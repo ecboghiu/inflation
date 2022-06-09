@@ -21,12 +21,12 @@ import itertools
 
 import numpy as np
 import scipy
-from quantuminflation.InflationProblem import InflationProblem
-from quantuminflation.InflationSDP import InflationSDP
-from quantuminflation.useful_distributions import (P_GHZ_array, P_Mermin_array, P_PRbox_array,
+from causalinflation.InflationProblem import InflationProblem
+from causalinflation.InflationSDP import InflationSDP
+from causalinflation.useful_distributions import (P_GHZ_array, P_Mermin_array, P_PRbox_array,
                                                    P_W_array, P_CHSH_array)
 
-from quantuminflation.fast_npa import calculate_momentmatrix
+from causalinflation.fast_npa import calculate_momentmatrix
 
 def solve_wrapper(v, InflationSDP, probfunc, use_linear_constraints):
     InflationSDP.set_distribution(probfunc(v), use_linear_constraints=use_linear_constraints)

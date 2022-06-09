@@ -1,6 +1,6 @@
 import unittest
 
-from quantuminflation.general_tools import *
+from causalinflation.general_tools import *
 
 class QuantumInflationPhysicalMoments(unittest.TestCase):
 

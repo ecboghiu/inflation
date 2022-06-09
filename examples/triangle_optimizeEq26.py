@@ -16,13 +16,13 @@ sys.path.append(cws)
 import itertools
 
 import numpy as np
-from quantuminflation.InflationProblem import InflationProblem
-from quantuminflation.InflationSDP import InflationSDP
-from quantuminflation.useful_distributions import P_GHZ, P_W_array
+from causalinflation.InflationProblem import InflationProblem
+from causalinflation.InflationSDP import InflationSDP
+from causalinflation.useful_distributions import P_GHZ, P_W_array
 import sympy as sp
 
-from quantuminflation.general_tools import to_numbers
-from quantuminflation.fast_npa import calculate_momentmatrix, to_name
+from causalinflation.general_tools import to_numbers
+from causalinflation.fast_npa import calculate_momentmatrix, to_name
 
 if __name__ == '__main__':  # Necessary for parallel computation, used in ncpol2sdpa
     outcomes_per_party = [2, 2, 2]

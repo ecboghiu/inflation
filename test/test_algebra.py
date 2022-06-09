@@ -1,7 +1,8 @@
 import unittest
 
-from quantuminflation.general_tools import *
-from quantuminflation.fast_npa import *
+from causalinflation.general_tools import *
+from causalinflation.fast_npa import *
+
 
 class TestNCAlgebra(unittest.TestCase):
     triangle = np.array([[0, 1, 1],  # Each row es a state, each column is the parties that are fed by a state

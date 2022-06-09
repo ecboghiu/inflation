@@ -21,10 +21,10 @@ import itertools
 import numpy as np
 import scipy
 import sympy as sp
-from quantuminflation.fast_npa import calculate_momentmatrix
-from quantuminflation.InflationProblem import InflationProblem
-from quantuminflation.InflationSDP import InflationSDP
-from quantuminflation.useful_distributions import (P_CHSH_array, P_GHZ_array,
+from causalinflation.fast_npa import calculate_momentmatrix
+from causalinflation.InflationProblem import InflationProblem
+from causalinflation.InflationSDP import InflationSDP
+from causalinflation.useful_distributions import (P_CHSH_array, P_GHZ_array,
                                                    P_Mermin_array, P_W_array)
 
 

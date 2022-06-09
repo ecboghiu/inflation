@@ -40,7 +40,7 @@ from ncpol2sdpa.nc_utils import apply_substitutions
 
 
 from tqdm import tqdm
-from quantuminflation.fast_npa import (mon_lessthan_mon, mon_lexsorted,
+from causalinflation.fast_npa import (mon_lessthan_mon, mon_lexsorted,
                                         to_canonical)
 
 import itertools

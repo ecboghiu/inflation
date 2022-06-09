@@ -2,9 +2,9 @@ import unittest
 
 # from sdp_utils import solveSDP
 from ncpol2sdpa.nc_utils import flatten
-from quantuminflation.general_tools import *
-from quantuminflation.sdp_utils import *
-import quantuminflation.useful_distributions as useful_distributions
+from causalinflation.general_tools import *
+from causalinflation.sdp_utils import *
+import causalinflation.useful_distributions as useful_distributions
 
 from scipy.io import loadmat
 

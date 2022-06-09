@@ -1,4 +1,11 @@
 # Docs
 docs/_static
-docs/_build/doctrees
 docs/_templates
+examples/.ipynb_checkpoints
+test
+*.dat
+test/__pycache__
+examples/.ipynb_checkpoints
+.vscode
+test/test_data
+ncpol2sdpa

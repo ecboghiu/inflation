@@ -1,7 +1,7 @@
 import unittest
 
-from quantuminflation.general_tools import *
-from quantuminflation.fast_npa import *
+from causalinflation.general_tools import *
+from causalinflation.fast_npa import *
 
 class TestToRepr(unittest.TestCase):
     def test_to_representative(self):
