@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ncpol2sdpa.nc_utils &mdash; inflation 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibliography.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">inflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../generatingset.html">How to customize the generating set</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>ncpol2sdpa.nc_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ncpol2sdpa.nc_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains helper functions to work with noncommutative polynomials</span>
+<span class="sd">and Hamiltonians.</span>
+
+<span class="sd">Created on Thu May  2 16:03:05 2013</span>
+
+<span class="sd">@author: Peter Wittek</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">adjoint</span><span class="p">,</span> <span class="n">conjugate</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">,</span> <span class="n">Pow</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">expand</span><span class="p">,</span> <span class="n">I</span>
+<span class="kn">from</span> <span class="nn">sympy.physics.quantum</span> <span class="kn">import</span> <span class="n">HermitianOperator</span><span class="p">,</span> <span class="n">Operator</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">lil_matrix</span>
+
+
+<div class="viewcode-block" id="flatten"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.flatten">[docs]</a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">lol</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flatten a list of lists to a list.</span>
+
+<span class="sd">    :param lol: A list of lists in arbitrary depth.</span>
+<span class="sd">    :type lol: list of list.</span>
+
+<span class="sd">    :returns: flat list of elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">lol</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">element</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">element</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">new_list</span></div>
+
+
+<div class="viewcode-block" id="simplify_polynomial"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.simplify_polynomial">[docs]</a><span class="k">def</span> <span class="nf">simplify_polynomial</span><span class="p">(</span><span class="n">polynomial</span><span class="p">,</span> <span class="n">monomial_substitutions</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simplify a polynomial for uniform handling later.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polynomial</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">polynomial</span>
+    <span class="n">polynomial</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">polynomial</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">mul</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                           <span class="n">multinomial</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">polynomial</span>
+    <span class="k">if</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">is_Mul</span><span class="p">:</span>
+        <span class="n">elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">polynomial</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">elements</span> <span class="o">=</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">as_coeff_mul</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">as_coeff_add</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">new_polynomial</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Identify its constituent monomials</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+        <span class="n">monomial</span><span class="p">,</span> <span class="n">coeff</span> <span class="o">=</span> <span class="n">separate_scalar_factor</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="n">monomial</span> <span class="o">=</span> <span class="n">apply_substitutions</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">monomial_substitutions</span><span class="p">)</span>
+        <span class="n">new_polynomial</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="n">monomial</span>
+    <span class="k">return</span> <span class="n">new_polynomial</span></div>
+
+
+<div class="viewcode-block" id="is_pure_substitution_rule"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.is_pure_substitution_rule">[docs]</a><span class="k">def</span> <span class="nf">is_pure_substitution_rule</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">rhs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">rhs</span><span class="o">.</span><span class="n">is_Mul</span><span class="p">:</span>
+        <span class="n">elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">rhs</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">elements</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">as_coeff_mul</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">as_coeff_add</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+        <span class="n">monomial</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">separate_scalar_factor</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">monomial</span><span class="o">.</span><span class="n">atoms</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">atom</span><span class="o">.</span><span class="n">is_Number</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">lhs</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">atom</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="remove_scalar_factor"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.remove_scalar_factor">[docs]</a><span class="k">def</span> <span class="nf">remove_scalar_factor</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return monomial without constant factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">monomial</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">separate_scalar_factor</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">monomial</span></div>
+
+
+<span class="k">def</span> <span class="nf">__separate_scalar_factor</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Separate the constant factor from a monomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">scalar_factor</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">S</span><span class="o">.</span><span class="n">One</span><span class="p">,</span> <span class="n">monomial</span>
+    <span class="k">if</span> <span class="n">monomial</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">S</span><span class="o">.</span><span class="n">One</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="n">comm_factors</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">split_commutative_parts</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">comm_factors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">comm_factors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Number</span><span class="p">):</span>
+            <span class="n">scalar_factor</span> <span class="o">=</span> <span class="n">comm_factors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">scalar_factor</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">monomial</span> <span class="o">/</span> <span class="n">scalar_factor</span><span class="p">,</span> <span class="n">scalar_factor</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">monomial</span><span class="p">,</span> <span class="n">scalar_factor</span>
+
+
+<div class="viewcode-block" id="get_support"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.get_support">[docs]</a><span class="k">def</span> <span class="nf">get_support</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">polynomial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the support of a polynomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">support</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+        <span class="n">support</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">support</span>
+    <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">expand</span><span class="p">()</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">():</span>
+        <span class="n">tmp_support</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+        <span class="n">mon</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">__separate_scalar_factor</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+        <span class="n">symbolic_support</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">(</span><span class="n">split_commutative_parts</span><span class="p">(</span><span class="n">mon</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbolic_support</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                <span class="n">base</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">base</span>
+                <span class="k">if</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">base</span><span class="p">):</span>
+                    <span class="n">base</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span>
+                <span class="n">tmp_support</span><span class="p">[</span><span class="n">variables</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">base</span><span class="p">)]</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">exp</span>
+            <span class="k">elif</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+                <span class="n">tmp_support</span><span class="p">[</span><span class="n">variables</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">adjoint</span><span class="p">())]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="n">Operator</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">)):</span>
+                <span class="n">tmp_support</span><span class="p">[</span><span class="n">variables</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">s</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">support</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp_support</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">support</span></div>
+
+
+<div class="viewcode-block" id="get_support_variables"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.get_support_variables">[docs]</a><span class="k">def</span> <span class="nf">get_support_variables</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the support of a polynomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">support</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">support</span>
+    <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">expand</span><span class="p">()</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">():</span>
+        <span class="n">mon</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">__separate_scalar_factor</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+        <span class="n">symbolic_support</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">(</span><span class="n">split_commutative_parts</span><span class="p">(</span><span class="n">mon</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbolic_support</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                <span class="n">base</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">base</span>
+                <span class="k">if</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">base</span><span class="p">):</span>
+                    <span class="n">base</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span>
+                <span class="n">support</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+                <span class="n">support</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">adjoint</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">Operator</span><span class="p">):</span>
+                <span class="n">support</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">support</span></div>
+
+
+<div class="viewcode-block" id="separate_scalar_factor"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.separate_scalar_factor">[docs]</a><span class="k">def</span> <span class="nf">separate_scalar_factor</span><span class="p">(</span><span class="n">element</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Construct a monomial with the coefficient separated</span>
+<span class="sd">    from an element in a polynomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">monomial</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">One</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)):</span>
+        <span class="n">coeff</span> <span class="o">*=</span> <span class="n">element</span>
+        <span class="k">return</span> <span class="n">monomial</span><span class="p">,</span> <span class="n">coeff</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">element</span><span class="o">.</span><span class="n">as_coeff_mul</span><span class="p">()[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">is_Number</span> <span class="ow">or</span> <span class="n">var</span><span class="o">.</span><span class="n">is_imaginary</span><span class="p">):</span>
+            <span class="n">monomial</span> <span class="o">=</span> <span class="n">monomial</span> <span class="o">*</span> <span class="n">var</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">is_Number</span><span class="p">:</span>
+                <span class="n">coeff</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+            <span class="c1"># If not, then it is imaginary</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">coeff</span> <span class="o">=</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">coeff</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">element</span><span class="o">.</span><span class="n">as_coeff_mul</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">coeff</span>
+    <span class="k">return</span> <span class="n">monomial</span><span class="p">,</span> <span class="n">coeff</span></div>
+
+
+<div class="viewcode-block" id="count_ncmonomials"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.count_ncmonomials">[docs]</a><span class="k">def</span> <span class="nf">count_ncmonomials</span><span class="p">(</span><span class="n">monomials</span><span class="p">,</span> <span class="n">degree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Given a list of monomials, it counts those that have a certain degree,</span>
+<span class="sd">    or less. The function is useful when certain monomials were eliminated</span>
+<span class="sd">    from the basis.</span>
+
+<span class="sd">    :param variables: The noncommutative variables making up the monomials</span>
+<span class="sd">    :param monomials: List of monomials (the monomial basis).</span>
+<span class="sd">    :param degree:  Maximum degree to count.</span>
+
+<span class="sd">    :returns: The count of appropriate monomials.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ncmoncount</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">monomials</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ncdegree</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">degree</span><span class="p">:</span>
+            <span class="n">ncmoncount</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">ncmoncount</span></div>
+
+
+<div class="viewcode-block" id="apply_substitutions"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.apply_substitutions">[docs]</a><span class="k">def</span> <span class="nf">apply_substitutions</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">monomial_substitutions</span><span class="p">,</span> <span class="n">pure</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper function to remove monomials from the basis.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">monomial</span>
+    <span class="n">original_monomial</span> <span class="o">=</span> <span class="n">monomial</span>
+    <span class="n">changed</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pure</span><span class="p">:</span>
+        <span class="n">substitutions</span> <span class="o">=</span> <span class="n">monomial_substitutions</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">substitutions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="ow">in</span> <span class="n">monomial_substitutions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">irrelevant</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">lhs</span><span class="o">.</span><span class="n">atoms</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">atom</span><span class="o">.</span><span class="n">is_Number</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">monomial</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">atom</span><span class="p">):</span>
+                    <span class="n">irrelevant</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">irrelevant</span><span class="p">:</span>
+                <span class="n">substitutions</span><span class="p">[</span><span class="n">lhs</span><span class="p">]</span> <span class="o">=</span> <span class="n">rhs</span>
+    <span class="k">while</span> <span class="n">changed</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="ow">in</span> <span class="n">substitutions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">monomial</span> <span class="o">=</span> <span class="n">fast_substitute</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">original_monomial</span> <span class="o">==</span> <span class="n">monomial</span><span class="p">:</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">original_monomial</span> <span class="o">=</span> <span class="n">monomial</span>
+    <span class="k">return</span> <span class="n">monomial</span></div>
+
+
+<div class="viewcode-block" id="fast_substitute"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.fast_substitute">[docs]</a><span class="k">def</span> <span class="nf">fast_substitute</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">old_sub</span><span class="p">,</span> <span class="n">new_sub</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Experimental fast substitution routine that considers only restricted</span>
+<span class="sd">    cases of noncommutative algebras. In rare cases, it fails to find a</span>
+<span class="sd">    substitution. Use it with proper testing.</span>
+
+<span class="sd">    :param monomial: The monomial with parts need to be substituted.</span>
+<span class="sd">    :param old_sub: The part to be replaced.</span>
+<span class="sd">    :param new_sub: The replacement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If monomial is number -&gt; nothing to do</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">monomial</span>
+    <span class="c1"># If polynomial then apply to each term in sum</span>
+    <span class="k">if</span> <span class="n">monomial</span><span class="o">.</span><span class="n">is_Add</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">fast_substitute</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">old_sub</span><span class="p">,</span> <span class="n">new_sub</span><span class="p">)</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span>
+                    <span class="n">monomial</span><span class="o">.</span><span class="n">as_ordered_terms</span><span class="p">()])</span>
+
+    <span class="c1"># Split the monomial into its factors (commutative separated)</span>
+    <span class="n">comm_factors</span><span class="p">,</span> <span class="n">ncomm_factors</span> <span class="o">=</span> <span class="n">split_commutative_parts</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+    <span class="c1"># Split the part to be substituted into factors</span>
+    <span class="n">old_comm_factors</span><span class="p">,</span> <span class="n">old_ncomm_factors</span> <span class="o">=</span> <span class="n">split_commutative_parts</span><span class="p">(</span><span class="n">old_sub</span><span class="p">)</span>
+    <span class="c1"># This is a temporary hack</span>
+    <span class="c1"># If the new_part is not a number then get its commutative parts</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_sub</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)):</span>
+        <span class="n">new_comm_factors</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">split_commutative_parts</span><span class="p">(</span><span class="n">new_sub</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_comm_factors</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_sub</span><span class="p">]</span>
+    <span class="n">comm_monomial</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">is_constant_term</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># If we have commutative variables then deal with them here</span>
+    <span class="k">if</span> <span class="n">comm_factors</span> <span class="o">!=</span> <span class="p">():</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">comm_factors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">comm_factors</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">is_constant_term</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">comm_monomial</span> <span class="o">=</span> <span class="n">comm_factors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">comm_factor</span> <span class="ow">in</span> <span class="n">comm_factors</span><span class="p">:</span>
+                <span class="n">comm_monomial</span> <span class="o">*=</span> <span class="n">comm_factor</span>
+            <span class="k">if</span> <span class="n">old_comm_factors</span> <span class="o">!=</span> <span class="p">():</span>
+                <span class="n">comm_old_sub</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">for</span> <span class="n">comm_factor</span> <span class="ow">in</span> <span class="n">old_comm_factors</span><span class="p">:</span>
+                    <span class="n">comm_old_sub</span> <span class="o">*=</span> <span class="n">comm_factor</span>
+                <span class="n">comm_new_sub</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">for</span> <span class="n">comm_factor</span> <span class="ow">in</span> <span class="n">new_comm_factors</span><span class="p">:</span>
+                    <span class="n">comm_new_sub</span> <span class="o">*=</span> <span class="n">comm_factor</span>
+                <span class="c1"># Dummy heuristic to get around retarded SymPy bug</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">comm_old_sub</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                    <span class="c1"># In this case, we are in trouble</span>
+                    <span class="n">old_base</span> <span class="o">=</span> <span class="n">comm_old_sub</span><span class="o">.</span><span class="n">base</span>
+                    <span class="k">if</span> <span class="n">comm_monomial</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">old_base</span><span class="p">):</span>
+                        <span class="n">old_degree</span> <span class="o">=</span> <span class="n">comm_old_sub</span><span class="o">.</span><span class="n">exp</span>
+                        <span class="n">new_monomial</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">match</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">comm_monomial</span><span class="o">.</span><span class="n">as_ordered_factors</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="n">factor</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">old_base</span><span class="p">):</span>
+                                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                                    <span class="n">degree</span> <span class="o">=</span> <span class="n">factor</span><span class="o">.</span><span class="n">exp</span>
+                                    <span class="k">if</span> <span class="n">degree</span> <span class="o">&gt;=</span> <span class="n">old_degree</span><span class="p">:</span>
+                                        <span class="n">match</span> <span class="o">=</span> <span class="kc">True</span>
+                                        <span class="n">new_monomial</span> <span class="o">*=</span> \
+                                            <span class="n">old_base</span><span class="o">**</span><span class="p">(</span><span class="n">degree</span><span class="o">-</span><span class="n">old_degree</span><span class="p">)</span> <span class="o">*</span> \
+                                            <span class="n">comm_new_sub</span>
+
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">factor</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">factor</span>
+                        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                            <span class="n">comm_monomial</span> <span class="o">=</span> <span class="n">new_monomial</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">comm_monomial</span> <span class="o">=</span> <span class="n">comm_monomial</span><span class="o">.</span><span class="n">subs</span><span class="p">(</span><span class="n">comm_old_sub</span><span class="p">,</span>
+                                                       <span class="n">comm_new_sub</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ncomm_factors</span> <span class="o">==</span> <span class="p">()</span> <span class="ow">or</span> <span class="n">old_ncomm_factors</span> <span class="o">==</span> <span class="p">():</span>
+        <span class="k">return</span> <span class="n">comm_monomial</span>
+
+    <span class="c1"># old_factors = old_sub.as_ordered_factors()</span>
+    <span class="c1"># factors = monomial.as_ordered_factors()</span>
+    <span class="c1"># Now dealing with the non_comm factors</span>
+    <span class="n">new_var_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">new_monomial</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">left_remainder</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="c1"># ncomm_factors -- factors of the monomial</span>
+    <span class="c1"># old_ncomm_factors -- factors of the part to be substituted</span>
+    <span class="c1"># We move through the monomial, checking that the substituted part</span>
+    <span class="c1"># lines up with some part of the monomial (if it does then we substitute)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ncomm_factors</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_ncomm_factors</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">old_ncomm_factor</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">old_ncomm_factors</span><span class="p">):</span>
+            <span class="n">ncomm_factor</span> <span class="o">=</span> <span class="n">ncomm_factors</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
+            <span class="c1"># If monomial factor is Symbol AND</span>
+            <span class="c1"># [sub_part is not symbol or the same symbol then move to next mono_part]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ncomm_factor</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">)</span> <span class="ow">and</span> \
+                <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">,</span> <span class="n">Operator</span><span class="p">)</span> <span class="ow">or</span>
+                 <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">)</span> <span class="ow">and</span>
+                  <span class="n">ncomm_factor</span> <span class="o">!=</span> <span class="n">old_ncomm_factor</span><span class="p">)):</span>
+                <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                <span class="k">break</span>
+            <span class="c1"># If monomial fact is Operator AND</span>
+            <span class="c1"># [sub_part is not operator or not same operator then move to next mono_part]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ncomm_factor</span><span class="p">,</span> <span class="n">Operator</span><span class="p">)</span> <span class="ow">and</span> \
+                    <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">,</span> <span class="n">Operator</span><span class="p">)</span> <span class="ow">and</span>
+                      <span class="n">ncomm_factor</span> <span class="o">!=</span> <span class="n">old_ncomm_factor</span><span class="p">)</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">,</span> <span class="n">Pow</span><span class="p">)):</span>
+                <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                <span class="k">break</span>
+            <span class="c1"># If mono_part is daggered:</span>
+            <span class="c1">#   if sub is not daggered or doesnt equal mono_part then move to next mono_part</span>
+            <span class="k">if</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">ncomm_factor</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">)</span> <span class="ow">or</span> \
+                         <span class="n">ncomm_factor</span> <span class="o">!=</span> <span class="n">old_ncomm_factor</span><span class="p">:</span>
+                    <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                    <span class="k">break</span>
+            <span class="c1"># If mono_part is not adjoint</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># if mono_part is not a pow  but sub_point is adjoint then move to next mono_part</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ncomm_factor</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">is_adjoint</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">):</span>
+                        <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                        <span class="k">break</span>
+                <span class="c1"># if mono_part is a pow</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># if sub_part is also a pow  then split the base and exponent</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_ncomm_factor</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                        <span class="n">old_base</span> <span class="o">=</span> <span class="n">old_ncomm_factor</span><span class="o">.</span><span class="n">base</span>
+                        <span class="n">old_degree</span> <span class="o">=</span> <span class="n">old_ncomm_factor</span><span class="o">.</span><span class="n">exp</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">old_base</span> <span class="o">=</span> <span class="n">old_ncomm_factor</span>
+                        <span class="n">old_degree</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="c1"># If the bases don&#39;t match then move to next mono part</span>
+                    <span class="k">if</span> <span class="n">old_base</span> <span class="o">!=</span> <span class="n">ncomm_factor</span><span class="o">.</span><span class="n">base</span><span class="p">:</span>
+                        <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                        <span class="k">break</span>
+                    <span class="c1"># If the exponent of sub part is too large then move to next mono_part</span>
+                    <span class="k">if</span> <span class="n">old_degree</span> <span class="o">&gt;</span> <span class="n">ncomm_factor</span><span class="o">.</span><span class="n">exp</span><span class="p">:</span>
+                        <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                        <span class="k">break</span>
+                    <span class="c1"># If the exponent of sub_part is smaller than the monomial part</span>
+                    <span class="k">if</span> <span class="n">old_degree</span> <span class="o">&lt;</span> <span class="n">ncomm_factor</span><span class="o">.</span><span class="n">exp</span><span class="p">:</span>
+                        <span class="c1"># if we are not at the last factor of sub_part</span>
+                        <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_ncomm_factors</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="c1"># neither last or first factor then sub doesn&#39;t fit and break</span>
+                            <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">left_remainder</span><span class="p">,</span> <span class="n">right_remainder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+                                <span class="k">break</span>
+                            <span class="c1"># We must now be the left-most factor of sub</span>
+                            <span class="c1"># So we can potentially sub in with some remainer to the left</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">left_remainder</span> <span class="o">=</span> <span class="n">old_base</span> <span class="o">**</span> <span class="p">(</span>
+                                    <span class="n">ncomm_factor</span><span class="o">.</span><span class="n">exp</span> <span class="o">-</span> <span class="n">old_degree</span><span class="p">)</span>
+                        <span class="c1"># if we are the last factor then we can sub in with remainer to the right</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">right_remainder</span> <span class="o">=</span> <span class="n">old_base</span> <span class="o">**</span> <span class="p">(</span>
+                                <span class="n">ncomm_factor</span><span class="o">.</span><span class="n">exp</span> <span class="o">-</span> <span class="n">old_degree</span><span class="p">)</span>
+        <span class="c1"># This else is executed after the inner-loop has been exhausted (no break)</span>
+        <span class="c1"># This should only happen if we find a match for the substitution</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_monomial</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="c1"># All parts of mono up to the substituted bit</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">new_var_list</span><span class="p">:</span>
+                <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">var</span>
+            <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">left_remainder</span> <span class="o">*</span> <span class="n">new_sub</span> <span class="o">*</span> <span class="n">right_remainder</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_ncomm_factors</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">ncomm_factors</span><span class="p">)):</span>
+                <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">ncomm_factors</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">comm_monomial</span>
+            <span class="k">break</span>
+        <span class="c1"># Each time we broke out of the inner loop we found another part</span>
+        <span class="c1"># of the monomial that will not be substituted. Add it to the new_var_list</span>
+        <span class="n">new_var_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ncomm_factors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="c1"># We broke out of the outer loop</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_constant_term</span> <span class="ow">and</span> <span class="n">comm_factors</span> <span class="o">!=</span> <span class="p">():</span>
+            <span class="n">new_monomial</span> <span class="o">=</span> <span class="n">comm_monomial</span>
+            <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">ncomm_factors</span><span class="p">:</span>
+                <span class="n">new_monomial</span> <span class="o">*=</span> <span class="n">factor</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">monomial</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_sub</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">complex</span><span class="p">))</span> <span class="ow">and</span> <span class="n">new_sub</span><span class="o">.</span><span class="n">is_Add</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">expand</span><span class="p">(</span><span class="n">new_monomial</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">new_monomial</span></div>
+
+
+<div class="viewcode-block" id="generate_variables"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.generate_variables">[docs]</a><span class="k">def</span> <span class="nf">generate_variables</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_vars</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hermitian</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">commutative</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates a number of commutative or noncommutative variables</span>
+
+<span class="sd">    :param name: The prefix in the symbolic representation of the noncommuting</span>
+<span class="sd">                 variables. This will be suffixed by a number from 0 to</span>
+<span class="sd">                 n_vars-1 if n_vars &gt; 1.</span>
+<span class="sd">    :type name: str.</span>
+<span class="sd">    :param n_vars: The number of variables.</span>
+<span class="sd">    :type n_vars: int.</span>
+<span class="sd">    :param hermitian: Optional parameter to request Hermitian variables .</span>
+<span class="sd">    :type hermitian: bool.</span>
+<span class="sd">    :param commutative: Optional parameter to request commutative variables.</span>
+<span class="sd">                        Commutative variables are Hermitian by default.</span>
+<span class="sd">    :type commutative: bool.</span>
+
+<span class="sd">    :returns: list of :class:`sympy.physics.quantum.operator.Operator` or</span>
+<span class="sd">              :class:`sympy.physics.quantum.operator.HermitianOperator`</span>
+<span class="sd">              variables or `sympy.Symbol`</span>
+
+<span class="sd">    :Example:</span>
+
+<span class="sd">    &gt;&gt;&gt; generate_variables(&#39;y&#39;, 2, commutative=True)</span>
+<span class="sd">    ￼[y0, y1]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">variables</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_vars</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n_vars</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="n">commutative</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hermitian</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">hermitian</span><span class="p">:</span>
+                <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Symbol</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Symbol</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="nb">complex</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">hermitian</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hermitian</span><span class="p">:</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HermitianOperator</span><span class="p">(</span><span class="n">var_name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Operator</span><span class="p">(</span><span class="n">var_name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">variables</span></div>
+
+
+<div class="viewcode-block" id="generate_operators"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.generate_operators">[docs]</a><span class="k">def</span> <span class="nf">generate_operators</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_vars</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hermitian</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">commutative</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates a number of commutative or noncommutative operators</span>
+
+<span class="sd">    :param name: The prefix in the symbolic representation of the noncommuting</span>
+<span class="sd">                 variables. This will be suffixed by a number from 0 to</span>
+<span class="sd">                 n_vars-1 if n_vars &gt; 1.</span>
+<span class="sd">    :type name: str.</span>
+<span class="sd">    :param n_vars: The number of variables.</span>
+<span class="sd">    :type n_vars: int.</span>
+<span class="sd">    :param hermitian: Optional parameter to request Hermitian variables .</span>
+<span class="sd">    :type hermitian: bool.</span>
+<span class="sd">    :param commutative: Optional parameter to request commutative variables.</span>
+<span class="sd">                        Commutative variables are Hermitian by default.</span>
+<span class="sd">    :type commutative: bool.</span>
+
+<span class="sd">    :returns: list of :class:`sympy.physics.quantum.operator.Operator` or</span>
+<span class="sd">              :class:`sympy.physics.quantum.operator.HermitianOperator`</span>
+<span class="sd">              variables</span>
+
+<span class="sd">    :Example:</span>
+
+<span class="sd">    &gt;&gt;&gt; generate_variables(&#39;y&#39;, 2, commutative=True)</span>
+<span class="sd">    ￼[y0, y1]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">variables</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_vars</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n_vars</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="n">hermitian</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hermitian</span><span class="p">:</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HermitianOperator</span><span class="p">(</span><span class="n">var_name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Operator</span><span class="p">(</span><span class="n">var_name</span><span class="p">))</span>
+        <span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">is_commutative</span> <span class="o">=</span> <span class="n">commutative</span>
+    <span class="k">return</span> <span class="n">variables</span></div>
+
+
+<div class="viewcode-block" id="get_monomials"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.get_monomials">[docs]</a><span class="k">def</span> <span class="nf">get_monomials</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">degree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates all noncommutative monomials up to a degree</span>
+
+<span class="sd">    :param variables: The noncommutative variables to generate monomials from</span>
+<span class="sd">    :type variables: list of :class:`sympy.physics.quantum.operator.Operator`</span>
+<span class="sd">                     or</span>
+<span class="sd">                     :class:`sympy.physics.quantum.operator.HermitianOperator`.</span>
+<span class="sd">    :param degree: The maximum degree.</span>
+<span class="sd">    :type degree: int.</span>
+
+<span class="sd">    :returns: list of monomials.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">degree</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">variables</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">S</span><span class="o">.</span><span class="n">One</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_variables</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[:]</span>
+        <span class="n">_variables</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">ncmonomials</span> <span class="o">=</span> <span class="p">[</span><span class="n">S</span><span class="o">.</span><span class="n">One</span><span class="p">]</span>
+        <span class="n">ncmonomials</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_hermitian</span><span class="p">(</span><span class="n">var</span><span class="p">):</span>
+                <span class="n">ncmonomials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">adjoint</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">degree</span><span class="p">):</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">_variables</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">new_var</span> <span class="ow">in</span> <span class="n">ncmonomials</span><span class="p">:</span>
+                    <span class="n">temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span> <span class="o">*</span> <span class="n">new_var</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">var</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_hermitian</span><span class="p">(</span><span class="n">var</span><span class="p">):</span>
+                        <span class="n">temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span> <span class="o">*</span> <span class="n">new_var</span><span class="p">)</span>
+            <span class="n">ncmonomials</span> <span class="o">=</span> <span class="n">unique</span><span class="p">(</span><span class="n">temp</span><span class="p">[:])</span>
+        <span class="k">return</span> <span class="n">ncmonomials</span></div>
+
+
+<div class="viewcode-block" id="ncdegree"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.ncdegree">[docs]</a><span class="k">def</span> <span class="nf">ncdegree</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the degree of a noncommutative polynomial.</span>
+
+<span class="sd">    :param polynomial: Polynomial of noncommutive variables.</span>
+<span class="sd">    :type polynomial: :class:`sympy.core.expr.Expr`.</span>
+
+<span class="sd">    :returns: int -- the degree of the polynomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">degree</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">is_number_type</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">degree</span>
+    <span class="n">polynomial</span> <span class="o">=</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">expand</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">():</span>
+        <span class="n">subdegree</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">monomial</span><span class="o">.</span><span class="n">as_coeff_mul</span><span class="p">()[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">Pow</span><span class="p">):</span>
+                <span class="n">subdegree</span> <span class="o">+=</span> <span class="n">variable</span><span class="o">.</span><span class="n">exp</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">Number</span><span class="p">)</span> <span class="ow">and</span> <span class="n">variable</span> <span class="o">!=</span> <span class="n">I</span><span class="p">:</span>
+                <span class="n">subdegree</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">subdegree</span> <span class="o">&gt;</span> <span class="n">degree</span><span class="p">:</span>
+            <span class="n">degree</span> <span class="o">=</span> <span class="n">subdegree</span>
+    <span class="k">return</span> <span class="n">degree</span></div>
+
+
+<div class="viewcode-block" id="iscomplex"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.iscomplex">[docs]</a><span class="k">def</span> <span class="nf">iscomplex</span><span class="p">(</span><span class="n">polynomial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns whether the polynomial has complex coefficients</span>
+
+<span class="sd">    :param polynomial: Polynomial of noncommutive variables.</span>
+<span class="sd">    :type polynomial: :class:`sympy.core.expr.Expr`.</span>
+
+<span class="sd">    :returns: bool -- whether there is a complex coefficient.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polynomial</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polynomial</span><span class="p">,</span> <span class="nb">complex</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">polynomial</span> <span class="o">=</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">expand</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">polynomial</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">monomial</span><span class="o">.</span><span class="n">as_coeff_mul</span><span class="p">()[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span> <span class="ow">or</span> <span class="n">variable</span> <span class="o">==</span> <span class="n">I</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="get_all_monomials"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.get_all_monomials">[docs]</a><span class="k">def</span> <span class="nf">get_all_monomials</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">extramonomials</span><span class="p">,</span> <span class="n">substitutions</span><span class="p">,</span> <span class="n">degree</span><span class="p">,</span>
+                      <span class="n">removesubstitutions</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the monomials of a certain degree.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">monomials</span> <span class="o">=</span> <span class="n">get_monomials</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extramonomials</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">monomials</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extramonomials</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">removesubstitutions</span> <span class="ow">and</span> <span class="n">substitutions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">monomials</span> <span class="o">=</span> <span class="p">[</span><span class="n">monomial</span> <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">monomials</span> <span class="k">if</span> <span class="n">monomial</span> <span class="ow">not</span>
+                     <span class="ow">in</span> <span class="n">substitutions</span><span class="p">]</span>
+        <span class="n">monomials</span> <span class="o">=</span> <span class="p">[</span><span class="n">remove_scalar_factor</span><span class="p">(</span><span class="n">apply_substitutions</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span>
+                                                              <span class="n">substitutions</span><span class="p">))</span>
+                     <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">monomials</span><span class="p">]</span>
+    <span class="n">monomials</span> <span class="o">=</span> <span class="n">unique</span><span class="p">(</span><span class="n">monomials</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">monomials</span></div>
+
+
+<div class="viewcode-block" id="pick_monomials_up_to_degree"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.pick_monomials_up_to_degree">[docs]</a><span class="k">def</span> <span class="nf">pick_monomials_up_to_degree</span><span class="p">(</span><span class="n">monomials</span><span class="p">,</span> <span class="n">degree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Collect monomials up to a given degree.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ordered_monomials</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">degree</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ordered_monomials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">One</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">deg</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">ordered_monomials</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">pick_monomials_of_degree</span><span class="p">(</span><span class="n">monomials</span><span class="p">,</span> <span class="n">deg</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">ordered_monomials</span></div>
+
+
+<div class="viewcode-block" id="pick_monomials_of_degree"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.pick_monomials_of_degree">[docs]</a><span class="k">def</span> <span class="nf">pick_monomials_of_degree</span><span class="p">(</span><span class="n">monomials</span><span class="p">,</span> <span class="n">degree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Collect all monomials up of a given degree.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">selected_monomials</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">monomials</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ncdegree</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span> <span class="o">==</span> <span class="n">degree</span><span class="p">:</span>
+            <span class="n">selected_monomials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">selected_monomials</span></div>
+
+
+<div class="viewcode-block" id="convert_monomial_to_string"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.convert_monomial_to_string">[docs]</a><span class="k">def</span> <span class="nf">convert_monomial_to_string</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
+    <span class="n">monomial_str</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">monomial</span><span class="p">)</span>
+    <span class="n">monomial_str</span> <span class="o">=</span> <span class="n">monomial_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Dagger(&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">monomial_str</span> <span class="o">=</span> <span class="n">monomial_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;)&#39;</span><span class="p">,</span> <span class="s1">&#39;T&#39;</span><span class="p">)</span>
+    <span class="n">monomial_str</span> <span class="o">=</span> <span class="n">monomial_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;**&#39;</span><span class="p">,</span> <span class="s1">&#39;^&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">monomial_str</span></div>
+
+
+<div class="viewcode-block" id="save_monomial_index"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.save_monomial_index">[docs]</a><span class="k">def</span> <span class="nf">save_monomial_index</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">monomial_index</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Save a monomial dictionary for debugging purposes.</span>
+
+<span class="sd">    :param filename: The name of the file to save to.</span>
+<span class="sd">    :type filename: str.</span>
+<span class="sd">    :param monomial_index: The monomial index of the SDP relaxation.</span>
+<span class="sd">    :type monomial_index: dict of :class:`sympy.core.expr.Expr`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">monomial_translation</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">monomial_index</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">monomial_index</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">monomial_translation</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">convert_monomial_to_string</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="n">file_</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">monomial_translation</span><span class="p">)):</span>
+        <span class="n">file_</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">monomial_translation</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+    <span class="n">file_</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="unique"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.unique">[docs]</a><span class="k">def</span> <span class="nf">unique</span><span class="p">(</span><span class="n">seq</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper function to include only unique monomials in a basis.&quot;&quot;&quot;</span>
+    <span class="n">seen</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+        <span class="n">marker</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">seen</span><span class="p">[</span><span class="n">marker</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="build_permutation_matrix"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.build_permutation_matrix">[docs]</a><span class="k">def</span> <span class="nf">build_permutation_matrix</span><span class="p">(</span><span class="n">permutation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Build a permutation matrix for a permutation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">matrix</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">permutation</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">permutation</span><span class="p">)))</span>
+    <span class="n">column</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">permutation</span><span class="p">:</span>
+        <span class="n">matrix</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">column</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">matrix</span></div>
+
+
+<div class="viewcode-block" id="convert_relational"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.convert_relational">[docs]</a><span class="k">def</span> <span class="nf">convert_relational</span><span class="p">(</span><span class="n">relational</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert all inequalities to &gt;=0 form.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rel</span> <span class="o">=</span> <span class="n">relational</span><span class="o">.</span><span class="n">rel_op</span>
+    <span class="k">if</span> <span class="n">rel</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;==&#39;</span><span class="p">,</span> <span class="s1">&#39;&gt;=&#39;</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">relational</span><span class="o">.</span><span class="n">lhs</span><span class="o">-</span><span class="n">relational</span><span class="o">.</span><span class="n">rhs</span>
+    <span class="k">elif</span> <span class="n">rel</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&lt;=&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">relational</span><span class="o">.</span><span class="n">rhs</span><span class="o">-</span><span class="n">relational</span><span class="o">.</span><span class="n">lhs</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The relational operation &#39; + rel + &#39; is not &quot;</span>
+                        <span class="s2">&quot;implemented!&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="find_variable_set"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.find_variable_set">[docs]</a><span class="k">def</span> <span class="nf">find_variable_set</span><span class="p">(</span><span class="n">variable_sets</span><span class="p">,</span> <span class="n">polynomial</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variable_sets</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="n">support</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_support_variables</span><span class="p">(</span><span class="n">polynomial</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">variable_set</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variable_sets</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">support</span><span class="o">-</span><span class="nb">set</span><span class="p">(</span><span class="n">variable_set</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">i</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="moment_of_entry"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.moment_of_entry">[docs]</a><span class="k">def</span> <span class="nf">moment_of_entry</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">monomials</span><span class="p">,</span> <span class="n">ineq</span><span class="p">,</span> <span class="n">substitutions</span><span class="p">):</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">column</span> <span class="o">=</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ineq</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">ineq</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">simplify_polynomial</span><span class="p">(</span><span class="n">monomials</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span> <span class="o">*</span>
+                                                <span class="n">ineq</span> <span class="o">*</span> <span class="n">monomials</span><span class="p">[</span><span class="n">column</span><span class="p">],</span>
+                                                <span class="n">substitutions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="assemble_monomial_and_do_substitutions"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.assemble_monomial_and_do_substitutions">[docs]</a><span class="k">def</span> <span class="nf">assemble_monomial_and_do_substitutions</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">monomialsA</span><span class="p">,</span> <span class="n">monomialsB</span><span class="p">,</span> <span class="n">ppt</span><span class="p">,</span>
+                                           <span class="n">substitutions</span><span class="p">,</span>
+                                           <span class="n">pure_substitution_rules</span><span class="p">):</span>
+    <span class="n">rowA</span> <span class="o">=</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">columnA</span> <span class="o">=</span> <span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">rowB</span> <span class="o">=</span> <span class="n">arg</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">columnB</span> <span class="o">=</span> <span class="n">arg</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ppt</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">columnB</span> <span class="o">&gt;=</span> <span class="n">rowB</span><span class="p">):</span>
+        <span class="n">monomial</span> <span class="o">=</span> <span class="n">monomialsA</span><span class="p">[</span><span class="n">rowA</span><span class="p">]</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span> <span class="o">*</span> <span class="n">monomialsA</span><span class="p">[</span><span class="n">columnA</span><span class="p">]</span> <span class="o">*</span> \
+            <span class="n">monomialsB</span><span class="p">[</span><span class="n">rowB</span><span class="p">]</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span> <span class="o">*</span> <span class="n">monomialsB</span><span class="p">[</span><span class="n">columnB</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">monomial</span> <span class="o">=</span> <span class="n">monomialsA</span><span class="p">[</span><span class="n">rowA</span><span class="p">]</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span> <span class="o">*</span> <span class="n">monomialsA</span><span class="p">[</span><span class="n">columnA</span><span class="p">]</span> <span class="o">*</span> \
+            <span class="n">monomialsB</span><span class="p">[</span><span class="n">columnB</span><span class="p">]</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span> <span class="o">*</span> <span class="n">monomialsB</span><span class="p">[</span><span class="n">rowB</span><span class="p">]</span>
+        <span class="c1"># Apply the substitutions if any</span>
+    <span class="n">monomial</span> <span class="o">=</span> <span class="n">apply_substitutions</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">substitutions</span><span class="p">,</span>
+                                   <span class="n">pure_substitution_rules</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">columnA</span><span class="p">,</span> <span class="n">rowB</span><span class="p">,</span> <span class="n">columnB</span><span class="p">,</span> <span class="n">monomial</span></div>
+
+
+<div class="viewcode-block" id="split_commutative_parts"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.split_commutative_parts">[docs]</a><span class="k">def</span> <span class="nf">split_commutative_parts</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">is_Mul</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">e</span><span class="p">,)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">is_commutative</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">args</span><span class="p">[:</span><span class="n">i</span><span class="p">],</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span></div>
+
+
+<div class="viewcode-block" id="is_number_type"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.is_number_type">[docs]</a><span class="k">def</span> <span class="nf">is_number_type</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">))</span> <span class="ow">or</span> <span class="n">exp</span><span class="o">.</span><span class="n">is_number</span></div>
+
+
+<div class="viewcode-block" id="is_adjoint"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.is_adjoint">[docs]</a><span class="k">def</span> <span class="nf">is_adjoint</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="p">(</span><span class="n">adjoint</span><span class="p">,</span> <span class="n">conjugate</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="is_hermitian"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.is_hermitian">[docs]</a><span class="k">def</span> <span class="nf">is_hermitian</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">is_hermitian</span> <span class="ow">or</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">is_hermitian</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">exp</span><span class="o">.</span><span class="n">is_complex</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="flip_sign"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.nc_utils.flip_sign">[docs]</a><span class="k">def</span> <span class="nf">flip_sign</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">exp</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">exp</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="n">exp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">exp</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">)</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tmp</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">exp</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

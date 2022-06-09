@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ncpol2sdpa.mosek_utils &mdash; inflation 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibliography.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">inflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../generatingset.html">How to customize the generating set</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>ncpol2sdpa.mosek_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ncpol2sdpa.mosek_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The module contains helper functions to work with MOSEK.</span>
+
+<span class="sd">Created on Tue Nov 18 10:51:14 2014</span>
+
+<span class="sd">@author: Peter Wittek</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">.sdpa_utils</span> <span class="kn">import</span> <span class="n">convert_row_to_sdpa_index</span>
+
+
+<div class="viewcode-block" id="streamprinter"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.streamprinter">[docs]</a><span class="k">def</span> <span class="nf">streamprinter</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper function for printing MOSEK messages in the Python console.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="moseksol_to_xmat"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.moseksol_to_xmat">[docs]</a><span class="k">def</span> <span class="nf">moseksol_to_xmat</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">block_struct</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mi">8</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;vec should be of dimension n(n+1)/2&#39;</span><span class="p">)</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">block_struct</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">block_struct</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">block</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">column</span> <span class="o">==</span> <span class="n">block_struct</span><span class="p">[</span><span class="n">block</span><span class="p">]:</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">column</span> <span class="o">=</span> <span class="n">row</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">block_struct</span><span class="p">[</span><span class="n">block</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="o">==</span> <span class="n">block_struct</span><span class="p">[</span><span class="n">block</span><span class="p">]:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="n">block</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">block</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">block_struct</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">block_struct</span><span class="p">[</span><span class="n">block</span><span class="p">],</span> <span class="n">block_struct</span><span class="p">[</span><span class="n">block</span><span class="p">]))</span>
+            <span class="n">row</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="n">M</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">M</span><span class="p">[</span><span class="n">column</span><span class="p">,</span> <span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">column</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="parse_mosek_solution"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.parse_mosek_solution">[docs]</a><span class="k">def</span> <span class="nf">parse_mosek_solution</span><span class="p">(</span><span class="n">sdp</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">mosek</span>
+    <span class="n">soltype</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">soltype</span><span class="o">.</span><span class="n">itr</span>
+    <span class="n">primal</span><span class="p">,</span> <span class="n">dual</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">getprimalobj</span><span class="p">(</span><span class="n">soltype</span><span class="p">),</span> <span class="n">task</span><span class="o">.</span><span class="n">getdualobj</span><span class="p">(</span><span class="n">soltype</span><span class="p">)</span>
+    <span class="n">x_mat</span><span class="p">,</span> <span class="n">y_mat</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="n">size_</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">bs</span> <span class="k">for</span> <span class="n">bs</span> <span class="ow">in</span> <span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">)</span>
+    <span class="n">primal_solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size_</span><span class="o">*</span><span class="p">(</span><span class="n">size_</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">getbarxj</span><span class="p">(</span><span class="n">soltype</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">primal_solution</span><span class="p">)</span>
+    <span class="n">y_mat</span> <span class="o">=</span> <span class="n">moseksol_to_xmat</span><span class="p">(</span><span class="n">primal_solution</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">)</span>
+    <span class="n">dual_solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size_</span><span class="o">*</span><span class="p">(</span><span class="n">size_</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">getbarsj</span><span class="p">(</span><span class="n">soltype</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dual_solution</span><span class="p">)</span>
+    <span class="n">x_mat</span> <span class="o">=</span> <span class="n">moseksol_to_xmat</span><span class="p">(</span><span class="n">dual_solution</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">)</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">getsolsta</span><span class="p">(</span><span class="n">soltype</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">primal</span><span class="p">,</span> <span class="n">dual</span><span class="p">,</span> <span class="n">x_mat</span><span class="p">,</span> <span class="n">y_mat</span><span class="p">,</span> <span class="n">status</span></div>
+
+
+<div class="viewcode-block" id="solve_with_mosek"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.solve_with_mosek">[docs]</a><span class="k">def</span> <span class="nf">solve_with_mosek</span><span class="p">(</span><span class="n">sdp</span><span class="p">,</span> <span class="n">solverparameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">convert_to_mosek</span><span class="p">(</span><span class="n">sdp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">solverparameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">mosek</span>
+        <span class="k">for</span> <span class="n">par</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">solverparameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1">#get rid of a leading &quot;mosek.&quot;</span>
+                <span class="k">if</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mosek.&quot;</span><span class="p">)):</span>
+                    <span class="n">par</span> <span class="o">=</span> <span class="n">par</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span>
+                <span class="c1">#if ?param. prefix is given use it to determine the type</span>
+                <span class="k">if</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;iparam.&quot;</span><span class="p">)):</span>
+                    <span class="n">mskpar</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;mosek.&#39;</span> <span class="o">+</span> <span class="n">par</span><span class="p">)</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mskpar</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;dparam.&quot;</span><span class="p">)):</span>
+                    <span class="n">mskpar</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;mosek.&#39;</span> <span class="o">+</span> <span class="n">par</span><span class="p">)</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">putdouparam</span><span class="p">(</span><span class="n">mskpar</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;sparam.&quot;</span><span class="p">)):</span>
+                    <span class="n">mskpar</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;mosek.&#39;</span> <span class="o">+</span> <span class="n">par</span><span class="p">)</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">putstrparam</span><span class="p">(</span><span class="n">mskpar</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="c1">#else try to infer the type from the type of val</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">mskpar</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;mosek.iparam.&#39;</span> <span class="o">+</span> <span class="n">par</span><span class="p">)</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mskpar</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+                    <span class="n">mskpar</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;mosek.dparam.&#39;</span> <span class="o">+</span> <span class="n">par</span><span class="p">)</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">putdouparam</span><span class="p">(</span><span class="n">mskpar</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">mskpar</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;mosek.sparam.&#39;</span> <span class="o">+</span> <span class="n">par</span><span class="p">)</span>
+                    <span class="n">task</span><span class="o">.</span><span class="n">putstrparam</span><span class="p">(</span><span class="n">mskpar</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No mosek parameter found with the name mosek(.iparam|.dparam|.sparam|).&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">par</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39; that takes a value of type &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">))</span><span class="o">+</span><span class="s1">&#39;. See the mosek python API manual for valid parameters.&#39;</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+    <span class="n">primal</span><span class="p">,</span> <span class="n">dual</span><span class="p">,</span> <span class="n">x_mat</span><span class="p">,</span> <span class="n">y_mat</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">parse_mosek_solution</span><span class="p">(</span><span class="n">sdp</span><span class="p">,</span>
+                                                              <span class="n">task</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">primal</span><span class="o">+</span><span class="n">sdp</span><span class="o">.</span><span class="n">constant_term</span><span class="p">,</span> \
+           <span class="o">-</span><span class="n">dual</span><span class="o">+</span><span class="n">sdp</span><span class="o">.</span><span class="n">constant_term</span><span class="p">,</span> <span class="n">x_mat</span><span class="p">,</span> <span class="n">y_mat</span><span class="p">,</span> <span class="n">status</span></div>
+
+
+<div class="viewcode-block" id="convert_to_mosek_index"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.convert_to_mosek_index">[docs]</a><span class="k">def</span> <span class="nf">convert_to_mosek_index</span><span class="p">(</span><span class="n">block_struct</span><span class="p">,</span> <span class="n">row_offsets</span><span class="p">,</span> <span class="n">block_offsets</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;MOSEK requires a specific sparse format to define the lower-triangular</span>
+<span class="sd">    part of a symmetric matrix. This function does the conversion from the</span>
+<span class="sd">    sparse upper triangular matrix format of Ncpol2SDPA.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">block_index</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">convert_row_to_sdpa_index</span><span class="p">(</span><span class="n">block_struct</span><span class="p">,</span> <span class="n">row_offsets</span><span class="p">,</span>
+                                                  <span class="n">row</span><span class="p">)</span>
+
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">block_offsets</span><span class="p">[</span><span class="n">block_index</span><span class="p">]</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">i</span>
+    <span class="n">cj</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">j</span>
+    <span class="k">return</span> <span class="n">cj</span><span class="p">,</span> <span class="n">ci</span>  <span class="c1"># Note that MOSEK expects lower-triangular matrices</span></div>
+
+
+<div class="viewcode-block" id="convert_to_mosek_matrix"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.convert_to_mosek_matrix">[docs]</a><span class="k">def</span> <span class="nf">convert_to_mosek_matrix</span><span class="p">(</span><span class="n">sdp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts the entire sparse representation of the Fi constraint matrices</span>
+<span class="sd">    to sparse MOSEK matrices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">barci</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">barcj</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">barcval</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">barai</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">baraj</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">baraval</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">n_vars</span><span class="p">):</span>
+        <span class="n">barai</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="n">baraj</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="n">baraval</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+    <span class="n">row_offsets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">block_offsets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">cumulative_sum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cumulative_square_sum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">block_size</span> <span class="ow">in</span> <span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">:</span>
+        <span class="n">cumulative_sum</span> <span class="o">+=</span> <span class="n">block_size</span>
+        <span class="n">cumulative_square_sum</span> <span class="o">+=</span> <span class="n">block_size</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">row_offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cumulative_square_sum</span><span class="p">)</span>
+        <span class="n">block_offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cumulative_sum</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">rows</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">rows</span><span class="p">[</span><span class="n">row</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">col_index</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">sdp</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">rows</span><span class="p">[</span><span class="n">row</span><span class="p">]:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">sdp</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span>
+                <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">convert_to_mosek_index</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">,</span>
+                                              <span class="n">row_offsets</span><span class="p">,</span> <span class="n">block_offsets</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">barai</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="n">baraj</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">baraval</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">barci</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="n">barcj</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                    <span class="n">barcval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">col_index</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">barci</span><span class="p">,</span> <span class="n">barcj</span><span class="p">,</span> <span class="n">barcval</span><span class="p">,</span> <span class="n">barai</span><span class="p">,</span> <span class="n">baraj</span><span class="p">,</span> <span class="n">baraval</span></div>
+
+
+<div class="viewcode-block" id="convert_to_mosek"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.mosek_utils.convert_to_mosek">[docs]</a><span class="k">def</span> <span class="nf">convert_to_mosek</span><span class="p">(</span><span class="n">sdp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert an SDP relaxation to a MOSEK task.</span>
+
+<span class="sd">    :param sdp: The SDP relaxation to convert.</span>
+<span class="sd">    :type sdp: :class:`ncpol2sdpa.sdp`.</span>
+
+<span class="sd">    :returns: :class:`mosek.Task`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">mosek</span>
+    <span class="c1"># Cheat when variables are complex and convert with PICOS</span>
+    <span class="k">if</span> <span class="n">sdp</span><span class="o">.</span><span class="n">complex_matrix</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">.picos_utils</span> <span class="kn">import</span> <span class="n">convert_to_picos</span>
+        <span class="n">Problem</span> <span class="o">=</span> <span class="n">convert_to_picos</span><span class="p">(</span><span class="n">sdp</span><span class="p">)</span><span class="o">.</span><span class="n">to_real</span><span class="p">()</span>
+        <span class="n">Problem</span><span class="o">.</span><span class="n">_make_mosek_instance</span><span class="p">()</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">Problem</span><span class="o">.</span><span class="n">msk_task</span>
+        <span class="k">if</span> <span class="n">sdp</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">task</span><span class="o">.</span><span class="n">set_Stream</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">streamtype</span><span class="o">.</span><span class="n">log</span><span class="p">,</span> <span class="n">streamprinter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">task</span>
+
+    <span class="n">barci</span><span class="p">,</span> <span class="n">barcj</span><span class="p">,</span> <span class="n">barcval</span><span class="p">,</span> <span class="n">barai</span><span class="p">,</span> <span class="n">baraj</span><span class="p">,</span> <span class="n">baraval</span> <span class="o">=</span> \
+        <span class="n">convert_to_mosek_matrix</span><span class="p">(</span><span class="n">sdp</span><span class="p">)</span>
+    <span class="n">bkc</span> <span class="o">=</span> <span class="p">[</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">fx</span><span class="p">]</span> <span class="o">*</span> <span class="n">sdp</span><span class="o">.</span><span class="n">n_vars</span>
+    <span class="n">blc</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sdp</span><span class="o">.</span><span class="n">obj_facvar</span><span class="p">]</span>
+    <span class="n">buc</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sdp</span><span class="o">.</span><span class="n">obj_facvar</span><span class="p">]</span>
+
+    <span class="n">env</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">Env</span><span class="p">()</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">Task</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sdp</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">set_Stream</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">streamtype</span><span class="o">.</span><span class="n">log</span><span class="p">,</span> <span class="n">streamprinter</span><span class="p">)</span>
+    <span class="n">numvar</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">numcon</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bkc</span><span class="p">)</span>
+    <span class="n">BARVARDIM</span> <span class="o">=</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">)]</span>
+
+    <span class="n">task</span><span class="o">.</span><span class="n">appendvars</span><span class="p">(</span><span class="n">numvar</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">appendcons</span><span class="p">(</span><span class="n">numcon</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">appendbarvars</span><span class="p">(</span><span class="n">BARVARDIM</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numcon</span><span class="p">):</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">putconbound</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">bkc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">blc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">buc</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">symc</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">appendsparsesymmat</span><span class="p">(</span><span class="n">BARVARDIM</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">barci</span><span class="p">,</span> <span class="n">barcj</span><span class="p">,</span> <span class="n">barcval</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">putbarcj</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">symc</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">barai</span><span class="p">)):</span>
+        <span class="n">syma</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">appendsparsesymmat</span><span class="p">(</span><span class="n">BARVARDIM</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">barai</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">baraj</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="n">baraval</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">putbaraij</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">syma</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">])</span>
+
+    <span class="c1"># Input the objective sense (minimize/maximize)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">putobjsense</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">objsense</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">task</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

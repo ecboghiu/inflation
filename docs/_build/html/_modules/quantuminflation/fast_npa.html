@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>quantuminflation.fast_npa &mdash; inflation 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibliography.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">inflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../generatingset.html">How to customize the generating set</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>quantuminflation.fast_npa</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for quantuminflation.fast_npa</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="c1"># Locate the script in UnifiedInflation/examples and add to path one folder</span>
+<span class="c1"># before, that is, UnifiedInflation/ in order to import quantuminflation</span>
+<span class="c1"># ! Note: I found online that &quot;__file__&quot; sometimes can be problematic,</span>
+<span class="c1"># So I&#39;m using the solution provided in</span>
+<span class="c1"># https://stackoverflow.com/questions/2632199/</span>
+<span class="c1"># how-do-i-get-the-path-of-the-current-executed-file-in-python?lq=1</span>
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">getsourcefile</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">abspath</span>
+
+<span class="kn">import</span> <span class="nn">numba</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">bool_</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="reverse_mon"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.reverse_mon">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">reverse_mon</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Output the monomial reversed, which means reverse the row of the 2d </span>
+<span class="sd">    matrix representing the monomial. This represents the complex conjugate</span>
+<span class="sd">    of the monomial, but we assume they are Hermitian.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Input monomial as 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Reversed monomial.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; reverse_mon(np.array([[1,...],[4,...],[3,...]]))</span>
+<span class="sd">    np.array([[3,...],[4,...],[1,...]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="mon_sorted_by_parties"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.mon_sorted_by_parties">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">mon_sorted_by_parties</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Sort by parties the monomial, i.e., sort by the first column in</span>
+<span class="sd">    the 2d representation of the monomial.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Input monomial as 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Sorted monomial.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))</span>
+<span class="sd">    np.array([[1,...],[3,...],[4,...]])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>    
+    
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mon</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;mergesort&#39;</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="dot_mon"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.dot_mon">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">dot_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">mon2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns ((mon1)^dagger)*mon2.</span>
+
+<span class="sd">    For hermitian operators this is the same as reversed(mon1)*mon2.</span>
+<span class="sd">    Since all parties commute, the output is ordered by parties. We do</span>
+<span class="sd">    not assume any other commutation rules.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon1 : np.ndarray</span>
+<span class="sd">        Monomial as a numpy array. </span>
+<span class="sd">    mon2 : np.ndarray</span>
+<span class="sd">        Monomial as a numpy array. </span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Output monomial ordered by parties.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; mon1 = np.array([[1,2,3],[4,5,6]])</span>
+<span class="sd">    &gt;&gt;&gt; mon2 = np.array([[7,8,9]])</span>
+<span class="sd">    &gt;&gt;&gt; dot_mon(mon1, mon2)</span>
+<span class="sd">    np.array([[4,5,6],[1,2,3],[7,8,9]])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">if</span> <span class="n">mon1</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mon2</span>
+    <span class="k">if</span> <span class="n">mon2</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mon_sorted_by_parties</span><span class="p">(</span><span class="n">reverse_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mon_sorted_by_parties</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">reverse_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">),</span> <span class="n">mon2</span><span class="p">)))</span></div>
+
+<span class="c1">#@numba.jit(nopython=True, cache=cache)</span>
+<div class="viewcode-block" id="dot_mon_commuting"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.dot_mon_commuting">[docs]</a><span class="k">def</span> <span class="nf">dot_mon_commuting</span><span class="p">(</span><span class="n">mon1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                      <span class="n">mon2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+                      <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A faster implementation of ```dot_mon``` that assumes that all</span>
+<span class="sd">    operators commute. This implies we order everything lexiographically.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon1 : np.ndarray</span>
+<span class="sd">        Monomial as a numpy array.</span>
+<span class="sd">    mon2 : np.ndarray</span>
+<span class="sd">        Monomial as a numpy array. </span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Returns (mon1)^\dagger*mon2 with the assumption that </span>
+<span class="sd">        everything commutes with everything.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">if</span> <span class="n">mon1</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mon2</span>
+    <span class="k">if</span> <span class="n">mon2</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mon_sorted_by_parties</span><span class="p">(</span><span class="n">reverse_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">))</span>
+    <span class="c1"># So it seems there is no implementation of lexsort in numba, so for now</span>
+    <span class="c1"># we don&#39;t use a precompiled function</span>
+    <span class="c1"># what we can do is use &#39;sorted&#39; with the string representation of</span>
+    <span class="c1"># the monomials which has a lexicographic ordering or implement a</span>
+    <span class="c1"># lexicographic ordering in numba</span>
+    <span class="c1"># numba issue: https://github.com/numba/numba/issues/3689</span>
+    <span class="n">mon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">reverse_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">),</span> <span class="n">mon2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mon_lexsorted</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="mon_lexsorted"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.mon_lexsorted">[docs]</a><span class="k">def</span> <span class="nf">mon_lexsorted</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return a monomial sorted lexicographically. </span>
+<span class="sd">    </span>
+<span class="sd">    The sorting keys are as follows. The first key is the parties, the second</span>
+<span class="sd">    key is the inflation indices and the last keys are the input and output </span>
+<span class="sd">    cardinalities. More informally, once we sorted all the parties together,</span>
+<span class="sd">    within a party group we group all operators with the same inflation-copy</span>
+<span class="sd">    index for the first source together, and within this group we group all</span>
+<span class="sd">    operators with the same inflation-copy index for the second source</span>
+<span class="sd">    together and so on until the last keys.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Monomial as a numpy array. </span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Sorted monomial. </span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">lexsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">mon</span><span class="p">))]</span></div>
+
+
+<div class="viewcode-block" id="remove_projector_squares"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.remove_projector_squares">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Simplify the monomial by removing the squares. This is because we</span>
+<span class="sd">    assume projectors, P^2=P.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Input monomial as 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Simplified monomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="n">to_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">bool_</span><span class="p">)</span>  <span class="c1"># bool_</span>
+    <span class="n">prev_row</span> <span class="o">=</span> <span class="n">mon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">prev_row</span><span class="p">):</span>
+            <span class="n">to_keep</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">prev_row</span> <span class="o">=</span> <span class="n">row</span>
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">to_keep</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="mon_is_zero"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.mon_is_zero">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">mon_is_zero</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Function which checks if there is a product of two orthogonal projectors,</span>
+<span class="sd">    and returns True if so.</span>
+
+<span class="sd">    _extended_summary_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Input monomial as 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool_</span>
+<span class="sd">        True if the monomial is zero, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="n">prev_row</span> <span class="o">=</span> <span class="n">mon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">prev_row</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">row</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">prev_row</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">prev_row</span> <span class="o">=</span> <span class="n">row</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+<span class="c1">#@numba.jit(nopython=True, cache=cache)</span>
+<div class="viewcode-block" id="to_name"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.to_name">[docs]</a><span class="k">def</span> <span class="nf">to_name</span><span class="p">(</span><span class="n">monomial_numbers</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">parties_names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts the 2d array representation of a monoial to a string.</span>
+
+<span class="sd">    _extended_summary_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    monomial_numbers : np.ndarray</span>
+<span class="sd">        Input monomial as 2d array.</span>
+<span class="sd">    parties_names : np.ndarray</span>
+<span class="sd">        Array of strings representing the parties.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        String representation of the monomial.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; to_name([[1 1,0,3], [4,1,2,6], [2,3,3,4]], [&#39;a&#39;,&#39;bb&#39;,&#39;x&#39;,&#39;Z&#39;])</span>
+<span class="sd">    &#39;a_1_0_3*Z_1_2_6*bb_3_3_4&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="c1"># Numba version is 2x slower than without!! Probably not optimized for</span>
+    <span class="c1"># strings. But we need it to be able to call to_name within a numba</span>
+    <span class="c1"># function</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">monomial_numbers</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">monomial_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">monomial_numbers</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">parties_names</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">parties_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">parties_names</span><span class="p">)</span>
+
+     <span class="c1">#np.zeros(monomial_numbers.shape[0], dtype=numba.types.unicode_type)</span>
+    <span class="n">components</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">monomial_numbers</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">monomial_numbers</span><span class="p">):</span>
+        <span class="n">arr1</span> <span class="o">=</span> <span class="p">[</span><span class="n">parties_names</span><span class="p">[</span><span class="n">monomial</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]</span>
+        <span class="n">arr2</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">monomial</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+        <span class="n">components</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arr1</span> <span class="o">+</span> <span class="n">arr2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">components</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="pad_with_zeros"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.pad_with_zeros">[docs]</a><span class="k">def</span> <span class="nf">pad_with_zeros</span><span class="p">(</span><span class="n">cols</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">]</span>
+                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Pad the columns with zeros. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cols : List[List]</span>
+<span class="sd">        Columns as lists of lists.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[np.ndarray]</span>
+<span class="sd">        Returns the inputs but with rows of zeros padded to the same length.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="n">max_prod_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">])</span>
+    <span class="n">mon_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">cols_padded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="n">max_prod_len</span><span class="p">,</span> <span class="n">mon_len</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)):</span>
+        <span class="n">cols_padded</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_prod_len</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">])),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+                                      <span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">cols_padded</span></div>
+
+
+<div class="viewcode-block" id="remove_zeros"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.remove_zeros">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">remove_zeros</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;If monomial has rows of all zeros, remove them.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Monomial as a matrix where each row is an operator.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        The monomial without rows of all zeros.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">mon</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="commuting"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.commuting">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">commuting</span><span class="p">(</span><span class="n">letter1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+              <span class="n">letter2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span>
+              <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Determine if two letters/operators commute. </span>
+<span class="sd">    </span>
+<span class="sd">    TODO accept arbitrary commutation rules.</span>
+<span class="sd">    Currently this only takes into accounts commutation coming of inflation</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    letter1 : np.array</span>
+<span class="sd">        Tuple of integers representing an operator.</span>
+<span class="sd">    letter2 : np.array</span>
+<span class="sd">        Tuple of integers representing an operator.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool_</span>
+<span class="sd">        If they commute or not.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------    </span>
+<span class="sd">    A^11_00 commutes with A^22_00</span>
+<span class="sd">    &gt;&gt;&gt; commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0])) </span>
+<span class="sd">    True</span>
+
+<span class="sd">    A^11_00 does not commute with A^12_00 as they overlap on source 1.</span>
+<span class="sd">    &gt;&gt;&gt; commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0])) </span>
+<span class="sd">    False</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">if</span> <span class="n">letter1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">letter2</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="c1"># if exactly same support and input, but then different outputs,</span>
+        <span class="c1">#  they commute (but the product should be 0 anyway!! so the last</span>
+        <span class="c1">#  thing shouldnt be relevant)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">letter1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">letter2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="n">inf1</span><span class="p">,</span> <span class="n">inf2</span> <span class="o">=</span> <span class="n">letter1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">letter2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">inf1</span><span class="p">,</span> <span class="n">inf2</span> <span class="o">=</span> <span class="n">inf1</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">inf1</span><span class="p">)],</span> <span class="n">inf2</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">inf2</span><span class="p">)]</span>
+
+    <span class="c1"># if at least one in inf1-inf2 is 0, then there is one source in common</span>
+    <span class="c1"># therefore they don&#39;t commute.</span>
+    <span class="c1"># If all are 0, then this case is covered in the first conditional,</span>
+    <span class="c1"># they commute regardless of the value of the output</span>
+    <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">inf1</span><span class="o">-</span><span class="n">inf2</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="A_lessthan_B"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.A_lessthan_B">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">A_lessthan_B</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">B</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Compares two letters/measurement operators lexicographically.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    A : np.array</span>
+<span class="sd">        Measurement operator encoded as a 1D array.</span>
+<span class="sd">    B : np.array</span>
+<span class="sd">        Measurement operator encoded as a 1D array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool_</span>
+<span class="sd">        True if A is less than B.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="c1"># if A.size == 0:</span>
+    <span class="c1">#     return True</span>
+    <span class="c1"># if B.size == 0:</span>
+    <span class="c1">#     return False</span>
+    <span class="c1"># if A[0] &lt; B[0]:</span>
+    <span class="c1">#     return True</span>
+    <span class="c1"># if A[0] &gt; B[0]:</span>
+    <span class="c1">#     return False</span>
+    <span class="c1"># return A_lessthan_B(A[1:], B[1:])</span>
+    <span class="c1"># Above is more &#39;elegant&#39; but im not sure about how efficient recursive</span>
+    <span class="c1"># functions are</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="mon_lessthan_mon"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.mon_lessthan_mon">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">mon_lessthan_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                     <span class="n">mon2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+                     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Compares two monomials and returns True if mon1 &lt; mon2 in lexicographic</span>
+<span class="sd">    order.</span>
+
+<span class="sd">    It flattens then 2D array representing the monomial to and uses</span>
+<span class="sd">    the function A_lessthan_B.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon1 : np.ndarray</span>
+<span class="sd">        Input monomial as a 2d array.</span>
+<span class="sd">    mon2 : np.ndarray</span>
+<span class="sd">        Input monomial as a 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool_</span>
+<span class="sd">        True if mon1 &lt; mon2 in lexicographic order.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">A_lessthan_B</span><span class="p">(</span><span class="n">mon1</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">mon2</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="nb_apply_substitutions"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.nb_apply_substitutions">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">nb_apply_substitutions</span><span class="p">(</span><span class="n">mon_in</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Apply substitutions to a monomial. </span>
+<span class="sd">    </span>
+<span class="sd">    Currently it only supports commutations arising from operators having</span>
+<span class="sd">    completely different support. It goes in a loop applying the substitutions</span>
+<span class="sd">    until it reaches a fixed point, if it finds two letters that commute and</span>
+<span class="sd">    are not in lexicographic ordering. This function does a single loop from</span>
+<span class="sd">    the first row to the last applying all substitutions along the way and</span>
+<span class="sd">    then it returns.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon_in : np.ndarray</span>
+<span class="sd">        Input monomial as a 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Simplified input monomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">if</span> <span class="n">mon_in</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mon_in</span>
+    <span class="n">mon</span> <span class="o">=</span> <span class="n">mon_in</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">A_lessthan_B</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">commuting</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="c1"># More elegant but doesn&#39;t work with numba</span>
+                <span class="c1">#mon[[i-1,i],:] = mon[[i,i-1],:]</span>
+                <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="c1"># ?? Is it best to stop after one commutation, or just</span>
+                <span class="c1">#  keep going until the end of the array?</span>
+                <span class="c1">#return mon</span>
+    <span class="k">return</span> <span class="n">mon</span></div>
+
+
+<div class="viewcode-block" id="to_canonical"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.to_canonical">[docs]</a><span class="nd">@numba</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">to_canonical</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Apply substitutions to a monomial until it stops changing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : np.ndarray</span>
+<span class="sd">        Input monomial as a 2d array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Monomial in canonical form w.r.t some lexicographic</span>
+<span class="sd">        ordering.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="n">prev</span> <span class="o">=</span> <span class="n">mon</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">mon</span> <span class="o">=</span> <span class="n">nb_apply_substitutions</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">prev</span><span class="p">):</span>
+            <span class="k">break</span>
+        <span class="n">prev</span> <span class="o">=</span> <span class="n">mon</span>
+    <span class="k">return</span> <span class="n">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="calculate_momentmatrix"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.calculate_momentmatrix">[docs]</a><span class="k">def</span> <span class="nf">calculate_momentmatrix</span><span class="p">(</span><span class="n">cols</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
+                           <span class="n">names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                           <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+                           <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Calculate the moment matrix. </span>
+<span class="sd">    </span>
+<span class="sd">    Takes as input the generating set {mon_i}_i encoded as a list of monomials.</span>
+<span class="sd">    Each monomial is a matrix where each row is an operator and the columns</span>
+<span class="sd">    specify the operator labels/indices. The moment matrix is the inner product</span>
+<span class="sd">    between all possible pairs of elements from the generating set. The program</span>
+<span class="sd">    outputs the moment matrix as a 2d array. Entry (i,j) of the moment matrix</span>
+<span class="sd">    stores the index of the monomial that is the result of the dot product</span>
+<span class="sd">    mon_i^\dagger * mon_j after applying the substitutions. The program returns</span>
+<span class="sd">    the moment matrix and the dictionary mapping each monomial in string</span>
+<span class="sd">    representation to its integer representation. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cols : List</span>
+<span class="sd">        List of np.ndarray representing the generating set.</span>
+<span class="sd">    names : np.ndarray</span>
+<span class="sd">        The string names of each party.</span>
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        _description_, by default 0</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[np.ndarray, Dict]</span>
+<span class="sd">        The moment matrix, where each entry (i,j) stores the</span>
+<span class="sd">        integer representation of a monomial. The Dict is a </span>
+<span class="sd">        mapping from string representation of monomial to integer</span>
+<span class="sd">        representation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="n">nrcols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="n">vardic</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Emi: so np.array([-1],dtype=np.uint16) evaluates to 65535, can we ensure</span>
+    <span class="c1"># we will never have more than 65535 unique variables??</span>
+    <span class="c1"># I&#39;m not so convinced, so I go with int32 (~4 billion)</span>
+    <span class="n">momentmatrix</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">nrcols</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])):</span>
+        <span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>  <span class="c1"># Some function needs [[0]] not []</span>
+    <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">varidx</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># We start from 1 because 0 is reserved for 0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nrcols</span><span class="p">),</span>
+                  <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                  <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Calculating moment matrix    &quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">):</span>
+            <span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span> <span class="o">=</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cols</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">mon1</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">mon2</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1">#print(mon1,mon2)</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+                <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="n">varidx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mon</span> <span class="o">=</span> <span class="n">dot_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">mon_is_zero</span><span class="p">(</span><span class="n">mon</span><span class="p">):</span>
+                    <span class="c1"># If sparse, we don&#39;t need this, but for readibility...</span>
+                    <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mon</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vardic</span><span class="p">:</span>
+                        <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                        <span class="n">mon_rev</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">dot_mon</span><span class="p">(</span><span class="n">mon2</span><span class="p">,</span> <span class="n">mon1</span><span class="p">))</span>
+                        <span class="c1"># equiv to name2 != name, but faster?</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">mon_rev</span><span class="p">):</span>
+                            <span class="n">name2</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">mon_rev</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">name2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vardic</span><span class="p">:</span>
+                                <span class="n">vardic</span><span class="p">[</span><span class="n">name2</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                        <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                        <span class="n">varidx</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>
+                        <span class="c1"># NOTE: Assuming a REAL moment matrix!!</span>
+                        <span class="n">momentmatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">momentmatrix</span><span class="p">,</span> <span class="n">vardic</span></div>
+
+
+<div class="viewcode-block" id="calculate_momentmatrix_commuting"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.calculate_momentmatrix_commuting">[docs]</a><span class="k">def</span> <span class="nf">calculate_momentmatrix_commuting</span><span class="p">(</span><span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                     <span class="n">names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                     <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+                                     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;See description of &#39;calculate_momentmatrix&#39;. The same, but we further</span>
+<span class="sd">    assume everything commutes with everything.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cols : np.ndarray</span>
+<span class="sd">        List of np.ndarray representing the generating set.</span>
+<span class="sd">    names : np.ndarray</span>
+<span class="sd">        The string names of each party.</span>
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        How descriptive the prints are, by default 0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[np.ndarray, Dict]</span>
+<span class="sd">        The moment matrix, where each entry (i,j) stores the</span>
+<span class="sd">        integer representation of a monomial. The Dict is a a </span>
+<span class="sd">        mapping from string representation of monomial to integer</span>
+<span class="sd">        representation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="n">nrcols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+
+    <span class="n">vardic</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">momentmatrix</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">nrcols</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])):</span>
+        <span class="c1"># Some function doesnt like [0] and needs [[0]]</span>
+        <span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">varidx</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># We start from 1 because 0 is reserved for 0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nrcols</span><span class="p">),</span> <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                  <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Calculating moment matrix&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">):</span>
+            <span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span> <span class="o">=</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cols</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">mon1</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">mon2</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+                <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="n">varidx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mon</span> <span class="o">=</span> <span class="n">dot_mon_commuting</span><span class="p">(</span><span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">mon_is_zero</span><span class="p">(</span><span class="n">mon</span><span class="p">):</span>
+                    <span class="c1"># If sparse, we don&#39;t need this, but for readibility...</span>
+                    <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">),</span> <span class="n">names</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vardic</span><span class="p">:</span>
+                        <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                        <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                        <span class="n">varidx</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">vardic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>
+                        <span class="c1"># Assuming a REAL moment matrix!!</span>
+                        <span class="n">momentmatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">momentmatrix</span><span class="p">,</span> <span class="n">vardic</span></div>
+
+
+<div class="viewcode-block" id="export_to_file_numba"><a class="viewcode-back" href="../../quantuminflation.html#quantuminflation.fast_npa.export_to_file_numba">[docs]</a><span class="k">def</span> <span class="nf">export_to_file_numba</span><span class="p">(</span><span class="n">momentmatrix</span><span class="p">,</span> <span class="n">monomials_list</span><span class="p">,</span> <span class="n">filename_label</span><span class="p">,</span>
+                         <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     TODO WARNING: BUGGY!!</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">block_idx</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># TODO accept any block structure</span>
+    <span class="n">filename_momentmatrix</span> <span class="o">=</span> <span class="s1">&#39;momentmatrix+&#39;</span> <span class="o">+</span> <span class="n">filename_label</span> <span class="o">+</span> <span class="s1">&#39;.dat-s&#39;</span>
+    <span class="n">filename_monomials</span> <span class="o">=</span> <span class="s1">&#39;monomials&#39;</span> <span class="o">+</span> <span class="n">filename_label</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename_momentmatrix</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">nrvars</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file &quot;</span><span class="o">+</span><span class="n">filename_momentmatrix</span> <span class="o">+</span>
+                <span class="s2">&quot; generated by UnifiedInflation</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">nrvars</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; = number of variables</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;1 = number of blocs</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">momentmatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;) = BlocStructure</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nrvars</span><span class="p">):</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;0, &quot;</span><span class="p">)</span>  <span class="c1"># This is the objective function!</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Matrix entries are given in the following format:</span>
+        <span class="c1"># n b i j v</span>
+        <span class="c1"># n = index of variable (0 stands for the rhs, i.e. the constant terms)</span>
+        <span class="c1"># b = index of block</span>
+        <span class="c1"># i j = position in matrix</span>
+        <span class="c1"># v = coefficient or value</span>
+        <span class="c1"># See http://www.opt.tu-darmstadt.de/scipsdp/downloads/data_format.txt</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">momentmatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                      <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                      <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Writing momentmatrix to file &#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">momentmatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># TODO accept any coefficient, or change the format</span>
+                    <span class="c1"># in which we enconde semiknowns</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">block_idx</span><span class="p">)</span> <span class="o">+</span>
+                            <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename_monomials</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">,</span>
+                        <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                        <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Writing monomials to file    &#39;</span><span class="p">):</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

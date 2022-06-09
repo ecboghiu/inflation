@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ncpol2sdpa.faacets_relaxation &mdash; inflation 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibliography.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">inflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../generatingset.html">How to customize the generating set</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>ncpol2sdpa.faacets_relaxation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ncpol2sdpa.faacets_relaxation</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Tue Jan 27 11:41:52 2015</span>
+
+<span class="sd">@author: wittek</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">copysign</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">lil_matrix</span>
+<span class="kn">from</span> <span class="nn">.sdp_relaxation</span> <span class="kn">import</span> <span class="n">Relaxation</span>
+
+
+<div class="viewcode-block" id="collinsgisin_to_faacets"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.faacets_relaxation.collinsgisin_to_faacets">[docs]</a><span class="k">def</span> <span class="nf">collinsgisin_to_faacets</span><span class="p">(</span><span class="n">I</span><span class="p">):</span>
+    <span class="n">coefficients</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">I</span><span class="p">)):</span>
+            <span class="n">coefficients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">I</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coefficients</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="configuration_to_faacets"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.faacets_relaxation.configuration_to_faacets">[docs]</a><span class="k">def</span> <span class="nf">configuration_to_faacets</span><span class="p">(</span><span class="n">A_configuration</span><span class="p">,</span> <span class="n">B_configuration</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">A_configuration</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">,</span> <span class="s1">&#39;(&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;]&#39;</span><span class="p">,</span> <span class="s1">&#39;)&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span>
+                                                                         <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">B_configuration</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">,</span> <span class="s1">&#39;(&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;]&#39;</span><span class="p">,</span> <span class="s1">&#39;)&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span>
+                                                                         <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s1">&#39;[&#39;</span> <span class="o">+</span> <span class="n">a</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="s1">&#39;]&#39;</span></div>
+
+
+<div class="viewcode-block" id="get_faacets_moment_matrix"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.faacets_relaxation.get_faacets_moment_matrix">[docs]</a><span class="k">def</span> <span class="nf">get_faacets_moment_matrix</span><span class="p">(</span><span class="n">A_configuration</span><span class="p">,</span> <span class="n">B_configuration</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">jpype</span> <span class="kn">import</span> <span class="n">startJVM</span><span class="p">,</span> <span class="n">shutdownJVM</span><span class="p">,</span> <span class="n">JPackage</span><span class="p">,</span> <span class="n">getDefaultJVMPath</span><span class="p">,</span> \
+        <span class="n">JArray</span><span class="p">,</span> <span class="n">JDouble</span>
+    <span class="c1"># find the JAR file and start the JVM</span>
+    <span class="n">jarFiles</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;faacets-*.jar&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">jarFiles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">jarFile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">jarFiles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">startJVM</span><span class="p">(</span><span class="n">getDefaultJVMPath</span><span class="p">(),</span> <span class="s2">&quot;-Djava.class.path=&quot;</span><span class="o">+</span><span class="n">jarFile</span><span class="p">)</span>
+    <span class="n">com</span> <span class="o">=</span> <span class="n">JPackage</span><span class="p">(</span><span class="s1">&#39;com&#39;</span><span class="p">)</span>
+
+    <span class="c1"># main code</span>
+    <span class="n">sc</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">Core</span><span class="o">.</span><span class="n">Scenario</span><span class="p">(</span><span class="n">configuration_to_faacets</span><span class="p">(</span><span class="n">A_configuration</span><span class="p">,</span>
+                                                            <span class="n">B_configuration</span><span class="p">))</span>
+    <span class="n">representation</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">Core</span><span class="o">.</span><span class="n">Representation</span><span class="p">(</span><span class="s1">&#39;NCRepresentation&#39;</span><span class="p">)</span>
+    <span class="n">ope</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">SDP</span><span class="o">.</span><span class="n">OperatorElements</span><span class="p">([</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;AB&#39;</span><span class="p">])</span>
+    <span class="n">pts</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">SDP</span><span class="o">.</span><span class="n">PartialTransposes</span><span class="p">([])</span>
+    <span class="n">vec</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">Core</span><span class="o">.</span><span class="n">QVector</span><span class="p">(</span><span class="n">JArray</span><span class="p">(</span><span class="n">JDouble</span><span class="p">)(</span><span class="n">coefficients</span><span class="p">))</span>
+    <span class="n">expr</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">Core</span><span class="o">.</span><span class="n">Expr</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">representation</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+    <span class="n">sdp</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">faacets</span><span class="o">.</span><span class="n">SDP</span><span class="o">.</span><span class="n">CorrSDP</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">ope</span><span class="p">,</span> <span class="n">pts</span><span class="p">,</span> <span class="n">expr</span><span class="o">.</span><span class="n">symmetryGroup</span><span class="p">())</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">indexArray</span><span class="p">())</span>
+    <span class="n">ncIndices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">ncIndices</span><span class="p">())</span>
+    <span class="n">shutdownJVM</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">M</span><span class="p">,</span> <span class="n">ncIndices</span></div>
+
+
+<div class="viewcode-block" id="FaacetsRelaxation"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.faacets_relaxation.FaacetsRelaxation">[docs]</a><span class="k">class</span> <span class="nc">FaacetsRelaxation</span><span class="p">(</span><span class="n">Relaxation</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Class for wrapping around a Faacets relaxation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FaacetsRelaxation.get_relaxation"><a class="viewcode-back" href="../../ncpol2sdpa.html#ncpol2sdpa.faacets_relaxation.FaacetsRelaxation.get_relaxation">[docs]</a>    <span class="k">def</span> <span class="nf">get_relaxation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A_configuration</span><span class="p">,</span> <span class="n">B_configuration</span><span class="p">,</span> <span class="n">I</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the sparse SDP relaxation of a Bell inequality.</span>
+
+<span class="sd">        :param A_configuration: The definition of measurements of Alice.</span>
+<span class="sd">        :type A_configuration: list of list of int.</span>
+<span class="sd">        :param B_configuration: The definition of measurements of Bob.</span>
+<span class="sd">        :type B_configuration: list of list of int.</span>
+<span class="sd">        :param I: The matrix describing the Bell inequality in the</span>
+<span class="sd">                  Collins-Gisin picture.</span>
+<span class="sd">        :type I: list of list of int.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coefficients</span> <span class="o">=</span> <span class="n">collinsgisin_to_faacets</span><span class="p">(</span><span class="n">I</span><span class="p">)</span>
+        <span class="n">M</span><span class="p">,</span> <span class="n">ncIndices</span> <span class="o">=</span> <span class="n">get_faacets_moment_matrix</span><span class="p">(</span><span class="n">A_configuration</span><span class="p">,</span>
+                                                 <span class="n">B_configuration</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_vars</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">bs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>  <span class="c1"># The block size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_struct</span> <span class="o">=</span> <span class="p">[</span><span class="n">bs</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="n">bs</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_vars</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># Constructing the internal representation of the constraint matrices</span>
+        <span class="c1"># See Section 2.1 in the SDPA manual and also Yalmip&#39;s internal</span>
+        <span class="c1"># representation</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bs</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">bs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">bs</span><span class="o">+</span><span class="n">j</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">copysign</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obj_facvar</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_vars</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ncIndices</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obj_facvar</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">ncIndices</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> \
+                <span class="n">copysign</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncIndices</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">*</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
