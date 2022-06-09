@@ -21,8 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="References" href="bibliography.html" />
-    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+    <link rel="next" title="inflation" href="modules.html" />
+    <link rel="prev" title="Download and Installation" href="download.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -43,22 +43,22 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#example-1-max-cut">Example 1: Max-cut</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-2-parametric-polynomial-optimization-problems">Example 2: Parametric Polynomial Optimization Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-3-sparse-relaxation-with-chordal-extension">Example 3: Sparse Relaxation with Chordal Extension</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-4-mixed-level-relaxation-of-a-bell-inequality">Example 4: Mixed-Level Relaxation of a Bell Inequality</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-5-additional-manipulation-of-the-generated-sdps-with-picos">Example 5: Additional manipulation of the generated SDPs with PICOS</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-6-bosonic-system">Example 6: Bosonic System</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-7-using-the-nieto-silleras-hierarchy">Example 7: Using the Nieto-Silleras Hierarchy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example-8-using-the-moroder-hierarchy">Example 8: Using the Moroder Hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Causal-compatibility-problems">Causal compatibility problems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#The-PR-box">The PR box</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#The-2PR-distribution-in-the-bilocal-scenario">The 2PR distribution in the bilocal scenario</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#The-W-distribution">The W distribution</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="bibliography.html">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Optimisation-problems">Optimisation problems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#The-Svetlichny-distribution">The Svetlichny distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#The-distance-to-a-particular-distribution">The distance to a particular distribution</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Appendix:-How-to-customize-the-generating-set">Appendix: How to customize the generating set</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">inflation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Testing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generatingset.html">How to customize the generating set</a></li>
 </ul>
 
         </div>
@@ -77,7 +77,7 @@
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
       <li>Examples</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/examples.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/examples.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -87,6 +87,260 @@
              
   
 <style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt .copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+.jp-RenderedHTMLCommon table,
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.jp-RenderedHTMLCommon thead,
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+.jp-RenderedHTMLCommon tr,
+.jp-RenderedHTMLCommon th,
+.jp-RenderedHTMLCommon td,
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+.jp-RenderedHTMLCommon th,
+div.rendered_html th {
+  font-weight: bold;
+}
+.jp-RenderedHTMLCommon tbody tr:nth-child(odd),
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+.jp-RenderedHTMLCommon tbody tr:hover,
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
 /* CSS overrides for sphinx_rtd_theme */
 
 /* 24px margin */
@@ -109,322 +363,417 @@
     text-align: unset;
 }
 </style>
-<section id="examples">
-<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline"></a></h1>
-<section id="example-1-max-cut">
-<h2>Example 1: Max-cut<a class="headerlink" href="#example-1-max-cut" title="Permalink to this headline"></a></h2>
-<p>This is a polynomial optimization problem of commutative variables mentioned in
-Section 5.12 of Henrion et. al (2009). We rely on NumPy to remove the equality constraints from the problem</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">7</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">7</span><span class="p">)</span> <span class="o">+</span> \
-    <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="mi">8</span><span class="p">)</span>
-<span class="n">W</span> <span class="o">=</span> <span class="n">W</span> <span class="o">+</span> <span class="n">W</span><span class="o">.</span><span class="n">T</span>
-<span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
-<span class="n">e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-<span class="n">Q</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">W</span><span class="p">))</span> <span class="o">-</span> <span class="n">W</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span>
-
-<span class="n">x</span> <span class="o">=</span> <span class="n">generate_variables</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-<span class="n">equalities</span> <span class="o">=</span> <span class="p">[</span><span class="n">xi</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">xi</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
-
-<span class="n">objective</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
-
-<span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span> <span class="n">equalities</span><span class="o">=</span><span class="n">equalities</span><span class="p">,</span>
-                   <span class="n">removeequalities</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<section id="Examples">
+<h1>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline"></a></h1>
+<p>In this tutorial, we will show different problems that the causalinflation package can solve.</p>
+<section id="Causal-compatibility-problems">
+<h2>Causal compatibility problems<a class="headerlink" href="#Causal-compatibility-problems" title="Permalink to this headline"></a></h2>
+<p>The causal compatibility problem aims to answer the question of whether a given probability distribution of outcomes of measurements is compatible with a given causal model. For the following examples, we consider compatibility with a quantum causal model.</p>
+<p><em>TODO</em>: explain more</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">causalinflation</span> <span class="k">as</span> <span class="nn">cinf</span>
+<span class="kn">from</span> <span class="nn">causalinflation.quantum.InflationSDP</span> <span class="kn">import</span> <span class="n">InflationSDP</span>
+<span class="kn">from</span> <span class="nn">causalinflation.InflationProblem</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
+
+<span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">feasibility_bisection</span>
+<br/></pre></div>
+</div>
+</div>
+<section id="The-PR-box">
+<h3>The PR box<a class="headerlink" href="#The-PR-box" title="Permalink to this headline"></a></h3>
+<p>TODO: break the code and introduce the problem</p>
+<p>add bisection function hidden from the documentation, maybe in example_utils.py</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_PRbox_array</span>
+
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">])</span>
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
+
+<span class="n">InfSDP</span><span class="p">,</span> <span class="n">critical_vis</span> <span class="o">=</span> <span class="n">feasibility_bisection</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">,</span> <span class="n">P_PRbox_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Critical visibility:&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">critical_vis</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Infeasibility certificate: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate_as_symbols_probs</span><span class="p">,</span>
+                                       <span class="s2">&quot;≥&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Critical visibility:     0.7071
+Infeasibility certificate:
+ -201487.332*p(00|00) - 201493.109*p(00|01) - 201493.109*p(00|10) + 201492.612*p(00|11) + 201489.909*pA(0|0) + 1.0*pA(0|1) + 201489.909*pB(0|0) + 1.0*pB(0|1) + 41739.738 ≥ 0
+</pre></div></div>
 </div>
 </section>
-<section id="example-2-parametric-polynomial-optimization-problems">
-<h2>Example 2: Parametric Polynomial Optimization Problems<a class="headerlink" href="#example-2-parametric-polynomial-optimization-problems" title="Permalink to this headline"></a></h2>
-<p>In a parametric polynomial optimization problem, we can separate two sets of variables, and one set acts as a parameter to the problem. More formally, we would like to find the following function:</p>
-<div class="math notranslate nohighlight">
-\[J(x) = \inf_{y\in\mathbb{R}^m}\{f(x,y): h_j(y)\geq 0, j=1,\ldots,r\}\]</div>
-<p>where <span class="math notranslate nohighlight">\(x\in\mathbf{X}=\{x\in \mathbb{R}^n: h_k(x)\geq 0, k=r+1,\ldots,t\}\)</span>. We can approximate <span class="math notranslate nohighlight">\(J(x)\)</span> using the dual an SDP relaxation. The following implements Example 4 from Lasserre (2010).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
-<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">integrate</span><span class="p">,</span> <span class="n">N</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-
-<span class="k">def</span> <span class="nf">J</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">x</span><span class="p">))</span>
-
-<span class="k">def</span> <span class="nf">Jk</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ci</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ci</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coeffs</span><span class="p">))</span>
-
-<span class="n">level</span> <span class="o">=</span> <span class="mi">4</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">generate_variables</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">generate_variables</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-
-<span class="n">gamma</span> <span class="o">=</span> <span class="p">[</span><span class="n">integrate</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
-<span class="n">marginals</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">([[</span><span class="n">x</span><span class="o">**</span><span class="n">i</span><span class="o">-</span><span class="n">N</span><span class="p">(</span><span class="n">gamma</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">N</span><span class="p">(</span><span class="n">gamma</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">x</span><span class="o">**</span><span class="n">i</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
-
-<span class="n">inequalities</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="p">,</span>  <span class="o">-</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span>
-                <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="p">,</span>  <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span>
-                <span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span>
-<span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">flatten</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]))</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">momentinequalities</span><span class="o">=</span><span class="n">marginals</span><span class="p">,</span>
-                   <span class="n">inequalities</span><span class="o">=</span><span class="n">inequalities</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">sdp</span><span class="o">.</span><span class="n">extract_dual_value</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))]</span>
-<span class="n">coeffs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">sdp</span><span class="o">.</span><span class="n">y_mat</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">sdp</span><span class="o">.</span><span class="n">y_mat</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">marginals</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">)]</span>
-
-<span class="n">x_domain</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">/</span><span class="mf">100.</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)]</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_domain</span><span class="p">,</span> <span class="p">[</span><span class="n">J</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span> <span class="k">for</span> <span class="n">xi</span> <span class="ow">in</span> <span class="n">x_domain</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_domain</span><span class="p">,</span> <span class="p">[</span><span class="n">Jk</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">)</span> <span class="k">for</span> <span class="n">xi</span> <span class="ow">in</span> <span class="n">x_domain</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<section id="The-2PR-distribution-in-the-bilocal-scenario">
+<h3>The 2PR distribution in the bilocal scenario<a class="headerlink" href="#The-2PR-distribution-in-the-bilocal-scenario" title="Permalink to this headline"></a></h3>
+<p>TODO: break the code and introduce the problem</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<img alt="_images/jointmarginal.png" src="_images/jointmarginal.png" />
-</section>
-<section id="example-3-sparse-relaxation-with-chordal-extension">
-<h2>Example 3: Sparse Relaxation with Chordal Extension<a class="headerlink" href="#example-3-sparse-relaxation-with-chordal-extension" title="Permalink to this headline"></a></h2>
-<p>This method replicates the behaviour of SparsePOP (Waki et. al, 2008). The following is a
-simple example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">level</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="n">X</span> <span class="o">=</span> <span class="n">generate_variables</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_2PR_array</span>
 
-<span class="n">obj</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">X</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-<span class="n">inequalities</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
+                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">])</span>
 
-<span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">obj</span><span class="p">,</span> <span class="n">inequalities</span><span class="o">=</span><span class="n">inequalities</span><span class="p">,</span>
-                   <span class="n">chordal_extension</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">primal</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">dual</span><span class="p">)</span>
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa3&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">InfSDP</span><span class="p">,</span> <span class="n">critical_vis</span> <span class="o">=</span> <span class="n">feasibility_bisection</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Critical visibility:&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">critical_vis</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Infeasibility certificate: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate_as_symbols_probs</span><span class="p">,</span>
+                                       <span class="s2">&quot;≥&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
-<section id="example-4-mixed-level-relaxation-of-a-bell-inequality">
-<h2>Example 4: Mixed-Level Relaxation of a Bell Inequality<a class="headerlink" href="#example-4-mixed-level-relaxation-of-a-bell-inequality" title="Permalink to this headline"></a></h2>
-<p>It is often the case that moving to a higher-order relaxation is
-computationally prohibitive. For these cases, it is possible to inject
-extra monomials to a lower level relaxation. We refer to this case as a
-mixed-level relaxation.</p>
-<p>As an example, we consider the CHSH inequality in the probability
-picture at level 1+AB relaxation. The lazy way of doing this is as follows:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">level</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">I</span> <span class="o">=</span> <span class="p">[[</span> <span class="mi">0</span><span class="p">,</span>   <span class="o">-</span><span class="mi">1</span><span class="p">,</span>    <span class="mi">0</span> <span class="p">],</span>
-     <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>    <span class="mi">1</span><span class="p">,</span>    <span class="mi">1</span> <span class="p">],</span>
-     <span class="p">[</span> <span class="mi">0</span><span class="p">,</span>    <span class="mi">1</span><span class="p">,</span>   <span class="o">-</span><span class="mi">1</span> <span class="p">]]</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">maximum_violation</span><span class="p">(</span><span class="n">A_configuration</span><span class="p">,</span> <span class="n">B_configuration</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span>
-      <span class="n">extra</span><span class="o">=</span><span class="s1">&#39;AB&#39;</span><span class="p">)</span>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+max(min eigval):  1.393e-09     visibility = 0 0.5
+Critical visibility:       0.75
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>                            Traceback (most recent call last)
+<span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\Temp/ipykernel_30420/222825797.py</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-fg">     14</span>
+<span class="ansi-green-fg">     15</span> print<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Critical visibility:&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-blue-intense-fg ansi-bold">&#34;{:10.4g}&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">.</span>format<span class="ansi-yellow-intense-fg ansi-bold">(</span>critical_vis<span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-intense-fg ansi-bold">---&gt; 16</span><span class="ansi-yellow-intense-fg ansi-bold"> print(&#34;Infeasibility certificate: \n&#34;, InfSDP.dual_certificate_as_symbols_probs,
+</span><span class="ansi-green-fg">     17</span>                                        &#34;≥&#34;, 0)
+
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>: &#39;int&#39; object has no attribute &#39;dual_certificate_as_symbols_probs&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>This will immediately give you the negative of the maximum violation.
-The function <cite>maximum_violation</cite> only works for two-party configuration, so for
-educational purposes, we spell out what goes on in the background. With <cite>level</cite>
-and <cite>I</cite> defined as above, we create the measurements that will make up the
-probabilities, and define the objective function with the <cite>I</cite> matrix.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span> <span class="o">=</span> <span class="n">Probability</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
-<span class="n">objective</span> <span class="o">=</span> <span class="n">define_objective_with_I</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span>
 </pre></div>
 </div>
-<p>Unfortunately, the function <cite>define_objective_with_I</cite> only works for two parties
-again, which is not surprising, as it would be hard to define an <cite>I</cite> matrix for
-more than two parties. So if you have a multipartite scenario, you can use the
-probabilities to define your Bell inequality. For the CHSH, it is</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CHSH</span> <span class="o">=</span> <span class="o">-</span><span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;A&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>  <span class="o">+</span> <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> \
-        <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
-</pre></div>
 </div>
-<p>Note that we can only minimize a function, so we have to flip the sign to get
-the same objective function as above:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">objective</span> <span class="o">=</span> <span class="o">-</span><span class="n">CHSH</span>
-</pre></div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<p>We need to generate the monomials we would like to add to the
-relaxation. This is aided by a helper function in the class <cite>Probability</cite>. We
-only need to provide the strings we would like to see – this time it is AB:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">get_all_operators</span><span class="p">())</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span>
-                   <span class="n">substitutions</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">substitutions</span><span class="p">,</span>
-                   <span class="n">extramonomials</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">get_extra_monomials</span><span class="p">(</span><span class="s1">&#39;AB&#39;</span><span class="p">))</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">primal</span><span class="p">)</span>
-</pre></div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0
+</pre></div></div>
 </div>
 </section>
-<section id="example-5-additional-manipulation-of-the-generated-sdps-with-picos">
-<h2>Example 5: Additional manipulation of the generated SDPs with PICOS<a class="headerlink" href="#example-5-additional-manipulation-of-the-generated-sdps-with-picos" title="Permalink to this headline"></a></h2>
-<p>A compatibility layer with PICOS allows additional manipulations of the
-optimization problem and also calling a wider ranger of solvers.
-Assuming that the PICOS dependencies are in <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>, we
-can pass an argument to the function <code class="docutils literal notranslate"><span class="pre">get_relaxation</span></code> to generate a
-PICOS optimization problem. Using the same example as before, we change
-the relevant function call to:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span> <span class="o">=</span> <span class="n">sdp</span><span class="o">.</span><span class="n">convert_to_picos</span><span class="p">()</span>
+<section id="The-W-distribution">
+<h3>The W distribution<a class="headerlink" href="#The-W-distribution" title="Permalink to this headline"></a></h3>
+<p>TODO: break the code and introduce the problem</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>This returns a PICOS problem. For instance, we can manually define the value
-of certain elements of the moment matrix before solving the SDP:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">get_variable</span><span class="p">(</span><span class="s1">&#39;X&#39;</span><span class="p">)</span>
-<span class="n">P</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mf">0.5</span><span class="p">)</span>
-</pre></div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_W_array</span>
+
+
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
+                                <span class="s2">&quot;h3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">],</span>
+                                <span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">])</span>
+
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+
+<span class="n">tol_vis</span> <span class="o">=</span> <span class="mf">1e-4</span>
+<span class="n">v0</span><span class="p">,</span> <span class="n">v1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+<span class="n">vm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">certificate</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="nb">abs</span><span class="p">(</span><span class="n">v1</span> <span class="o">-</span> <span class="n">v0</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol_vis</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="mi">20</span><span class="p">:</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">P_W_array</span><span class="p">(</span><span class="n">visibility</span><span class="o">=</span><span class="n">vm</span><span class="p">)</span>
+    <span class="n">InfSDP</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;max(min eigval):&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">visibility =&quot;</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vm</span><span class="p">))</span>
+    <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">v0</span> <span class="o">=</span> <span class="n">vm</span>
+        <span class="n">vm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">elif</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">vm</span>
+        <span class="n">vm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">certificate</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate_as_symbols_probs</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1e-7</span><span class="p">:</span>
+        <span class="k">break</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Final values and last valid certificate:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;max(min eigval):&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">vm =&quot;</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vm</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">certificate</span><span class="p">,</span> <span class="s2">&quot;≥&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<br/></pre></div>
 </div>
-<p>Finally we can solve the SDP with any of solvers that PICOS supports:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-</pre></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+max(min eigval):   0.004188     visibility = 0 0.5
+max(min eigval):   0.001165     visibility = 1 0.75
+max(min eigval):  -0.001274     visibility = 2 0.875
+max(min eigval):  0.0006713     visibility = 3 0.8125
+max(min eigval):  0.0001666     visibility = 4 0.8438
+max(min eigval): -0.0004739     visibility = 5 0.8594
+max(min eigval): -0.0001339     visibility = 6 0.8516
+max(min eigval):  2.187e-05     visibility = 7 0.8477
+max(min eigval): -5.472e-05     visibility = 8 0.8496
+max(min eigval): -1.609e-05     visibility = 9 0.8486
+max(min eigval):  2.972e-06     visibility = 10 0.8481
+max(min eigval): -6.541e-06     visibility = 11 0.8484
+max(min eigval): -1.779e-06     visibility = 12 0.8483
+max(min eigval):  5.974e-07     visibility = 13 0.8482
+Final values and last valid certificate:
+max(min eigval):  5.974e-07     vm = 14     0.8482
+145.768*p(000|000)*pA(0|0) + 145.769*p(000|000)*pB(0|0) + 145.757*p(000|000)*pC(0|0) + 921.574*p(000|000) - 122.504*pA(0|0)**2 - 112.285*pA(0|0)*pAB(00|00) - 112.149*pA(0|0)*pAC(00|00) - 553.411*pA(0|0)*pB(0|0)*pC(0|0) + 1293.356*pA(0|0)*pB(0|0) - 580.673*pA(0|0)*pBC(00|00) + 1293.124*pA(0|0)*pC(0|0) - 1105.698*pA(0|0) + 313.48*pAB(00|00)**2 + 202.786*pAB(00|00)*pAC(00|00) - 112.258*pAB(00|00)*pB(0|0) + 202.78*pAB(00|00)*pBC(00|00) - 580.667*pAB(00|00)*pC(0|0) + 1.066*pAB(00|00) + 313.433*pAC(00|00)**2 - 580.747*pAC(00|00)*pB(0|0) + 202.818*pAC(00|00)*pBC(00|00) - 112.177*pAC(00|00)*pC(0|0) + 1.0*pAC(00|00) - 122.527*pB(0|0)**2 - 112.227*pB(0|0)*pBC(00|00) + 1293.293*pB(0|0)*pC(0|0) - 1105.759*pB(0|0) + 313.504*pBC(00|00)**2 - 112.338*pBC(00|00)*pC(0|0) + 1.058*pBC(00|00) - 122.482*pC(0|0)**2 - 1105.672*pC(0|0) + 1142.473 ≥ 0
+</pre></div></div>
 </div>
 </section>
-<section id="example-6-bosonic-system">
-<h2>Example 6: Bosonic System<a class="headerlink" href="#example-6-bosonic-system" title="Permalink to this headline"></a></h2>
-<p>The system Hamiltonian describes <span class="math notranslate nohighlight">\(N\)</span> harmonic oscillators with a
-parameter <span class="math notranslate nohighlight">\(\omega\)</span>. It is the result of second quantization and it
-is subject to bosonic constraints on the ladder operators <span class="math notranslate nohighlight">\(a_{k}\)</span>
-and <span class="math notranslate nohighlight">\(a_{k}^{\dagger}\)</span> (see, for instance, Section 22.2 in M.
-Fayngold and Fayngold (2013)). The Hamiltonian is written as</p>
-<div class="math notranslate nohighlight">
-\[H = \hbar \omega\sum_{i}\left(a_{i}^{\dagger}a_{i}+\frac{1}{2}\right).\]</div>
-<p>Here <span class="math notranslate nohighlight">\(^{\dagger}\)</span> stands for the adjoint operation. The
-constraints on the ladder operators are given as</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}\begin{aligned}
-[a_{i},a_{j}^{\dagger}] &amp;=  \delta_{ij} \\
-[a_{i},a_{j}]  &amp;=  0 \nonumber \\
-[a_{i}^{\dagger},a_{j}^{\dagger}] &amp;=  0,\nonumber\end{aligned}\end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\([.,.]\)</span> stands for the commutation operator
-<span class="math notranslate nohighlight">\([a,b]=ab-ba\)</span>.</p>
-<p>Clearly, most of the constraints are monomial substitutions, except
-<span class="math notranslate nohighlight">\([a_{i},a_{i}^{\dagger}]=1\)</span>, which needs to be defined as an
-equality. The Python code for generating the SDP relaxation is provided
-below. We set <span class="math notranslate nohighlight">\(\omega=1\)</span>, and we also set Planck’s constant
-<span class="math notranslate nohighlight">\(\hbar\)</span> to one, to obtain numerical results that are easier to
-interpret.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sympy.physics.quantum.dagger</span> <span class="kn">import</span> <span class="n">Dagger</span>
-
-<span class="n">level</span> <span class="o">=</span> <span class="mi">1</span>          <span class="c1"># Level of relaxation</span>
-<span class="n">N</span> <span class="o">=</span> <span class="mi">4</span>              <span class="c1"># Number of variables</span>
-<span class="n">hbar</span><span class="p">,</span> <span class="n">omega</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="c1"># Parameters for the Hamiltonian</span>
-
-<span class="c1"># Define ladder operators</span>
-<span class="n">a</span> <span class="o">=</span> <span class="n">generate_operators</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
-
-<span class="n">hamiltonian</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">hbar</span><span class="o">*</span><span class="n">omega</span><span class="o">*</span><span class="p">(</span><span class="n">Dagger</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span><span class="o">*</span><span class="n">ai</span><span class="o">+</span><span class="mf">0.5</span><span class="p">)</span> <span class="k">for</span> <span class="n">ai</span> <span class="ow">in</span> <span class="n">a</span><span class="p">)</span>
-<span class="n">substitutions</span> <span class="o">=</span> <span class="n">bosonic_constraints</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-
-<span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">hamiltonian</span><span class="p">,</span>
-                   <span class="n">substitutions</span><span class="o">=</span><span class="n">substitutions</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>The result is very close to two. The result is similarly precise for arbitrary numbers
-of oscillators.</p>
-<p>It is remarkable that we get the correct value at the first level of
-relaxation, but this property is typical for bosonic systems (Navascués
-et al. 2013).</p>
 </section>
-<section id="example-7-using-the-nieto-silleras-hierarchy">
-<h2>Example 7: Using the Nieto-Silleras Hierarchy<a class="headerlink" href="#example-7-using-the-nieto-silleras-hierarchy" title="Permalink to this headline"></a></h2>
-<p>One of the newer approaches to the SDP relaxations takes all joint
-probabilities into consideration when looking for a maximum guessing
-probability, and not just the ones included in a particular Bell
-inequality (Nieto-Silleras, Pironio, and Silman 2014; Bancal, Sheridan,
-and Scarani 2014). Ncpol2sdpa can generate the respective hierarchy.</p>
-<p>To deal with the joint probabilities necessary for setting constraints,
-we also rely on QuTiP (Johansson, Nation, and Nori 2013):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
-<span class="kn">from</span> <span class="nn">qutip</span> <span class="kn">import</span> <span class="n">tensor</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">sigmax</span><span class="p">,</span> <span class="n">sigmay</span><span class="p">,</span> <span class="n">expect</span><span class="p">,</span> <span class="n">qeye</span>
+<section id="Optimisation-problems">
+<h2>Optimisation problems<a class="headerlink" href="#Optimisation-problems" title="Permalink to this headline"></a></h2>
+<p>Given a function of the probability distribution, we want to find the maximum over the set of probability distributions compatible with the causal model. This type of problem can also be tackled with causalinflation by optimising over the semidefinite relaxation of the problem.</p>
+<p>TODO: refine statement</p>
+<section id="The-Svetlichny-distribution">
+<h3>The Svetlichny distribution<a class="headerlink" href="#The-Svetlichny-distribution" title="Permalink to this headline"></a></h3>
+<p>TODO: break the code and introduce the problem</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>We will work in a CHSH scenario where we are trying to find the maximum
-guessing probability of the first projector of Alice’s first
-measurement. We generate the joint probability distribution on the
-maximally entangled state with the measurements that give the maximum
-quantum violation of the CHSH inequality:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">psi</span> <span class="o">=</span> <span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">basis</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="n">basis</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span> <span class="o">+</span> <span class="n">tensor</span><span class="p">(</span><span class="n">basis</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">basis</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">unit</span><span class="p">()</span>
-<span class="n">A</span> <span class="o">=</span> <span class="p">[(</span><span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">sigmax</span><span class="p">())</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">sigmay</span><span class="p">())</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
-<span class="n">B</span> <span class="o">=</span> <span class="p">[(</span><span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="n">sigmay</span><span class="p">()</span><span class="o">+</span><span class="n">sigmax</span><span class="p">())</span><span class="o">/</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>
-     <span class="p">(</span><span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">sigmay</span><span class="p">()</span><span class="o">+</span><span class="n">sigmax</span><span class="p">())</span><span class="o">/</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.quantum.general_tools</span> <span class="kn">import</span> <span class="n">to_numbers</span><span class="p">,</span> <span class="n">to_name</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
 </pre></div>
 </div>
-<p>Next we need the basic configuration of the probabilities and we must make them
-match the observed distribution.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span> <span class="o">=</span> <span class="n">Probability</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
-<span class="n">behaviour_constraints</span> <span class="o">=</span> <span class="p">[</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;A&#39;</span><span class="p">)</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">)),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">],</span><span class="s1">&#39;A&#39;</span><span class="p">)</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">)),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;B&#39;</span><span class="p">)</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">B</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">],</span><span class="s1">&#39;B&#39;</span><span class="p">)</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">qeye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">B</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">psi</span><span class="p">),</span>
-  <span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">expect</span><span class="p">(</span><span class="n">tensor</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">psi</span><span class="p">)]</span>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>We also have to define normalization of the subalgebras, in this case, only one:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">behaviour_constraints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;-0[0,0]+1.0&quot;</span><span class="p">)</span>
-</pre></div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
+                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">],</span>
+                                 <span class="s2">&quot;h3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;physical222&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">cols_S2</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">generating_monomials</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+<span class="n">cols_loc1</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">generating_monomials</span>
+
+<span class="n">cols_S2_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_name</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">InfProb</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols_S2</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+<span class="n">cols_loc1_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_name</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">InfProb</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols_loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+<span class="n">cols</span> <span class="o">=</span> <span class="n">cols_S2_name</span>
+<span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols_loc1_name</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">m</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cols_S2_name</span><span class="p">:</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="c1">#cols = cols_S2_name.union(cols_loc1_name)</span>
+<span class="n">cols_num</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]]</span>
+<span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+    <span class="n">cols_num</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">InfProb</span><span class="o">.</span><span class="n">names</span><span class="p">))</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="p">[[],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                                                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]])</span>
+
+<span class="n">measurements</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>
+<span class="n">A0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">A1</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">B0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">B1</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">C0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">C1</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">objective</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span>
+                      <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="p">)</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">)</span>  <span class="c1"># By default it maximizes</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">interpreter</span><span class="o">=</span><span class="s2">&quot;MOSEKFusion&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">)</span>
+<br/></pre></div>
 </div>
-<p>From here, the solution follows the usual pathway:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">level</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">get_all_operators</span><span class="p">(),</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=-</span><span class="n">P</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;A&#39;</span><span class="p">),</span>
-                   <span class="n">momentequalities</span><span class="o">=</span><span class="n">behaviour_constraints</span><span class="p">,</span>
-                   <span class="n">substitutions</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">substitutions</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">primal</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">dual</span><span class="p">)</span>
-</pre></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+5.656854245790322
+</pre></div></div>
 </div>
 </section>
-<section id="example-8-using-the-moroder-hierarchy">
-<h2>Example 8: Using the Moroder Hierarchy<a class="headerlink" href="#example-8-using-the-moroder-hierarchy" title="Permalink to this headline"></a></h2>
-<p>This type of hierarchy allows for a wider range of constraints of the
-optimization problems, including ones that are not of polynomial
-form (Moroder et al. 2013). These constraints are hard to impose using
-SymPy and the sparse structures in Ncpol2Sdpa. For this reason, we
-separate two steps: generating the SDP and post-processing the SDP to
-impose extra constraints. This second step can be done in MATLAB, for
-instance.</p>
-<p>Then we set up the problem with specifically with the CHSH inequality in
-the probability picture as the objective function. This part is
-identical to the one discussed in Section [mixedlevel].</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I</span> <span class="o">=</span> <span class="p">[[</span> <span class="mi">0</span><span class="p">,</span>   <span class="o">-</span><span class="mi">1</span><span class="p">,</span>    <span class="mi">0</span> <span class="p">],</span>
-     <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>    <span class="mi">1</span><span class="p">,</span>    <span class="mi">1</span> <span class="p">],</span>
-     <span class="p">[</span> <span class="mi">0</span><span class="p">,</span>    <span class="mi">1</span><span class="p">,</span>   <span class="o">-</span><span class="mi">1</span> <span class="p">]]</span>
-<span class="n">P</span> <span class="o">=</span> <span class="n">Probability</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
-<span class="n">objective</span> <span class="o">=</span> <span class="n">define_objective_with_I</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+<section id="The-distance-to-a-particular-distribution">
+<h3>The distance to a particular distribution<a class="headerlink" href="#The-distance-to-a-particular-distribution" title="Permalink to this headline"></a></h3>
+<p>TODO: break the code and introduce the problem</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>When obtaining the relaxation for this kind of problem, it can prove
-useful to disable the normalization of the top-left element of the
-moment matrix. Naturally, before solving the problem this should be set
-to zero, but further processing of the SDP matrix can be easier without
-this constraint set a priori. Hence we write:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">level</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">sdp</span> <span class="o">=</span> <span class="n">MoroderHierarchy</span><span class="p">([</span><span class="n">flatten</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">parties</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">flatten</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">parties</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span>
-                       <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span>
-                   <span class="n">substitutions</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">substitutions</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_W_array</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>We can further process the moment matrix, for instance, to impose partial positivity, or a matrix decomposition. To do these operations, we rely on PICOS:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Problem</span> <span class="o">=</span> <span class="n">sdp</span><span class="o">.</span><span class="n">convert_to_picos</span><span class="p">(</span><span class="n">duplicate_moment_matrix</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">X</span> <span class="o">=</span> <span class="n">Problem</span><span class="o">.</span><span class="n">get_variable</span><span class="p">(</span><span class="s1">&#39;X&#39;</span><span class="p">)</span>
-<span class="n">Y</span> <span class="o">=</span> <span class="n">Problem</span><span class="o">.</span><span class="n">get_variable</span><span class="p">(</span><span class="s1">&#39;Y&#39;</span><span class="p">)</span>
-<span class="n">Z</span> <span class="o">=</span> <span class="n">Problem</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                         <span class="n">sdp</span><span class="o">.</span><span class="n">block_struct</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-<span class="n">Problem</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">partial_transpose</span><span class="p">()</span><span class="o">&gt;&gt;</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">Problem</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">partial_transpose</span><span class="p">()</span><span class="o">&gt;&gt;</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">Problem</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">Problem</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="n">Z</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">solution</span> <span class="o">=</span> <span class="n">Problem</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">solution</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">outcomes_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="n">settings_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
+                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">],</span>
+                                 <span class="s2">&quot;h3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="n">outcomes_per_party</span><span class="p">,</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="n">settings_per_party</span><span class="p">,</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]</span> <span class="p">)</span>
+
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;local1&#39;</span><span class="p">,)</span>
+
+<span class="n">p_W</span> <span class="o">=</span> <span class="n">P_W_array</span><span class="p">(</span><span class="n">visibility</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+
+<span class="n">measurements</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>  <span class="c1"># This reads as measurements[party][inflation_source][setting][outcome]. TODO remove &quot;inflation_source&quot; as the user doesnt care</span>
+
+<span class="n">sum_abc_pW_squared</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">p_W</span><span class="p">,</span><span class="n">p_W</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="n">sum_abc_p_obs_times_p_W</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">sum_abc_p_obs_squared</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outcomes_per_party</span><span class="p">]):</span>
+    <span class="c1"># &lt; A_11 * A_22 * B_11 * B_22 * C_11 * C_22 &gt;</span>
+    <span class="n">p_obs_squared</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">p_obs_squared</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">*</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="k">if</span> <span class="n">a</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">p_obs_squared</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]</span> <span class="o">*</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]</span> <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">p_obs_squared</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">c</span><span class="p">]</span> <span class="o">*</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">c</span><span class="p">]</span> <span class="k">if</span> <span class="n">c</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">sum_abc_p_obs_squared</span> <span class="o">+=</span> <span class="n">p_obs_squared</span>
+
+    <span class="c1"># p_W(a,b,c) * &lt; A_11 * B_11 * C_11 &gt;</span>
+    <span class="n">p_obs_times_p_W</span> <span class="o">=</span> <span class="n">p_W</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">p_obs_times_p_W</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">a</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">p_obs_times_p_W</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">p_obs_times_p_W</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">c</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">sum_abc_p_obs_times_p_W</span> <span class="o">+=</span> <span class="n">p_obs_times_p_W</span>
+
+
+<span class="n">objective</span> <span class="o">=</span> <span class="n">sum_abc_pW_squared</span> <span class="o">+</span> <span class="n">sum_abc_p_obs_squared</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sum_abc_p_obs_times_p_W</span>
+<span class="n">objective</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">objective</span><span class="p">)</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">)</span>  <span class="c1"># By default it maximizes</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">interpreter</span><span class="o">=</span><span class="s2">&quot;MOSEKFusion&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Alternatively, with SeDuMi’s <code class="docutils literal notranslate"><span class="pre">fromsdpa</span></code> function (Sturm 1999), we can also impose the positivity of the partial trace of the moment matrix using MATLAB, or decompose the moment matrix in various forms. For this, we have to write the relaxation to a file:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">write_to_file</span><span class="p">(</span><span class="s2">&quot;chsh-moroder.dat-s&quot;</span><span class="p">)</span>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.33333333121984077
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Appendix:-How-to-customize-the-generating-set">
+<h2>Appendix: How to customize the generating set<a class="headerlink" href="#Appendix:-How-to-customize-the-generating-set" title="Permalink to this headline"></a></h2>
+<p>In this tutorial we will showcase how to customize the generating set of monomials.</p>
+<p>We can use the built-in functions to construct a generating set according to several hierarchies. To showcase this, let us first look at a simple scenario of only two parties, Alice and Bob, sharing a quantum state.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<p>If all we need is the partial positivity of the moment matrix, that is actually nothing but an extra symmetry. We can request this condition by passing an argument to the constructor, leading to a sparser SDP:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span> <span class="o">=</span> <span class="n">MoroderHierarchy</span><span class="p">([</span><span class="n">flatten</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">parties</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">flatten</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">parties</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span>
-                       <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ppt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span>
-                   <span class="n">substitutions</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">substitutions</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span> <span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">]},</span>
+                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
+</div>
+</div>
+<p>These are all the measurement operators:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">meas</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>
+<span class="n">meas</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[[[A_1_0_0], [A_1_1_0]]], [[[B_1_0_0], [B_1_1_0]]]]
+</pre></div></div>
+</div>
+<p>As a reminder, the indices are interpreted as follows: the last two give the measurement setting and measurement output, and the rest represent on which copy of the source the operator is acting. For example, <code class="docutils literal notranslate"><span class="pre">A_1_1_0</span></code> represents the projection onto copy 1 of source 1 with measurement setting <span class="math notranslate nohighlight">\(x=1\)</span> and measurement outcome <span class="math notranslate nohighlight">\(a=0\)</span>.</p>
+<p>Now let us look at a few examples of hierarchies. The first is the NPA levels</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">generating_monomials_sym</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[1, A_1_0_0, A_1_1_0, B_1_0_0, B_1_1_0, A_1_0_0*B_1_0_0, A_1_0_0*B_1_1_0, A_1_1_0*B_1_0_0, A_1_1_0*B_1_1_0]
+</pre></div></div>
 </div>
 </section>
 </section>
@@ -433,8 +782,8 @@ this constraint set a priori. Hence we write:</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="bibliography.html" class="btn btn-neutral float-right" title="References" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="download.html" class="btn btn-neutral float-left" title="Download and Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="inflation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

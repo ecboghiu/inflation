@@ -11,8 +11,7 @@ Welcome to causalinflation's documentation!
    :caption: Contents:
    
    download
-   tutorial
-   generatingset
+   examples
    modules
    
 
