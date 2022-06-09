@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Tutorial &#8212; inflation 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="Download and Installation" href="download.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p>COPIED FROM Ncpol2sdpa, can serve as inspiration!!</p>
+<section id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>The implementation follows an object-oriented design. The core object is
+SdpRelaxation. There are three steps to generate the relaxation:</p>
+<ul class="simple">
+<li><p>Instantiate the SdpRelaxation object.</p></li>
+<li><p>Get the relaxation.</p></li>
+<li><p>Write the relaxation to a file or solve the problem.</p></li>
+</ul>
+<p>The second step is the most time consuming, often running for hours as
+the number of variables increases. Once the solution is obtained, it can
+be studied further with some helper functions.</p>
+<p>To instantiate the SdpRelaxation object, you need to specify the
+variables. You can use any SymPy symbolic variable, as long as the adjoint
+operator is well-defined. The library also has helper functions to generate
+commutative or noncommutative variables or operators.</p>
+<p>Getting the relaxation requires at least the level of relaxation, and the
+matching method, <cite>SdpRelaxation.get_relaxation</cite>, will generate the moment
+matrix. Additional elements of the problem, such as the objective function,
+inequalities, equalities, and constraints on the moments.</p>
+<p>The last step in is to either solve or export the relaxation. The function
+<cite>solve_sdp</cite> or the class method <cite>SdpRelaxation.solve</cite> autodetects the possible
+solvers: SDPA, MOSEK, and CVXOPT. Alternatively, the method <code class="docutils literal notranslate"><span class="pre">write_to_file</span></code>
+exports the file to sparse SDPA format, which can be solved externally on a
+supercomputer, in MATLAB, or by any other means that accepts this input format.</p>
+<section id="defining-a-polynomial-optimization-problem-of-commuting-variables">
+<h2>Defining a Polynomial Optimization Problem of Commuting Variables<a class="headerlink" href="#defining-a-polynomial-optimization-problem-of-commuting-variables" title="Permalink to this headline">¶</a></h2>
+<p>Consider the following polynomial optimization problem:</p>
+<div class="math notranslate nohighlight">
+\[\min_{x\in \mathbb{R}^2}2x_1x_2\]</div>
+<p>such that</p>
+<div class="math notranslate nohighlight">
+\[-x_2^2+x_2+0.5\geq 0\]</div>
+<div class="math notranslate nohighlight">
+\[x_1^2-x_1=0.\]</div>
+<p>The equality constraint is a simple projection. We either substitute it with two
+inequalities or treat the equality as a monomial substitution. The second option
+leads to a sparser SDP relaxation. The code samples below take this approach.
+In this case, the monomial basis is
+<span class="math notranslate nohighlight">\(\{1, x_1, x_2, x_1x_2, x_2^2\}\)</span>. The corresponding level-2
+relaxation is written as</p>
+<div class="math notranslate nohighlight">
+\[\min_{y}2y_{12}\]</div>
+<p>such that</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\left[ \begin{array}{c|cc|cc}1 &amp; y_{1} &amp; y_{2} &amp; y_{12} &amp; y_{22}\\
+\hline{}y_{1} &amp; y_{1} &amp; y_{12} &amp; y_{12} &amp; y_{122}\\
+y_{2} &amp; y_{12} &amp; y_{22} &amp; y_{122} &amp; y_{222}\\
+\hline{}y_{12} &amp; y_{12} &amp; y_{122} &amp; y_{122} &amp; y_{1222}\\
+y_{22} &amp; y_{122} &amp; y_{222} &amp; y_{1222} &amp; y_{2222}\end{array} \right] \succeq{}0\end{split}\]</div>
+<div class="math notranslate nohighlight">
+\[\begin{split}\left[ \begin{array}{c|cc}-y_{22}+y_{2}+0.5 &amp; -y_{122}+y_{12}+0.5y_{1} &amp; -y_{222}+y_{22}+0.5y_{2}\\
+\hline{}-y_{122}+y_{12}+0.5y_{1} &amp; -y_{122}+y_{12}+0.5y_{1} &amp; -y_{1222}+y_{122}+0.5y_{12}\\
+-y_{222}+y_{22}+0.5y_{2} &amp; -y_{1222}+y_{122}+0.5y_{12} &amp; -y_{2222}+y_{222}+0.5y_{22}
+\end{array}\right]\succeq{}0.\end{split}\]</div>
+<p>Apart from the matrices being symmetric, notice other regular patterns
+between the elements – these are recognized in the relaxation and the same SDP
+variables are used for matching moments. To generate the relaxation, first we
+set up a few helper variables, including the symbolic variables used to define
+the polynomial objective function and constraint. The symbolic manipulations
+are based on SymPy.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ncpol2sdpa</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">n_vars</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># Number of variables</span>
+<span class="n">level</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># Requested level of relaxation</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">generate_variables</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">n_vars</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default, the generated variables are commutative. Alternatively, you can use
+standard SymPy symbols, but it is worth declaring them as real. With these
+variables, we can define the objective and the inequality constraint.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">inequalities</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We can also write all inequality-type constraints assuming to be in the form <span class="math notranslate nohighlight">\(\ge 0\)</span> as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">inequalities</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This is more convenient when we have a large number of constraints.</p>
+<p>The equality, as discussed, is entered as a substitution rule:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">substitutions</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+</pre></div>
+</div>
+</section>
+<section id="generating-and-solving-the-relaxation">
+<h2>Generating and Solving the Relaxation<a class="headerlink" href="#generating-and-solving-the-relaxation" title="Permalink to this headline">¶</a></h2>
+<p>After we defined the problem, we need to initialize the SDP relaxation object
+with the variables, and request generating the relaxation given the constraints:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">obj</span><span class="p">,</span> <span class="n">inequalities</span><span class="o">=</span><span class="n">inequalities</span><span class="p">,</span>
+                   <span class="n">substitutions</span><span class="o">=</span><span class="n">substitutions</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For large problems, getting the relaxation can take a long time. Once we have
+the relaxation, we can try to solve it solve it. Currently three solvers are
+supported fully: SDPA, MOSEK, and CVXOPT. If any of them are available, we
+obtain the solution by calling the <code class="docutils literal notranslate"><span class="pre">solve</span></code> method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">primal</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">dual</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This gives a solution close to the optimum around -0.7321. The solution and some
+status information and the time it takes to solve it become part of the
+relaxation object.</p>
+<p>If no solver is detected, or you want more control over the parameters
+of the solver, or you want to solve the problem in MATLAB, you export the
+relaxation to SDPA format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">write_to_file</span><span class="p">(</span><span class="s1">&#39;example.dat-s&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also specify a solver if you wish. For instance, if you want to use
+the arbitrary-precision solver that you have available in the path, along with a
+matching parameter file, you can call</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;sdpa&#39;</span><span class="p">,</span> <span class="n">solverparameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;executable&quot;</span><span class="p">:</span><span class="s2">&quot;sdpa_gmp&quot;</span><span class="p">,</span>
+                                           <span class="s2">&quot;paramsfile&quot;</span><span class="p">:</span><span class="s2">&quot;params.gmp.sdpa&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>If you have multiple solvers available, you might want to specify which exactly
+you want to use. For CVXOPT, call</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;cvxopt&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">primal</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">dual</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This solution also requires PICOS on top of CXOPT. Alternatively, if you have
+MOSEK installed and it is callable from your Python distribution, you can
+request to use it:</p>
+<blockquote>
+<div><p>sdp.solve(solver=’mosek’)
+print(sdp.primal, sdp.dual)</p>
+</div></blockquote>
+</section>
+<section id="analyzing-the-solution">
+<h2>Analyzing the Solution<a class="headerlink" href="#analyzing-the-solution" title="Permalink to this headline">¶</a></h2>
+<p>We can study individual entries of the solution matrix by providing the monomial
+we are interested in. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="p">[</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>The sums-of-square (SOS) decomposition is extracted from the dual solution:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sdp</span><span class="o">.</span><span class="n">get_sos_decomposition</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If we solve the SDP with the arbitrary-precision solver <code class="docutils literal notranslate"><span class="pre">sdpa_gmp</span></code>,
+we can find a rank loop at level two, indicating that convergence has
+been achieved.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;sdpa&#39;</span><span class="p">,</span> <span class="n">solverparameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;executable&quot;</span><span class="p">:</span><span class="s2">&quot;sdpa_gmp&quot;</span><span class="p">,</span>
+                                           <span class="s2">&quot;paramsfile&quot;</span><span class="o">=</span><span class="s2">&quot;params.gmp.sdpa&quot;</span><span class="p">})</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">find_solution_ranks</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The output for this problem is <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">3]</span></code>, not showing a rank loop at this level
+of relaxation.</p>
+</section>
+<section id="debugging-the-sdp-relaxation">
+<h2>Debugging the SDP Relaxation<a class="headerlink" href="#debugging-the-sdp-relaxation" title="Permalink to this headline">¶</a></h2>
+<p>It often happens that solving a relaxation does not yield the expected results.
+To help understand what goes wrong, Ncpol2sdpa provides a function to write the
+relaxation in a comma separated file, in which the individual cells contain the
+respective monomials. The first line of the file is the objective function.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">write_to_file</span><span class="p">(</span><span class="s2">&quot;examples.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Furthermore, the library can write out which SDP variable corresponds to which
+monomial by calling</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">save_monomial_index</span><span class="p">(</span><span class="s2">&quot;monomials.txt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="defining-and-solving-an-optimization-problem-of-noncommuting-variables">
+<h2>Defining and Solving an Optimization Problem of Noncommuting Variables<a class="headerlink" href="#defining-and-solving-an-optimization-problem-of-noncommuting-variables" title="Permalink to this headline">¶</a></h2>
+<p>Consider a slight variation of the problem discussed in the previous sections:
+change the algebra of the variables from commutative to Hermitian noncommutative, and use
+the following objective function:</p>
+<div class="math notranslate nohighlight">
+\[\min_{x\in \mathbb{R}^2}x_1x_2+x_2x_1\]</div>
+<p>The constraints remain identical:</p>
+<div class="math notranslate nohighlight">
+\[-x_2^2+x_2+0.5\geq 0\]</div>
+<div class="math notranslate nohighlight">
+\[x_1^2-x_1=0.\]</div>
+<p>Defining the problem, generating the relaxation, and solving it follow a similar
+pattern, but we request operators instead of variables.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">generate_operators</span><span class="p">(</span><span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="n">n_vars</span><span class="p">,</span> <span class="n">hermitian</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">obj_nc</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">inequalities_nc</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">]</span>
+<span class="n">substitutions_nc</span> <span class="o">=</span> <span class="p">{</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="p">:</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+<span class="n">sdp_nc</span> <span class="o">=</span> <span class="n">SdpRelaxation</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="n">sdp_nc</span><span class="o">.</span><span class="n">get_relaxation</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">obj_nc</span><span class="p">,</span> <span class="n">inequalities</span><span class="o">=</span><span class="n">inequalities_nc</span><span class="p">,</span>
+                      <span class="n">substitutions</span><span class="o">=</span><span class="n">substitutions_nc</span><span class="p">)</span>
+<span class="n">sdp_nc</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This gives a solution very close to the analytical -3/4. Let us export the
+problem again:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">write_to_file</span><span class="p">(</span><span class="s2">&quot;examplenc.dat-s&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Solving this with the arbitrary-precision solver, we discover a rank loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;sdpa&#39;</span><span class="p">,</span> <span class="n">solverparameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;executable&quot;</span><span class="p">:</span><span class="s2">&quot;sdpa_gmp&quot;</span><span class="p">,</span>
+                                           <span class="s2">&quot;paramsfile&quot;</span><span class="o">=</span><span class="s2">&quot;params.gmp.sdpa&quot;</span><span class="p">})</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">find_solution_ranks</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The output is <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">2]</span></code>, indicating a rank loop and showing that the
+noncommutative case of the relaxation converges faster.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">inflation</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mee.html">All about me</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#defining-a-polynomial-optimization-problem-of-commuting-variables">Defining a Polynomial Optimization Problem of Commuting Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generating-and-solving-the-relaxation">Generating and Solving the Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#analyzing-the-solution">Analyzing the Solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging-the-sdp-relaxation">Debugging the SDP Relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#defining-and-solving-an-optimization-problem-of-noncommuting-variables">Defining and Solving an Optimization Problem of Noncommuting Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">inflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="almostq.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="almostq.html#Functions-for-Collins-Gisin-notation">Functions for Collins Gisin notation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="almostq.html#Now-we-do-the-real-scenario">Now we do the real scenario</a></li>
+<li class="toctree-l1"><a class="reference internal" href="almostq.html#Now-we-can-find-the-U-and-V-above-with-a-seesaw">Now we can find the U and V above with a seesaw</a></li>
+<li class="toctree-l1"><a class="reference internal" href="almostq.html#With-extra-output">With extra output</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="download.html" title="previous chapter">Download and Installation</a></li>
+      <li>Next: <a href="examples.html" title="next chapter">Examples</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/tutorial.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
