@@ -11,9 +11,13 @@ Short note on tests:
 
 Documentation is built using Sphinx. Here are quick notes on how some sphinx commands work. 
 
-The documentation is already built. One can update index.rst to include additional files. To modify the current files, one can modify the .rst files already included in index.rst, for example, `tutorial.rst`. To include the .rst files detailing the code description, one should run `sphinx-apidoc -f -o . ..` in the `./docs` folder. This will update the corresponding .rst files detailing the code. To build the documentation again with the updated files, one can run `make html`. 
+The documentation is already built. One can update index.rst to include additional files. To modify the current files, one can modify the .rst files already included in index.rst, for example, `tutorial.rst`. To include the .rst files detailing the code description, one should run `sphinx-apidoc -f -o . ..` in the `./docs` folder. This will update the corresponding .rst files detailing the code. To build the documentation again with the updated files, one can run `make html`.
 
 Note that we need the following extensions with Sphinx, which you should have installed locally:
  - sphinx.ext.autodoc: This extension is used to create .rst files from the class and method code docstrings.
  - sphinx.ext.napoleon: This extension enables the correct identification of numpy-style docstrings.
  - sphinx.ext.githubpages: This extension creates .nojekyll file on generated HTML directory to publish the document on GitHub Pages. 
+
+ One needs the following Sphinx extensions in order to locally compile:
+  - sphinx-rtd-theme: for the Read the docs theme
+  - nbsphinx: to have Jupyter notebooks as pages

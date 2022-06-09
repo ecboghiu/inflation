@@ -13,10 +13,10 @@ cws = os.sep.join(cws.split(os.sep)[:-1])
 cws = cws + os.sep + os.pardir
 sys.path.append(cws)
 
-from quantuminflation.useful_distributions import (P_GHZ_array, P_Mermin_array,
+from causalinflation.useful_distributions import (P_GHZ_array, P_Mermin_array,
                                                    P_W_array, P_CHSH_array)
-from quantuminflation.InflationSDP import InflationSDP
-from quantuminflation.InflationProblem import InflationProblem
+from causalinflation.InflationSDP import InflationSDP
+from causalinflation.InflationProblem import InflationProblem
 import numpy as np
 
 ###############################################################################

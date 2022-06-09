@@ -15,9 +15,9 @@ sys.path.append(cws)
 ################################################################################
 
 import numpy as np
-from quantuminflation.InflationProblem import InflationProblem
-from quantuminflation.InflationSDP import InflationSDP
-from quantuminflation.useful_distributions import (P_2PR_array, P_CHSH_array,
+from causalinflation.InflationProblem import InflationProblem
+from causalinflation.InflationSDP import InflationSDP
+from causalinflation.useful_distributions import (P_2PR_array, P_CHSH_array,
                                                    P_GHZ_array, P_Mermin_array,
                                                    P_W_array)
 

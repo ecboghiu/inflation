@@ -16,13 +16,13 @@ sys.path.append(cws)
 import itertools
 
 import numpy as np
-from quantuminflation.InflationProblem import InflationProblem
-from quantuminflation.InflationSDP import InflationSDP
-from quantuminflation.useful_distributions import P_GHZ
+from causalinflation.InflationProblem import InflationProblem
+from causalinflation.InflationSDP import InflationSDP
+from causalinflation.useful_distributions import P_GHZ
 import sympy as sp
 
-from quantuminflation.general_tools import to_numbers
-from quantuminflation.fast_npa import calculate_momentmatrix, to_name
+from causalinflation.general_tools import to_numbers
+from causalinflation.fast_npa import calculate_momentmatrix, to_name
 
 
 InfProb = InflationProblem( dag={"h1": ["v1", "v2"],
