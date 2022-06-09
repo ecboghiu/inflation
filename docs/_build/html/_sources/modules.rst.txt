@@ -5,3 +5,4 @@ inflation
    :maxdepth: 4
 
    causalinflation
+   setup
