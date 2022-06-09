@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tutorial" href="tutorial.html" />
-    <link rel="prev" title="Welcome to inflation’s documentation!" href="index.html" /> 
+    <link rel="prev" title="Welcome to causalinflation’s documentation!" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -46,11 +46,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bibliography.html">References</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">inflation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Testing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="generatingset.html">How to customize the generating set</a></li>
 </ul>
 
         </div>
@@ -103,21 +99,11 @@
 </style>
 <section id="download-and-installation">
 <h1>Download and Installation<a class="headerlink" href="#download-and-installation" title="Permalink to this headline"></a></h1>
-<p>The package is available in the <a class="reference external" href="https://pypi.python.org/pypi/ncpol2sdpa/">Python Package Index</a>. The latest development version is available on <a class="reference external" href="https://github.com/peterwittek/ncpol2sdpa">GitHub</a>.</p>
 <section id="dependencies">
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline"></a></h2>
-<p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a> and <a class="reference external" href="http://www.numpy.org/">Numpy</a>. The code is compatible with both Python 2 and 3. The code is compatible with Pypy. Using it yields a 10-20x speedup.</p>
-<p>By default, Ncpol2sdpa does not require a solver, but then it will not be able to solve a generated relaxation either. Install any supported solver and it will be detected automatically.</p>
-<p>Optional dependencies include:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="http://sdpa.sourceforge.net/">SDPA</a> is a possible target solver.</p></li>
-<li><p><a class="reference external" href="http://scipy.org/">SciPy</a> yields faster execution with the default CPython interpreter.</p></li>
-<li><p><a class="reference external" href="http://picos.zib.de/">PICOS</a> is necessary for using the Cvxopt solver and for converting the problem to a PICOS instance.</p></li>
-<li><p><a class="reference external" href="http://www.mosek.com/">MOSEK</a> Python module is necessary to work with the MOSEK solver.</p></li>
-<li><p><a class="reference external" href="http://cvxpy.org/">CVXPY</a> is required for converting the problem to or by solving it by CVXPY.</p></li>
-<li><p><a class="reference external" href="http://cvxopt.org/">Cvxopt</a> is required by both Chompack and PICOS.</p></li>
-<li><p><a class="reference external" href="http://chompack.readthedocs.io/">Chompack</a> improves the sparsity of the chordal graph extension.</p></li>
-</ul>
+<p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a> and <a class="reference external" href="http://www.numpy.org/">Numpy</a>. The code is only compatible with Python 3.</p>
+<p>We use the <cite>MOSEK &lt;http://www.mosek.com/&gt;</cite> solver for solving the semidefinite program. There exist free academic licenses for this solver.
+The MOSEK Python package is required.</p>
 </section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
@@ -138,7 +124,7 @@ $ python setup.py install
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to inflation’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to causalinflation’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
