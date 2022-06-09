@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to inflation's documentation!
+Welcome to causalinflation's documentation!
 =====================================
 
 .. toctree::
@@ -12,14 +12,10 @@ Welcome to inflation's documentation!
    
    download
    tutorial
-   examples
-   bibliography
-   modules
-   quickstart
    generatingset
+   modules
+   
 
-
-I am learning Sphinx
 
 Indices and tables
 ==================

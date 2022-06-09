@@ -20,7 +20,7 @@ import pickle
 from ncpol2sdpa.nc_utils import apply_substitutions
 from ncpol2sdpa import projective_measurement_constraints
 
-from causalinflation.general_tools import (to_name, to_representative, 
+from causalinflation.quantum.general_tools import (to_name, to_representative, 
                                             to_numbers, mul,
                                             transform_vars_to_symb,
                                             substitute_variable_values_in_monlist,
@@ -41,16 +41,16 @@ from causalinflation.general_tools import (to_name, to_representative,
                                             Symbolic)
 
 
-from causalinflation.sdp_utils import (solveSDP_MosekFUSION,
+from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
                                         solveSDP_CVXPY, extract_from_ncpol,
                                         read_problem_from_file)
 
-from causalinflation.fast_npa import (calculate_momentmatrix,
+from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        calculate_momentmatrix_commuting,
                                        export_to_file_numba,
                                        to_canonical)
 
-from causalinflation.writer_utils import (write_to_csv, write_to_mat,
+from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                            write_to_sdpa)
 
 from causalinflation.InflationProblem import InflationProblem
