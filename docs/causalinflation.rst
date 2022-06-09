@@ -1,6 +1,14 @@
 causalinflation package
 =======================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   causalinflation.quantum
+
 Submodules
 ----------
 
