@@ -118,12 +118,7 @@ class InflationSDP(object):
 
         In the inflated graph there are many symmetries coming from invariance
         under swaps of the copied sources, which are used to remove variables
-        in the moment matrix. DESIRATA: We should be able to block-diagonalize
-        the moment matrix. It would be highly interesting to find how to 
-        do this analytically for specific hierarchies. Soon, we will enable
-        the use of REPLAB through MATLAB to do this numerically,
-        but it is not scalable.
-
+        in the moment matrix.
 
         Parameters
         ----------
@@ -224,6 +219,7 @@ class InflationSDP(object):
         self.filename_label = filename_label
         self.build_columns(column_specification,
                            max_monomial_length=max_monomial_length)
+
         if self.verbose > 0:
             print("Number of columns:", len(self.generating_monomials))
 
@@ -809,11 +805,11 @@ class InflationSDP(object):
                     else:
                         self.generating_monomials += [
                             to_numbers(str(col), self.names)]
-                return
+                
             # == 1+2+self.InflationProblem.nr_sources:
             elif len(np.array(column_specification[1]).shape) > 1:
                 self.generating_monomials = column_specification
-                return
+                
 
             else:
                 if max_monomial_length > 0:
@@ -829,7 +825,7 @@ class InflationSDP(object):
                     col_specs = column_specification
 
                 self._build_cols_from_col_specs(col_specs)
-                return
+                
 
         elif type(column_specification) == str:
             if 'npa' in column_specification.lower():
@@ -843,7 +839,7 @@ class InflationSDP(object):
                             # if tuple in increasing order from left to right
                             col_specs += [a.tolist()]
                 self._build_cols_from_col_specs(col_specs)
-                return
+                
 
             elif 'local' in column_specification.lower():
                 local_level = int(column_specification[5:])
@@ -864,7 +860,7 @@ class InflationSDP(object):
                     col_specs += [lst]
 
                 self._build_cols_from_col_specs(col_specs)
-                return
+                
 
             elif 'physical' in column_specification.lower():
                 try:
@@ -927,13 +923,19 @@ class InflationSDP(object):
                             physical_monomials.append(concatenated.tolist())
 
                 self.generating_monomials = physical_monomials
-                return
+                
             else:
                 raise Exception('I have not understood the format of the '
                                 + 'column specification')
         else:
             raise Exception('I have not understood the format of the '
                             + 'column specification')
+
+        self.generating_monomials_sym = \
+                from_coord_to_sym(self.generating_monomials,
+                                    self.names,
+                                    self.InflationProblem.nr_sources,
+                                    self.measurements)
 
     def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
         """his builds the generating set for the moment matrix taking as input
@@ -1163,12 +1165,6 @@ class InflationSDP(object):
             problem_arr, _, monomials_list = \
                  read_problem_from_file(filename_momentmatrix, filename_monomials)
         else:
-            self.generating_monomials_sym = \
-                                    from_coord_to_sym(self.generating_monomials,
-                                                      self.names,
-                                                      self.InflationProblem.nr_sources,
-                                                      self.measurements)
-
             if use_numba:
                 _cols = [np.array(col, dtype=np.uint8)
                          for col in self.generating_monomials]
