@@ -9,3 +9,6 @@ examples/.ipynb_checkpoints
 .vscode
 test/test_data
 ncpol2sdpa
+causalinflation/__pycache__
+moment*
+*.dat-s
