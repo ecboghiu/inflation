@@ -1,13 +1,13 @@
-import os
-import sys
-# Locate the script in UnifiedInflation/examples and add to path one folder
-# before, that is, UnifiedInflation/ in order to import quantuminflation
-# ! Note: I found online that "__file__" sometimes can be problematic,
-# So I'm using the solution provided in
-# https://stackoverflow.com/questions/2632199/
-# how-do-i-get-the-path-of-the-current-executed-file-in-python?lq=1
-from inspect import getsourcefile
-from os.path import abspath
+# import os
+# import sys
+# # Locate the script in UnifiedInflation/examples and add to path one folder
+# # before, that is, UnifiedInflation/ in order to import quantuminflation
+# # ! Note: I found online that "__file__" sometimes can be problematic,
+# # So I'm using the solution provided in
+# # https://stackoverflow.com/questions/2632199/
+# # how-do-i-get-the-path-of-the-current-executed-file-in-python?lq=1
+# from inspect import getsourcefile
+# from os.path import abspath
 
 import numba
 import numpy as np

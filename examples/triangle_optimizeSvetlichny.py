@@ -13,16 +13,15 @@ cws = cws + os.sep + os.pardir  # Go one folder above UnifiedInflation/examples 
 sys.path.append(cws)
 ###############################################################################
 
-import itertools
 
 import numpy as np
 from causalinflation.InflationProblem import InflationProblem
-from causalinflation.InflationSDP import InflationSDP
+from causalinflation.quantum.InflationSDP import InflationSDP
 from causalinflation.useful_distributions import P_GHZ
 import sympy as sp
 
-from causalinflation.general_tools import to_numbers
-from causalinflation.fast_npa import calculate_momentmatrix, to_name
+from causalinflation.quantum.general_tools import to_numbers
+from causalinflation.quantum.fast_npa import calculate_momentmatrix, to_name
 
 
 InfProb = InflationProblem( dag={"h1": ["v1", "v2"],
@@ -71,7 +70,6 @@ objective = sp.expand(A1*B0*C0 +
                         A0*B0*C0 )
 
 InfSDP.set_objective(objective=objective)  # By default it maximizes
-InfSDP.write_to_file('inflationMATLAB.mat')
 
 InfSDP.solve(interpreter="MOSEKFusion")
 

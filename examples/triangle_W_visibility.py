@@ -15,7 +15,7 @@ sys.path.append(cws)
 
 from causalinflation.useful_distributions import (P_GHZ_array, P_Mermin_array,
                                                    P_W_array, P_CHSH_array)
-from causalinflation.InflationSDP import InflationSDP
+from causalinflation.quantum.InflationSDP import InflationSDP
 from causalinflation.InflationProblem import InflationProblem
 import numpy as np
 
