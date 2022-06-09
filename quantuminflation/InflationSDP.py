@@ -109,10 +109,11 @@ class InflationSDP(object):
         from inflation.
 
         It takes as input the generating set of monomials {M_i}_i. The moment 
-        matrix is defined by all the possible inner products between these 
+        matrix Gamma is defined by all the possible inner products between these 
         monomials:
         
-        MomentMatrix[i, j] := trace (rho * (M_i)^\dagger * M_j).
+        .. math::
+            \Gamma[i, j] := \operatorname{tr} (\rho * (M_i)^\dagger M_j).
         
         The set {M_i} is specified by the parameter `column_specification`.
 
