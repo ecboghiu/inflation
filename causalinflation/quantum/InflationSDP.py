@@ -244,7 +244,7 @@ class InflationSDP(object):
         # to bring the monomials in the user-inputted objective function
         # to a canonoical form! But this is not implemented yet.
         symmetric_arr, orbits, remaining_monomials \
-                            = self._apply_infation_symmetries(problem_arr,
+                            = self._apply_inflation_symmetries(problem_arr,
                                                               monomials_list,
                                                               inflation_symmetries)
 
@@ -1261,7 +1261,7 @@ class InflationSDP(object):
         
         return inflation_symmetries
 
-    def _apply_infation_symmetries(self, momentmatrix: np.ndarray,
+    def _apply_inflation_symmetries(self, momentmatrix: np.ndarray,
                                          monomials_list: np.ndarray,
                                          inflation_symmetries: List[List[int]]
                                          ) -> Tuple[np.ndarray, Dict[int, int], np.ndarray]:
