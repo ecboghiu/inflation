@@ -1,10 +1,8 @@
-import gc
-import os
-import sys
-from typing import Tuple
-
 import numpy as np
+import os
 import scipy.sparse
+import sys
+
 from scipy.io import loadmat
 from tqdm import tqdm
 
@@ -21,11 +19,11 @@ def load_MATLAB_SDP(filename_SDP_info: str, use_semiknown: bool = False):
 
     return positionsmatrix, [], known_vars_array, semiknown_vars_array
 
-def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective: dict = {},
-                            known_vars=[0, 1], semiknown_vars=[], positive_vars=[],
-                            verbose: int = 0,
-                            pure_feasibility_problem: bool = False,
-                            solverparameters: dict = {}):
+def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
+                         objective: dict = {}, known_vars=[0, 1],
+                         semiknown_vars=[], positive_vars=[], verbose: int = 0,
+                         pure_feasibility_problem: bool = False,
+                         solverparameters: dict = {}):
 
     import mosek
     from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \

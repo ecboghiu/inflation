@@ -1,32 +1,18 @@
 import copy
-
+import numpy as np
+import sympy
 import warnings
+
+from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
+                                              to_canonical)
 from collections import defaultdict, deque
 from itertools import permutations, product
+# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
+from ncpol2sdpa import flatten, generate_operators, generate_variables
+from ncpol2sdpa.nc_utils import apply_substitutions
 
-import sympy
-from sympy import S
-
+from tqdm import tqdm
 from typing import Dict, List, Tuple, Union, Any, NewType
-
-# TODO build a proper typing system, maybe use classes?
-
-# Note: one can also use constrained TypeVar to encode a type which is 
-# an "or" of different types, but for our usage it doesn't really matter
-# See https://stackoverflow.com/questions/58903906/
-# whats-the-difference-between-a-constrained-typevar-and-a-union
-Symbolic = Union[sympy.core.symbol.Symbol, 
-                 sympy.core.numbers.One,
-                 sympy.physics.quantum.operator.HermitianOperator, # For some
-                            # reason, the HermitianOperator class is 
-                            # being used, maybe remove this?
-                 sympy.core.power.Pow,
-                 sympy.core.mul.Mul,
-                 sympy.core.add.Add]  # Currently add class only supported 
-                                      # for the objective function
-
-
-import numpy as np
 
 try:
     import numba
@@ -38,30 +24,33 @@ except ImportError:
     int16_ = np.uint16
 
 
+# TODO build a proper typing system, maybe use classes?
+
+# Note: one can also use constrained TypeVar to encode a type which is
+# an "or" of different types, but for our usage it doesn't really matter
+# See https://stackoverflow.com/questions/58903906/
+# whats-the-difference-between-a-constrained-typevar-and-a-union
+Symbolic = Union[sympy.core.symbol.Symbol,
+                 sympy.core.numbers.One,
+                 sympy.physics.quantum.operator.HermitianOperator, # For some
+                            # reason, the HermitianOperator class is
+                            # being used, maybe remove this?
+                 sympy.core.power.Pow,
+                 sympy.core.mul.Mul,
+                 sympy.core.add.Add]  # Currently add class only supported
+                                      # for the objective function
+
 ArrayMonomial = NewType("ArrayMonomial", np.ndarray)
 StringMonomial = NewType("StringMonomial", str)
 IntMonomial = NewType("IntMonomial", int)
 Monomial = Union[ArrayMonomial, StringMonomial, IntMonomial]
-
-# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-from ncpol2sdpa import (SdpRelaxation, flatten, generate_operators,
-                        generate_variables, projective_measurement_constraints)
-from ncpol2sdpa.nc_utils import apply_substitutions
-
-
-from tqdm import tqdm
-from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
-                                        to_canonical)
-
-import itertools
-
 
 def substitute_variable_values_in_monlist(variables_values: np.ndarray,
                                         monomials_factors_reps: np.ndarray,
                                         monomials_factors_names: np.ndarray,
                                         stop_counting: int,
                                           ) -> np.ndarray:
-    """Substitues the known monomials with their known numerical value. From 
+    """Substitues the known monomials with their known numerical value. From
     this the 'known_moments' and lpi constraints can be extracted for the SDP.
 
     Parameters
@@ -69,7 +58,7 @@ def substitute_variable_values_in_monlist(variables_values: np.ndarray,
     variables_values : np.ndarray
         Array describing the numerical value of known moments.
     monomials_factors_reps : np.ndarray
-        Monomials factorised, in integer representation.  
+        Monomials factorised, in integer representation.
     monomials_factors_names : np.ndarray
         Monomials factorised, in string representation.
     stop_counting : int
@@ -108,7 +97,7 @@ def generate_commuting_measurements(party: int,
     Parameters
     ----------
     party : int
-        Configuration indicating the configuration of m measurements and 
+        Configuration indicating the configuration of m measurements and
         d outcomes for each measurement. It is a list with m integers,
         each of them representing the number of outcomes of the corresponding
         measurement.
@@ -137,7 +126,7 @@ def generate_noncommuting_measurements(party: int,
     Parameters
     ----------
     party : int
-        Configuration indicating the configuration of m measurements and 
+        Configuration indicating the configuration of m measurements and
         d outcomes for each measurement. It is a list with m integers,
         each of them representing the number of outcomes of the corresponding
         measurement.
@@ -161,7 +150,7 @@ def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
                       n_sources: int,
                       measurements: List[List[List[Symbolic]]]
                       ) -> List[Symbolic]:
-    """Go from the output of build_columns to a list of symbolic operators 
+    """Go from the output of build_columns to a list of symbolic operators
 
     TODO: change name to cols_num2sym
 
@@ -182,17 +171,17 @@ def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
     -------
     List[Symbolic]
         The generating set but with symbolic monomials.
-    """    
-    
+    """
+
     flatmeas = np.array(flatten(measurements))
     measnames = np.array([str(meas) for meas in flatmeas])
 
     res = [None] * len(ordered_cols_coord)
     for ii, elements in enumerate(ordered_cols_coord):
         if elements == [0]:
-            res[ii] = S.One
+            res[ii] = sympy.S.One
         else:
-            producto = S.One
+            product = sympy.S.One
             for element in elements:
                 party = element[0]
                 name = names[party - 1] + '_'
@@ -200,8 +189,8 @@ def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
                     name += str(s) + '_'
                 name += str(element[-2]) + '_' + str(element[-1])
                 term = flatmeas[measnames == name][0]
-                producto *= term
-            res[ii] = producto
+                product *= term
+            res[ii] = product
     return res
 
 
@@ -209,7 +198,7 @@ def find_permutation(list1: List,
                      list2: List
                      ) -> List:
     """Returns the permutation that transforms list2 in list1.
-    
+
     Parameters
     ----------
     list1 : List
@@ -227,7 +216,7 @@ def find_permutation(list1: List,
     Exception
         If the lengths are different, or if the elements of the two lists are
         different.
-    """    
+    """
     if (len(list1) != len(list2)) or (set(list1) != set(list2)):
         raise Exception('The two lists are not permutations of one another')
     else:
@@ -238,11 +227,11 @@ def find_permutation(list1: List,
 
 def mul(lst: List) -> Any:
     """Multiply all elements of a list.
-    
+
     Parameters
     ----------
     lst : List
-        Input list with elements that have a supported '*' multiplication.  
+        Input list with elements that have a supported '*' multiplication.
 
     Returns
     -------
@@ -253,8 +242,8 @@ def mul(lst: List) -> Any:
     -------
     >>> mul([2, A_1, B_2])
     2*A_1*B_2
-    """    
-    
+    """
+
     if type(lst[0]) == str:
         result = '*'.join(lst)
     else:
@@ -269,8 +258,8 @@ def apply_source_perm_monomial_commuting(monomial: ArrayMonomial,
                                          source: int,
                                          permutation: List
                                          ) -> ArrayMonomial:
-    """This applies a source swap to a monomial. 
-    
+    """This applies a source swap to a monomial.
+
     We assume in the monomial that all operators COMMUTE with each other.
 
     Parameters
@@ -286,7 +275,7 @@ def apply_source_perm_monomial_commuting(monomial: ArrayMonomial,
     -------
     np.ndarray
         Input monomial with the specified source swapped.
-    """                                         
+    """
 
     new_factors = monomial.copy()
     for i in range(len(monomial)):
@@ -338,8 +327,8 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     -------
     List[np.ndarray]
         List of operators with the specified source permuted.
-        
-    """    
+
+    """
     permuted_op_list = []
     for monomial in columns:
         if monomial == [0]:
@@ -365,7 +354,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                 canonical = sorted(new_factors)
             else:
                 n_sources = len(measnames[0].split("_")[1:-2])
-                producto = 1
+                product = 1
                 for factor in new_factors:
                     party = factor[0]
                     name = names[party - 1] + '_'
@@ -373,9 +362,9 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                         name += str(s) + '_'
                     name += str(factor[-2]) + '_' + str(factor[-1])
                     term = flatmeas[measnames == name][0]
-                    producto *= term
+                    product *= term
 
-                canonical = to_numbers(apply_substitutions(producto,
+                canonical = to_numbers(apply_substitutions(product,
                                                          substitutions), names)
 
             permuted_op_list.append(canonical)
@@ -390,7 +379,7 @@ def apply_source_permutation_monomial(monomial: ArrayMonomial,
                                       ) -> ArrayMonomial:
     """Applies a source permutation to a single monomial.
 
-    SPEED NOTE: if you want to apply a simple source swap as opposed 
+    SPEED NOTE: if you want to apply a simple source swap as opposed
     to an arbitrary permutation, use apply_source_swap_monomial instead,
     as it is 25x faster.
 
@@ -407,23 +396,23 @@ def apply_source_permutation_monomial(monomial: ArrayMonomial,
     -------
     np.ndarray
         Monomial with the specified source permuted.
-    """    
+    """
 
     new_factors = monomial.copy()
     for i in range(len(new_factors)):
         if new_factors[i, 1 + source] > 0:
              # Python starts counting at 0
             new_factors[i, 1 + source] = permutation[
-                                            new_factors[i,1 + source] - 1] + 1 
+                                            new_factors[i,1 + source] - 1] + 1
         else:
             continue
 
     return new_factors
 
 
-def phys_mon_1_party_of_given_len(hypergraph: np.ndarray, 
+def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   inflevels: np.array,
-                                  party: int, 
+                                  party: int,
                                   max_monomial_length: int,
                                   settings_per_party: List[int],
                                   outputs_per_party: List[int],
@@ -431,12 +420,12 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   ) -> List[np.ndarray]:
     """Generates all possible positive monomials given a scenario and a
     maximum length.
-    
+
     Note that the maximum length cannot be greater than the minimum number
     of copies for each source that the party has access to. For example,
     if party 2 has access to 3 sources, the first has 3 copies, the second
-    4 copies and the third 5 copies, the maximum length cannot be greater 
-    than 3. This is because the extra operators will not commute with the 
+    4 copies and the third 5 copies, the maximum length cannot be greater
+    than 3. This is because the extra operators will not commute with the
     ones before as they will be sharing support (unless we also consider
     entangling vs. separable measurements!)
 
@@ -476,7 +465,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     # The initial monomial to which we will apply the symmetries
     # If max_monomial_length=4, this is something of the form
     # A_1_1_0_xa * A_2_2_0_xa * A_3_3_0_xa * A_4_4_0_xa
-    # and after applying a permutation, we get an equivalent monomial 
+    # and after applying a permutation, we get an equivalent monomial
     # where everything also factorizes. I have no proof, but I think
     # that by applying all possible source swaps, you get all possible
     # commuting products of the same length.
@@ -493,7 +482,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         range(inflevels[source])) for source in range(nr_sources)]
     # Careful! We're not applying only the *generators* but **all** possible
     # combination of permutations
-    for perms in itertools.product(*all_perms_per_source):
+    for perms in product(*all_perms_per_source):
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
             permuted = apply_source_perm_monomial_commuting(
@@ -507,11 +496,10 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
 
     new_monomials = []
     # Now for all input and output combinations:
-    for input_slice in itertools.product(*[range(settings_per_party[party])
-                                         for _ in range(max_monomial_length)]):
-        for output_slice in itertools.product(*[
-                                           range(outputs_per_party[party]-1)
-                                         for _ in range(max_monomial_length)]):
+    for input_slice in product(*[range(settings_per_party[party])
+                                 for _ in range(max_monomial_length)]):
+        for output_slice in product(*[range(outputs_per_party[party]-1)
+                                      for _ in range(max_monomial_length)]):
             for new_mon_idx in range(len(template_new_monomials)):
                 new_monomial = copy.deepcopy(
                     template_new_monomials[new_mon_idx])
@@ -525,7 +513,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
 
 def as_ordered_factors_for_powers(monomial: Symbolic
                                   ) -> List[Symbolic]:
-    """If we have powers of a monomial, such as A**3, return a list with 
+    """If we have powers of a monomial, such as A**3, return a list with
     the factors, [A, A, A].
 
     Parameters
@@ -537,8 +525,8 @@ def as_ordered_factors_for_powers(monomial: Symbolic
     -------
     List[Symbolic]
         List of all the symbolic factors, with the powers expanded.
-    """    
-    
+    """
+
     # this is for treating cases like A**2, where we want factors = [A, A]
     # and this behaviour doesn't work with .as_ordered_factors()
     factors = monomial.as_ordered_factors()
@@ -561,7 +549,7 @@ def to_numbers(monomial: str,
 
     Given a monomial input in string format, return the matrix representation
     where each row represents an operators and the columns are operator labels
-    such as party, inflation copies and input and output cardinalities.  
+    such as party, inflation copies and input and output cardinalities.
 
     Parameters
     ----------
@@ -575,7 +563,7 @@ def to_numbers(monomial: str,
     List[List[int]]
         Monomial in list of lists format (equivalent to 2d array format by
         calling np.array() on the result).
-    """    
+    """
 
     # the following commented code is compatible with numba, but it is slower
     # than native...
@@ -596,9 +584,9 @@ def to_numbers(monomial: str,
     monomial_parts_indices[1] = 2
     for i, part in enumerate(monomial_parts):
         atoms = part.split('_')
-        
+
         monomial_parts_indices[i, 0] = ord(atoms[0]) - ord('A')
-        
+
         for i2, j in enumerate(atoms[1:-2]):
             monomial_parts_indices[i, i2] = ord(j) - ord('0')
         monomial_parts_indices[i, -2] = ord(atoms[-2])-ord('0')
@@ -629,7 +617,7 @@ def to_name(monomial_numbers: List[List[int]],
     """Go from lists of numbers to string representation.
 
     Comments: this is much quicker (10x) if monomial_numbers is a list of
-    lists than if it a np.array (At least with the current implementation)! 
+    lists than if it a np.array (At least with the current implementation)!
     Around 3-4 microsecs and more than 10 microsecs if input is np.array.
 
     Parameters
@@ -643,7 +631,7 @@ def to_name(monomial_numbers: List[List[int]],
     -------
     str
         String representation of the input.
-    """    
+    """
 
     components = []
     for monomial in monomial_numbers:
@@ -654,10 +642,10 @@ def to_name(monomial_numbers: List[List[int]],
 
 def from_numbers_to_flat_tuples(list: List[List[int]]
                                 ) -> List[Tuple[int]]:
-    """Flatten all monomials in the list represented as lists of lists to a 
+    """Flatten all monomials in the list represented as lists of lists to a
     flat tuple.
 
-    This is useful for dictionaries, as list of lists are not hashable. 
+    This is useful for dictionaries, as list of lists are not hashable.
 
     Parameters
     ----------
@@ -668,7 +656,7 @@ def from_numbers_to_flat_tuples(list: List[List[int]]
     -------
     List[Tuple[int]]
         List of monomials encoded as flat tuples of integers.
-    """    
+    """
     tuples = []
     for element in list:
         if element == [0]:
@@ -696,11 +684,11 @@ def is_knowable(monomial: ArrayMonomial,
     -------
     bool
         bool stating whether the monomial is knowable or not
-    """    
+    """
 
     # After inflation and factorization, a monomial is known if it just
     # contains at most one operator per party, and in the case of having
-    # one operator per node in the network, if the corresponding graph is 
+    # one operator per node in the network, if the corresponding graph is
     # the same as the scenario hypergraph.
 
     if type(monomial) == list:
@@ -735,22 +723,22 @@ def is_knowable(monomial: ArrayMonomial,
 def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
                 sandwich_positivity=False
                 ) -> bool:
-    """Determines whether a monomial is physical/positive. It is positive 
-    if it is a probability (i.e., >0) but we do not  know its exact value. 
+    """Determines whether a monomial is physical/positive. It is positive
+    if it is a probability (i.e., >0) but we do not  know its exact value.
 
-    This code also supports the detection of "sandwiches", i.e., monomials 
-    of the form    
+    This code also supports the detection of "sandwiches", i.e., monomials
+    of the form
     $\\langle \\psi | A_1 A_2 A_1 | \\psi \\rangle$
-    where $A_1$ and $A_2$ do not commute. In principle we do not know the 
+    where $A_1$ and $A_2$ do not commute. In principle we do not know the
     value of this term. However, note that $A_1$ can be absorbed into
     $| \\psi \\rangle$ forming an unnormalised quantum state
     $| \\psi' \\rangle$, thus
     $\\langle \\psi' | A_2 | \\psi' \\rangle$
     Note that while we know the value $\\langle \\psi | A_2 | \\psi \\rangle$
-    we do not know $\\langle \\psi' | A_2 | \\psi' \\rangle$ because of the 
+    we do not know $\\langle \\psi' | A_2 | \\psi' \\rangle$ because of the
     unknown normalisation, however we know it must be positive, thus
     $\\langle \\psi | A_1 A_2 A_1 | \\psi \\rangle \geq 0$.
-    This simple example can be extended to various layers of sandwiching. 
+    This simple example can be extended to various layers of sandwiching.
 
     Parameters
     ----------
@@ -763,7 +751,7 @@ def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
     -------
     bool
         Returns whether the monomial is positive or not.
-    """    
+    """
 
     monomial = np.array(monomial_in, dtype=np.int8).copy()
     if sandwich_positivity:
@@ -775,7 +763,7 @@ def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
         party_monomial = monomial[monomial[:, 0] == party]
         if not len(party_monomial) == 1:
             factors = factorize_monomial(party_monomial)
-            # i.e., there are operators that do not commute 
+            # i.e., there are operators that do not commute
             # within one party's operators
             if len(factors) != len(party_monomial):
                 res *= False
@@ -791,7 +779,7 @@ def remove_sandwich(monomial: np.ndarray
     <(A_0111*A_0121*A_0111)*(A_332*A_0342*A_332)*(B_0011*B_0012)>
     Notice that the first parenthesis commutes with the second, but none of the
     first or second commutes with the third. In this case the algorithm of
-    just looking at the first and last operator will not identify this 
+    just looking at the first and last operator will not identify this
     sandwich, so an easy way is to just apply factorize_monomial to the
     letters from a single party, and try to identify sandwiches in
     non-commuting blocks.
@@ -806,7 +794,7 @@ def remove_sandwich(monomial: np.ndarray
     np.ndarray
         Output monomial without one layer of sandwiching.
 
-    """    
+    """
 
     new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
     parties = np.unique(monomial[:, 0])
@@ -887,9 +875,9 @@ def transform_vars_to_symb(variables_to_be_given: List[np.ndarray],
     Parameters
     ----------
     variables_to_be_given : np.ndarray
-        A 2d array of type object 
+        A 2d array of type object
     max_nr_of_parties : int, optional
-        What is the maximum number of parties. By default 2. If the number of 
+        What is the maximum number of parties. By default 2. If the number of
         parties is 4, then pABCD(abcd|xyzw) gets simplified to p(abcd|xyzw).
 
     Returns
@@ -903,7 +891,7 @@ def transform_vars_to_symb(variables_to_be_given: List[np.ndarray],
     >>> transform_vars_to_symb([[3, 'B_1_0_1_0_0'],
                                 [6, 'A_1_1_0_1_3*B_1_0_1_2_0']])
     [[3, pB(0|0)], [6, p(30|12)]]
-    """    
+    """
     sym_variables_to_be_given = copy.deepcopy(variables_to_be_given)
     for idx, [var, term] in enumerate(variables_to_be_given):
         factors = term.split('*')
@@ -947,7 +935,7 @@ def substitute_sym_with_value(syminput: Symbolic,
     """Function which, given a symbolic probability in the form
     p(abc...|xyz...) and a probability distribution p called as
     p[a,b,c,...,x,y,z,...], returns the numerical value of the
-    probability. 
+    probability.
 
     Note that this accepts marginals, for example, p(a|x), and
     then it automatically computes all the summations over
@@ -962,7 +950,7 @@ def substitute_sym_with_value(syminput: Symbolic,
     outcomes_per_party : List[int]
         Outcome cardinalities per party.
     p_vector : np.ndarray
-        The probability distribution of dims 
+        The probability distribution of dims
         (outcomes_per_party,settings_per_party).
 
     Returns
@@ -974,11 +962,11 @@ def substitute_sym_with_value(syminput: Symbolic,
     --------
     >>> p = sympy.symbols('pA(0|1)')
     >>> substitute_sym_with_value(p, [2,2], [2,2], parray)
-    parray[0,:,1,0].sum()  
-    
-    Note that we take the first setting (=0) for marginalised parties, in the 
+    parray[0,:,1,0].sum()
+
+    Note that we take the first setting (=0) for marginalised parties, in the
     example above, the second party is marginalised.
-    """ 
+    """
 
     # Extract the parties
     nrparties = len(settings_per_party)
@@ -1029,12 +1017,12 @@ def substitute_sym_with_value(syminput: Symbolic,
         settings_aux[p] = [inputs[i_idx]]
         i_idx += 1
     # For the outcomes, we define a list of lists where the outcomes
-    # that are not marginalized over have a fixed value; for the 
+    # that are not marginalized over have a fixed value; for the
     # others we give all possible values.
     # example: pAC(0,1|1,2) --> [[0],[0,1,2],[1]]
     # we have [0,1,2] because Bob is being marginalized over so we put
     # all outcome values, but we only put 0 and 1 for Alice and Charlie.
-    # This construction allows to easily use itertools.product to do 
+    # This construction allows to easily use itertools.product to do
     # the marginalisation on parray over the marginalised parties.
     outcomes_aux = []
     for p in range(nrparties):
@@ -1056,8 +1044,8 @@ def hypergraphs_are_equal(hypergraph1: np.ndarray,
                           up_to_source_permutation : bool =True
                           ) -> bool:
     """Returns True if two hypergraphs are equvialent.
-    
-    A hypergraph is as a list of hyperlinks or hyperedges. A hyperedge is a 
+
+    A hypergraph is as a list of hyperlinks or hyperedges. A hyperedge is a
     binary list of 0 and 1 with a 1 in the i-th index only if the i-th party
     is connected by this hyperlink. To see if two hypergraphs are equal,
     the functions removes duplicate hyperlinks and checks if two lists of
@@ -1071,7 +1059,7 @@ def hypergraphs_are_equal(hypergraph1: np.ndarray,
     hypergraph2 : np.ndarray
         Hypergraph where each row is a hyperedge.
     up_to_source_permutation : bool, optional
-        If one hypergraph is a row/source permutation of another, whether to 
+        If one hypergraph is a row/source permutation of another, whether to
         return True. By default True.
 
     Returns
@@ -1085,7 +1073,7 @@ def hypergraphs_are_equal(hypergraph1: np.ndarray,
     >>> hyper2 = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
     >>> hypergraphs_are_equal(hyper1, hyper2)
     True
-    """                        
+    """
 
     if up_to_source_permutation:
         tuple_hypergraph1 = []
@@ -1121,7 +1109,7 @@ def hypergraph_of_a_factor(factors: np.ndarray
     -------
     np.ndarray
         The hypergraph of the monomial.
-    """    
+    """
     n_sources = len(factors[0][1:-2])
     party_slice = np.array(factors)[:, 0]
     n_parties = len(np.unique(party_slice))
@@ -1162,7 +1150,7 @@ def monomialset_name2num(monomials: np.ndarray,
     np.ndarray
         Same dimensions as input monomials, but each monomial is in
         string format.
-    """                         
+    """
     monomials_numbers = monomials.copy()
     for i, line in enumerate(tqdm(monomials,
                                  disable=True,
@@ -1193,7 +1181,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
     np.ndarray
         Same as monomials_as_numbers but with the
         factorized monomials.
-    """    
+    """
 
     monomials_factors = monomials_as_numbers.copy()
     for idx, [_, monomial] in enumerate(tqdm(monomials_factors,
@@ -1205,23 +1193,23 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
 
 def factorize_monomial(monomial: np.ndarray
                        ) -> np.ndarray:
-    """This function splits a moment/expectation value into products of 
+    """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
-    
+
     The moment is encoded as a 2d array where each row is an operator.
     If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
     In each row, the columns encode the following information:
 
-    First column:       The party index, *starting from 1*. 
+    First column:       The party index, *starting from 1*.
                         (1 for A, 2 for B, etc.)
     Last two columns:   The input x, starting from zero and then the
                         output a, starting from zero.
     In between:         This encodes the support of the operator. There
-                        are as many columns as sources/quantum states. 
+                        are as many columns as sources/quantum states.
                         Column j represents source j-1 (-1 because the 1st
                         col is the party). If the value is 0, then this
                         operator does not measure this source. If the value
-                        is for e.g. 2, then this operator is acting on 
+                        is for e.g. 2, then this operator is acting on
                         copy 2 of source j-1.
 
     The output is a list of lists, where each list represents another
@@ -1255,7 +1243,7 @@ def factorize_monomial(monomial: np.ndarray
             [3, 4, 5, 0, 0, 0]]),
      array([[3, 6, 6, 0, 0, 0]])]
 
-    """  
+    """
     monomial = np.array(monomial, dtype=np.ubyte)
     components_indices = np.zeros((len(monomial), 2), dtype=np.ubyte)
     # Add labels to see if the components have been used
@@ -1339,7 +1327,7 @@ def nb_first_index(array: np.ndarray,
     >>> array = np.array([1, 2, 3, 4, 5, 6])
     >>> nb_first_index(array, 5)
     4
-    """    
+    """
 
     for idx, val in enumerate(array):
         if abs(val - item) < 1e-10:
@@ -1366,7 +1354,7 @@ def nb_unique(arr: np.ndarray
     --------
     >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
     (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
-    """    
+    """
 
     # One can use return_index=True with np.unique but I find this incompatible with numba so I do it by hand
     uniquevals = np.unique(arr)
@@ -1413,13 +1401,13 @@ def apply_source_swap_monomial(monomial: np.ndarray,
     --------
     >>> monomial = np.array([[1, 2, 3, 0, 0, 0]])
     >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
-                                             [2, 1, 3, 0, 0, 0]]), 
-                                             1,  # source 
+                                             [2, 1, 3, 0, 0, 0]]),
+                                             1,  # source
                                              2,  # copy1
                                              3)  # copy2
     array([[1, 0, 3, 1, 0, 0],
            [2, 1, 2, 0, 0, 0]])
-    """    
+    """
 
     new_factors = monomial.copy()
     for i in range(new_factors.shape[0]):
@@ -1448,7 +1436,7 @@ def to_representative_aux(monomial_component: np.ndarray
     -------
     np.ndarray
         An equivalent monomial closer to its representative form.
-    """    
+    """
 
     monomial_component = to_canonical(
         monomial_component)  # Make sure all commutation rules are applied
@@ -1470,11 +1458,11 @@ def to_representative_aux(monomial_component: np.ndarray
 def to_representative(mon: np.ndarray,
                       inflevels: np.array
                       ) -> np.ndarray:
-    """This function takes a monomial and applies inflation 
-    symmetries to bring it to a canonical form. 
+    """This function takes a monomial and applies inflation
+    symmetries to bring it to a canonical form.
 
     NOTE WARNING: Not finished!!
-    
+
     Example:
     Assume the monomial is something like:
     < D^350_00 D^450_00 D^150_00 E^401_00 F^031_00 >
@@ -1505,7 +1493,7 @@ def to_representative(mon: np.ndarray,
     np.ndarray
         Input monomial in canonical form.
 
-    """   
+    """
 
     mon_aux = to_representative_aux(mon)
 
@@ -1521,7 +1509,7 @@ def to_representative(mon: np.ndarray,
     final_monomial = mon_aux.copy()
     prev = mon_aux
     while True:
-        for perms in itertools.product(*all_perms_per_source):
+        for perms in product(*all_perms_per_source):
             permuted = final_monomial.copy()
             for source in range(nr_sources):
                 permuted = apply_source_perm_monomial_commuting(
@@ -1555,7 +1543,7 @@ def monomialset_num2name(monomials_factors: np.ndarray,
     np.ndarray
         Returns the input with the monomials replaced by their
         string representation.
-    """    
+    """
 
     monomials_factors_names = monomials_factors.copy()
     for idx, [_, monomial_factors] in enumerate(monomials_factors_names):
@@ -1568,7 +1556,7 @@ def monomialset_num2name(monomials_factors: np.ndarray,
 def label_knowable_and_unknowable(monomials_factors_input: np.ndarray,
                                   hypergraph: np.ndarray
                                   ) -> np.ndarray:
-    """Given the list of monomials factorised, it labels each 
+    """Given the list of monomials factorised, it labels each
     monomial into knowable, semiknowable and unknowable.
 
     Parameters
@@ -1583,7 +1571,7 @@ def label_knowable_and_unknowable(monomials_factors_input: np.ndarray,
     -------
     np.ndarray
         Array of the same size as the input, with the labels of each monomial.
-    """    
+    """
 
     monomials_factors_knowable = np.empty_like(monomials_factors_input)
     monomials_factors_knowable[:, 0] = monomials_factors_input[:, 0]
@@ -1619,7 +1607,7 @@ def reorder_according_to_known_semiknown_unknown(input_list: np.ndarray,
     np.ndarray
         Input list sorted according to the tags, first "Yes",
         then "Semi" and lastly "No".
-    """    
+    """
 
     reordered_list = np.concatenate(
         [input_list[tags[:, 1] == 'Yes'],
@@ -1632,7 +1620,7 @@ def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
                                  monomials_factors_knowable: np.ndarray,
                                  monomials_list: np.ndarray,
                                  measurements: List[Symbolic],
-                                 substitutions: 
+                                 substitutions:
                     Dict[Symbolic, Symbolic],
                                  hypergraph: np.ndarray,
                                  names: List[str],
@@ -1650,7 +1638,7 @@ def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
         Array where each row contains the integer representation of
         the monomial and the knowability of the monomials.
     monomials_list : np.ndarray
-        List of all the *unfactorised* monomials in the moment matrix. 
+        List of all the *unfactorised* monomials in the moment matrix.
     measurements : List[Symbolic]
         List of symbolic symbols representing the measurements.
     substitutions : Dict[Symbolic, Symbolic]
@@ -1668,7 +1656,7 @@ def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
     -------
     np.ndarray
         Returns input list of monomials with products of unknown combined.
-    """    
+    """
 
     # If there is a semiknown factorization with >1 unknowns, we must use the
     # unfactorized variable. This part must be commented out when combining
@@ -1728,9 +1716,9 @@ def monomial_to_var_repr(monomials_factors_names: np.ndarray,
                          names: List[str],
                          flag_use_semiknowns: bool = True,
                          verbose: int = 0):
-    """This function translates the factorization of monomials from string 
-    representation to integer representation. 
-    
+    """This function translates the factorization of monomials from string
+    representation to integer representation.
+
     If the (i,j) entry of the moment matrix has variable v_m, then the
     factorization v_m=v_o*v_p is encoded as an entry of
     monomials_factors_names as, eg, [12, ['A_0_1_1_0_0', 'A_0_2_2_0_0']].
@@ -1738,7 +1726,7 @@ def monomial_to_var_repr(monomials_factors_names: np.ndarray,
     is an array where each entry is something of the form [12, [4, 6]],
     where m=12, o=4, p=6 in v_m=v_o*v_p.
 
-    Note! This function also brings to canonical form the factorization. 
+    Note! This function also brings to canonical form the factorization.
 
     Parameters
     ----------
@@ -1749,7 +1737,7 @@ def monomial_to_var_repr(monomials_factors_names: np.ndarray,
         Array where each row contains the integer representation of
         the monomial and the knowability of the monomials.
     monomials_list : np.ndarray
-        List of all the *unfactorised* monomials in the moment matrix. 
+        List of all the *unfactorised* monomials in the moment matrix.
     measurements : List[Symbolic]
         List of symbolic symbols representing the measurements.
     substitutions : Dict[Symbolic, Symbolic]
@@ -1766,7 +1754,7 @@ def monomial_to_var_repr(monomials_factors_names: np.ndarray,
     -------
     np.ndarray
         Same as input, but with integers instead of strings.
-    """    
+    """
 
     if not flag_use_semiknowns:
         n_known = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
@@ -1836,10 +1824,10 @@ def change_to_representative_variables(monomials_factors_vars: np.ndarray,
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        The two lists of monomials, monomials_factors_vars and 
+        The two lists of monomials, monomials_factors_vars and
         physical_monomials, but with the monomials replaced by their
         representative.
-    """    
+    """
     monomials_factors_reps = monomials_factors_vars.copy()
     for idx, [_, monomial_factors] in enumerate(monomials_factors_reps):
         if len(monomial_factors) > 1:
@@ -1883,7 +1871,7 @@ def get_variables_the_user_can_specify(monomials_factors_reps: np.ndarray,
     -------
     np.ndarray
         All the monomials that have a single factor and are known.
-    """    
+    """
     variables_to_be_given = []
     for idx, factors in monomials_factors_reps:
         if len(factors) == 1:
@@ -1894,7 +1882,7 @@ def get_variables_the_user_can_specify(monomials_factors_reps: np.ndarray,
     return variables_to_be_given
 
 
-def substitute_sym_with_numbers(symbolic_variables_to_be_given: 
+def substitute_sym_with_numbers(symbolic_variables_to_be_given:
                                                 List[Tuple[int, Symbolic]],
                                 settings_per_party: List[int],
                                 outcomes_per_party: List[int],
@@ -1922,7 +1910,7 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
         A nested list of type [..., [int, float], ...] where every
         symbolic probability in the input is substituted with its numerical
         value.
-    """    
+    """
     variables_values = symbolic_variables_to_be_given.copy()
     for i in range(len(variables_values)):
         variables_values[i][1] = float(substitute_sym_with_value(
@@ -1935,13 +1923,13 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
 
 def objective_sym2index(objective: Symbolic,
                         monomials_list: List[Tuple[int, StringMonomial]],
-                        orbits: Dict[int, int], 
-                        canonical_mon2indx: Dict[str, int], 
-                        names: List[str], 
-                        measurements: List[Symbolic], 
+                        orbits: Dict[int, int],
+                        canonical_mon2indx: Dict[str, int],
+                        names: List[str],
+                        measurements: List[Symbolic],
                         substitutions: Dict[Symbolic, Symbolic]
                         ) -> Dict[int, float]:
-    """Transform a symbolic expression into a dictionary of index variable 
+    """Transform a symbolic expression into a dictionary of index variable
     coefficients. This is interpretable by the solver.
 
     NOTE: WARNING: many of the parameters of this function will be removed
@@ -1953,7 +1941,7 @@ def objective_sym2index(objective: Symbolic,
         Symbolic objective function, written in terms of the measurement
         operators.
     monomials_list : List[Tuple[int, StringMonomial]]
-        List of all monomials and their index representation. 
+        List of all monomials and their index representation.
     orbits : Dict[int, int]
         Dictionary mapping each monomial index to its orbit representative.
     canonical_mon2indx : Dict[str, int]
@@ -1969,7 +1957,7 @@ def objective_sym2index(objective: Symbolic,
     -------
     Dict[int, float]
         A dictionary mapping each monomial index to a coefficient.
-    """    
+    """
     monomials_list_len1 = []
     for row in monomials_list:
         if len(row[1]) == 1:
@@ -2025,7 +2013,7 @@ def canonicalize(list_of_operators: List[List[int]],
     -------
     List[List[int]]
         The monomial in canonical form.
-    """    
+    """
 
     operator = from_indices_to_operators(list_of_operators, measurements)[0]
     adjoint = apply_substitutions(operator.adjoint(), substitutions)
@@ -2045,7 +2033,7 @@ def canonicalize(list_of_operators: List[List[int]],
 def from_indices_to_operators(monomial_list: List[List[int]],
                               measurements: List[List[List[Symbolic]]]
                               ) -> Symbolic:
-    """Transforms a monomial, expressed as a list of lists of indices, 
+    """Transforms a monomial, expressed as a list of lists of indices,
     into its associated operator.
 
     Parameters
@@ -2059,13 +2047,13 @@ def from_indices_to_operators(monomial_list: List[List[int]],
     -------
     Symbolic
         Symbolic monomial.
-    """    
-    
+    """
+
     flatmeas = np.array(flatten(measurements))
     measnames = np.array([str(meas) for meas in flatmeas])
     parties_names = sorted(np.unique([str(meas)[0] for meas in flatmeas]))
     name = to_name(monomial_list, parties_names).split('*')
-    product = S.One
+    product = sympy.S.One
     for part in name:
         product *= flatmeas[measnames == part]
     return product

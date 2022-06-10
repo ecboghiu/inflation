@@ -1,31 +1,17 @@
-import itertools
-from tokenize import String
-import warnings
-from time import time
-import os
-
-from typing import Any, List, Dict, Union, Tuple
-
-import sympy as sp
-import numpy as np
-# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-from ncpol2sdpa import (SdpRelaxation, flatten)
-from ncpol2sdpa.nc_utils import simplify_polynomial
-
-from tqdm import tqdm
-import itertools
 import copy
+import itertools
+import numpy as np
 import pickle
+import sympy as sp
 
-from ncpol2sdpa.nc_utils import apply_substitutions
-from ncpol2sdpa import projective_measurement_constraints
-
+from causalinflation.InflationProblem import InflationProblem
 from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             to_numbers, mul,
                                             transform_vars_to_symb,
                                             substitute_variable_values_in_monlist,
                                             substitute_sym_with_numbers,
-                                            string2prob, phys_mon_1_party_of_given_len,
+                                            string2prob,
+                                            phys_mon_1_party_of_given_len,
                                             is_knowable, is_physical,
                                             label_knowable_and_unknowable,
                                             monomialset_name2num,
@@ -39,21 +25,23 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             from_coord_to_sym,
                                             get_variables_the_user_can_specify,
                                             Symbolic)
-
-
-from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
-                                        solveSDP_CVXPY, extract_from_ncpol,
-                                        read_problem_from_file)
-
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        calculate_momentmatrix_commuting,
                                        export_to_file_numba,
                                        to_canonical)
-
+from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
+                                        solveSDP_CVXPY, extract_from_ncpol,
+                                        read_problem_from_file)
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                            write_to_sdpa)
-
-from causalinflation.InflationProblem import InflationProblem
+# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
+from ncpol2sdpa import SdpRelaxation, flatten, projective_measurement_constraints
+from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
+from time import time
+from tokenize import String
+from tqdm import tqdm
+from typing import Any, List, Dict, Union, Tuple
+from warnings import warn
 
 
 class InflationSDP(object):
@@ -561,7 +549,7 @@ class InflationSDP(object):
         elif interpreter == 'MOSEKFusion':
             sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
         else:
-            Warning("Interpreter not found/implemented, using MOSEKFusion.")
+            warn("Interpreter not found/implemented, using MOSEKFusion.")
             sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
 
         self.primal_objective = lambdaval
@@ -570,7 +558,7 @@ class InflationSDP(object):
         # Processed the dual certificate and stores it in
         # self.dual_certificate in various formats
         if np.array(self.semiknown_moments).size > 0:
-            Warning("Beware that, because the problem contains linearized " +
+            warn("Beware that, because the problem contains linearized " +
                     "polynomial constraints, the certificate is not " +
                     "guaranteed to apply to other distributions")
 
@@ -969,9 +957,9 @@ class InflationSDP(object):
             if all([len(block) == len(np.unique(block)) for block in col_specs]):
                 # TODO maybe do things without sympy substitutions,
                 # but numba functions??
-                warnings.warn("You have not input substitution rules to the " +
-                              "generation of columns, but it is OK because you " +
-                              "are using local level 1")
+                warn("You have not input substitution rules to the " +
+                     "generation of columns, but it is OK because you " +
+                     "are using local level 1")
             else:
                 raise Exception("You must input substitution rules for columns " +
                                 "to be generated properly")
@@ -1288,8 +1276,8 @@ class InflationSDP(object):
                     else:
                         previous = val
                 except KeyError:
-                    warnings.warn("Your generating set might not have enough" +
-                                  "elements to fully impose inflation symmetries.")
+                    warn("Your generating set might not have enough" +
+                         "elements to fully impose inflation symmetries.")
             orbits[key] = val
 
         # Remove from monomials_list all those that have disappeared. The -2 is
