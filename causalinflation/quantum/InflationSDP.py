@@ -398,6 +398,11 @@ class InflationSDP(object):
 
         self.use_lpi_constraints = use_lpi_constraints
 
+        if len(self._objective_as_dict) > 1:
+            warn("You have an objective function set. Be aware that imposing " +
+                 "linearized polynomial constraints will constrain the " +
+                 "optimization to distributions with fixed marginals.")
+
         if self.use_lpi_constraints:
             stop_counting = self._n_something_known
         else:
@@ -434,8 +439,6 @@ class InflationSDP(object):
             self.semiknown_moments = np.array([[var, mul(val[:-1]), val[-1]]
                                                for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]])
 
-        self._objective_as_dict = {}
-        self.objective = 0
 
     def set_objective(self, objective: Symbolic,
                              direction: str ='max',
@@ -463,6 +466,12 @@ class InflationSDP(object):
         else:
             sign = -1
             self.maximize = False
+
+        if self.use_lpi_constraints:
+            warn("You have the flag `use_lpi_constraints` set to True. Be " +
+                 "aware that imposing linearized polynomial constraints will " +
+                 "constrain the optimization to distributions with fixed " +
+                 "marginals.")
 
         self.objective = objective
 
