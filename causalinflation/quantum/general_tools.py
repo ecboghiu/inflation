@@ -25,8 +25,18 @@ Symbolic = Union[sympy.core.symbol.Symbol,
                  sympy.core.add.Add]  # Currently add class only supported 
                                       # for the objective function
 
-import numba
+
 import numpy as np
+
+try:
+    import numba
+    from numba import jit
+    int16_ = numba.int16
+except ImportError:
+    def jit(*args, **kwargs):
+        return lambda f: f
+    int16_ = np.uint16
+
 
 ArrayMonomial = NewType("ArrayMonomial", np.ndarray)
 StringMonomial = NewType("StringMonomial", str)
@@ -254,7 +264,7 @@ def mul(lst: List) -> Any:
     return result
 
 
-# @numba.jit(nopython=True)
+# @jit(nopython=True)
 def apply_source_perm_monomial_commuting(monomial: ArrayMonomial,
                                          source: int,
                                          permutation: List
@@ -373,7 +383,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     return permuted_op_list
 
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def apply_source_permutation_monomial(monomial: ArrayMonomial,
                                       source: int,
                                       permutation: np.ndarray
@@ -1306,7 +1316,7 @@ def factorize_monomial(monomial: np.ndarray
     return disconnected_components
 
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def nb_first_index(array: np.ndarray,
                    item: float
                    ) -> int:
@@ -1336,7 +1346,7 @@ def nb_first_index(array: np.ndarray,
             return idx
 
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def nb_unique(arr: np.ndarray
               ) -> Tuple[np.ndarray, np.ndarray]:
     """Find the unique elements in an array without sorting
@@ -1362,12 +1372,12 @@ def nb_unique(arr: np.ndarray
     uniquevals = np.unique(arr)
     nr_uniquevals = uniquevals.shape[0]
 
-    indices = np.zeros(nr_uniquevals).astype(numba.int16)
+    indices = np.zeros(nr_uniquevals).astype(int16_)
     for i in range(nr_uniquevals):
         indices[i] = nb_first_index(arr, uniquevals[i])
     indices.sort()
 
-    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(numba.int16)
+    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int16_)
     for i in range(nr_uniquevals):
         # Undo the sorting done by np.unique()
         uniquevals_unsorted[i] = arr[indices[i]]
@@ -1375,7 +1385,7 @@ def nb_unique(arr: np.ndarray
     return uniquevals_unsorted, indices
 
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def apply_source_swap_monomial(monomial: np.ndarray,
                                source: int,
                                copy1: int,
@@ -1422,7 +1432,7 @@ def apply_source_swap_monomial(monomial: np.ndarray,
     return new_factors
 
 
-@numba.jit(nopython=True)
+@jit(nopython=True)
 def to_representative_aux(monomial_component: np.ndarray
                           ) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps

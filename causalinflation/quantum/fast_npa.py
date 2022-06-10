@@ -1,29 +1,24 @@
-# import os
-# import sys
-# # Locate the script in UnifiedInflation/examples and add to path one folder
-# # before, that is, UnifiedInflation/ in order to import quantuminflation
-# # ! Note: I found online that "__file__" sometimes can be problematic,
-# # So I'm using the solution provided in
-# # https://stackoverflow.com/questions/2632199/
-# # how-do-i-get-the-path-of-the-current-executed-file-in-python?lq=1
-# from inspect import getsourcefile
-# from os.path import abspath
-
-import numba
 import numpy as np
 import scipy
 
-from numba.types import bool_
 from tqdm import tqdm
 
 from typing import List, Dict, Tuple
 
+try:
+    from numba import jit
+    from numba.types import bool_
+except ImportError:
+    def jit(*args, **kwargs):
+        return lambda f: f
+    bool_ = bool
+
 cache = True
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
-    """Output the monomial reversed, which means reverse the row of the 2d 
+    """Output the monomial reversed, which means reverse the row of the 2d
     matrix representing the monomial. This represents the complex conjugate
     of the monomial, but we assume they are Hermitian.
 
@@ -46,7 +41,7 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     return mon[np.arange(mon.shape[0])[::-1]]
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
     """Sort by parties the monomial, i.e., sort by the first column in
     the 2d representation of the monomial.
@@ -66,12 +61,12 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
     >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
     np.array([[1,...],[3,...],[4,...]])
 
-    """    
-    
+    """
+
     return mon[np.argsort(mon[:, 0], kind='mergesort')]
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def dot_mon(mon1: np.ndarray,
             mon2: np.ndarray
             ) -> np.ndarray:
@@ -85,9 +80,9 @@ def dot_mon(mon1: np.ndarray,
     Parameters
     ----------
     mon1 : np.ndarray
-        Monomial as a numpy array. 
+        Monomial as a numpy array.
     mon2 : np.ndarray
-        Monomial as a numpy array. 
+        Monomial as a numpy array.
 
     Returns
     -------
@@ -101,7 +96,7 @@ def dot_mon(mon1: np.ndarray,
     >>> dot_mon(mon1, mon2)
     np.array([[4,5,6],[1,2,3],[7,8,9]])
 
-    """    
+    """
 
     if mon1.size <= 1:
         return mon2
@@ -109,7 +104,7 @@ def dot_mon(mon1: np.ndarray,
         return mon_sorted_by_parties(reverse_mon(mon1))
     return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)))
 
-#@numba.jit(nopython=True, cache=cache)
+#@jit(nopython=True, cache=cache)
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray
                       ) -> np.ndarray:
@@ -121,14 +116,14 @@ def dot_mon_commuting(mon1: np.ndarray,
     mon1 : np.ndarray
         Monomial as a numpy array.
     mon2 : np.ndarray
-        Monomial as a numpy array. 
+        Monomial as a numpy array.
 
     Returns
     -------
     np.ndarray
-        Returns (mon1)^\dagger*mon2 with the assumption that 
+        Returns (mon1)^\dagger*mon2 with the assumption that
         everything commutes with everything.
-    """    
+    """
 
     if mon1.size <= 1:
         return mon2
@@ -146,10 +141,10 @@ def dot_mon_commuting(mon1: np.ndarray,
 
 def mon_lexsorted(mon: np.ndarray
                  ) -> np.ndarray:
-    """Return a monomial sorted lexicographically. 
-    
+    """Return a monomial sorted lexicographically.
+
     The sorting keys are as follows. The first key is the parties, the second
-    key is the inflation indices and the last keys are the input and output 
+    key is the inflation indices and the last keys are the input and output
     cardinalities. More informally, once we sorted all the parties together,
     within a party group we group all operators with the same inflation-copy
     index for the first source together, and within this group we group all
@@ -159,18 +154,18 @@ def mon_lexsorted(mon: np.ndarray
     Parameters
     ----------
     mon : np.ndarray
-        Monomial as a numpy array. 
+        Monomial as a numpy array.
 
     Returns
     -------
     np.ndarray
-        Sorted monomial. 
-    """    
+        Sorted monomial.
+    """
 
     return mon[np.lexsort(np.rot90(mon))]
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     """Simplify the monomial by removing the squares. This is because we
     assume projectors, P^2=P.
@@ -184,7 +179,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     -------
     np.ndarray
         Simplified monomial.
-    """    
+    """
 
     to_keep = np.array([1]*mon.shape[0], dtype=bool_)  # bool_
     prev_row = mon[0]
@@ -196,7 +191,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     return mon[to_keep]
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def mon_is_zero(mon: np.ndarray
                 ) -> bool_:
     """Function which checks if there is a product of two orthogonal projectors,
@@ -213,7 +208,7 @@ def mon_is_zero(mon: np.ndarray
     -------
     bool_
         True if the monomial is zero, False otherwise.
-    """    
+    """
 
     prev_row = mon[0]
     for i in range(1, mon.shape[0]):
@@ -223,7 +218,7 @@ def mon_is_zero(mon: np.ndarray
         prev_row = row
     return False
 
-#@numba.jit(nopython=True, cache=cache)
+#@jit(nopython=True, cache=cache)
 def to_name(monomial_numbers: np.ndarray,
             parties_names: np.ndarray
             ) -> str:
@@ -247,7 +242,7 @@ def to_name(monomial_numbers: np.ndarray,
     --------
     >>> to_name([[1 1,0,3], [4,1,2,6], [2,3,3,4]], ['a','bb','x','Z'])
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
-    """    
+    """
 
     # Numba version is 2x slower than without!! Probably not optimized for
     # strings. But we need it to be able to call to_name within a numba
@@ -268,7 +263,7 @@ def to_name(monomial_numbers: np.ndarray,
 
 def pad_with_zeros(cols: List[List]
                     ) -> List[np.ndarray]:
-    """Pad the columns with zeros. 
+    """Pad the columns with zeros.
 
     Parameters
     ----------
@@ -279,7 +274,7 @@ def pad_with_zeros(cols: List[List]
     -------
     List[np.ndarray]
         Returns the inputs but with rows of zeros padded to the same length.
-    """    
+    """
     max_prod_len = max([len(col) for col in cols])
     mon_len = len(cols[-1][0])
     cols_padded = np.zeros((len(cols), max_prod_len, mon_len), dtype=np.uint8)
@@ -290,7 +285,7 @@ def pad_with_zeros(cols: List[List]
     return cols_padded
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def remove_zeros(mon: np.ndarray
                  ) -> np.ndarray:
     """If monomial has rows of all zeros, remove them.
@@ -304,17 +299,17 @@ def remove_zeros(mon: np.ndarray
     -------
     np.ndarray
         The monomial without rows of all zeros.
-    """    
+    """
 
     return mon[mon[:, 0] != 0]
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def commuting(letter1: np.array,
               letter2: np.array
               ) -> bool_:
-    """Determine if two letters/operators commute. 
-    
+    """Determine if two letters/operators commute.
+
     TODO accept arbitrary commutation rules.
     Currently this only takes into accounts commutation coming of inflation
 
@@ -331,15 +326,15 @@ def commuting(letter1: np.array,
         If they commute or not.
 
     Examples
-    --------    
+    --------
     A^11_00 commutes with A^22_00
-    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0])) 
+    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
     True
 
     A^11_00 does not commute with A^12_00 as they overlap on source 1.
-    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0])) 
+    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
-    """    
+    """
 
     if letter1[0] != letter2[0]:
         # if exactly same support and input, but then different outputs,
@@ -359,7 +354,7 @@ def commuting(letter1: np.array,
     return True if np.all(inf1-inf2) else False
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     """Compares two letters/measurement operators lexicographically.
 
@@ -374,7 +369,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     -------
     bool_
         True if A is less than B.
-    """    
+    """
     # if A.size == 0:
     #     return True
     # if B.size == 0:
@@ -392,7 +387,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     return True
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def mon_lessthan_mon(mon1: np.ndarray,
                      mon2: np.ndarray
                      ) -> bool_:
@@ -418,10 +413,10 @@ def mon_lessthan_mon(mon1: np.ndarray,
     return A_lessthan_B(mon1.flatten(), mon2.flatten())
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
-    """Apply substitutions to a monomial. 
-    
+    """Apply substitutions to a monomial.
+
     Currently it only supports commutations arising from operators having
     completely different support. It goes in a loop applying the substitutions
     until it reaches a fixed point, if it finds two letters that commute and
@@ -438,7 +433,7 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     -------
     np.ndarray
         Simplified input monomial.
-    """    
+    """
 
     if mon_in.shape[0] == 1:
         return mon_in
@@ -455,7 +450,7 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     return mon
 
 
-@numba.jit(nopython=True, cache=cache)
+@jit(nopython=True, cache=cache)
 def to_canonical(mon: np.ndarray) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
 
@@ -469,7 +464,7 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
     np.ndarray
         Monomial in canonical form w.r.t some lexicographic
         ordering.
-    """    
+    """
 
     prev = mon
     while True:
@@ -484,8 +479,8 @@ def calculate_momentmatrix(cols: List,
                            names: np.ndarray,
                            verbose: int = 0
                            ) -> Tuple[np.ndarray, Dict]:
-    """Calculate the moment matrix. 
-    
+    """Calculate the moment matrix.
+
     Takes as input the generating set {mon_i}_i encoded as a list of monomials.
     Each monomial is a matrix where each row is an operator and the columns
     specify the operator labels/indices. The moment matrix is the inner product
@@ -494,7 +489,7 @@ def calculate_momentmatrix(cols: List,
     stores the index of the monomial that is the result of the dot product
     mon_i^\dagger * mon_j after applying the substitutions. The program returns
     the moment matrix and the dictionary mapping each monomial in string
-    representation to its integer representation. 
+    representation to its integer representation.
 
     Parameters
     ----------
@@ -509,10 +504,10 @@ def calculate_momentmatrix(cols: List,
     -------
     Tuple[np.ndarray, Dict]
         The moment matrix, where each entry (i,j) stores the
-        integer representation of a monomial. The Dict is a 
+        integer representation of a monomial. The Dict is a
         mapping from string representation of monomial to integer
         representation.
-    """    
+    """
 
     nrcols = len(cols)
     vardic = {}
@@ -583,10 +578,10 @@ def calculate_momentmatrix_commuting(cols: np.ndarray,
     -------
     Tuple[np.ndarray, Dict]
         The moment matrix, where each entry (i,j) stores the
-        integer representation of a monomial. The Dict is a a 
+        integer representation of a monomial. The Dict is a a
         mapping from string representation of monomial to integer
         representation.
-    """    
+    """
     nrcols = len(cols)
 
     vardic = {}
