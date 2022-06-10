@@ -3,12 +3,8 @@ import os
 import sys
 from typing import Tuple
 
-import cvxpy as cp
-import mosek
 import numpy as np
-import picos
 import scipy.sparse
-from mosek.fusion import *  # Todo make so you don't import this if you dont use the mosek solver to reduce dependencies
 from scipy.io import loadmat
 from tqdm import tqdm
 
@@ -31,12 +27,17 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
                             pure_feasibility_problem: bool = False,
                             solverparameters: dict = {}):
 
+    import mosek
+    from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
+                             OptimizeError, SolutionError, \
+                             AccSolutionStatus, ProblemStatus
+
     semiknown_vars = np.array(semiknown_vars)
     positive_vars = np.array(positive_vars)
-    
+
     solve_dual = True
     if solverparameters:
-        solve_dual = True if 'solve_dual' not in solverparameters else solverparameters['solve_dual'] 
+        solve_dual = True if 'solve_dual' not in solverparameters else solverparameters['solve_dual']
 
     use_positive_vars = False
     if positive_vars.size > 0:
@@ -47,11 +48,11 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
     positionsmatrix = positionsmatrix.astype(np.uint16)
     if semiknown_vars.size > 0:
         # TODO find a more elegant way to do this?
-        # When using proportionality constraints, we might get an entry is 
+        # When using proportionality constraints, we might get an entry is
         # proportional to a variable that is not found at any other entry, thus
         # the total number of variables is not just the number of unknown entries
         # of the moment matrix.
-        # However, if no new variables are to be found, the index of the biggest 
+        # However, if no new variables are to be found, the index of the biggest
         # variable in semiknown_vars_array will be smaller than the maximum in all
         # the entries of positionsmatrix.
         nr_variables = max([int(np.max(semiknown_vars)), int(positionsmatrix.max())]) + 1
@@ -69,7 +70,7 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
     Fi = []
     for variable in range(nr_known, nr_variables):
         F = scipy.sparse.lil_matrix(positionsmatrix.shape)
-        F[scipy.sparse.find(positionsmatrix == variable)[:2]] = 1  # Set to 1 where the unknown variable is 
+        F[scipy.sparse.find(positionsmatrix == variable)[:2]] = 1  # Set to 1 where the unknown variable is
         #print(F.todense())
         #F = Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].todense().A[0])
         Fi.append(F)
@@ -81,7 +82,7 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
         x2 = semiknown_vars[:, 2].astype(int)
         for idx, variable in enumerate(range(nr_known, nr_variables)):
             if variable in x1:
-                Fi[x2[idx]-nr_known] = Fi[x2[idx]-nr_known] + k[idx] * Fi[x1[idx]-nr_known] 
+                Fi[x2[idx]-nr_known] = Fi[x2[idx]-nr_known] + k[idx] * Fi[x1[idx]-nr_known]
             else:
                 Fii.append(Fi[idx])
         Fi = Fii
@@ -130,7 +131,7 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
         if use_positive_vars:
             for i in positive_vars:
                 M.constraint(x.index(i), Domain.greaterThan(0))
-        
+
         #G = x.pick(positionsmatrix.astype(int).reshape((1,int(positionsmatrix.size)))).reshape([mat_dim, mat_dim])
         #G = Expr.reshape(x.pick(positionsmatrix.astype(int).flatten()),[mat_dim, mat_dim])
         #G = M.variable("G", Domain.unbounded([mat_dim, mat_dim]))
@@ -144,7 +145,7 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
         else:
             if objective:
                 c = np.zeros(nr_variables)
-                vars_in_obj = np.array(sorted(list(objective.keys())), dtype=int)  
+                vars_in_obj = np.array(sorted(list(objective.keys())), dtype=int)
                 for var in vars_in_obj:
                     c[var] = float(objective[var])
                 M.objective(ObjectiveSense.Maximize, Expr.dot(c, x))
@@ -171,7 +172,7 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
 
         M.acceptedSolutionStatus(AccSolutionStatus.Anything)
         M.solve()
-        
+
         status = M.getProblemStatus()
         if status == ProblemStatus.PrimalAndDualFeasible:
             if solve_dual:
@@ -223,7 +224,7 @@ def solveSDP_MosekFUSION(   positionsmatrix: scipy.sparse.lil_matrix, objective:
         if primal >= INFEASIBILITY_THRESHOLD:
             coeffs = coeffs*0  # Certificates are meaningless here
         if primal < INFEASIBILITY_THRESHOLD:
-            coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is  
+            coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is
     vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs, 'Z': ymat, 'xi': xi_list}
     return vars_of_interest, primal
 
@@ -233,6 +234,9 @@ def solveSDP_CVXPY(positionsmatrix, objective,
                     pure_feasibility_problem: bool = False,
                     verbose: int = 0,
                     solverparameters: dict = {}):
+
+    import cvxpy as cp
+
     if pure_feasibility_problem:
         if verbose > 0:
             Warning("Cannot get infeasibility certificates in CVXPY. Suggestion for "+
@@ -263,12 +267,12 @@ def solveSDP_CVXPY(positionsmatrix, objective,
     # but then we have two reserved variables for 0 and 1
     if np.array(semiknown_vars).size > 0:
         # TODO find a more elegant way to do this?
-        # When using proportionality constraints, we might get an entry is 
+        # When using proportionality constraints, we might get an entry is
         # proportional to a variable that is not found at any other entry, thus
         # the total number of variables is not just the number of unknown entries
         # of the moment matrix.
 
-        # However, if no new variables are to be found, the index of the biggest 
+        # However, if no new variables are to be found, the index of the biggest
         # variable in semiknown_vars_array will be smaller than the maximum in all
         # the entries of positionsmatrix.
         nr_variables = max([int(np.max(semiknown_vars)), int(np.max(positionsmatrix))]) + 1
@@ -362,16 +366,19 @@ def solveSDP_PICOS(positionsmatrix, objective, known_vars=[0, 1], semiknown_vars
     Solves an SDP and returns the solution object and the optimum objective. Takes as input the filename for a .mat file
     with the different variables that are needed.
     """
+
+    import picos
+
     # The +1 is because positionsmatrix starts counting from 0,
     # but then we have two reserved variables for 0 and 1
     if np.array(semiknown_vars).size > 0:
         # TODO find a more elegant way to do this?
-        # When using proportionality constraints, we might get an entry is 
+        # When using proportionality constraints, we might get an entry is
         # proportional to a variable that is not found at any other entry, thus
         # the total number of variables is not just the number of unknown entries
         # of the moment matrix.
 
-        # However, if no new variables are to be found, the index of the biggest 
+        # However, if no new variables are to be found, the index of the biggest
         # variable in semiknown_vars_array will be smaller than the maximum in all
         # the entries of positionsmatrix.
         nr_variables = max([int(np.max(semiknown_vars)), int(np.max(positionsmatrix))]) + 1
@@ -394,7 +401,7 @@ def solveSDP_PICOS(positionsmatrix, objective, known_vars=[0, 1], semiknown_vars
 
     #x = cp.Variable(nr_unknown)
     x = picos.RealVariable("x", nr_unknown)
-    
+
     G = F0
     for i in range(len(Fi)):
         G = G + x[i] * Fi[i]
