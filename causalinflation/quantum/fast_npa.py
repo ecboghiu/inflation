@@ -620,14 +620,14 @@ def calculate_momentmatrix_commuting(cols: np.ndarray,
     return momentmatrix, vardic
 
 
-def export_to_file_numba(momentmatrix, monomials_list, filename_label,
+def export_to_file_numba(momentmatrix, monomials_list,
                          verbose: int = 0) -> None:
     """
      TODO WARNING: BUGGY!!
     """
     block_idx = 1  # TODO accept any block structure
-    filename_momentmatrix = 'momentmatrix+' + filename_label + '.dat-s'
-    filename_monomials = 'monomials' + filename_label + '.txt'
+    filename_momentmatrix = 'debug_momentmatrix.dat-s'
+    filename_monomials = 'debug_monomials.txt'
     with open(filename_momentmatrix, 'w') as f:
         nrvars = np.max(monomials_list[:, 0].astype(int))
         f.write("file "+filename_momentmatrix +
