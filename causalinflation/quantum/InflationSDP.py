@@ -199,7 +199,7 @@ class InflationSDP(object):
         """
 
         self.use_numba = use_numba
-        self.use_lpi_constraints = True
+        self.use_lpi_constraints = False
 
         # Process the column_specification input and store the result
         #  in self.generating_monomials.
@@ -371,7 +371,7 @@ class InflationSDP(object):
         self.semiknown_moments = np.array([])
         self._objective_as_dict = {1: 0.}
 
-    def set_distribution(self, p: np.ndarray, use_lpi_constraints: bool = True) -> None:
+    def set_distribution(self, p: np.ndarray, use_lpi_constraints: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified, p. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
@@ -379,11 +379,15 @@ class InflationSDP(object):
         elements that are either None or nan, then this is understood as leaving
         the corresponding variable free in the SDP approximation.
         Args:
-            p (np.ndarray, optional): Multidimensional array encoding the probability vector,
+            p (np.ndarray): Multidimensional array encoding the probability vector,
             which is called as p[a,b,c,...,x,y,z,...] where a,b,c,... are outputs
             and x,y,z,... are inputs. Note: even if the inputs have cadinality 1,
             they must still be specified, and the corresponding axis dimensions are 1
             respectively.
+
+            use_lpi_constraints (bool): Specification whether linearized
+            polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
+            will be imposed or not.
         """
         _pdims = len(list(p.shape))
         assert _pdims % 2 == 0, "The probability distribution must have equal number of inputs and outputs"
@@ -461,7 +465,7 @@ class InflationSDP(object):
             self.maximize = False
 
         self.objective = objective
-        # self.use_lpi_constraints = False
+
         if extraobjexpr:
             self.extraobjexpr = extraobjexpr  # TODO process this
 
