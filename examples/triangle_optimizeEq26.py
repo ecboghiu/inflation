@@ -62,7 +62,6 @@ if __name__ == '__main__':  # Necessary for parallel computation, used in ncpol2
                                 find_physical_monomials=True,
                                 sandwich_positivity=True,
                                 parallel=False,
-                                load_from_file=False,
                                 use_numba=True)
 
 
