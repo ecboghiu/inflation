@@ -94,10 +94,17 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     mat_dim = positionsmatrix.shape[0]
 
+    constant_objective = False
+    if list(objective.keys()) == [1]: # If there are only constants in the objective, treat it as a feasibility problem!
+        constant_objective = True
+        if verbose > 1:
+            print('Constant objective detected! Treating the problem as ' +
+                  'a feasibility problem.')
+
     M = Model('InfSDP')
     if solve_dual:
         Z = M.variable("Z", Domain.inPSDCone(mat_dim))
-        if objective:
+        if not constant_objective:
             ci_constraints = []
             M.objective(ObjectiveSense.Minimize, Expr.add(float(objective[1]), Expr.dot(Z, F0)))
             for i, F in enumerate(Fi):
@@ -141,7 +148,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 for j in range(i, mat_dim):
                     M.constraint(Expr.sub(G.index(i,j), x.index(int(positionsmatrix[i,j]))), Domain.equalsTo(0))
         else:
-            if objective:
+            if not constant_objective:
                 c = np.zeros(nr_variables)
                 vars_in_obj = np.array(sorted(list(objective.keys())), dtype=int)
                 for var in vars_in_obj:

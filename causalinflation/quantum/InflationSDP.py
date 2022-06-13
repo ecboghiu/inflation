@@ -355,7 +355,7 @@ class InflationSDP(object):
 
         # Define empty arrays for conditional statement if the problem is called
         # before calling .set_distribution()
-        self.known_moments = np.array([])
+        self.known_moments = np.array([0, 1])
         self.semiknown_moments = np.array([])
         self._objective_as_dict = {1: 0.}
 
@@ -533,8 +533,7 @@ class InflationSDP(object):
                             "Call 'InflationSDP.get_relaxation(...)' first")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
-        known_moments = self.known_moments if not self._objective_as_dict else [
-            0, 1]
+        known_moments = self.known_moments
 
         solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
