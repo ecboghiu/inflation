@@ -17,12 +17,12 @@ import itertools
 
 import numpy as np
 from causalinflation.InflationProblem import InflationProblem
-from causalinflation.InflationSDP import InflationSDP
+from causalinflation.quantum.InflationSDP import InflationSDP
 from causalinflation.useful_distributions import P_GHZ, P_W_array
 import sympy as sp
 
-from causalinflation.general_tools import to_numbers
-from causalinflation.fast_npa import calculate_momentmatrix, to_name
+from causalinflation.quantum.general_tools import to_numbers
+from causalinflation.quantum.fast_npa import calculate_momentmatrix, to_name
 
 if __name__ == '__main__':  # Necessary for parallel computation, used in ncpol2sdpa
     outcomes_per_party = [2, 2, 2]
@@ -56,13 +56,7 @@ if __name__ == '__main__':  # Necessary for parallel computation, used in ncpol2
 
     filename_label = 'eq26'
     col_specification = [[], [0], [2], [0, 0], [0, 1], [1, 1], [0, 2], [2, 2], [1, 2], [0, 1, 2]]
-    InfSDP.generate_relaxation( column_specification='local1',#col_specification,#cols_num,#'physical', # col_specification,
-                                #max_monomial_length = 4,
-                                filename_label=filename_label,
-                                find_physical_monomials=True,
-                                sandwich_positivity=True,
-                                parallel=False,
-                                use_numba=True)
+    InfSDP.generate_relaxation( column_specification='local1')
 
 
     p_W = P_W_array(visibility=1.0)
@@ -100,4 +94,4 @@ if __name__ == '__main__':  # Necessary for parallel computation, used in ncpol2
 
     InfSDP.solve(interpreter="MOSEKFusion")
 
-    print(InfSDP.primal_objective)
+    print(InfSDP.objective_value)

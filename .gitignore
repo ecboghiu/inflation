@@ -153,6 +153,7 @@ test/test_data
 test/arena.py
 test/monomials.txt
 monomials.txt
+debug_monomials.txt
 solv_alex.m
 result_matlab.txt
 matlab_primal_dual.m
