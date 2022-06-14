@@ -16,8 +16,7 @@ sys.path.append(cws)
 import itertools
 
 import numpy as np
-from causalinflation.InflationProblem import InflationProblem
-from causalinflation.InflationSDP import InflationSDP
+from causalinflation import InflationProblem, InflationSDP
 from causalinflation.useful_distributions import P_GHZ, P_W_array
 import sympy as sp
 
