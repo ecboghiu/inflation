@@ -1,6 +1,8 @@
-from causalinflation.InflationProblem import InflationProblem
-from causalinflation.quantum.InflationSDP import InflationSDP
 from causalinflation.useful_distributions import P_W_array
+from causalinflation import InflationSDP, InflationProblem
+import numpy as np
+
+###############################################################################
 
 
 InfProb = InflationProblem(dag={"h2": ["v1", "v2"],
