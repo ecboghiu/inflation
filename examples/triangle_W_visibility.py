@@ -36,7 +36,7 @@ while abs(v1 - v0) >= tol_vis and iteration < 20:
     elif InfSDP.primal_objective < 0:
         v1 = vm
         vm = (v0 + v1)/2
-        certificate = InfSDP.dual_certificate_as_symbols_probs
+        certificate = InfSDP.certificate_as_probs()
     if abs(InfSDP.primal_objective) <= 1e-7:
         break
 
