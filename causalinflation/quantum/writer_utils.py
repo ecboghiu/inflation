@@ -198,52 +198,6 @@ def write_to_sdpa(problem, filename):
     file_.close()
 
 
-def export_to_MATLAB(final_monomials_list: np.ndarray,
-                     symmetric_arr: np.ndarray,
-                     matlab_filename: str,
-                     n_known: int,
-                     n_something_known: int,
-                     use_semiknown: bool = False,) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Dict]:
-    """
-    Writes in a .mat file various variables of interest passed as input.
-
-    Returns the same variables plus one more for debugging.
-    TODO: make this not return anything as it doesn't make sense. Change whatever depends on the output from this function.
-    """
-    # Variables 0 and 1 are reserved for the numerical values 0 and 1, respectively
-    variable_dict = {**{0: 0, 1: 1},
-                     **{init: fin for init, fin in zip(final_monomials_list[:, 0],
-                                                       range(2, len(final_monomials_list) + 2))}}
-    # Transform the indices of the monomial list to the new variables
-    for idx in range(len(final_monomials_list)):
-        final_monomials_list[idx][0] = variable_dict[final_monomials_list[idx][0]]
-        # And those in the semiknowns too
-        if isinstance(final_monomials_list[idx][1][-1], int):  ## !! Careful
-            final_monomials_list[idx][1][-1] = variable_dict[final_monomials_list[idx][1][-1]]
-
-    positions_matrix = symmetric_arr[:, :, 0].astype(int)
-    final_positions_matrix = positions_matrix.copy()
-    for i, row in enumerate(final_positions_matrix):
-        for j, col in enumerate(row):
-            final_positions_matrix[i, j] = variable_dict[col]
-
-    # MATLAB does not like 0s, so we shift all by 1
-    final_positions_matrix += 1
-    known_moments = [0, 1] + [np.prod(factors) for _, factors in final_monomials_list[:n_known]]
-    # The indices for the variables in the semiknowns also need shifting
-    semiknown_moments = []
-    if use_semiknown:
-        semiknown_moments = [[var + 1, np.prod(val[:-1]), val[-1] + 1]
-                         for var, val in final_monomials_list[n_known:n_something_known]]
-
-    savemat(matlab_filename,
-            mdict={'G': final_positions_matrix,
-                   'known_moments': known_moments,
-                   'propto': semiknown_moments
-                   }
-            )
-    return final_positions_matrix, known_moments, semiknown_moments, variable_dict
-
 def pickle_load(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)

@@ -27,10 +27,8 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             Symbolic)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        calculate_momentmatrix_commuting,
-                                       export_to_file_numba,
                                        to_canonical)
-from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
-                                        solveSDP_CVXPY, extract_from_ncpol,
+from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION, extract_from_ncpol,
                                         read_problem_from_file)
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                            write_to_sdpa)
@@ -87,9 +85,6 @@ class InflationSDP(object):
     def generate_relaxation(self,
                             column_specification:
                         Union[str, List[List[int]], List[Symbolic]] = 'npa1',
-                            max_monomial_length: int = 0,
-                            parallel: bool = False,
-                            sandwich_positivity: bool = True,
                             use_numba: bool = True
                             ) -> None:
         """Creates the SDP relaxation of the quantum inflation problem
@@ -162,13 +157,6 @@ class InflationSDP(object):
             operators in `self.measurements`. This list needs to have the
             identity `sympy.S.One` as the first element.
 
-        max_monomial_length : int, optional
-            Maximum number of letters in a monomial in the generating set,
-            by default 0 (no limit). Example: if we choose 'local1' for 3
-            parties, this gives the set {1, A, B, C, A*B, A*C, B*C, A*B*C}.
-            If we set max_monomial_length=2, we remove all terms with more
-            than 2 letters, and the generating set becomes:
-            {1, A, B, C, A*B, A*C, B*C}.
         parallel : bool, optional
             Whether to use multiple cpus, only works with ncpol2sdpa,
             i.e., with `use_numba=False`. Note that usually Numba is faster
@@ -191,16 +179,16 @@ class InflationSDP(object):
 
         # Process the column_specification input and store the result
         #  in self.generating_monomials.
-        self.build_columns(column_specification,
-                           max_monomial_length=max_monomial_length)
+        self.generating_monomials_sym, self.generating_monomials = \
+                        self.build_columns(column_specification,
+                            max_monomial_length=0,
+                            return_columns_numerical=True)
 
         if self.verbose > 0:
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
-        problem_arr, monomials_list = self._build_momentmatrix(
-                                                parallel=parallel,
-                                                use_numba=use_numba)
+        problem_arr, monomials_list = self._build_momentmatrix()
         self._monomials_list_all = monomials_list
 
         # Calculate the inflation symmetries.
@@ -766,7 +754,8 @@ class InflationSDP(object):
         elif extension == 'mat':
             write_to_mat(self, filename)
 
-    def build_columns(self, column_specification, max_monomial_length=0) -> None:
+    def build_columns(self, column_specification, max_monomial_length=0,
+                      return_columns_numerical = True) -> None:
         """Process the input for the columns of the SDP relaxation.
 
         Parameters
@@ -774,25 +763,31 @@ class InflationSDP(object):
         column_specification : Union[str, List[List[int]], List[Symbolic]]
             See description in the self.generate_relaxation()` method.
         max_monomial_length : int, optional
-            See description in the self.generate_relaxation()` method,
-            by default 0 (unbounded).
+            Maximum number of letters in a monomial in the generating set,
+            by default 0 (no limit). Example: if we choose 'local1' for 3
+            parties, this gives the set {1, A, B, C, A*B, A*C, B*C, A*B*C}.
+            If we set max_monomial_length=2, we remove all terms with more
+            than 2 letters, and the generating set becomes:
+            {1, A, B, C, A*B, A*C, B*C}.
         """
+
+        symbolic_types = [sp.core.symbol.Symbol, sp.core.numbers.One,
+                          sp.core.power.Pow, sp.core.mul.Mul]
+
+        columns = None
         if type(column_specification) == list:
-            strtype = str(type(column_specification))
-            if len(strtype) > 8 and strtype[:8] == "<class 'sympy":
-                self.generating_monomials = []
+            #strtype = str(type(column_specification[1]))
+            #if len(strtype) > 8 and strtype[:8] == "<class 'sympy":
+            if type(column_specification[1]) in symbolic_types:
+                columns = []
                 for col in column_specification:
-                    if col == sp.S.One:
-                        self.generating_monomials += [[]]
+                    if col == sp.S.One or col == 1:
+                        columns += [[]]
                     else:
-                        self.generating_monomials += [
-                            to_numbers(str(col), self.names)]
+                        columns += [to_numbers(str(col), self.names)]
 
-            # == 1+2+self.InflationProblem.nr_sources:
             elif len(np.array(column_specification[1]).shape) > 1:
-                self.generating_monomials = column_specification
-
-
+                columns = column_specification
             else:
                 if max_monomial_length > 0:
                     to_remove = []
@@ -806,7 +801,7 @@ class InflationSDP(object):
                 else:
                     col_specs = column_specification
 
-                self._build_cols_from_col_specs(col_specs)
+                columns = self._build_cols_from_col_specs(col_specs)
 
 
         elif type(column_specification) == str:
@@ -820,7 +815,7 @@ class InflationSDP(object):
                         if np.all(a[:-1] <= a[1:]):
                             # if tuple in increasing order from left to right
                             col_specs += [a.tolist()]
-                self._build_cols_from_col_specs(col_specs)
+                columns = self._build_cols_from_col_specs(col_specs)
 
 
             elif 'local' in column_specification.lower():
@@ -841,7 +836,7 @@ class InflationSDP(object):
                         lst += [party]*pfreq[party]
                     col_specs += [lst]
 
-                self._build_cols_from_col_specs(col_specs)
+                columns = self._build_cols_from_col_specs(col_specs)
 
 
             elif 'physical' in column_specification.lower():
@@ -904,8 +899,8 @@ class InflationSDP(object):
 
                             physical_monomials.append(concatenated.tolist())
 
-                self.generating_monomials = physical_monomials
-
+                #self.generating_monomials = physical_monomials
+                columns = physical_monomials
             else:
                 raise Exception('I have not understood the format of the '
                                 + 'column specification')
@@ -913,11 +908,17 @@ class InflationSDP(object):
             raise Exception('I have not understood the format of the '
                             + 'column specification')
 
-        self.generating_monomials_sym = \
-                from_coord_to_sym(self.generating_monomials,
-                                    self.names,
-                                    self.InflationProblem.nr_sources,
-                                    self.measurements)
+        columns_symbolical = from_coord_to_sym(columns,
+                                            self.names,
+                                            self.InflationProblem.nr_sources,
+                                            self.measurements)
+
+        if return_columns_numerical:
+            return columns_symbolical, columns
+        else:
+            return columns_symbolical
+
+        
 
     def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
         """his builds the generating set for the moment matrix taking as input
@@ -990,7 +991,8 @@ class InflationSDP(object):
                                     coords.append(*to_numbers(factor, self.names))
                             res.append(coords)
 
-            self.generating_monomials = sorted(res, key=len)
+            #self.generating_monomials = sorted(res, key=len)
+            return sorted(res, key=len)
 
     def _generate_parties(self):
         # TODO: change name to generate_measurements
@@ -1109,9 +1111,7 @@ class InflationSDP(object):
 
         return measurements, substitutions, parties
 
-    def _build_momentmatrix(self, parallel: bool=False,
-                                  use_numba: bool=True
-                            ) -> None:
+    def _build_momentmatrix(self) -> None:
         """Generate the moment matrix or load it from file if it is already calculated.
 
         Parameters
@@ -1123,55 +1123,32 @@ class InflationSDP(object):
             Whether to use JIT functions through numba to calculate
             the moment matrix. Defaults to True.
         """
-
-        if use_numba:
-            _cols = [np.array(col, dtype=np.uint8)
-                     for col in self.generating_monomials]
-            if not self.commuting:
-                problem_arr, vardic = \
-                                calculate_momentmatrix(_cols,
+        
+        _cols = [np.array(col, dtype=np.uint8)
+                    for col in self.generating_monomials]
+        if not self.commuting:
+            problem_arr, vardic = \
+                            calculate_momentmatrix(_cols,
+                                                np.array(self.names),
+                                                verbose=self.verbose)
+        else:
+            problem_arr, vardic = \
+                            calculate_momentmatrix_commuting(_cols,
                                                     np.array(self.names),
                                                     verbose=self.verbose)
-            else:
-                problem_arr, vardic = \
-                             calculate_momentmatrix_commuting(_cols,
-                                                     np.array(self.names),
-                                                     verbose=self.verbose)
 
-            # Remove duplicates in vardic that have the same index
-            vardic_clean = {}
-            for k, v in vardic.items():
-                if v not in vardic_clean:
-                    vardic_clean[v] = k
-            monomials_list = np.array(
-                list(vardic_clean.items()), dtype=str).astype(object)
-            monomials_list = monomials_list[1:]  # Remove the '1': ' ' row
+        # Remove duplicates in vardic that have the same index
+        vardic_clean = {}
+        for k, v in vardic.items():
+            if v not in vardic_clean:
+                vardic_clean[v] = k
+        monomials_list = np.array(
+            list(vardic_clean.items()), dtype=str).astype(object)
+        monomials_list = monomials_list[1:]  # Remove the '1': ' ' row
 
-            if self.verbose >= 2:
-                export_to_file_numba(problem_arr, monomials_list)
-            # TODO change from dense to sparse !! Else useless, but this requires adapting code
-            problem_arr = problem_arr.todense()
-        else:
-            time0 = time()
-            sdp = SdpRelaxation(flatten(self.measurements),
-                                verbose=self.verbose, parallel=parallel)
-            sdp.get_relaxation(level=-1,
-                               extramonomials=self.generating_monomials_sym,
-                               substitutions=self.substitutions)
+        # TODO change from dense to sparse !! Else useless, but this requires adapting code
+        problem_arr = problem_arr.todense()
 
-            if self.verbose >= 1:
-                print("SDP relaxation was generated in " +
-                      str(time() - time0) + " seconds.")
-                if self.verbose >= 2:
-                    print("Saving as '" + filename_momentmatrix +
-                          "' and '" + filename_monomials + "'")
-                print("")
-            sdp.write_to_file('debug_momentmatrix.dat-s')
-            sdp.save_monomial_index('debug_monomials.txt')
-
-            problem_arr, _, monomials_list = extract_from_ncpol(sdp,
-                                                                self.verbose)
-        # monomials_list[:, 0] = monomials_list[:, 0].astype(int)  # TODO: make it work with int
         return problem_arr, monomials_list
 
     def _calculate_inflation_symmetries(self) -> List[List]:
