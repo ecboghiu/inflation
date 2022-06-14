@@ -38,11 +38,14 @@ while abs(v1 - v0) >= tol_vis and iteration < 20:
     elif InfSDP.primal_objective < 0:
         v1 = vm
         vm = (v0 + v1)/2
-        certificate = InfSDP.certificate_as_probs()
+        certificate1 = InfSDP.certificate_as_probs(clean=True)
+        certificate2 = InfSDP.certificate_as_objective(clean=False)
+        certificate4 = InfSDP.certificate_as_2output_correlators(clean=True)
     if abs(InfSDP.primal_objective) <= 1e-7:
         break
 
 print("Final values and last valid certificate:")
 print("max(min eigval):", "{:10.4g}".format(
     InfSDP.primal_objective), "\tvm =", iteration, "{:10.4g}".format(vm))
-print(certificate, "≥", 0)
+print(certificate1, "≥", 0)
+print(certificate2, certificate4)
