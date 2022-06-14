@@ -1,22 +1,6 @@
-import os
-import sys
-# Locate the script in UnifiedInflation/examples and add to path one folder before, that is, UnifiedInflation/
-# in order to be able to import quantuminflation
-# ! Note: I found online that "__file__" sometimes can be problematic, So I'm using the solution provided in
-# https://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python?lq=1
-from inspect import getsourcefile
-from os.path import abspath
-cws = abspath(getsourcefile(lambda: 0))
-# Remove the script filename to get the directory of the script
-cws = os.sep.join(cws.split(os.sep)[:-1])
-# Go one folder above UnifiedInflation/examples -> UnifiedInflation/
-cws = cws + os.sep + os.pardir
-sys.path.append(cws)
-
 from causalinflation.useful_distributions import (P_GHZ_array, P_Mermin_array,
                                                    P_W_array, P_CHSH_array)
-from causalinflation.quantum.InflationSDP import InflationSDP
-from causalinflation.InflationProblem import InflationProblem
+from causalinflation import InflationSDP, InflationProblem
 import numpy as np
 
 ###############################################################################

@@ -15,11 +15,10 @@ sys.path.append(cws)
 ################################################################################
 
 import numpy as np
-from causalinflation.InflationProblem import InflationProblem
-from causalinflation.InflationSDP import InflationSDP
 from causalinflation.useful_distributions import (P_2PR_array, P_CHSH_array,
                                                    P_GHZ_array, P_Mermin_array,
                                                    P_W_array)
+from causalinflation import InflationProblem, InflationSDP
 
 InfProb = InflationProblem( dag={"h1": ["v1", "v2"],
                                  "h2": ["v2", "v3"]},
