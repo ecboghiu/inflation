@@ -311,7 +311,7 @@ class InflationSDP(object):
         # Now find all the positive monomials
         # TODO add also known monomials to physical_monomials
         self.physical_monomials = self._find_positive_monomials(
-            monomials_factors_names, sandwich_positivity=sandwich_positivity)
+            monomials_factors_names, sandwich_positivity=True)
         # if not find_physical_monomials:
         #     self.physical_monomials = np.array([])
 
@@ -531,13 +531,10 @@ class InflationSDP(object):
                               "pure_feasibility_problem": pure_feasibility_problem,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
-        if interpreter == 'CVXPY':
-            sol, lambdaval = solveSDP_CVXPY(**solveSDP_arguments)
-        elif interpreter == 'MOSEKFusion':
-            sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
-        else:
-            warn("Interpreter not found/implemented, using MOSEKFusion.")
-            sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
+
+
+        sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
+
 
         self.primal_objective = lambdaval
         self.solution_object = sol
@@ -556,10 +553,131 @@ class InflationSDP(object):
         clean_names = np.concatenate((aux01, names[:, 1]))
         self.dual_certificate = np.array(
             [[coeffs[i], clean_names[i]] for i in range(coeffs.shape[0])], dtype=object)
+        
         self.dual_certificate_lowerbound = 0
-        self.process_certificate(as_symbols_correlators=True if all(
-                         [o == 2 for o in self.InflationProblem.outcomes_per_party]) 
-                                                            else False)
+
+    def certificate_as_probs(self, normalize: bool=False, chop_tol: float=1e-10,
+                                    round_decimals: int=3):
+        "Give certificate as symbolic product of probabilities"
+        coeffs = self.dual_certificate[:, 0].astype(float)
+        names = self.dual_certificate[:, 1]
+        # C: why did I write this??
+        # names can still contain duplicated names, so we need to remove them
+        # new_dual_certificate = {tuple(name): 0 for name in names}
+        # for i, name in enumerate(names):
+        #     new_dual_certificate[tuple(name)] += coeffs[i]
+        # coeffs = np.array(list(new_dual_certificate.values()))
+        # names = list(new_dual_certificate.keys())
+
+        if normalize and not np.allclose(coeffs, 0):
+            # Set to zero very small coefficients
+            coeffs[np.abs(coeffs) < chop_tol] = 0
+            # Take the smallest one and make it 1
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
+            # Round
+            coeffs = np.round(coeffs, decimals=round_decimals)
+
+        polynomial = 0
+        for i, row in enumerate(names):
+            asprobs = [string2prob(
+                term, self.InflationProblem.nr_parties) for term in row]
+            monomial = sp.S.One
+            for prob in asprobs:
+                monomial *= prob
+            monomial *= coeffs[i]
+            polynomial += monomial
+        return polynomial
+
+    def certificate_as_objective(self):
+        coeffs = self.dual_certificate[:, 0]
+        names = self.dual_certificate[:, 1]
+        polynomial = 0
+        for i, row in enumerate(names):
+            monomial = sp.S.One
+            for name in row:
+                if name == '1':
+                    monomial = sp.S.One
+                elif name == '0':
+                    monomial = sp.S.Zero
+                else:
+                    letters = name.split('*')
+                    for letter in letters:
+                        op = sp.Symbol(letter, commutative=False)
+                        monomial *= op
+            monomial *= coeffs[i]
+            polynomial += monomial
+        return polynomial
+
+    def certificate_as_2output_correlators(self):
+        coeffs = self.dual_certificate[:, 0]
+        names = self.dual_certificate[:, 1]
+        if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
+            raise Exception("Correlator certificates are only available " +
+                            "for 2-output problems")
+
+        polynomial = 0
+        for i, row in enumerate(names):
+            poly1 = sp.S.One
+            if row[0] != '1' and row[0] != '0':
+                for name in row:
+                    factors = name.split('*')
+                    #correlator = '\langle '
+
+                    aux_prod = sp.S.One
+                    for factor_name in factors:
+                        simbolo = sp.Symbol(factor_name[0]+'_{'+factor_name[-3]+'}', commuting=True)
+                        projector = sp.Rational(1, 2)*(sp.S.One - simbolo)
+                        aux_prod *= projector
+                    aux_prod = sp.expand(aux_prod)
+                    # Now take products and make them a single variable to make them 'sticking togetther' easier
+                    suma = 0
+                    for var, coeff in aux_prod.as_coefficients_dict().items():
+                        if var == sp.S.One:
+                            expected_value = sp.S.One
+                        else:
+                            if str(var)[-3:-1] == '**':
+                                base, exp = var.as_base_exp()
+                                auxname = '<' + ''.join(str(base).split('*')) + '>'
+                                auxname = '\langle ' + ''.join(str(base).split('*')) + ' \\rangle'
+                                base = sp.Symbol(auxname, commutative=True)
+                                expected_value = base ** exp
+                            else:
+                                auxname = '<'+ ''.join(str(var).split('*')) + '>'
+                                auxname = '\langle ' + ' '.join(str(var).split('*')) + ' \\rangle'
+                                expected_value = sp.Symbol(auxname, commutative=True)
+                        suma += coeff*expected_value
+                    poly1 *= suma
+                else:
+                    if row[0] == '1':
+                        poly1 = sp.S.One
+                    elif row[0] == '0':
+                        poly1 = sp.S.Zero
+            polynomial += coeffs[i]*poly1
+
+        return sp.expand(polynomial)
+
+    def certificate_as_operators(self):
+        coeffs = self.dual_certificate[:, 0]
+        names = self.dual_certificate[:, 1]        
+
+        polynomial = 0
+        for i, row in enumerate(names):
+            monomial = sp.S.One
+            for name in row:
+                if name == '1':
+                    monomial = sp.S.One
+                elif name == '0':
+                    monomial = sp.S.Zero
+                else:
+                    letters = name.split('*')
+                    for letter in letters:
+                        # Omitting the inflation indices!
+                        label = letter[0] + '_' + letter[-3:]
+                        op = sp.Symbol(label, commutative=False)
+                        monomial *= op
+            monomial *= coeffs[i]
+            polynomial += monomial
+        return polynomial
 
     def process_certificate(self,  as_symbols_probs: bool=True,
                             as_objective_function: bool=True,
@@ -578,7 +696,7 @@ class InflationSDP(object):
         Parameters
         ----------
         as_symbols_probs : bool, optional
-            Give certificate as symbolic product of probabilities,
+            ,
             stored in self.dual_certificate_as_symbols_operators.
             Defaults to True.
         as_objective_function : bool, optional
@@ -607,77 +725,9 @@ class InflationSDP(object):
 
         """
 
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
-        # names can still contain duplicated names, so we need to remove them
 
-        new_dual_certificate = {tuple(name): 0 for name in names}
-        for i, name in enumerate(names):
-            new_dual_certificate[tuple(name)] += coeffs[i]
 
-        coeffs = np.array(list(new_dual_certificate.values()))
-        names = list(new_dual_certificate.keys())
 
-        if normalize_certificate and not np.allclose(coeffs, 0):
-            # Set to zero very small coefficients
-            coeffs[np.abs(coeffs) < chop_tol] = 0
-            # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
-            # Round to 5 decimal places
-            coeffs = np.round(coeffs, decimals=round_decimals)
-
-        self.dual_certificate_as_symbols_operators = None
-        if as_symbols_operators:
-            polynomial = 0
-            for i, row in enumerate(names):
-                monomial = sp.S.One
-                for name in row:
-                    if name == '1':
-                        monomial = sp.S.One
-                    elif name == '0':
-                        monomial = sp.S.Zero
-                    else:
-                        letters = name.split('*')
-                        for letter in letters:
-                            # Omitting the inflation indices!
-                            label = letter[0] + '_' + letter[-3:]
-                            op = sp.Symbol(label, commutative=False)
-                            monomial *= op
-                monomial *= coeffs[i]
-                polynomial += monomial
-            self.dual_certificate_as_symbols_operators = polynomial
-
-        self.dual_certificate_as_objective_function = None
-        if as_objective_function:
-            polynomial = 0
-            for i, row in enumerate(names):
-                monomial = sp.S.One
-                for name in row:
-                    if name == '1':
-                        monomial = sp.S.One
-                    elif name == '0':
-                        monomial = sp.S.Zero
-                    else:
-                        letters = name.split('*')
-                        for letter in letters:
-                            op = sp.Symbol(letter, commutative=False)
-                            monomial *= op
-                monomial *= coeffs[i]
-                polynomial += monomial
-            self.dual_certificate_as_objective_function = polynomial
-
-        self.dual_certificate_as_symbols_probs = None
-        if as_symbols_probs:
-            polynomial = 0
-            for i, row in enumerate(names):
-                asprobs = [string2prob(
-                    term, self.InflationProblem.nr_parties) for term in row]
-                monomial = sp.S.One
-                for prob in asprobs:
-                    monomial *= prob
-                monomial *= coeffs[i]
-                polynomial += monomial
-            self.dual_certificate_as_symbols_probs = polynomial
 
         self.dual_certificate_as_symbols_correlators = None
         if as_symbols_correlators:
@@ -1440,7 +1490,7 @@ class InflationSDP(object):
         return new_monomials_known, new_monomials_unknown
 
     def _find_positive_monomials(self, monomials_factors_names: np.ndarray,
-                                 sandwich_positivity=False):
+                                 sandwich_positivity=True):
         ispositive = np.empty_like(monomials_factors_names)
         ispositive[:, 0] = monomials_factors_names[:, 0]
         ispositive[:, 1] = False
