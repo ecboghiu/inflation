@@ -144,7 +144,6 @@ def generate_noncommuting_measurements(party: int,
                                                hermitian=True))
     return measurements
 
-
 def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
                       names: str,
                       n_sources: int,

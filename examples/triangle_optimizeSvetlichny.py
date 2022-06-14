@@ -34,10 +34,9 @@ InfProb = InflationProblem( dag={"h1": ["v1", "v2"],
 
 InfSDP = InflationSDP(InfProb, commuting=False, verbose = 2)
 
-InfSDP.build_columns('physical222', max_monomial_length=2)
-cols_S2 = InfSDP.generating_monomials
-InfSDP.build_columns('local1')
-cols_loc1 = InfSDP.generating_monomials
+_, cols_S2 = InfSDP.build_columns('physical222', max_monomial_length=2,
+                                  return_columns_numerical=True)
+_, cols_loc1 = InfSDP.build_columns('local1', return_columns_numerical=True)
 
 cols_S2_name = [to_name(np.array(m), InfProb.names) for m in cols_S2[1:]]
 cols_loc1_name = [to_name(np.array(m), InfProb.names) for m in cols_loc1[1:]]
