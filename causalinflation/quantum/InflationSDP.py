@@ -557,7 +557,7 @@ class InflationSDP(object):
         
         self.dual_certificate_lowerbound = 0
 
-    def certificate_as_probs(self, normalize: bool=False,
+    def certificate_as_probs(self, clean: bool=False,
                              chop_tol: float=1e-10,
                              round_decimals: int=3) -> Symbolic:
         """Give certificate as symbolic sum of probabilities that is greater
@@ -565,7 +565,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        normalize_certificate : bool, optional
+        clean : bool, optional
             If true, eliminate all coefficients that are smaller
             than 'chop_tol' and round to the number of decimals specified
             `round_decimals`. Defaults to True.
@@ -592,7 +592,7 @@ class InflationSDP(object):
         # coeffs = np.array(list(new_dual_certificate.values()))
         # names = list(new_dual_certificate.keys())
 
-        if normalize and not np.allclose(coeffs, 0):
+        if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
             # Take the smallest one and make it 1
@@ -611,7 +611,7 @@ class InflationSDP(object):
             polynomial += monomial
         return polynomial
 
-    def certificate_as_objective(self, normalize: bool=False,
+    def certificate_as_objective(self, clean: bool=False,
                                  chop_tol: float=1e-10,
                                  round_decimals: int=3) -> Symbolic:
         """Give certificate as symbolic sum of operators that can be used
@@ -619,10 +619,10 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        normalize_certificate : bool, optional
+        clean : bool, optional
             If true, eliminate all coefficients that are smaller
-            than 'chop_tol' and round to the number of decimals specified
-            `round_decimals`. Defaults to True.
+            than 'chop_tol', normalise and round to the number of decimals 
+            specified `round_decimals`. Defaults to True.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
             set to zero. Defaults to 1e-8.
@@ -635,9 +635,9 @@ class InflationSDP(object):
         Symbolic
             The certificate as an objective function.
         """        
-        coeffs = self.dual_certificate[:, 0]
+        coeffs = self.dual_certificate[:, 0].astype(float)
         names = self.dual_certificate[:, 1]
-        if normalize and not np.allclose(coeffs, 0):
+        if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
             # Take the smallest one and make it 1
@@ -661,7 +661,7 @@ class InflationSDP(object):
             polynomial += monomial
         return polynomial
 
-    def certificate_as_2output_correlators(self, normalize: bool=False,
+    def certificate_as_2output_correlators(self, clean: bool=False,
                                            chop_tol: float=1e-10,
                                            round_decimals: int=3) -> Symbolic:
         """Give certificate as symbolic sum of 2-output correlators that
@@ -669,10 +669,10 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        normalize_certificate : bool, optional
+        clean : bool, optional
             If true, eliminate all coefficients that are smaller
-            than 'chop_tol' and round to the number of decimals specified
-            `round_decimals`. Defaults to True.
+            than 'chop_tol', normalise and round to the number of decimals 
+            specified `round_decimals`. Defaults to True.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
             set to zero. Defaults to 1e-8.
@@ -686,12 +686,12 @@ class InflationSDP(object):
             The certificate in terms of correlators.
         """        
 
-        coeffs = self.dual_certificate[:, 0]
+        coeffs = self.dual_certificate[:, 0].astype(float)
         names = self.dual_certificate[:, 1]
         if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
             raise Exception("Correlator certificates are only available " +
                             "for 2-output problems")
-        if normalize and not np.allclose(coeffs, 0):
+        if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
             # Take the smallest one and make it 1
@@ -739,58 +739,6 @@ class InflationSDP(object):
             polynomial += coeffs[i]*poly1
 
         return sp.expand(polynomial)
-
-    def certificate_as_operators(self, normalize: bool=False,
-                                 chop_tol: float=1e-10,
-                                 round_decimals: int=3) -> Symbolic:
-        """Give certificate as symbolic sum of probabilities that is greater
-        than or equal to 0.
-
-        Parameters
-        ----------
-        normalize_certificate : bool, optional
-            If true, eliminate all coefficients that are smaller
-            than 'chop_tol' and round to the number of decimals specified
-            `round_decimals`. Defaults to True.
-        chop_tol : float, optional
-            Coefficients in the dual certificate smaller in absolute value are
-            set to zero. Defaults to 1e-8.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are rounded to the number
-            of decimals specified. Defaults to 3.
-
-        Returns
-        -------
-        Symbolic
-            The certificate in terms or probabilities and marginals.
-        """        
-        coeffs = self.dual_certificate[:, 0]
-        names = self.dual_certificate[:, 1]        
-        if normalize and not np.allclose(coeffs, 0):
-            # Set to zero very small coefficients
-            coeffs[np.abs(coeffs) < chop_tol] = 0
-            # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
-            # Round
-            coeffs = np.round(coeffs, decimals=round_decimals)
-        polynomial = 0
-        for i, row in enumerate(names):
-            monomial = sp.S.One
-            for name in row:
-                if name == '1':
-                    monomial = sp.S.One
-                elif name == '0':
-                    monomial = sp.S.Zero
-                else:
-                    letters = name.split('*')
-                    for letter in letters:
-                        # Omitting the inflation indices!
-                        label = letter[0] + '_' + letter[-3:]
-                        op = sp.Symbol(label, commutative=False)
-                        monomial *= op
-            monomial *= coeffs[i]
-            polynomial += monomial
-        return polynomial
 
 
     def write_to_file(self, filename: str):
