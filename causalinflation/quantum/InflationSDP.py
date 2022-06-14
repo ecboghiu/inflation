@@ -409,6 +409,7 @@ class InflationSDP(object):
         self.known_moments = np.array(
             [0, 1] + [mul(factors) for _, factors in final_monomials_list_numerical[:self._n_known]])
 
+
         # The indices for the variables in the semiknowns also need shifting
         self.semiknown_moments = []
         if self.use_lpi_constraints:
@@ -556,9 +557,31 @@ class InflationSDP(object):
         
         self.dual_certificate_lowerbound = 0
 
-    def certificate_as_probs(self, normalize: bool=False, chop_tol: float=1e-10,
-                                    round_decimals: int=3):
-        "Give certificate as symbolic product of probabilities"
+    def certificate_as_probs(self, normalize: bool=False,
+                             chop_tol: float=1e-10,
+                             round_decimals: int=3) -> Symbolic:
+        """Give certificate as symbolic sum of probabilities that is greater
+        than or equal to 0.
+
+        Parameters
+        ----------
+        normalize_certificate : bool, optional
+            If true, eliminate all coefficients that are smaller
+            than 'chop_tol' and round to the number of decimals specified
+            `round_decimals`. Defaults to True.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. Defaults to 1e-8.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number
+            of decimals specified. Defaults to 3.
+
+        Returns
+        -------
+        Symbolic
+            The certificate in terms or probabilities and marginals.
+        """        
+
         coeffs = self.dual_certificate[:, 0].astype(float)
         names = self.dual_certificate[:, 1]
         # C: why did I write this??
@@ -588,9 +611,39 @@ class InflationSDP(object):
             polynomial += monomial
         return polynomial
 
-    def certificate_as_objective(self):
+    def certificate_as_objective(self, normalize: bool=False,
+                                 chop_tol: float=1e-10,
+                                 round_decimals: int=3) -> Symbolic:
+        """Give certificate as symbolic sum of operators that can be used
+        as an objective function to optimse.
+
+        Parameters
+        ----------
+        normalize_certificate : bool, optional
+            If true, eliminate all coefficients that are smaller
+            than 'chop_tol' and round to the number of decimals specified
+            `round_decimals`. Defaults to True.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. Defaults to 1e-8.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number
+            of decimals specified. Defaults to 3.
+
+        Returns
+        -------
+        Symbolic
+            The certificate as an objective function.
+        """        
         coeffs = self.dual_certificate[:, 0]
         names = self.dual_certificate[:, 1]
+        if normalize and not np.allclose(coeffs, 0):
+            # Set to zero very small coefficients
+            coeffs[np.abs(coeffs) < chop_tol] = 0
+            # Take the smallest one and make it 1
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
+            # Round
+            coeffs = np.round(coeffs, decimals=round_decimals)
         polynomial = 0
         for i, row in enumerate(names):
             monomial = sp.S.One
@@ -608,12 +661,43 @@ class InflationSDP(object):
             polynomial += monomial
         return polynomial
 
-    def certificate_as_2output_correlators(self):
+    def certificate_as_2output_correlators(self, normalize: bool=False,
+                                           chop_tol: float=1e-10,
+                                           round_decimals: int=3) -> Symbolic:
+        """Give certificate as symbolic sum of 2-output correlators that
+        is greater than or equal to 0. Only valid for 2-output problems.
+
+        Parameters
+        ----------
+        normalize_certificate : bool, optional
+            If true, eliminate all coefficients that are smaller
+            than 'chop_tol' and round to the number of decimals specified
+            `round_decimals`. Defaults to True.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. Defaults to 1e-8.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number
+            of decimals specified. Defaults to 3.
+
+        Returns
+        -------
+        Symbolic
+            The certificate in terms of correlators.
+        """        
+
         coeffs = self.dual_certificate[:, 0]
         names = self.dual_certificate[:, 1]
         if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
             raise Exception("Correlator certificates are only available " +
                             "for 2-output problems")
+        if normalize and not np.allclose(coeffs, 0):
+            # Set to zero very small coefficients
+            coeffs[np.abs(coeffs) < chop_tol] = 0
+            # Take the smallest one and make it 1
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
+            # Round
+            coeffs = np.round(coeffs, decimals=round_decimals)
 
         polynomial = 0
         for i, row in enumerate(names):
@@ -656,10 +740,39 @@ class InflationSDP(object):
 
         return sp.expand(polynomial)
 
-    def certificate_as_operators(self):
+    def certificate_as_operators(self, normalize: bool=False,
+                                 chop_tol: float=1e-10,
+                                 round_decimals: int=3) -> Symbolic:
+        """Give certificate as symbolic sum of probabilities that is greater
+        than or equal to 0.
+
+        Parameters
+        ----------
+        normalize_certificate : bool, optional
+            If true, eliminate all coefficients that are smaller
+            than 'chop_tol' and round to the number of decimals specified
+            `round_decimals`. Defaults to True.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. Defaults to 1e-8.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number
+            of decimals specified. Defaults to 3.
+
+        Returns
+        -------
+        Symbolic
+            The certificate in terms or probabilities and marginals.
+        """        
         coeffs = self.dual_certificate[:, 0]
         names = self.dual_certificate[:, 1]        
-
+        if normalize and not np.allclose(coeffs, 0):
+            # Set to zero very small coefficients
+            coeffs[np.abs(coeffs) < chop_tol] = 0
+            # Take the smallest one and make it 1
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
+            # Round
+            coeffs = np.round(coeffs, decimals=round_decimals)
         polynomial = 0
         for i, row in enumerate(names):
             monomial = sp.S.One
@@ -679,100 +792,6 @@ class InflationSDP(object):
             polynomial += monomial
         return polynomial
 
-    def process_certificate(self,  as_symbols_probs: bool=True,
-                            as_objective_function: bool=True,
-                            normalize_certificate: bool=True,
-                            as_symbols_operators: bool=False,
-                            as_symbols_correlators: bool=False,
-                            chop_tol: float=1e-8,
-                            round_decimals: int=3
-                            ) -> None:
-        """Process the dual certificate and create symbolic instances of it.
-
-        Currently supported to have it written in terms of probabilities
-        projectors, correlators (if applicable) and as an objective function
-        that can be optimized with `InflationSD`.
-
-        Parameters
-        ----------
-        as_symbols_probs : bool, optional
-            ,
-            stored in self.dual_certificate_as_symbols_operators.
-            Defaults to True.
-        as_objective_function : bool, optional
-            Give certificate as an objective function that can be optimized
-            with InflationSDP, stored in `self.dual_certificate_as_objective_function.`
-            Defaults to True.
-        normalize_certificate : bool, optional
-            If true, eliminate all coefficients that are smaller
-            than 'chop_tol' and round to the number of decimals specified
-            `round_decimals`. Defaults to True.
-        as_symbols_operators : bool, optional
-            Give certificate as symbolic product of projectors,
-            stored in self.dual_certificate_as_symbols_operators.
-            Defaults to True.
-        as_symbols_correlators : bool, optional
-            Give certificate in correlator form, *only* if
-            there are 2 outputs per party, stored in
-            `self.dual_certificate_as_symbols_correlator`.
-            Defaults to True.
-        chop_tol : float, optional
-            Coefficients in the dual certificate smaller in absolute value are
-            set to zero. Defaults to 1e-8.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are rounded to the number
-            of decimals specified. Defaults to 3.
-
-        """
-
-
-
-
-
-        self.dual_certificate_as_symbols_correlators = None
-        if as_symbols_correlators:
-            if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
-                raise Exception("Correlator certificates are only available " +
-                                "for 2-output problems")
-
-            polynomial = 0
-            for i, row in enumerate(names):
-                poly1 = sp.S.One
-                if row[0] != '1' and row[0] != '0':
-                    for name in row:
-                        factors = name.split('*')
-                        #correlator = '\langle '
-
-                        aux_prod = sp.S.One
-                        for factor_name in factors:
-                            simbolo = sp.Symbol(factor_name[0]+'_{'+factor_name[-3]+'}', commuting=True)
-                            projector = sp.Rational(1, 2)*(sp.S.One - simbolo)
-                            aux_prod *= projector
-                        aux_prod = sp.expand(aux_prod)
-                        # Now take products and make them a single variable to make them 'sticking togetther' easier
-                        suma = 0
-                        for var, coeff in aux_prod.as_coefficients_dict().items():
-                            if var == sp.S.One:
-                                expected_value = sp.S.One
-                            else:
-                                if str(var)[-3:-1] == '**':
-                                    base, exp = var.as_base_exp()
-                                    auxname = '<' + ''.join(str(base).split('*')) + '>'
-                                    base = sp.Symbol(auxname, commutative=True)
-                                    expected_value = base ** exp
-                                else:
-                                    auxname = '\langle ' + ' '.join(str(var).split('*')) + ' \\rangle'
-                                    auxname = '<'+ ''.join(str(var).split('*')) + '>'
-                                    expected_value = sp.Symbol(auxname, commutative=True)
-                            suma += coeff*expected_value
-                        poly1 *= suma
-                    else:
-                        if row[0] == '1':
-                            poly1 = sp.S.One
-                        elif row[0] == '0':
-                            poly1 = sp.S.Zero
-                polynomial += coeffs[i]*poly1
-            self.dual_certificate_as_symbols_correlators = sp.expand(polynomial)
 
     def write_to_file(self, filename: str):
         """Exports the problem to a file.
