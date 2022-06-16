@@ -226,10 +226,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     for var in range(nr_known):
         coeffs[var] = np.sum(ymat[np.where(positionsmatrix == var)])
     if not pure_feasibility_problem and not objective:  # i.e., if doing a relaxed feasibility problem, a maximization of the minimum eigenvalue
-        if primal >= INFEASIBILITY_THRESHOLD:
-            coeffs = coeffs*0  # Certificates are meaningless here
-        if primal < INFEASIBILITY_THRESHOLD:
-            coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is
+        coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is
     vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs, 'Z': ymat, 'xi': xi_list}
     return vars_of_interest, primal
 
