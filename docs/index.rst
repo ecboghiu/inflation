@@ -4,13 +4,14 @@
    contain the root `toctree` directive.
 
 Welcome to causalinflation's documentation!
-=====================================
+===========================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
    
    download
+   tutorial
    examples
    modules
    

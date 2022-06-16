@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import sympy as sp
 
-from causalinflation.InflationProblem import InflationProblem
+from causalinflation import InflationProblem
 from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             to_numbers, mul,
                                             transform_vars_to_symb,
@@ -163,15 +163,19 @@ class InflationSDP(object):
             than parallel ncpol2sdpa. ncpol2sdpa should only be used for
             features not present in the numba functions, such as using
             arbitrary substituion rules.
+
         sandwich_positivity : bool, optional
             Whether to identify monomials that are positive because of
             sandwiching. See description of `is_physical`, by default True.
+
         use_numba : bool, optional
             Whether to use JIT compiled functions with Numba, by default True.
             If False, the program will use ncpol2sdpa to for various steps.
             Note that usually Numba is faster than ncpol2sdpa. ncpol2sdpa
             should only be used for features not present in the numba functions,
             such as for implementing arbitrary substituion rules.
+
+
         """
 
         self.use_numba = use_numba

@@ -205,7 +205,7 @@ def mon_is_zero(mon: np.ndarray
 
     Returns
     -------
-    bool_
+    bool
         True if the monomial is zero, False otherwise.
     """
 
@@ -321,7 +321,7 @@ def commuting(letter1: np.array,
 
     Returns
     -------
-    bool_
+    bool
         If they commute or not.
 
     Examples
@@ -366,7 +366,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
 
     Returns
     -------
-    bool_
+    bool
         True if A is less than B.
     """
     # if A.size == 0:
@@ -405,7 +405,7 @@ def mon_lessthan_mon(mon1: np.ndarray,
 
     Returns
     -------
-    bool_
+    bool
         True if mon1 < mon2 in lexicographic order.
     """
 
