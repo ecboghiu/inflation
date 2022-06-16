@@ -1,5 +1,5 @@
-inflation
-=========
+causalinflation
+===============
 
 .. toctree::
    :maxdepth: 4

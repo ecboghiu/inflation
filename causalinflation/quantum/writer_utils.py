@@ -7,6 +7,7 @@ import pickle
 
 def convert_to_human_readable(problem):
     """Convert the SDP relaxation to a human-readable format.
+    
     :param problem: The SDP relaxation to write.
     :type problem: :class:`inflapyon.InflationSDP`.
     :returns: tuple of the objective function in a string and a matrix of
@@ -18,7 +19,7 @@ def convert_to_human_readable(problem):
     constant_replacer = np.vectorize(lambda x: constant_dict.get(x, x))
     # Replacer for remaining symbols
     monomial_dict = dict([[var, "*".join(expr)]
-                          for var, expr in problem.final_monomials_list])
+                        for var, expr in problem.final_monomials_list])
     def replace_known(monom):
         try:
             replacement = monomial_dict.get(float(monom), monom)
@@ -28,7 +29,7 @@ def convert_to_human_readable(problem):
     known_replacer = np.vectorize(replace_known)
     # Replacer for semiknowns
     semiknown_list = np.zeros((problem.semiknown_moments.shape[0], 2),
-                              dtype=object)
+                            dtype=object)
     for ii, semiknown in enumerate(problem.semiknown_moments):
         semiknown_list[ii,0] = int(semiknown[0])
         semiknown_list[ii,1] = f"{semiknown[1]}*{monomial_dict[int(semiknown[2])]}"
