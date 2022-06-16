@@ -23,8 +23,7 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             generate_commuting_measurements,
                                             generate_noncommuting_measurements,
                                             from_coord_to_sym,
-                                            get_variables_the_user_can_specify,
-                                            Symbolic)
+                                            get_variables_the_user_can_specify)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        calculate_momentmatrix_commuting,
                                        to_canonical)
@@ -84,7 +83,7 @@ class InflationSDP(object):
 
     def generate_relaxation(self,
                             column_specification:
-                        Union[str, List[List[int]], List[Symbolic]] = 'npa1',
+                        Union[str, List[List[int]], List[sp.core.symbol.Symbol]] = 'npa1',
                             use_numba: bool = True
                             ) -> None:
         """Creates the SDP relaxation of the quantum inflation problem
@@ -105,8 +104,8 @@ class InflationSDP(object):
         in the moment matrix.
 
         Parameters
-        ----------
-        column_specification : Union[str, List[List[int]], List[Symbolic]]
+        
+        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             Describes the generating set of monomials {M_i}_i.
 
             (NOTATION) If we have 2 parties, we denote by {A, B} the set
@@ -152,7 +151,7 @@ class InflationSDP(object):
             C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as 'npa2' for
             3 parties. [[]] encodes the identity element.
 
-            * `List[Symbolic]`: we can fully specify the generating set by
+            * `List[sympy.core.symbol.Symbol]`: we can fully specify the generating set by
             giving a list of symbolic operators built from the measurement
             operators in `self.measurements`. This list needs to have the
             identity `sympy.S.One` as the first element.
@@ -174,7 +173,6 @@ class InflationSDP(object):
             Note that usually Numba is faster than ncpol2sdpa. ncpol2sdpa
             should only be used for features not present in the numba functions,
             such as for implementing arbitrary substituion rules.
-
 
         """
 
@@ -421,7 +419,7 @@ class InflationSDP(object):
                                                for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]])
 
 
-    def set_objective(self, objective: Symbolic,
+    def set_objective(self, objective: sp.core.symbol.Symbol,
                              direction: str ='max',
                             extraobjexpr=None) -> None:
         """Set or change the objective function of the polynomial optimization
@@ -429,7 +427,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        objective : Symbolic
+        objective : sympy.core.symbol.Symbol
             Describes the objective function.
         direction : str, optional
             Direction of the optimization (max/min), by default 'max'
@@ -563,7 +561,7 @@ class InflationSDP(object):
 
     def certificate_as_probs(self, clean: bool=False,
                              chop_tol: float=1e-10,
-                             round_decimals: int=3) -> Symbolic:
+                             round_decimals: int=3) -> sp.core.symbol.Symbol:
         """Give certificate as symbolic sum of probabilities that is greater
         than or equal to 0.
 
@@ -582,7 +580,7 @@ class InflationSDP(object):
 
         Returns
         -------
-        Symbolic
+        sympy.core.symbol.Symbol
             The certificate in terms or probabilities and marginals.
         """        
 
@@ -617,7 +615,7 @@ class InflationSDP(object):
 
     def certificate_as_objective(self, clean: bool=False,
                                  chop_tol: float=1e-10,
-                                 round_decimals: int=3) -> Symbolic:
+                                 round_decimals: int=3) -> sp.core.symbol.Symbol:
         """Give certificate as symbolic sum of operators that can be used
         as an objective function to optimse.
 
@@ -636,7 +634,7 @@ class InflationSDP(object):
 
         Returns
         -------
-        Symbolic
+        sympy.core.symbol.Symbol
             The certificate as an objective function.
         """        
         coeffs = self.dual_certificate[:, 0].astype(float)
@@ -667,7 +665,7 @@ class InflationSDP(object):
 
     def certificate_as_2output_correlators(self, clean: bool=False,
                                            chop_tol: float=1e-10,
-                                           round_decimals: int=3) -> Symbolic:
+                                           round_decimals: int=3) -> sp.core.symbol.Symbol:
         """Give certificate as symbolic sum of 2-output correlators that
         is greater than or equal to 0. Only valid for 2-output problems.
 
@@ -686,7 +684,7 @@ class InflationSDP(object):
 
         Returns
         -------
-        Symbolic
+        sympy.core.symbol.Symbol
             The certificate in terms of correlators.
         """        
 
@@ -781,7 +779,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        column_specification : Union[str, List[List[int]], List[Symbolic]]
+        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             See description in the self.generate_relaxation()` method.
         max_monomial_length : int, optional
             Maximum number of letters in a monomial in the generating set,
@@ -959,7 +957,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        col_specs : Union[str, List[List[int]], List[Symbolic]]
+        col_specs : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             The column specification as specified in the method description.
 
         """

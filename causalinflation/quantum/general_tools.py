@@ -5,6 +5,9 @@ import warnings
 
 from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
                                               to_canonical)
+from causalinflation.quantum.typing import ArrayMonomial, StringMonomial, IntMonomial
+
+
 from collections import defaultdict, deque
 from itertools import permutations, product
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
@@ -12,7 +15,8 @@ from ncpol2sdpa import flatten, generate_operators, generate_variables
 from ncpol2sdpa.nc_utils import apply_substitutions
 
 from tqdm import tqdm
-from typing import Dict, List, Tuple, Union, Any, NewType
+from typing import Dict, List, Tuple, Union, Any, NewType, TypeVar
+
 
 try:
     import numba
@@ -26,24 +30,7 @@ except ImportError:
 
 # TODO build a proper typing system, maybe use classes?
 
-# Note: one can also use constrained TypeVar to encode a type which is
-# an "or" of different types, but for our usage it doesn't really matter
-# See https://stackoverflow.com/questions/58903906/
-# whats-the-difference-between-a-constrained-typevar-and-a-union
-Symbolic = Union[sympy.core.symbol.Symbol,
-                 sympy.core.numbers.One,
-                 sympy.physics.quantum.operator.HermitianOperator, # For some
-                            # reason, the HermitianOperator class is
-                            # being used, maybe remove this?
-                 sympy.core.power.Pow,
-                 sympy.core.mul.Mul,
-                 sympy.core.add.Add]  # Currently add class only supported
-                                      # for the objective function
 
-ArrayMonomial = NewType("ArrayMonomial", np.ndarray)
-StringMonomial = NewType("StringMonomial", str)
-IntMonomial = NewType("IntMonomial", int)
-Monomial = Union[ArrayMonomial, StringMonomial, IntMonomial]
 
 def substitute_variable_values_in_monlist(variables_values: np.ndarray,
                                         monomials_factors_reps: np.ndarray,
@@ -90,7 +77,7 @@ def substitute_variable_values_in_monlist(variables_values: np.ndarray,
 
 def generate_commuting_measurements(party: int,
                                     label: str
-                                ) -> List[List[List[Symbolic]]]:
+                                ) -> List[List[List[sympy.core.symbol.Symbol]]]:
     """Generates the list of symbolic variables representing the measurements
     for a given party. The variables are treated as commuting.
 
@@ -106,7 +93,7 @@ def generate_commuting_measurements(party: int,
 
     Returns
     -------
-    List[List[List[Symbolic]]]
+    List[List[List[sympy.core.symbol.Symbol]]]
         List of measurements.
     """
 
@@ -119,8 +106,8 @@ def generate_commuting_measurements(party: int,
 
 def generate_noncommuting_measurements(party: int,
                                        label: str
-                                ) -> List[List[List[Symbolic]]]:
-    """Generates the list of symbolic variables representing the measurements
+                                ) -> List[List[List[sympy.core.symbol.Symbol]]]:
+    """Generates the list of sympy.core.symbol.Symbol variables representing the measurements
     for a given party. The variables are treated as non-commuting.
 
     Parameters
@@ -135,7 +122,7 @@ def generate_noncommuting_measurements(party: int,
 
     Returns
     -------
-    List[List[List[Symbolic]]]
+    List[List[List[sympy.core.symbol.Symbol]]]
         List of measurements.
     """
     measurements = []
@@ -147,8 +134,8 @@ def generate_noncommuting_measurements(party: int,
 def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
                       names: str,
                       n_sources: int,
-                      measurements: List[List[List[Symbolic]]]
-                      ) -> List[Symbolic]:
+                      measurements: List[List[List[sympy.core.symbol.Symbol]]]
+                      ) -> List[sympy.core.symbol.Symbol]:
     """Go from the output of build_columns to a list of symbolic operators
 
     TODO: change name to cols_num2sym
@@ -161,14 +148,14 @@ def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
         Names of each party.
     n_sources : int
         Number of sources.
-    measurements : List[List[List[Symbolic]]]
+    measurements : List[List[List[sympy.core.symbol.Symbol]]]
         List of symbolic operators representing the measurements. The list is
         nested such that the first index corresponds to the party, the
         second index to the measurement, and the third index to the outcome.
 
     Returns
     -------
-    List[Symbolic]
+    List[sympy.core.symbol.Symbol]
         The generating set but with symbolic monomials.
     """
 
@@ -253,10 +240,10 @@ def mul(lst: List) -> Any:
 
 
 # @jit(nopython=True)
-def apply_source_perm_monomial_commuting(monomial: ArrayMonomial,
+def apply_source_perm_monomial_commuting(monomial: np.ndarray,
                                          source: int,
                                          permutation: List
-                                         ) -> ArrayMonomial:
+                                         ) -> np.ndarray:
     """This applies a source swap to a monomial.
 
     We assume in the monomial that all operators COMMUTE with each other.
@@ -291,11 +278,11 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
                                          permutation: List[int],
                                          commuting: bool,
-                                         substitutions: Dict[Symbolic,Symbolic],
-                                         flatmeas: List[Symbolic],
+                                         substitutions: Dict[sympy.core.symbol.Symbol,sympy.core.symbol.Symbol],
+                                         flatmeas: List[sympy.core.symbol.Symbol],
                                          measnames: List[str],
                                          names: List[str]
-                                         ) -> List[Symbolic]:
+                                         ) -> List[sympy.core.symbol.Symbol]:
     """Applies a specific source permutation to the list of operators used to
     define the moment matrix. Outputs the permuted list of operators.
     The operators are enconded as lists of numbers denoting
@@ -313,9 +300,9 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
         Permutation of the copies of the specified source.
     commuting : bool
         Whether the operators commute or not.
-    substitutions : Dict[Symbolic, Symbolic]
+    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
         Dictionary of substitutions to be applied to the operators.
-    flatmeas : List[Symbolic]
+    flatmeas : List[sympy.core.symbol.Symbol]
         List of measurements in the form of symbolic operators.
     measnames : List[str]
         Names of the measurements in `flatmeas`.
@@ -372,10 +359,10 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
 
 
 @jit(nopython=True)
-def apply_source_permutation_monomial(monomial: ArrayMonomial,
+def apply_source_permutation_monomial(monomial: np.ndarray,
                                       source: int,
                                       permutation: np.ndarray
-                                      ) -> ArrayMonomial:
+                                      ) -> np.ndarray:
     """Applies a source permutation to a single monomial.
 
     SPEED NOTE: if you want to apply a simple source swap as opposed
@@ -510,19 +497,19 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     return new_monomials
 
 
-def as_ordered_factors_for_powers(monomial: Symbolic
-                                  ) -> List[Symbolic]:
+def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
+                                  ) -> List[sympy.core.symbol.Symbol]:
     """If we have powers of a monomial, such as A**3, return a list with
     the factors, [A, A, A].
 
     Parameters
     ----------
-    monomial : Symbolic
+    monomial : sympy.core.symbol.Symbol
         Symbolic monomial, possible with powers.
 
     Returns
     -------
-    List[Symbolic]
+    List[sympy.core.symbol.Symbol]
         List of all the symbolic factors, with the powers expanded.
     """
 
@@ -811,7 +798,7 @@ def remove_sandwich(monomial: np.ndarray
 
 def string2prob(term: str,
                 max_nr_of_parties: int
-                ) -> Symbolic:
+                ) -> sympy.core.symbol.Symbol:
     """Converts a string to a symbolic probability with the correct indices.
     For example 'A_0_1_0*B_0_2_3' is converted to pAB(03|12).
 
@@ -824,7 +811,7 @@ def string2prob(term: str,
 
     Returns
     -------
-    Symbolic
+    sympy.core.symbol.Symbol
         The symbolic probability, e.g., p(00|01).
 
     """
@@ -926,7 +913,7 @@ def transform_vars_to_symb(variables_to_be_given: List[np.ndarray],
     return sym_variables_to_be_given
 
 
-def substitute_sym_with_value(syminput: Symbolic,
+def substitute_sym_with_value(syminput: sympy.core.symbol.Symbol,
                               settings_per_party: List[int],
                               outcomes_per_party: List[int],
                               p_vector: np.ndarray
@@ -942,7 +929,7 @@ def substitute_sym_with_value(syminput: Symbolic,
 
     Parameters
     ----------
-    syminput : Symbolic
+    syminput : sympy.core.symbol.Symbol
         Symbolic probability.
     settings_per_party : List[int]
         Setting cardinalities per party.
@@ -1618,9 +1605,9 @@ def reorder_according_to_known_semiknown_unknown(input_list: np.ndarray,
 def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
                                  monomials_factors_knowable: np.ndarray,
                                  monomials_list: np.ndarray,
-                                 measurements: List[Symbolic],
+                                 measurements: List[sympy.core.symbol.Symbol],
                                  substitutions:
-                    Dict[Symbolic, Symbolic],
+                    Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol],
                                  hypergraph: np.ndarray,
                                  names: List[str],
                                  use_numba: bool = True
@@ -1638,9 +1625,9 @@ def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
         the monomial and the knowability of the monomials.
     monomials_list : np.ndarray
         List of all the *unfactorised* monomials in the moment matrix.
-    measurements : List[Symbolic]
+    measurements : List[sympy.core.symbol.Symbol]
         List of symbolic symbols representing the measurements.
-    substitutions : Dict[Symbolic, Symbolic]
+    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
         Dictionary of substitutions to be applied to the monomials.
     hypergraph : np.ndarray
         Hypergraph of the network where each row is an edge.
@@ -1710,8 +1697,8 @@ def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
 def monomial_to_var_repr(monomials_factors_names: np.ndarray,
                          monomials_factors_knowable: np.ndarray,
                          monomials_list: np.ndarray,
-                         measurements: List[Symbolic],
-                         substitutions: Dict[Symbolic, Symbolic],
+                         measurements: List[sympy.core.symbol.Symbol],
+                         substitutions: Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol],
                          names: List[str],
                          flag_use_semiknowns: bool = True,
                          verbose: int = 0):
@@ -1737,9 +1724,9 @@ def monomial_to_var_repr(monomials_factors_names: np.ndarray,
         the monomial and the knowability of the monomials.
     monomials_list : np.ndarray
         List of all the *unfactorised* monomials in the moment matrix.
-    measurements : List[Symbolic]
+    measurements : List[sympy.core.symbol.Symbol]
         List of symbolic symbols representing the measurements.
-    substitutions : Dict[Symbolic, Symbolic]
+    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
         Dictionary of substitutions to be applied to the monomials.
     names : List[str]
         Name of each party.
@@ -1882,7 +1869,7 @@ def get_variables_the_user_can_specify(monomials_factors_reps: np.ndarray,
 
 
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:
-                                                List[Tuple[int, Symbolic]],
+                                                List[Tuple[int, sympy.core.symbol.Symbol]],
                                 settings_per_party: List[int],
                                 outcomes_per_party: List[int],
                                 p_vector: np.ndarray
@@ -1894,7 +1881,7 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
 
     Parameters
     ----------
-    symbolic_variables_to_be_given : List[Tuple[int, Symbolic]]
+    symbolic_variables_to_be_given : List[Tuple[int, sympy.core.symbol.Symbol]]
         A list of structure [...,[int, symbolic_prob],...]
     settings_per_party : List[int]
         Measurement setting cardinality per party.
@@ -1920,13 +1907,13 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
     return variables_values
 
 
-def objective_sym2index(objective: Symbolic,
+def objective_sym2index(objective: sympy.core.symbol.Symbol,
                         monomials_list: List[Tuple[int, StringMonomial]],
                         orbits: Dict[int, int],
                         canonical_mon2indx: Dict[str, int],
                         names: List[str],
-                        measurements: List[Symbolic],
-                        substitutions: Dict[Symbolic, Symbolic]
+                        measurements: List[sympy.core.symbol.Symbol],
+                        substitutions: Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
                         ) -> Dict[int, float]:
     """Transform a symbolic expression into a dictionary of index variable
     coefficients. This is interpretable by the solver.
@@ -1936,7 +1923,7 @@ def objective_sym2index(objective: Symbolic,
 
     Parameters
     ----------
-    objective : Symbolic
+    objective : sympy.core.symbol.Symbol
         Symbolic objective function, written in terms of the measurement
         operators.
     monomials_list : List[Tuple[int, StringMonomial]]
@@ -1947,9 +1934,9 @@ def objective_sym2index(objective: Symbolic,
         Dictionary mapping each monomial string to its integer representative.
     names : List[str]
         All party names.
-    measurements : List[Symbolic]
+    measurements : List[sympy.core.symbol.Symbol]
         List of symbolic measurement operators.
-    substitutions : Dict[Symbolic, Symbolic]
+    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
         All substitutions to be applied to a symbolic monomial.
 
     Returns
@@ -1986,7 +1973,7 @@ def objective_sym2index(objective: Symbolic,
 
 
 def canonicalize(list_of_operators: List[List[int]],
-                 measurements: List[List[List[Symbolic]]],
+                 measurements: List[List[List[sympy.core.symbol.Symbol]]],
                  substitutions: Dict,
                  parties_names: List[str]
                  ) -> List[List[int]]:
@@ -2001,7 +1988,7 @@ def canonicalize(list_of_operators: List[List[int]],
     ----------
     list_of_operators : List[List[int]]
         The input monomial.
-    measurements : List[List[List[Symbolic]]]
+    measurements : List[List[List[sympy.core.symbol.Symbol]]]
         All the symbolic measurement operators.
     substitutions : Dict
         Dictionary of symbolic substitutions to be applied to the monomial.
@@ -2030,8 +2017,8 @@ def canonicalize(list_of_operators: List[List[int]],
 
 
 def from_indices_to_operators(monomial_list: List[List[int]],
-                              measurements: List[List[List[Symbolic]]]
-                              ) -> Symbolic:
+                              measurements: List[List[List[sympy.core.symbol.Symbol]]]
+                              ) -> sympy.core.symbol.Symbol:
     """Transforms a monomial, expressed as a list of lists of indices,
     into its associated operator.
 
@@ -2039,7 +2026,7 @@ def from_indices_to_operators(monomial_list: List[List[int]],
     ----------
     monomial_list : List[List[int]]
         Input monomal in array form.
-    measurements : List[List[List[Symbolic]]]
+    measurements : List[List[List[sympy.core.symbol.Symbol]]]
         All the measurement operators.
 
     Returns
