@@ -181,7 +181,7 @@ class TestInflation(unittest.TestCase):
                                 commuting=True)
         meas, subs, names = scenario._generate_parties()
         col_structure = [[], [0, 0]]
-        flatmeas = np.array(flatten(meas))  # TODO remove this...
+        flatmeas = np.array(flatten(meas))
         measnames = np.array([str(meas) for meas in flatmeas])
 
         # Define moment matrix columns
@@ -189,18 +189,12 @@ class TestInflation(unittest.TestCase):
                                                   return_columns_numerical=True)
 
         expected = [[0],
-                    [[1, 2, 0, 0]],
-                    [[1, 2, 1, 0]],
-                    [[1, 1, 0, 0]],
-                    [[1, 1, 1, 0]],
                     [[1, 2, 0, 0], [1, 2, 1, 0]],
                     [[1, 1, 0, 0], [1, 2, 0, 0]],
-                    [[1, 1, 0, 0], [1, 2, 1, 0]],
-                    [[1, 2, 1, 0], [1, 2, 0, 0]],
                     [[1, 1, 1, 0], [1, 2, 0, 0]],
+                    [[1, 1, 0, 0], [1, 2, 1, 0]],
                     [[1, 1, 1, 0], [1, 2, 1, 0]],
-                    [[1, 1, 0, 0], [1, 1, 1, 0]],
-                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
+                    [[1, 1, 0, 0], [1, 1, 1, 0]]]
 
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
