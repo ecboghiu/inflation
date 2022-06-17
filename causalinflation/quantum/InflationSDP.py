@@ -80,8 +80,9 @@ class InflationSDP(object):
 
     def generate_relaxation(self,
                             column_specification:
-                        Union[str, List[List[int]], List[sp.core.symbol.Symbol]] = 'npa1',
-                            use_numba: bool = True
+                                Union[str,
+                                      List[List[int]],
+                                      List[sp.core.symbol.Symbol]] = 'npa1'
                             ) -> None:
         """Creates the SDP relaxation of the quantum inflation problem
         using the NPA hierarchy and applies the symmetries inferred
@@ -152,17 +153,7 @@ class InflationSDP(object):
             giving a list of symbolic operators built from the measurement
             operators in `self.measurements`. This list needs to have the
             identity `sympy.S.One` as the first element.
-
-        use_numba : bool, optional
-            Whether to use JIT compiled functions with Numba, by default True.
-            If False, the program will use ncpol2sdpa to for various steps.
-            Note that usually Numba is faster than ncpol2sdpa. ncpol2sdpa
-            should only be used for features not present in the numba functions,
-            such as for implementing arbitrary substituion rules.
-
         """
-
-        self.use_numba = use_numba
         self.use_lpi_constraints = False
 
         # Process the column_specification input and store the result
@@ -1028,16 +1019,7 @@ class InflationSDP(object):
         return measurements, substitutions, parties
 
     def _build_momentmatrix(self) -> None:
-        """Generate the moment matrix or load it from file if it is already calculated.
-
-        Parameters
-        ----------
-        parallel : bool, optional
-            Specifies whether to use parallelization or not.
-            Only works with ncpol2sdpa. Defaults to False.
-        use_numba : bool, optional
-            Whether to use JIT functions through numba to calculate
-            the moment matrix. Defaults to True.
+        """Generate the moment matrix.
         """
 
         _cols = [np.array(col, dtype=np.uint8)
@@ -1228,77 +1210,6 @@ class InflationSDP(object):
         monomials_unfactorised_reordered[:, 1] = [[mon] for mon in monomials_unfactorised_reordered[:, 1]]
 
         return monomials_factors_names_reordered, monomials_unfactorised_reordered
-
-    def _monomials_combine_products_of_unknown(self,
-                                              monomials_factors_names: np.ndarray
-                                              ) -> np.ndarray:
-        """In the factorised monomials, combine the products of factors with
-        unknown values
-
-        TODO: Check by splitting into factors and recombining, we are
-        generating new monomials.
-
-        Parameters
-        ----------
-        monomials_factors_names : np.ndarray
-            Monomials factorised as List[Tuple[int, List[ArrayMonomial]]].
-
-        Returns
-        -------
-        np.ndarray
-            Same format as input, but with the products of unknown factors
-            combined.
-        """
-        # monomials_factors_names is reordered according to known, semiknown and unknown
-
-        monomials_factors_names_combined = monomials_factors_names.copy()
-
-        for idx, line in enumerate(monomials_factors_names_combined[self._n_known:]):
-            var = line[0]
-            factors = np.array(line[1])
-
-            if len(factors) > 1:
-                # TODO doing this twice, maybe reuse the previous calc?? more efficient
-                where_unknown = np.array(
-                    [not is_knowable(to_numbers(f, self.names), self.hypergraph) for f in factors])
-                factors_unknown = factors[where_unknown]
-                factors_known = factors[np.invert(where_unknown)]
-
-                if self.use_numba:
-                    joined_unknowns_name = '*'.join(factors_unknown)
-                    joined_unknowns_name_canonical = to_name(to_canonical(
-                        np.array(to_numbers(joined_unknowns_name, self.names))), self.names)
-                    new_line = [var, factors_known.tolist(
-                    ) + [joined_unknowns_name_canonical]]
-                    monomials_factors_names_combined[idx +
-                                                     self._n_known] = new_line
-                else:
-                    flatmeas = np.array(flatten(self.measurements))
-                    measnames = np.array([str(meas) for meas in flatmeas])
-
-                    unknown_components = flatten(
-                        [part.split('*') for part in factors_unknown])
-                    unknown_operator = mul(
-                        [flatmeas[measnames == op] for op in unknown_components])[0]
-                    unknown_operator = apply_substitutions(
-                        unknown_operator, self.substitutions)
-
-                    # It seems like ncpol2sdpa does not use as canonical form a
-                    # lexicographic order, but the first representation appearing,
-                    # which can be the adjoint of the lexicographic form. The following
-                    # loop tries to fix this
-                    # # # if sum(monomials_list[:, 1] == str(unknown_operator)) == 0:
-                    # # #     unknown_operator = apply_substitutions(unknown_operator.adjoint(),
-                    # # #                                         self.substitutions)
-                    #unknown_var = int(monomials_list[monomials_list[:, 1] == str(unknown_operator)][0][0])
-                    new_line = [var, factors_known.tolist() +
-                                [str(unknown_operator)]]
-                    monomials_factors_names_combined[idx +
-                                                     self._n_known] = new_line
-
-        return monomials_factors_names_combined
-
-        # return monomials_factors_names_reordered, monomials_factors_knowable, semiknown_vars, new_monomials_list, orbits
 
     def _find_positive_monomials(self, monomials_factors_names: np.ndarray,
                                        sandwich_positivity=True):
