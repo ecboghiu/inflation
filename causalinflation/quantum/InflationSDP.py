@@ -408,8 +408,7 @@ class InflationSDP(object):
 
 
     def set_objective(self, objective: sp.core.symbol.Symbol,
-                            direction: str ='max',
-                            extraobjexpr=None) -> None:
+                            direction: str ='max') -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
 
@@ -419,10 +418,6 @@ class InflationSDP(object):
             Describes the objective function.
         direction : str, optional
             Direction of the optimization (max/min), by default 'max'
-        extraobjexpr : _type_, optional
-            Optional parameter of a string expression of a
-            linear combination of moment matrix elements to be
-            included in the objective function, by default None
         """
 
         assert direction in ['max', 'min'], ('The direction parameter should be'
@@ -441,9 +436,6 @@ class InflationSDP(object):
                  "marginals.")
 
         self.objective = objective
-
-        if extraobjexpr:
-            self.extraobjexpr = extraobjexpr  # TODO process this
 
         if (sp.S.One*objective).free_symbols:
             # Sanitize input: pass through substitutions to get
@@ -467,7 +459,6 @@ class InflationSDP(object):
                 else:
                     symmetrized_objective[reprr] = sign * coeff
             self._objective_as_dict = symmetrized_objective
-
         else:
             self._objective_as_dict = {1: sign * float(objective)}
 
