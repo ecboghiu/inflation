@@ -581,7 +581,10 @@ class InflationSDP(object):
         -------
         sympy.core.symbol.Symbol
             The certificate in terms or probabilities and marginals.
-        """        
+        """
+        if not self.dual_certificate:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve(...)' first")
 
         coeffs = self.dual_certificate[:, 0].astype(float)
         names = self.dual_certificate[:, 1]
@@ -622,7 +625,7 @@ class InflationSDP(object):
         ----------
         clean : bool, optional
             If true, eliminate all coefficients that are smaller
-            than 'chop_tol', normalise and round to the number of decimals 
+            than 'chop_tol', normalise and round to the number of decimals
             specified `round_decimals`. Defaults to True.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
@@ -635,7 +638,10 @@ class InflationSDP(object):
         -------
         sympy.core.symbol.Symbol
             The certificate as an objective function.
-        """        
+        """
+        if not self.dual_certificate:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve(...)' first")
         coeffs = self.dual_certificate[:, 0].astype(float)
         names = self.dual_certificate[:, 1]
         if clean and not np.allclose(coeffs, 0):
@@ -672,7 +678,7 @@ class InflationSDP(object):
         ----------
         clean : bool, optional
             If true, eliminate all coefficients that are smaller
-            than 'chop_tol', normalise and round to the number of decimals 
+            than 'chop_tol', normalise and round to the number of decimals
             specified `round_decimals`. Defaults to True.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
@@ -685,13 +691,15 @@ class InflationSDP(object):
         -------
         sympy.core.symbol.Symbol
             The certificate in terms of correlators.
-        """        
-
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+        """
+        if not self.dual_certificate:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve(...)' first")
         if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
             raise Exception("Correlator certificates are only available " +
                             "for 2-output problems")
+        coeffs = self.dual_certificate[:, 0].astype(float)
+        names = self.dual_certificate[:, 1]
         if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
@@ -936,7 +944,7 @@ class InflationSDP(object):
         else:
             return columns_symbolical
 
-        
+
 
     def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
         """his builds the generating set for the moment matrix taking as input
@@ -950,7 +958,7 @@ class InflationSDP(object):
         and output indices compatible with the cardinalities. As further
         examples, NPA level 2 for 3 parties is built from
         [[], [0], [1], [2], [0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]
-        and "local level 1" is build from
+        and "local level 1" is built from
         [[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]]
 
 
@@ -1141,7 +1149,7 @@ class InflationSDP(object):
             Whether to use JIT functions through numba to calculate
             the moment matrix. Defaults to True.
         """
-        
+
         _cols = [np.array(col, dtype=np.uint8)
                     for col in self.generating_monomials]
         if not self.commuting:
