@@ -2047,3 +2047,33 @@ def from_indices_to_operators(monomial_list: List[List[int]],
     for part in name:
         product *= flatmeas[measnames == part]
     return product
+
+def clean_coefficients(coefficients: np.array,
+                       chop_tol: float=1e-10,
+                       round_decimals: int=3) -> np.array:
+    """Clean the list of coefficients in a certificate.
+
+    Parameters
+    ----------
+    coefficients : numpy.array
+      The list of coefficients.
+    chop_tol : float, optional
+      Coefficients in the dual certificate smaller in absolute value are
+      set to zero. Defaults to 1e-10.
+    round_decimals : int, optional
+      Coefficients that are not set to zero are rounded to the number
+      of decimals specified. Defaults to 3.
+
+    Returns
+    -------
+    numpy.array
+      The cleaned-up coefficients.
+    """
+    coeffs = copy.deepcopy(coefficients)
+    # Set to zero very small coefficients
+    coeffs[np.abs(coeffs) < chop_tol] = 0
+    # Take the smallest one and make it 1
+    coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
+    # Round
+    coeffs = np.round(coeffs, decimals=round_decimals)
+    return coeffs

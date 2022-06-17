@@ -23,7 +23,8 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             generate_commuting_measurements,
                                             generate_noncommuting_measurements,
                                             from_coord_to_sym,
-                                            get_variables_the_user_can_specify)
+                                            get_variables_the_user_can_specify,
+                                            clean_coefficients)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
                                               to_canonical)
@@ -509,10 +510,7 @@ class InflationSDP(object):
         # names = list(new_dual_certificate.keys())
 
         if clean and not np.allclose(coeffs, 0):
-            # Set to zero very small coefficients
-            coeffs[np.abs(coeffs) < chop_tol] = 0
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
-            coeffs = np.round(coeffs, decimals=round_decimals)
+            coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
 
         polynomial = 0
         for i, row in enumerate(names):
@@ -556,12 +554,7 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
         if clean and not np.allclose(coeffs, 0):
-            # Set to zero very small coefficients
-            coeffs[np.abs(coeffs) < chop_tol] = 0
-            # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
-            # Round
-            coeffs = np.round(coeffs, decimals=round_decimals)
+            coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
         polynomial = 0
         for i, row in enumerate(names):
             monomial = sp.S.One
@@ -614,12 +607,7 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
         if clean and not np.allclose(coeffs, 0):
-            # Set to zero very small coefficients
-            coeffs[np.abs(coeffs) < chop_tol] = 0
-            # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
-            # Round
-            coeffs = np.round(coeffs, decimals=round_decimals)
+            coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
 
         polynomial = 0
         for i, row in enumerate(names):
