@@ -1,6 +1,7 @@
 import unittest
+import numpy as np
 
-from causalinflation.general_tools import *
+from causalinflation.quantum.general_tools import factorize_monomial
 
 class QuantumInflationFactorization(unittest.TestCase):
 
