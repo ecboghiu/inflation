@@ -27,8 +27,7 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        calculate_momentmatrix_commuting,
                                        to_canonical)
-from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION, extract_from_ncpol,
-                                        read_problem_from_file)
+from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                            write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work

@@ -1,23 +1,6 @@
 import numpy as np
-import os
 import scipy.sparse
 import sys
-
-from scipy.io import loadmat
-from tqdm import tqdm
-
-def load_MATLAB_SDP(filename_SDP_info: str, use_semiknown: bool = False):
-    SDP_data = loadmat(filename_SDP_info)
-    positionsmatrix = SDP_data['G'] - 1  # Offset index to Python convention (== counting from 0, not 1)
-    known_vars_array = SDP_data['known_moments'][0]
-
-    if use_semiknown:
-        semiknown_vars_array = SDP_data['propto']  # Index in MATLAB convention!
-        semiknown_vars_array[:, [0,2]] += -1  # Offset the first and second column index to Python convention
-    else:
-        semiknown_vars_array = []  # Needed for del to work. Would be happy not to have to write this
-
-    return positionsmatrix, [], known_vars_array, semiknown_vars_array
 
 def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                          objective: dict = {}, known_vars=[0, 1],
@@ -31,7 +14,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                              AccSolutionStatus, ProblemStatus
 
     semiknown_vars = np.array(semiknown_vars)
-    positive_vars = np.array(positive_vars)
+    positive_vars  = np.array(positive_vars)
 
     solve_dual = True
     if solverparameters:
@@ -218,7 +201,6 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     except Exception as e:
         print("Unexpected error: {0}".format(e))
 
-
     INFEASIBILITY_THRESHOLD = -1e-6
 
     vars_of_interest = {}
@@ -229,76 +211,3 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is
     vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs, 'Z': ymat, 'xi': xi_list}
     return vars_of_interest, primal
-
-
-
-
-def read_from_sdpa(filename, verbose=0):
-    with open(filename, 'r') as file:
-        problem = file.read()
-    _, nvars, nblocs, blocstructure, obj = problem.split('\n')[:5]
-
-    if verbose > 0:
-        iterator = tqdm(problem.split('\n')[5:-1], desc='Reading problem', disable=verbose)
-    else:
-        iterator = problem.split('\n')[5:-1]
-    mat = [list(map(float, row.split('\t'))) for row in iterator]
-    return mat, obj
-
-
-def create_array_from_sdpa(sdpa_mat, verbose=0):
-    sdpa_mat = np.array(sdpa_mat)
-    size = int(max(sdpa_mat[:, 3]))
-    mat = np.zeros((size, size, 2))
-    if verbose > 0:
-        iterator = tqdm(sdpa_mat, disable=verbose)
-    else:
-        iterator = sdpa_mat
-    for var, _, i, j, val in iterator:
-        mat[int(i - 1), int(j - 1)] = np.array([var, val])
-        mat[int(j - 1), int(i - 1)] = np.array([var, val])
-    return mat
-
-def extract_from_ncpol(problem, verbose=0):
-    '''
-    Extracts the moment matrix, monomial list and objective function from an
-    SdpRelaxation object from ncpol2sdpa
-    '''
-    prob_filename = 'temp_SDPAProblem.dat-s'
-    mon_filename  = 'temp_monomials.txt'
-    problem.write_to_file(prob_filename)
-    problem.save_monomial_index(mon_filename)
-    momentmatrix, objective, monomials = read_problem_from_file(prob_filename,
-                                                                mon_filename,
-                                                                verbose)
-    os.remove(prob_filename)
-    os.remove(mon_filename)
-
-    return momentmatrix, objective, monomials
-
-def read_problem_from_file(filename_momentmatrix,
-                           filename_monomials,
-                           verbose=0):
-    problem, obj = read_from_sdpa(filename_momentmatrix, verbose)
-    problem_arr  = create_array_from_sdpa(problem, verbose)
-    # Reserve variables 0 and 1 for constant entries with 0 and 1, respectively
-    # The original notation puts constants in the variable 0, so we must split
-    # this and have proper variables start counting from 2
-    # Have the variables begin from 2
-    problem_arr[:,:,0] += 1
-    # The constants, which are now under variable 1, are split in zeros and ones
-    problem_arr[(problem_arr[:,:,0] == 1) & (problem_arr[:,:,1] == 0)] = [0, 1]
-    problem_arr[(problem_arr[:,:,0] == 1) & (problem_arr[:,:,1] == 1)] = [1, 1]
-    obj = np.array(eval(obj.replace('{', '[').replace('}', ']')))
-    nonzerovariables = np.nonzero(obj)[0]
-    nonzerocoefficients = obj[nonzerovariables]
-    # Indexing of variables begins in 1 in ncpol2sdpa, plus the extra index from
-    # splitting the constants makes an offset of 2
-    nonzerovariables += 2
-    obj = dict(zip(nonzerovariables, nonzerocoefficients))
-    monomials_list = np.genfromtxt(filename_monomials,
-                                   dtype=str, skip_header=1).astype(object)
-    # Monomials in ncpol2sdpa begin from 1, but now they must begin from 2
-    for idx in range(len(monomials_list)):
-        monomials_list[idx][0] = str(int(monomials_list[idx][0]) + 1)
-    return problem_arr, obj, monomials_list
