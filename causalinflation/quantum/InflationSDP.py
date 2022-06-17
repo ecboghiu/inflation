@@ -25,18 +25,16 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             from_coord_to_sym,
                                             get_variables_the_user_can_specify)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
-                                       calculate_momentmatrix_commuting,
-                                       to_canonical)
+                                              calculate_momentmatrix_commuting,
+                                              to_canonical)
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-from ncpol2sdpa import SdpRelaxation, flatten, projective_measurement_constraints
+from ncpol2sdpa import flatten, projective_measurement_constraints
 from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
-from time import time
-from tokenize import String
 from tqdm import tqdm
-from typing import Any, List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple
 from warnings import warn
 
 
@@ -337,7 +335,9 @@ class InflationSDP(object):
         self.semiknown_moments = np.array([])
         self._objective_as_dict = {1: 0.}
 
-    def set_distribution(self, p: np.ndarray, use_lpi_constraints: bool = False) -> None:
+    def set_distribution(self,
+                         p: np.ndarray,
+                         use_lpi_constraints: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified, p. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
@@ -345,11 +345,11 @@ class InflationSDP(object):
         elements that are either None or nan, then this is understood as leaving
         the corresponding variable free in the SDP approximation.
         Args:
-            p (np.ndarray): Multidimensional array encoding the probability vector,
-            which is called as p[a,b,c,...,x,y,z,...] where a,b,c,... are outputs
-            and x,y,z,... are inputs. Note: even if the inputs have cadinality 1,
-            they must still be specified, and the corresponding axis dimensions are 1
-            respectively.
+            p (np.ndarray): Multidimensional array encoding the probability
+            vector, which is called as p[a,b,c,...,x,y,z,...] where a,b,c,...
+            are outputs and x,y,z,... are inputs. Note: even if the inputs have
+            cardinality 1, they must still be specified, and the corresponding
+            axis dimensions are 1.
 
             use_lpi_constraints (bool): Specification whether linearized
             polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
@@ -481,8 +481,7 @@ class InflationSDP(object):
                     solverparameters=None):
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
-        matrices. It also sets these values in the `sdpRelaxation` object,
-        along with some status information.
+        matrices.
 
         Parameters
         ----------
@@ -896,9 +895,9 @@ class InflationSDP(object):
                             + 'column specification')
 
         columns_symbolical = from_coord_to_sym(columns,
-                                            self.names,
-                                            self.InflationProblem.nr_sources,
-                                            self.measurements)
+                                               self.names,
+                                               self.InflationProblem.nr_sources,
+                                               self.measurements)
 
         if return_columns_numerical:
             return columns_symbolical, columns
