@@ -3,15 +3,7 @@ import numpy as np
 
 from ncpol2sdpa.nc_utils import flatten
 from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
-# from causalinflation.quantum.sdp_utils import *
-# import causalinflation.useful_distributions as useful_distributions
 from causalinflation import InflationProblem, InflationSDP
-
-# from scipy.io import loadmat
-
-""" THIS IS MISSING data/ DOES NOT WORK """
-
-# Commented out because it takes long to test
 
 class TestGeneratingMonomials(unittest.TestCase):
     bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
@@ -178,8 +170,37 @@ class TestInflation(unittest.TestCase):
                          + "being applied properly after inflation symmetries")
 
 class TestSDPOutput(unittest.TestCase):
+    def test_CHSH(self):
+        bellScenario = InflationProblem({"lambda": ["a", "b"]},
+                                         outcomes_per_party=[2, 2],
+                                         settings_per_party=[2, 2],
+                                         inflation_level_per_source=[1])
+        sdp = InflationSDP(bellScenario)
+        sdp.generate_relaxation('npa1')
+        self.assertEqual(len(sdp.generating_monomials), 5,
+                         "The number of generating columns is not correct")
+        self.assertEqual(sdp._n_known, 8,
+                         "The count of knowable moments is wrong")
+        self.assertEqual(sdp._n_unknown, 2,
+                         "The count of unknowable moments is wrong")
+        meas = sdp.measurements
+        A0 = 1 - 2*meas[0][0][0][0]
+        A1 = 1 - 2*meas[0][0][1][0]
+        B0 = 1 - 2*meas[1][0][0][0]
+        B1 = 1 - 2*meas[1][0][1][0]
+
+        sdp.set_objective(A0*(B0+B1)+A1*(B0-B1), 'max')
+        self.assertEqual(len(sdp._objective_as_dict), 7,
+                         "The parsing of the objective function is failing")
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, 2*np.sqrt(2)),
+                        "The SDP is not recovering max(CHSH) = 2*sqrt(2)")
     '''
     def test_GHZ_known_semiknown(self):
+
+        from scipy.io import loadmat
+        from causalinflation.quantum.sdp_utils import *
+        import causalinflation.useful_distributions as useful_distributions
         """
         Comparing with what I get when solving the SDP in MATLAB up to 4 decimal places.
         These lambda values are the same as in Alex's stable version 0.1 before any change to
