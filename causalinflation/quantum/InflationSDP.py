@@ -832,10 +832,10 @@ class InflationSDP(object):
                     inf_level = int(column_specification[8])
                     length = len(column_specification[8:])
                     message = ("Physical monomial generating set party number" +
-                               "specification must have length equal to " +
+                               "specification must have length equal to 1 or " +
                                "number of parties. E.g.: For 3 parties, " +
                                "'physical322'.")
-                    assert length <= self.nr_parties and length > 0, message
+                    assert length == self.nr_parties or length == 1, message
                     if length == 1:
                         physmon_lens = [inf_level]*self.InflationProblem.nr_sources
                     else:
@@ -887,7 +887,6 @@ class InflationSDP(object):
 
                             physical_monomials.append(concatenated.tolist())
 
-                #self.generating_monomials = physical_monomials
                 columns = physical_monomials
             else:
                 raise Exception('I have not understood the format of the '
