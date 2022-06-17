@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Download and Installation &mdash; inflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Download and Installation &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +38,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Download and Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
@@ -46,7 +46,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Tutorial and examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">causalinflation</a></li>
 </ul>
 
@@ -98,28 +98,27 @@
     text-align: unset;
 }
 </style>
-<section id="download-and-installation">
-<h1>Download and Installation<a class="headerlink" href="#download-and-installation" title="Permalink to this headline"></a></h1>
-<section id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline"></a></h2>
-<p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a> and <a class="reference external" href="http://www.numpy.org/">Numpy</a>. The code is only compatible with Python 3.</p>
-<p>We use the <cite>MOSEK &lt;http://www.mosek.com/&gt;</cite> solver for solving the semidefinite program. There exist free academic licenses for this solver.
-The MOSEK Python package is required.</p>
-</section>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
+<div class="section" id="download-and-installation">
+<h1>Download and Installation<a class="headerlink" href="#download-and-installation" title="Permalink to this headline">¶</a></h1>
+<p>The package is available in the Python Package Index. The latest development version is available on GitHub.</p>
+<div class="section" id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a>, <a class="reference external" href="http://www.numpy.org/">Numpy</a> and <a class="reference external" href="http://www.scipy.org/">Scipy</a>. The code is only compatible with Python 3. It is recommended to install <a class="reference external" href="http://www.numba.org/">Numba</a> which provides just-in-time compilation of several core functions, yelding a significant speed-up.</p>
+<p>Generated relaxations can be exported in <a class="reference external" href="http://euler.nmt.edu/~brian/sdplib/FORMAT">SDPA format</a>, which can be loaded with other solvers. We also support the use of the <a class="reference external" href="http://www.mosek.com/">MOSEK</a> solver for efficiently solving the relaxation (MOSEK has free academic licenses). The MOSEK Python package needs to be installed. Future updates will include exporting to other solver interfaces, such as CVXPY, PICOS or YALMIP.</p>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>Follow the standard procedure for installing Python modules:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install ncpol2sdpa
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install causalinflation
 </pre></div>
 </div>
-<p>If you use the development version, install it from the source code:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/peterwittek/ncpol2sdpa.git
-$ cd ncpol2sdpa
-$ python setup.py install
+<p>If you use the development version, you can download the source code from the <a href="#id1"><span class="problematic" id="id2">`GitHub repository &lt;&gt;`_</span></a> and run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python setup.py install
 </pre></div>
 </div>
-</section>
-</section>
+<p>in the downloaded folder.</p>
+</div>
+</div>
 
 
            </div>

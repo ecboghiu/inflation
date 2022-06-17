@@ -5,16 +5,31 @@
 
 Introduction
 ============
-Causalinflation is a Python package that provides implementations of various inflation algorithms for causal inference. In causal inference, the main task is to determine which types of causal relationships can exist between different random variables. Inflation algorithms allow one to exclude, based on data, certain causal relationships. 
+CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatiblity between some observed data and a given causal relationship.
 
-The first version of this package implements the inflation technique for Quantum Causal Compatibility (see `Wolfe, Elie, et al. "Quantum inflation: A general approach to quantum causal compatibility." Physical Review X 11.2 (2021): 021043. <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043>`_). The inflation techniques for classical and post-quantum causal compatibility will be implemented in future updates. 
+The first version of this package implements the inflation technique for quantum causal compatibility. For details, see `Wolfe, Elie, et al. "Quantum inflation: A general approach to quantum causal compatibility." Physical Review X 11.2 (2021): 021043. <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043>`_). The inflation technique for classical causal compatibility will be implemented in a future update. 
 
-Examples of applications of this package:
+Examples of use of this package include:
 
-- Standard NPA .. expand
--
+- Feasibility problems and extraction of certificates.
+- Optimization of Bell operators. 
+- Optimisation over classical distributions. 
+- Standard NPA.
+- Scenarios with partial information. 
 
-The implementation has an intuitive syntax and the user does not require advanced knowledge of the inner workings of the package.
+In the Tutorial and examples (link!) all the above are explained in more detail.
+
+Copyright and License
+=====================
+
+CasualInflation is free open-source software released under the GNU General Public License. [TODO: what license do we use?]
+
+Acnkowledgments
+===============
+
+[Should we acknowledge funding, or is it enough to have it in the paper?]
+
+
 
 .. toctree::
    :maxdepth: 2
@@ -23,6 +38,7 @@ The implementation has an intuitive syntax and the user does not require advance
    download
    tutorial
    examples
+   advanced
    modules
 
 Indices and tables

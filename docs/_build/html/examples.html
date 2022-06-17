@@ -1,28 +1,26 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples &mdash; inflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Examples &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="inflation" href="modules.html" />
-    <link rel="prev" title="Download and Installation" href="download.html" /> 
+    <link rel="next" title="Function documentation" href="modules.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,10 +38,16 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Feasibility-problems-and-extraction-of-certificates.">Feasibility problems and extraction of certificates.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Optimization-of-Bell-operators.">Optimization of Bell operators.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Optimisation-over-classical-distributions.">Optimisation over classical distributions.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Standard-NPA.">Standard NPA.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Scenarios-with-partial-information.">Scenarios with partial information.</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Causal-compatibility-problems">Causal compatibility problems</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#The-PR-box">The PR box</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#The-2PR-distribution-in-the-bilocal-scenario">The 2PR distribution in the bilocal scenario</a></li>
@@ -58,7 +62,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#Appendix:-How-to-customize-the-generating-set">Appendix: How to customize the generating set</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">inflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Function documentation</a></li>
 </ul>
 
         </div>
@@ -363,15 +367,30 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<section id="Examples">
-<h1>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline"></a></h1>
-<p>In this tutorial, we will show different problems that the causalinflation package can solve.</p>
-<section id="Causal-compatibility-problems">
-<h2>Causal compatibility problems<a class="headerlink" href="#Causal-compatibility-problems" title="Permalink to this headline"></a></h2>
+<div class="section" id="Examples">
+<h1>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Feasibility-problems-and-extraction-of-certificates.">
+<h2>Feasibility problems and extraction of certificates.<a class="headerlink" href="#Feasibility-problems-and-extraction-of-certificates." title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="Optimization-of-Bell-operators.">
+<h2>Optimization of Bell operators.<a class="headerlink" href="#Optimization-of-Bell-operators." title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="Optimisation-over-classical-distributions.">
+<h2>Optimisation over classical distributions.<a class="headerlink" href="#Optimisation-over-classical-distributions." title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="Standard-NPA.">
+<h2>Standard NPA.<a class="headerlink" href="#Standard-NPA." title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="Scenarios-with-partial-information.">
+<h2>Scenarios with partial information.<a class="headerlink" href="#Scenarios-with-partial-information." title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="Causal-compatibility-problems">
+<h2>Causal compatibility problems<a class="headerlink" href="#Causal-compatibility-problems" title="Permalink to this headline">¶</a></h2>
+<p>Causal relationships are encoded as a Bayesian Directed-Acyclic-Graph (DAG). A DAG is a graph where some nodes correspond to observed random variables, and other nodes correspond to unobserved variables. Directed arrows between the nodes describe the direction of causation.</p>
 <p>The causal compatibility problem aims to answer the question of whether a given probability distribution of outcomes of measurements is compatible with a given causal model. For the following examples, we consider compatibility with a quantum causal model.</p>
 <p><em>TODO</em>: explain more</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">causalinflation</span> <span class="k">as</span> <span class="nn">cinf</span>
@@ -382,48 +401,114 @@ div.rendered_html tbody tr:hover {
 <br/></pre></div>
 </div>
 </div>
-<section id="The-PR-box">
-<h3>The PR box<a class="headerlink" href="#The-PR-box" title="Permalink to this headline"></a></h3>
+<div class="section" id="The-PR-box">
+<h3>The PR box<a class="headerlink" href="#The-PR-box" title="Permalink to this headline">¶</a></h3>
 <p>TODO: break the code and introduce the problem</p>
 <p>add bisection function hidden from the documentation, maybe in example_utils.py</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_PRbox_array</span>
 
 <span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">]},</span>
                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">])</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 <span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
 
 <span class="n">InfSDP</span><span class="p">,</span> <span class="n">critical_vis</span> <span class="o">=</span> <span class="n">feasibility_bisection</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">,</span> <span class="n">P_PRbox_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Critical visibility:&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">critical_vis</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Infeasibility certificate: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate_as_symbols_probs</span><span class="p">,</span>
-                                       <span class="s2">&quot;≥&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Last infeasibility certificate: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">certificate_as_2output_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Critical visibility:     0.7071
-Infeasibility certificate:
- -201487.332*p(00|00) - 201493.109*p(00|01) - 201493.109*p(00|10) + 201492.612*p(00|11) + 201489.909*pA(0|0) + 1.0*pA(0|1) + 201489.909*pB(0|0) + 1.0*pB(0|1) + 41739.738 ≥ 0
+Last infeasibility certificate:
+
 </pre></div></div>
 </div>
-</section>
-<section id="The-2PR-distribution-in-the-bilocal-scenario">
-<h3>The 2PR distribution in the bilocal scenario<a class="headerlink" href="#The-2PR-distribution-in-the-bilocal-scenario" title="Permalink to this headline"></a></h3>
-<p>TODO: break the code and introduce the problem</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="math notranslate nohighlight">
+$\displaystyle - 0.25 \langle A_{0} B_{0} \rangle - 0.25 \langle A_{0} B_{1} \rangle - 0.25 \langle A_{1} B_{0} \rangle + 0.25 \langle A_{1} B_{1} \rangle + 0.707$</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">coeffs</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="c1"># C: why did I write this??</span>
+<span class="c1"># names can still contain duplicated names, so we need to remove them</span>
+<span class="c1"># new_dual_certificate = {tuple(name): 0 for name in names}</span>
+<span class="c1"># for i, name in enumerate(names):</span>
+<span class="c1">#     new_dual_certificate[tuple(name)] += coeffs[i]</span>
+<span class="c1"># coeffs = np.array(list(new_dual_certificate.values()))</span>
+<span class="c1"># names = list(new_dual_certificate.keys())</span>
+
+
+<span class="c1"># Set to zero very small coefficients</span>
+<span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="c1"># Take the smallest one and make it 1</span>
+<span class="n">coeffs</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">])</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+<span class="c1"># Round</span>
+<span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">coeffs</span><span class="p">,</span> <span class="n">names</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(array([ 0.00000000e+00,  4.17303634e+04,  2.01489910e+05,  1.00000000e+00,
+         2.01489910e+05,  1.00000000e+00, -2.01487334e+05, -2.01493111e+05,
+        -2.01493111e+05,  2.01492614e+05]),
+ array([list([&#39;0&#39;]), list([&#39;1&#39;]), list([&#39;A_1_0_0&#39;]), list([&#39;A_1_1_0&#39;]),
+        list([&#39;B_1_0_0&#39;]), list([&#39;B_1_1_0&#39;]), list([&#39;A_1_0_0*B_1_0_0&#39;]),
+        list([&#39;A_1_0_0*B_1_1_0&#39;]), list([&#39;A_1_1_0*B_1_0_0&#39;]),
+        list([&#39;A_1_1_0*B_1_1_0&#39;])], dtype=object))
+</pre></div></div>
+</div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([ 0.00000000e+00,  2.07106169e-01,  9.99986581e-01,  4.96296108e-06,
+        9.99986581e-01,  4.96296107e-06, -9.99973795e-01, -1.00000246e+00,
+       -1.00000246e+00,  1.00000000e+00])
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="The-2PR-distribution-in-the-bilocal-scenario">
+<h3>The 2PR distribution in the bilocal scenario<a class="headerlink" href="#The-2PR-distribution-in-the-bilocal-scenario" title="Permalink to this headline">¶</a></h3>
+<p>TODO: break the code and introduce the problem</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_2PR_array</span>
@@ -487,9 +572,9 @@ Critical visibility:       0.75
 0
 </pre></div></div>
 </div>
-</section>
-<section id="The-W-distribution">
-<h3>The W distribution<a class="headerlink" href="#The-W-distribution" title="Permalink to this headline"></a></h3>
+</div>
+<div class="section" id="The-W-distribution">
+<h3>The W distribution<a class="headerlink" href="#The-W-distribution" title="Permalink to this headline">¶</a></h3>
 <p>TODO: break the code and introduce the problem</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -566,14 +651,14 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
 145.768*p(000|000)*pA(0|0) + 145.769*p(000|000)*pB(0|0) + 145.757*p(000|000)*pC(0|0) + 921.574*p(000|000) - 122.504*pA(0|0)**2 - 112.285*pA(0|0)*pAB(00|00) - 112.149*pA(0|0)*pAC(00|00) - 553.411*pA(0|0)*pB(0|0)*pC(0|0) + 1293.356*pA(0|0)*pB(0|0) - 580.673*pA(0|0)*pBC(00|00) + 1293.124*pA(0|0)*pC(0|0) - 1105.698*pA(0|0) + 313.48*pAB(00|00)**2 + 202.786*pAB(00|00)*pAC(00|00) - 112.258*pAB(00|00)*pB(0|0) + 202.78*pAB(00|00)*pBC(00|00) - 580.667*pAB(00|00)*pC(0|0) + 1.066*pAB(00|00) + 313.433*pAC(00|00)**2 - 580.747*pAC(00|00)*pB(0|0) + 202.818*pAC(00|00)*pBC(00|00) - 112.177*pAC(00|00)*pC(0|0) + 1.0*pAC(00|00) - 122.527*pB(0|0)**2 - 112.227*pB(0|0)*pBC(00|00) + 1293.293*pB(0|0)*pC(0|0) - 1105.759*pB(0|0) + 313.504*pBC(00|00)**2 - 112.338*pBC(00|00)*pC(0|0) + 1.058*pBC(00|00) - 122.482*pC(0|0)**2 - 1105.672*pC(0|0) + 1142.473 ≥ 0
 </pre></div></div>
 </div>
-</section>
-</section>
-<section id="Optimisation-problems">
-<h2>Optimisation problems<a class="headerlink" href="#Optimisation-problems" title="Permalink to this headline"></a></h2>
+</div>
+</div>
+<div class="section" id="Optimisation-problems">
+<h2>Optimisation problems<a class="headerlink" href="#Optimisation-problems" title="Permalink to this headline">¶</a></h2>
 <p>Given a function of the probability distribution, we want to find the maximum over the set of probability distributions compatible with the causal model. This type of problem can also be tackled with causalinflation by optimising over the semidefinite relaxation of the problem.</p>
 <p>TODO: refine statement</p>
-<section id="The-Svetlichny-distribution">
-<h3>The Svetlichny distribution<a class="headerlink" href="#The-Svetlichny-distribution" title="Permalink to this headline"></a></h3>
+<div class="section" id="The-Svetlichny-distribution">
+<h3>The Svetlichny distribution<a class="headerlink" href="#The-Svetlichny-distribution" title="Permalink to this headline">¶</a></h3>
 <p>TODO: break the code and introduce the problem</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -646,9 +731,9 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
 5.656854245790322
 </pre></div></div>
 </div>
-</section>
-<section id="The-distance-to-a-particular-distribution">
-<h3>The distance to a particular distribution<a class="headerlink" href="#The-distance-to-a-particular-distribution" title="Permalink to this headline"></a></h3>
+</div>
+<div class="section" id="The-distance-to-a-particular-distribution">
+<h3>The distance to a particular distribution<a class="headerlink" href="#The-distance-to-a-particular-distribution" title="Permalink to this headline">¶</a></h3>
 <p>TODO: break the code and introduce the problem</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -720,10 +805,10 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
 0.33333333121984077
 </pre></div></div>
 </div>
-</section>
-</section>
-<section id="Appendix:-How-to-customize-the-generating-set">
-<h2>Appendix: How to customize the generating set<a class="headerlink" href="#Appendix:-How-to-customize-the-generating-set" title="Permalink to this headline"></a></h2>
+</div>
+</div>
+<div class="section" id="Appendix:-How-to-customize-the-generating-set">
+<h2>Appendix: How to customize the generating set<a class="headerlink" href="#Appendix:-How-to-customize-the-generating-set" title="Permalink to this headline">¶</a></h2>
 <p>In this tutorial we will showcase how to customize the generating set of monomials.</p>
 <p>We can use the built-in functions to construct a generating set according to several hierarchies. To showcase this, let us first look at a simple scenario of only two parties, Alice and Bob, sharing a quantum state.</p>
 <div class="nbinput nblast docutils container">
@@ -740,7 +825,7 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
 </div>
 <p>These are all the measurement operators:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">meas</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>
@@ -749,7 +834,8 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
@@ -775,15 +861,15 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
 [1, A_1_0_0, A_1_1_0, B_1_0_0, B_1_1_0, A_1_0_0*B_1_0_0, A_1_0_0*B_1_1_0, A_1_1_0*B_1_0_0, A_1_1_0*B_1_1_0]
 </pre></div></div>
 </div>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="download.html" class="btn btn-neutral float-left" title="Download and Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="modules.html" class="btn btn-neutral float-right" title="inflation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="Function documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
