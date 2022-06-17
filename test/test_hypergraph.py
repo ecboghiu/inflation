@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from causalinflation.quantum.general_tools import *
+from causalinflation.quantum.general_tools import hypergraphs_are_equal, is_knowable
 from causalinflation import InflationProblem
 
 class TestDAGToHypergraph(unittest.TestCase):

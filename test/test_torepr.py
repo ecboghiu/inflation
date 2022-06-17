@@ -1,7 +1,8 @@
 import unittest
+import numpy as np
 
-from causalinflation.quantum.general_tools import *
-from causalinflation.quantum.fast_npa import *
+from causalinflation.quantum.general_tools import to_numbers, to_representative
+from causalinflation.quantum.fast_npa import to_name
 
 class TestToRepr(unittest.TestCase):
     def test_to_representative(self):
