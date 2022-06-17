@@ -22,7 +22,34 @@ class TestGeneratingMonomials(unittest.TestCase):
     col_structure = [[],
                      [0], [1], [2],
                      [0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]
-
+    # Monomials for the NPA level 2 in the bilocality scenario
+    meas = bilocalSDP.measurements
+    A_1_0_0_0 = meas[0][0][0][0]
+    A_2_0_0_0 = meas[0][1][0][0]
+    B_1_1_0_0 = meas[1][0][0][0]
+    B_1_2_0_0 = meas[1][1][0][0]
+    B_2_1_0_0 = meas[1][2][0][0]
+    B_2_2_0_0 = meas[1][3][0][0]
+    C_0_1_0_0 = meas[2][0][0][0]
+    C_0_2_0_0 = meas[2][1][0][0]
+    actual_cols = [1, A_1_0_0_0, A_2_0_0_0, B_1_1_0_0, B_1_2_0_0, B_2_1_0_0,
+                   B_2_2_0_0, C_0_1_0_0, C_0_2_0_0, A_1_0_0_0*A_2_0_0_0,
+                   A_1_0_0_0*B_1_1_0_0, A_1_0_0_0*B_1_2_0_0,
+                   A_1_0_0_0*B_2_1_0_0, A_1_0_0_0*B_2_2_0_0,
+                   A_2_0_0_0*B_1_1_0_0, A_2_0_0_0*B_1_2_0_0,
+                   A_2_0_0_0*B_2_1_0_0, A_2_0_0_0*B_2_2_0_0,
+                   A_1_0_0_0*C_0_1_0_0, A_1_0_0_0*C_0_2_0_0,
+                   A_2_0_0_0*C_0_1_0_0, A_2_0_0_0*C_0_2_0_0,
+                   B_1_1_0_0*B_1_2_0_0, B_1_1_0_0*B_2_1_0_0,
+                   B_1_1_0_0*B_2_2_0_0, B_1_2_0_0*B_1_1_0_0,
+                   B_1_2_0_0*B_2_1_0_0, B_1_2_0_0*B_2_2_0_0,
+                   B_2_1_0_0*B_1_1_0_0, B_2_1_0_0*B_2_2_0_0,
+                   B_2_2_0_0*B_1_2_0_0, B_2_2_0_0*B_2_1_0_0,
+                   B_1_1_0_0*C_0_1_0_0, B_1_1_0_0*C_0_2_0_0,
+                   B_1_2_0_0*C_0_1_0_0, B_1_2_0_0*C_0_2_0_0,
+                   B_2_1_0_0*C_0_1_0_0, B_2_1_0_0*C_0_2_0_0,
+                   B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
+                   C_0_1_0_0*C_0_2_0_0]
 
     def test_generating_columns_nc(self):
         truth = 41
@@ -32,6 +59,24 @@ class TestGeneratingMonomials(unittest.TestCase):
                          "With noncommuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
                          " were expected")
+
+    def test_generation_from_columns(self):
+        columns = self.bilocalSDP.build_columns(self.actual_cols,
+                                                return_columns_numerical=False)
+        self.assertEqual(columns, self.actual_cols,
+                         "The direct copying of columns is failing")
+
+    def test_generation_from_lol(self):
+        columns = self.bilocalSDP.build_columns(self.col_structure,
+                                                return_columns_numerical=False)
+        self.assertEqual(columns, self.actual_cols,
+                         "Parsing a list-of-list description of columns fails")
+
+    def test_generation_from_str(self):
+        columns = self.bilocalSDP.build_columns('npa2',
+                                                return_columns_numerical=False)
+        self.assertEqual(columns, self.actual_cols,
+                         "Parsing the string description of columns is failing")
 
     def test_generate_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
