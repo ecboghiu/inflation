@@ -5,7 +5,7 @@ import sys
 def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                          objective: dict = {}, known_vars=[0, 1],
                          semiknown_vars=[], positive_vars=[], verbose: int = 0,
-                         pure_feasibility_problem: bool = False,
+                         feas_as_optim: bool = False,
                          solverparameters: dict = {}):
 
     import mosek
@@ -108,7 +108,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                     ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.lessThan(0)))
                 else:
                     ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.equalsTo(0)))
-            if not pure_feasibility_problem:
+            if feas_as_optim:
                 ci_constraints.append(M.constraint(Expr.dot(Z,Matrix.eye(mat_dim)), Domain.equalsTo(1)))
     else:
         # ! The primal formulation uses a lot more RAM and is slower!! Only use if the problem is not too big
@@ -125,7 +125,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         #G = M.variable("G", Domain.unbounded([mat_dim, mat_dim]))
         #const = M.constraint(G, Domain.inPSDCone(mat_dim))
         G = M.variable("G", Domain.inPSDCone(mat_dim))
-        if pure_feasibility_problem:
+        if not feas_as_optim:
             M.objective(ObjectiveSense.Maximize, 0)
             for i in range(mat_dim):
                 for j in range(i, mat_dim):
@@ -207,7 +207,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     coeffs = np.zeros(nr_known, dtype=np.float64)
     for var in range(nr_known):
         coeffs[var] = np.sum(ymat[np.where(positionsmatrix == var)])
-    if not pure_feasibility_problem and not objective:  # i.e., if doing a relaxed feasibility problem, a maximization of the minimum eigenvalue
+    if feas_as_optim and not objective:  # i.e., if doing a relaxed feasibility problem, a maximization of the minimum eigenvalue
         coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is
     vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs, 'Z': ymat, 'xi': xi_list}
     return vars_of_interest, primal

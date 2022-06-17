@@ -486,7 +486,7 @@ class InflationSDP(object):
                     "variables from the objective function.")
 
     def solve(self, interpreter: str='MOSEKFusion',
-                    pure_feasibility_problem: bool=False,
+                    feas_as_optim: bool=False,
                     solverparameters=None):
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
@@ -496,15 +496,16 @@ class InflationSDP(object):
         Parameters
         ----------
         interpreter : str, optional
-            The solver to be called, by default 'MOSEKFusion'. It also accepts
-            'CVXPY' and 'PICOS'. It is recommended to use 'MOSEKFusion'.
-        pure_feasibility_problem : bool, optional
-            For problems with constant objective, whether to do a pure
-            feasibility problem or to relax it to an optimisation where
-            we maximize the minimum eigenvalue. If such eigenvalue is negative,
-            then the original problem is infeasible. By default False.
+            The solver to be called, by default 'MOSEKFusion'.
+        feas_as_optim : bool, optional
+            Instead of solving the feasibility problem
+                (1) find vars such that Gamma >= 0
+            setting this label to True solves instead the problem
+                (2) max lambda such that Gamma - lambda*Id >= 0.
+            The correspondence is that the result of (2) is positive if (1) is
+            feasible and negative otherwise. By default False.
         solverparameters : _type_, optional
-            Extra parmeters to be sent to the solver, by default None.
+            Extra parameters to be sent to the solver, by default None.
 
         """
         if self.momentmatrix is None:
@@ -519,7 +520,7 @@ class InflationSDP(object):
                               "known_vars":       known_moments,
                               "semiknown_vars":   semiknown_moments,
                               "positive_vars":    self.physical_monomials[:, 0] if self.physical_monomials.size > 0 else [],
-                              "pure_feasibility_problem": pure_feasibility_problem,
+                              "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
 
