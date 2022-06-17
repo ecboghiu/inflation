@@ -46,7 +46,8 @@ class InflationProblem(object):
         self.nr_sources = self.hypergraph.shape[0]
 
         if np.array(inflation_level_per_source).size == 0:
-            warn("Inflation level per source must be a non-empty list. Defaulting to 1 (standard NPA).")
+            if self.verbose > 0:
+                print("Inflation level per source must be a non-empty list. Defaulting to 1 (standard NPA).")
             self.inflation_level_per_source = np.array([1]*self.nr_sources)
         elif type(inflation_level_per_source) == int:
             self.inflation_level_per_source = np.array([inflation_level_per_source]*self.nr_sources)

@@ -110,7 +110,7 @@ def write_to_mat(problem, filename):
     )
 
 def write_to_sdpa(problem, filename):
-    """Export the problem to a file in SDPA format. See specifications at
+    """Export the problem to a file in  . See specifications at
     http://euler.nmt.edu/~brian/sdplib/FORMAT.
 
     :param problem: The SDP relaxation to write.

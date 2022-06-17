@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; inflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Introduction &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -37,12 +37,13 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">causalinflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Function documentation</a></li>
 </ul>
 
         </div>
@@ -93,17 +94,29 @@
     text-align: unset;
 }
 </style>
-<section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
-<p>Causalinflation is a Python package that provides implementations of various inflation algorithms for causal inference. In causal inference, the main task is to determine which types of causal relationships can exist between different random variables. Inflation algorithms allow one to exclude, based on data, certain causal relationships. The first version of this package implements the inflation technique for Quantum Causal Compatibility (see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Wolfe, Elie, et al. “Quantum inflation: A general approach to quantum causal compatibility.” Physical Review X 11.2 (2021): 021043.</a>). The inflation techniques for classical and post-quantum causal compatibility will be implemented in future updates.</p>
-<p>Currently, the types of problems that this package can solve are:</p>
+<div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatiblity between some observed data and a given causal relationship.</p>
+<p>The first version of this package implements the inflation technique for quantum causal compatibility. For details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Wolfe, Elie, et al. “Quantum inflation: A general approach to quantum causal compatibility.” Physical Review X 11.2 (2021): 021043.</a>). The inflation technique for classical causal compatibility will be implemented in a future update.</p>
+<p>Examples of use of this package include:</p>
 <ul class="simple">
-<li></li>
-<li></li>
+<li><p>Feasibility problems and extraction of certificates.</p></li>
+<li><p>Optimization of Bell operators.</p></li>
+<li><p>Optimisation over classical distributions.</p></li>
+<li><p>Standard NPA.</p></li>
+<li><p>Scenarios with partial information.</p></li>
 </ul>
-<p>The implementation has an intuitive syntax and the user does not require advanced knowledge of the inner workings of the package.</p>
+<p>In the Tutorial and examples (link!) all the above are explained in more detail.</p>
+</div>
+<div class="section" id="copyright-and-license">
+<h1>Copyright and License<a class="headerlink" href="#copyright-and-license" title="Permalink to this headline">¶</a></h1>
+<p>CasualInflation is free open-source software released under the GNU General Public License. [TODO: what license do we use?]</p>
+</div>
+<div class="section" id="acnkowledgments">
+<h1>Acnkowledgments<a class="headerlink" href="#acnkowledgments" title="Permalink to this headline">¶</a></h1>
+<p>[Should we acknowledge funding, or is it enough to have it in the paper?]</p>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="download.html#dependencies">Dependencies</a></li>
@@ -111,34 +124,40 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#defining-a-polynomial-optimization-problem-of-commuting-variables">Defining a Polynomial Optimization Problem of Commuting Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#generating-and-solving-the-relaxation">Generating and Solving the Relaxation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#analyzing-the-solution">Analyzing the Solution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#debugging-the-sdp-relaxation">Debugging the SDP Relaxation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#defining-and-solving-an-optimization-problem-of-noncommuting-variables">Defining and Solving an Optimization Problem of Noncommuting Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Encoding-the-causal-scenario">Encoding the causal scenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Generating-the-SDP-relaxation">Generating the SDP relaxation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Feasibility-problems-and-extraction-of-certificates.">Feasibility problems and extraction of certificates.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Optimization-of-Bell-operators.">Optimization of Bell operators.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Optimisation-over-classical-distributions.">Optimisation over classical distributions.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Standard-NPA.">Standard NPA.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Scenarios-with-partial-information.">Scenarios with partial information.</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Causal-compatibility-problems">Causal compatibility problems</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Optimisation-problems">Optimisation problems</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Appendix:-How-to-customize-the-generating-set">Appendix: How to customize the generating set</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">causalinflation</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="advanced.html#How-to-customize-the-generating-set">How to customize the generating set</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Function documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="causalinflation.html">causalinflation package</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</section>
+</div>
 
 
            </div>

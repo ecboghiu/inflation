@@ -597,9 +597,7 @@ class InflationSDP(object):
         if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
-            # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
-            # Round
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
             coeffs = np.round(coeffs, decimals=round_decimals)
 
         polynomial = 0
@@ -643,7 +641,7 @@ class InflationSDP(object):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
             # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
             # Round
             coeffs = np.round(coeffs, decimals=round_decimals)
         polynomial = 0
@@ -697,7 +695,7 @@ class InflationSDP(object):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
             # Take the smallest one and make it 1
-            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).min()
+            coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
             # Round
             coeffs = np.round(coeffs, decimals=round_decimals)
 
