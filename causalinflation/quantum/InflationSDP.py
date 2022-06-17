@@ -520,7 +520,7 @@ class InflationSDP(object):
         """
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
-                            "Call 'InflationSDP.get_relaxation(...)' first")
+                            "Call 'InflationSDP.get_relaxation()' first")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
         known_moments = self.known_moments
@@ -541,6 +541,8 @@ class InflationSDP(object):
         self.primal_objective = lambdaval
         self.solution_object = sol
         self.objective_value = lambdaval * (1 if self.maximize else -1)
+        self.solution_object  = sol
+        self.objective_value  = lambdaval * (1 if self.maximize else -1)
         # Processed the dual certificate and stores it in
         # self.dual_certificate in various formats
         if np.array(self.semiknown_moments).size > 0:
@@ -556,6 +558,8 @@ class InflationSDP(object):
         self.dual_certificate = np.array(
             [[coeffs[i], clean_names[i]] for i in range(coeffs.shape[0])], dtype=object)
         
+                                         dtype=object)
+
         self.dual_certificate_lowerbound = 0
 
     def certificate_as_probs(self, clean: bool=False,
@@ -582,12 +586,12 @@ class InflationSDP(object):
         sympy.core.symbol.Symbol
             The certificate in terms or probabilities and marginals.
         """
-        if not self.dual_certificate:
+        try:
+            coeffs = self.dual_certificate[:, 0].astype(float)
+            names  = self.dual_certificate[:, 1]
+        except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve(...)' first")
-
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+                            "a problem. Call 'InflationSDP.solve()' first")
         # C: why did I write this??
         # names can still contain duplicated names, so we need to remove them
         # new_dual_certificate = {tuple(name): 0 for name in names}
@@ -639,11 +643,12 @@ class InflationSDP(object):
         sympy.core.symbol.Symbol
             The certificate as an objective function.
         """
-        if not self.dual_certificate:
+        try:
+            coeffs = self.dual_certificate[:, 0].astype(float)
+            names = self.dual_certificate[:, 1]
+        except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve(...)' first")
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+                            "a problem. Call 'InflationSDP.solve()' first")
         if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
@@ -692,14 +697,15 @@ class InflationSDP(object):
         sympy.core.symbol.Symbol
             The certificate in terms of correlators.
         """
-        if not self.dual_certificate:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve(...)' first")
         if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
             raise Exception("Correlator certificates are only available " +
                             "for 2-output problems")
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+        try:
+            coeffs = self.dual_certificate[:, 0].astype(float)
+            names = self.dual_certificate[:, 1]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve()' first")
         if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
