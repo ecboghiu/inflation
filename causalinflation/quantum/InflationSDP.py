@@ -204,8 +204,6 @@ class InflationSDP(object):
                 unfactorized_semiknown_and_known.append([monomials_factors_names[i]])
         unfactorized_semiknown_and_known = np.array(unfactorized_semiknown_and_known, dtype=object)
 
-        self._n_unknown = len(monomials_factors_names) - self._n_something_known
-
         # Reassign the integer variable names to ordered from 1 to N
         variable_dict = {**{0: 0, 1: 1},
                          **dict(zip(monomials_factors_names[:, 0],
@@ -910,8 +908,8 @@ class InflationSDP(object):
         """
 
         hypergraph = self.InflationProblem.hypergraph
-        settings = self.InflationProblem.settings_per_party
-        outcomes = self.InflationProblem.outcomes_per_party
+        settings   = self.InflationProblem.settings_per_party
+        outcomes   = self.InflationProblem.outcomes_per_party
         inflation_level_per_source = self.InflationProblem.inflation_level_per_source
         commuting = self.commuting
 
@@ -1055,13 +1053,13 @@ class InflationSDP(object):
         """
 
 
-        inflevel = self.InflationProblem.inflation_level_per_source
+        inflevel  = self.InflationProblem.inflation_level_per_source
         n_sources = len(inflevel)
         # Start with the identity permutation
         inflation_symmetries = [list(range(len(self.generating_monomials)))]
 
         # TODO do this function without relying on symbolic substitutions!!
-        flatmeas = np.array(flatten(self.measurements))
+        flatmeas  = np.array(flatten(self.measurements))
         measnames = np.array([str(meas) for meas in flatmeas])
 
         list_original = from_numbers_to_flat_tuples(self.generating_monomials)
@@ -1081,7 +1079,7 @@ class InflationSDP(object):
                                                       measnames,
                                                       self.names)
             list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
-            total_perm = find_permutation(list_permuted, list_original)
+            total_perm    = find_permutation(list_permuted, list_original)
             inflation_symmetries.append(total_perm)
 
         return inflation_symmetries
@@ -1183,7 +1181,7 @@ class InflationSDP(object):
         self._n_known = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
         self._n_something_known = np.sum(
             monomials_factors_knowable[:, 1] != 'No')
-        self._n_uknown = np.sum(monomials_factors_knowable[:, 1] == 'No')
+        self._n_unknown = np.sum(monomials_factors_knowable[:, 1] == 'No')
 
         # Reorder according to know, semiknown and unknown.
         monomials_factors_names_reordered = np.concatenate(
