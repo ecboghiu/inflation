@@ -948,9 +948,8 @@ class InflationSDP(object):
                      "generation of columns, but it is OK because you " +
                      "are using local level 1")
             else:
-                raise Exception("You must input substitution rules for columns " +
-                                "to be generated properly")
-
+                raise Exception("You must input substitution rules for columns "
+                                + "to be generated properly")
         else:
             # party_structure is something like:
             # only the first element is special, and it determines whether we include 1 or not
@@ -965,10 +964,11 @@ class InflationSDP(object):
                     meas_ops = []
                     for party in block:
                         meas_ops.append(flatten(self.measurements[party]))
-                    for slicee in itertools.product(*meas_ops):
+                    for monomial_factors in itertools.product(*meas_ops):
                         monomial = apply_substitutions(
-                            np.prod(slicee), self.substitutions)
-                        if monomial not in symbols:
+                            np.prod(monomial_factors), self.substitutions)
+                        mon_length = len(str(monomial).split('*'))
+                        if monomial not in symbols and mon_length == len(block):
                             symbols.append(monomial)
                             if monomial == 1:
                                 coords = [0]
@@ -977,8 +977,6 @@ class InflationSDP(object):
                                 for factor in monomial.as_coeff_mul()[1]:
                                     coords.append(*to_numbers(factor, self.names))
                             res.append(coords)
-
-            #self.generating_monomials = sorted(res, key=len)
             return sorted(res, key=len)
 
     def _generate_parties(self):
