@@ -1,10 +1,8 @@
 import unittest
 import numpy as np
 
-# from sdp_utils import solveSDP
-from causalinflation.general_tools import *
-#from quantuminflation.general_tools import hypergraphs_are_equal
-from causalinflation.InflationProblem import InflationProblem
+from causalinflation.quantum.general_tools import *
+from causalinflation import InflationProblem
 
 class TestDAGToHypergraph(unittest.TestCase):
 

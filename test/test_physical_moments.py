@@ -1,6 +1,7 @@
 import unittest
+import numpy as np
 
-from causalinflation.general_tools import *
+from causalinflation.quantum.general_tools import is_physical, remove_sandwich
 
 class QuantumInflationPhysicalMoments(unittest.TestCase):
 
@@ -67,7 +68,7 @@ class QuantumInflationPhysicalMoments(unittest.TestCase):
                              [3, 1, 2, 0, 0, 0],
                              [3, 2, 1, 0, 0, 0]])
         self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
-        
+
         # Variations of previous
         monomial = np.array([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 2, 0, 0],

@@ -2,22 +2,30 @@ import unittest
 
 # from sdp_utils import solveSDP
 from ncpol2sdpa.nc_utils import flatten
-from causalinflation.general_tools import *
-from causalinflation.sdp_utils import *
+from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
+from causalinflation.quantum.sdp_utils import *
 import causalinflation.useful_distributions as useful_distributions
+from causalinflation import InflationProblem, InflationSDP
 
-from scipy.io import loadmat
+# from scipy.io import loadmat
 
 """ THIS IS MISSING data/ DOES NOT WORK """
 
 # Commented out because it takes long to test
 
 class TestGeneratingMonomials(unittest.TestCase):
-    bilocality = np.array([[1, 1, 0],
-                           [0, 1, 1]])
-    ins       = [1, 1, 1]
-    outs      = [2, 2, 2]
-    inflation = [2, 2]
+    bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
+    inflation  = [2, 2]
+    bilocality = InflationProblem(dag=bilocalDAG,
+                                  settings_per_party=[1, 1, 1],
+                                  outcomes_per_party=[2, 2, 2],
+                                  inflation_level_per_source=inflation)
+    bilocalSDP           = InflationSDP(bilocality)
+    bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
+    test_substitutions_scenario = InflationProblem(bilocalDAG,
+                                                   settings_per_party=[1, 2, 2],
+                                                   outcomes_per_party=[3, 2, 3],
+                                                   inflation_level_per_source=inflation)
     # Column structure for the NPA level 2 in a tripartite scenario
     col_structure = [[],
                      [0], [1], [2],
@@ -26,27 +34,17 @@ class TestGeneratingMonomials(unittest.TestCase):
 
     def test_generating_columns_nc(self):
         truth = 41
-        meas, subs, names = generate_parties(self.bilocality,
-                                             self.ins,
-                                             self.outs,
-                                             self.inflation,
-                                             noncommuting=True,
-                                             return_names=True)
-        columns = build_columns(self.col_structure, meas, subs, names)
+        columns = self.bilocalSDP.build_columns(self.col_structure,
+                                                return_columns_numerical=False)
         self.assertEqual(len(columns), truth,
                          "With noncommuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
                          " were expected")
 
     def test_generate_with_identities(self):
-        meas, subs, names = generate_parties(np.array([[1]]),
-                                             [2],
-                                             [2],
-                                             [1],
-                                             noncommuting=True,
-                                             expectation_values=True,
-                                             return_names=True)
-        columns = build_columns([[0, 0]], meas, subs, names)
+        oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
+        _, columns = oneParty.build_columns([[], [0, 0]],
+                                            return_columns_numerical=True)
         truth   = [[0],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
@@ -56,13 +54,8 @@ class TestGeneratingMonomials(unittest.TestCase):
 
     def test_generating_columns_c(self):
         truth = 37
-        meas, subs, names = generate_parties(self.bilocality,
-                                             self.ins,
-                                             self.outs,
-                                             self.inflation,
-                                             noncommuting=False,
-                                             return_names=True)
-        columns = build_columns(self.col_structure, meas, subs, names)
+        columns = self.bilocalSDP_commuting.build_columns(self.col_structure,
+                                                 return_columns_numerical=False)
         self.assertEqual(len(columns), truth,
                          "With commuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
@@ -71,8 +64,9 @@ class TestGeneratingMonomials(unittest.TestCase):
     def test_nc_substitutions(self):
         settings = [1, 2, 2]
         outcomes = [3, 2, 3]
-        meas, subs = generate_parties(self.bilocality, settings, outcomes,
-                                      self.inflation, noncommuting=True)
+        scenario = InflationSDP(self.test_substitutions_scenario)
+
+        meas, subs, _ = scenario._generate_parties()
 
         true_substitutions = {}
         for party in meas:
@@ -119,10 +113,9 @@ class TestGeneratingMonomials(unittest.TestCase):
 
 
     def test_c_substitutions(self):
-        settings = [1, 2, 2]
-        outcomes = [3, 2, 3]
-        meas, subs = generate_parties(self.bilocality, settings, outcomes,
-                                      self.inflation, noncommuting=False)
+        scenario = InflationSDP(self.test_substitutions_scenario,
+                                commuting=True)
+        meas, subs, _ = scenario._generate_parties()
 
         true_substitutions = {}
         for party in meas:
@@ -143,24 +136,23 @@ class TestGeneratingMonomials(unittest.TestCase):
 
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
-        hypergraph = np.array([[1]])
-        inflation_level = [2]
-        classical = False
-        col_structure = [[0, 0]]
-
-        meas, subs, names = generate_parties(hypergraph,
-                                             [2],
-                                             [2],
-                                             inflation_level,
-                                             noncommuting=True,
-                                             return_names=True)
+        scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
+                                                 outcomes_per_party=[2],
+                                                 settings_per_party=[2],
+                                                 inflation_level_per_source=[2]
+                                                 ),
+                                commuting=True)
+        meas, subs, names = scenario._generate_parties()
+        col_structure = [[], [0, 0]]
         flatmeas = np.array(flatten(meas))  # TODO remove this...
         measnames = np.array([str(meas) for meas in flatmeas])
 
         # Define moment matrix columns
-        ordered_cols_num = build_columns(col_structure, meas, subs, names)
+        _, ordered_cols_num = scenario.build_columns(col_structure,
+                                                  return_columns_numerical=True)
 
-        expected = [[[1, 2, 0, 0]],
+        expected = [[0],
+                    [[1, 2, 0, 0]],
                     [[1, 2, 1, 0]],
                     [[1, 1, 0, 0]],
                     [[1, 1, 1, 0]],
