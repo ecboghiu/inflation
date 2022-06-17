@@ -311,10 +311,11 @@ class InflationSDP(object):
 
         # Now find all the positive monomials
         # TODO add also known monomials to physical_monomials
-        self.physical_monomials = self._find_positive_monomials(
-            monomials_factors_names, sandwich_positivity=True)
-        # if not find_physical_monomials:
-        #     self.physical_monomials = np.array([])
+        if self.commuting:
+            self.physical_monomials = monomials_factors_names
+        else:
+            self.physical_monomials = self._find_positive_monomials(
+                monomials_factors_names, sandwich_positivity=True)
 
         if self.verbose > 0:
             print("Number of known, semi-known and unknown variables =",
