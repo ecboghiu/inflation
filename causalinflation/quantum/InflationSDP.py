@@ -511,9 +511,18 @@ class InflationSDP(object):
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
+        if feas_as_optim and len(self._objective_as_dict) > 2:
+            warn("You have a non-trivial objective set, but set to solve a " +
+                 "feasibility problem as optimization. Setting "
+                 + "feas_as_optim=False and optimizing the objective...")
+            feas_as_optim = False
+        if np.array(self.semiknown_moments).size > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
-        known_moments = self.known_moments
+        known_moments     = self.known_moments
 
         solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
@@ -524,24 +533,16 @@ class InflationSDP(object):
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
 
-
         sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
 
-
+        # Process the solution
         self.primal_objective = lambdaval
         self.solution_object  = sol
         self.objective_value  = lambdaval * (1 if self.maximize else -1)
-        # Processed the dual certificate and stores it in
-        # self.dual_certificate in various formats
-        if np.array(self.semiknown_moments).size > 0:
-            warn("Beware that, because the problem contains linearized " +
-                    "polynomial constraints, the certificate is not " +
-                    "guaranteed to apply to other distributions")
-
-        # if 'dual_certificate' in self.solution_object else None
-        coeffs = self.solution_object['dual_certificate']
-        names = self.final_monomials_list[:self._n_known]
-        aux01 = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
+        # Process the dual certificate in a generic form
+        coeffs      = self.solution_object['dual_certificate']
+        names       = self.final_monomials_list[:self._n_known]
+        aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
         clean_names = np.concatenate((aux01, names[:, 1]))
         self.dual_certificate = np.array([[coeffs[i], clean_names[i]]
                                             for i in range(coeffs.shape[0])],
