@@ -575,9 +575,10 @@ class InflationSDP(object):
             polynomial += monomial
         return polynomial
 
-    def certificate_as_2output_correlators(self, clean: bool=False,
-                                           chop_tol: float=1e-10,
-                                           round_decimals: int=3) -> sp.core.symbol.Symbol:
+    def certificate_as_correlators(self,
+                                   clean: bool=False,
+                                   chop_tol: float=1e-10,
+                                   round_decimals: int=3) -> sp.core.symbol.Symbol:
         """Give certificate as symbolic sum of 2-output correlators that
         is greater than or equal to 0. Only valid for 2-output problems.
 
