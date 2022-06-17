@@ -32,11 +32,15 @@ from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
 from ncpol2sdpa import flatten, projective_measurement_constraints
-from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
-from tqdm import tqdm
+from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomia
 from typing import List, Dict, Union, Tuple
 from warnings import warn
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(*args, **kwargs):
+        return args[0]
 
 class InflationSDP(object):
     """Class for generating and solving an SDP relaxation for quantum inflation.
