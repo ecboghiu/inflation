@@ -207,7 +207,10 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     coeffs = np.zeros(nr_known, dtype=np.float64)
     for var in range(nr_known):
         coeffs[var] = np.sum(ymat[np.where(positionsmatrix == var)])
-    if feas_as_optim and not objective:  # i.e., if doing a relaxed feasibility problem, a maximization of the minimum eigenvalue
-        coeffs[1] += -primal  # If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is
-    vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs, 'Z': ymat, 'xi': xi_list}
+    if feas_as_optim:
+        # In feasibility-as-optimization problems, the certificate is offset by
+        # the optimal value
+        coeffs[1] += -primal
+    vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs,
+                        'Z': ymat, 'xi': xi_list}
     return vars_of_interest, primal
