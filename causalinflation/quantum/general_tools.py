@@ -14,7 +14,6 @@ from itertools import permutations, product
 from ncpol2sdpa import flatten, generate_operators, generate_variables
 from ncpol2sdpa.nc_utils import apply_substitutions
 
-from tqdm import tqdm
 from typing import Dict, List, Tuple, Union, Any, NewType, TypeVar
 
 
@@ -27,6 +26,11 @@ except ImportError:
         return lambda f: f
     int16_ = np.uint16
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(*args, **kwargs):
+        return args[0]
 
 # TODO build a proper typing system, maybe use classes?
 

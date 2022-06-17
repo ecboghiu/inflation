@@ -1,7 +1,6 @@
 import numpy as np
 import scipy
 
-from tqdm import tqdm
 from typing import List, Dict, Tuple
 
 try:
@@ -11,6 +10,12 @@ except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
     bool_ = bool
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(*args, **kwargs):
+        return args[0]
 
 cache = True
 
