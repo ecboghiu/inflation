@@ -33,7 +33,7 @@ from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
 from ncpol2sdpa import flatten, projective_measurement_constraints
-from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomia
+from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
 from typing import List, Dict, Union, Tuple
 from warnings import warn
 
@@ -162,7 +162,7 @@ class InflationSDP(object):
         self.use_lpi_constraints = False
 
         # Process the column_specification input and store the result
-        #  in self.generating_monomials.
+        # in self.generating_monomials.
         self.generating_monomials_sym, self.generating_monomials = \
                         self.build_columns(column_specification,
                             max_monomial_length=0,
@@ -247,7 +247,7 @@ class InflationSDP(object):
         self.semiknown_reps = monomials_factors_ints[:self._n_something_known]
         self.final_monomials_list = monomials_factors_names
 
-        self._orbits = variable_dict
+        self._orbits   = variable_dict
         self._var2repr = orbits
         self._mon2indx = mon_string2int
 
@@ -262,8 +262,8 @@ class InflationSDP(object):
 
         # Define empty arrays for conditional statement if the problem is called
         # before calling .set_distribution()
-        self.known_moments = np.array([0, 1])
-        self.semiknown_moments = np.array([])
+        self.known_moments      = np.array([0, 1])
+        self.semiknown_moments  = np.array([])
         self._objective_as_dict = {1: 0.}
 
     def set_distribution(self,
@@ -465,8 +465,7 @@ class InflationSDP(object):
         names       = self.final_monomials_list[:self._n_known]
         aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
         clean_names = np.concatenate((aux01, names[:, 1]))
-        self.dual_certificate = np.array([[coeffs[i], clean_names[i]]
-                                            for i in range(coeffs.shape[0])],
+        self.dual_certificate = np.array(list(zip(coeffs, clean_names)),
                                          dtype=object)
 
         self.dual_certificate_lowerbound = 0
@@ -602,7 +601,7 @@ class InflationSDP(object):
                             "for 2-output problems")
         try:
             coeffs = self.dual_certificate[:, 0].astype(float)
-            names = self.dual_certificate[:, 1]
+            names  = self.dual_certificate[:, 1]
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
