@@ -1,10 +1,10 @@
 import unittest
+import numpy as np
 
-# from sdp_utils import solveSDP
 from ncpol2sdpa.nc_utils import flatten
 from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
-from causalinflation.quantum.sdp_utils import *
-import causalinflation.useful_distributions as useful_distributions
+# from causalinflation.quantum.sdp_utils import *
+# import causalinflation.useful_distributions as useful_distributions
 from causalinflation import InflationProblem, InflationSDP
 
 # from scipy.io import loadmat
