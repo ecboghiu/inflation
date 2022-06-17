@@ -176,7 +176,7 @@ class InflationSDP(object):
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
-        problem_arr, monomials_list = self._build_momentmatrix()
+        problem_arr, monomials_list, mon_string2int = self._build_momentmatrix()
         self._monomials_list_all = monomials_list
 
         # Calculate the inflation symmetries.
@@ -195,7 +195,9 @@ class InflationSDP(object):
                             = self._apply_inflation_symmetries(problem_arr,
                                                               monomials_list,
                                                               inflation_symmetries)
-
+        # Associate the names of all copies to the same variable
+        for key, val in mon_string2int.items():
+            mon_string2int[key] = orbits[val]
         # Factorize the symmetrized monomials
         monomials_factors_names, monomials_unfactorised_reordered \
                             = self._factorize_monomials(remaining_monomials)
@@ -206,68 +208,9 @@ class InflationSDP(object):
                 unfactorized_semiknown_and_known.append([monomials_factors_names[i]])
         unfactorized_semiknown_and_known = np.array(unfactorized_semiknown_and_known, dtype=object)
 
-        # Combine products of unknown monomials into a single variable.
-        monomials_factors_names_combined \
-          = self._monomials_combine_products_of_unknown(monomials_factors_names)
+        self._n_unknown = len(monomials_factors_names) - self._n_something_known
 
-        # Change the factors to representative factors
-        for i in range(monomials_factors_names_combined.shape[0]):
-            factors = monomials_factors_names_combined[i, 1]
-            factors_rep = []
-            for mon in factors:
-                asnumbers = np.array(to_numbers(mon, self.names))
-                asrep = to_representative(asnumbers, self.inflation_levels)
-                asname = to_name(asrep,self.names)
-                factors_rep.append(asname)
-            #factors_rep = [ for mon in factors]
-            monomials_factors_names_combined[i, 1] = factors_rep
-
-        # Find if any of the factors cannot be achieved from the generating set,
-        # and if so add them as variables.
-        new_monomials_known, new_monomials_unknown \
-                = self._find_new_monomials(monomials_factors_names_combined)
-        if self.verbose > 0:
-            print("New variables have been found not achievable " +
-                                    "from the generating set of monomials:",
-            "known:", new_monomials_known, "unknown:", new_monomials_unknown)
-
-        # Update the list of monomials with the new variables.
-        monomials_factors_names \
-                            = monomials_factors_names_combined[:self._n_known]
-
-        # Add new known variables
-        if new_monomials_known.size > 0:
-            monomials_factors_names = np.concatenate([monomials_factors_names,
-                                                      new_monomials_known])
-
-        # Add the semiknown variables, nothing different here
-        monomials_factors_names = np.concatenate([
-            monomials_factors_names,
-            monomials_factors_names_combined[self._n_known:self._n_something_known]
-                                                  ])
-        # Add the new unknown variables, to which the semiknown make reference
-        if new_monomials_unknown.size > 0:
-            monomials_factors_names = np.concatenate([monomials_factors_names,
-                                                         new_monomials_unknown])
-
-        # Add the previous unknown variables
-        monomials_factors_names = np.concatenate([
-            monomials_factors_names,
-            monomials_factors_names_combined[self._n_something_known:]
-                                                  ])
-
-        # Update the counts
-        self._n_known += new_monomials_known.shape[0]
-        self._n_something_known += new_monomials_known.shape[0]
-        self._n_unknown = (monomials_factors_names_combined.shape[0] +
-                           - self._n_something_known
-                           + monomials_factors_names.shape[0])
-
-        # Update orbits with the new monomials
-        for row in [*new_monomials_known, *new_monomials_unknown]:
-            orbits[int(row[0])] = int(row[0])
-
-        # Reasign the integer variable names to ordered from 1 to N
+        # Reassign the integer variable names to ordered from 1 to N
         variable_dict = {**{0: 0, 1: 1},
                          **dict(zip(monomials_factors_names[:, 0],
                               range(2, monomials_factors_names.shape[0] + 2)))}
@@ -281,14 +224,6 @@ class InflationSDP(object):
         for i in range(monomials_unfactorised_reordered.shape[0]):
             monomials_unfactorised_reordered[i, 0] = \
                          variable_dict[monomials_unfactorised_reordered[i, 0]]
-
-        mon_string2int = {}
-        for var_idx, [string] in monomials_unfactorised_reordered:
-            mon_string2int[string] = var_idx
-        for var_idx, [string] in [row.tolist()
-                        for row in monomials_factors_names if len(row[1]) == 1]:
-            if string not in mon_string2int:
-                mon_string2int[string] = var_idx
 
         monomials_factors_ints = np.empty_like(monomials_factors_names)
         monomials_factors_ints[:, 0] = monomials_factors_names[:, 0]
@@ -472,7 +407,7 @@ class InflationSDP(object):
                 raise Exception(
                     "You have variables in the objective that are also known " +
                     "moments fixed by a distribution. Either erase the fixed " +
-                    "values of the known moments (e.g., call self.set_distributin() " +
+                    "values of the known moments (e.g., call self.set_distribution() " +
                     "with no input or set to nan/None ) or remove the known " +
                     "variables from the objective function.")
 
@@ -758,7 +693,6 @@ class InflationSDP(object):
             write_to_sdpa(self, filename)
         if extension == 'csv':
             write_to_csv(self, filename)
-            # Moment matrix in readable form, objective in the first cell
         elif extension == 'mat':
             write_to_mat(self, filename)
 
@@ -903,8 +837,6 @@ class InflationSDP(object):
             return columns_symbolical, columns
         else:
             return columns_symbolical
-
-
 
     def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
         """his builds the generating set for the moment matrix taking as input
@@ -1133,7 +1065,7 @@ class InflationSDP(object):
         # TODO change from dense to sparse !! Else useless, but this requires adapting code
         problem_arr = problem_arr.todense()
 
-        return problem_arr, monomials_list
+        return problem_arr, monomials_list, vardic
 
     def _calculate_inflation_symmetries(self) -> List[List]:
         """Calculates all the symmetries and applies them to the set of
@@ -1367,61 +1299,6 @@ class InflationSDP(object):
         return monomials_factors_names_combined
 
         # return monomials_factors_names_reordered, monomials_factors_knowable, semiknown_vars, new_monomials_list, orbits
-    def _find_new_monomials(self, monomials_factors_names: np.ndarray
-                            ) -> Tuple[np.ndarray, np.ndarray]:
-        """As input we get the list of monomials factorised. The monomials with
-        just a single factor are monomials that can be found from products
-        of operators from the generating set. If there are two or more factors,
-        some of the factors might not be reachable from the generating set.
-        We then add these as new monomials. We also label them as known or
-        unknown.
-
-        Parameters
-        ----------
-        monomials_factors_names : np.ndarray
-            Input monomials.
-
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            New monomials found in the factorsand, first all known and then
-            all unknown.
-        """
-
-        last_index = np.max(monomials_factors_names[:, 0]) + 1
-
-        monomials_1factor = monomials_factors_names[[
-            len(mon) == 1 for mon in monomials_factors_names[:, 1]]][:, 1]
-        monomials_1factor = [i[0] for i in monomials_1factor]  # formatting
-        # set(monomials_1factor)  # They should be unique, so no need for the set function
-        old_monomials = set(monomials_1factor)
-
-        monomials_morethan2factors = monomials_factors_names[[
-            len(mon) > 1 for mon in monomials_factors_names[:, 1]]][:, 1]
-        monomials_morethan2factors_temp = []
-        for mon in monomials_morethan2factors:
-            monomials_morethan2factors_temp += mon
-        new_monomials_candidates = set(monomials_morethan2factors_temp)
-
-        new_monomials_known = []
-        new_monomials_unknown = []
-        for mon_ in new_monomials_candidates:
-            mon = to_name(to_representative(
-                np.array(to_numbers(mon_, self.names)), self.inflation_levels), self.names)
-            if mon not in old_monomials:
-                knowable = is_knowable(to_numbers(
-                    mon, self.names), self.hypergraph)
-                if knowable:
-                    new_monomials_known.append([last_index, [mon]])
-                else:
-                    new_monomials_unknown.append([last_index, [mon]])
-                old_monomials.add(mon)
-                last_index += 1
-
-        new_monomials_known = np.array(new_monomials_known, dtype=object)
-        new_monomials_unknown = np.array(new_monomials_unknown, dtype=object)
-
-        return new_monomials_known, new_monomials_unknown
 
     def _find_positive_monomials(self, monomials_factors_names: np.ndarray,
                                        sandwich_positivity=True):
