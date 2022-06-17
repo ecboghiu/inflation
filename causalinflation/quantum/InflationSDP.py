@@ -364,7 +364,7 @@ class InflationSDP(object):
 
         self.use_lpi_constraints = use_lpi_constraints
 
-        if len(self._objective_as_dict) > 1:
+        if (len(self._objective_as_dict) > 1) and self.use_lpi_constraints:
             warn("You have an objective function set. Be aware that imposing " +
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
@@ -511,8 +511,8 @@ class InflationSDP(object):
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
-        if feas_as_optim and len(self._objective_as_dict) > 2:
-            warn("You have a non-trivial objective set, but set to solve a " +
+        if feas_as_optim and len(self._objective_as_dict) > 1:
+            warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
