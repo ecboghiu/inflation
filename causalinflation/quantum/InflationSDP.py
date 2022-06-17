@@ -772,13 +772,14 @@ class InflationSDP(object):
         elif extension == 'mat':
             write_to_mat(self, filename)
 
-    def build_columns(self, column_specification, max_monomial_length=0,
-                      return_columns_numerical = True) -> None:
+    def build_columns(self, column_specification, max_monomial_length: int = 0,
+                      return_columns_numerical: bool = True) -> None:
         """Process the input for the columns of the SDP relaxation.
 
         Parameters
         ----------
-        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
+        column_specification : Union[str, List[List[int]],
+                                     List[sympy.core.symbol.Symbol]]
             See description in the self.generate_relaxation()` method.
         max_monomial_length : int, optional
             Maximum number of letters in a monomial in the generating set,
@@ -788,40 +789,18 @@ class InflationSDP(object):
             than 2 letters, and the generating set becomes:
             {1, A, B, C, A*B, A*C, B*C}.
         """
-
-        symbolic_types = [sp.core.symbol.Symbol, sp.core.numbers.One,
-                          sp.core.power.Pow, sp.core.mul.Mul]
-
         columns = None
         if type(column_specification) == list:
-            #strtype = str(type(column_specification[1]))
-            #if len(strtype) > 8 and strtype[:8] == "<class 'sympy":
-            if type(column_specification[1]) in symbolic_types:
+            # There are two possibilities: list of lists, or list of symbols
+            if type(column_specification[0]) == list:
+                columns = self._build_cols_from_col_specs(column_specification)
+            else:
                 columns = []
                 for col in column_specification:
                     if col == sp.S.One or col == 1:
                         columns += [[]]
                     else:
                         columns += [to_numbers(str(col), self.names)]
-
-            elif len(np.array(column_specification[1]).shape) > 1:
-                columns = column_specification
-            else:
-                if max_monomial_length > 0:
-                    to_remove = []
-                    for idx, col_spec in enumerate(column_specification):
-                        if len(col_spec) > max_monomial_length:
-                            to_remove.append(idx)
-                    column_specification_new = column_specification.copy()
-                    for idx in sorted(to_remove, reverse=True):
-                        del column_specification_new[idx]
-                    col_specs = column_specification_new
-                else:
-                    col_specs = column_specification
-
-                columns = self._build_cols_from_col_specs(col_specs)
-
-
         elif type(column_specification) == str:
             if 'npa' in column_specification.lower():
                 npa_level = int(column_specification[3:])
@@ -956,7 +935,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        col_specs : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
+        col_specs : List[List[int]]
             The column specification as specified in the method description.
 
         """
