@@ -27,10 +27,9 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        calculate_momentmatrix_commuting,
                                        to_canonical)
-from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION, extract_from_ncpol,
-                                        read_problem_from_file)
+from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
-                                           write_to_sdpa)
+                                                  write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
 from ncpol2sdpa import SdpRelaxation, flatten, projective_measurement_constraints
 from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
@@ -104,7 +103,7 @@ class InflationSDP(object):
         in the moment matrix.
 
         Parameters
-        
+
         column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             Describes the generating set of monomials {M_i}_i.
 
@@ -155,17 +154,6 @@ class InflationSDP(object):
             giving a list of symbolic operators built from the measurement
             operators in `self.measurements`. This list needs to have the
             identity `sympy.S.One` as the first element.
-
-        parallel : bool, optional
-            Whether to use multiple cpus, only works with ncpol2sdpa,
-            i.e., with `use_numba=False`. Note that usually Numba is faster
-            than parallel ncpol2sdpa. ncpol2sdpa should only be used for
-            features not present in the numba functions, such as using
-            arbitrary substituion rules.
-
-        sandwich_positivity : bool, optional
-            Whether to identify monomials that are positive because of
-            sandwiching. See description of `is_physical`, by default True.
 
         use_numba : bool, optional
             Whether to use JIT compiled functions with Numba, by default True.
@@ -311,19 +299,19 @@ class InflationSDP(object):
                                     for mon in monomials_factors_names[i, 1]]
 
         # Now find all the positive monomials
-        # TODO add also known monomials to physical_monomials
-        self.physical_monomials = self._find_positive_monomials(
-            monomials_factors_names, sandwich_positivity=True)
-        # if not find_physical_monomials:
-        #     self.physical_monomials = np.array([])
+        if self.commuting:
+            self.physical_monomials = monomials_factors_names
+        else:
+            self.physical_monomials = self._find_positive_monomials(
+                monomials_factors_names, sandwich_positivity=True)
 
         if self.verbose > 0:
             print("Number of known, semi-known and unknown variables =",
                     self._n_known, self._n_something_known-self._n_known,
                     self._n_unknown)
         if self.verbose > 0:
-            print("Number of positive/physical unknown variables =",
-                  len(self.physical_monomials))
+            print("Number of positive unknown variables =",
+                  len(self.physical_monomials) - self._n_known)
             if self.verbose > 1:
                 print("Positive variables:", self.physical_monomials)
 
@@ -376,7 +364,7 @@ class InflationSDP(object):
 
         self.use_lpi_constraints = use_lpi_constraints
 
-        if len(self._objective_as_dict) > 1:
+        if (len(self._objective_as_dict) > 1) and self.use_lpi_constraints:
             warn("You have an objective function set. Be aware that imposing " +
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
@@ -420,7 +408,7 @@ class InflationSDP(object):
 
 
     def set_objective(self, objective: sp.core.symbol.Symbol,
-                             direction: str ='max',
+                            direction: str ='max',
                             extraobjexpr=None) -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
@@ -498,7 +486,7 @@ class InflationSDP(object):
                     "variables from the objective function.")
 
     def solve(self, interpreter: str='MOSEKFusion',
-                    pure_feasibility_problem: bool=False,
+                    feas_as_optim: bool=False,
                     solverparameters=None):
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
@@ -508,55 +496,58 @@ class InflationSDP(object):
         Parameters
         ----------
         interpreter : str, optional
-            The solver to be called, by default 'MOSEKFusion'. It also accepts
-            'CVXPY' and 'PICOS'. It is recommended to use 'MOSEKFusion'.
-        pure_feasibility_problem : bool, optional
-            For problems with constant objective, whether to do a pure
-            feasibility problem or to relax it to an optimisation where
-            we maximize the minimum eigenvalue. If such eigenvalue is negative,
-            then the original problem is infeasible. By default False.
+            The solver to be called, by default 'MOSEKFusion'.
+        feas_as_optim : bool, optional
+            Instead of solving the feasibility problem
+                (1) find vars such that Gamma >= 0
+            setting this label to True solves instead the problem
+                (2) max lambda such that Gamma - lambda*Id >= 0.
+            The correspondence is that the result of (2) is positive if (1) is
+            feasible and negative otherwise. By default False.
         solverparameters : _type_, optional
-            Extra parmeters to be sent to the solver, by default None.
+            Extra parameters to be sent to the solver, by default None.
 
         """
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
-                            "Call 'InflationSDP.get_relaxation(...)' first")
+                            "Call 'InflationSDP.get_relaxation()' first")
+        if feas_as_optim and len(self._objective_as_dict) > 1:
+            warn("You have a non-trivial objective, but set to solve a " +
+                 "feasibility problem as optimization. Setting "
+                 + "feas_as_optim=False and optimizing the objective...")
+            feas_as_optim = False
+        if np.array(self.semiknown_moments).size > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
-        known_moments = self.known_moments
+        known_moments     = self.known_moments
 
         solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
                               "known_vars":       known_moments,
                               "semiknown_vars":   semiknown_moments,
                               "positive_vars":    self.physical_monomials[:, 0] if self.physical_monomials.size > 0 else [],
-                              "pure_feasibility_problem": pure_feasibility_problem,
+                              "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
 
-
         sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
 
-
+        # Process the solution
         self.primal_objective = lambdaval
-        self.solution_object = sol
-        self.objective_value = lambdaval * (1 if self.maximize else -1)
-        # Processed the dual certificate and stores it in
-        # self.dual_certificate in various formats
-        if np.array(self.semiknown_moments).size > 0:
-            warn("Beware that, because the problem contains linearized " +
-                    "polynomial constraints, the certificate is not " +
-                    "guaranteed to apply to other distributions")
-
-        # if 'dual_certificate' in self.solution_object else None
-        coeffs = self.solution_object['dual_certificate']
-        names = self.final_monomials_list[:self._n_known]
-        aux01 = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
+        self.solution_object  = sol
+        self.objective_value  = lambdaval * (1 if self.maximize else -1)
+        # Process the dual certificate in a generic form
+        coeffs      = self.solution_object['dual_certificate']
+        names       = self.final_monomials_list[:self._n_known]
+        aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
         clean_names = np.concatenate((aux01, names[:, 1]))
-        self.dual_certificate = np.array(
-            [[coeffs[i], clean_names[i]] for i in range(coeffs.shape[0])], dtype=object)
-        
+        self.dual_certificate = np.array([[coeffs[i], clean_names[i]]
+                                            for i in range(coeffs.shape[0])],
+                                         dtype=object)
+
         self.dual_certificate_lowerbound = 0
 
     def certificate_as_probs(self, clean: bool=False,
@@ -582,10 +573,13 @@ class InflationSDP(object):
         -------
         sympy.core.symbol.Symbol
             The certificate in terms or probabilities and marginals.
-        """        
-
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+        """
+        try:
+            coeffs = self.dual_certificate[:, 0].astype(float)
+            names  = self.dual_certificate[:, 1]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve()' first")
         # C: why did I write this??
         # names can still contain duplicated names, so we need to remove them
         # new_dual_certificate = {tuple(name): 0 for name in names}
@@ -621,7 +615,7 @@ class InflationSDP(object):
         ----------
         clean : bool, optional
             If true, eliminate all coefficients that are smaller
-            than 'chop_tol', normalise and round to the number of decimals 
+            than 'chop_tol', normalise and round to the number of decimals
             specified `round_decimals`. Defaults to True.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
@@ -634,9 +628,13 @@ class InflationSDP(object):
         -------
         sympy.core.symbol.Symbol
             The certificate as an objective function.
-        """        
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+        """
+        try:
+            coeffs = self.dual_certificate[:, 0].astype(float)
+            names = self.dual_certificate[:, 1]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve()' first")
         if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
@@ -671,7 +669,7 @@ class InflationSDP(object):
         ----------
         clean : bool, optional
             If true, eliminate all coefficients that are smaller
-            than 'chop_tol', normalise and round to the number of decimals 
+            than 'chop_tol', normalise and round to the number of decimals
             specified `round_decimals`. Defaults to True.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
@@ -684,13 +682,16 @@ class InflationSDP(object):
         -------
         sympy.core.symbol.Symbol
             The certificate in terms of correlators.
-        """        
-
-        coeffs = self.dual_certificate[:, 0].astype(float)
-        names = self.dual_certificate[:, 1]
+        """
         if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
             raise Exception("Correlator certificates are only available " +
                             "for 2-output problems")
+        try:
+            coeffs = self.dual_certificate[:, 0].astype(float)
+            names = self.dual_certificate[:, 1]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve()' first")
         if clean and not np.allclose(coeffs, 0):
             # Set to zero very small coefficients
             coeffs[np.abs(coeffs) < chop_tol] = 0
@@ -935,7 +936,7 @@ class InflationSDP(object):
         else:
             return columns_symbolical
 
-        
+
 
     def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
         """his builds the generating set for the moment matrix taking as input
@@ -949,7 +950,7 @@ class InflationSDP(object):
         and output indices compatible with the cardinalities. As further
         examples, NPA level 2 for 3 parties is built from
         [[], [0], [1], [2], [0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]
-        and "local level 1" is build from
+        and "local level 1" is built from
         [[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]]
 
 
@@ -1140,7 +1141,7 @@ class InflationSDP(object):
             Whether to use JIT functions through numba to calculate
             the moment matrix. Defaults to True.
         """
-        
+
         _cols = [np.array(col, dtype=np.uint8)
                     for col in self.generating_monomials]
         if not self.commuting:
@@ -1457,10 +1458,11 @@ class InflationSDP(object):
         return new_monomials_known, new_monomials_unknown
 
     def _find_positive_monomials(self, monomials_factors_names: np.ndarray,
-                                 sandwich_positivity=True):
+                                       sandwich_positivity=True):
         ispositive = np.empty_like(monomials_factors_names)
         ispositive[:, 0] = monomials_factors_names[:, 0]
         ispositive[:, 1] = False
+        ispositive[:self._n_known, 1] = True    # Knowable moments are physical
         for i, row in enumerate(monomials_factors_names[self._n_known:]):
             factors = row[1]
             factor_is_positive = []

@@ -19,11 +19,11 @@ class InflationProblem(object):
         Number of copies per source in the inflated graph, by default 1
         for all sources.
     names : List[int], optional
-        Name of each party, default is alphabetical labels, 
+        Name of each party, default is alphabetical labels,
         e.g. ['A', 'B', ...]
     verbose : int, optional
         How much information to print, by default 0.
-    """      
+    """
     def __init__(self,  dag=[], outcomes_per_party=[], settings_per_party=[],
                         inflation_level_per_source=[], names=[], verbose=0):
         """Initialize the InflationProblem class.
@@ -72,19 +72,19 @@ class InflationProblem(object):
                             " and the hypergraph, does not coincide")
 
     def __repr__(self):
-        return ("InflationProblem with " + str(self.hypergraph.tolist()) + 
+        return ("InflationProblem with " + str(self.hypergraph.tolist()) +
                     " as hypergraph, " + str(self.outcomes_per_party) +
                      " outcomes per party, "+ str(self.settings_per_party) +
                      " settings per party and " +
-                     str(self.inflation_level_per_source) + 
+                     str(self.inflation_level_per_source) +
                      " inflation copies per source.")
 
     def _dag_to_hypergraph(self, dag):
-        """The DAG is given as a dictionary of the form {parent_node: 
+        """The DAG is given as a dictionary of the form {parent_node:
         List[children_nodes]}. If the DAG represents a network (i.e.,
         it a bipartite graph), it computes the hypergraph representation.
         Otherwise, it applies unpacking techniques to transform the DAG
-        into a network, and tracks the constraints between the nodes in 
+        into a network, and tracks the constraints between the nodes in
         the unpacked network.
 
         Parameters
@@ -96,14 +96,14 @@ class InflationProblem(object):
         -------
         Tuple[hypergraph, constraints]
             array with the hypergraph representation of the (unpacked)
-            scenario and list of relations between the nodes in the 
+            scenario and list of relations between the nodes in the
             unpacked hypergraph
 
         Raises
         ------
         Exception
             Currently non-network scenarios are not implemented.
-        """        
+        """
 
         sources = dag.keys()
         is_network = all([all([source not in drain for drain in dag.values()]) for source in sources])
