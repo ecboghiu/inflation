@@ -29,7 +29,7 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                        to_canonical)
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
-                                           write_to_sdpa)
+                                                  write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
 from ncpol2sdpa import SdpRelaxation, flatten, projective_measurement_constraints
 from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
@@ -103,7 +103,7 @@ class InflationSDP(object):
         in the moment matrix.
 
         Parameters
-        
+
         column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             Describes the generating set of monomials {M_i}_i.
 
@@ -154,17 +154,6 @@ class InflationSDP(object):
             giving a list of symbolic operators built from the measurement
             operators in `self.measurements`. This list needs to have the
             identity `sympy.S.One` as the first element.
-
-        parallel : bool, optional
-            Whether to use multiple cpus, only works with ncpol2sdpa,
-            i.e., with `use_numba=False`. Note that usually Numba is faster
-            than parallel ncpol2sdpa. ncpol2sdpa should only be used for
-            features not present in the numba functions, such as using
-            arbitrary substituion rules.
-
-        sandwich_positivity : bool, optional
-            Whether to identify monomials that are positive because of
-            sandwiching. See description of `is_physical`, by default True.
 
         use_numba : bool, optional
             Whether to use JIT compiled functions with Numba, by default True.
@@ -419,7 +408,7 @@ class InflationSDP(object):
 
 
     def set_objective(self, objective: sp.core.symbol.Symbol,
-                             direction: str ='max',
+                            direction: str ='max',
                             extraobjexpr=None) -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
@@ -539,8 +528,6 @@ class InflationSDP(object):
 
 
         self.primal_objective = lambdaval
-        self.solution_object = sol
-        self.objective_value = lambdaval * (1 if self.maximize else -1)
         self.solution_object  = sol
         self.objective_value  = lambdaval * (1 if self.maximize else -1)
         # Processed the dual certificate and stores it in
@@ -555,9 +542,8 @@ class InflationSDP(object):
         names = self.final_monomials_list[:self._n_known]
         aux01 = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
         clean_names = np.concatenate((aux01, names[:, 1]))
-        self.dual_certificate = np.array(
-            [[coeffs[i], clean_names[i]] for i in range(coeffs.shape[0])], dtype=object)
-        
+        self.dual_certificate = np.array([[coeffs[i], clean_names[i]]
+                                            for i in range(coeffs.shape[0])],
                                          dtype=object)
 
         self.dual_certificate_lowerbound = 0
