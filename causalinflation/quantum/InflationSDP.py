@@ -310,7 +310,6 @@ class InflationSDP(object):
                                     for mon in monomials_factors_names[i, 1]]
 
         # Now find all the positive monomials
-        # TODO add also known monomials to physical_monomials
         if self.commuting:
             self.physical_monomials = monomials_factors_names
         else:
@@ -322,8 +321,8 @@ class InflationSDP(object):
                     self._n_known, self._n_something_known-self._n_known,
                     self._n_unknown)
         if self.verbose > 0:
-            print("Number of positive/physical unknown variables =",
-                  len(self.physical_monomials))
+            print("Number of positive unknown variables =",
+                  len(self.physical_monomials) - self._n_known)
             if self.verbose > 1:
                 print("Positive variables:", self.physical_monomials)
 
@@ -1459,10 +1458,11 @@ class InflationSDP(object):
         return new_monomials_known, new_monomials_unknown
 
     def _find_positive_monomials(self, monomials_factors_names: np.ndarray,
-                                 sandwich_positivity=True):
+                                       sandwich_positivity=True):
         ispositive = np.empty_like(monomials_factors_names)
         ispositive[:, 0] = monomials_factors_names[:, 0]
         ispositive[:, 1] = False
+        ispositive[:self._n_known, 1] = True    # Knowable moments are physical
         for i, row in enumerate(monomials_factors_names[self._n_known:]):
             factors = row[1]
             factor_is_positive = []
