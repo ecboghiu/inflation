@@ -37,9 +37,9 @@ except ImportError:
 
 
 def substitute_variable_values_in_monlist(variables_values: np.ndarray,
-                                        monomials_factors_reps: np.ndarray,
-                                        monomials_factors_names: np.ndarray,
-                                        stop_counting: int,
+                                          monomials_factors_reps: np.ndarray,
+                                          monomials_factors_names: np.ndarray,
+                                          stop_counting: int,
                                           ) -> np.ndarray:
     """Substitues the known monomials with their known numerical value. From
     this the 'known_moments' and lpi constraints can be extracted for the SDP.
@@ -884,33 +884,20 @@ def transform_vars_to_symb(variables_to_be_given: List[np.ndarray],
     """
     sym_variables_to_be_given = copy.deepcopy(variables_to_be_given)
     for idx, [var, term] in enumerate(variables_to_be_given):
-        factors = term.split('*')
+        factors  = term.split('*')
         nr_terms = len(factors)
-        factors = [list(factor.split('_')) for factor in factors]
-        '''
-        for i in range(nr_terms):
-            # Split ['A',...,'3','io'] into ['A',...,'3','i', 'o']
-            setting =  factors[i][-2]
-            output = factors[i][-1]
-            factors[i].pop()
-            factors[i].append(setting)
-            factors[i].append(output)
-        '''
-        factors = np.array(factors)
-        parties = factors[:, 0]
-        inputs = factors[:, -2]
-        outputs = factors[:, -1]
+        factors  = np.array([list(factor.split('_')) for factor in factors])
+        parties  = factors[:, 0]
+        inputs   = factors[:, -2]
+        outputs  = factors[:, -1]
         name = 'p'
-        # add parties if we are marginalizing over a distribution
+        # Add specification of parties if a marginal probability
         if len(parties) < max_nr_of_parties:
-            for p in parties:
-                name += p
+            name += ''.join(parties)
         name += '('
-        for o in outputs:
-            name += o
+        name += ''.join(outputs)
         name += '|'
-        for i in inputs:
-            name += i
+        name += ''.join(inputs)
         name += ')'
         sym_variables_to_be_given[idx][1] = sympy.symbols(name)
 
@@ -1873,7 +1860,7 @@ def get_variables_the_user_can_specify(monomials_factors_reps: np.ndarray,
 
 
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:
-                                                List[Tuple[int, sympy.core.symbol.Symbol]],
+                                     List[Tuple[int, sympy.core.symbol.Symbol]],
                                 settings_per_party: List[int],
                                 outcomes_per_party: List[int],
                                 p_vector: np.ndarray
@@ -1904,10 +1891,10 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
     variables_values = symbolic_variables_to_be_given.copy()
     for i in range(len(variables_values)):
         variables_values[i][1] = float(substitute_sym_with_value(
-                                    symbolic_variables_to_be_given[i][1],
-                                                        settings_per_party,
-                                                        outcomes_per_party,
-                                                        p_vector))
+                                           symbolic_variables_to_be_given[i][1],
+                                                             settings_per_party,
+                                                             outcomes_per_party,
+                                                             p_vector))
     return variables_values
 
 
