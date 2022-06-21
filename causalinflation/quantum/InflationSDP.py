@@ -450,21 +450,24 @@ class InflationSDP(object):
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
 
-        sol, lambdaval = solveSDP_MosekFUSION(**solveSDP_arguments)
+        self.solution_object, lambdaval, self.status = \
+                                      solveSDP_MosekFUSION(**solveSDP_arguments)
 
         # Process the solution
-        self.primal_objective = lambdaval
-        self.solution_object  = sol
-        self.objective_value  = lambdaval * (1 if self.maximize else -1)
-        # Process the dual certificate in a generic form
-        coeffs      = self.solution_object['dual_certificate']
-        names       = self.final_monomials_list[:self._n_known]
-        aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
-        clean_names = np.concatenate((aux01, names[:, 1]))
-        self.dual_certificate = np.array(list(zip(coeffs, clean_names)),
-                                         dtype=object)
+        if self.status == 'feasible':
+            self.primal_objective = lambdaval
+            self.objective_value  = lambdaval * (1 if self.maximize else -1)
 
-        self.dual_certificate_lowerbound = 0
+        # Process the dual certificate in a generic form
+        if self.status in ['feasible', 'infeasible']:
+            coeffs      = self.solution_object['dual_certificate']
+            names       = self.monomials_list[:self._n_known]
+            aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
+            clean_names = np.concatenate((aux01, names[:, 1]))
+            self.dual_certificate = np.array(list(zip(coeffs, clean_names)),
+                                             dtype=object)
+
+            self.dual_certificate_lowerbound = 0
 
     def certificate_as_probs(self, clean: bool=False,
                              chop_tol: float=1e-10,

@@ -163,6 +163,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
         status = M.getProblemStatus()
         if status == ProblemStatus.PrimalAndDualFeasible:
+            status_str = 'feasible'
             if solve_dual:
                 ymat = Z.level().reshape([mat_dim, mat_dim])
                 xmat = F0.getDataAsArray().reshape((mat_dim,mat_dim))
@@ -176,6 +177,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             primal = M.primalObjValue()
             dual = M.dualObjValue()
         elif status == ProblemStatus.DualInfeasible or status == ProblemStatus.PrimalInfeasible:
+            status_str = 'infeasible'
             if solve_dual:
                 ymat = Z.level().reshape([mat_dim, mat_dim])
                 xmat = F0.getDataAsArray().reshape((mat_dim,mat_dim))
@@ -187,12 +189,14 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 ymat = G.dual().reshape([mat_dim, mat_dim])
                 xmat = G.level().reshape([mat_dim, mat_dim])
         elif status == ProblemStatus.Unknown:
+            status_str = 'unknown'
             # The solutions status is unknown. The termination code
             # indicates why the optimizer terminated prematurely.
             print("The solution status is unknown.")
             symname, desc = mosek.Env.getcodedesc(mosek.rescode(int(M.getSolverIntInfo("optimizeResponse"))))
             print("   Termination code: {0} {1}".format(symname, desc))
         else:
+            status_str = 'other'
             print("Another unexpected problem status {0} is obtained.".format(status))
     except OptimizeError as e:
         print("Optimization failed. Error: {0}".format(e))
@@ -201,14 +205,17 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     except Exception as e:
         print("Unexpected error: {0}".format(e))
 
-    vars_of_interest = {}
-    coeffs = np.zeros(nr_known, dtype=np.float64)
-    for var in range(nr_known):
-        coeffs[var] = np.sum(ymat[np.where(positionsmatrix == var)])
-    if feas_as_optim:
-        # In feasibility-as-optimization problems, the certificate is offset by
-        # the optimal value
-        coeffs[1] += -primal
-    vars_of_interest = {'sol': primal, 'G': xmat, 'dual_certificate': coeffs,
-                        'Z': ymat, 'xi': xi_list}
-    return vars_of_interest, primal
+    if status_str in ['feasible', 'infeasible']:
+        vars_of_interest = {}
+        coeffs = np.zeros(nr_known, dtype=np.float64)
+        for var in range(nr_known):
+            coeffs[var] = np.sum(ymat[np.where(positionsmatrix == var)])
+        if feas_as_optim:
+            # In feasibility-as-optimization problems, the certificate is offset
+            # by the optimal value
+            coeffs[1] += -primal
+        vars_of_interest = {'sol': primal, 'G': xmat, 'Z': ymat,
+                            'dual_certificate': coeffs, 'xi': xi_list}
+        return vars_of_interest, primal, status_str
+    else:
+        return None, None, status_str
