@@ -305,14 +305,14 @@ class InflationSDP(object):
         # Extract variables whose value we can get from the probability distribution in a symbolic form
         variables_to_be_given = get_variables_the_user_can_specify(
             self.semiknown_reps[:self._n_known], self.final_monomials_list[:self._n_known])
-        self.symbolic_variables_to_be_given = transform_vars_to_symb(copy.deepcopy(variables_to_be_given),  # TODO change this name
+        self.symbolic_variables_to_be_given = transform_vars_to_symb(variables_to_be_given,  # TODO change this name
                                                                      max_nr_of_parties=self.InflationProblem.nr_parties)
         if self.verbose > 1:
             print("Simplest known variables: =",
                   self.symbolic_variables_to_be_given)
 
         # Substitute the list of known variables with symbolic values with numerical values
-        variables_values = substitute_sym_with_numbers(copy.deepcopy(self.symbolic_variables_to_be_given),
+        variables_values = substitute_sym_with_numbers(self.symbolic_variables_to_be_given,
                                                        self.InflationProblem.settings_per_party,
                                                        self.InflationProblem.outcomes_per_party,
                                                        p)
