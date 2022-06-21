@@ -227,7 +227,7 @@ class InflationSDP(object):
 
         # Now find all the positive monomials
         if self.commuting:
-            self.physical_monomials = monomials_factors_names
+            self.physical_monomials = monomials_factors_names[:,0]
         else:
             self.physical_monomials = self._find_positive_monomials(
                 monomials_factors_names, sandwich_positivity=True)
@@ -240,7 +240,6 @@ class InflationSDP(object):
             print("Number of positive unknown variables =",
                   len(self.physical_monomials) - self._n_known)
             if self.verbose > 1:
-                print("Positive variables:", self.physical_monomials)
 
         self.semiknown_reps = monomials_factors_ints[:self._n_something_known]
         self.final_monomials_list = monomials_factors_names
@@ -257,6 +256,9 @@ class InflationSDP(object):
                                      desc="Reassigning moment matrix indices")):
             for j, col in enumerate(row):
                 self.momentmatrix[i, j] = variable_dict[col]
+                print("Positive variables:",
+                      [self.final_monomials_list[phys-2]
+                                           for phys in self.physical_monomials])
 
         # Define empty arrays for conditional statement if the problem is called
         # before calling .set_distribution()
@@ -447,7 +449,7 @@ class InflationSDP(object):
                               "objective":        self._objective_as_dict,
                               "known_vars":       known_moments,
                               "semiknown_vars":   semiknown_moments,
-                              "positive_vars":    self.physical_monomials[:, 0] if self.physical_monomials.size > 0 else [],
+                              "positive_vars":    self.physical_monomials,
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
@@ -1183,7 +1185,7 @@ class InflationSDP(object):
             monomials_factors_knowable[:, 1] != 'No')
         self._n_unknown = np.sum(monomials_factors_knowable[:, 1] == 'No')
 
-        # Reorder according to know, semiknown and unknown.
+        # Reorder according to known, semiknown and unknown.
         monomials_factors_names_reordered = np.concatenate(
             [monomials_factors_names[monomials_factors_knowable[:, 1] == 'Yes'],
              monomials_factors_names[monomials_factors_knowable[:, 1] == 'Semi'],
@@ -1217,7 +1219,6 @@ class InflationSDP(object):
                 factor_is_positive.append(isphysical)
             if all(factor_is_positive):
                 ispositive[i+self._n_known, 1] = True
-        return monomials_factors_names[ispositive[:, 1].astype(bool)]
 
     def dump_to_file(self, filename):
         """
