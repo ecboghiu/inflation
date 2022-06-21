@@ -63,7 +63,7 @@ def substitute_variable_values_in_monlist(variables_values: np.ndarray,
     """
 
     vars_numeric_dict = {var: val for var, val in variables_values}
-    monomials_factors_numeric = monomials_factors_reps.copy()
+    monomials_factors_numeric = copy.deepcopy(monomials_factors_reps)
     for idx, [_, monomial_factors] in enumerate(monomials_factors_numeric):
         factors_nums_list = []
         for factor in monomial_factors:
@@ -1888,7 +1888,7 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
         symbolic probability in the input is substituted with its numerical
         value.
     """
-    variables_values = symbolic_variables_to_be_given.copy()
+    variables_values = copy.deepcopy(symbolic_variables_to_be_given)
     for i in range(len(variables_values)):
         variables_values[i][1] = float(substitute_sym_with_value(
                                            symbolic_variables_to_be_given[i][1],
