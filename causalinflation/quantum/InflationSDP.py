@@ -321,9 +321,12 @@ class InflationSDP(object):
                 == np.array(variables_to_be_given, dtype=object)[:, 0].astype(int).tolist())
         if self.verbose > 1:
             print("Variables' numerical values given p =", variables_values)
-        final_monomials_list_numerical = substitute_variable_values_in_monlist(variables_values, self.semiknown_reps,
-                                                                               self.final_monomials_list, stop_counting)
 
+        final_monomials_list_numerical = \
+                      substitute_variable_values_in_monlist(variables_values,
+                                                            self.semiknown_reps,
+                                                            self.monomials_list,
+                                                            stop_counting)
         self.known_moments = np.array(
             [0, 1] + [mul(factors) for _, factors in final_monomials_list_numerical[:self._n_known]])
 
