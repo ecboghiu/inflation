@@ -209,6 +209,24 @@ class TestInflation(unittest.TestCase):
                          + "being applied properly after inflation symmetries")
 
 class TestSDPOutput(unittest.TestCase):
+    def GHZ(self, v):
+        dist = np.zeros((2,2,2,1,1,1))
+        for a in [0, 1]:
+            for b in [0, 1]:
+                for c in [0, 1]:
+                    if (a == b) and (b == c):
+                        dist[a,b,c,0,0,0] = v/2 + (1-v)/8
+                    else:
+                        dist[a,b,c,0,0,0] = (1-v)/8
+        return dist
+
+    cutInflation = InflationProblem({"lambda": ["a", "b"],
+                                     "mu": ["b", "c"],
+                                     "sigma": ["a", "c"]},
+                                     outcomes_per_party=[2, 2, 2],
+                                     settings_per_party=[1, 1, 1],
+                                     inflation_level_per_source=[2, 1, 1])
+
     def test_CHSH(self):
         bellScenario = InflationProblem({"lambda": ["a", "b"]},
                                          outcomes_per_party=[2, 2],
@@ -234,6 +252,67 @@ class TestSDPOutput(unittest.TestCase):
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 2*np.sqrt(2)),
                         "The SDP is not recovering max(CHSH) = 2*sqrt(2)")
+
+    def test_GHZ_NC(self):
+        sdp = InflationSDP(self.cutInflation)
+        sdp.generate_relaxation('local1')
+        self.assertEqual(len(sdp.generating_monomials), 18,
+                         "The number of generating columns is not correct")
+        self.assertEqual(sdp._n_known, 8,
+                         "The count of knowable moments is wrong")
+        self.assertEqual(sdp._n_unknown, 13,
+                         "The count of unknowable moments is wrong")
+
+        sdp.set_distribution(self.GHZ(0.5 + 1e-4))
+        self.assertEqual(sdp.known_moments[-1],
+                         (0.5+1e-4)/2 + (0.5-1e-4)/8,
+                         "Setting the distribution is failing")
+        sdp.solve()
+        self.assertEqual(sdp.status, 'infeasible',
+                     "The NC SDP is not identifying incompatible distributions")
+        sdp.solve(feas_as_optim=True)
+        self.assertTrue(sdp.primal_objective <= 0,
+                        "The NC SDP with feasibility as optimization is not " +
+                        "identifying incompatible distributions")
+        sdp.set_distribution(self.GHZ(0.5 - 1e-4))
+        self.assertEqual(sdp.known_moments[-1],
+                         (0.5-1e-4)/2 + (0.5+1e-4)/8,
+                         "Re-setting the distribution is failing")
+        sdp.solve()
+        self.assertEqual(sdp.status, 'feasible',
+                       "The NC SDP is not recognizing compatible distributions")
+        sdp.solve(feas_as_optim=True)
+        self.assertTrue(sdp.primal_objective >= 0,
+                        "The NC SDP with feasibility as optimization is not " +
+                        "recognizing compatible distributions")
+
+    def test_GHZ_commuting(self):
+        sdp = InflationSDP(self.cutInflation, commuting=True)
+        sdp.generate_relaxation('local1')
+        self.assertEqual(len(sdp.generating_monomials), 18,
+                         "The number of generating columns is not correct")
+        self.assertEqual(sdp._n_known, 8,
+                         "The count of knowable moments is wrong")
+        self.assertEqual(sdp._n_unknown, 11,
+                         "The count of unknowable moments is wrong")
+
+        sdp.set_distribution(self.GHZ(0.5 + 1e-2))
+        sdp.solve()
+        self.assertEqual(sdp.status, 'infeasible',
+              "The commuting SDP is not identifying incompatible distributions")
+        sdp.solve(feas_as_optim=True)
+        self.assertTrue(sdp.primal_objective <= 0,
+                        "The commuting SDP with feasibility as optimization " +
+                        "is not identifying incompatible distributions")
+        sdp.set_distribution(self.GHZ(0.5 - 1e-2))
+        sdp.solve()
+        self.assertEqual(sdp.status, 'feasible',
+                "The commuting SDP is not recognizing compatible distributions")
+        sdp.solve(feas_as_optim=True)
+        self.assertTrue(sdp.primal_objective >= 0,
+                        "The commuting SDP with feasibility as optimization " +
+                        "is not recognizing compatible distributions")
+
     '''
     def test_GHZ_known_semiknown(self):
 
