@@ -201,8 +201,6 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     except Exception as e:
         print("Unexpected error: {0}".format(e))
 
-    INFEASIBILITY_THRESHOLD = -1e-6
-
     vars_of_interest = {}
     coeffs = np.zeros(nr_known, dtype=np.float64)
     for var in range(nr_known):

@@ -165,7 +165,6 @@ class InflationSDP(object):
         # in self.generating_monomials.
         self.generating_monomials_sym, self.generating_monomials = \
                         self.build_columns(column_specification,
-                            max_monomial_length=0,
                             return_columns_numerical=True)
 
         if self.verbose > 0:
@@ -188,13 +187,13 @@ class InflationSDP(object):
         # to bring the monomials in the user-inputted objective function
         # to a canonoical form! But this is not implemented yet.
         symmetric_arr, orbits, remaining_monomials \
-                            = self._apply_inflation_symmetries(problem_arr,
-                                                              monomials_list,
-                                                              inflation_symmetries)
+                        = self._apply_inflation_symmetries(problem_arr,
+                                                           monomials_list,
+                                                           inflation_symmetries)
         # Associate the names of all copies to the same variable
         for key, val in mon_string2int.items():
             mon_string2int[key] = orbits[val]
-        # Factorize the symmetrized monomials
+        # Factorize the symmetrized monomials, identifying knowable, etc
         monomials_factors_names, monomials_unfactorised_reordered \
                             = self._factorize_monomials(remaining_monomials)
 
@@ -236,7 +235,6 @@ class InflationSDP(object):
             print("Number of known, semi-known and unknown variables =",
                     self._n_known, self._n_something_known-self._n_known,
                     self._n_unknown)
-        if self.verbose > 0:
             print("Number of positive unknown variables =",
                   len(self.physical_monomials) - self._n_known)
             if self.verbose > 1:
@@ -260,8 +258,7 @@ class InflationSDP(object):
                       [self.final_monomials_list[phys-2]
                                            for phys in self.physical_monomials])
 
-        # Define empty arrays for conditional statement if the problem is called
-        # before calling .set_distribution()
+        # Define trivial arrays for distribution and objective
         self.known_moments      = np.array([0, 1])
         self.semiknown_moments  = np.array([])
         self._objective_as_dict = {1: 0.}
@@ -443,11 +440,10 @@ class InflationSDP(object):
                  "to apply to other distributions")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
-        known_moments     = self.known_moments
 
         solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
-                              "known_vars":       known_moments,
+                              "known_vars":       self.known_moments,
                               "semiknown_vars":   semiknown_moments,
                               "positive_vars":    self.physical_monomials,
                               "feas_as_optim":    feas_as_optim,
@@ -1086,10 +1082,11 @@ class InflationSDP(object):
 
         return inflation_symmetries
 
-    def _apply_inflation_symmetries(self, momentmatrix: np.ndarray,
-                                         monomials_list: np.ndarray,
-                                         inflation_symmetries: List[List[int]]
-                                         ) -> Tuple[np.ndarray, Dict[int, int], np.ndarray]:
+    def _apply_inflation_symmetries(self,
+                                    momentmatrix: np.ndarray,
+                                    monomials_list: np.ndarray,
+                                    inflation_symmetries: List[List[int]]
+                                    ) -> Tuple[np.ndarray, Dict[int, int], np.ndarray]:
         """Applies the inflation symmetries to the moment matrix.
 
         Parameters
