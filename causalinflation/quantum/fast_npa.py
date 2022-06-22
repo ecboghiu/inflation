@@ -265,49 +265,6 @@ def to_name(monomial_numbers: np.ndarray,
     return '*'.join(components)
 
 
-def pad_with_zeros(cols: List[List]
-                    ) -> List[np.ndarray]:
-    """Pad the columns with zeros.
-
-    Parameters
-    ----------
-    cols : List[List]
-        Columns as lists of lists.
-
-    Returns
-    -------
-    List[np.ndarray]
-        Returns the inputs but with rows of zeros padded to the same length.
-    """
-    max_prod_len = max([len(col) for col in cols])
-    mon_len = len(cols[-1][0])
-    cols_padded = np.zeros((len(cols), max_prod_len, mon_len), dtype=np.uint8)
-    for i in range(1, len(cols)):
-        cols_padded[i, :, :] = np.pad(cols[i],
-                                      ((0, max_prod_len-len(cols[i])), (0, 0)),
-                                      'constant', constant_values=(0, 0))
-    return cols_padded
-
-
-@jit(nopython=True, cache=cache)
-def remove_zeros(mon: np.ndarray
-                 ) -> np.ndarray:
-    """If monomial has rows of all zeros, remove them.
-
-    Parameters
-    ----------
-    mon : np.ndarray
-        Monomial as a matrix where each row is an operator.
-
-    Returns
-    -------
-    np.ndarray
-        The monomial without rows of all zeros.
-    """
-
-    return mon[mon[:, 0] != 0]
-
-
 @jit(nopython=True, cache=cache)
 def commuting(letter1: np.array,
               letter2: np.array
