@@ -195,36 +195,29 @@ class InflationSDP(object):
         # Factorize the symmetrized monomials, identifying knowable, etc
         monomials_factors_names, monomials_unfactorised_reordered \
                             = self._factorize_monomials(remaining_monomials)
-
-        unfactorized_semiknown_and_known = []
-        for i in range(self._n_something_known):
-            if len(monomials_factors_names[i, 1]) > 1:
-                unfactorized_semiknown_and_known.append([monomials_factors_names[i]])
-        unfactorized_semiknown_and_known = np.array(unfactorized_semiknown_and_known, dtype=object)
         self.monomials_list = monomials_unfactorised_reordered
 
         # Reassign the integer variable names to ordered from 1 to N
         variable_dict = {**{0: 0, 1: 1},
-                         **dict(zip(monomials_factors_names[:, 0],
-                              range(2, monomials_factors_names.shape[0] + 2)))}
-        monomials_factors_names2 = monomials_factors_names.copy()
-        for i in range(monomials_factors_names.shape[0]):
-            monomials_factors_names2[i, 0] = \
-                                 variable_dict[monomials_factors_names[i, 0]]
-        monomials_factors_names[:, 0] = \
-                            np.arange(2, monomials_factors_names.shape[0] + 2)
+                         **dict(zip(self.monomials_list[:, 0],
+                              range(2, self.monomials_list.shape[0] + 2)))}
 
-        for i in range(monomials_unfactorised_reordered.shape[0]):
-            monomials_unfactorised_reordered[i, 0] = \
-                         variable_dict[monomials_unfactorised_reordered[i, 0]]
+        self._var2repr = {key: variable_dict[val] for key, val in orbits.items()}
+        self._mon2indx = {key: variable_dict[val] for key, val in mon_string2int.items()}
 
-        monomials_factors_ints = np.empty_like(monomials_factors_names)
-        monomials_factors_ints[:, 0] = monomials_factors_names[:, 0]
-        for i in range(monomials_factors_ints.shape[0]):
-            monomials_factors_ints[i, 1] = [mon_string2int[mon]
-                                    for mon in monomials_factors_names[i, 1]]
+        # Change objects to new variables
+        self.momentmatrix = symmetric_arr[:, :, 0].astype(int)
+        for i, row in enumerate(tqdm(self.momentmatrix,
+                                     disable=not self.verbose,
+                                     desc="Reassigning moment matrix indices")):
+            for j, col in enumerate(row):
+                self.momentmatrix[i, j] = self._var2repr[col]
 
-        # Now find all the positive monomials
+        for idx in range(len(self.monomials_list)):
+            self.monomials_list[idx, 0]     = self._var2repr[self.monomials_list[idx, 0]]
+            monomials_factors_names[idx, 0] = self._var2repr[monomials_factors_names[idx, 0]]
+
+        # Find all the positive monomials
         if self.commuting:
             self.physical_monomials = monomials_factors_names[:,0]
         else:
@@ -238,26 +231,15 @@ class InflationSDP(object):
             print("Number of positive unknown variables =",
                   len(self.physical_monomials) - self._n_known)
             if self.verbose > 1:
-
-        self.semiknown_reps = monomials_factors_ints[:self._n_something_known]
-        self.final_monomials_list = monomials_factors_names
-
-        self._orbits   = variable_dict
-        self._var2repr = orbits
-        self._mon2indx = mon_string2int
-
-        # Change moment matrix to the new integer variables
-        positions_matrix = symmetric_arr[:, :, 0].astype(int)
-        self.momentmatrix = positions_matrix.copy()
-        for i, row in enumerate(tqdm(self.momentmatrix,
-                                     disable=not self.verbose,
-                                     desc="Reassigning moment matrix indices")):
-            for j, col in enumerate(row):
-                self.momentmatrix[i, j] = variable_dict[col]
                 print("Positive variables:",
                       [self.monomials_list[phys-2]
                                            for phys in self.physical_monomials])
 
+
+        # Store the variables that will be relevant when setting a distribution
+        # and into which variables they factorize
+        monomials_factors_vars = [[var, [self._mon2indx[name] for name in names]] for var, names in monomials_factors_names]
+        self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
         self.known_moments      = np.array([0, 1])
         self.semiknown_moments  = np.array([])
