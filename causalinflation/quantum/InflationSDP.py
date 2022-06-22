@@ -364,14 +364,14 @@ class InflationSDP(object):
             symmetrized_objective = {1: 0.}
             for monomial, coeff in objective_as_dict.items():
                 monomial_variable = int(string2int_dict[str(monomial)])
-                # This has to be fixed carefully. We want one single
-                # dictionary for bringing any variable to its representative.
-                # Why do we need two steps?
-                reprr = self._orbits[self._var2repr[monomial_variable]]
-                if reprr in symmetrized_objective.keys():
-                    symmetrized_objective[reprr] += sign * coeff
+                repr = self._var2repr[monomial_variable]
+                if repr < len(self.known_moments):
+                    symmetrized_objective[1] += \
+                                            sign*coeff*self.known_moments[repr]
+                elif repr in symmetrized_objective.keys():
+                    symmetrized_objective[repr] += sign * coeff
                 else:
-                    symmetrized_objective[reprr] = sign * coeff
+                    symmetrized_objective[repr] = sign * coeff
             self._objective_as_dict = symmetrized_objective
         else:
             self._objective_as_dict = {1: sign * float(objective)}
