@@ -1,21 +1,8 @@
 import unittest
 import numpy as np
 
-from causalinflation.quantum.general_tools import hypergraphs_are_equal, is_knowable
+from causalinflation.quantum.general_tools import is_knowable
 from causalinflation import InflationProblem
-
-class TestDAGToHypergraph(unittest.TestCase):
-
-    def test_network(self):
-        network = {"h1": ["v1", "v2", "v3"], "h2": ["v3", "v4", "v5"], "h3": ["v5", "v1"]}
-        network_hypergraph = [[1, 1, 1, 0, 0],
-                              [0, 0, 1, 1, 1],
-                              [1, 0, 0, 0, 1]]
-        inflationProblem = InflationProblem(dag=network, outcomes_per_party=[2]*5)
-        assert hypergraphs_are_equal(inflationProblem.hypergraph, network_hypergraph),     \
-               "The hypergraph computed by InflationProblem, does not match the expected"
-
-
 
 class TestHypergraphUtils(unittest.TestCase):
 
@@ -41,27 +28,6 @@ class TestHypergraphUtils(unittest.TestCase):
                        [0, 0, 1, 1, 0],
                        [0, 0, 1, 0, 1],
                        [0, 0, 0, 1, 1]])
-
-    def test_hypergraphs_are_equal(self):
-        hyper1 = np.array([[0, 1, 1],
-                           [1, 1, 0],
-                           [1, 0, 1],
-                           [1, 0, 1]])
-
-        hyper2 = np.array([[0, 1, 1],
-                           [1, 1, 0],
-                           [1, 0, 1]])
-
-        hyper3 = np.array([[0, 1, 1],
-                           [1, 0, 1]])
-
-        hyper4 = np.array([[0, 1, 1],
-                           [1, 0, 1],
-                           [1, 1, 0]])
-
-        assert hypergraphs_are_equal(hyper1, hyper2), "Incorrect treatment of duplicate hyperlinks"
-        assert not hypergraphs_are_equal(hyper2, hyper3), "Obviously incorrect"
-        assert hypergraphs_are_equal(hyper2, hyper4), "Does not detect permutations of list of hyperlinks"
 
     def test_knowable_complete(self):
         # A12B23C31 in the triangle scenario should be knowable
