@@ -1205,6 +1205,7 @@ class InflationSDP(object):
                 factor_is_positive.append(isphysical)
             if all(factor_is_positive):
                 ispositive[i+self._n_known, 1] = True
+        return monomials_factors_names[ispositive[:, 1].astype(bool), 0]
 
     def dump_to_file(self, filename):
         """
