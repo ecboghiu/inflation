@@ -1826,39 +1826,6 @@ def change_to_representative_variables(monomials_factors_vars: np.ndarray,
     return monomials_factors_reps, physical_monomials_out
 
 
-def get_variables_the_user_can_specify(monomials_factors_reps: np.ndarray,
-                                       monomials_list: np.ndarray
-                                       ) -> np.ndarray:
-    """Return only the monomials that have a single variable,
-    all factors that can be fully known from a probability distribution,
-    and from which other monomials that factorise into products of these
-    can be known.
-
-    ASSUMPTION: no unknown monomials are present.
-    TODO: rewrite code so that we don't use this function
-
-    Parameters
-    ----------
-    monomials_factors_reps : np.ndarray
-        Input monomials.
-    monomials_list : np.ndarray
-        List of all monomials and their index representation.
-
-    Returns
-    -------
-    np.ndarray
-        All the monomials that have a single factor and are known.
-    """
-    variables_to_be_given = []
-    for idx, factors in monomials_factors_reps:
-        if len(factors) == 1:
-            #variables_to_be_given.append([idx, monomials_list[
-            #                   monomials_list[:, 0] == str(idx)][0][1]])
-            variables_to_be_given.append(
-                [idx, monomials_list[monomials_list[:, 0] == idx][0][1][0]])
-    return variables_to_be_given
-
-
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:
                                      List[Tuple[int, sympy.core.symbol.Symbol]],
                                 settings_per_party: List[int],

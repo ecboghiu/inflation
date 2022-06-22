@@ -23,7 +23,6 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             generate_commuting_measurements,
                                             generate_noncommuting_measurements,
                                             from_coord_to_sym,
-                                            get_variables_the_user_can_specify,
                                             clean_coefficients)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
@@ -303,8 +302,9 @@ class InflationSDP(object):
             stop_counting = self._n_known
 
         # Extract variables whose value we can get from the probability distribution in a symbolic form
-        variables_to_be_given = get_variables_the_user_can_specify(
-            self.semiknown_reps[:self._n_known], self.final_monomials_list[:self._n_known])
+        variables_to_be_given = [entry
+                for idx, entry in enumerate(self.final_monomials_list[:self._n_known])
+                                   if len(self.semiknown_reps[idx][1]) == 1]
         self.symbolic_variables_to_be_given = transform_vars_to_symb(variables_to_be_given,  # TODO change this name
                                                                      max_nr_of_parties=self.InflationProblem.nr_parties)
         if self.verbose > 1:
