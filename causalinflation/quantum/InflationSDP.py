@@ -201,6 +201,7 @@ class InflationSDP(object):
             if len(monomials_factors_names[i, 1]) > 1:
                 unfactorized_semiknown_and_known.append([monomials_factors_names[i]])
         unfactorized_semiknown_and_known = np.array(unfactorized_semiknown_and_known, dtype=object)
+        self.monomials_list = monomials_unfactorised_reordered
 
         # Reassign the integer variable names to ordered from 1 to N
         variable_dict = {**{0: 0, 1: 1},
@@ -254,7 +255,7 @@ class InflationSDP(object):
             for j, col in enumerate(row):
                 self.momentmatrix[i, j] = variable_dict[col]
                 print("Positive variables:",
-                      [self.final_monomials_list[phys-2]
+                      [self.monomials_list[phys-2]
                                            for phys in self.physical_monomials])
 
         # Define trivial arrays for distribution and objective
@@ -303,7 +304,7 @@ class InflationSDP(object):
 
         # Extract variables whose value we can get from the probability distribution in a symbolic form
         variables_to_be_given = [entry
-                for idx, entry in enumerate(self.final_monomials_list[:self._n_known])
+                for idx, entry in enumerate(self.monomials_list[:self._n_known])
                                    if len(self.semiknown_reps[idx][1]) == 1]
         self.symbolic_variables_to_be_given = transform_vars_to_symb(variables_to_be_given,  # TODO change this name
                                                                      max_nr_of_parties=self.InflationProblem.nr_parties)
