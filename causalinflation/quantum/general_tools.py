@@ -73,9 +73,8 @@ def substitute_variable_values_in_monlist(variables_values: np.ndarray,
                 factors_nums_list.append(factor)
         monomials_factors_numeric[idx][1] = sorted(factors_nums_list)
 
-    final_monomials_list = np.concatenate([monomials_factors_numeric,
-                                           monomials_factors_names[
-                                                            stop_counting:]])
+    final_monomials_list = monomials_factors_numeric + \
+                                monomials_factors_names[stop_counting:].tolist()
     return final_monomials_list
 
 
