@@ -1144,7 +1144,7 @@ class InflationSDP(object):
         return symmetric_arr.astype(int), orbits, remaining_monomials
 
     def _factorize_monomials(self, remaining_monomials: np.ndarray
-                            ) -> Tuple[np.ndarray, np.ndarray]:
+                             ) -> Tuple[np.ndarray, np.ndarray]:
         """Splits the monomials into factors according to the supports of the
         operators.
 
@@ -1188,7 +1188,6 @@ class InflationSDP(object):
                                                             )
         monomials_unfactorised_reordered = monomials_unfactorised_reordered.astype(object)
         monomials_unfactorised_reordered[:, 0] = monomials_unfactorised_reordered[:, 0].astype(int)
-        monomials_unfactorised_reordered[:, 1] = [[mon] for mon in monomials_unfactorised_reordered[:, 1]]
 
         return monomials_factors_names_reordered, monomials_unfactorised_reordered
 
