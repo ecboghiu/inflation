@@ -2,6 +2,7 @@ import copy
 import itertools
 import numpy as np
 import pickle
+from sqlalchemy import column
 import sympy as sp
 
 from causalinflation import InflationProblem
@@ -687,15 +688,27 @@ class InflationSDP(object):
         columns = None
         if type(column_specification) == list:
             # There are two possibilities: list of lists, or list of symbols
-            if type(column_specification[0]) == list:
-                columns = self._build_cols_from_col_specs(column_specification)
+            if type(column_specification[0]) == list or type(column_specification[0]) == np.ndarray:
+                if len(np.array(column_specification[1]).shape) == 2:
+                    # If we are here, then the input to build columns is a list
+                    # of monomials in array form, so we just return this
+                    # e.g., [[0], [[1, 1, 1, 0, 0, 0]], [[1, 1, 1, 0, 0, 0],[2, 2, 1, 0, 0, 0]], ...]
+                    # or [np.array([0]), np.array([[1, 1, 1, 0, 0, 0]]), np.array([[1, 1, 1, 0, 0, 0],[2, 2, 1, 0, 0, 0]]), ...]
+                    columns = [np.array(mon, dtype=np.uint8) for mon in column_specification]
+                elif len(np.array(column_specification[1]).shape) == 1:
+                    # If the depth of column_specification is just 2, 
+                    # then the input must be in the form of 
+                    # e.g., [[], [0], [1], [0, 0]] -> {1, A{:}, B{:}, (A*A){:}}
+                    # which just specifies the party structure in the 
+                    # generating set
+                    columns = self._build_cols_from_col_specs(column_specification)
             else:
                 columns = []
                 for col in column_specification:
                     if col == sp.S.One or col == 1:
-                        columns += [[]]
+                        columns += [np.array([0],dtype=np.uint8)]
                     else:
-                        columns += [to_numbers(str(col), self.names)]
+                        columns += [np.array(to_numbers(str(col), self.names),dtype=np.uint8)]
         elif type(column_specification) == str:
             if 'npa' in column_specification.lower():
                 npa_level = int(column_specification[3:])
@@ -810,7 +823,7 @@ class InflationSDP(object):
             return columns_symbolical
 
     def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
-        """his builds the generating set for the moment matrix taking as input
+        """This builds the generating set for the moment matrix taking as input
         a block specified only the number of parties, and the party labels.
 
         For example, with col_specs=[[], [0], [2], [0, 2]] as input, we
@@ -879,7 +892,8 @@ class InflationSDP(object):
                                 for factor in monomial.as_coeff_mul()[1]:
                                     coords.append(*to_numbers(factor, self.names))
                             res.append(coords)
-            return sorted(res, key=len)
+            sortd = sorted(res, key=len)
+            return [np.array(mon, dtype=np.uint8) for mon in sortd]
 
     def _generate_parties(self):
         # TODO: change name to generate_measurements
@@ -1069,8 +1083,12 @@ class InflationSDP(object):
                                                       measnames,
                                                       self.names)
             list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
-            total_perm    = find_permutation(list_permuted, list_original)
-            inflation_symmetries.append(total_perm)
+            
+            try:
+                total_perm    = find_permutation(list_permuted, list_original)
+                inflation_symmetries.append(total_perm)
+            except:
+                warn("The generating set is not closed under source swaps. Some symmetries will not be implemented.")
 
         return inflation_symmetries
 

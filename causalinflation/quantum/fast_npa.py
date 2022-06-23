@@ -112,7 +112,7 @@ def dot_mon(mon1: np.ndarray,
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray
                       ) -> np.ndarray:
-    """A faster implementation of ```dot_mon``` that assumes that all
+    """A faster implementation of `dot_mon` that assumes that all
     operators commute. This implies we order everything lexiographically.
 
     Parameters
@@ -130,16 +130,18 @@ def dot_mon_commuting(mon1: np.ndarray,
     """
 
     if mon1.size <= 1:
-        return mon2
+        return mon_lexsorted(mon2) # mon2 
     if mon2.size <= 1:
-        return mon_sorted_by_parties(reverse_mon(mon1))
+        return mon_lexsorted(mon1) #mon_sorted_by_parties(reverse_mon(mon1))
     # So it seems there is no implementation of lexsort in numba, so for now
     # we don't use a precompiled function
     # what we can do is use 'sorted' with the string representation of
     # the monomials which has a lexicographic ordering or implement a
     # lexicographic ordering in numba
     # numba issue: https://github.com/numba/numba/issues/3689
-    mon = np.concatenate((reverse_mon(mon1), mon2))
+    mon = np.concatenate((mon1, mon2)) # There is no need to do np.concatenate((reverse_mon(mon1), mon2))
+                                       # here because we sort lexicographically in the end anyway, so
+                                       # reversing the monomial is useless
     return mon_lexsorted(mon)
 
 

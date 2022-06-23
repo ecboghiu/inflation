@@ -1,4 +1,5 @@
 import unittest
+from matplotlib.style import use
 import numpy as np
 
 from ncpol2sdpa.nc_utils import flatten
@@ -204,7 +205,7 @@ class TestInflation(unittest.TestCase):
                                                              flatmeas,
                                                              measnames,
                                                              names)
-        self.assertEqual(expected[5], permuted_cols[5],
+        self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "
                          + "being applied properly after inflation symmetries")
 
@@ -312,3 +313,31 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(sdp.primal_objective >= 0,
                         "The commuting SDP with feasibility as optimization " +
                         "is not recognizing compatible distributions")
+
+    def test_lpi_constraints(self):
+        sdp = InflationSDP(InflationProblem({"h1": ["a", "b"],
+                                     "h2": ["b", "c"],
+                                     "h3": ["a", "c"]},
+                                     outcomes_per_party=[2, 2, 2],
+                                     settings_per_party=[1, 1, 1],
+                                     inflation_level_per_source=[3, 3, 3]),
+                            commuting=False)
+        cols = [np.array([0]),
+                np.array([[1, 1, 0, 1, 0, 0]]),
+                np.array([[2, 2, 1, 0, 0, 0],
+                          [2, 3, 1, 0, 0, 0]]),
+                np.array([[3, 0, 2, 2, 0, 0],
+                          [3, 0, 3, 2, 0, 0]]),
+                np.array([[1, 1, 0, 1, 0, 0],
+                          [2, 2, 1, 0, 0, 0],
+                          [2, 3, 1, 0, 0, 0],
+                          [3, 0, 2, 2, 0, 0],
+                          [3, 0, 3, 2, 0, 0]]),
+        ]
+        sdp.generate_relaxation(cols)
+        sdp.set_distribution(self.GHZ(0.5), use_lpi_constraints=True)
+
+        self.assertTrue(np.all(sdp.semiknown_moments[:,1] <= 1),
+                    ("Semiknown moments need to be of the form " +
+                    "mon_index1 = (number<=1) * mon_index2, this is failing!"))
+        #sdp.solve(feas_as_optim=True)

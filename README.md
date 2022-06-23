@@ -1,5 +1,5 @@
 # UnifiedInflation
-Implementations of the Inflation Technique for Causal Inference.
+Implementations of the Inflation Technique for Causal Inference. The complete documentation is hosted online [here](https://ecboghiu.github.io/inflation/).
 
 ## Installation
 
