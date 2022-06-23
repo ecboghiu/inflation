@@ -167,7 +167,7 @@ def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
 
     res = [None] * len(ordered_cols_coord)
     for ii, elements in enumerate(ordered_cols_coord):
-        if elements == [0]:
+        if np.array_equal(elements, np.array([0])):
             res[ii] = sympy.S.One
         else:
             product = sympy.S.One
@@ -320,7 +320,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     """
     permuted_op_list = []
     for monomial in columns:
-        if monomial == [0]:
+        if np.array_equal(monomial, np.array([0])):
             permuted_op_list.append(monomial)
         else:
             new_factors = copy.deepcopy(monomial)
@@ -340,7 +340,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
             # This is achieved with factorize_monomial
             # NOTE: commuting is a very good attribute for a future SDP class
             if commuting:
-                canonical = sorted(new_factors)
+                canonical = mon_lexsorted(new_factors) #sorted(new_factors)
             else:
                 n_sources = len(measnames[0].split("_")[1:-2])
                 product = 1
@@ -356,7 +356,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                 canonical = to_numbers(apply_substitutions(product,
                                                          substitutions), names)
 
-            permuted_op_list.append(canonical)
+            permuted_op_list.append(np.array(canonical, dtype=np.uint8))
 
     return permuted_op_list
 
@@ -629,7 +629,7 @@ def to_name(monomial_numbers: List[List[int]],
     return '*'.join(components)
 
 
-def from_numbers_to_flat_tuples(list: List[List[int]]
+def from_numbers_to_flat_tuples(lista: List[List[int]]
                                 ) -> List[Tuple[int]]:
     """Flatten all monomials in the list represented as lists of lists to a
     flat tuple.
@@ -647,11 +647,11 @@ def from_numbers_to_flat_tuples(list: List[List[int]]
         List of monomials encoded as flat tuples of integers.
     """
     tuples = []
-    for element in list:
-        if element == [0]:
+    for element in lista:
+        if np.array_equal(element, np.array([0])):
             tuples.append(tuple([0]))
         else:
-            tuples.append(tuple(flatten(element)))
+            tuples.append(tuple(flatten(element.tolist())))
     return tuples
 
 

@@ -13,8 +13,9 @@ InfProb = InflationProblem(dag={"h2": ["v1", "v2"],
                            inflation_level_per_source=[2, 2, 2],
                            names=['A', 'B', 'C'])
 
-InfSDP = InflationSDP(InfProb, commuting=False, verbose=0)
-InfSDP.generate_relaxation(column_specification='npa2')
+InfSDP = InflationSDP(InfProb, commuting=False, verbose=1)
+cols_sym, cols_num = InfSDP.build_columns('npa3') 
+InfSDP.generate_relaxation(column_specification=cols_sym)
 
 tol_vis = 1e-4
 v0, v1 = 0, 1
@@ -27,7 +28,7 @@ certificate = 0
 while abs(v1 - v0) >= tol_vis and iteration < 20:
     p = P_W_array(visibility=vm)
     InfSDP.set_distribution(p, use_lpi_constraints=True)
-    InfSDP.solve()
+    InfSDP.solve(feas_as_optim=True)
 
     print("max(min eigval):", "{:10.4g}".format(
         InfSDP.primal_objective), "\tvisibility =", iteration, "{:.4g}".format(vm))
@@ -38,9 +39,7 @@ while abs(v1 - v0) >= tol_vis and iteration < 20:
     elif InfSDP.primal_objective < 0:
         v1 = vm
         vm = (v0 + v1)/2
-        certificate1 = InfSDP.certificate_as_probs(clean=True)
-        certificate2 = InfSDP.certificate_as_objective(clean=False)
-        certificate4 = InfSDP.certificate_as_2output_correlators(clean=True)
+        certificate1 = InfSDP.dual_certificate
     if abs(InfSDP.primal_objective) <= 1e-7:
         break
 
@@ -48,4 +47,3 @@ print("Final values and last valid certificate:")
 print("max(min eigval):", "{:10.4g}".format(
     InfSDP.primal_objective), "\tvm =", iteration, "{:10.4g}".format(vm))
 print(certificate1, "≥", 0)
-print(certificate2, certificate4)
