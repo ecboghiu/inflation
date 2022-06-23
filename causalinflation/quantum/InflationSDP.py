@@ -197,7 +197,7 @@ class InflationSDP(object):
         for key, val in mon_string2int.items():
             mon_string2int[key] = orbits[val]
         # Factorize the symmetrized monomials, identifying knowable, etc
-        monomials_factors_names, monomials_unfactorised_reordered \
+        monomials_factors, monomials_unfactorised_reordered \
                             = self._factorize_monomials(remaining_monomials)
         self.monomials_list = monomials_unfactorised_reordered
 
@@ -206,8 +206,10 @@ class InflationSDP(object):
                          **dict(zip(self.monomials_list[:, 0],
                               range(2, self.monomials_list.shape[0] + 2)))}
 
-        self._var2repr = {key: variable_dict[val] for key, val in orbits.items()}
-        self._mon2indx = {key: variable_dict[val] for key, val in mon_string2int.items()}
+        self._var2repr = {key: variable_dict[val]
+                              for key, val in orbits.items()}
+        self._mon2indx = {key: variable_dict[val]
+                              for key, val in mon_string2int.items()}
 
         # Change objects to new variables
         self.momentmatrix = symmetric_arr[:, :, 0].astype(int)
@@ -218,15 +220,15 @@ class InflationSDP(object):
                 self.momentmatrix[i, j] = self._var2repr[col]
 
         for idx in range(len(self.monomials_list)):
-            self.monomials_list[idx, 0]     = self._var2repr[self.monomials_list[idx, 0]]
-            monomials_factors_names[idx, 0] = self._var2repr[monomials_factors_names[idx, 0]]
+            self.monomials_list[idx, 0] = self._var2repr[self.monomials_list[idx, 0]]
+            monomials_factors[idx, 0]   = self._var2repr[monomials_factors[idx, 0]]
 
         # Find all the positive monomials
         if self.commuting:
-            self.physical_monomials = monomials_factors_names[:,0]
+            self.physical_monomials = monomials_factors[:,0]
         else:
             self.physical_monomials = self._find_positive_monomials(
-                monomials_factors_names, sandwich_positivity=True)
+                monomials_factors, sandwich_positivity=True)
 
         if self.verbose > 0:
             print("Number of known, semi-known and unknown variables =",
@@ -242,7 +244,10 @@ class InflationSDP(object):
 
         # Store the variables that will be relevant when setting a distribution
         # and into which variables they factorize
-        monomials_factors_vars = [[var, [self._mon2indx[name] for name in names]] for var, names in monomials_factors_names]
+        monomials_factors_vars = [[var, [self._mon2indx[to_name(factor,
+                                                                self.names)]
+                                         for factor in factors]]
+                                  for var, factors in monomials_factors]
         self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
         self.known_moments      = np.array([0, 1])
@@ -740,7 +745,6 @@ class InflationSDP(object):
                     for party in range(self.nr_parties):
                         lst += [party]*pfreq[party]
                     col_specs += [lst]
-
                 columns = self._build_cols_from_col_specs(col_specs)
 
 
@@ -1193,10 +1197,10 @@ class InflationSDP(object):
         self._n_unknown = np.sum(monomials_factors_knowable[:, 1] == 'No')
 
         # Reorder according to known, semiknown and unknown.
-        monomials_factors_names_reordered = np.concatenate(
-            [monomials_factors_names[monomials_factors_knowable[:, 1] == 'Yes'],
-             monomials_factors_names[monomials_factors_knowable[:, 1] == 'Semi'],
-             monomials_factors_names[monomials_factors_knowable[:, 1] == 'No']]
+        monomials_factors_reordered = np.concatenate(
+            [monomials_factors[monomials_factors_knowable[:, 1] == 'Yes'],
+             monomials_factors[monomials_factors_knowable[:, 1] == 'Semi'],
+             monomials_factors[monomials_factors_knowable[:, 1] == 'No']]
                                                             )
 
         monomials_unfactorised_reordered = np.concatenate(
@@ -1207,25 +1211,24 @@ class InflationSDP(object):
         monomials_unfactorised_reordered = monomials_unfactorised_reordered.astype(object)
         monomials_unfactorised_reordered[:, 0] = monomials_unfactorised_reordered[:, 0].astype(int)
 
-        return monomials_factors_names_reordered, monomials_unfactorised_reordered
+        return monomials_factors_reordered, monomials_unfactorised_reordered
 
-    def _find_positive_monomials(self, monomials_factors_names: np.ndarray,
+    def _find_positive_monomials(self, monomials_factors: np.ndarray,
                                        sandwich_positivity=True):
-        ispositive = np.empty_like(monomials_factors_names)
-        ispositive[:, 0] = monomials_factors_names[:, 0]
+        ispositive = np.empty_like(monomials_factors)
+        ispositive[:, 0] = monomials_factors[:, 0]
         ispositive[:, 1] = False
         ispositive[:self._n_known, 1] = True    # Knowable moments are physical
-        for i, row in enumerate(monomials_factors_names[self._n_known:]):
+        for i, row in enumerate(monomials_factors[self._n_known:]):
             factors = row[1]
             factor_is_positive = []
-            for mon in factors:
-                asnumbers = np.array(to_numbers(mon, self.names))
-                isphysical = is_physical(asnumbers,
+            for factor in factors:
+                isphysical = is_physical(factor,
                                          sandwich_positivity=sandwich_positivity)
                 factor_is_positive.append(isphysical)
             if all(factor_is_positive):
                 ispositive[i+self._n_known, 1] = True
-        return monomials_factors_names[ispositive[:, 1].astype(bool), 0]
+        return monomials_factors[ispositive[:, 1].astype(bool), 0]
 
     def dump_to_file(self, filename):
         """
