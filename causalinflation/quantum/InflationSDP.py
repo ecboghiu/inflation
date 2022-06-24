@@ -1218,7 +1218,7 @@ class InflationSDP(object):
         for idx, line in enumerate(
                 monomials_factors[self._n_known:self._n_something_known, :]):
             var = line[0]
-            factors = np.array(line[1])
+            factors = np.array(line[1], dtype=object)
             where_unknown = np.array(
                 [not is_knowable(factor, self.InflationProblem.hypergraph)
                                                     for factor in factors])
