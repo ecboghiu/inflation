@@ -1217,7 +1217,8 @@ class InflationSDP(object):
     def _combine_products_of_unknowns(self, monomials_factors):
         for idx, line in enumerate(
                 monomials_factors[self._n_known:self._n_something_known, :]):
-            var, factors = line[0], np.array(line[1])
+            var = line[0]
+            factors = np.array(line[1])
             where_unknown = np.array(
                 [not is_knowable(factor, self.InflationProblem.hypergraph)
                                                     for factor in factors])
