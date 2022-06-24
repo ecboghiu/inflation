@@ -6,7 +6,7 @@ from sqlalchemy import column
 import sympy as sp
 
 from causalinflation import InflationProblem
-from causalinflation.quantum.general_tools import (to_name, to_representative,
+from causalinflation.quantum.general_tools import (combine_products_of_unknowns, to_name, to_representative,
                                             to_numbers, mul,
                                             transform_vars_to_symb,
                                             substitute_variable_values_in_monlist,
@@ -199,6 +199,8 @@ class InflationSDP(object):
         # Factorize the symmetrized monomials, identifying knowable, etc
         monomials_factors, monomials_unfactorised_reordered \
                             = self._factorize_monomials(remaining_monomials)
+        monomials_factors = self._combine_products_of_unknowns(monomials_factors)
+
         self.monomials_list = monomials_unfactorised_reordered
 
         # Reassign the integer variable names to ordered from 1 to N
@@ -1213,6 +1215,22 @@ class InflationSDP(object):
 
         return monomials_factors_reordered, monomials_unfactorised_reordered
 
+    def _combine_products_of_unknowns(self, monomials_factors):
+        for idx, line in enumerate(
+                monomials_factors[self._n_known:self._n_something_known, :]):
+            var, factors = line[0], np.array(line[1])
+            where_unknown = np.array(
+                [not is_knowable(factor, self.InflationProblem.hypergraph)
+                                                    for factor in factors])
+            factors_unknown = factors[where_unknown]
+            joined_unknowns = to_canonical(
+                np.concatenate(tuple(factor for factor in factors_unknown))
+                )
+            factors_known = factors[np.invert(where_unknown)]
+            new_line = [var, factors_known.tolist() + [joined_unknowns]]
+            monomials_factors[idx + self._n_known] = new_line
+        return monomials_factors
+    
     def _find_positive_monomials(self, monomials_factors: np.ndarray,
                                        sandwich_positivity=True):
         ispositive = np.empty_like(monomials_factors)

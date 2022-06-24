@@ -658,9 +658,9 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
 def is_knowable(monomial: ArrayMonomial,
                 hypergraph_scenario: np.ndarray
                 ) -> bool:
-    """Determines whether a given monomial (which cannot be factorized into
-    smaller disconnected components) admits an identification with a monomial
-    of the original scenario.
+    """Determines whether a given atomic monomial (which cannot be factorized 
+    into smaller disconnected components) admits an identification with a 
+    monomial of the original scenario.
 
     Parameters
     ----------
@@ -1469,98 +1469,6 @@ def label_knowable_and_unknowable(monomials_factors_input: np.ndarray,
             knowable = 'No'
         monomials_factors_knowable[idx][1] = knowable
     return monomials_factors_knowable
-
-
-def combine_products_of_unknowns(monomials_factors_names_input: np.ndarray,
-                                 monomials_factors_knowable: np.ndarray,
-                                 monomials_list: np.ndarray,
-                                 measurements: List[sympy.core.symbol.Symbol],
-                                 substitutions:
-                    Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol],
-                                 hypergraph: np.ndarray,
-                                 names: List[str],
-                                 use_numba: bool = True
-                                 ) -> np.ndarray:
-    """This function returns the input list of monomials with the products of
-    unknown monomials combined into a single factor.
-
-    Parameters
-    ----------
-    monomials_factors_names_input : np.ndarray
-        Array where each row contains the integer representation of
-        the monomial and the factors of the monomial.
-    monomials_factors_knowable : np.ndarray
-        Array where each row contains the integer representation of
-        the monomial and the knowability of the monomials.
-    monomials_list : np.ndarray
-        List of all the *unfactorised* monomials in the moment matrix.
-    measurements : List[sympy.core.symbol.Symbol]
-        List of symbolic symbols representing the measurements.
-    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
-        Dictionary of substitutions to be applied to the monomials.
-    hypergraph : np.ndarray
-        Hypergraph of the network where each row is an edge.
-    names : List[str]
-         List of string names of each party.
-    use_numba : bool, optional
-        If using numba, we need to apply substitutions without using
-        ncpol2sdpa. If False, we do everything with ncpol2sda. Defaults
-        to True.
-
-    Returns
-    -------
-    np.ndarray
-        Returns input list of monomials with products of unknown combined.
-    """
-
-    # If there is a semiknown factorization with >1 unknowns, we must use the
-    # unfactorized variable. This part must be commented out when combining
-    # with scalar extension, and be used with a lot of care when using
-    # non-commuting variables (because now we use the fact that all operators
-    # commute to put the expressions in "canonical form")
-    n_known = sum(monomials_factors_knowable[:, 1] == 'Yes')
-    n_something_known = sum(monomials_factors_knowable[:, 1] != 'No')
-
-    flatmeas = np.array(flatten(measurements))
-    measnames = np.array([str(meas) for meas in flatmeas])
-
-    monomials_factors_names = monomials_factors_names_input.copy()
-    for idx, line in enumerate(monomials_factors_names_input[
-                                                n_known:n_something_known, :]):
-        var = line[0]
-        factors = np.array(line[1])
-        where_unknown = np.array(
-            [not is_knowable(to_numbers(f, names), hypergraph)
-                                                         for f in factors])
-        factors_unknown = factors[where_unknown]
-        factors_known = factors[np.invert(where_unknown)]
-
-        if use_numba:
-            joined_unknowns_name = '*'.join(factors_unknown)
-            joined_unknowns_name_canonical = to_name(to_canonical(
-                np.array(to_numbers(joined_unknowns_name, names))), names)
-            new_line = [var, factors_known.tolist(
-            ) + [joined_unknowns_name_canonical]]
-            monomials_factors_names[idx + n_known] = new_line
-        else:
-            unknown_components = flatten(
-                [part.split('*') for part in factors_unknown])
-            unknown_operator = mul([flatmeas[measnames == op]
-                                   for op in unknown_components])[0]
-
-            # It seems like ncpol2sdpa does not use as canonical form a
-            # lexicographic order, but the first representation appearing,
-            # which can be the adjoint of the lexicographic form. The
-            #  following loop tries to fix this
-            if sum(monomials_list[:, 1] == str(unknown_operator)) == 0:
-                unknown_operator = apply_substitutions(
-                                                unknown_operator.adjoint(),
-                                                        substitutions)
-            new_line = [var, factors_known.tolist() + [str(unknown_operator)]]
-            monomials_factors_names[monomials_factors_names_input[:, 0]
-                                    == var] = new_line
-
-    return monomials_factors_names
 
 
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:
