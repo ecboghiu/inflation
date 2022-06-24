@@ -243,9 +243,10 @@ def mul(lst: List) -> Any:
 
 
 # @jit(nopython=True)
-def apply_source_perm_monomial_commuting(monomial: np.ndarray,
+def apply_source_perm_monomial(monomial: np.ndarray,
                                          source: int,
-                                         permutation: List
+                                         permutation: List,
+                                         commuting: bool
                                          ) -> np.ndarray:
     """This applies a source swap to a monomial.
 
@@ -259,6 +260,8 @@ def apply_source_perm_monomial_commuting(monomial: np.ndarray,
         The source that is being swapped.
     permutation : List
         The permutation of the copies of the specified source
+    commuting : bool
+        Whether all the involved operators commute or not.
 
     Returns
     -------
@@ -274,7 +277,10 @@ def apply_source_perm_monomial_commuting(monomial: np.ndarray,
                 new_factors[i][1 + source] - 1] + 1
         else:
             continue
-    return mon_lexsorted(new_factors)  # canonical
+    if commuting:
+        return mon_lexsorted(new_factors)
+    else:
+        return new_factors
 
 
 def apply_source_permutation_coord_input(columns: List[np.ndarray],
@@ -474,8 +480,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     for perms in product(*all_perms_per_source):
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
-            permuted = apply_source_perm_monomial_commuting(
-                permuted, source, perms[source])
+            permuted = apply_source_perm_monomial(
+                permuted, source, perms[source], True)
         permuted_name = to_name(permuted, names)
         if permuted_name not in template_new_mons_aux:
             template_new_mons_aux.append(permuted_name)
@@ -658,8 +664,8 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
 def is_knowable(monomial: ArrayMonomial,
                 hypergraph_scenario: np.ndarray
                 ) -> bool:
-    """Determines whether a given atomic monomial (which cannot be factorized 
-    into smaller disconnected components) admits an identification with a 
+    """Determines whether a given atomic monomial (which cannot be factorized
+    into smaller disconnected components) admits an identification with a
     monomial of the original scenario.
 
     Parameters
@@ -1339,7 +1345,8 @@ def to_representative_aux(monomial_component: np.ndarray
 
 
 def to_representative(mon: np.ndarray,
-                      inflevels: np.array
+                      inflevels: np.array,
+                      commuting: bool
                       ) -> np.ndarray:
     """This function takes a monomial and applies inflation
     symmetries to bring it to a canonical form.
@@ -1370,6 +1377,8 @@ def to_representative(mon: np.ndarray,
         Input monomial that cannot be further factorised.
     inflevels : np.array
         Number of copies of each source in the inflated graph.
+    commuting : bool
+        Whether all the involved operators commute or not.
 
     Returns
     -------
@@ -1395,8 +1404,8 @@ def to_representative(mon: np.ndarray,
         for perms in product(*all_perms_per_source):
             permuted = final_monomial.copy()
             for source in range(nr_sources):
-                permuted = apply_source_perm_monomial_commuting(
-                    permuted, source, perms[source])
+                permuted = apply_source_perm_monomial(
+                    permuted, source, perms[source], commuting)
             permuted = to_canonical(permuted)
             if mon_lessthan_mon(permuted, final_monomial):
                 final_monomial = permuted
