@@ -5,7 +5,7 @@ import pickle
 import sympy as sp
 
 from causalinflation import InflationProblem
-from causalinflation.quantum.general_tools import (combine_products_of_unknowns, to_name, to_representative,
+from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             to_numbers, mul,
                                             transform_vars_to_symb,
                                             substitute_variable_values_in_monlist,
