@@ -2,7 +2,6 @@ import copy
 import itertools
 import numpy as np
 import pickle
-from sqlalchemy import column
 import sympy as sp
 
 from causalinflation import InflationProblem
