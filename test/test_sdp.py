@@ -86,7 +86,10 @@ class TestGeneratingMonomials(unittest.TestCase):
         truth   = [[0],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
-        self.assertEqual(columns, truth,
+        truth = [np.array(mon) for mon in truth]
+        self.assertTrue(len(columns) == len(truth), "The number of columns is incorrect.")
+        areequal = np.all([np.array_equal(columns[i], truth[i]) for i in range(len(columns))])
+        self.assertTrue(areequal,
                          "The column generation is not capable of handling " +
                          "monomials that reduce to the identity")
 
@@ -327,6 +330,10 @@ class TestSDPOutput(unittest.TestCase):
                 np.array([[2, 2, 1, 0, 0, 0],
                           [2, 3, 1, 0, 0, 0]]),
                 np.array([[3, 0, 2, 2, 0, 0],
+                          [3, 0, 3, 2, 0, 0]]),
+                np.array([[2, 2, 1, 0, 0, 0],
+                          [2, 3, 1, 0, 0, 0],
+                          [3, 0, 2, 2, 0, 0],
                           [3, 0, 3, 2, 0, 0]]),
                 np.array([[1, 1, 0, 1, 0, 0],
                           [2, 2, 1, 0, 0, 0],

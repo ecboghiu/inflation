@@ -14,7 +14,7 @@ InfProb = InflationProblem(dag={"h2": ["v1", "v2"],
                            names=['A', 'B', 'C'])
 
 InfSDP = InflationSDP(InfProb, commuting=False, verbose=1)
-cols_sym, cols_num = InfSDP.build_columns('npa3') 
+cols_sym, cols_num = InfSDP.build_columns('local1') 
 InfSDP.generate_relaxation(column_specification=cols_sym)
 
 tol_vis = 1e-4
