@@ -1218,16 +1218,17 @@ class InflationSDP(object):
         for idx, line in enumerate(
                 monomials_factors[self._n_known:self._n_something_known, :]):
             var = line[0]
-            factors = np.array(line[1])
+            factors = line[1]
             where_unknown = np.array(
                 [not is_knowable(factor, self.InflationProblem.hypergraph)
                                                     for factor in factors])
-            factors_unknown = factors[where_unknown]
+            factors_unknown = [factor for i, factor in enumerate(factors) if where_unknown[i]]
             joined_unknowns = to_canonical(
                 np.concatenate(tuple(factor for factor in factors_unknown))
                 )
-            factors_known = factors[np.invert(where_unknown)]
-            new_line = [var, factors_known.tolist() + [joined_unknowns]]
+            where_known = np.invert(where_unknown)
+            factors_known =  [factor for i, factor in enumerate(factors) if where_known[i]]
+            new_line = [var, factors_known + [joined_unknowns]]
             monomials_factors[idx + self._n_known] = new_line
         return monomials_factors
     
