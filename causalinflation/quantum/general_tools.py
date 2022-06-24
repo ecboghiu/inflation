@@ -655,9 +655,7 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
     return tuples
 
 
-def is_knowable(monomial: ArrayMonomial,
-                hypergraph_scenario: np.ndarray
-                ) -> bool:
+def is_knowable(monomial: ArrayMonomial) -> bool:
     """Determines whether a given atomic monomial (which cannot be factorized 
     into smaller disconnected components) admits an identification with a 
     monomial of the original scenario.
@@ -666,8 +664,6 @@ def is_knowable(monomial: ArrayMonomial,
     ----------
     monomial : Union[List[List[int]], np.ndarray]
         List of operators, denoted each by a list of indices
-    hypergraph_scenario : np.ndarray
-        Binary matrix representing the scenario.
 
     Returns
     -------
@@ -684,27 +680,12 @@ def is_knowable(monomial: ArrayMonomial,
         monomial = np.array(monomial)
     assert monomial.ndim == 2, "You must enter a list of monomials. Hence,"\
                         + " the number of dimensions of monomial must be 2"
-    parties = np.array(monomial)[:, 0].astype(int)
+    parties = np.asarray(monomial)[:, 0].astype(int)
     # If there is more than one monomial of a party, it is not knowable
     if len(set(parties)) != len(parties):
         return False
     else:
-        # Parties begin with 1
-        scenario_subhypergraph = hypergraph_scenario[:, parties - 1]
-        monomial_sources = np.array(monomial)[:, 1:-2].T
-
-        # First, test if the monomial corresponds to the scenario.
-        # NOTE: This many not be needed depending on how independent we want
-        # different parts of the code to be. If we remove this check, we can
-        # remove hypergraph_scenario from the input
-        monomial_hypergraph = monomial_sources.copy()
-        monomial_hypergraph[np.nonzero(monomial_hypergraph)] = 1
-        assert all([source in scenario_subhypergraph.tolist()
-                    for source in monomial_hypergraph.tolist()]), \
-            "The hypergraph corresponding to the monomial does not match a "\
-            + "subgraph of the scenario hypergraph"
-
-        # We see if, for each source, there is at most one copy used
+       # We see if, for each source, there is at most one copy used
         return all([len(set(source[np.nonzero(source)])) <= 1
                     for source in monomial_sources])
 
@@ -1436,39 +1417,6 @@ def monomialset_num2name(monomials_factors: np.ndarray,
     return monomials_factors_names
 
 
-def label_knowable_and_unknowable(monomials_factors_input: np.ndarray,
-                                  hypergraph: np.ndarray
-                                  ) -> np.ndarray:
-    """Given the list of monomials factorised, it labels each
-    monomial into knowable, semiknowable and unknowable.
-
-    Parameters
-    ----------
-    monomials_factors_input : np.ndarray
-        Ndarray of factorised monomials. Each row encodes the integer
-        representation and the factors of the monomial.
-    hypergraph : np.ndarray
-        The hypergraph of the network.
-
-    Returns
-    -------
-    np.ndarray
-        Array of the same size as the input, with the labels of each monomial.
-    """
-
-    monomials_factors_knowable = np.empty_like(monomials_factors_input)
-    monomials_factors_knowable[:, 0] = monomials_factors_input[:, 0]
-    for idx, [_, monomial_factors] in enumerate(tqdm(monomials_factors_input, disable=True)):
-        factors_known_list = [is_knowable(
-            factors, hypergraph) for factors in monomial_factors]
-        if all(factors_known_list):
-            knowable = 'Yes'
-        elif any(factors_known_list):
-            knowable = 'Semi'
-        else:
-            knowable = 'No'
-        monomials_factors_knowable[idx][1] = knowable
-    return monomials_factors_knowable
 
 
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:

@@ -13,7 +13,7 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             string2prob,
                                             phys_mon_1_party_of_given_len,
                                             is_knowable, is_physical,
-                                            label_knowable_and_unknowable,
+                                            # label_knowable_and_unknowable,
                                             monomialset_name2num,
                                             monomialset_num2name,
                                             factorize_monomials,
@@ -81,6 +81,13 @@ class InflationSDP(object):
         self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         self.setting_cardinalities = self.InflationProblem.settings_per_party
         self.maximize = True    # Direction of the optimization
+
+    def atomic_knowable_q(self, atomic_monomial):
+        first_test = is_knowable(atomic_monomial)
+        if first_test and self.split_node_model:
+            return self.is_knowable_q_split_node_check(atomic_monomial)
+        else:
+            return first_test
 
     def generate_relaxation(self,
                             column_specification:
@@ -1188,8 +1195,7 @@ class InflationSDP(object):
             remaining_monomials, self.names), verbose=self.verbose)
         monomials_factors_names = monomialset_num2name(
             monomials_factors, self.names)
-        monomials_factors_knowable = label_knowable_and_unknowable(
-            monomials_factors, self.InflationProblem.hypergraph)
+        monomials_factors_knowable = self.label_knowable_and_unknowable(monomials_factors)
 
         # Some counting
         self._n_known = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
@@ -1259,3 +1265,48 @@ class InflationSDP(object):
         """
         with open(filename, 'w') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+
+    def monomial_sanity_check(self, monomial):
+        """
+        The hypergraph corresponding to the monomial should match a
+        subgraph of the scenario hypergraph.
+        """
+        parties = np.asarray(monomial)[:, 0].astype(int)
+        #Parties start at #1 in our numpy vector notation.
+        scenario_subhypergraph = self.hypergraph[:, parties - 1]
+        monomial_sources = np.asarray(monomial)[:, 1:-2].T
+        monomial_hypergraph = monomial_sources.copy()
+        monomial_hypergraph[np.nonzero(monomial_hypergraph)] = 1
+        return all([source in scenario_subhypergraph.tolist()
+                    for source in monomial_hypergraph.tolist()])
+
+    def label_knowable_and_unknowable(self,
+                                      monomials_factors_input: np.ndarray
+                                      ) -> np.ndarray:
+        """Given the list of monomials factorised, it labels each
+        monomial into knowable, semiknowable and unknowable.
+
+        Parameters
+        ----------
+        monomials_factors_input : np.ndarray
+            Ndarray of factorised monomials. Each row encodes the integer
+            representation and the factors of the monomial.
+
+
+        Returns
+        -------
+        np.ndarray
+            Array of the same size as the input, with the labels of each monomial.
+        """
+        monomials_factors_knowable = np.empty_like(monomials_factors_input)
+        monomials_factors_knowable[:, 0] = monomials_factors_input[:, 0]
+        for idx, [_, monomial_factors] in enumerate(tqdm(monomials_factors_input, disable=True)):
+            factors_known_list = [self.atomic_knowable_q(factors) for factors in monomial_factors]
+            if all(factors_known_list):
+                knowable = 'Yes'
+            elif any(factors_known_list):
+                knowable = 'Semi'
+            else:
+                knowable = 'No'
+            monomials_factors_knowable[idx][1] = knowable
+        return monomials_factors_knowable
