@@ -193,9 +193,23 @@ class InflationSDP(object):
                                                            monomials_list,
                                                            inflation_symmetries)
         # Associate the names of all copies to the same variable
-        for key, val in mon_string2int.items():
-            mon_string2int[key] = orbits[val]
-        # Factorize the symmetrized monomials, identifying knowable, etc
+        for key, val in self._mon_string2int.items():
+            self._mon_string2int[key] = orbits[val]
+
+        # Bring remaining monomials to a representative form, and add the
+        # corresponding identifications to the dictionary
+        for idx, [var, mon] in enumerate(tqdm(
+                                       monomialset_name2num(remaining_monomials,
+                                                            self.names),
+                                              disable=not self.verbose,
+                                          desc="Computing canonical forms   ")):
+            canonical = to_name(to_representative(np.array(mon),
+                                                  self.inflation_levels,
+                                                  self.commuting),
+                                self.names)
+            remaining_monomials[idx][1] = canonical
+            self._mon_string2int[canonical] = var
+
         monomials_factors, monomials_unfactorised_reordered \
                             = self._factorize_monomials(remaining_monomials,
                                                         combine_unknowns=True)
@@ -210,7 +224,7 @@ class InflationSDP(object):
         self._var2repr = {key: variable_dict[val]
                               for key, val in orbits.items()}
         self._mon2indx = {key: variable_dict[val]
-                              for key, val in mon_string2int.items()}
+                              for key, val in self._mon_string2int.items()}
 
         # Change objects to new variables
         self.momentmatrix = symmetric_arr[:, :, 0].astype(int)
@@ -242,13 +256,30 @@ class InflationSDP(object):
                       [self.monomials_list[phys-2]
                                            for phys in self.physical_monomials])
 
-
         # Store the variables that will be relevant when setting a distribution
         # and into which variables they factorize
-        monomials_factors_vars = [[var, [self._mon2indx[to_name(factor,
-                                                                self.names)]
-                                         for factor in factors]]
-                                  for var, factors in monomials_factors]
+        monomials_factors_vars = np.empty_like(monomials_factors).tolist()
+        for idx, [var, factors] in enumerate(monomials_factors):
+            monomials_factors_vars[idx][0] = var
+            factor_variables = []
+            for factor in factors:
+                try:
+                    factor_variables.append(self._mon2indx[
+                               to_name(to_representative(np.array(factor),
+                                                         self.inflation_levels,
+                                                         self.commuting),
+                                       self.names)])
+                except KeyError:
+                    # If the unknown variable doesn't appear anywhere else, add
+                    # it to the list
+                    self._n_unknown += 1
+                    var_idx = self._n_something_known + self._n_unknown
+                    self._mon2indx[to_name(to_representative(np.array(factor),
+                                                          self.inflation_levels,
+                                                             self.commuting),
+                            self.names)] = var_idx
+                    factor_variables.append(var_idx)
+            monomials_factors_vars[idx][1] = factor_variables
         self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
         self.known_moments      = np.array([0, 1])
