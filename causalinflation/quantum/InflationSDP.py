@@ -495,6 +495,10 @@ class InflationSDP(object):
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
         # C: why did I write this??
         # names can still contain duplicated names, so we need to remove them
         # new_dual_certificate = {tuple(name): 0 for name in names}
@@ -547,6 +551,10 @@ class InflationSDP(object):
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
         polynomial = 0
@@ -600,6 +608,11 @@ class InflationSDP(object):
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
+
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
 
