@@ -189,9 +189,9 @@ class InflationSDP(object):
         # to bring the monomials in the user-inputted objective function
         # to a canonoical form! But this is not implemented yet.
         symmetric_arr, orbits, remaining_monomials \
-                        = self._apply_inflation_symmetries(problem_arr,
-                                                           monomials_list,
-                                                           inflation_symmetries)
+                    = self._apply_inflation_symmetries(problem_arr,
+                                                       self._monomials_list_all,
+                                                       inflation_symmetries)
         # Associate the names of all copies to the same variable
         for key, val in self._mon_string2int.items():
             self._mon_string2int[key] = orbits[val]
@@ -356,7 +356,7 @@ class InflationSDP(object):
 
 
         # The indices for the variables in the semiknowns also need shifting
-        self.semiknown_moments = []
+        self.semiknown_moments = np.array([])
         if self.use_lpi_constraints:
             self.semiknown_moments = np.array([[var, mul(val[:-1]), val[-1]]
                                                for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]])
@@ -461,10 +461,6 @@ class InflationSDP(object):
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
-        if np.array(self.semiknown_moments).size > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
 
@@ -746,10 +742,10 @@ class InflationSDP(object):
                     # or [np.array([0]), np.array([[1, 1, 1, 0, 0, 0]]), np.array([[1, 1, 1, 0, 0, 0],[2, 2, 1, 0, 0, 0]]), ...]
                     columns = [np.array(mon, dtype=np.uint8) for mon in column_specification]
                 elif len(np.array(column_specification[1]).shape) == 1:
-                    # If the depth of column_specification is just 2, 
-                    # then the input must be in the form of 
+                    # If the depth of column_specification is just 2,
+                    # then the input must be in the form of
                     # e.g., [[], [0], [1], [0, 0]] -> {1, A{:}, B{:}, (A*A){:}}
-                    # which just specifies the party structure in the 
+                    # which just specifies the party structure in the
                     # generating set
                     columns = self._build_cols_from_col_specs(column_specification)
             else:
@@ -1132,7 +1128,7 @@ class InflationSDP(object):
                                                       measnames,
                                                       self.names)
             list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
-            
+
             try:
                 total_perm    = find_permutation(list_permuted, list_original)
                 inflation_symmetries.append(total_perm)
