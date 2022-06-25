@@ -170,8 +170,8 @@ class InflationSDP(object):
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
-        problem_arr, monomials_list, mon_string2int = self._build_momentmatrix()
-        self._monomials_list_all = monomials_list
+        problem_arr, self._monomials_list_all, self._mon_string2int = \
+                                                      self._build_momentmatrix()
         if self.verbose > 1:
             print("Number of variables before symmetrization:",
                   len(self._monomials_list_all))
