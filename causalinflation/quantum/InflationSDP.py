@@ -1201,8 +1201,8 @@ class InflationSDP(object):
             remaining_monomials, self.names), verbose=self.verbose)
         monomials_factors_names = monomialset_num2name(
             monomials_factors, self.names)
-        monomials_factors_knowable = label_knowable_and_unknowable(
-            monomials_factors, self.InflationProblem.hypergraph)
+        is_knowable, factors_are_knowable = label_knowable_and_unknowable(
+                            monomials_factors, self.InflationProblem.hypergraph)
 
         # Some counting
         self._n_known = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
