@@ -12,7 +12,7 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             substitute_sym_with_numbers,
                                             string2prob,
                                             phys_mon_1_party_of_given_len,
-                                            is_knowable, is_physical,
+                                            is_physical,
                                             label_knowable_and_unknowable,
                                             monomialset_name2num,
                                             monomialset_num2name,
@@ -197,8 +197,8 @@ class InflationSDP(object):
             mon_string2int[key] = orbits[val]
         # Factorize the symmetrized monomials, identifying knowable, etc
         monomials_factors, monomials_unfactorised_reordered \
-                            = self._factorize_monomials(remaining_monomials)
-        monomials_factors = self._combine_products_of_unknowns(monomials_factors)
+                            = self._factorize_monomials(remaining_monomials,
+                                                        combine_unknowns=True)
 
         self.monomials_list = monomials_unfactorised_reordered
 
@@ -1179,15 +1179,20 @@ class InflationSDP(object):
 
         return symmetric_arr.astype(int), orbits, remaining_monomials
 
-    def _factorize_monomials(self, remaining_monomials: np.ndarray
+    def _factorize_monomials(self,
+                             monomials: np.ndarray,
+                             combine_unknowns: bool=True
                              ) -> Tuple[np.ndarray, np.ndarray]:
         """Splits the monomials into factors according to the supports of the
         operators.
 
         Parameters
         ----------
-        remaining_monomials : np.ndarray
+        monomials : np.ndarray
             List of unfactorised monomials.
+        combine_unknowns : bool
+            Whether combining the unknown monomials into a single one.
+            Default True.
 
         Returns
         -------
@@ -1196,55 +1201,64 @@ class InflationSDP(object):
             and unknown moments and also the corresponding unfactorised
             monomials, also reordered.
         """
-        # TODO see why I cannot just plug in remaining_monomials instead of monomials_list??
-        monomials_factors = factorize_monomials(monomialset_name2num(
-            remaining_monomials, self.names), verbose=self.verbose)
+        monomials_factors = factorize_monomials(
+                                monomialset_name2num(monomials, self.names),
+                                                verbose=self.verbose)
         monomials_factors_names = monomialset_num2name(
             monomials_factors, self.names)
         is_knowable, factors_are_knowable = label_knowable_and_unknowable(
                             monomials_factors, self.InflationProblem.hypergraph)
 
         # Some counting
-        self._n_known = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
-        self._n_something_known = np.sum(
-            monomials_factors_knowable[:, 1] != 'No')
-        self._n_unknown = np.sum(monomials_factors_knowable[:, 1] == 'No')
+        self._n_known           = np.sum(is_knowable[:, 1] == 'Yes')
+        self._n_something_known = np.sum(is_knowable[:, 1] != 'No')
+        self._n_unknown         = np.sum(is_knowable[:, 1] == 'No')
+
+        # Recombine multiple unknowable variables into one, and reorder the
+        # factors so the unknowable is always last
+        multiple_unknowable = []
+        for idx, [_, are_knowable] in enumerate(factors_are_knowable):
+            if len(are_knowable) >= 2:
+                are_knowable   = np.array(are_knowable)
+                arent_knowable = (1-are_knowable).astype(bool)
+                if (np.count_nonzero(arent_knowable) > 1) and combine_unknowns:
+                    # Combine unknowables and reorder
+                    unknowable_factors = np.concatenate(
+                            np.array(monomials_factors[idx][1])[arent_knowable],
+                            axis=0
+                            )
+                    unknowable_factors_ordered = \
+                           unknowable_factors[unknowable_factors[:,0].argsort()]
+                    # Ugly hack. np.concatenate and np.append were failing
+                    monomials_factors[idx][1] = \
+                        ((np.array(
+                            monomials_factors[idx][1]
+                                   )[are_knowable]).tolist()
+                            + [unknowable_factors_ordered])
+                else:
+                    # Just reorder
+                    monomials_factors[idx][1] = np.concatenate(
+                        [np.array(monomials_factors[idx][1])[are_knowable],
+                         np.array(monomials_factors[idx][1])[arent_knowable]]
+                    ).tolist()
 
         # Reorder according to known, semiknown and unknown.
         monomials_factors_reordered = np.concatenate(
-            [monomials_factors[monomials_factors_knowable[:, 1] == 'Yes'],
-             monomials_factors[monomials_factors_knowable[:, 1] == 'Semi'],
-             monomials_factors[monomials_factors_knowable[:, 1] == 'No']]
+            [monomials_factors[is_knowable[:, 1] == 'Yes'],
+             monomials_factors[is_knowable[:, 1] == 'Semi'],
+             monomials_factors[is_knowable[:, 1] == 'No']]
                                                             )
 
         monomials_unfactorised_reordered = np.concatenate(
-            [remaining_monomials[monomials_factors_knowable[:, 1] == 'Yes'],
-             remaining_monomials[monomials_factors_knowable[:, 1] == 'Semi'],
-             remaining_monomials[monomials_factors_knowable[:, 1] == 'No']]
+            [monomials[is_knowable[:, 1] == 'Yes'],
+             monomials[is_knowable[:, 1] == 'Semi'],
+             monomials[is_knowable[:, 1] == 'No']]
                                                             )
         monomials_unfactorised_reordered = monomials_unfactorised_reordered.astype(object)
         monomials_unfactorised_reordered[:, 0] = monomials_unfactorised_reordered[:, 0].astype(int)
 
         return monomials_factors_reordered, monomials_unfactorised_reordered
 
-    def _combine_products_of_unknowns(self, monomials_factors):
-        for idx, line in enumerate(
-                monomials_factors[self._n_known:self._n_something_known, :]):
-            var = line[0]
-            factors = line[1]
-            where_unknown = np.array(
-                [not is_knowable(factor, self.InflationProblem.hypergraph)
-                                                    for factor in factors])
-            factors_unknown = [factor for i, factor in enumerate(factors) if where_unknown[i]]
-            joined_unknowns = to_canonical(
-                np.concatenate(tuple(factor for factor in factors_unknown))
-                )
-            where_known = np.invert(where_unknown)
-            factors_known =  [factor for i, factor in enumerate(factors) if where_known[i]]
-            new_line = [var, factors_known + [joined_unknowns]]
-            monomials_factors[idx + self._n_known] = new_line
-        return monomials_factors
-    
     def _find_positive_monomials(self, monomials_factors: np.ndarray,
                                        sandwich_positivity=True):
         ispositive = np.empty_like(monomials_factors)
