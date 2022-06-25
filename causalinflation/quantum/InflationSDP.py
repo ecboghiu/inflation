@@ -1247,27 +1247,30 @@ class InflationSDP(object):
         for idx, [_, are_knowable] in enumerate(factors_are_knowable):
             if len(are_knowable) >= 2:
                 are_knowable   = np.array(are_knowable)
-                arent_knowable = (1-are_knowable).astype(bool)
                 if (np.count_nonzero(arent_knowable) > 1) and combine_unknowns:
                     # Combine unknowables and reorder
                     unknowable_factors = np.concatenate(
-                            np.array(monomials_factors[idx][1])[arent_knowable],
-                            axis=0
-                            )
+                        [factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                            if arent_knowable[i]], axis=0)
                     unknowable_factors_ordered = \
                            unknowable_factors[unknowable_factors[:,0].argsort()]
                     # Ugly hack. np.concatenate and np.append were failing
                     monomials_factors[idx][1] = \
-                        ((np.array(
-                            monomials_factors[idx][1]
-                                   )[are_knowable]).tolist()
-                            + [unknowable_factors_ordered])
+                        ([factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                            if are_knowable[i]]
+                        + [unknowable_factors_ordered])
                 else:
                     # Just reorder
-                    monomials_factors[idx][1] = np.concatenate(
-                        [np.array(monomials_factors[idx][1])[are_knowable],
-                         np.array(monomials_factors[idx][1])[arent_knowable]]
-                    ).tolist()
+                    monomials_factors[idx][1] = \
+                        ([factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                         if are_knowable[i]]
+                        +
+                        [factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                          if not are_knowable[i]])
 
         # Reorder according to known, semiknown and unknown.
         monomials_factors_reordered = np.concatenate(
