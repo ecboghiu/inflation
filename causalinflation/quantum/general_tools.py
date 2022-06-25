@@ -1445,7 +1445,7 @@ def monomialset_num2name(monomials_factors: np.ndarray,
     return monomials_factors_names
 
 
-def label_knowable_and_unknowable(monomials_factors_input: np.ndarray,
+def label_knowable_and_unknowable(monomials_factors: np.ndarray,
                                   hypergraph: np.ndarray
                                   ) -> np.ndarray:
     """Given the list of monomials factorised, it labels each
@@ -1465,19 +1465,22 @@ def label_knowable_and_unknowable(monomials_factors_input: np.ndarray,
         Array of the same size as the input, with the labels of each monomial.
     """
 
-    monomials_factors_knowable = np.empty_like(monomials_factors_input)
-    monomials_factors_knowable[:, 0] = monomials_factors_input[:, 0]
-    for idx, [_, monomial_factors] in enumerate(tqdm(monomials_factors_input, disable=True)):
+    factors_are_knowable       = np.empty_like(monomials_factors)
+    factors_are_knowable[:, 0] = monomials_factors[:, 0]
+    monomial_is_knowable       = np.empty_like(monomials_factors)
+    monomial_is_knowable[:, 0] = monomials_factors[:, 0]
+    for idx, [_, factors] in enumerate(monomials_factors):
         factors_known_list = [is_knowable(
-            factors, hypergraph) for factors in monomial_factors]
+            factor, hypergraph) for factor in factors]
+        factors_are_knowable[idx][1] = factors_known_list
         if all(factors_known_list):
             knowable = 'Yes'
         elif any(factors_known_list):
             knowable = 'Semi'
         else:
             knowable = 'No'
-        monomials_factors_knowable[idx][1] = knowable
-    return monomials_factors_knowable
+        monomial_is_knowable[idx][1] = knowable
+    return monomial_is_knowable, factors_are_knowable
 
 
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:
