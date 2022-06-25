@@ -343,4 +343,3 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(np.all(sdp.semiknown_moments[:,1] <= 1),
                     ("Semiknown moments need to be of the form " +
                     "mon_index1 = (number<=1) * mon_index2, this is failing!"))
-        #sdp.solve(feas_as_optim=True)

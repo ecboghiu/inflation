@@ -130,7 +130,7 @@ def dot_mon_commuting(mon1: np.ndarray,
     """
 
     if mon1.size <= 1:
-        return mon_lexsorted(mon2) # mon2 
+        return mon_lexsorted(mon2) # mon2
     if mon2.size <= 1:
         return mon_lexsorted(mon1) #mon_sorted_by_parties(reverse_mon(mon1))
     # So it seems there is no implementation of lexsort in numba, so for now
@@ -145,8 +145,7 @@ def dot_mon_commuting(mon1: np.ndarray,
     return mon_lexsorted(mon)
 
 
-def mon_lexsorted(mon: np.ndarray
-                 ) -> np.ndarray:
+def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
     """Return a monomial sorted lexicographically.
 
     The sorting keys are as follows. The first key is the parties, the second
@@ -198,8 +197,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=True, cache=cache)
-def mon_is_zero(mon: np.ndarray
-                ) -> bool_:
+def mon_is_zero(mon: np.ndarray) -> bool_:
     """Function which checks if there is a product of two orthogonal projectors,
     and returns True if so.
 
