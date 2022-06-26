@@ -1247,6 +1247,7 @@ class InflationSDP(object):
         for idx, [_, are_knowable] in enumerate(factors_are_knowable):
             if len(are_knowable) >= 2:
                 are_knowable   = np.array(are_knowable)
+                arent_knowable = np.invert(are_knowable)
                 if (np.count_nonzero(arent_knowable) > 1) and combine_unknowns:
                     # Combine unknowables and reorder
                     unknowable_factors = np.concatenate(

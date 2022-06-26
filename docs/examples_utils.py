@@ -1,4 +1,6 @@
 from copy import deepcopy
+import itertools
+import numpy as np
 
 def feasibility_bisection(InfSDP, distribution, tol_vis=1e-4, verbose=0, max_iter=20):
     v0, v1 = 0, 1
@@ -27,3 +29,11 @@ def feasibility_bisection(InfSDP, distribution, tol_vis=1e-4, verbose=0, max_ite
             break
     
     return last_good, vm
+
+def probfunc2array(func, noise, outcomes_per_party, settings_per_party):
+    p = np.zeros([*outcomes_per_party, *settings_per_party])
+    for a,b,c,x,y,z in itertools.product(*[range(i) for i in [*outcomes_per_party, *settings_per_party]]):
+        p[a,b,c,x,y,z] = func(a,b,c,x,y,z,noise)
+    return p
+
+
