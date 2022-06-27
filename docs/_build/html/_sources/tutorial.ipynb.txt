@@ -11,46 +11,82 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The package implementation follows an object-oriented design. There are two main objects that need to be understood.\n",
+    "The CausalInflation package generates semidefinite programming relaxions of inflations of causal scenarios. The implementation follows an object-oriented design. There are three main steps:\n",
     "\n",
-    "## Encoding the causal scenario\n",
+    "* Encode the causal scenario and desired inflation as an instance of `InflationProblem`.\n",
+    "* Generate the semidefinite programming relaxation of the desired inflation through `InflationSDP`.\n",
+    "* Export the relaxation to a file and/or solve the problem.\n",
     "\n",
-    "The first object of interest is `InflationProblem`. When instantiating this object, we pass it all the relevant information about the causal scenario and the type of inflation we want to perform.\n",
+    "We will now go through the steps above in more detail. This tutorial is available on the documentation [webpage](https://ecboghiu.github.io/inflation/) and it can also be downloaded as a ready-to-run Jupyter Notebook from the [GitHub repository](https://github.com/ecboghiu/inflation). If already familiar with quantum inflation, the quickest way to get started is to run some examples from the Examples section, which can also be downloaded as a Jupyter Notebook.\n",
     "\n",
-    "Causal relationships are encoded through a Bayesian Directed-Acyclic-Graph, or DAG, for short. The nodes of the graph represent random variables, which can be either observable or unobservable. Directed arrows between the nodes encode direct causal influence between one node and another. The acyclicity of the graph avoids the existence of causal loops. \n",
-    "\n",
-    "For applications to physics, another class of random variables is often considered, called \"settings\". These correspond to observable variables on whose outcome we condition in order to obtain the observed data. In a physics setting, this could correspond to measuring one property of a system or another.\n",
-    "\n",
-    "For a simple causal scenario in physics, consider the so called [\"bilocal scenario\"](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119):\n",
-    "\n",
-    "<img src=\"./figures/bilocal.PNG\" alt=\"drawing\" width=\"400\"/>\n",
-    "\n",
-    "Here we have three observed random variables, $A$, $B$ and $C$, two hidden quantum variables $U_{AB}$ and $U_{B'C}$ and three setting variables, $X$, $Y$ and $Z$.\n",
-    "\n",
-    "After importing the package, we encode information about the causal scenario into `InflationProblem` as follows:"
+    "We start by importing everything that we will need:"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 1,
+   "execution_count": 9,
    "metadata": {},
    "outputs": [],
    "source": [
-    "from causalinflation import InflationProblem\n",
-    "\n",
-    "InfProb = InflationProblem( dag={\"h1\": [\"v1\", \"v2\"],\n",
-    "                                 \"h2\": [\"v2\", \"v3\"]},\n",
-    "                            outcomes_per_party=[2, 2, 2],\n",
-    "                            settings_per_party=[2, 2, 2],\n",
-    "                            inflation_level_per_source=[2, 2],\n",
-    "                            names=['A', 'B', 'C'])"
+    "from causalinflation import InflationProblem, InflationSDP"
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The DAG is encoded through a dictionary where directed arrows are encoded as keys in the dictionary pointing to all nodes stored in the value of the key. In `outcomes_per_party` and `settings_per_party` we specify the cardinalities of the observable nodes and measurement settings respectively. We can optionally specify other party names in `names`; the default is alphabetical. The paremeter `inflation_level_per_source` determines how many copies of the quantum sources we consider in the inflated graph. See [Physical Review X 11.2 (2021): 021043](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043) for more information about quantum inflation.\n",
+    "## Encoding the inflation problem \n",
+    "\n",
+    "The first object of interest is `InflationProblem`. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform. Currently, only quantum inflation is implemented.\n",
+    "\n",
+    "#### Basics of causal diagrams\n",
+    "\n",
+    "Causal relationships are encoded through a Bayesian Directed-Acyclic-Graph, or \"DAG\", for short. The nodes of the graph represent random variables, which can be either observable (visible) or unobservable (hidden). Directed arrows encode causal influence between nodes. Arrows point from parent nodes to the nodes causally influences by the parent, called children nodes. The acyclicity property avoids the presence of causal loops. \n",
+    "\n",
+    "For applications to physics, another class of random variables is often considered called \"settings\". These correspond to observable variables on whose outcome we condition in order to obtain the observed data. For example, this might correspond to measuring one property of a system versus another in an experiment. Furthermore, in physics we also have sources generating quantum correlations. These are modeled through the presence of quantum unobservable variables, which represent quantum systems. Arrows going into a quantum node represent controlling the corresponding quantum system. Arrows going out of the quantum node represent the children of the quantum node generating statistics by measuring the quantum system.\n",
+    "\n",
+    "#### The bilocal scenario and an inflation\n",
+    "\n",
+    "As an example, let us consider the [\"quantum bilocal scenario\"](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119), which corresponds to correlations achievable by 3 space-like separated parties (A, B and C) measuring 2 quantum systems $\\rho_{AB}$, $\\rho_{BC}$ that never interacted in the past. The subindex of the quantum states indicates which parties hace access to and can measure that state. This is a simple scenario where [entanglement swapping](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287) can be performed, which is at the heart of the [quantum teleportation protocol](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895). The corresponding DAG is:\n",
+    "\n",
+    "<img src=\"./figures/bilocal_1.PNG\" alt=\"drawing\" width=\"400\"/>\n",
+    "\n",
+    "We have three observed random variables, $A$, $B$ and $C$, two hidden quantum variables $\\rho_{AB}$ and $\\rho_{BC}$ of unbounded dimension denoting the particles and three setting variables, $X$, $Y$ and $Z$. We assume all observed variables have cardinality 2, i.e., $a,b,c,x,y,z \\in \\{0, 1\\}$, where lower case denotes specific values the random variables (in upper case) can take. In this causal scenario, correlations are generated by measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution $p(a,b,c|x,y,z)$. Notice that the probability distribution is not conditioned on $\\rho_{AB}, \\rho_{BC}$ as they are hidden variables.\n",
+    "\n",
+    "#### Quantum causal compatibility and an inflation\n",
+    "\n",
+    "One of the fundamental questions to ask is whether a given a probability distribution $p(a,b,c|x,y,z)$ is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the quantum sources $\\rho_{AB}$ and $\\rho_{BC}$. The quantum inflation technique is one technique that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario where we take two copies of each source, as in the following figure:\n",
+    "\n",
+    "<img src=\"./figures/bilocal_inflated.PNG\" alt=\"drawing\" width=\"400\"/>\n",
+    "\n",
+    "Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the [NPA hierarcy](https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013). The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., $\\rho_{AB}{=}\\rho_{AB}^1{=}\\rho_{AB}^2$. If after running the SDP, we get that it is infeasible, then we can conclude that the distribution $p(a,b,c|x,y,z)$ is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see [Physical Review X 11.2 (2021): 021043](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043). \n",
+    "\n",
+    "### Creating an instance of `InflationProblem`\n",
+    "\n",
+    "We encode information about the causal scenario as an instance of `InflationProblem` as follows:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "slideshow": {
+     "slide_type": "notes"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "InfProb = InflationProblem( dag={\"h1\": [\"v1\", \"v2\"], \"h2\": [\"v2\", \"v3\"]},\n",
+    "                            outcomes_per_party=[2, 2, 2],\n",
+    "                            settings_per_party=[2, 2, 2],\n",
+    "                            inflation_level_per_source=[2, 2])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the parent's children nodes. The first character of the node name denotes whether the node is visible or hidden. In `outcomes_per_party` and `settings_per_party` we specify the cardinalities of visible nodes. The paremeter `inflation_level_per_source` determines how many copies of the quantum sources we consider in the inflated graph.\n",
     "\n",
     "## Generating the SDP relaxation\n",
     "\n",
@@ -59,29 +95,86 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 3,
+   "execution_count": 11,
    "metadata": {},
    "outputs": [],
    "source": [
-    "from causalinflation import InflationSDP\n",
-    "\n",
-    "InfSDP = InflationSDP(InfProb)"
+    "InfSDP = InflationSDP(InfProb, verbose=0)"
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The first main method, `generate_relaxation()` is that which generates the SDP relaxation of the chosen inflation:"
+    "The first main method, `generate_relaxation()` generates the SDP relaxation of the chosen inflation of a given NPA level. "
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 6,
+   "execution_count": 13,
    "metadata": {},
-   "outputs": [],
+   "outputs": [
+    {
+     "ename": "NameError",
+     "evalue": "name 'arent_knowable' is not defined",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+      "\u001b[1;32m<ipython-input-13-ef923ecaee85>\u001b[0m in \u001b[0;36m<module>\u001b[1;34m\u001b[0m\n\u001b[1;32m----> 1\u001b[1;33m \u001b[0mInfSDP\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mgenerate_relaxation\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mcolumn_specification\u001b[0m\u001b[1;33m=\u001b[0m\u001b[1;34m'npa1'\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[1;32mc:\\users\\embog\\onedrive - icfo\\documents\\code\\inflation\\causalinflation\\quantum\\InflationSDP.py\u001b[0m in \u001b[0;36mgenerate_relaxation\u001b[1;34m(self, column_specification)\u001b[0m\n\u001b[0;32m    212\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m    213\u001b[0m         \u001b[0mmonomials_factors\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mmonomials_unfactorised_reordered\u001b[0m\u001b[0;31m \u001b[0m\u001b[0;31m\\\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m--> 214\u001b[1;33m                             = self._factorize_monomials(remaining_monomials,\n\u001b[0m\u001b[0;32m    215\u001b[0m                                                         combine_unknowns=True)\n\u001b[0;32m    216\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n",
+      "\u001b[1;32mc:\\users\\embog\\onedrive - icfo\\documents\\code\\inflation\\causalinflation\\quantum\\InflationSDP.py\u001b[0m in \u001b[0;36m_factorize_monomials\u001b[1;34m(self, monomials, combine_unknowns)\u001b[0m\n\u001b[0;32m   1248\u001b[0m             \u001b[1;32mif\u001b[0m \u001b[0mlen\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mare_knowable\u001b[0m\u001b[1;33m)\u001b[0m \u001b[1;33m>=\u001b[0m \u001b[1;36m2\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m   1249\u001b[0m                 \u001b[0mare_knowable\u001b[0m   \u001b[1;33m=\u001b[0m \u001b[0mnp\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0marray\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mare_knowable\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m-> 1250\u001b[1;33m                 \u001b[1;32mif\u001b[0m \u001b[1;33m(\u001b[0m\u001b[0mnp\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mcount_nonzero\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0marent_knowable\u001b[0m\u001b[1;33m)\u001b[0m \u001b[1;33m>\u001b[0m \u001b[1;36m1\u001b[0m\u001b[1;33m)\u001b[0m \u001b[1;32mand\u001b[0m \u001b[0mcombine_unknowns\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m\u001b[0;32m   1251\u001b[0m                     \u001b[1;31m# Combine unknowables and reorder\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m   1252\u001b[0m                     unknowable_factors = np.concatenate(\n",
+      "\u001b[1;31mNameError\u001b[0m: name 'arent_knowable' is not defined"
+     ]
+    }
+   ],
    "source": [
-    "InfSDP.generate_relaxation(column_specification='npa1')"
+    "InfSDP.generate_relaxation(column_specification='npa1') "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "NameError",
+     "evalue": "name 'convert_to_human_readable' is not defined",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+      "\u001b[1;32m<ipython-input-14-b629689b134f>\u001b[0m in \u001b[0;36m<module>\u001b[1;34m\u001b[0m\n\u001b[1;32m----> 1\u001b[1;33m \u001b[0mobj\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mmat\u001b[0m \u001b[1;33m=\u001b[0m \u001b[0mconvert_to_human_readable\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mInfSDP\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m\u001b[0;32m      2\u001b[0m \u001b[0mprint\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mmat\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n",
+      "\u001b[1;31mNameError\u001b[0m: name 'convert_to_human_readable' is not defined"
+     ]
+    }
+   ],
+   "source": [
+    "obj, mat = convert_to_human_readable(InfSDP)\n",
+    "print(mat)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "AttributeError",
+     "evalue": "'InflationSDP' object has no attribute '_var2repr'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mAttributeError\u001b[0m                            Traceback (most recent call last)",
+      "\u001b[1;32m<ipython-input-15-7d0f73e63eb9>\u001b[0m in \u001b[0;36m<module>\u001b[1;34m\u001b[0m\n\u001b[1;32m----> 1\u001b[1;33m \u001b[0mInfSDP\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mset_objective\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mInfSDP\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mmeasurements\u001b[0m\u001b[1;33m[\u001b[0m\u001b[1;36m0\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m[\u001b[0m\u001b[1;36m0\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m[\u001b[0m\u001b[1;36m0\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m[\u001b[0m\u001b[1;36m0\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m\u001b[0;32m      2\u001b[0m \u001b[0mInfSDP\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0msolve\u001b[0m\u001b[1;33m(\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n",
+      "\u001b[1;32mc:\\users\\embog\\onedrive - icfo\\documents\\code\\inflation\\causalinflation\\quantum\\InflationSDP.py\u001b[0m in \u001b[0;36mset_objective\u001b[1;34m(self, objective, direction)\u001b[0m\n\u001b[0;32m    406\u001b[0m             \u001b[1;32mfor\u001b[0m \u001b[0mmonomial\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mcoeff\u001b[0m \u001b[1;32min\u001b[0m \u001b[0mobjective_as_dict\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mitems\u001b[0m\u001b[1;33m(\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m    407\u001b[0m                 \u001b[0mmonomial_variable\u001b[0m \u001b[1;33m=\u001b[0m \u001b[0mint\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mstring2int_dict\u001b[0m\u001b[1;33m[\u001b[0m\u001b[0mstr\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mmonomial\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m--> 408\u001b[1;33m                 \u001b[0mrepr\u001b[0m \u001b[1;33m=\u001b[0m \u001b[0mself\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0m_var2repr\u001b[0m\u001b[1;33m[\u001b[0m\u001b[0mmonomial_variable\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m\u001b[0;32m    409\u001b[0m                 \u001b[1;32mif\u001b[0m \u001b[0mrepr\u001b[0m \u001b[1;33m<\u001b[0m \u001b[0mlen\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mself\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mknown_moments\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m    410\u001b[0m                     \u001b[0msymmetrized_objective\u001b[0m\u001b[1;33m[\u001b[0m\u001b[1;36m1\u001b[0m\u001b[1;33m]\u001b[0m \u001b[1;33m+=\u001b[0m\u001b[0;31m \u001b[0m\u001b[0;31m\\\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n",
+      "\u001b[1;31mAttributeError\u001b[0m: 'InflationSDP' object has no attribute '_var2repr'"
+     ]
+    }
+   ],
+   "source": [
+    "InfSDP.set_objective(InfSDP.measurements[0][0][0][0])\n",
+    "InfSDP.solve()"
    ]
   },
   {
@@ -126,7 +219,7 @@
    "hash": "00a39c23cf09218597099894b042ffa9fa6ee7ec336d8d61c9bbb23befd995be"
   },
   "kernelspec": {
-   "display_name": "Python 3.8.5 ('base')",
+   "display_name": "Python 3",
    "language": "python",
    "name": "python3"
   },
@@ -141,8 +234,7 @@
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
    "version": "3.8.5"
-  },
-  "orig_nbformat": 4
+  }
  },
  "nbformat": 4,
  "nbformat_minor": 2

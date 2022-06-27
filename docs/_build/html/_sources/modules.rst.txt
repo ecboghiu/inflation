@@ -1,5 +1,5 @@
-Function documentation
-======================
+causalinflation
+===============
 
 .. toctree::
    :maxdepth: 4

@@ -847,8 +847,10 @@ def string2prob(term: str,
     name = 'p'
     # add parties if we are marginalizing over a distribution
     if len(parties) < max_nr_of_parties:
+        name += '_{'
         for p in parties:
             name += p
+        name += '}'
     name += '('
     for o in outputs:
         name += o
@@ -1617,9 +1619,9 @@ def clean_coefficients(coefficients: np.array,
     """
     coeffs = copy.deepcopy(coefficients)
     # Set to zero very small coefficients
-    coeffs[np.abs(coeffs) < chop_tol] = 0
-    # Take the smallest one and make it 1
-    coeffs /= np.abs(coeffs[np.abs(coeffs) > chop_tol]).max()
+    coeffs[np.abs(coeffs) <= chop_tol] = 0
+    # Take the biggest one and make it 1
+    coeffs /= np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
     # Round
     coeffs = np.round(coeffs, decimals=round_decimals)
     return coeffs

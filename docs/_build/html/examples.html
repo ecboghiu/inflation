@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Function documentation" href="modules.html" />
+    <link rel="next" title="Advanced options" href="advanced.html" />
     <link rel="prev" title="Tutorial" href="tutorial.html" /> 
 </head>
 
@@ -43,26 +43,45 @@
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Feasibility-problems-and-extraction-of-certificates.">Feasibility problems and extraction of certificates.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Optimization-of-Bell-operators.">Optimization of Bell operators.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Optimisation-over-classical-distributions.">Optimisation over classical distributions.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Standard-NPA.">Standard NPA.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Scenarios-with-partial-information.">Scenarios with partial information.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Causal-compatibility-problems">Causal compatibility problems</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#The-PR-box">The PR box</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#The-2PR-distribution-in-the-bilocal-scenario">The 2PR distribution in the bilocal scenario</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#The-W-distribution">The W distribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Feasibility-problems-and-extraction-of-certificates">Feasibility problems and extraction of certificates</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario">Example 1: Infeasibility of the W distribution in the quantum triangle scenario</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Certificate-extraction">Certificate extraction</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Optimisation-problems">Optimisation problems</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#The-Svetlichny-distribution">The Svetlichny distribution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#The-distance-to-a-particular-distribution">The distance to a particular distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario">Example 2: Critical visibility of the 2PR distribution in the quantum tripartite-line scenario</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Feasibility-as-an-optimisation">Feasibility as an optimisation</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Appendix:-How-to-customize-the-generating-set">Appendix: How to customize the generating set</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">Function documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Optimization-of-Bell-operators">Optimization of Bell operators</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-3.-Upper-bounds-on-Mermin’s-inequality">Example 3. Upper bounds on Mermin’s inequality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Customising-the-generating-set-for-the-semidefinite-relaxation">Customising the generating set for the semidefinite relaxation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Optimisation-over-classical-distributions-and-feasibility-problems">Optimisation over classical distributions and feasibility problems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario">Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Standard-NPA.">Standard NPA.</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources">Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">Example 6: Optimising the CHSH inequality in the Bell scenario</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#SDP-hierarchy-of-“physical-moments”">SDP hierarchy of “physical moments”</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-7:-Critical-visibility-of-the-W-distribution-in-the-triangle">Example 7: Critical visibility of the W distribution in the triangle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Linearized-polynomial-identification-(LPI)-constraints">Linearized polynomial identification (LPI) constraints</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-LPI-constraints-and-with-the-physical-moments-hierarchy">Example 8: Critical visibility of the W distribution with LPI constraints and with the physical moments hierarchy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">causalinflation</a></li>
 </ul>
 
         </div>
@@ -369,59 +388,298 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="Examples">
 <h1>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="Feasibility-problems-and-extraction-of-certificates.">
-<h2>Feasibility problems and extraction of certificates.<a class="headerlink" href="#Feasibility-problems-and-extraction-of-certificates." title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="Optimization-of-Bell-operators.">
-<h2>Optimization of Bell operators.<a class="headerlink" href="#Optimization-of-Bell-operators." title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="Optimisation-over-classical-distributions.">
-<h2>Optimisation over classical distributions.<a class="headerlink" href="#Optimisation-over-classical-distributions." title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="Standard-NPA.">
-<h2>Standard NPA.<a class="headerlink" href="#Standard-NPA." title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="Scenarios-with-partial-information.">
-<h2>Scenarios with partial information.<a class="headerlink" href="#Scenarios-with-partial-information." title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="Causal-compatibility-problems">
-<h2>Causal compatibility problems<a class="headerlink" href="#Causal-compatibility-problems" title="Permalink to this headline">¶</a></h2>
-<p>Causal relationships are encoded as a Bayesian Directed-Acyclic-Graph (DAG). A DAG is a graph where some nodes correspond to observed random variables, and other nodes correspond to unobserved variables. Directed arrows between the nodes describe the direction of causation.</p>
-<p>The causal compatibility problem aims to answer the question of whether a given probability distribution of outcomes of measurements is compatible with a given causal model. For the following examples, we consider compatibility with a quantum causal model.</p>
-<p><em>TODO</em>: explain more</p>
+<p>Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook.</p>
+<p>We begin by importing the functions that we will need:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">causalinflation</span> <span class="k">as</span> <span class="nn">cinf</span>
-<span class="kn">from</span> <span class="nn">causalinflation.quantum.InflationSDP</span> <span class="kn">import</span> <span class="n">InflationSDP</span>
-<span class="kn">from</span> <span class="nn">causalinflation.InflationProblem</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
-
-<span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">feasibility_bisection</span>
-<br/></pre></div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+<span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">bisection</span><span class="p">,</span> <span class="n">P_W_array</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">,</span> <span class="n">P_PRbox_array</span>
+</pre></div>
 </div>
 </div>
-<div class="section" id="The-PR-box">
-<h3>The PR box<a class="headerlink" href="#The-PR-box" title="Permalink to this headline">¶</a></h3>
-<p>TODO: break the code and introduce the problem</p>
-<p>add bisection function hidden from the documentation, maybe in example_utils.py</p>
-<div class="nbinput docutils container">
+<div class="section" id="Feasibility-problems-and-extraction-of-certificates">
+<h2>Feasibility problems and extraction of certificates<a class="headerlink" href="#Feasibility-problems-and-extraction-of-certificates" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario">
+<h3>Example 1: Infeasibility of the W distribution in the quantum triangle scenario<a class="headerlink" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario" title="Permalink to this headline">¶</a></h3>
+<p>Consider determining if the following distribution, the so-called “W distribution” (due to its similarity to the <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.62.062314">W state</a>), is compatible with the triangle scenario:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}P_{A B C}=\frac{[100]+[010]+[001]}{3}, \quad \text {i.e.,} \quad P_{A B C}(a b c)= \begin{cases}\frac{1}{3} &amp; \text { if } a+b+c=1, \\ 0 &amp; \text { otherwise. }\end{cases}\end{split}\]</div>
+<p>It is known that it is <a class="reference external" href="https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html">incompatible with the classical triangle scenario</a>, however with quantum inflation, once can also show that it is incompatible with the quantum triangle scenario, depicted in the following figure:</p>
+<center><p><img alt="drawing" class="no-scaled-link" src="_images/quantum_triangle.PNG" style="width: 250px;" /></p>
+</center><p>To show this, we can generate the semidefinite relaxation of NPA level 2 corresponding to a second order quantum inflation:</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_PRbox_array</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
+                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">sdprelax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>With the <code class="docutils literal notranslate"><span class="pre">set_distribution</span></code> method we set the entries of the moment matrix that depend on the probability distribution, and we attempt to solve the program:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdprelax</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W_array</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">status</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;infeasible&#39;
+</pre></div></div>
+</div>
+<p>The problem status is reported as infeasible, therefore this serves as a proof that the W distribution is incompatible with the quantum triangle scenario.</p>
+<div class="section" id="Certificate-extraction">
+<h4>Certificate extraction<a class="headerlink" href="#Certificate-extraction" title="Permalink to this headline">¶</a></h4>
+<p>We can furthermore recover a certificate of infeasibility as a polynomial inequality in the probabilities, <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz) \geq 0\)</span>. There are built-in methods to extract the symbolic form of <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz))\)</span>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdprelax</span><span class="o">.</span><span class="n">certificate_as_probs</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="math notranslate nohighlight">
+$\displaystyle 0.46 p(000|000) p_{A}(0|0) + 0.456 p(000|000) p_{B}(0|0) + 0.457 p(000|000) p_{C}(0|0) + 0.616 p(000|000) + 0.232 p_{AB}(00|00)^{2} + 0.103 p_{AB}(00|00) p_{AC}(00|00) + 0.046 p_{AB}(00|00) p_{A}(0|0) + 0.096 p_{AB}(00|00) p_{BC}(00|00) + 0.041 p_{AB}(00|00) p_{B}(0|0) - 0.365 p_{AB}(00|00) p_{C}(0|0) + 0.131 p_{AB}(00|00) + 0.231 p_{AC}(00|00)^{2} + 0.046 p_{AC}(00|00) p_{A}(0|0) + 0.095 p_{AC}(00|00) p_{BC}(00|00) - 0.363 p_{AC}(00|00) p_{B}(0|0) + 0.045 p_{AC}(00|00) p_{C}(0|0) + 0.13 p_{AC}(00|00) - 0.454 p_{A}(0|0)^{2} - 0.365 p_{A}(0|0) p_{BC}(00|00) + 1.0 p_{A}(0|0) p_{B}(0|0) p_{C}(0|0) - 0.732 p_{A}(0|0) p_{B}(0|0) - 0.731 p_{A}(0|0) p_{C}(0|0) + 0.371 p_{A}(0|0) + 0.228 p_{BC}(00|00)^{2} + 0.042 p_{BC}(00|00) p_{B}(0|0) + 0.044 p_{BC}(00|00) p_{C}(0|0) + 0.129 p_{BC}(00|00) - 0.443 p_{B}(0|0)^{2} - 0.726 p_{B}(0|0) p_{C}(0|0) + 0.365 p_{B}(0|0) - 0.446 p_{C}(0|0)^{2} + 0.369 p_{C}(0|0) + 0.481$</div></div>
+</div>
+<p>In the above, lower indices indicate marginals. For example, <span class="math notranslate nohighlight">\(p_{AC}(ac|xz) := \sum_b p(abc|xyz)\)</span>. Note that due to no-signaling, in this example the marginal is independent of the setting <span class="math notranslate nohighlight">\(y\)</span>.</p>
+<p>Finally, given that we only have two outcomes, we can also express the certificate in “correlator form”, where the correlators are defined as</p>
+<div class="math notranslate nohighlight">
+\[\left\langle A_{x} \right\rangle =\sum_{a\in \{0,1\}} (-1)^{a} \, p_{A}(a|x)\]</div>
+<div class="math notranslate nohighlight">
+\[\left\langle A_{x} B_{y} \right\rangle =\sum_{a, b \in \{0,1\}} (-1)^{a+b} \, p_{AB}(ab|xy)\]</div>
+<div class="math notranslate nohighlight">
+\[\left\langle A_{x} B_{y} C_{z}\right\rangle =\sum_{a, b, c \in \{0,1\}} (-1)^{a+b+c} \, p(abc|xyz)\]</div>
+<p>where the omitted 2-body and 1-body correlators have similar definitions:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdprelax</span><span class="o">.</span><span class="n">certificate_as_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="math notranslate nohighlight">
+$\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0.0285 \langle A_{0} B_{0} C_{0} \rangle \langle B_{0} \rangle + 0.0285625 \langle A_{0} B_{0} C_{0} \rangle \langle C_{0} \rangle - 0.1628125 \langle A_{0} B_{0} C_{0} \rangle + 0.0145 \langle A_{0} B_{0} \rangle^{2} + 0.0064375 \langle A_{0} B_{0} \rangle \langle A_{0} C_{0} \rangle - 0.0699375 \langle A_{0} B_{0} \rangle \langle A_{0} \rangle + 0.006 \langle A_{0} B_{0} \rangle \langle B_{0} C_{0} \rangle - 0.068625 \langle A_{0} B_{0} \rangle \langle B_{0} \rangle + 0.004625 \langle A_{0} B_{0} \rangle \langle C_{0} \rangle + 0.20225 \langle A_{0} B_{0} \rangle + 0.0144375 \langle A_{0} C_{0} \rangle^{2} - 0.0698125 \langle A_{0} C_{0} \rangle \langle A_{0} \rangle + 0.0059375 \langle A_{0} C_{0} \rangle \langle B_{0} C_{0} \rangle + 0.0045 \langle A_{0} C_{0} \rangle \langle B_{0} \rangle - 0.069 \langle A_{0} C_{0} \rangle \langle C_{0} \rangle + 0.2025625 \langle A_{0} C_{0} \rangle - 0.037875 \langle A_{0} \rangle^{2} + 0.0049375 \langle A_{0} \rangle \langle B_{0} C_{0} \rangle - 0.125 \langle A_{0} \rangle \langle B_{0} \rangle \langle C_{0} \rangle - 0.0335 \langle A_{0} \rangle \langle B_{0} \rangle - 0.0330625 \langle A_{0} \rangle \langle C_{0} \rangle + 0.0456249999999999 \langle A_{0} \rangle + 0.01425 \langle B_{0} C_{0} \rangle^{2} - 0.06825 \langle B_{0} C_{0} \rangle \langle B_{0} \rangle - 0.0685 \langle B_{0} C_{0} \rangle \langle C_{0} \rangle + 0.200625 \langle B_{0} C_{0} \rangle - 0.037125 \langle B_{0} \rangle^{2} - 0.0328125 \langle B_{0} \rangle \langle C_{0} \rangle + 0.0449374999999999 \langle B_{0} \rangle - 0.0371875 \langle C_{0} \rangle^{2} + 0.0433124999999999 \langle C_{0} \rangle + 0.493750000000001$</div></div>
+</div>
+</div>
+</div>
+<div class="section" id="Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario">
+<h3>Example 2: Critical visibility of the 2PR distribution in the quantum tripartite-line scenario<a class="headerlink" href="#Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario" title="Permalink to this headline">¶</a></h3>
+<p>It is known that the 2PR distribution, defined as:</p>
+<div class="math notranslate nohighlight">
+\[P_{\text{2PR}}(abc|xyz) := \frac{1+ (-1)^{a+b+c+xy+yz}}{8}\]</div>
+<p>is incompatible with the tripartite-line scenario (also called “quantum bilocal scenario”), whose DAG is depicted in the following figure:</p>
+<center><p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_1.PNG" style="width: 400px;" /></p>
+</center><p>This can be shown by running a feasibility program, as in Example 1. We might also be interested in studying how much noise this distribution can tolerate before the relaxation no longer identifies the distribution as incompatible. One simple model of noise is that of a probabilistic mixture with the uniform distribution:</p>
+<div class="math notranslate nohighlight">
+\[P_{\text{2PR,v}} := v P_{\text{2PR}}  + (1-v)/8\]</div>
+<p>A simple approach would be to vary the parameter <span class="math notranslate nohighlight">\(v\)</span> from <span class="math notranslate nohighlight">\(v{=}1\)</span> to <span class="math notranslate nohighlight">\(v{=}0\)</span> and find the <span class="math notranslate nohighlight">\(v_{\text{crit}}\)</span> for which the problem status changes from infeasible to feasible. However, there is a more robust method available.</p>
+<div class="section" id="Feasibility-as-an-optimisation">
+<h4>Feasibility as an optimisation<a class="headerlink" href="#Feasibility-as-an-optimisation" title="Permalink to this headline">¶</a></h4>
+<p>A more numerically robust approach is to convert feasibility problems to optimisation problems. Instead of imposing that the moment matrix <span class="math notranslate nohighlight">\(\Gamma\)</span> of the SDP relaxation is posivite semidefinite, we can maximize the minimum eigenvalue of <span class="math notranslate nohighlight">\(\Gamma\)</span> and check its sign. Clearly, if the result of the optimisation is negative, then one cannot find a matrix <span class="math notranslate nohighlight">\(\Gamma\)</span> that is positive semidefinite, thus the original program is infeasible.</p>
+<p>By setting the flag <code class="docutils literal notranslate"><span class="pre">feas_as_optim</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> in the <code class="docutils literal notranslate"><span class="pre">InflationSDP.solve()</span></code> method, feasibility problems are converted to optimisation problems. The result is stored in <code class="docutils literal notranslate"><span class="pre">InflationSDP.objective_value</span></code>.</p>
+<p>We encode the inflation scenario and generate the relaxation corresponding to NPA level 2:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+                                 <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qbilocal_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qbilocal</span><span class="p">)</span>
+<span class="n">qbilocal_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>And next we run a simple bisection to find the <span class="math notranslate nohighlight">\(v_{\text{crit}}\)</span> for which the maximum minimum eigenvalue is 0. The bisection is implemented in an auxiliary file:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">qbilocal_relax</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">v_crit</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.500030517578125
+</pre></div></div>
+</div>
+<p>It is known that <span class="math notranslate nohighlight">\(P_{\text{2PR},v}\)</span> is incompatible with the quantum tripartite scenario for <span class="math notranslate nohighlight">\(v&gt;\frac{1}{2}\)</span>. Quantum inflation at the second order correctly recovers this bound.</p>
+</div>
+</div>
+</div>
+<div class="section" id="Optimization-of-Bell-operators">
+<h2>Optimization of Bell operators<a class="headerlink" href="#Optimization-of-Bell-operators" title="Permalink to this headline">¶</a></h2>
+<p>One can use inflation techniques to not only run causal compatibility problems, but also to optimize over the generated relaxation, and therefore get upper bounds on the values of various Bell operators.</p>
+<div class="section" id="Example-3.-Upper-bounds-on-Mermin’s-inequality">
+<h3>Example 3. Upper bounds on Mermin’s inequality<a class="headerlink" href="#Example-3.-Upper-bounds-on-Mermin’s-inequality" title="Permalink to this headline">¶</a></h3>
+<p>Let us consider Mermin’s inequality, written in the correlator form introduced in Example 1:</p>
+<div class="math notranslate nohighlight">
+\[\text{Mermin} = \langle A_1 B_0 C_0 \rangle +  \langle A_0 B_1 C_0 \rangle +  \langle A_0 B_0 C_1 \rangle -  \langle A_1 B_1 C_1 \rangle\]</div>
+<p>It is known that the algebraic maximum of 4 is achieved in the tripartite scenario both with global shared randomness and also global non-signaling sources. However, one can see a difference between quantum and general no-signaling sources when restricting to the triangle scenario from Example 1.</p>
+<p>First we generate the relaxation corresponding to a second order inflation of the triangle of NPA level 2:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
+                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">sdprelax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We implement the objective function after extracting the measurement operators and solve the program:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mmnts</span> <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">measurements</span>
+<span class="n">A0</span><span class="p">,</span> <span class="n">B0</span><span class="p">,</span> <span class="n">C0</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span><span class="p">,</span> <span class="n">C1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">mmnts</span><span class="p">[</span><span class="n">party</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">setting</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
 
-<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">]},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span> <span class="o">=</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
 
-<span class="n">InfSDP</span><span class="p">,</span> <span class="n">critical_vis</span> <span class="o">=</span> <span class="n">feasibility_bisection</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">,</span> <span class="n">P_PRbox_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">objective_value</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+3.999999995695141
+</pre></div></div>
+</div>
+<p>Notice that we get a value that is within numerical precision the algebraic maximum of 4. To improve on this result, we will need to do a tighter SDP relaxation.</p>
+<div class="section" id="Customising-the-generating-set-for-the-semidefinite-relaxation">
+<h4>Customising the generating set for the semidefinite relaxation<a class="headerlink" href="#Customising-the-generating-set-for-the-semidefinite-relaxation" title="Permalink to this headline">¶</a></h4>
+<p>To get a tighter SDP relaxation, we will add more monomoials to the generating set. Namely, we will use the union of the monomoials corresponding to NPA level 2 and local level 1.</p>
+<p>The so-called “local levels” are a different choice of generating set for the moment matrix. Whereas NPA level <span class="math notranslate nohighlight">\(n\)</span> is the <span class="math notranslate nohighlight">\(n\)</span>-times cartesian product (without duplicated elements) of the set of measurements of the parties together with the identity, local level <span class="math notranslate nohighlight">\(n\)</span> refers to a generating set with all the products up to <span class="math notranslate nohighlight">\(n\)</span> operators per party. For more details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021):
+021043</a>.</p>
+<p>In what follows, we use the built-in method <code class="docutils literal notranslate"><span class="pre">build_columns</span></code> to generate the columns corresponding to NPA level 2 and local level 1. Then we do a union, generate the relaxation and again, solve the program. As it will now take a bit longer, we increase the verbosity level to see the progress:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">npa2</span>   <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+<span class="n">local1</span> <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Critical visibility:&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">critical_vis</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Last infeasibility certificate: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">certificate_as_2output_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">generatingset</span> <span class="o">=</span> <span class="n">npa2</span>
+<span class="k">for</span> <span class="n">mon</span> <span class="ow">in</span> <span class="n">local1</span><span class="p">:</span>
+     <span class="k">if</span> <span class="n">mon</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">generatingset</span><span class="p">:</span>
+         <span class="n">generatingset</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
+
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">generatingset</span><span class="p">)</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span> <span class="o">=</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span><span class="p">)</span>
+
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">objective_value</span>
+</pre></div>
+</div>
+</div>
+<p>With quantum inflation we can certify then that the Mermin inequality cannot have a value larger than <span class="math notranslate nohighlight">\(3.085\)</span> for the quantum triangle causal scenario.</p>
+</div>
+</div>
+</div>
+<div class="section" id="Optimisation-over-classical-distributions-and-feasibility-problems">
+<h2>Optimisation over classical distributions and feasibility problems<a class="headerlink" href="#Optimisation-over-classical-distributions-and-feasibility-problems" title="Permalink to this headline">¶</a></h2>
+<p>With quantum inflation, we can also optimize over a relaxation of the set of distributions compatible with a classical DAG. This works by imposing at the level of the SDP relaxation the constraint that all operators defining the moments commute. The effect of this constraint is that previously different variables in the moment matrix become identical. For example, <span class="math notranslate nohighlight">\(\langle A_{x} A_{x'} \rangle \neq \langle A_{x'} A_{x} \rangle\)</span> in general in quantum mechanics, but if we assume all
+operators commute, then they become equal.</p>
+<p>To enable this feauture one simply adds the flag <code class="docutils literal notranslate"><span class="pre">commuting=True</span></code> when instantiating the <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code> object.</p>
+<div class="section" id="Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario">
+<h3>Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario<a class="headerlink" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario" title="Permalink to this headline">¶</a></h3>
+<p>As an example, we find the critical visibility of the <span class="math notranslate nohighlight">\(P_{\text{2PR}}\)</span> distribution from Example 2, but in the classical tripartite line scenario with a second order inflation, and with the local level 1 generating set for the SDP relaxation:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span> <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qbilocal_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qbilocal</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">qbilocal_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">qbilocal_relax</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">v_crit</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.353546142578125
+</pre></div></div>
+</div>
+<p>This relaxation of the set of distributions classically simulable in the tripartite line scenario certifies then the incompatibility of the <span class="math notranslate nohighlight">\(P_{\text{2PR}}\)</span> distribution for <span class="math notranslate nohighlight">\(v&gt;0.3536\)</span>. This does not completely certify incompatibility down to the known critical threshold of <span class="math notranslate nohighlight">\(v_{\text{crit}}=\frac{1}{4}\)</span>, but we expect tighter relaxations, which are computationally more expensive, might recover this value.</p>
+<p>For optimisation problems, one can run the exact same program as in Example 3, but with the flag <code class="docutils literal notranslate"><span class="pre">commuting</span></code> set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+</div>
+<div class="section" id="Standard-NPA.">
+<h2>Standard NPA.<a class="headerlink" href="#Standard-NPA." title="Permalink to this headline">¶</a></h2>
+<p>If the DAG corresponds to a single global shared source scenario, then doing an inflation does not grant any advantage. In this case, the semidefinite programming relaxation defaults to being the same as the <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">NPA hierarcy</a>. If we set the <code class="docutils literal notranslate"><span class="pre">commuting</span></code> flag to <code class="docutils literal notranslate"><span class="pre">True</span></code> then this is a relaxation of the set of distributions classically with global shared randomness, as introduced in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7,
+021042</a>. We will show this with two simple examples.</p>
+<div class="section" id="Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources">
+<h3>Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources<a class="headerlink" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources" title="Permalink to this headline">¶</a></h3>
+<p>We recover the critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}=\frac{1}{\sqrt{2}}\)</span> for a <a class="reference external" href="https://link.springer.com/article/10.1007/BF02058098">Popeschu-Rohrlich box</a> in the Bell scenario.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bellscenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]},</span>
+                                <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                                <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">bellscenario_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">bellscenario</span><span class="p">)</span>
+<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">bellscenario_relax</span><span class="p">,</span> <span class="n">P_PRbox_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Critical visibility: &quot;</span><span class="p">,</span> <span class="n">v_crit</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -430,104 +688,65 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Critical visibility:     0.7071
-Last infeasibility certificate:
-
+Critical visibility:  0.707122802734375
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="math notranslate nohighlight">
 $\displaystyle - 0.25 \langle A_{0} B_{0} \rangle - 0.25 \langle A_{0} B_{1} \rangle - 0.25 \langle A_{1} B_{0} \rangle + 0.25 \langle A_{1} B_{1} \rangle + 0.707$</div></div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
-</pre></div>
+<p>Notice that the dual certificate that we extract in correlator form is exactly the CHSH inequality tangent to the quantum set of correlations.</p>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="n">coeffs</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-<span class="n">names</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="c1"># C: why did I write this??</span>
-<span class="c1"># names can still contain duplicated names, so we need to remove them</span>
-<span class="c1"># new_dual_certificate = {tuple(name): 0 for name in names}</span>
-<span class="c1"># for i, name in enumerate(names):</span>
-<span class="c1">#     new_dual_certificate[tuple(name)] += coeffs[i]</span>
-<span class="c1"># coeffs = np.array(list(new_dual_certificate.values()))</span>
-<span class="c1"># names = list(new_dual_certificate.keys())</span>
-
-
-<span class="c1"># Set to zero very small coefficients</span>
-<span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="c1"># Take the smallest one and make it 1</span>
-<span class="n">coeffs</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">])</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
-<span class="c1"># Round</span>
-<span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">coeffs</span><span class="p">,</span> <span class="n">names</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-(array([ 0.00000000e+00,  4.17303634e+04,  2.01489910e+05,  1.00000000e+00,
-         2.01489910e+05,  1.00000000e+00, -2.01487334e+05, -2.01493111e+05,
-        -2.01493111e+05,  2.01492614e+05]),
- array([list([&#39;0&#39;]), list([&#39;1&#39;]), list([&#39;A_1_0_0&#39;]), list([&#39;A_1_1_0&#39;]),
-        list([&#39;B_1_0_0&#39;]), list([&#39;B_1_1_0&#39;]), list([&#39;A_1_0_0*B_1_0_0&#39;]),
-        list([&#39;A_1_0_0*B_1_1_0&#39;]), list([&#39;A_1_1_0*B_1_0_0&#39;]),
-        list([&#39;A_1_1_0*B_1_1_0&#39;])], dtype=object))
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-array([ 0.00000000e+00,  2.07106169e-01,  9.99986581e-01,  4.96296108e-06,
-        9.99986581e-01,  4.96296107e-06, -9.99973795e-01, -1.00000246e+00,
-       -1.00000246e+00,  1.00000000e+00])
-</pre></div></div>
-</div>
-</div>
-<div class="section" id="The-2PR-distribution-in-the-bilocal-scenario">
-<h3>The 2PR distribution in the bilocal scenario<a class="headerlink" href="#The-2PR-distribution-in-the-bilocal-scenario" title="Permalink to this headline">¶</a></h3>
-<p>TODO: break the code and introduce the problem</p>
-<div class="nbinput docutils container">
+<div class="section" id="Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">
+<h3>Example 6: Optimising the CHSH inequality in the Bell scenario<a class="headerlink" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario" title="Permalink to this headline">¶</a></h3>
+<p>Now we will showcase optimising the CHSH inequality that was recovered in Example 5:</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_2PR_array</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bellscenario_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">bellscenario</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
 
-<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+<span class="n">mmnts</span> <span class="o">=</span> <span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">measurements</span>
+<span class="n">A0</span><span class="p">,</span> <span class="n">B0</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">mmnts</span><span class="p">[</span><span class="n">party</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">setting</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">CHSH</span> <span class="o">=</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span> <span class="o">+</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span>
+
+<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">CHSH</span><span class="p">)</span>
+<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CHSH upper bound in the Bell scenario with a quantum source: &quot;</span><span class="p">,</span> <span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">objective_value</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We correctly recover the Tsirelson bound for the CHSH inequality.</p>
+</div>
+</div>
+<div class="section" id="SDP-hierarchy-of-“physical-moments”">
+<h2>SDP hierarchy of “physical moments”<a class="headerlink" href="#SDP-hierarchy-of-“physical-moments”" title="Permalink to this headline">¶</a></h2>
+<p>For the generation of the semidefinite programming relaxation, besides NPA levels and local levels, we also implement a hierachy of “physical moments” of level <span class="math notranslate nohighlight">\(n\)</span>. This is a subset of local level <span class="math notranslate nohighlight">\(n\)</span> of all the monomials for which all operators in that monomial commute due to non-overlapping support in the inflated graph.</p>
+<div class="section" id="Example-7:-Critical-visibility-of-the-W-distribution-in-the-triangle">
+<h3>Example 7: Critical visibility of the W distribution in the triangle<a class="headerlink" href="#Example-7:-Critical-visibility-of-the-W-distribution-in-the-triangle" title="Permalink to this headline">¶</a></h3>
+<p>As an application, we show how we can recover the critical visibility <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx=0.8038\)</span> of the W distribution in the triangle causal scenario achieved with the generating set corresponding to local level 2 with monomials of maximum length 4, as shown in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>. This corresponds to a moment matrix of size 1175x1175. However, by using the second level of the physical moments
+hierarchy of monomials up to length 4, we recover the same results with a smaller moment matrix:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],},</span>
                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">])</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
+<span class="n">cols</span> <span class="o">=</span> <span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;physical2&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
 
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa3&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-
-<span class="n">InfSDP</span><span class="p">,</span> <span class="n">critical_vis</span> <span class="o">=</span> <span class="n">feasibility_bisection</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Critical visibility:&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">critical_vis</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Infeasibility certificate: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate_as_symbols_probs</span><span class="p">,</span>
-                                       <span class="s2">&quot;≥&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">qtriangle_relax</span><span class="p">,</span> <span class="n">P_W_array</span><span class="p">)</span>
+<span class="n">v_crit</span>
 </pre></div>
 </div>
 </div>
@@ -536,330 +755,98 @@ array([ 0.00000000e+00,  2.07106169e-01,  9.99986581e-01,  4.96296108e-06,
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-max(min eigval):  1.393e-09     visibility = 0 0.5
-Critical visibility:       0.75
+0 Maximum smallest eigenvalue:  0.0001523       visibility = 0.5
+1 Maximum smallest eigenvalue:  3.164e-05       visibility = 0.75
+2 Maximum smallest eigenvalue:  -0.007737       visibility = 0.875
+3 Maximum smallest eigenvalue:  -0.002003       visibility = 0.8125
+4 Maximum smallest eigenvalue: -0.0003796       visibility = 0.7812
+5 Maximum smallest eigenvalue: -3.854e-06       visibility = 0.7656
+6 Maximum smallest eigenvalue:  1.941e-05       visibility = 0.7578
+7 Maximum smallest eigenvalue:  1.111e-05       visibility = 0.7617
+8 Maximum smallest eigenvalue:  5.533e-06       visibility = 0.7637
+9 Maximum smallest eigenvalue:  1.788e-06       visibility = 0.7646
+10 Maximum smallest eigenvalue: -6.595e-07      visibility = 0.7651
+11 Maximum smallest eigenvalue:  6.439e-07      visibility = 0.7649
+12 Maximum smallest eigenvalue:  1.525e-08      visibility = 0.765
+13 Maximum smallest eigenvalue:  -3.16e-07      visibility = 0.7651
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
-<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>                            Traceback (most recent call last)
-<span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\Temp/ipykernel_30420/222825797.py</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
-<span class="ansi-green-fg">     14</span>
-<span class="ansi-green-fg">     15</span> print<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Critical visibility:&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-blue-intense-fg ansi-bold">&#34;{:10.4g}&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">.</span>format<span class="ansi-yellow-intense-fg ansi-bold">(</span>critical_vis<span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 16</span><span class="ansi-yellow-intense-fg ansi-bold"> print(&#34;Infeasibility certificate: \n&#34;, InfSDP.dual_certificate_as_symbols_probs,
-</span><span class="ansi-green-fg">     17</span>                                        &#34;≥&#34;, 0)
-
-<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>: &#39;int&#39; object has no attribute &#39;dual_certificate_as_symbols_probs&#39;
+0.765045166015625
 </pre></div></div>
 </div>
+<p>We recover the same critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx 0.8039\)</span> a moment matrix of size 287x287 as opposed to 1175x1175.</p>
+</div>
+</div>
+<div class="section" id="Linearized-polynomial-identification-(LPI)-constraints">
+<h2>Linearized polynomial identification (LPI) constraints<a class="headerlink" href="#Linearized-polynomial-identification-(LPI)-constraints" title="Permalink to this headline">¶</a></h2>
+<p>LPI constraints were first introduced in <a class="reference external" href="https://arxiv.org/abs/2203.16543">arXiv:2203.16543</a>. They are proportionality constraints between different entries of the moment matrix. Due to nature of the inflated graph, many of the moments in the moment matrix factorise into products of other moments.</p>
+<p>As a simplified example, consider the moment <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> in the inflated triangle of order two. In the triangle, we have three sources, <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{AC}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The upper indices in the operators of the previous moment indicate on which copy of the sources the operator is acting. The value 0 means that the party does not measure the corresponding source. For example, <span class="math notranslate nohighlight">\(B^{201}_{yb}\)</span> represents Bob
+measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of setting <span class="math notranslate nohighlight">\(y\)</span> on copy 2 of <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and copy 1 of <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. Notice that because of the non-overlapping support of some of the moments, the moment factorises as follows:</p>
+<div class="math notranslate nohighlight">
+\[\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle = \langle A^{110}_{xa} \rangle \langle B^{202}_{x'a'} B^{201}_{yb} \rangle\]</div>
+<p>The moment $:nbsphinx-math:<cite>langle `A^{110}*{xa} :nbsphinx-math:</cite>rangle <cite>$ is known and it is equal to :math:`p_A(a|x)</cite>, but <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> is unknown. Therefore, we have a linear proportionality relationship between the variables <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> and $ <span class="math">\langle `B^{202}*\ {x’a’} B^{201}_{yb} :nbsphinx-math:</span>rangle`$.</p>
+<p>Proportionality constraints of these form can be automatically implemented by setting <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> when using the <code class="docutils literal notranslate"><span class="pre">set_distribution()</span></code> method.</p>
+<div class="section" id="Example-8:-Critical-visibility-of-the-W-distribution-with-LPI-constraints-and-with-the-physical-moments-hierarchy">
+<h3>Example 8: Critical visibility of the W distribution with LPI constraints and with the physical moments hierarchy<a class="headerlink" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-LPI-constraints-and-with-the-physical-moments-hierarchy" title="Permalink to this headline">¶</a></h3>
+<p>We will now show how using LPI constraints lead to tighter relaxations. For example, we can certify incompatiblity with the triangle for noisier W distributions than before.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-0
-</pre></div></div>
-</div>
-</div>
-<div class="section" id="The-W-distribution">
-<h3>The W distribution<a class="headerlink" href="#The-W-distribution" title="Permalink to this headline">¶</a></h3>
-<p>TODO: break the code and introduce the problem</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_W_array</span>
-
-
-<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
-                                <span class="s2">&quot;h3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">],</span>
-                                <span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
-                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                           <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">])</span>
-
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
-
-<span class="n">tol_vis</span> <span class="o">=</span> <span class="mf">1e-4</span>
-<span class="n">v0</span><span class="p">,</span> <span class="n">v1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
-<span class="n">vm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">certificate</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="k">while</span> <span class="nb">abs</span><span class="p">(</span><span class="n">v1</span> <span class="o">-</span> <span class="n">v0</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol_vis</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="mi">20</span><span class="p">:</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">P_W_array</span><span class="p">(</span><span class="n">visibility</span><span class="o">=</span><span class="n">vm</span><span class="p">)</span>
-    <span class="n">InfSDP</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;max(min eigval):&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">visibility =&quot;</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vm</span><span class="p">))</span>
-    <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">if</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">v0</span> <span class="o">=</span> <span class="n">vm</span>
-        <span class="n">vm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-    <span class="k">elif</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">v1</span> <span class="o">=</span> <span class="n">vm</span>
-        <span class="n">vm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v0</span> <span class="o">+</span> <span class="n">v1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-        <span class="n">certificate</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">dual_certificate_as_symbols_probs</span>
-    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1e-7</span><span class="p">:</span>
-        <span class="k">break</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Final values and last valid certificate:&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;max(min eigval):&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-    <span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">vm =&quot;</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{:10.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vm</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">certificate</span><span class="p">,</span> <span class="s2">&quot;≥&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<br/></pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-max(min eigval):   0.004188     visibility = 0 0.5
-max(min eigval):   0.001165     visibility = 1 0.75
-max(min eigval):  -0.001274     visibility = 2 0.875
-max(min eigval):  0.0006713     visibility = 3 0.8125
-max(min eigval):  0.0001666     visibility = 4 0.8438
-max(min eigval): -0.0004739     visibility = 5 0.8594
-max(min eigval): -0.0001339     visibility = 6 0.8516
-max(min eigval):  2.187e-05     visibility = 7 0.8477
-max(min eigval): -5.472e-05     visibility = 8 0.8496
-max(min eigval): -1.609e-05     visibility = 9 0.8486
-max(min eigval):  2.972e-06     visibility = 10 0.8481
-max(min eigval): -6.541e-06     visibility = 11 0.8484
-max(min eigval): -1.779e-06     visibility = 12 0.8483
-max(min eigval):  5.974e-07     visibility = 13 0.8482
-Final values and last valid certificate:
-max(min eigval):  5.974e-07     vm = 14     0.8482
-145.768*p(000|000)*pA(0|0) + 145.769*p(000|000)*pB(0|0) + 145.757*p(000|000)*pC(0|0) + 921.574*p(000|000) - 122.504*pA(0|0)**2 - 112.285*pA(0|0)*pAB(00|00) - 112.149*pA(0|0)*pAC(00|00) - 553.411*pA(0|0)*pB(0|0)*pC(0|0) + 1293.356*pA(0|0)*pB(0|0) - 580.673*pA(0|0)*pBC(00|00) + 1293.124*pA(0|0)*pC(0|0) - 1105.698*pA(0|0) + 313.48*pAB(00|00)**2 + 202.786*pAB(00|00)*pAC(00|00) - 112.258*pAB(00|00)*pB(0|0) + 202.78*pAB(00|00)*pBC(00|00) - 580.667*pAB(00|00)*pC(0|0) + 1.066*pAB(00|00) + 313.433*pAC(00|00)**2 - 580.747*pAC(00|00)*pB(0|0) + 202.818*pAC(00|00)*pBC(00|00) - 112.177*pAC(00|00)*pC(0|0) + 1.0*pAC(00|00) - 122.527*pB(0|0)**2 - 112.227*pB(0|0)*pBC(00|00) + 1293.293*pB(0|0)*pC(0|0) - 1105.759*pB(0|0) + 313.504*pBC(00|00)**2 - 112.338*pBC(00|00)*pC(0|0) + 1.058*pBC(00|00) - 122.482*pC(0|0)**2 - 1105.672*pC(0|0) + 1142.473 ≥ 0
-</pre></div></div>
-</div>
-</div>
-</div>
-<div class="section" id="Optimisation-problems">
-<h2>Optimisation problems<a class="headerlink" href="#Optimisation-problems" title="Permalink to this headline">¶</a></h2>
-<p>Given a function of the probability distribution, we want to find the maximum over the set of probability distributions compatible with the causal model. This type of problem can also be tackled with causalinflation by optimising over the semidefinite relaxation of the problem.</p>
-<p>TODO: refine statement</p>
-<div class="section" id="The-Svetlichny-distribution">
-<h3>The Svetlichny distribution<a class="headerlink" href="#The-Svetlichny-distribution" title="Permalink to this headline">¶</a></h3>
-<p>TODO: break the code and introduce the problem</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.quantum.general_tools</span> <span class="kn">import</span> <span class="n">to_numbers</span><span class="p">,</span> <span class="n">to_name</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;h3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],},</span>
                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]</span> <span class="p">)</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
+<span class="n">cols</span> <span class="o">=</span> <span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;physical2&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
 
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;physical222&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">cols_S2</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">generating_monomials</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
-<span class="n">cols_loc1</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">generating_monomials</span>
-
-<span class="n">cols_S2_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_name</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">InfProb</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols_S2</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
-<span class="n">cols_loc1_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_name</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">InfProb</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols_loc1</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
-<span class="n">cols</span> <span class="o">=</span> <span class="n">cols_S2_name</span>
-<span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols_loc1_name</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">m</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cols_S2_name</span><span class="p">:</span>
-        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="c1">#cols = cols_S2_name.union(cols_loc1_name)</span>
-<span class="n">cols_num</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]]</span>
-<span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
-    <span class="n">cols_num</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">InfProb</span><span class="o">.</span><span class="n">names</span><span class="p">))</span>
-
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="p">[[],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
-                                                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                                                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]])</span>
-
-<span class="n">measurements</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>
-<span class="n">A0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">A1</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">B0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">B1</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">C0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">C1</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">objective</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span>
-                      <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="p">)</span>
-
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">)</span>  <span class="c1"># By default it maximizes</span>
-
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">interpreter</span><span class="o">=</span><span class="s2">&quot;MOSEKFusion&quot;</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">)</span>
-<br/></pre></div>
+<span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">qtriangle_relax</span><span class="p">,</span> <span class="n">P_W_array</span><span class="p">,</span> <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">v_crit</span>
+</pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-5.656854245790322
+0 Maximum smallest eigenvalue:  0.0001523       visibility = 0.5
+1 Maximum smallest eigenvalue:  3.164e-05       visibility = 0.75
+2 Maximum smallest eigenvalue:  -0.007737       visibility = 0.875
+3 Maximum smallest eigenvalue:  -0.002003       visibility = 0.8125
+4 Maximum smallest eigenvalue: -0.0003796       visibility = 0.7812
+5 Maximum smallest eigenvalue: -3.854e-06       visibility = 0.7656
+6 Maximum smallest eigenvalue:  1.941e-05       visibility = 0.7578
+7 Maximum smallest eigenvalue:  1.111e-05       visibility = 0.7617
+8 Maximum smallest eigenvalue:  5.533e-06       visibility = 0.7637
+9 Maximum smallest eigenvalue:  1.788e-06       visibility = 0.7646
+10 Maximum smallest eigenvalue: -6.595e-07      visibility = 0.7651
+11 Maximum smallest eigenvalue:  6.439e-07      visibility = 0.7649
+12 Maximum smallest eigenvalue:  1.525e-08      visibility = 0.765
+13 Maximum smallest eigenvalue:  -3.16e-07      visibility = 0.7651
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="The-distance-to-a-particular-distribution">
-<h3>The distance to a particular distribution<a class="headerlink" href="#The-distance-to-a-particular-distribution" title="Permalink to this headline">¶</a></h3>
-<p>TODO: break the code and introduce the problem</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation.useful_distributions</span> <span class="kn">import</span> <span class="n">P_W_array</span>
-<br/></pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">outcomes_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-<span class="n">settings_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;h3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="n">outcomes_per_party</span><span class="p">,</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="n">settings_per_party</span><span class="p">,</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]</span> <span class="p">)</span>
-
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;local1&#39;</span><span class="p">,)</span>
-
-<span class="n">p_W</span> <span class="o">=</span> <span class="n">P_W_array</span><span class="p">(</span><span class="n">visibility</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
-
-<span class="n">measurements</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>  <span class="c1"># This reads as measurements[party][inflation_source][setting][outcome]. TODO remove &quot;inflation_source&quot; as the user doesnt care</span>
-
-<span class="n">sum_abc_pW_squared</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">p_W</span><span class="p">,</span><span class="n">p_W</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-
-<span class="n">sum_abc_p_obs_times_p_W</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">sum_abc_p_obs_squared</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outcomes_per_party</span><span class="p">]):</span>
-    <span class="c1"># &lt; A_11 * A_22 * B_11 * B_22 * C_11 * C_22 &gt;</span>
-    <span class="n">p_obs_squared</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">p_obs_squared</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">*</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="k">if</span> <span class="n">a</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">p_obs_squared</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]</span> <span class="o">*</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]</span> <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">p_obs_squared</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">c</span><span class="p">]</span> <span class="o">*</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">c</span><span class="p">]</span> <span class="k">if</span> <span class="n">c</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-
-    <span class="n">sum_abc_p_obs_squared</span> <span class="o">+=</span> <span class="n">p_obs_squared</span>
-
-    <span class="c1"># p_W(a,b,c) * &lt; A_11 * B_11 * C_11 &gt;</span>
-    <span class="n">p_obs_times_p_W</span> <span class="o">=</span> <span class="n">p_W</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-    <span class="n">p_obs_times_p_W</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">a</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">p_obs_times_p_W</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">b</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">p_obs_times_p_W</span> <span class="o">*=</span> <span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">c</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">measurements</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-
-    <span class="n">sum_abc_p_obs_times_p_W</span> <span class="o">+=</span> <span class="n">p_obs_times_p_W</span>
-
-
-<span class="n">objective</span> <span class="o">=</span> <span class="n">sum_abc_pW_squared</span> <span class="o">+</span> <span class="n">sum_abc_p_obs_squared</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sum_abc_p_obs_times_p_W</span>
-<span class="n">objective</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">objective</span><span class="p">)</span>
-
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">)</span>  <span class="c1"># By default it maximizes</span>
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">interpreter</span><span class="o">=</span><span class="s2">&quot;MOSEKFusion&quot;</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">primal_objective</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-0.33333333121984077
-</pre></div></div>
-</div>
-</div>
-</div>
-<div class="section" id="Appendix:-How-to-customize-the-generating-set">
-<h2>Appendix: How to customize the generating set<a class="headerlink" href="#Appendix:-How-to-customize-the-generating-set" title="Permalink to this headline">¶</a></h2>
-<p>In this tutorial we will showcase how to customize the generating set of monomials.</p>
-<p>We can use the built-in functions to construct a generating set according to several hierarchies. To showcase this, let us first look at a simple scenario of only two parties, Alice and Bob, sharing a quantum state.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span> <span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">]},</span>
-                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>These are all the measurement operators:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">meas</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>
-<span class="n">meas</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[[[[A_1_0_0], [A_1_1_0]]], [[[B_1_0_0], [B_1_1_0]]]]
+0.765045166015625
 </pre></div></div>
 </div>
-<p>As a reminder, the indices are interpreted as follows: the last two give the measurement setting and measurement output, and the rest represent on which copy of the source the operator is acting. For example, <code class="docutils literal notranslate"><span class="pre">A_1_1_0</span></code> represents the projection onto copy 1 of source 1 with measurement setting <span class="math notranslate nohighlight">\(x=1\)</span> and measurement outcome <span class="math notranslate nohighlight">\(a=0\)</span>.</p>
-<p>Now let us look at a few examples of hierarchies. The first is the NPA levels</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">generating_monomials_sym</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-[1, A_1_0_0, A_1_1_0, B_1_0_0, B_1_1_0, A_1_0_0*B_1_0_0, A_1_0_0*B_1_1_0, A_1_1_0*B_1_0_0, A_1_1_0*B_1_1_0]
-</pre></div></div>
+<p>The critical value for the noise that we achieve, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.7650\)</span>, is lower than the critical value for the noise that we achieved in Example 7, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.8039\)</span></p>
+<p><strong>Warning!</strong> The tradeoff of using LPI constraints is that the dual certificate is no longer valid for other distributions. We can still certify incompatibility of a specific distribution <span class="math notranslate nohighlight">\(P_0\)</span> with a certain causal model with the extracted certificate <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_0)&gt;0\)</span> when using LPI constraints, but if attempt to check other distributions <span class="math notranslate nohighlight">\(P_1\)</span> with the same certificate, getting a violation of the inequality <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_1)\)</span> no longer also guarantees
+that <span class="math notranslate nohighlight">\(P_1\)</span> is also incompatible with the same causal structure, as was the case in the other scenarios.</p>
 </div>
 </div>
 </div>
@@ -869,7 +856,7 @@ max(min eigval):  5.974e-07     vm = 14     0.8482
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="modules.html" class="btn btn-neutral float-right" title="Function documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="advanced.html" class="btn btn-neutral float-right" title="Advanced options" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
