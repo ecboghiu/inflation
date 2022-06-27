@@ -71,11 +71,11 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#SDP-hierarchy-of-“physical-moments”">SDP hierarchy of “physical moments”</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-7:-Critical-visibility-of-the-W-distribution-in-the-triangle">Example 7: Critical visibility of the W distribution in the triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy">Example 7: Critical visibility of the W distribution with the physical moments hierarchy</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#Linearized-polynomial-identification-(LPI)-constraints">Linearized polynomial identification (LPI) constraints</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-LPI-constraints-and-with-the-physical-moments-hierarchy">Example 8: Critical visibility of the W distribution with LPI constraints and with the physical moments hierarchy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints">Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints</a></li>
 </ul>
 </li>
 </ul>
@@ -388,10 +388,10 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="Examples">
 <h1>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline">¶</a></h1>
-<p>Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook.</p>
+<p>Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>.</p>
 <p>We begin by importing the functions that we will need:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
@@ -424,9 +424,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<p>With the <code class="docutils literal notranslate"><span class="pre">set_distribution</span></code> method we set the entries of the moment matrix that depend on the probability distribution, and we attempt to solve the program:</p>
+<p>With the <code class="docutils literal notranslate"><span class="pre">set_distribution</span></code> method we set the entries of the moment matrix that depend on the probability distribution, and we attempt to solve the program with the <code class="docutils literal notranslate"><span class="pre">solve()</span></code> method:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdprelax</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W_array</span><span class="p">)</span>
@@ -436,7 +436,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -447,9 +447,9 @@ div.rendered_html tbody tr:hover {
 <p>The problem status is reported as infeasible, therefore this serves as a proof that the W distribution is incompatible with the quantum triangle scenario.</p>
 <div class="section" id="Certificate-extraction">
 <h4>Certificate extraction<a class="headerlink" href="#Certificate-extraction" title="Permalink to this headline">¶</a></h4>
-<p>We can furthermore recover a certificate of infeasibility as a polynomial inequality in the probabilities, <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz) \geq 0\)</span>. There are built-in methods to extract the symbolic form of <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz))\)</span>:</p>
+<p>We can furthermore recover a certificate of infeasibility as a polynomial inequality in the probabilities, <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz) \geq 0\)</span> . This means that any other correlations vector <span class="math notranslate nohighlight">\(p'(abc|xyz)\)</span> that also satisfies the inequality, <span class="math notranslate nohighlight">\(\text{Poly}(p'(abc|xyz) \geq 0\)</span>, is guaranteed to lead to an infeasible SDP. There are built-in methods to extract the symbolic form of <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz))\)</span>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdprelax</span><span class="o">.</span><span class="n">certificate_as_probs</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -457,7 +457,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -474,7 +474,7 @@ $\displaystyle 0.46 p(000|000) p_{A}(0|0) + 0.456 p(000|000) p_{B}(0|0) + 0.457 
 \[\left\langle A_{x} B_{y} C_{z}\right\rangle =\sum_{a, b, c \in \{0,1\}} (-1)^{a+b+c} \, p(abc|xyz)\]</div>
 <p>where the omitted 2-body and 1-body correlators have similar definitions:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdprelax</span><span class="o">.</span><span class="n">certificate_as_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -482,7 +482,7 @@ $\displaystyle 0.46 p(000|000) p_{A}(0|0) + 0.456 p(000|000) p_{B}(0|0) + 0.457 
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -508,7 +508,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 <p>By setting the flag <code class="docutils literal notranslate"><span class="pre">feas_as_optim</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> in the <code class="docutils literal notranslate"><span class="pre">InflationSDP.solve()</span></code> method, feasibility problems are converted to optimisation problems. The result is stored in <code class="docutils literal notranslate"><span class="pre">InflationSDP.objective_value</span></code>.</p>
 <p>We encode the inflation scenario and generate the relaxation corresponding to NPA level 2:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
@@ -523,16 +523,16 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 </div>
 <p>And next we run a simple bisection to find the <span class="math notranslate nohighlight">\(v_{\text{crit}}\)</span> for which the maximum minimum eigenvalue is 0. The bisection is implemented in an auxiliary file:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">qbilocal_relax</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="p">,</span> <span class="n">v_crit</span> <span class="o">=</span> <span class="n">bisection</span><span class="p">(</span><span class="n">qbilocal_relax</span><span class="p">,</span> <span class="n">P_2PR_array</span><span class="p">)</span>
 <span class="n">v_crit</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -540,7 +540,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 0.500030517578125
 </pre></div></div>
 </div>
-<p>It is known that <span class="math notranslate nohighlight">\(P_{\text{2PR},v}\)</span> is incompatible with the quantum tripartite scenario for <span class="math notranslate nohighlight">\(v&gt;\frac{1}{2}\)</span>. Quantum inflation at the second order correctly recovers this bound.</p>
+<p>We correctly recover the known critical visibility of the 2PR distribution in the quantum tripartite-line scenario, namely <span class="math notranslate nohighlight">\(v&gt;\frac{1}{2}\)</span>.</p>
 </div>
 </div>
 </div>
@@ -555,7 +555,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 <p>It is known that the algebraic maximum of 4 is achieved in the tripartite scenario both with global shared randomness and also global non-signaling sources. However, one can see a difference between quantum and general no-signaling sources when restricting to the triangle scenario from Example 1.</p>
 <p>First we generate the relaxation corresponding to a second order inflation of the triangle of NPA level 2:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
@@ -571,7 +571,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 </div>
 <p>We implement the objective function after extracting the measurement operators and solve the program:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mmnts</span> <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">measurements</span>
@@ -585,7 +585,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -601,7 +601,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 021043</a>.</p>
 <p>In what follows, we use the built-in method <code class="docutils literal notranslate"><span class="pre">build_columns</span></code> to generate the columns corresponding to NPA level 2 and local level 1. Then we do a union, generate the relaxation and again, solve the program. As it will now take a bit longer, we increase the verbosity level to see the progress:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">npa2</span>   <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
@@ -616,12 +616,12 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 <span class="n">sdprelax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span> <span class="o">=</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span><span class="p">)</span>
 
 <span class="n">sdprelax</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="n">sdprelax</span><span class="o">.</span><span class="n">objective_value</span>
+<span class="c1"># sdprelax.solve()</span>
+<span class="c1"># sdprelax.objective_value</span>
 </pre></div>
 </div>
 </div>
-<p>With quantum inflation we can certify then that the Mermin inequality cannot have a value larger than <span class="math notranslate nohighlight">\(3.085\)</span> for the quantum triangle causal scenario.</p>
+<p>After running the above, we can certify then that the Mermin inequality cannot have a value larger than <span class="math notranslate nohighlight">\(3.085\)</span> for the quantum triangle causal scenario.</p>
 </div>
 </div>
 </div>
@@ -634,7 +634,7 @@ operators commute, then they become equal.</p>
 <h3>Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario<a class="headerlink" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario" title="Permalink to this headline">¶</a></h3>
 <p>As an example, we find the critical visibility of the <span class="math notranslate nohighlight">\(P_{\text{2PR}}\)</span> distribution from Example 2, but in the classical tripartite line scenario with a second order inflation, and with the local level 1 generating set for the SDP relaxation:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span> <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
@@ -649,7 +649,7 @@ operators commute, then they become equal.</p>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -669,7 +669,7 @@ operators commute, then they become equal.</p>
 <h3>Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources<a class="headerlink" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources" title="Permalink to this headline">¶</a></h3>
 <p>We recover the critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}=\frac{1}{\sqrt{2}}\)</span> for a <a class="reference external" href="https://link.springer.com/article/10.1007/BF02058098">Popeschu-Rohrlich box</a> in the Bell scenario.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bellscenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]},</span>
@@ -692,34 +692,42 @@ Critical visibility:  0.707122802734375
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="math notranslate nohighlight">
 $\displaystyle - 0.25 \langle A_{0} B_{0} \rangle - 0.25 \langle A_{0} B_{1} \rangle - 0.25 \langle A_{1} B_{0} \rangle + 0.25 \langle A_{1} B_{1} \rangle + 0.707$</div></div>
 </div>
-<p>Notice that the dual certificate that we extract in correlator form is exactly the CHSH inequality tangent to the quantum set of correlations.</p>
+<p>Notice that the dual certificate that we extract in correlator form (which has been renormalised and rounded numerically) is the CHSH inequality tangent to the quantum set of correlations.</p>
 </div>
 <div class="section" id="Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">
 <h3>Example 6: Optimising the CHSH inequality in the Bell scenario<a class="headerlink" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario" title="Permalink to this headline">¶</a></h3>
 <p>Now we will showcase optimising the CHSH inequality that was recovered in Example 5:</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bellscenario_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">bellscenario</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bellscenario_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">bellscenario</span><span class="p">)</span>
 <span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
 
 <span class="n">mmnts</span> <span class="o">=</span> <span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">measurements</span>
 <span class="n">A0</span><span class="p">,</span> <span class="n">B0</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">mmnts</span><span class="p">[</span><span class="n">party</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">setting</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-<span class="n">CHSH</span> <span class="o">=</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span> <span class="o">+</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span>
 
-<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">CHSH</span><span class="p">)</span>
+<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">A0</span><span class="o">*</span><span class="n">B0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span> <span class="o">+</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="p">)</span>
 <span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CHSH upper bound in the Bell scenario with a quantum source: &quot;</span><span class="p">,</span> <span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">objective_value</span><span class="p">)</span>
+<span class="n">bellscenario_relax</span><span class="o">.</span><span class="n">objective_value</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2.8284271751751255
+</pre></div></div>
 </div>
 <p>We correctly recover the Tsirelson bound for the CHSH inequality.</p>
 </div>
@@ -727,12 +735,12 @@ $\displaystyle - 0.25 \langle A_{0} B_{0} \rangle - 0.25 \langle A_{0} B_{1} \ra
 <div class="section" id="SDP-hierarchy-of-“physical-moments”">
 <h2>SDP hierarchy of “physical moments”<a class="headerlink" href="#SDP-hierarchy-of-“physical-moments”" title="Permalink to this headline">¶</a></h2>
 <p>For the generation of the semidefinite programming relaxation, besides NPA levels and local levels, we also implement a hierachy of “physical moments” of level <span class="math notranslate nohighlight">\(n\)</span>. This is a subset of local level <span class="math notranslate nohighlight">\(n\)</span> of all the monomials for which all operators in that monomial commute due to non-overlapping support in the inflated graph.</p>
-<div class="section" id="Example-7:-Critical-visibility-of-the-W-distribution-in-the-triangle">
-<h3>Example 7: Critical visibility of the W distribution in the triangle<a class="headerlink" href="#Example-7:-Critical-visibility-of-the-W-distribution-in-the-triangle" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy">
+<h3>Example 7: Critical visibility of the W distribution with the physical moments hierarchy<a class="headerlink" href="#Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy" title="Permalink to this headline">¶</a></h3>
 <p>As an application, we show how we can recover the critical visibility <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx=0.8038\)</span> of the W distribution in the triangle causal scenario achieved with the generating set corresponding to local level 2 with monomials of maximum length 4, as shown in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>. This corresponds to a moment matrix of size 1175x1175. However, by using the second level of the physical moments
 hierarchy of monomials up to length 4, we recover the same results with a smaller moment matrix:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
@@ -750,53 +758,32 @@ hierarchy of monomials up to length 4, we recover the same results with a smalle
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-0 Maximum smallest eigenvalue:  0.0001523       visibility = 0.5
-1 Maximum smallest eigenvalue:  3.164e-05       visibility = 0.75
-2 Maximum smallest eigenvalue:  -0.007737       visibility = 0.875
-3 Maximum smallest eigenvalue:  -0.002003       visibility = 0.8125
-4 Maximum smallest eigenvalue: -0.0003796       visibility = 0.7812
-5 Maximum smallest eigenvalue: -3.854e-06       visibility = 0.7656
-6 Maximum smallest eigenvalue:  1.941e-05       visibility = 0.7578
-7 Maximum smallest eigenvalue:  1.111e-05       visibility = 0.7617
-8 Maximum smallest eigenvalue:  5.533e-06       visibility = 0.7637
-9 Maximum smallest eigenvalue:  1.788e-06       visibility = 0.7646
-10 Maximum smallest eigenvalue: -6.595e-07      visibility = 0.7651
-11 Maximum smallest eigenvalue:  6.439e-07      visibility = 0.7649
-12 Maximum smallest eigenvalue:  1.525e-08      visibility = 0.765
-13 Maximum smallest eigenvalue:  -3.16e-07      visibility = 0.7651
-</pre></div></div>
-</div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-0.765045166015625
+0.803863525390625
 </pre></div></div>
 </div>
-<p>We recover the same critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx 0.8039\)</span> a moment matrix of size 287x287 as opposed to 1175x1175.</p>
+<p>We recover the same critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx 0.8039\)</span> a moment matrix of size 287x287 as opposed to 1175x1175, which leads to a signfificant gain in performance.</p>
 </div>
 </div>
 <div class="section" id="Linearized-polynomial-identification-(LPI)-constraints">
 <h2>Linearized polynomial identification (LPI) constraints<a class="headerlink" href="#Linearized-polynomial-identification-(LPI)-constraints" title="Permalink to this headline">¶</a></h2>
-<p>LPI constraints were first introduced in <a class="reference external" href="https://arxiv.org/abs/2203.16543">arXiv:2203.16543</a>. They are proportionality constraints between different entries of the moment matrix. Due to nature of the inflated graph, many of the moments in the moment matrix factorise into products of other moments.</p>
+<p>LPI constraints were introduced in <a class="reference external" href="https://arxiv.org/abs/2203.16543">arXiv:2203.16543</a>. They are proportionality constraints between different entries of the moment matrix. Due to nature of the inflated graph, many of the moments in the moment matrix factorise into products of other moments.</p>
 <p>As a simplified example, consider the moment <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> in the inflated triangle of order two. In the triangle, we have three sources, <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{AC}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The upper indices in the operators of the previous moment indicate on which copy of the sources the operator is acting. The value 0 means that the party does not measure the corresponding source. For example, <span class="math notranslate nohighlight">\(B^{201}_{yb}\)</span> represents Bob
 measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of setting <span class="math notranslate nohighlight">\(y\)</span> on copy 2 of <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and copy 1 of <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. Notice that because of the non-overlapping support of some of the moments, the moment factorises as follows:</p>
 <div class="math notranslate nohighlight">
 \[\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle = \langle A^{110}_{xa} \rangle \langle B^{202}_{x'a'} B^{201}_{yb} \rangle\]</div>
-<p>The moment $:nbsphinx-math:<cite>langle `A^{110}*{xa} :nbsphinx-math:</cite>rangle <cite>$ is known and it is equal to :math:`p_A(a|x)</cite>, but <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> is unknown. Therefore, we have a linear proportionality relationship between the variables <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> and $ <span class="math">\langle `B^{202}*\ {x’a’} B^{201}_{yb} :nbsphinx-math:</span>rangle`$.</p>
+<p>The moment $:nbsphinx-math:<cite>langle `A^{110}*{xa} :nbsphinx-math:</cite>rangle <cite>$ is known to be equal to :math:`p_A(a|x)</cite>, but <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> is unknown. Therefore, we have a linear proportionality relationship between the variables <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> and $ <span class="math">\langle `B^{202}*\ {x’a’} B^{201}_{yb} :nbsphinx-math:</span>rangle`$.</p>
 <p>Proportionality constraints of these form can be automatically implemented by setting <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> when using the <code class="docutils literal notranslate"><span class="pre">set_distribution()</span></code> method.</p>
-<div class="section" id="Example-8:-Critical-visibility-of-the-W-distribution-with-LPI-constraints-and-with-the-physical-moments-hierarchy">
-<h3>Example 8: Critical visibility of the W distribution with LPI constraints and with the physical moments hierarchy<a class="headerlink" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-LPI-constraints-and-with-the-physical-moments-hierarchy" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints">
+<h3>Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints<a class="headerlink" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints" title="Permalink to this headline">¶</a></h3>
 <p>We will now show how using LPI constraints lead to tighter relaxations. For example, we can certify incompatiblity with the triangle for noisier W distributions than before.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
@@ -814,29 +801,8 @@ measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of set
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-0 Maximum smallest eigenvalue:  0.0001523       visibility = 0.5
-1 Maximum smallest eigenvalue:  3.164e-05       visibility = 0.75
-2 Maximum smallest eigenvalue:  -0.007737       visibility = 0.875
-3 Maximum smallest eigenvalue:  -0.002003       visibility = 0.8125
-4 Maximum smallest eigenvalue: -0.0003796       visibility = 0.7812
-5 Maximum smallest eigenvalue: -3.854e-06       visibility = 0.7656
-6 Maximum smallest eigenvalue:  1.941e-05       visibility = 0.7578
-7 Maximum smallest eigenvalue:  1.111e-05       visibility = 0.7617
-8 Maximum smallest eigenvalue:  5.533e-06       visibility = 0.7637
-9 Maximum smallest eigenvalue:  1.788e-06       visibility = 0.7646
-10 Maximum smallest eigenvalue: -6.595e-07      visibility = 0.7651
-11 Maximum smallest eigenvalue:  6.439e-07      visibility = 0.7649
-12 Maximum smallest eigenvalue:  1.525e-08      visibility = 0.765
-13 Maximum smallest eigenvalue:  -3.16e-07      visibility = 0.7651
-</pre></div></div>
-</div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -844,9 +810,9 @@ measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of set
 0.765045166015625
 </pre></div></div>
 </div>
-<p>The critical value for the noise that we achieve, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.7650\)</span>, is lower than the critical value for the noise that we achieved in Example 7, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.8039\)</span></p>
-<p><strong>Warning!</strong> The tradeoff of using LPI constraints is that the dual certificate is no longer valid for other distributions. We can still certify incompatibility of a specific distribution <span class="math notranslate nohighlight">\(P_0\)</span> with a certain causal model with the extracted certificate <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_0)&gt;0\)</span> when using LPI constraints, but if attempt to check other distributions <span class="math notranslate nohighlight">\(P_1\)</span> with the same certificate, getting a violation of the inequality <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_1)\)</span> no longer also guarantees
-that <span class="math notranslate nohighlight">\(P_1\)</span> is also incompatible with the same causal structure, as was the case in the other scenarios.</p>
+<p>The critical value for the noise that we achieve, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.7650\)</span>, is lower than the critical value for the noise that we achieved in Example 7, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.8039\)</span>.</p>
+<p><strong>Warning!</strong> The tradeoff of using LPI constraints is that the dual certificate is no longer valid for other distributions. We can still certify incompatibility of a specific distribution <span class="math notranslate nohighlight">\(P_0\)</span> with a certain causal model with the extracted certificate <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_0)&gt;0\)</span> when using LPI constraints, but if attempt to check other distributions <span class="math notranslate nohighlight">\(P_1\)</span> with the same certificate, satisfying he inequality <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_1)&gt;0\)</span> no longer guarantees that <span class="math notranslate nohighlight">\(P_1\)</span>
+is also incompatible with the same causal structure, as was the case in the other scenarios (e.g., in Example 1).</p>
 </div>
 </div>
 </div>
