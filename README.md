@@ -1,5 +1,21 @@
 # UnifiedInflation
-Implementations of the Inflation Technique for Causal Inference. The complete documentation is hosted online [here](https://ecboghiu.github.io/inflation/).
+CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatiblity between some observed data and a given causal relationship.
+
+The first version of this package implements the inflation technique for quantum causal compatibility. For details, see `Wolfe, Elie, et al. "Quantum inflation: A general approach to quantum causal compatibility." `Physical Review X 11.2 (2021): 021043. <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043>`_). The inflation technique for classical causal compatibility will be implemented in a future update. 
+
+Examples of use of this package include:
+
+- Feasibility problems and extraction of certificates.
+- Optimization of Bell operators. 
+- Optimisation over classical distributions. 
+- Standard NPA.
+- Scenarios with partial information. 
+
+See the documentation for more details.
+
+## Documentation
+
+* [LATEST VERSION](https://ecboghiu.github.io/inflation/).
 
 ## Installation
 
@@ -9,30 +25,47 @@ To install the package, run the following command:
 pip install causalinflation
 ```
 
-You can also install the latest developed version with  `pip install git+https://github.com/ecboghiu/inflation.git@main` or clone the repository and run `python setup.py install`. If you forsee making many contributions, you can install the package in develop mode: `python setup.py develop`.
+You can also install the latest developed version with:
 
+`pip install git+https://github.com/ecboghiu/inflation.git@main`
 
+or clone the repository and run `python setup.py install` in the downloaded folder.
 
+## Getting started
 
-## Temporary notes on how to contribute 
+Below is a simple complete ready-to-run example that shows that the W distribution is incompatible with the triangle scenario with quantum sources:
 
-### Documentation
+```
+from causalinflation import InflationProblem, InflationSDP
+import numpy as np
+import itertools
 
-Documentation is built using Sphinx. Here are quick notes on how some sphinx commands work. 
+P_W_array = np.zeros((2, 2, 2, 1, 1, 1))
+for a, b, c in itertools.product([0, 1], repeat=3):
+    if a + b + c == 1:
+        P_W_array[a, b, c, 0, 0, 0] = 1 / 3
 
-The documentation is already built. One can update index.rst to include additional files. The sphinx configuration file `conf.py` has been modified to allow including files from the examples folder.
+scenario = InflationProblem(dag={ "rho_AB": ["A", "B"],
+                                  "rho_BC": ["B", "C"],
+                                  "rho_AC": ["A", "C"]}, 
+                             outcomes_per_party=[2, 2, 2],
+                             settings_per_party=[1, 1, 1],
+                             inflation_level_per_source=[2, 2, 2])
 
-To modify the current files, one can modify the `.rst` files already included in `index.rst`, for example, `tutorial.rst`. To include the `.rst` files detailing the code description, one should run `sphinx-apidoc -f -o . ../causalinflation` in the `./docs`. This will update the corresponding `.rst` files detailing the code. To build the documentation again with the updated files, one can run `make html` and then push to update the webpage.
+sdprelax = InflationSDP(scenario)
+sdprelax.generate_relaxation('npa2')
+sdprelax.set_distribution(P_W_array)
+sdprelax.solve()
+print(sdprelax.status)
 
-Note that we need the following extensions with Sphinx, some might need to be installed locally on your machine:
- - `sphinx.ext.autodoc`: This extension is used to create `.rst` files from the class and method code docstrings.
- - `sphinx.ext.napoleon`: This extension enables the correct identification of numpy-style docstrings.
- - `sphinx.ext.githubpages`: This extension creates `.nojekyll` file on generated HTML directory to publish the document on GitHub Pages. 
-  - `sphinx-rtd-theme`: for the Read the docs theme.
-  - `nbsphinx`: to have Jupyter notebooks as pages.
+```
 
-### Short note on tests:
-- If using Spyder: install the unittest plugin. See here https://www.spyder-ide.org/blog/introducing-unittest-plugin/ Then create a new project in the "Projects" tab and choose as existing directory your local repo copy. Then in the "Run" tab there is the option of running tests.
-- If using VSCode: Ctrl+Shift+P (universal search) "Configure Tests" and choose unittest. Then you run all the tests in the "Test" tab on the left.
-- If using PyCharm: Either make a new project and pull from the repository, or open the already downloaded one. Then in File > Settings > Tools > Python Integrated Tools choose "Default test runner" as "Unittest". Then context actions are updated and you can run individual tests ("play" arrow next to the test function) or all of them.
-- If using terminal: be in the UnifiedInflation folder (and not in test/). Run "python -m unittest -v" to run all the tests ("-v" for verbose), or "python -m unittest -v test/test_hypergraph.py" to run a specific test script
+For more information about the theory and other features, please visit the [documentation](https://ecboghiu.github.io/inflation/), and more specifically and [Tutorial](https://ecboghiu.github.io/inflation/_build/html/tutorial.html) and [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) pages.
+
+## How to contribute
+
+If you want to contribute, visit the [documentation](https://ecboghiu.github.io/inflation/) to learn how the package works, and then submit an issue or create a pull request on the GitHub repository.
+
+## License
+
+CasualInflation is free open-source software released under the [Creative Commons License](https://github.com/ecboghiu/inflation/blob/main/LICENSE>).

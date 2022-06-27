@@ -4,7 +4,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# Examples\n",
+    "# Examples and features\n",
     "\n",
     "Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook from the [GitHub repository](https://github.com/ecboghiu/inflation).\n",
     "\n",
@@ -413,7 +413,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "## Standard NPA.\n",
+    "## Standard NPA\n",
     "\n",
     "If the DAG corresponds to a single global shared source scenario, then doing an inflation does not grant any advantage. In this case, the semidefinite programming relaxation defaults to being the same as the [NPA hierarcy](https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013). If we set the `commuting` flag to `True` then this is a relaxation of the set of distributions classically with global shared randomness, as introduced in [Phys. Rev. X 7, 021042](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042). We will show this with two simple examples."
    ]
@@ -477,7 +477,7 @@
    "source": [
     "### Example 6: Optimising the CHSH inequality in the Bell scenario\n",
     "\n",
-    "Now we will showcase optimising the CHSH inequality that was recovered in Example 5:"
+    "To find upper bounds on the values for the CHSH Bell operator, recovered in Example 5, we run a similar program to that in Example 2:"
    ]
   },
   {
@@ -583,7 +583,7 @@
     "\n",
     "$$\\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \\rangle = \\langle A^{110}_{xa} \\rangle \\langle B^{202}_{x'a'} B^{201}_{yb} \\rangle $$ \n",
     "\n",
-    "The moment $\\langle A^{110}_{xa} \\rangle $ is known to be equal to $p_A(a|x)$, but  $\\langle B^{202}_{x'a'} B^{201}_{yb} \\rangle$ is unknown. Therefore, we have a linear proportionality relationship between the variables $\\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \\rangle$ and $ \\langle B^{202}_{x'a'} B^{201}_{yb} \\rangle$.\n",
+    "The moment $\\langle A^{110}_{xa} \\rangle$ is known to be equal to $p_A(a|x)$, but  $\\langle B^{202}_{x'a'} B^{201}_{yb} \\rangle$ is unknown. Therefore, we have a linear proportionality relationship between the variables $\\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \\rangle$ and $\\langle B^{202}_{x'a'} B^{201}_{yb} \\rangle$.\n",
     "\n",
     "Proportionality constraints of these form can be automatically implemented by setting `use_lpi_constraints` to `True` when using the `set_distribution()` method."
    ]

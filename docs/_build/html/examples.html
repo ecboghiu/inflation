@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Examples and features &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Advanced options" href="advanced.html" />
+    <link rel="next" title="How to contribute" href="contribute.html" />
     <link rel="prev" title="Tutorial" href="tutorial.html" /> 
 </head>
 
@@ -42,7 +42,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples and features</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Feasibility-problems-and-extraction-of-certificates">Feasibility problems and extraction of certificates</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario">Example 1: Infeasibility of the W distribution in the quantum triangle scenario</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Certificate-extraction">Certificate extraction</a></li>
@@ -65,7 +65,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario">Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Standard-NPA.">Standard NPA.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Standard-NPA">Standard NPA</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources">Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">Example 6: Optimising the CHSH inequality in the Bell scenario</a></li>
 </ul>
@@ -80,7 +80,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">causalinflation</a></li>
 </ul>
 
@@ -98,7 +98,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Examples</li>
+      <li>Examples and features</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/examples.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -386,8 +386,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Examples">
-<h1>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Examples-and-features">
+<h1>Examples and features<a class="headerlink" href="#Examples-and-features" title="Permalink to this headline">¶</a></h1>
 <p>Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>.</p>
 <p>We begin by importing the functions that we will need:</p>
 <div class="nbinput nblast docutils container">
@@ -661,8 +661,8 @@ operators commute, then they become equal.</p>
 <p>For optimisation problems, one can run the exact same program as in Example 3, but with the flag <code class="docutils literal notranslate"><span class="pre">commuting</span></code> set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 </div>
-<div class="section" id="Standard-NPA.">
-<h2>Standard NPA.<a class="headerlink" href="#Standard-NPA." title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Standard-NPA">
+<h2>Standard NPA<a class="headerlink" href="#Standard-NPA" title="Permalink to this headline">¶</a></h2>
 <p>If the DAG corresponds to a single global shared source scenario, then doing an inflation does not grant any advantage. In this case, the semidefinite programming relaxation defaults to being the same as the <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">NPA hierarcy</a>. If we set the <code class="docutils literal notranslate"><span class="pre">commuting</span></code> flag to <code class="docutils literal notranslate"><span class="pre">True</span></code> then this is a relaxation of the set of distributions classically with global shared randomness, as introduced in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7,
 021042</a>. We will show this with two simple examples.</p>
 <div class="section" id="Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources">
@@ -703,7 +703,7 @@ $\displaystyle - 0.25 \langle A_{0} B_{0} \rangle - 0.25 \langle A_{0} B_{1} \ra
 </div>
 <div class="section" id="Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">
 <h3>Example 6: Optimising the CHSH inequality in the Bell scenario<a class="headerlink" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario" title="Permalink to this headline">¶</a></h3>
-<p>Now we will showcase optimising the CHSH inequality that was recovered in Example 5:</p>
+<p>To find upper bounds on the values for the CHSH Bell operator, recovered in Example 5, we run a similar program to that in Example 2:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
@@ -777,7 +777,7 @@ hierarchy of monomials up to length 4, we recover the same results with a smalle
 measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of setting <span class="math notranslate nohighlight">\(y\)</span> on copy 2 of <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and copy 1 of <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. Notice that because of the non-overlapping support of some of the moments, the moment factorises as follows:</p>
 <div class="math notranslate nohighlight">
 \[\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle = \langle A^{110}_{xa} \rangle \langle B^{202}_{x'a'} B^{201}_{yb} \rangle\]</div>
-<p>The moment $:nbsphinx-math:<cite>langle `A^{110}*{xa} :nbsphinx-math:</cite>rangle <cite>$ is known to be equal to :math:`p_A(a|x)</cite>, but <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> is unknown. Therefore, we have a linear proportionality relationship between the variables <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> and $ <span class="math">\langle `B^{202}*\ {x’a’} B^{201}_{yb} :nbsphinx-math:</span>rangle`$.</p>
+<p>The moment <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} \rangle\)</span> is known to be equal to <span class="math notranslate nohighlight">\(p_A(a|x)\)</span>, but <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> is unknown. Therefore, we have a linear proportionality relationship between the variables <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> and <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span>.</p>
 <p>Proportionality constraints of these form can be automatically implemented by setting <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> when using the <code class="docutils literal notranslate"><span class="pre">set_distribution()</span></code> method.</p>
 <div class="section" id="Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints">
 <h3>Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints<a class="headerlink" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints" title="Permalink to this headline">¶</a></h3>
@@ -822,7 +822,7 @@ is also incompatible with the same causal structure, as was the case in the othe
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="advanced.html" class="btn btn-neutral float-right" title="Advanced options" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="contribute.html" class="btn btn-neutral float-right" title="How to contribute" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
