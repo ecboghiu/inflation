@@ -1,7 +1,7 @@
 # UnifiedInflation
 CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatiblity between some observed data and a given causal relationship.
 
-The first version of this package implements the inflation technique for quantum causal compatibility. For details, see `Wolfe, Elie, et al. "Quantum inflation: A general approach to quantum causal compatibility." `Physical Review X 11.2 (2021): 021043. <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043>`_). The inflation technique for classical causal compatibility will be implemented in a future update. 
+The first version of this package implements the inflation technique for quantum causal compatibility. For details, see [Physical Review X 11.2 (2021): 021043](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043). The inflation technique for classical causal compatibility will be implemented in a future update. 
 
 Examples of use of this package include:
 
@@ -15,7 +15,7 @@ See the documentation for more details.
 
 ## Documentation
 
-* [LATEST VERSION](https://ecboghiu.github.io/inflation/).
+* [Latest version](https://ecboghiu.github.io/inflation/).
 
 ## Installation
 
@@ -57,7 +57,6 @@ sdprelax.generate_relaxation('npa2')
 sdprelax.set_distribution(P_W_array)
 sdprelax.solve()
 print(sdprelax.status)
-
 ```
 
 For more information about the theory and other features, please visit the [documentation](https://ecboghiu.github.io/inflation/), and more specifically and [Tutorial](https://ecboghiu.github.io/inflation/_build/html/tutorial.html) and [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) pages.
