@@ -81,6 +81,8 @@ class InflationSDP(object):
         self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         self.setting_cardinalities = self.InflationProblem.settings_per_party
         self.maximize = True    # Direction of the optimization
+        self.split_node_model = self.InflationProblem.split_node_model
+        self.is_knowable_q_split_node_check = self.InflationProblem.is_knowable_q_split_node_check
 
     def atomic_knowable_q(self, atomic_monomial):
         first_test = is_knowable(atomic_monomial)
@@ -1226,8 +1228,7 @@ class InflationSDP(object):
             var = line[0]
             factors = np.array(line[1])
             where_unknown = np.array(
-                [not is_knowable(factor, self.InflationProblem.hypergraph)
-                                                    for factor in factors])
+                [not self.atomic_knowable_q(factor) for factor in factors])
             factors_unknown = factors[where_unknown]
             joined_unknowns = to_canonical(
                 np.concatenate(tuple(factor for factor in factors_unknown))
@@ -1301,7 +1302,7 @@ class InflationSDP(object):
         monomials_factors_knowable = np.empty_like(monomials_factors_input)
         monomials_factors_knowable[:, 0] = monomials_factors_input[:, 0]
         for idx, [_, monomial_factors] in enumerate(tqdm(monomials_factors_input, disable=True)):
-            factors_known_list = [self.atomic_knowable_q(factors) for factors in monomial_factors]
+            factors_known_list = [self.atomic_knowable_q(factor) for factor in monomial_factors]
             if all(factors_known_list):
                 knowable = 'Yes'
             elif any(factors_known_list):
