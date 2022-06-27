@@ -74,10 +74,11 @@ class InflationProblem(object):
         names_to_integers_dict = {party: position for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties), dtype=np.uint8)
         for parent in nodes_with_children:
-            ii = names_to_integers_dict[parent]
-            for child in dag[parent]:
-                jj = names_to_integers_dict[child]
-                adjacency_matrix[ii, jj] = 1
+            if parent in self.names:
+                ii = names_to_integers_dict[parent]
+                for child in dag[parent]:
+                    jj = names_to_integers_dict[child]
+                    adjacency_matrix[ii, jj] = 1
         # NEW PROPERTY ADDED BY ELIE
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
         settings_per_party_as_lists = [[s] for s in self.private_settings_per_party]
