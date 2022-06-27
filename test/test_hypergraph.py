@@ -35,7 +35,7 @@ class TestHypergraphUtils(unittest.TestCase):
                               [2, 2, 3, 0, None, None],
                               [3, 0, 3, 1, None, None]])
 
-        self.assertTrue(is_knowable(A12B23C31, self.triangle),
+        self.assertTrue(is_knowable(A12B23C31),
                         "A complete copy of the scenario is not knowable")
 
     def test_unknowable_complete(self):
@@ -44,14 +44,14 @@ class TestHypergraphUtils(unittest.TestCase):
                               [2, 1, 2, 0, None, None],
                               [3, 0, 2, 2, None, None]])
 
-        self.assertFalse(is_knowable(A11B12C22, self.triangle),
+        self.assertFalse(is_knowable(A11B12C22),
                          "An open copy of the triangle is knowable")
 
     def test_knowable_partial(self):
         # A11 in the triangle should be knowable
         A11 = np.array([[1, 1, 0, 1, None, None]])
 
-        self.assertTrue(is_knowable(A11, self.triangle),
+        self.assertTrue(is_knowable(A11),
                          "Knowable monomials of a subset of parties "
                          + "are unknowable")
 
@@ -61,7 +61,7 @@ class TestHypergraphUtils(unittest.TestCase):
                                 [2, 1, 1, 0, 0, 0, 0, None, None],
                                 [3, 0, 1, 2, 1, 1, 0, None, None]])
 
-        self.assertFalse(is_knowable(A11B11C1211, self.bowtie),
+        self.assertFalse(is_knowable(A11B11C1211),
                          "Unknowable monomials of a subset of parties "
                          + "are knowable")
 

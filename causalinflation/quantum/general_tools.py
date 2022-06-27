@@ -687,7 +687,7 @@ def is_knowable(monomial: ArrayMonomial) -> bool:
     else:
        # We see if, for each source, there is at most one copy used
         return all([len(set(source[np.nonzero(source)])) <= 1
-                    for source in monomial_sources])
+                    for source in np.asarray(monomial)[:, 1:-2].T])
 
 
 def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
