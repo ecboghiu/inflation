@@ -42,7 +42,15 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Encoding-the-causal-scenario">Encoding the causal scenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Encoding-the-inflation-problem">Encoding the inflation problem</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Basics-of-causal-diagrams">Basics of causal diagrams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#The-bilocal-scenario-and-an-inflation">The bilocal scenario and an inflation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Quantum-causal-compatibility-and-an-inflation">Quantum causal compatibility and an inflation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-an-instance-of-InflationProblem">Creating an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#Generating-the-SDP-relaxation">Generating the SDP relaxation</a></li>
 </ul>
 </li>
@@ -355,55 +363,163 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="Tutorial">
 <h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this headline">¶</a></h1>
-<p>The package implementation follows an object-oriented design. There are two main objects that need to be understood.</p>
-<div class="section" id="Encoding-the-causal-scenario">
-<h2>Encoding the causal scenario<a class="headerlink" href="#Encoding-the-causal-scenario" title="Permalink to this headline">¶</a></h2>
-<p>The first object of interest is <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>. When instantiating this object, we pass it all the relevant information about the causal scenario and the type of inflation we want to perform.</p>
-<p>Causal relationships are encoded through a Bayesian Directed-Acyclic-Graph, or DAG, for short. The nodes of the graph represent random variables, which can be either observable or unobservable. Directed arrows between the nodes encode direct causal influence between one node and another. The acyclicity of the graph avoids the existence of causal loops.</p>
-<p>For applications to physics, another class of random variables is often considered, called “settings”. These correspond to observable variables on whose outcome we condition in order to obtain the observed data. In a physics setting, this could correspond to measuring one property of a system or another.</p>
-<p>For a simple causal scenario in physics, consider the so called <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119">“bilocal scenario”</a>:</p>
-<p><img alt="drawing" class="no-scaled-link" src="_images/bilocal.PNG" style="width: 400px;" /></p>
-<p>Here we have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two hidden quantum variables <span class="math notranslate nohighlight">\(U_{AB}\)</span> and <span class="math notranslate nohighlight">\(U_{B'C}\)</span> and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>.</p>
-<p>After importing the package, we encode information about the causal scenario into <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> as follows:</p>
+<p>The CausalInflation package generates semidefinite programming relaxions of inflations of causal scenarios. The implementation follows an object-oriented design. There are three main steps:</p>
+<ul class="simple">
+<li><p>Encode the causal scenario and desired inflation as an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>.</p></li>
+<li><p>Generate the semidefinite programming relaxation of the desired inflation through <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>.</p></li>
+<li><p>Export the relaxation to a file and/or solve the problem.</p></li>
+</ul>
+<p>We will now go through the steps above in more detail. This tutorial is available on the documentation <a class="reference external" href="https://ecboghiu.github.io/inflation/">webpage</a> and it can also be downloaded as a ready-to-run Jupyter Notebook from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>. If already familiar with quantum inflation, the quickest way to get started is to run some examples from the Examples section, which can also be downloaded as a Jupyter Notebook.</p>
+<p>We start by importing everything that we will need:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
-
-<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Encoding-the-inflation-problem">
+<h2>Encoding the inflation problem<a class="headerlink" href="#Encoding-the-inflation-problem" title="Permalink to this headline">¶</a></h2>
+<p>The first object of interest is <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform. Currently, only quantum inflation is implemented.</p>
+<div class="section" id="Basics-of-causal-diagrams">
+<h3>Basics of causal diagrams<a class="headerlink" href="#Basics-of-causal-diagrams" title="Permalink to this headline">¶</a></h3>
+<p>Causal relationships are encoded through a Bayesian Directed-Acyclic-Graph, or “DAG”, for short. The nodes of the graph represent random variables, which can be either observable (visible) or unobservable (hidden). Directed arrows encode causal influence between nodes. Arrows point from parent nodes to the nodes causally influences by the parent, called children nodes. The acyclicity property avoids the presence of causal loops.</p>
+<p>For applications to physics, another class of random variables is often considered called “settings”. These correspond to observable variables on whose outcome we condition in order to obtain the observed data. For example, this might correspond to measuring one property of a system versus another in an experiment. Furthermore, in physics we also have sources generating quantum correlations. These are modeled through the presence of quantum unobservable variables, which represent quantum
+systems. Arrows going into a quantum node represent controlling the corresponding quantum system. Arrows going out of the quantum node represent the children of the quantum node generating statistics by measuring the quantum system.</p>
+</div>
+<div class="section" id="The-bilocal-scenario-and-an-inflation">
+<h3>The bilocal scenario and an inflation<a class="headerlink" href="#The-bilocal-scenario-and-an-inflation" title="Permalink to this headline">¶</a></h3>
+<p>As an example, let us consider the <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119">“quantum bilocal scenario”</a>, which corresponds to correlations achievable by 3 space-like separated parties (A, B and C) measuring 2 quantum systems <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> that never interacted in the past. The subindex of the quantum states indicates which parties hace access to and can measure that state. This is a simple scenario where <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">entanglement
+swapping</a> can be performed, which is at the heart of the <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">quantum teleportation protocol</a>. The corresponding DAG is:</p>
+<p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_1.PNG" style="width: 400px;" /></p>
+<p>We have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two hidden quantum variables <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> of unbounded dimension denoting the particles and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>. We assume all observed variables have cardinality 2, i.e., <span class="math notranslate nohighlight">\(a,b,c,x,y,z \in \{0, 1\}\)</span>, where lower case denotes specific values the random variables (in upper case) can take. In this causal scenario, correlations are generated by
+measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span>. Notice that the probability distribution is not conditioned on <span class="math notranslate nohighlight">\(\rho_{AB}, \rho_{BC}\)</span> as they are hidden variables.</p>
+</div>
+<div class="section" id="Quantum-causal-compatibility-and-an-inflation">
+<h3>Quantum causal compatibility and an inflation<a class="headerlink" href="#Quantum-causal-compatibility-and-an-inflation" title="Permalink to this headline">¶</a></h3>
+<p>One of the fundamental questions to ask is whether a given a probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the quantum sources <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The quantum inflation technique is one technique that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario
+where we take two copies of each source, as in the following figure:</p>
+<p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_inflated.PNG" style="width: 400px;" /></p>
+<p>Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">NPA hierarcy</a>. The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., <span class="math notranslate nohighlight">\(\rho_{AB}{=}\rho_{AB}^1{=}\rho_{AB}^2\)</span>. If after running the
+SDP, we get that it is infeasible, then we can conclude that the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>.</p>
+<div class="section" id="Creating-an-instance-of-InflationProblem">
+<h4>Creating an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code><a class="headerlink" href="#Creating-an-instance-of-InflationProblem" title="Permalink to this headline">¶</a></h4>
+<p>We encode information about the causal scenario as an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> as follows:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span> <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">])</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
-<p>The DAG is encoded through a dictionary where directed arrows are encoded as keys in the dictionary pointing to all nodes stored in the value of the key. In <code class="docutils literal notranslate"><span class="pre">outcomes_per_party</span></code> and <code class="docutils literal notranslate"><span class="pre">settings_per_party</span></code> we specify the cardinalities of the observable nodes and measurement settings respectively. We can optionally specify other party names in <code class="docutils literal notranslate"><span class="pre">names</span></code>; the default is alphabetical. The paremeter <code class="docutils literal notranslate"><span class="pre">inflation_level_per_source</span></code> determines how many copies of the quantum sources we consider in the
-inflated graph. See <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a> for more information about quantum inflation.</p>
+<p>The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the parent’s children nodes. The first character of the node name denotes whether the node is visible or hidden. In <code class="docutils literal notranslate"><span class="pre">outcomes_per_party</span></code> and <code class="docutils literal notranslate"><span class="pre">settings_per_party</span></code> we specify the cardinalities of visible nodes. The paremeter <code class="docutils literal notranslate"><span class="pre">inflation_level_per_source</span></code> determines how many copies of the quantum sources we consider in the inflated graph.</p>
+</div>
+</div>
 </div>
 <div class="section" id="Generating-the-SDP-relaxation">
 <h2>Generating the SDP relaxation<a class="headerlink" href="#Generating-the-SDP-relaxation" title="Permalink to this headline">¶</a></h2>
 <p>The next object of interest is <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>. It is an object that takes as input an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationSDP</span>
-
-<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>The first main method, <code class="docutils literal notranslate"><span class="pre">generate_relaxation()</span></code> is that which generates the SDP relaxation of the chosen inflation:</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<p>The first main method, <code class="docutils literal notranslate"><span class="pre">generate_relaxation()</span></code> generates the SDP relaxation of the chosen inflation of a given NPA level.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">column_specification</span><span class="o">=</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-13-ef923ecaee85&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span><span class="ansi-yellow-intense-fg ansi-bold"> </span>InfSDP<span class="ansi-yellow-intense-fg ansi-bold">.</span>generate_relaxation<span class="ansi-yellow-intense-fg ansi-bold">(</span>column_specification<span class="ansi-yellow-intense-fg ansi-bold">=</span><span class="ansi-blue-intense-fg ansi-bold">&#39;npa1&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+
+<span class="ansi-green-intense-fg ansi-bold">c:\users\embog\onedrive - icfo\documents\code\inflation\causalinflation\quantum\InflationSDP.py</span> in <span class="ansi-cyan-fg">generate_relaxation</span><span class="ansi-blue-intense-fg ansi-bold">(self, column_specification)</span>
+<span class="ansi-green-fg">    212</span>
+<span class="ansi-green-fg">    213</span>         monomials_factors<span class="ansi-yellow-intense-fg ansi-bold">,</span> monomials_unfactorised_reordered<span class="ansi-red-fg"> </span><span class="ansi-red-fg">\</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 214</span><span class="ansi-yellow-intense-fg ansi-bold">                             = self._factorize_monomials(remaining_monomials,
+</span><span class="ansi-green-fg">    215</span>                                                         combine_unknowns=True)
+<span class="ansi-green-fg">    216</span>
+
+<span class="ansi-green-intense-fg ansi-bold">c:\users\embog\onedrive - icfo\documents\code\inflation\causalinflation\quantum\InflationSDP.py</span> in <span class="ansi-cyan-fg">_factorize_monomials</span><span class="ansi-blue-intense-fg ansi-bold">(self, monomials, combine_unknowns)</span>
+<span class="ansi-green-fg">   1248</span>             <span class="ansi-green-intense-fg ansi-bold">if</span> len<span class="ansi-yellow-intense-fg ansi-bold">(</span>are_knowable<span class="ansi-yellow-intense-fg ansi-bold">)</span> <span class="ansi-yellow-intense-fg ansi-bold">&gt;=</span> <span class="ansi-cyan-intense-fg ansi-bold">2</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-fg">   1249</span>                 are_knowable   <span class="ansi-yellow-intense-fg ansi-bold">=</span> np<span class="ansi-yellow-intense-fg ansi-bold">.</span>array<span class="ansi-yellow-intense-fg ansi-bold">(</span>are_knowable<span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1250</span><span class="ansi-yellow-intense-fg ansi-bold">                 </span><span class="ansi-green-intense-fg ansi-bold">if</span> <span class="ansi-yellow-intense-fg ansi-bold">(</span>np<span class="ansi-yellow-intense-fg ansi-bold">.</span>count_nonzero<span class="ansi-yellow-intense-fg ansi-bold">(</span>arent_knowable<span class="ansi-yellow-intense-fg ansi-bold">)</span> <span class="ansi-yellow-intense-fg ansi-bold">&gt;</span> <span class="ansi-cyan-intense-fg ansi-bold">1</span><span class="ansi-yellow-intense-fg ansi-bold">)</span> <span class="ansi-green-intense-fg ansi-bold">and</span> combine_unknowns<span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-fg">   1251</span>                     <span class="ansi-red-intense-fg ansi-bold"># Combine unknowables and reorder</span>
+<span class="ansi-green-fg">   1252</span>                     unknowable_factors = np.concatenate(
+
+<span class="ansi-red-intense-fg ansi-bold">NameError</span>: name &#39;arent_knowable&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span><span class="p">,</span> <span class="n">mat</span> <span class="o">=</span> <span class="n">convert_to_human_readable</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-14-b629689b134f&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span><span class="ansi-yellow-intense-fg ansi-bold"> </span>obj<span class="ansi-yellow-intense-fg ansi-bold">,</span> mat <span class="ansi-yellow-intense-fg ansi-bold">=</span> convert_to_human_readable<span class="ansi-yellow-intense-fg ansi-bold">(</span>InfSDP<span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">      2</span> print<span class="ansi-yellow-intense-fg ansi-bold">(</span>mat<span class="ansi-yellow-intense-fg ansi-bold">)</span>
+
+<span class="ansi-red-intense-fg ansi-bold">NameError</span>: name &#39;convert_to_human_readable&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>                            Traceback (most recent call last)
+<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-15-7d0f73e63eb9&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span><span class="ansi-yellow-intense-fg ansi-bold"> </span>InfSDP<span class="ansi-yellow-intense-fg ansi-bold">.</span>set_objective<span class="ansi-yellow-intense-fg ansi-bold">(</span>InfSDP<span class="ansi-yellow-intense-fg ansi-bold">.</span>measurements<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-cyan-intense-fg ansi-bold">0</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-cyan-intense-fg ansi-bold">0</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-cyan-intense-fg ansi-bold">0</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-cyan-intense-fg ansi-bold">0</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-fg">      2</span> InfSDP<span class="ansi-yellow-intense-fg ansi-bold">.</span>solve<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+
+<span class="ansi-green-intense-fg ansi-bold">c:\users\embog\onedrive - icfo\documents\code\inflation\causalinflation\quantum\InflationSDP.py</span> in <span class="ansi-cyan-fg">set_objective</span><span class="ansi-blue-intense-fg ansi-bold">(self, objective, direction)</span>
+<span class="ansi-green-fg">    406</span>             <span class="ansi-green-intense-fg ansi-bold">for</span> monomial<span class="ansi-yellow-intense-fg ansi-bold">,</span> coeff <span class="ansi-green-intense-fg ansi-bold">in</span> objective_as_dict<span class="ansi-yellow-intense-fg ansi-bold">.</span>items<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-fg">    407</span>                 monomial_variable <span class="ansi-yellow-intense-fg ansi-bold">=</span> int<span class="ansi-yellow-intense-fg ansi-bold">(</span>string2int_dict<span class="ansi-yellow-intense-fg ansi-bold">[</span>str<span class="ansi-yellow-intense-fg ansi-bold">(</span>monomial<span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 408</span><span class="ansi-yellow-intense-fg ansi-bold">                 </span>repr <span class="ansi-yellow-intense-fg ansi-bold">=</span> self<span class="ansi-yellow-intense-fg ansi-bold">.</span>_var2repr<span class="ansi-yellow-intense-fg ansi-bold">[</span>monomial_variable<span class="ansi-yellow-intense-fg ansi-bold">]</span>
+<span class="ansi-green-fg">    409</span>                 <span class="ansi-green-intense-fg ansi-bold">if</span> repr <span class="ansi-yellow-intense-fg ansi-bold">&lt;</span> len<span class="ansi-yellow-intense-fg ansi-bold">(</span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>known_moments<span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-fg">    410</span>                     symmetrized_objective<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-cyan-intense-fg ansi-bold">1</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">+=</span><span class="ansi-red-fg"> </span><span class="ansi-red-fg">\</span>
+
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>: &#39;InflationSDP&#39; object has no attribute &#39;_var2repr&#39;
+</pre></div></div>
 </div>
 <p>In the above example, we have chosen “NPA hierarchy level 1”. For the meaning of these levels, see <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013/meta">New Journal of Physics 10.7 (2008): 073013</a>. For other hierarchies that we support, see the documentation of <code class="docutils literal notranslate"><span class="pre">generate_relaxation()</span></code>. What is important to know is that the higher the hierarchy level, the tighter are the</p>
 <p>There are three steps to generate the relaxation:</p>

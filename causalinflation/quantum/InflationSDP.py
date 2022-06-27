@@ -202,7 +202,7 @@ class InflationSDP(object):
                                        monomialset_name2num(remaining_monomials,
                                                             self.names),
                                               disable=not self.verbose,
-                                          desc="Computing canonical forms   ")):
+                                          desc="Computing canonical forms    ")):
             canonical = to_name(to_representative(np.array(mon),
                                                   self.inflation_levels,
                                                   self.commuting),
@@ -537,6 +537,16 @@ class InflationSDP(object):
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
 
+        # Quickfix to a bug introduced in some committ, we need this for the
+        # certificates
+        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
+        names_factorised = []
+        for mon in names[2:]:
+            factors = factorize_monomial(to_numbers(mon, self.names))
+            factors_name = [to_name(factor, self.names) for factor in factors]
+            names_factorised.append(factors_name)
+        names = names[:2].tolist() + names_factorised
+
         polynomial = 0
         for i, row in enumerate(names):
             asprobs = [string2prob(
@@ -584,6 +594,17 @@ class InflationSDP(object):
                  "to apply to other distributions")
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+
+        # Quickfix to a bug introduced in some committ, we need this for the
+        # certificates
+        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
+        names_factorised = []
+        for mon in names[2:]:
+            factors = factorize_monomial(to_numbers(mon, self.names))
+            factors_name = [to_name(factor, self.names) for factor in factors]
+            names_factorised.append(factors_name)
+        names = names[:2].tolist() + names_factorised
+
         polynomial = 0
         for i, row in enumerate(names):
             monomial = sp.S.One
@@ -642,6 +663,16 @@ class InflationSDP(object):
 
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+
+        # Quickfix to a bug introduced in some committ, we need this for the
+        # certificates
+        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
+        names_factorised = []
+        for mon in names[2:]:
+            factors = factorize_monomial(to_numbers(mon, self.names))
+            factors_name = [to_name(factor, self.names) for factor in factors]
+            names_factorised.append(factors_name)
+        names = names[:2].tolist() + names_factorised
 
         polynomial = 0
         for i, row in enumerate(names):
@@ -715,7 +746,7 @@ class InflationSDP(object):
             write_to_mat(self, filename)
 
     def build_columns(self, column_specification, max_monomial_length: int = 0,
-                      return_columns_numerical: bool = True) -> None:
+                      return_columns_numerical: bool = False) -> None:
         """Process the input for the columns of the SDP relaxation.
 
         Parameters

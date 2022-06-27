@@ -42,7 +42,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Function documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">causalinflation</a></li>
 </ul>
 
         </div>
@@ -91,11 +91,11 @@
 <span class="sd">        Number of copies per source in the inflated graph, by default 1</span>
 <span class="sd">        for all sources.</span>
 <span class="sd">    names : List[int], optional</span>
-<span class="sd">        Name of each party, default is alphabetical labels, </span>
+<span class="sd">        Name of each party, default is alphabetical labels,</span>
 <span class="sd">        e.g. [&#39;A&#39;, &#39;B&#39;, ...]</span>
 <span class="sd">    verbose : int, optional</span>
 <span class="sd">        How much information to print, by default 0.</span>
-<span class="sd">    &quot;&quot;&quot;</span>      
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>  <span class="n">dag</span><span class="o">=</span><span class="p">[],</span> <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[],</span> <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[],</span>
                         <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[],</span> <span class="n">names</span><span class="o">=</span><span class="p">[],</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initialize the InflationProblem class.</span>
@@ -144,19 +144,19 @@
                             <span class="s2">&quot; and the hypergraph, does not coincide&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;InflationProblem with &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span> <span class="o">+</span> 
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;InflationProblem with &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span> <span class="o">+</span>
                     <span class="s2">&quot; as hypergraph, &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outcomes_per_party</span><span class="p">)</span> <span class="o">+</span>
                      <span class="s2">&quot; outcomes per party, &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings_per_party</span><span class="p">)</span> <span class="o">+</span>
                      <span class="s2">&quot; settings per party and &quot;</span> <span class="o">+</span>
-                     <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span><span class="p">)</span> <span class="o">+</span> 
+                     <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span><span class="p">)</span> <span class="o">+</span>
                      <span class="s2">&quot; inflation copies per source.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_dag_to_hypergraph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dag</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The DAG is given as a dictionary of the form {parent_node: </span>
+        <span class="sd">&quot;&quot;&quot;The DAG is given as a dictionary of the form {parent_node:</span>
 <span class="sd">        List[children_nodes]}. If the DAG represents a network (i.e.,</span>
 <span class="sd">        it a bipartite graph), it computes the hypergraph representation.</span>
 <span class="sd">        Otherwise, it applies unpacking techniques to transform the DAG</span>
-<span class="sd">        into a network, and tracks the constraints between the nodes in </span>
+<span class="sd">        into a network, and tracks the constraints between the nodes in</span>
 <span class="sd">        the unpacked network.</span>
 
 <span class="sd">        Parameters</span>
@@ -168,14 +168,14 @@
 <span class="sd">        -------</span>
 <span class="sd">        Tuple[hypergraph, constraints]</span>
 <span class="sd">            array with the hypergraph representation of the (unpacked)</span>
-<span class="sd">            scenario and list of relations between the nodes in the </span>
+<span class="sd">            scenario and list of relations between the nodes in the</span>
 <span class="sd">            unpacked hypergraph</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        Exception</span>
 <span class="sd">            Currently non-network scenarios are not implemented.</span>
-<span class="sd">        &quot;&quot;&quot;</span>        
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">sources</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
         <span class="n">is_network</span> <span class="o">=</span> <span class="nb">all</span><span class="p">([</span><span class="nb">all</span><span class="p">([</span><span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">drain</span> <span class="k">for</span> <span class="n">drain</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span> <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">])</span>
