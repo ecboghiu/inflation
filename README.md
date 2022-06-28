@@ -46,9 +46,9 @@ for a, b, c in itertools.product([0, 1], repeat=3):
     if a + b + c == 1:
         P_W_array[a, b, c, x, y, z] = 1 / 3
 
-scenario = InflationProblem(dag={ "rho_AB": ["A", "B"],
-                                  "rho_BC": ["B", "C"],
-                                  "rho_AC": ["A", "C"]}, 
+scenario = InflationProblem(dag={"rho_AB": ["A", "B"],
+                                 "rho_BC": ["B", "C"],
+                                 "rho_AC": ["A", "C"]}, 
                              outcomes_per_party=[2, 2, 2],
                              settings_per_party=[1, 1, 1],
                              inflation_level_per_source=[2, 2, 2])
@@ -57,6 +57,7 @@ sdprelax = InflationSDP(scenario)
 sdprelax.generate_relaxation('npa2')
 sdprelax.set_distribution(P_W_array)
 sdprelax.solve()
+
 print(sdprelax.status)
 ```
 
