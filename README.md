@@ -41,9 +41,10 @@ import numpy as np
 import itertools
 
 P_W_array = np.zeros((2, 2, 2, 1, 1, 1))
+x, y, z = 0, 0, 0
 for a, b, c in itertools.product([0, 1], repeat=3):
     if a + b + c == 1:
-        P_W_array[a, b, c, 0, 0, 0] = 1 / 3
+        P_W_array[a, b, c, x, y, z] = 1 / 3
 
 scenario = InflationProblem(dag={ "rho_AB": ["A", "B"],
                                   "rho_BC": ["B", "C"],
@@ -59,7 +60,7 @@ sdprelax.solve()
 print(sdprelax.status)
 ```
 
-For more information about the theory and other features, please visit the [documentation](https://ecboghiu.github.io/inflation/), and more specifically and [Tutorial](https://ecboghiu.github.io/inflation/_build/html/tutorial.html) and [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) pages.
+For more information about the theory and other features, please visit the [documentation](https://ecboghiu.github.io/inflation/), and more specifically the [Tutorial](https://ecboghiu.github.io/inflation/_build/html/tutorial.html) and [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) pages.
 
 ## How to contribute
 
