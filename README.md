@@ -40,11 +40,11 @@ from causalinflation import InflationProblem, InflationSDP
 import numpy as np
 import itertools
 
-P_W_array = np.zeros((2, 2, 2, 1, 1, 1))
+P_W = np.zeros((2, 2, 2, 1, 1, 1))
 x, y, z = 0, 0, 0
 for a, b, c in itertools.product([0, 1], repeat=3):
     if a + b + c == 1:
-        P_W_array[a, b, c, x, y, z] = 1 / 3
+        P_W[a, b, c, x, y, z] = 1 / 3
 
 scenario = InflationProblem(dag={"rho_AB": ["A", "B"],
                                  "rho_BC": ["B", "C"],
@@ -55,7 +55,7 @@ scenario = InflationProblem(dag={"rho_AB": ["A", "B"],
 
 sdprelax = InflationSDP(scenario)
 sdprelax.generate_relaxation('npa2')
-sdprelax.set_distribution(P_W_array)
+sdprelax.set_distribution(P_W)
 sdprelax.solve()
 
 print(sdprelax.status)
