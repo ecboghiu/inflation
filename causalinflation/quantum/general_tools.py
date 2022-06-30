@@ -606,7 +606,7 @@ def to_name(monomial_numbers: List[List[int]],
     """Go from lists of numbers to string representation.
 
     Comments: this is much quicker (10x) if monomial_numbers is a list of
-    lists than if it a np.array (At least with the current implementation)!
+    lists than if it is a np.array (At least with the current implementation)!
     Around 3-4 microsecs and more than 10 microsecs if input is np.array.
 
     Parameters

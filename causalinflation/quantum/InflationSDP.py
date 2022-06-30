@@ -270,7 +270,7 @@ class InflationSDP(object):
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified, p. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
-        as a request to delete information about past distributions. If p containts
+        as a request to delete information about past distributions. If p contains
         elements that are either None or nan, then this is understood as leaving
         the corresponding variable free in the SDP approximation.
         Args:
