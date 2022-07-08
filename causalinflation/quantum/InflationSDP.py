@@ -1164,7 +1164,9 @@ class InflationSDP(object):
                 total_perm    = find_permutation(list_permuted, list_original)
                 inflation_symmetries.append(total_perm)
             except:
-                warn("The generating set is not closed under source swaps. Some symmetries will not be implemented.")
+                if self.verbose > 0:
+                    warn("The generating set is not closed under source swaps."+
+                         "Some symmetries will not be implemented.")
 
         return inflation_symmetries
 
