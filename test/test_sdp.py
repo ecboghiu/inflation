@@ -1,5 +1,4 @@
 import unittest
-from matplotlib.style import use
 import numpy as np
 
 from ncpol2sdpa.nc_utils import flatten

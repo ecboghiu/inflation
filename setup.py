@@ -16,5 +16,6 @@ setup(
     description = ("Implementations of the Inflation Technique for Causal Inference"),
     license = "Creative Commons License",
     url = "https://github.com/ecboghiu/inflation",
-    packages=['causalinflation'] #long_description=read('README.md')
+    zip_safe=False, # To avoid problems with Numba, https://github.com/numba/numba/issues/4908
+    packages=['causalinflation', 'causalinflation.quantum'] #long_description=read('README.md')
 )

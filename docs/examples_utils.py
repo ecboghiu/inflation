@@ -1,6 +1,7 @@
 from copy import deepcopy
 import itertools
 import numpy as np
+from qutip import tensor, basis, expect, qeye, ket2dm
 
 def pfunc2array(func, outcomes=[2, 2, 2], settings=[1, 1, 1]):
     p = np.zeros([*outcomes, *settings])
@@ -34,6 +35,54 @@ def P_PRbox():
     return P_PRbox_array
 
 P_PRbox_array = P_PRbox()
+
+def get_W_state(N):
+    # Taken from https://github.com/FlavioBaccari/Hierarchy-for-nonlocality-detection
+    """Generates the density matrix for the N-partite W state.
+
+    :param N: number of parties.
+    :type N: int
+
+    :returns: the W density matrix as a qutip.qobj.Qobj
+    """
+    state = tensor([basis(2, 1)] + [basis(2, 0) for _ in range(N - 1)])
+    for i in range(1, N):
+        components = [basis(2, 0) for _ in range(N)]
+        components[i] = basis(2, 1)
+        state += tensor(components)
+    return 1. / N**0.5 * state
+
+
+def get_W_reduced(N):
+    # Taken from https://github.com/FlavioBaccari/Hierarchy-for-nonlocality-detection
+    """Generates the reduced four-body state for the N-partite W state. Since
+    the W state is symmetric, it is independent of the choice of the four
+    parties that one considers.
+
+    :param N: number of parties for the global state.
+    :type N: int
+
+    :returns: the reduced state as a qutip.qobj.Qobj
+    """
+    w = ket2dm(get_W_state(4))
+    rest = ket2dm(tensor([basis(2, 0) for _ in range(4)]))
+
+    return 4. / N * w + (N - 4.) / N * rest
+
+def get_GHZ_reduced(N):
+    # Taken from https://github.com/FlavioBaccari/Hierarchy-for-nonlocality-detection
+    """Generates the reduced four-body state for the N-partite GHZ state. Since
+    the GHZ state is symmetric, it is independent of the choice of the four
+    parties that one considers.
+
+    :param N: number of parties for the global state,
+    :type N: int
+
+    :returns: the reduced state as a qutip.qobj.Qobj
+    """
+    zero = tensor([basis(2, 0) for _ in range(N)])
+    one = tensor([basis(2, 1) for _ in range(N)])
+    return 1 / 2 * (ket2dm(zero) + ket2dm(one))
 
 def bisection(InfSDP, probarray, tol_vis=1e-4, verbose=0, max_iter=20, use_lpi_constraints=False):
     v0, v1 = 0, 1
