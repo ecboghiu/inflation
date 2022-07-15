@@ -502,7 +502,8 @@ def calculate_momentmatrix(cols: List,
 
                     if name not in vardic:
                         vardic[name] = varidx
-                        mon_rev = to_canonical(dot_mon(mon2, mon1))
+                        mon_rev = to_canonical(dot_mon(np.flip(mon2, axis=0),
+                                                       np.flip(mon1, axis=0)))
                         # equiv to name2 != name, but faster?
                         if not np.array_equal(mon, mon_rev):
                             name2 = to_name(mon_rev, names)
