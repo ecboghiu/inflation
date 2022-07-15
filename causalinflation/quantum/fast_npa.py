@@ -478,7 +478,6 @@ def calculate_momentmatrix(cols: List,
     momentmatrix = scipy.sparse.lil_matrix((nrcols, nrcols), dtype=np.uint32)
     if np.array_equal(cols[0], np.array([0])):
         cols[0] = np.array([cols[0]])  # Some function needs [[0]] not []
-    iteration = 0
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i in tqdm(range(nrcols),
                   disable=not verbose,
@@ -497,26 +496,26 @@ def calculate_momentmatrix(cols: List,
                     # If sparse, we don't need this, but for readibility...
                     momentmatrix[i, j] = 0
                 else:
-                    mon = to_canonical(mon)
+                    mon  = to_canonical(mon)
                     name = to_name(mon, names)
 
                     if name not in vardic:
-                        vardic[name] = varidx
-                        mon_rev = to_canonical(dot_mon(np.flip(mon2, axis=0),
-                                                       np.flip(mon1, axis=0)))
-                        # equiv to name2 != name, but faster?
-                        if not np.array_equal(mon, mon_rev):
-                            name2 = to_name(mon_rev, names)
-                            if name2 not in vardic:
-                                vardic[name2] = varidx
+                        mon_rev  = to_canonical(dot_mon(np.flip(mon2, axis=0),
+                                                        np.flip(mon1, axis=0)))
+                        rev_name = to_name(mon_rev, names)
+                        if rev_name not in vardic:
+                            vardic[name] = varidx
+                            if not np.array_equal(mon, mon_rev):
+                                vardic[rev_name] = varidx
+                            varidx += 1
+                        else:
+                            vardic[name] = vardic[rev_name]
                         momentmatrix[i, j] = vardic[name]
-                        varidx += 1
                     else:
                         momentmatrix[i, j] = vardic[name]
                     if i != j:
                         # NOTE: Assuming a REAL moment matrix!!
                         momentmatrix[j, i] = momentmatrix[i, j]
-            iteration += 1
     return momentmatrix, vardic
 
 
