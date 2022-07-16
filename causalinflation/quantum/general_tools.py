@@ -1311,7 +1311,7 @@ def apply_source_swap_monomial(monomial: np.ndarray,
     return new_factors
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def to_representative_aux(monomial_component: np.ndarray
                           ) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps

@@ -17,6 +17,7 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             monomialset_name2num,
                                             monomialset_num2name,
                                             factorize_monomials,
+                                            factorize_monomial,
                                             find_permutation,
                                             apply_source_permutation_coord_input,
                                             from_numbers_to_flat_tuples,
@@ -958,6 +959,28 @@ class InflationSDP(object):
                     for monomial_factors in itertools.product(*meas_ops):
                         monomial = apply_substitutions(
                             np.prod(monomial_factors), self.substitutions)
+                        # The commutation rules in self.substitutions are not
+                        # enough in some occasions when the monomial can be
+                        # factorized. An example is (all indices are inflation
+                        # indices) A13A33A22 and A22A13A33. Both are the same
+                        # because they are composed of two disconnected objects,
+                        # but cannot be brought one to another via two-body
+                        # substitution rules. The solution below is to decompose
+                        # in disconnected components, order them canonically,
+                        # and recombine them.
+                        factor_list = monomial.as_ordered_factors()
+                        num_to_symb = {tuple(to_numbers(str(factor),
+                                                        self.names)[0]): factor
+                                                      for factor in factor_list}
+                        reordered = np.concatenate(
+                                        factorize_monomial(
+                                            to_numbers(str(monomial),
+                                                       self.names)))
+                        # Recombine sorting by party
+                        reordered = np.vstack(sorted(reordered,
+                                                     key=lambda x: x[0]))
+                        monomial = np.prod([translation[tuple(factor)]
+                                            for factor in reordered])
                         mon_length = len(str(monomial).split('*'))
                         if monomial not in symbols and mon_length == len(block):
                             symbols.append(monomial)
@@ -1158,10 +1181,19 @@ class InflationSDP(object):
                                                       flatmeas,
                                                       measnames,
                                                       self.names)
+            # Bring columns to the canonical form using commutations of
+            # connected components
+            for idx in range(len(permuted_cols_ind)):
+                if len(permuted_cols_ind[idx].shape) > 1:
+                    permuted_cols_ind[idx] = np.vstack(
+                                 sorted(np.concatenate(factorize_monomial(
+                                                          permuted_cols_ind[idx]
+                                                                          )),
+                                        key=lambda x: x[0])
+                                                       )
             list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
-
             try:
-                total_perm    = find_permutation(list_permuted, list_original)
+                total_perm = find_permutation(list_permuted, list_original)
                 inflation_symmetries.append(total_perm)
             except:
                 if self.verbose > 0:
