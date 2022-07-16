@@ -1311,14 +1311,13 @@ class InflationSDP(object):
         multiple_unknowable = []
         for idx, [_, are_knowable] in enumerate(factors_are_knowable):
             if len(are_knowable) >= 2:
-                are_knowable   = np.array(are_knowable)
-                arent_knowable = np.invert(are_knowable)
-                if (np.count_nonzero(arent_knowable) > 1) and combine_unknowns:
+                are_knowable = np.array(are_knowable)
+                if (np.count_nonzero(1-are_knowable) > 1) and combine_unknowns:
                     # Combine unknowables and reorder
                     unknowable_factors = np.concatenate(
                         [factor
                            for i, factor in enumerate(monomials_factors[idx][1])
-                            if arent_knowable[i]], axis=0)
+                            if not are_knowable[i]], axis=0)
                     unknowable_factors_ordered = \
                            unknowable_factors[unknowable_factors[:,0].argsort()]
                     # Ugly hack. np.concatenate and np.append were failing
