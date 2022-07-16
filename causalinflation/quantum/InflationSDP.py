@@ -979,7 +979,7 @@ class InflationSDP(object):
                         # Recombine sorting by party
                         reordered = np.vstack(sorted(reordered,
                                                      key=lambda x: x[0]))
-                        monomial = np.prod([translation[tuple(factor)]
+                        monomial = np.prod([num_to_symb[tuple(factor)]
                                             for factor in reordered])
                         mon_length = len(str(monomial).split('*'))
                         if monomial not in symbols and mon_length == len(block):
