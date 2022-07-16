@@ -507,8 +507,7 @@ def calculate_momentmatrix(cols: List,
                     name = to_name(mon, names)
 
                     if name not in vardic:
-                        mon_rev  = to_canonical(dot_mon(np.flip(mon2, axis=0),
-                                                        np.flip(mon1, axis=0)))
+                        mon_rev  = to_canonical(dot_mon(mon2, mon1))
                         rev_name = to_name(mon_rev, names)
                         if rev_name not in vardic:
                             vardic[name] = varidx
