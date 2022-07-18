@@ -203,7 +203,7 @@ class InflationSDP(object):
                                        monomialset_name2num(remaining_monomials,
                                                             self.names),
                                               disable=not self.verbose,
-                                          desc="Computing canonical forms    ")):
+                                          desc="Computing canonical forms   ")):
             canonical = to_name(to_representative(np.array(mon),
                                                   self.inflation_levels,
                                                   self.commuting),
@@ -283,7 +283,7 @@ class InflationSDP(object):
             monomials_factors_vars[idx][1] = factor_variables
         self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
-        self.known_moments      = np.array([0, 1])
+        self.known_moments      = {0: 0, 1: 1}
         self.semiknown_moments  = np.array([])
         self._objective_as_dict = {1: 0.}
 
@@ -352,8 +352,9 @@ class InflationSDP(object):
                                                             self.semiknown_reps,
                                                             self.monomials_list,
                                                             stop_counting)
-        self.known_moments = np.array(
-            [0, 1] + [mul(factors) for _, factors in final_monomials_list_numerical[:self._n_known]])
+        self.known_moments = {**{0: 0, 1: 1},
+                              **{var: mul(factors)
+            for var, factors in final_monomials_list_numerical[:self._n_known]}}
 
 
         # The indices for the variables in the semiknowns also need shifting
@@ -362,9 +363,18 @@ class InflationSDP(object):
             self.semiknown_moments = np.array([[var, mul(val[:-1]), val[-1]]
                                                for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]])
 
+        # If there is an objective, update it with the numerical values set
+        # if XXX:
+        #     for all keys in the objective
+        #         if the key corresponds to a number
+        #             add the number to the variable 1
+        #             delete the key
+        #     self.objective_as_dict
 
-    def set_objective(self, objective: sp.core.symbol.Symbol,
-                            direction: str ='max') -> None:
+
+    def set_objective(self,
+                      objective: sp.core.symbol.Symbol,
+                      direction: str ='max') -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
 
@@ -398,16 +408,16 @@ class InflationSDP(object):
             # objects that we have used previously
             objective = simplify_polynomial(sp.expand(objective),
                                             self.substitutions)
-            # Write objective as dictionary
+            # Build string-to-variable dictionary
             string2int_dict = {**{'0': '0', '1': '1'},
                                **dict(self._monomials_list_all[:, ::-1])}
-            objective_as_dict = objective.as_coefficients_dict()
             # Express objective in terms of representatives
             symmetrized_objective = {1: 0.}
-            for monomial, coeff in objective_as_dict.items():
+            for monomial, coeff in objective.as_coefficients_dict().items():
                 monomial_variable = int(string2int_dict[str(monomial)])
                 repr = self._var2repr[monomial_variable]
-                if repr < len(self.known_moments):
+                # If the objective contains a known value add it to the constant
+                if repr in self.known_moments:
                     symmetrized_objective[1] += \
                                             sign*coeff*self.known_moments[repr]
                 elif repr in symmetrized_objective.keys():
@@ -421,8 +431,8 @@ class InflationSDP(object):
         # If there is a conflict between fixed known moments
         # and variables in the objective
         vars_in_objective = self._objective_as_dict.keys()
-        vars_known = [i for i in range(
-            2, len(self.known_moments)) if self.known_moments[i] != np.nan]
+        vars_known = [key for key, val in self.known_moments.items()
+                                               if (key > 1) and (val != np.nan)]
         for var in vars_known:
             if var in vars_in_objective:
                 raise Exception(
@@ -485,12 +495,13 @@ class InflationSDP(object):
         # Process the dual certificate in a generic form
         if self.status in ['feasible', 'infeasible']:
             coeffs      = self.solution_object['dual_certificate']
-            names       = self.monomials_list[:self._n_known]
-            aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
-            clean_names = np.concatenate((aux01, names[:, 1]))
-            self.dual_certificate = np.array(list(zip(coeffs, clean_names)),
+            names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
+                            if idx > 1]    # We'd probably want this cleaner
+            aux01       = np.array([[0, '0'], [0, '1']], dtype=object)[:, 1]
+            clean_names = np.concatenate((['0', '1'], names))
+            self.dual_certificate = np.array(list(zip(coeffs.keys(),
+                                                      clean_names)),
                                              dtype=object)
-
             self.dual_certificate_lowerbound = 0
 
     def certificate_as_probs(self, clean: bool=False,
