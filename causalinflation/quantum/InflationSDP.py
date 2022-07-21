@@ -1318,12 +1318,13 @@ class InflationSDP(object):
                                                 verbose=self.verbose)
         monomials_factors_names = monomialset_num2name(
             monomials_factors, self.names)
-        monomials_factors_knowable = self.label_knowable_and_unknowable(monomials_factors)
+        monomials_factors_knowable, factors_are_knowable = \
+                           self.label_knowable_and_unknowable(monomials_factors)
 
         # Some counting
-        self._n_known           = np.sum(is_knowable[:, 1] == 'Yes')
-        self._n_something_known = np.sum(is_knowable[:, 1] != 'No')
-        self._n_unknown         = np.sum(is_knowable[:, 1] == 'No')
+        self._n_known           = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
+        self._n_something_known = np.sum(monomials_factors_knowable[:, 1] != 'No')
+        self._n_unknown         = np.sum(monomials_factors_knowable[:, 1] == 'No')
 
         # Recombine multiple unknowable variables into one, and reorder the
         # factors so the unknowable is always last
@@ -1358,15 +1359,15 @@ class InflationSDP(object):
 
         # Reorder according to known, semiknown and unknown.
         monomials_factors_reordered = np.concatenate(
-            [monomials_factors[is_knowable[:, 1] == 'Yes'],
-             monomials_factors[is_knowable[:, 1] == 'Semi'],
-             monomials_factors[is_knowable[:, 1] == 'No']]
+            [monomials_factors[monomials_factors_knowable[:, 1] == 'Yes'],
+             monomials_factors[monomials_factors_knowable[:, 1] == 'Semi'],
+             monomials_factors[monomials_factors_knowable[:, 1] == 'No']]
                                                             )
 
         monomials_unfactorised_reordered = np.concatenate(
-            [monomials[is_knowable[:, 1] == 'Yes'],
-             monomials[is_knowable[:, 1] == 'Semi'],
-             monomials[is_knowable[:, 1] == 'No']]
+            [monomials[monomials_factors_knowable[:, 1] == 'Yes'],
+             monomials[monomials_factors_knowable[:, 1] == 'Semi'],
+             monomials[monomials_factors_knowable[:, 1] == 'No']]
                                                             )
         monomials_unfactorised_reordered = monomials_unfactorised_reordered.astype(object)
         monomials_unfactorised_reordered[:, 0] = monomials_unfactorised_reordered[:, 0].astype(int)
@@ -1436,8 +1437,11 @@ class InflationSDP(object):
         """
         monomials_factors_knowable = np.empty_like(monomials_factors_input)
         monomials_factors_knowable[:, 0] = monomials_factors_input[:, 0]
+        factors_are_knowable       = np.empty_like(monomials_factors_input)
+        factors_are_knowable[:, 0] = monomials_factors_input[:, 0]
         for idx, [_, monomial_factors] in enumerate(tqdm(monomials_factors_input, disable=True)):
             factors_known_list = [self.atomic_knowable_q(factor) for factor in monomial_factors]
+            factors_are_knowable[idx][1] = factors_known_list
             if all(factors_known_list):
                 knowable = 'Yes'
             elif any(factors_known_list):
@@ -1445,4 +1449,4 @@ class InflationSDP(object):
             else:
                 knowable = 'No'
             monomials_factors_knowable[idx][1] = knowable
-        return monomials_factors_knowable
+        return monomials_factors_knowable, factors_are_knowable
