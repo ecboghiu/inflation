@@ -3,7 +3,7 @@ import scipy.sparse
 import sys
 
 def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
-                         objective: dict = {}, known_vars=[0, 1],
+                         objective: dict = {1: 0.}, known_vars={0: 0, 1: 1},
                          semiknown_vars=[], positive_vars=[], verbose: int = 0,
                          feas_as_optim: bool = False,
                          solverparameters: dict = {}):
@@ -43,17 +43,16 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     nr_unknown = nr_variables - nr_known
 
     F0 = scipy.sparse.lil_matrix(positionsmatrix.shape)
-    for variable in range(nr_known):
-        F0[scipy.sparse.find(positionsmatrix == variable)[:2]] = known_vars[variable]
+    for var in known_vars.keys():
+        F0[scipy.sparse.find(positionsmatrix == var)[:2]] = known_vars[var]
     F0 = Matrix.sparse(*F0.shape, *F0.nonzero(), F0[F0.nonzero()].todense().A[0])
 
     # List of empty sparse matrices
     Fi = []
-    for variable in range(nr_known, nr_variables):
+    for variable in set(range(nr_variables)) - set(known_vars.keys()):
+        # Set to 1 where the unknown variable is
         F = scipy.sparse.lil_matrix(positionsmatrix.shape)
-        F[scipy.sparse.find(positionsmatrix == variable)[:2]] = 1  # Set to 1 where the unknown variable is
-        #print(F.todense())
-        #F = Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].todense().A[0])
+        F[scipy.sparse.find(positionsmatrix == variable)[:2]] = 1
         Fi.append(F)
 
     if semiknown_vars.size > 0:
@@ -61,7 +60,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         x1 = semiknown_vars[:, 0].astype(int)
         k  = semiknown_vars[:, 1]
         x2 = semiknown_vars[:, 2].astype(int)
-        for idx, variable in enumerate(range(nr_known, nr_variables)):
+        for idx, variable in enumerate(set(range(nr_variables))
+                                       - set(known_vars.keys())):
             if variable in x1:
                 Fi[x2[idx]-nr_known] = Fi[x2[idx]-nr_known] + k[idx] * Fi[x1[idx]-nr_known]
             else:
@@ -206,9 +206,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         print("Unexpected error: {0}".format(e))
 
     if status_str in ['feasible', 'infeasible']:
-        vars_of_interest = {}
-        coeffs = np.zeros(nr_known, dtype=np.float64)
-        for var in range(nr_known):
+        coeffs = {}
+        for var in known_vars.keys():
             coeffs[var] = np.sum(ymat[np.where(positionsmatrix == var)])
         if feas_as_optim:
             # In feasibility-as-optimization problems, the certificate is offset

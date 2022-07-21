@@ -130,7 +130,7 @@ def dot_mon_commuting(mon1: np.ndarray,
     """
 
     if mon1.size <= 1:
-        return mon_lexsorted(mon2) # mon2 
+        return mon_lexsorted(mon2) # mon2
     if mon2.size <= 1:
         return mon_lexsorted(mon1) #mon_sorted_by_parties(reverse_mon(mon1))
     # So it seems there is no implementation of lexsort in numba, so for now
@@ -145,8 +145,7 @@ def dot_mon_commuting(mon1: np.ndarray,
     return mon_lexsorted(mon)
 
 
-def mon_lexsorted(mon: np.ndarray
-                 ) -> np.ndarray:
+def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
     """Return a monomial sorted lexicographically.
 
     The sorting keys are as follows. The first key is the parties, the second
@@ -198,8 +197,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=True, cache=cache)
-def mon_is_zero(mon: np.ndarray
-                ) -> bool_:
+def mon_is_zero(mon: np.ndarray) -> bool_:
     """Function which checks if there is a product of two orthogonal projectors,
     and returns True if so.
 
@@ -413,7 +411,7 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     return mon
 
 
-@jit(nopython=True, cache=cache)
+# @jit(nopython=True, cache=cache)
 def to_canonical(mon: np.ndarray) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
 
@@ -435,7 +433,14 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
         if np.array_equal(mon, prev):
             break
         prev = mon
-    return remove_projector_squares(mon)
+    # The two-body commutation rules in are not enough in some occasions when
+    # the monomial can be factorized. An example is (all indices are inflation
+    # indices) A13A33A22 and A22A13A33. The solution below is to decompose
+    # in disconnected components, order them canonically, and recombine them.
+    mon = np.concatenate(factorize_monomial(remove_projector_squares(mon)))
+    # Recombine reordering according to party
+    mon = np.vstack(sorted(mon, key=lambda x: x[0]))
+    return mon
 
 
 def calculate_momentmatrix(cols: List,
@@ -480,7 +485,6 @@ def calculate_momentmatrix(cols: List,
     momentmatrix = scipy.sparse.lil_matrix((nrcols, nrcols), dtype=np.uint32)
     if np.array_equal(cols[0], np.array([0])):
         cols[0] = np.array([cols[0]])  # Some function needs [[0]] not []
-    iteration = 0
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i in tqdm(range(nrcols),
                   disable=not verbose,
@@ -499,25 +503,25 @@ def calculate_momentmatrix(cols: List,
                     # If sparse, we don't need this, but for readibility...
                     momentmatrix[i, j] = 0
                 else:
-                    mon = to_canonical(mon)
+                    mon  = to_canonical(mon)
                     name = to_name(mon, names)
 
                     if name not in vardic:
-                        vardic[name] = varidx
-                        mon_rev = to_canonical(dot_mon(mon2, mon1))
-                        # equiv to name2 != name, but faster?
-                        if not np.array_equal(mon, mon_rev):
-                            name2 = to_name(mon_rev, names)
-                            if name2 not in vardic:
-                                vardic[name2] = varidx
+                        mon_rev  = to_canonical(dot_mon(mon2, mon1))
+                        rev_name = to_name(mon_rev, names)
+                        if rev_name not in vardic:
+                            vardic[name] = varidx
+                            if not np.array_equal(mon, mon_rev):
+                                vardic[rev_name] = varidx
+                            varidx += 1
+                        else:
+                            vardic[name] = vardic[rev_name]
                         momentmatrix[i, j] = vardic[name]
-                        varidx += 1
                     else:
                         momentmatrix[i, j] = vardic[name]
                     if i != j:
                         # NOTE: Assuming a REAL moment matrix!!
                         momentmatrix[j, i] = momentmatrix[i, j]
-            iteration += 1
     return momentmatrix, vardic
 
 
@@ -581,3 +585,118 @@ def calculate_momentmatrix_commuting(cols: np.ndarray,
                         momentmatrix[j, i] = momentmatrix[i, j]
             iteration += 1
     return momentmatrix, vardic
+
+################################################################################
+# Had to insert this because of circular imports
+from collections import defaultdict, deque
+def factorize_monomial(monomial: np.ndarray
+                       ) -> np.ndarray:
+    """This function splits a moment/expectation value into products of
+    moments according to the support of the operators within the moment.
+
+    The moment is encoded as a 2d array where each row is an operator.
+    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
+    In each row, the columns encode the following information:
+
+    First column:       The party index, *starting from 1*.
+                        (1 for A, 2 for B, etc.)
+    Last two columns:   The input x, starting from zero and then the
+                        output a, starting from zero.
+    In between:         This encodes the support of the operator. There
+                        are as many columns as sources/quantum states.
+                        Column j represents source j-1 (-1 because the 1st
+                        col is the party). If the value is 0, then this
+                        operator does not measure this source. If the value
+                        is for e.g. 2, then this operator is acting on
+                        copy 2 of source j-1.
+
+    The output is a list of lists, where each list represents another
+    monomial s.t. their product is equal to the original monomial.
+
+    Parameters
+    ----------
+    monomial : np.ndarray
+        Monomial encoded as a 2d array where each row is an operator.
+
+    Returns
+    -------
+    np.ndarray
+        A list of lists, where each list represents the monomial factors.
+
+    Examples
+    --------
+    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                             [2, 1, 0, 2, 0, 0],
+                             [1, 0, 3, 3, 0, 0],
+                             [3, 3, 5, 0, 0, 0],
+                             [3, 1, 4, 0, 0, 0],
+                             [3, 6, 6, 0, 0, 0],
+                             [3, 4, 5, 0, 0, 0]])
+    >>> factorised = factorize_monomial(monomial)
+    [array([[1, 0, 1, 1, 0, 0]]),
+     array([[1, 0, 3, 3, 0, 0]]),
+     array([[2, 1, 0, 2, 0, 0],
+            [3, 1, 4, 0, 0, 0]]),
+     array([[3, 3, 5, 0, 0, 0],
+            [3, 4, 5, 0, 0, 0]]),
+     array([[3, 6, 6, 0, 0, 0]])]
+
+    """
+    monomial = np.array(monomial, dtype=np.ubyte)
+    components_indices = np.zeros((len(monomial), 2), dtype=np.ubyte)
+    # Add labels to see if the components have been used
+    components_indices[:, 0] = np.arange(0, len(monomial), 1)
+
+    inflation_indices = monomial[:, 1:-2]
+    disconnected_components = []
+
+    idx = 0
+    while idx < len(monomial):
+        component = []
+        if components_indices[idx, 1] == 0:
+            component.append(idx)
+            components_indices[idx, 1] = 1
+            jdx = 0
+            # Iterate over all components that are connected
+            while jdx < len(component):
+                nonzero_sources = np.nonzero(
+                    inflation_indices[component[jdx]])[0]
+                for source in nonzero_sources:
+                    overlapping = inflation_indices[:,
+                           source] == inflation_indices[component[jdx], source]
+                    # Add the components that overlap to the lookup list
+                    component += components_indices[overlapping &
+                                (components_indices[:, 1] == 0)][:, 0].tolist()
+                    # Specify that the components that overlap have been used
+                    components_indices[overlapping, 1] = 1
+                jdx += 1
+        if len(component) > 0:
+            disconnected_components.append(component)
+        idx += 1
+
+    disconnected_components = [
+        monomial[np.array(component)] for component in disconnected_components]
+
+    # Order each factor as determined by the input monomial. We store the
+    # the positions in the monomial so we can read it off afterwards.
+    # Method taken from
+    # https://stackoverflow.com/questions/64944815/
+    # sort-a-list-with-duplicates-based-on-another-
+    # list-with-same-items-but-different
+    monomial = monomial.tolist()
+    indexes = defaultdict(deque)
+    for i, x in enumerate(monomial):
+        indexes[tuple(x)].append(i)
+
+    for idx, component in enumerate(disconnected_components):
+        # ordered_component = sorted(component.tolist(),
+        #                            key=lambda x: monomial.index(x))
+        ids = sorted([indexes[tuple(x)].popleft() for x in component.tolist()])
+        ordered_component = [monomial[id] for id in ids]
+        disconnected_components[idx] = np.array(ordered_component)
+
+    # Order independent factors canonically
+    disconnected_components = sorted(disconnected_components,
+                                     key=lambda x: x[0].tolist())
+
+    return disconnected_components

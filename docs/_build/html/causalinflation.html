@@ -42,7 +42,8 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Tutorial and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">causalinflation</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">causalinflation package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
@@ -304,12 +305,13 @@ by default False.</p></li>
 </dl>
 <dl class="py method">
 <dt id="causalinflation.InflationSDP.build_columns">
-<code class="sig-name descname">build_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span></em>, <em class="sig-param"><span class="n">max_monomial_length</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">return_columns_numerical</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.build_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.build_columns" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">build_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span></em>, <em class="sig-param"><span class="n">max_monomial_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">return_columns_numerical</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.build_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.build_columns" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process the input for the columns of the SDP relaxation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>sympy.core.symbol.Symbol</em><em>]</em><em>]</em>) – See description in the self.generate_relaxation()` method.</p></li>
+<li><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>,</em>) – List[sympy.core.symbol.Symbol]]
+See description in the self.generate_relaxation()` method.</p></li>
 <li><p><strong>max_monomial_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of letters in a monomial in the generating set,
 by default 0 (no limit). Example: if we choose ‘local1’ for 3
 parties, this gives the set {1, A, B, C, A*B, A*C, B*C, A*B*C}.
@@ -322,8 +324,8 @@ than 2 letters, and the generating set becomes:
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_2output_correlators">
-<code class="sig-name descname">certificate_as_2output_correlators</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.symbol.Symbol<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_2output_correlators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_2output_correlators" title="Permalink to this definition">¶</a></dt>
+<dt id="causalinflation.InflationSDP.certificate_as_correlators">
+<code class="sig-name descname">certificate_as_correlators</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.symbol.Symbol<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_correlators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_correlators" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give certificate as symbolic sum of 2-output correlators that
 is greater than or equal to 0. Only valid for 2-output problems.</p>
 <dl class="field-list simple">
@@ -412,7 +414,7 @@ of decimals specified. Defaults to 3.</p></li>
 
 <dl class="py method">
 <dt id="causalinflation.InflationSDP.generate_relaxation">
-<code class="sig-name descname">generate_relaxation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'npa1'</span></em>, <em class="sig-param"><span class="n">use_numba</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">generate_relaxation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'npa1'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
 <dt>Creates the SDP relaxation of the quantum inflation problem</dt><dd><p>using the NPA hierarchy and applies the symmetries inferred
 from inflation.</p>
@@ -485,21 +487,6 @@ C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as ‘npa2’ for
 operators in <cite>self.measurements</cite>. This list needs to have the
 identity <cite>sympy.S.One</cite> as the first element.</p>
 </dd>
-<dt>parallel<span class="classifier">bool, optional</span></dt><dd><p>Whether to use multiple cpus, only works with ncpol2sdpa,
-i.e., with <cite>use_numba=False</cite>. Note that usually Numba is faster
-than parallel ncpol2sdpa. ncpol2sdpa should only be used for
-features not present in the numba functions, such as using
-arbitrary substituion rules.</p>
-</dd>
-<dt>sandwich_positivity<span class="classifier">bool, optional</span></dt><dd><p>Whether to identify monomials that are positive because of
-sandwiching. See description of <cite>is_physical</cite>, by default True.</p>
-</dd>
-<dt>use_numba<span class="classifier">bool, optional</span></dt><dd><p>Whether to use JIT compiled functions with Numba, by default True.
-If False, the program will use ncpol2sdpa to for various steps.
-Note that usually Numba is faster than ncpol2sdpa. ncpol2sdpa
-should only be used for features not present in the numba functions,
-such as for implementing arbitrary substituion rules.</p>
-</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
@@ -513,8 +500,9 @@ doesn’t pass any argument to set_distribution, then this is understood
 as a request to delete information about past distributions. If p containts
 elements that are either None or nan, then this is understood as leaving
 the corresponding variable free in the SDP approximation.
-:param p: Multidimensional array encoding the probability vector,
+:param p: Multidimensional array encoding the probability
 :type p: np.ndarray
+:param vector:
 :param which is called as p[a:
 :param b:
 :param c:
@@ -525,14 +513,15 @@ the corresponding variable free in the SDP approximation.
 :param …] where a:
 :param b:
 :param c:
-:param … are outputs:
-:param and x: even if the inputs have cadinality 1,
-:param y: even if the inputs have cadinality 1,
-:param z: even if the inputs have cadinality 1,
-:param … are inputs. Note: even if the inputs have cadinality 1,
+:param …:
+:param are outputs and x: even if the inputs have
+:param y: even if the inputs have
+:param z: even if the inputs have
+:param … are inputs. Note: even if the inputs have
+:param cardinality 1:
 :param they must still be specified:
-:param and the corresponding axis dimensions are 1:
-:param respectively.:
+:param and the corresponding:
+:param axis dimensions are 1.:
 :param use_lpi_constraints: Specification whether linearized
 :type use_lpi_constraints: bool
 :param polynomial constraints: 2203.16543)
@@ -542,7 +531,7 @@ the corresponding variable free in the SDP approximation.
 
 <dl class="py method">
 <dt id="causalinflation.InflationSDP.set_objective">
-<code class="sig-name descname">set_objective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective</span><span class="p">:</span> <span class="n">sympy.core.symbol.Symbol</span></em>, <em class="sig-param"><span class="n">direction</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'max'</span></em>, <em class="sig-param"><span class="n">extraobjexpr</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_objective" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_objective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective</span><span class="p">:</span> <span class="n">sympy.core.symbol.Symbol</span></em>, <em class="sig-param"><span class="n">direction</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'max'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_objective" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set or change the objective function of the polynomial optimization
 problem.</p>
 <dl class="field-list simple">
@@ -550,9 +539,6 @@ problem.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>objective</strong> (<em>sympy.core.symbol.Symbol</em>) – Describes the objective function.</p></li>
 <li><p><strong>direction</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the optimization (max/min), by default ‘max’</p></li>
-<li><p><strong>extraobjexpr</strong> (<em>_type_</em><em>, </em><em>optional</em>) – Optional parameter of a string expression of a
-linear combination of moment matrix elements to be
-included in the objective function, by default None</p></li>
 </ul>
 </dd>
 </dl>
@@ -560,21 +546,28 @@ included in the objective function, by default None</p></li>
 
 <dl class="py method">
 <dt id="causalinflation.InflationSDP.solve">
-<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interpreter</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'MOSEKFusion'</span></em>, <em class="sig-param"><span class="n">pure_feasibility_problem</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">solverparameters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.solve" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interpreter</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'MOSEKFusion'</span></em>, <em class="sig-param"><span class="n">feas_as_optim</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">solverparameters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.solve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Call a solver on the SDP relaxation. Upon successful solution, it
 returns the primal and dual objective values along with the solution
-matrices. It also sets these values in the <cite>sdpRelaxation</cite> object,
-along with some status information.</p>
+matrices.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>interpreter</strong> (<em>str</em><em>, </em><em>optional</em>) – The solver to be called, by default ‘MOSEKFusion’. It also accepts
-‘CVXPY’ and ‘PICOS’. It is recommended to use ‘MOSEKFusion’.</p></li>
-<li><p><strong>pure_feasibility_problem</strong> (<em>bool</em><em>, </em><em>optional</em>) – For problems with constant objective, whether to do a pure
-feasibility problem or to relax it to an optimisation where
-we maximize the minimum eigenvalue. If such eigenvalue is negative,
-then the original problem is infeasible. By default False.</p></li>
-<li><p><strong>solverparameters</strong> (<em>_type_</em><em>, </em><em>optional</em>) – Extra parmeters to be sent to the solver, by default None.</p></li>
+<li><p><strong>interpreter</strong> (<em>str</em><em>, </em><em>optional</em>) – The solver to be called, by default ‘MOSEKFusion’.</p></li>
+<li><p><strong>feas_as_optim</strong> (<em>bool</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>Instead of solving the feasibility problem</dt><dd><ol class="arabic simple">
+<li><p>find vars such that Gamma &gt;= 0</p></li>
+</ol>
+</dd>
+<dt>setting this label to True solves instead the problem</dt><dd><ol class="arabic simple" start="2">
+<li><p>max lambda such that Gamma - lambda*Id &gt;= 0.</p></li>
+</ol>
+</dd>
+</dl>
+<p>The correspondence is that the result of (2) is positive if (1) is
+feasible and negative otherwise. By default False.</p>
+</p></li>
+<li><p><strong>solverparameters</strong> (<em>_type_</em><em>, </em><em>optional</em>) – Extra parameters to be sent to the solver, by default None.</p></li>
 </ul>
 </dd>
 </dl>

@@ -40,9 +40,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Function documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">causalinflation</a></li>
 </ul>
 
         </div>
@@ -71,30 +71,13 @@
              
   <h1>Source code for causalinflation.quantum.sdp_utils</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">scipy.sparse</span>
 <span class="kn">import</span> <span class="nn">sys</span>
-
-<span class="kn">from</span> <span class="nn">scipy.io</span> <span class="kn">import</span> <span class="n">loadmat</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
-
-<div class="viewcode-block" id="load_MATLAB_SDP"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.sdp_utils.load_MATLAB_SDP">[docs]</a><span class="k">def</span> <span class="nf">load_MATLAB_SDP</span><span class="p">(</span><span class="n">filename_SDP_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use_semiknown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    <span class="n">SDP_data</span> <span class="o">=</span> <span class="n">loadmat</span><span class="p">(</span><span class="n">filename_SDP_info</span><span class="p">)</span>
-    <span class="n">positionsmatrix</span> <span class="o">=</span> <span class="n">SDP_data</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># Offset index to Python convention (== counting from 0, not 1)</span>
-    <span class="n">known_vars_array</span> <span class="o">=</span> <span class="n">SDP_data</span><span class="p">[</span><span class="s1">&#39;known_moments&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-
-    <span class="k">if</span> <span class="n">use_semiknown</span><span class="p">:</span>
-        <span class="n">semiknown_vars_array</span> <span class="o">=</span> <span class="n">SDP_data</span><span class="p">[</span><span class="s1">&#39;propto&#39;</span><span class="p">]</span>  <span class="c1"># Index in MATLAB convention!</span>
-        <span class="n">semiknown_vars_array</span><span class="p">[:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]]</span> <span class="o">+=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># Offset the first and second column index to Python convention</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">semiknown_vars_array</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Needed for del to work. Would be happy not to have to write this</span>
-
-    <span class="k">return</span> <span class="n">positionsmatrix</span><span class="p">,</span> <span class="p">[],</span> <span class="n">known_vars_array</span><span class="p">,</span> <span class="n">semiknown_vars_array</span></div>
 
 <div class="viewcode-block" id="solveSDP_MosekFUSION"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION">[docs]</a><span class="k">def</span> <span class="nf">solveSDP_MosekFUSION</span><span class="p">(</span><span class="n">positionsmatrix</span><span class="p">:</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">,</span>
                          <span class="n">objective</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span> <span class="n">known_vars</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
                          <span class="n">semiknown_vars</span><span class="o">=</span><span class="p">[],</span> <span class="n">positive_vars</span><span class="o">=</span><span class="p">[],</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                         <span class="n">pure_feasibility_problem</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                         <span class="n">feas_as_optim</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                          <span class="n">solverparameters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}):</span>
 
     <span class="kn">import</span> <span class="nn">mosek</span>
@@ -103,7 +86,7 @@
                              <span class="n">AccSolutionStatus</span><span class="p">,</span> <span class="n">ProblemStatus</span>
 
     <span class="n">semiknown_vars</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">semiknown_vars</span><span class="p">)</span>
-    <span class="n">positive_vars</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">positive_vars</span><span class="p">)</span>
+    <span class="n">positive_vars</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">positive_vars</span><span class="p">)</span>
 
     <span class="n">solve_dual</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="k">if</span> <span class="n">solverparameters</span><span class="p">:</span>
@@ -197,7 +180,7 @@
                     <span class="n">ci_constraints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="n">F</span><span class="p">),</span> <span class="n">Domain</span><span class="o">.</span><span class="n">lessThan</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ci_constraints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="n">F</span><span class="p">),</span> <span class="n">Domain</span><span class="o">.</span><span class="n">equalsTo</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">pure_feasibility_problem</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">feas_as_optim</span><span class="p">:</span>
                 <span class="n">ci_constraints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="n">Matrix</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">mat_dim</span><span class="p">)),</span> <span class="n">Domain</span><span class="o">.</span><span class="n">equalsTo</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># ! The primal formulation uses a lot more RAM and is slower!! Only use if the problem is not too big</span>
@@ -214,7 +197,7 @@
         <span class="c1">#G = M.variable(&quot;G&quot;, Domain.unbounded([mat_dim, mat_dim]))</span>
         <span class="c1">#const = M.constraint(G, Domain.inPSDCone(mat_dim))</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="s2">&quot;G&quot;</span><span class="p">,</span> <span class="n">Domain</span><span class="o">.</span><span class="n">inPSDCone</span><span class="p">(</span><span class="n">mat_dim</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">pure_feasibility_problem</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">feas_as_optim</span><span class="p">:</span>
             <span class="n">M</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">ObjectiveSense</span><span class="o">.</span><span class="n">Maximize</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mat_dim</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">):</span>
@@ -252,6 +235,7 @@
 
         <span class="n">status</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">getProblemStatus</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="n">ProblemStatus</span><span class="o">.</span><span class="n">PrimalAndDualFeasible</span><span class="p">:</span>
+            <span class="n">status_str</span> <span class="o">=</span> <span class="s1">&#39;feasible&#39;</span>
             <span class="k">if</span> <span class="n">solve_dual</span><span class="p">:</span>
                 <span class="n">ymat</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">level</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">mat_dim</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">])</span>
                 <span class="n">xmat</span> <span class="o">=</span> <span class="n">F0</span><span class="o">.</span><span class="n">getDataAsArray</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">mat_dim</span><span class="p">,</span><span class="n">mat_dim</span><span class="p">))</span>
@@ -265,6 +249,7 @@
             <span class="n">primal</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">primalObjValue</span><span class="p">()</span>
             <span class="n">dual</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dualObjValue</span><span class="p">()</span>
         <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="n">ProblemStatus</span><span class="o">.</span><span class="n">DualInfeasible</span> <span class="ow">or</span> <span class="n">status</span> <span class="o">==</span> <span class="n">ProblemStatus</span><span class="o">.</span><span class="n">PrimalInfeasible</span><span class="p">:</span>
+            <span class="n">status_str</span> <span class="o">=</span> <span class="s1">&#39;infeasible&#39;</span>
             <span class="k">if</span> <span class="n">solve_dual</span><span class="p">:</span>
                 <span class="n">ymat</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">level</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">mat_dim</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">])</span>
                 <span class="n">xmat</span> <span class="o">=</span> <span class="n">F0</span><span class="o">.</span><span class="n">getDataAsArray</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">mat_dim</span><span class="p">,</span><span class="n">mat_dim</span><span class="p">))</span>
@@ -276,12 +261,14 @@
                 <span class="n">ymat</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">dual</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">mat_dim</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">])</span>
                 <span class="n">xmat</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">level</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">mat_dim</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">])</span>
         <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="n">ProblemStatus</span><span class="o">.</span><span class="n">Unknown</span><span class="p">:</span>
+            <span class="n">status_str</span> <span class="o">=</span> <span class="s1">&#39;unknown&#39;</span>
             <span class="c1"># The solutions status is unknown. The termination code</span>
             <span class="c1"># indicates why the optimizer terminated prematurely.</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The solution status is unknown.&quot;</span><span class="p">)</span>
             <span class="n">symname</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">Env</span><span class="o">.</span><span class="n">getcodedesc</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">rescode</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">getSolverIntInfo</span><span class="p">(</span><span class="s2">&quot;optimizeResponse&quot;</span><span class="p">))))</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Termination code: </span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symname</span><span class="p">,</span> <span class="n">desc</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="n">status_str</span> <span class="o">=</span> <span class="s1">&#39;other&#39;</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Another unexpected problem status </span><span class="si">{0}</span><span class="s2"> is obtained.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">status</span><span class="p">))</span>
     <span class="k">except</span> <span class="n">OptimizeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Optimization failed. Error: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
@@ -290,90 +277,20 @@
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unexpected error: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
-
-    <span class="n">INFEASIBILITY_THRESHOLD</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e-6</span>
-
-    <span class="n">vars_of_interest</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nr_known</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_known</span><span class="p">):</span>
-        <span class="n">coeffs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ymat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">positionsmatrix</span> <span class="o">==</span> <span class="n">var</span><span class="p">)])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">pure_feasibility_problem</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">objective</span><span class="p">:</span>  <span class="c1"># i.e., if doing a relaxed feasibility problem, a maximization of the minimum eigenvalue</span>
-        <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="n">primal</span>  <span class="c1"># If the minimum eiganvalue is negative, the certificate is that this minimum eigenvalue is</span>
-    <span class="n">vars_of_interest</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;sol&#39;</span><span class="p">:</span> <span class="n">primal</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span> <span class="n">xmat</span><span class="p">,</span> <span class="s1">&#39;dual_certificate&#39;</span><span class="p">:</span> <span class="n">coeffs</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">:</span> <span class="n">ymat</span><span class="p">,</span> <span class="s1">&#39;xi&#39;</span><span class="p">:</span> <span class="n">xi_list</span><span class="p">}</span>
-    <span class="k">return</span> <span class="n">vars_of_interest</span><span class="p">,</span> <span class="n">primal</span></div>
-
-
-
-
-<div class="viewcode-block" id="read_from_sdpa"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.sdp_utils.read_from_sdpa">[docs]</a><span class="k">def</span> <span class="nf">read_from_sdpa</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-        <span class="n">problem</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">nvars</span><span class="p">,</span> <span class="n">nblocs</span><span class="p">,</span> <span class="n">blocstructure</span><span class="p">,</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]</span>
-
-    <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">problem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Reading problem&#39;</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">status_str</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;feasible&#39;</span><span class="p">,</span> <span class="s1">&#39;infeasible&#39;</span><span class="p">]:</span>
+        <span class="n">vars_of_interest</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nr_known</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_known</span><span class="p">):</span>
+            <span class="n">coeffs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ymat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">positionsmatrix</span> <span class="o">==</span> <span class="n">var</span><span class="p">)])</span>
+        <span class="k">if</span> <span class="n">feas_as_optim</span><span class="p">:</span>
+            <span class="c1"># In feasibility-as-optimization problems, the certificate is offset</span>
+            <span class="c1"># by the optimal value</span>
+            <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="n">primal</span>
+        <span class="n">vars_of_interest</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;sol&#39;</span><span class="p">:</span> <span class="n">primal</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">:</span> <span class="n">xmat</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">:</span> <span class="n">ymat</span><span class="p">,</span>
+                            <span class="s1">&#39;dual_certificate&#39;</span><span class="p">:</span> <span class="n">coeffs</span><span class="p">,</span> <span class="s1">&#39;xi&#39;</span><span class="p">:</span> <span class="n">xi_list</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">vars_of_interest</span><span class="p">,</span> <span class="n">primal</span><span class="p">,</span> <span class="n">status_str</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">mat</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)))</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">mat</span><span class="p">,</span> <span class="n">obj</span></div>
-
-
-<div class="viewcode-block" id="create_array_from_sdpa"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.sdp_utils.create_array_from_sdpa">[docs]</a><span class="k">def</span> <span class="nf">create_array_from_sdpa</span><span class="p">(</span><span class="n">sdpa_mat</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="n">sdpa_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sdpa_mat</span><span class="p">)</span>
-    <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">sdpa_mat</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]))</span>
-    <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">sdpa_mat</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="n">sdpa_mat</span>
-    <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
-        <span class="n">mat</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">var</span><span class="p">,</span> <span class="n">val</span><span class="p">])</span>
-        <span class="n">mat</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">var</span><span class="p">,</span> <span class="n">val</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">mat</span></div>
-
-<div class="viewcode-block" id="extract_from_ncpol"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.sdp_utils.extract_from_ncpol">[docs]</a><span class="k">def</span> <span class="nf">extract_from_ncpol</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Extracts the moment matrix, monomial list and objective function from an</span>
-<span class="sd">    SdpRelaxation object from ncpol2sdpa</span>
-<span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">prob_filename</span> <span class="o">=</span> <span class="s1">&#39;temp_SDPAProblem.dat-s&#39;</span>
-    <span class="n">mon_filename</span>  <span class="o">=</span> <span class="s1">&#39;temp_monomials.txt&#39;</span>
-    <span class="n">problem</span><span class="o">.</span><span class="n">write_to_file</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">)</span>
-    <span class="n">problem</span><span class="o">.</span><span class="n">save_monomial_index</span><span class="p">(</span><span class="n">mon_filename</span><span class="p">)</span>
-    <span class="n">momentmatrix</span><span class="p">,</span> <span class="n">objective</span><span class="p">,</span> <span class="n">monomials</span> <span class="o">=</span> <span class="n">read_problem_from_file</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">,</span>
-                                                                <span class="n">mon_filename</span><span class="p">,</span>
-                                                                <span class="n">verbose</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">mon_filename</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">momentmatrix</span><span class="p">,</span> <span class="n">objective</span><span class="p">,</span> <span class="n">monomials</span></div>
-
-<div class="viewcode-block" id="read_problem_from_file"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.sdp_utils.read_problem_from_file">[docs]</a><span class="k">def</span> <span class="nf">read_problem_from_file</span><span class="p">(</span><span class="n">filename_momentmatrix</span><span class="p">,</span>
-                           <span class="n">filename_monomials</span><span class="p">,</span>
-                           <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="n">problem</span><span class="p">,</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">read_from_sdpa</span><span class="p">(</span><span class="n">filename_momentmatrix</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
-    <span class="n">problem_arr</span>  <span class="o">=</span> <span class="n">create_array_from_sdpa</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
-    <span class="c1"># Reserve variables 0 and 1 for constant entries with 0 and 1, respectively</span>
-    <span class="c1"># The original notation puts constants in the variable 0, so we must split</span>
-    <span class="c1"># this and have proper variables start counting from 2</span>
-    <span class="c1"># Have the variables begin from 2</span>
-    <span class="n">problem_arr</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="c1"># The constants, which are now under variable 1, are split in zeros and ones</span>
-    <span class="n">problem_arr</span><span class="p">[(</span><span class="n">problem_arr</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">problem_arr</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">problem_arr</span><span class="p">[(</span><span class="n">problem_arr</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">problem_arr</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">obj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">,</span> <span class="s1">&#39;[&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">,</span> <span class="s1">&#39;]&#39;</span><span class="p">)))</span>
-    <span class="n">nonzerovariables</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">obj</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">nonzerocoefficients</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="n">nonzerovariables</span><span class="p">]</span>
-    <span class="c1"># Indexing of variables begins in 1 in ncpol2sdpa, plus the extra index from</span>
-    <span class="c1"># splitting the constants makes an offset of 2</span>
-    <span class="n">nonzerovariables</span> <span class="o">+=</span> <span class="mi">2</span>
-    <span class="n">obj</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nonzerovariables</span><span class="p">,</span> <span class="n">nonzerocoefficients</span><span class="p">))</span>
-    <span class="n">monomials_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">filename_monomials</span><span class="p">,</span>
-                                   <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
-    <span class="c1"># Monomials in ncpol2sdpa begin from 1, but now they must begin from 2</span>
-    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">)):</span>
-        <span class="n">monomials_list</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">problem_arr</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">monomials_list</span></div>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">status_str</span></div>
 </pre></div>
 
            </div>
