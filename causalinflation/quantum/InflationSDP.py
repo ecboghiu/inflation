@@ -17,6 +17,7 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             monomialset_name2num,
                                             monomialset_num2name,
                                             factorize_monomials,
+                                            factorize_monomial,
                                             find_permutation,
                                             apply_source_permutation_coord_input,
                                             from_numbers_to_flat_tuples,
@@ -179,8 +180,8 @@ class InflationSDP(object):
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
-        problem_arr, monomials_list, mon_string2int = self._build_momentmatrix()
-        self._monomials_list_all = monomials_list
+        problem_arr, self._monomials_list_all, self._mon_string2int = \
+                                                      self._build_momentmatrix()
         if self.verbose > 1:
             print("Number of variables before symmetrization:",
                   len(self._monomials_list_all))
@@ -198,16 +199,30 @@ class InflationSDP(object):
         # to bring the monomials in the user-inputted objective function
         # to a canonoical form! But this is not implemented yet.
         symmetric_arr, orbits, remaining_monomials \
-                        = self._apply_inflation_symmetries(problem_arr,
-                                                           monomials_list,
-                                                           inflation_symmetries)
+                    = self._apply_inflation_symmetries(problem_arr,
+                                                       self._monomials_list_all,
+                                                       inflation_symmetries)
         # Associate the names of all copies to the same variable
-        for key, val in mon_string2int.items():
-            mon_string2int[key] = orbits[val]
-        # Factorize the symmetrized monomials, identifying knowable, etc
+        for key, val in self._mon_string2int.items():
+            self._mon_string2int[key] = orbits[val]
+
+        # Bring remaining monomials to a representative form, and add the
+        # corresponding identifications to the dictionary
+        for idx, [var, mon] in enumerate(tqdm(
+                                       monomialset_name2num(remaining_monomials,
+                                                            self.names),
+                                              disable=not self.verbose,
+                                          desc="Computing canonical forms   ")):
+            canonical = to_name(to_representative(np.array(mon),
+                                                  self.inflation_levels,
+                                                  self.commuting),
+                                self.names)
+            remaining_monomials[idx][1] = canonical
+            self._mon_string2int[canonical] = var
+
         monomials_factors, monomials_unfactorised_reordered \
-                            = self._factorize_monomials(remaining_monomials)
-        monomials_factors = self._combine_products_of_unknowns(monomials_factors)
+                            = self._factorize_monomials(remaining_monomials,
+                                                        combine_unknowns=True)
 
         self.monomials_list = monomials_unfactorised_reordered
 
@@ -219,7 +234,7 @@ class InflationSDP(object):
         self._var2repr = {key: variable_dict[val]
                               for key, val in orbits.items()}
         self._mon2indx = {key: variable_dict[val]
-                              for key, val in mon_string2int.items()}
+                              for key, val in self._mon_string2int.items()}
 
         # Change objects to new variables
         self.momentmatrix = symmetric_arr[:, :, 0].astype(int)
@@ -251,16 +266,33 @@ class InflationSDP(object):
                       [self.monomials_list[phys-2]
                                            for phys in self.physical_monomials])
 
-
         # Store the variables that will be relevant when setting a distribution
         # and into which variables they factorize
-        monomials_factors_vars = [[var, [self._mon2indx[to_name(factor,
-                                                                self.names)]
-                                         for factor in factors]]
-                                  for var, factors in monomials_factors]
+        monomials_factors_vars = np.empty_like(monomials_factors).tolist()
+        for idx, [var, factors] in enumerate(monomials_factors):
+            monomials_factors_vars[idx][0] = var
+            factor_variables = []
+            for factor in factors:
+                try:
+                    factor_variables.append(self._mon2indx[
+                               to_name(to_representative(np.array(factor),
+                                                         self.inflation_levels,
+                                                         self.commuting),
+                                       self.names)])
+                except KeyError:
+                    # If the unknown variable doesn't appear anywhere else, add
+                    # it to the list
+                    self._n_unknown += 1
+                    var_idx = self._n_something_known + self._n_unknown
+                    self._mon2indx[to_name(to_representative(np.array(factor),
+                                                          self.inflation_levels,
+                                                             self.commuting),
+                            self.names)] = var_idx
+                    factor_variables.append(var_idx)
+            monomials_factors_vars[idx][1] = factor_variables
         self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
-        self.known_moments      = np.array([0, 1])
+        self.known_moments      = {0: 0, 1: 1}
         self.semiknown_moments  = np.array([])
         self._objective_as_dict = {1: 0.}
 
@@ -329,19 +361,29 @@ class InflationSDP(object):
                                                             self.semiknown_reps,
                                                             self.monomials_list,
                                                             stop_counting)
-        self.known_moments = np.array(
-            [0, 1] + [mul(factors) for _, factors in final_monomials_list_numerical[:self._n_known]])
+        self.known_moments = {**{0: 0, 1: 1},
+                              **{var: mul(factors)
+            for var, factors in final_monomials_list_numerical[:self._n_known]}}
 
 
         # The indices for the variables in the semiknowns also need shifting
-        self.semiknown_moments = []
+        self.semiknown_moments = np.array([])
         if self.use_lpi_constraints:
             self.semiknown_moments = np.array([[var, mul(val[:-1]), val[-1]]
                                                for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]])
 
+        # If there is an objective, update it with the numerical values set
+        # if XXX:
+        #     for all keys in the objective
+        #         if the key corresponds to a number
+        #             add the number to the variable 1
+        #             delete the key
+        #     self.objective_as_dict
 
-    def set_objective(self, objective: sp.core.symbol.Symbol,
-                            direction: str ='max') -> None:
+
+    def set_objective(self,
+                      objective: sp.core.symbol.Symbol,
+                      direction: str ='max') -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
 
@@ -375,16 +417,16 @@ class InflationSDP(object):
             # objects that we have used previously
             objective = simplify_polynomial(sp.expand(objective),
                                             self.substitutions)
-            # Write objective as dictionary
+            # Build string-to-variable dictionary
             string2int_dict = {**{'0': '0', '1': '1'},
                                **dict(self._monomials_list_all[:, ::-1])}
-            objective_as_dict = objective.as_coefficients_dict()
             # Express objective in terms of representatives
             symmetrized_objective = {1: 0.}
-            for monomial, coeff in objective_as_dict.items():
+            for monomial, coeff in objective.as_coefficients_dict().items():
                 monomial_variable = int(string2int_dict[str(monomial)])
                 repr = self._var2repr[monomial_variable]
-                if repr < len(self.known_moments):
+                # If the objective contains a known value add it to the constant
+                if repr in self.known_moments:
                     symmetrized_objective[1] += \
                                             sign*coeff*self.known_moments[repr]
                 elif repr in symmetrized_objective.keys():
@@ -398,8 +440,8 @@ class InflationSDP(object):
         # If there is a conflict between fixed known moments
         # and variables in the objective
         vars_in_objective = self._objective_as_dict.keys()
-        vars_known = [i for i in range(
-            2, len(self.known_moments)) if self.known_moments[i] != np.nan]
+        vars_known = [key for key, val in self.known_moments.items()
+                                               if (key > 1) and (val != np.nan)]
         for var in vars_known:
             if var in vars_in_objective:
                 raise Exception(
@@ -439,10 +481,6 @@ class InflationSDP(object):
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
-        if np.array(self.semiknown_moments).size > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions")
 
         semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
 
@@ -466,12 +504,13 @@ class InflationSDP(object):
         # Process the dual certificate in a generic form
         if self.status in ['feasible', 'infeasible']:
             coeffs      = self.solution_object['dual_certificate']
-            names       = self.monomials_list[:self._n_known]
-            aux01       = np.array([[0, ['0']], [0, ['1']]], dtype=object)[:, 1]
-            clean_names = np.concatenate((aux01, names[:, 1]))
-            self.dual_certificate = np.array(list(zip(coeffs, clean_names)),
+            names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
+                            if idx > 1]    # We'd probably want this cleaner
+            aux01       = np.array([[0, '0'], [0, '1']], dtype=object)[:, 1]
+            clean_names = np.concatenate((['0', '1'], names))
+            self.dual_certificate = np.array(list(zip(coeffs.keys(),
+                                                      clean_names)),
                                              dtype=object)
-
             self.dual_certificate_lowerbound = 0
 
     def certificate_as_probs(self, clean: bool=False,
@@ -504,6 +543,10 @@ class InflationSDP(object):
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
         # C: why did I write this??
         # names can still contain duplicated names, so we need to remove them
         # new_dual_certificate = {tuple(name): 0 for name in names}
@@ -514,6 +557,16 @@ class InflationSDP(object):
 
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+
+        # Quickfix to a bug introduced in some committ, we need this for the
+        # certificates
+        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
+        names_factorised = []
+        for mon in names[2:]:
+            factors = factorize_monomial(to_numbers(mon, self.names))
+            factors_name = [to_name(factor, self.names) for factor in factors]
+            names_factorised.append(factors_name)
+        names = names[:2].tolist() + names_factorised
 
         polynomial = 0
         for i, row in enumerate(names):
@@ -556,8 +609,23 @@ class InflationSDP(object):
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+
+        # Quickfix to a bug introduced in some committ, we need this for the
+        # certificates
+        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
+        names_factorised = []
+        for mon in names[2:]:
+            factors = factorize_monomial(to_numbers(mon, self.names))
+            factors_name = [to_name(factor, self.names) for factor in factors]
+            names_factorised.append(factors_name)
+        names = names[:2].tolist() + names_factorised
+
         polynomial = 0
         for i, row in enumerate(names):
             monomial = sp.S.One
@@ -609,8 +677,23 @@ class InflationSDP(object):
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
+
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+
+        # Quickfix to a bug introduced in some committ, we need this for the
+        # certificates
+        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
+        names_factorised = []
+        for mon in names[2:]:
+            factors = factorize_monomial(to_numbers(mon, self.names))
+            factors_name = [to_name(factor, self.names) for factor in factors]
+            names_factorised.append(factors_name)
+        names = names[:2].tolist() + names_factorised
 
         polynomial = 0
         for i, row in enumerate(names):
@@ -684,7 +767,7 @@ class InflationSDP(object):
             write_to_mat(self, filename)
 
     def build_columns(self, column_specification, max_monomial_length: int = 0,
-                      return_columns_numerical: bool = True) -> None:
+                      return_columns_numerical: bool = False) -> None:
         """Process the input for the columns of the SDP relaxation.
 
         Parameters
@@ -711,10 +794,10 @@ class InflationSDP(object):
                     # or [np.array([0]), np.array([[1, 1, 1, 0, 0, 0]]), np.array([[1, 1, 1, 0, 0, 0],[2, 2, 1, 0, 0, 0]]), ...]
                     columns = [np.array(mon, dtype=np.uint8) for mon in column_specification]
                 elif len(np.array(column_specification[1]).shape) == 1:
-                    # If the depth of column_specification is just 2, 
-                    # then the input must be in the form of 
+                    # If the depth of column_specification is just 2,
+                    # then the input must be in the form of
                     # e.g., [[], [0], [1], [0, 0]] -> {1, A{:}, B{:}, (A*A){:}}
-                    # which just specifies the party structure in the 
+                    # which just specifies the party structure in the
                     # generating set
                     columns = self._build_cols_from_col_specs(column_specification)
             else:
@@ -896,6 +979,28 @@ class InflationSDP(object):
                     for monomial_factors in itertools.product(*meas_ops):
                         monomial = apply_substitutions(
                             np.prod(monomial_factors), self.substitutions)
+                        # The commutation rules in self.substitutions are not
+                        # enough in some occasions when the monomial can be
+                        # factorized. An example is (all indices are inflation
+                        # indices) A13A33A22 and A22A13A33. Both are the same
+                        # because they are composed of two disconnected objects,
+                        # but cannot be brought one to another via two-body
+                        # substitution rules. The solution below is to decompose
+                        # in disconnected components, order them canonically,
+                        # and recombine them.
+                        factor_list = monomial.as_ordered_factors()
+                        num_to_symb = {tuple(to_numbers(str(factor),
+                                                        self.names)[0]): factor
+                                                      for factor in factor_list}
+                        reordered = np.concatenate(
+                                        factorize_monomial(
+                                            to_numbers(str(monomial),
+                                                       self.names)))
+                        # Recombine sorting by party
+                        reordered = np.vstack(sorted(reordered,
+                                                     key=lambda x: x[0]))
+                        monomial = np.prod([num_to_symb[tuple(factor)]
+                                            for factor in reordered])
                         mon_length = len(str(monomial).split('*'))
                         if monomial not in symbols and mon_length == len(block):
                             symbols.append(monomial)
@@ -1096,13 +1201,24 @@ class InflationSDP(object):
                                                       flatmeas,
                                                       measnames,
                                                       self.names)
+            # Bring columns to the canonical form using commutations of
+            # connected components
+            for idx in range(len(permuted_cols_ind)):
+                if len(permuted_cols_ind[idx].shape) > 1:
+                    permuted_cols_ind[idx] = np.vstack(
+                                 sorted(np.concatenate(factorize_monomial(
+                                                          permuted_cols_ind[idx]
+                                                                          )),
+                                        key=lambda x: x[0])
+                                                       )
             list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
-            
             try:
-                total_perm    = find_permutation(list_permuted, list_original)
+                total_perm = find_permutation(list_permuted, list_original)
                 inflation_symmetries.append(total_perm)
             except:
-                warn("The generating set is not closed under source swaps. Some symmetries will not be implemented.")
+                if self.verbose > 0:
+                    warn("The generating set is not closed under source swaps."+
+                         "Some symmetries will not be implemented.")
 
         return inflation_symmetries
 
@@ -1175,15 +1291,20 @@ class InflationSDP(object):
 
         return symmetric_arr.astype(int), orbits, remaining_monomials
 
-    def _factorize_monomials(self, remaining_monomials: np.ndarray
+    def _factorize_monomials(self,
+                             monomials: np.ndarray,
+                             combine_unknowns: bool=True
                              ) -> Tuple[np.ndarray, np.ndarray]:
         """Splits the monomials into factors according to the supports of the
         operators.
 
         Parameters
         ----------
-        remaining_monomials : np.ndarray
+        monomials : np.ndarray
             List of unfactorised monomials.
+        combine_unknowns : bool
+            Whether combining the unknown monomials into a single one.
+            Default True.
 
         Returns
         -------
@@ -1192,52 +1313,66 @@ class InflationSDP(object):
             and unknown moments and also the corresponding unfactorised
             monomials, also reordered.
         """
-        # TODO see why I cannot just plug in remaining_monomials instead of monomials_list??
-        monomials_factors = factorize_monomials(monomialset_name2num(
-            remaining_monomials, self.names), verbose=self.verbose)
+        monomials_factors = factorize_monomials(
+                                monomialset_name2num(monomials, self.names),
+                                                verbose=self.verbose)
         monomials_factors_names = monomialset_num2name(
             monomials_factors, self.names)
         monomials_factors_knowable = self.label_knowable_and_unknowable(monomials_factors)
 
         # Some counting
-        self._n_known = np.sum(monomials_factors_knowable[:, 1] == 'Yes')
-        self._n_something_known = np.sum(
-            monomials_factors_knowable[:, 1] != 'No')
-        self._n_unknown = np.sum(monomials_factors_knowable[:, 1] == 'No')
+        self._n_known           = np.sum(is_knowable[:, 1] == 'Yes')
+        self._n_something_known = np.sum(is_knowable[:, 1] != 'No')
+        self._n_unknown         = np.sum(is_knowable[:, 1] == 'No')
+
+        # Recombine multiple unknowable variables into one, and reorder the
+        # factors so the unknowable is always last
+        multiple_unknowable = []
+        for idx, [_, are_knowable] in enumerate(factors_are_knowable):
+            if len(are_knowable) >= 2:
+                are_knowable = np.array(are_knowable)
+                if (np.count_nonzero(1-are_knowable) > 1) and combine_unknowns:
+                    # Combine unknowables and reorder
+                    unknowable_factors = np.concatenate(
+                        [factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                            if not are_knowable[i]], axis=0)
+                    unknowable_factors_ordered = \
+                           unknowable_factors[unknowable_factors[:,0].argsort()]
+                    # Ugly hack. np.concatenate and np.append were failing
+                    monomials_factors[idx][1] = \
+                        ([factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                            if are_knowable[i]]
+                        + [unknowable_factors_ordered])
+                else:
+                    # Just reorder
+                    monomials_factors[idx][1] = \
+                        ([factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                         if are_knowable[i]]
+                        +
+                        [factor
+                           for i, factor in enumerate(monomials_factors[idx][1])
+                          if not are_knowable[i]])
 
         # Reorder according to known, semiknown and unknown.
         monomials_factors_reordered = np.concatenate(
-            [monomials_factors[monomials_factors_knowable[:, 1] == 'Yes'],
-             monomials_factors[monomials_factors_knowable[:, 1] == 'Semi'],
-             monomials_factors[monomials_factors_knowable[:, 1] == 'No']]
+            [monomials_factors[is_knowable[:, 1] == 'Yes'],
+             monomials_factors[is_knowable[:, 1] == 'Semi'],
+             monomials_factors[is_knowable[:, 1] == 'No']]
                                                             )
 
         monomials_unfactorised_reordered = np.concatenate(
-            [remaining_monomials[monomials_factors_knowable[:, 1] == 'Yes'],
-             remaining_monomials[monomials_factors_knowable[:, 1] == 'Semi'],
-             remaining_monomials[monomials_factors_knowable[:, 1] == 'No']]
+            [monomials[is_knowable[:, 1] == 'Yes'],
+             monomials[is_knowable[:, 1] == 'Semi'],
+             monomials[is_knowable[:, 1] == 'No']]
                                                             )
         monomials_unfactorised_reordered = monomials_unfactorised_reordered.astype(object)
         monomials_unfactorised_reordered[:, 0] = monomials_unfactorised_reordered[:, 0].astype(int)
 
         return monomials_factors_reordered, monomials_unfactorised_reordered
 
-    def _combine_products_of_unknowns(self, monomials_factors):
-        for idx, line in enumerate(
-                monomials_factors[self._n_known:self._n_something_known, :]):
-            var = line[0]
-            factors = np.array(line[1])
-            where_unknown = np.array(
-                [not self.atomic_knowable_q(factor) for factor in factors])
-            factors_unknown = factors[where_unknown]
-            joined_unknowns = to_canonical(
-                np.concatenate(tuple(factor for factor in factors_unknown))
-                )
-            factors_known = factors[np.invert(where_unknown)]
-            new_line = [var, factors_known.tolist() + [joined_unknowns]]
-            monomials_factors[idx + self._n_known] = new_line
-        return monomials_factors
-    
     def _find_positive_monomials(self, monomials_factors: np.ndarray,
                                        sandwich_positivity=True):
         ispositive = np.empty_like(monomials_factors)

@@ -1,5 +1,4 @@
 import unittest
-#from matplotlib.style import use
 import numpy as np
 
 from ncpol2sdpa.nc_utils import flatten
@@ -268,7 +267,7 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-4))
-        self.assertEqual(sdp.known_moments[-1],
+        self.assertEqual(sdp.known_moments[9],
                          (0.5+1e-4)/2 + (0.5-1e-4)/8,
                          "Setting the distribution is failing")
         sdp.solve()
@@ -279,7 +278,7 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions")
         sdp.set_distribution(self.GHZ(0.5 - 1e-4))
-        self.assertEqual(sdp.known_moments[-1],
+        self.assertEqual(sdp.known_moments[9],
                          (0.5-1e-4)/2 + (0.5+1e-4)/8,
                          "Re-setting the distribution is failing")
         sdp.solve()
@@ -331,10 +330,6 @@ class TestSDPOutput(unittest.TestCase):
                           [2, 3, 1, 0, 0, 0]]),
                 np.array([[3, 0, 2, 2, 0, 0],
                           [3, 0, 3, 2, 0, 0]]),
-                np.array([[2, 2, 1, 0, 0, 0],
-                          [2, 3, 1, 0, 0, 0],
-                          [3, 0, 2, 2, 0, 0],
-                          [3, 0, 3, 2, 0, 0]]),
                 np.array([[1, 1, 0, 1, 0, 0],
                           [2, 2, 1, 0, 0, 0],
                           [2, 3, 1, 0, 0, 0],
@@ -347,4 +342,3 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(np.all(sdp.semiknown_moments[:,1] <= 1),
                     ("Semiknown moments need to be of the form " +
                     "mon_index1 = (number<=1) * mon_index2, this is failing!"))
-        #sdp.solve(feas_as_optim=True)

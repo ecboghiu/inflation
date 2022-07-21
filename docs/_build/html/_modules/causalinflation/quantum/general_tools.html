@@ -40,9 +40,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced options</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Function documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">causalinflation</a></li>
 </ul>
 
         </div>
@@ -86,7 +86,6 @@
 <span class="kn">from</span> <span class="nn">ncpol2sdpa</span> <span class="kn">import</span> <span class="n">flatten</span><span class="p">,</span> <span class="n">generate_operators</span><span class="p">,</span> <span class="n">generate_variables</span>
 <span class="kn">from</span> <span class="nn">ncpol2sdpa.nc_utils</span> <span class="kn">import</span> <span class="n">apply_substitutions</span>
 
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">TypeVar</span>
 
 
@@ -99,15 +98,20 @@
         <span class="k">return</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span>
     <span class="n">int16_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span>
 
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">tqdm</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
 <span class="c1"># TODO build a proper typing system, maybe use classes?</span>
 
 
 
 <div class="viewcode-block" id="substitute_variable_values_in_monlist"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.substitute_variable_values_in_monlist">[docs]</a><span class="k">def</span> <span class="nf">substitute_variable_values_in_monlist</span><span class="p">(</span><span class="n">variables_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                        <span class="n">monomials_factors_reps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                        <span class="n">monomials_factors_names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                        <span class="n">stop_counting</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                                          <span class="n">monomials_factors_reps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                          <span class="n">monomials_factors_names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                          <span class="n">stop_counting</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                                           <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Substitues the known monomials with their known numerical value. From</span>
 <span class="sd">    this the &#39;known_moments&#39; and lpi constraints can be extracted for the SDP.</span>
@@ -131,7 +135,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">vars_numeric_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">variables_values</span><span class="p">}</span>
-    <span class="n">monomials_factors_numeric</span> <span class="o">=</span> <span class="n">monomials_factors_reps</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">monomials_factors_numeric</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">monomials_factors_reps</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">monomial_factors</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">monomials_factors_numeric</span><span class="p">):</span>
         <span class="n">factors_nums_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">monomial_factors</span><span class="p">:</span>
@@ -141,9 +145,8 @@
                 <span class="n">factors_nums_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
         <span class="n">monomials_factors_numeric</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">factors_nums_list</span><span class="p">)</span>
 
-    <span class="n">final_monomials_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">monomials_factors_numeric</span><span class="p">,</span>
-                                           <span class="n">monomials_factors_names</span><span class="p">[</span>
-                                                            <span class="n">stop_counting</span><span class="p">:]])</span>
+    <span class="n">final_monomials_list</span> <span class="o">=</span> <span class="n">monomials_factors_numeric</span> <span class="o">+</span> \
+                                <span class="n">monomials_factors_names</span><span class="p">[</span><span class="n">stop_counting</span><span class="p">:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">final_monomials_list</span></div>
 
 
@@ -236,7 +239,7 @@
 
     <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">ordered_cols_coord</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">elements</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ordered_cols_coord</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])):</span>
             <span class="n">res</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">product</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span>
@@ -312,9 +315,10 @@
 
 
 <span class="c1"># @jit(nopython=True)</span>
-<div class="viewcode-block" id="apply_source_perm_monomial_commuting"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.apply_source_perm_monomial_commuting">[docs]</a><span class="k">def</span> <span class="nf">apply_source_perm_monomial_commuting</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<div class="viewcode-block" id="apply_source_perm_monomial"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.apply_source_perm_monomial">[docs]</a><span class="k">def</span> <span class="nf">apply_source_perm_monomial</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                                          <span class="n">source</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                         <span class="n">permutation</span><span class="p">:</span> <span class="n">List</span>
+                                         <span class="n">permutation</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
+                                         <span class="n">commuting</span><span class="p">:</span> <span class="nb">bool</span>
                                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;This applies a source swap to a monomial.</span>
 
@@ -328,6 +332,8 @@
 <span class="sd">        The source that is being swapped.</span>
 <span class="sd">    permutation : List</span>
 <span class="sd">        The permutation of the copies of the specified source</span>
+<span class="sd">    commuting : bool</span>
+<span class="sd">        Whether all the involved operators commute or not.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -343,7 +349,10 @@
                 <span class="n">new_factors</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">continue</span>
-    <span class="k">return</span> <span class="n">mon_lexsorted</span><span class="p">(</span><span class="n">new_factors</span><span class="p">)</span>  <span class="c1"># canonical</span></div>
+    <span class="k">if</span> <span class="n">commuting</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mon_lexsorted</span><span class="p">(</span><span class="n">new_factors</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">new_factors</span></div>
 
 
 <div class="viewcode-block" id="apply_source_permutation_coord_input"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.apply_source_permutation_coord_input">[docs]</a><span class="k">def</span> <span class="nf">apply_source_permutation_coord_input</span><span class="p">(</span><span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
@@ -389,7 +398,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">permuted_op_list</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">monomial</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">monomial</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])):</span>
             <span class="n">permuted_op_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new_factors</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
@@ -409,7 +418,7 @@
             <span class="c1"># This is achieved with factorize_monomial</span>
             <span class="c1"># NOTE: commuting is a very good attribute for a future SDP class</span>
             <span class="k">if</span> <span class="n">commuting</span><span class="p">:</span>
-                <span class="n">canonical</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">new_factors</span><span class="p">)</span>
+                <span class="n">canonical</span> <span class="o">=</span> <span class="n">mon_lexsorted</span><span class="p">(</span><span class="n">new_factors</span><span class="p">)</span> <span class="c1">#sorted(new_factors)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">n_sources</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">measnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
                 <span class="n">product</span> <span class="o">=</span> <span class="mi">1</span>
@@ -425,7 +434,7 @@
                 <span class="n">canonical</span> <span class="o">=</span> <span class="n">to_numbers</span><span class="p">(</span><span class="n">apply_substitutions</span><span class="p">(</span><span class="n">product</span><span class="p">,</span>
                                                          <span class="n">substitutions</span><span class="p">),</span> <span class="n">names</span><span class="p">)</span>
 
-            <span class="n">permuted_op_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">canonical</span><span class="p">)</span>
+            <span class="n">permuted_op_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">canonical</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">permuted_op_list</span></div>
 
@@ -543,8 +552,8 @@
     <span class="k">for</span> <span class="n">perms</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">all_perms_per_source</span><span class="p">):</span>
         <span class="n">permuted</span> <span class="o">=</span> <span class="n">initial_monomial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_sources</span><span class="p">):</span>
-            <span class="n">permuted</span> <span class="o">=</span> <span class="n">apply_source_perm_monomial_commuting</span><span class="p">(</span>
-                <span class="n">permuted</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">perms</span><span class="p">[</span><span class="n">source</span><span class="p">])</span>
+            <span class="n">permuted</span> <span class="o">=</span> <span class="n">apply_source_perm_monomial</span><span class="p">(</span>
+                <span class="n">permuted</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">perms</span><span class="p">[</span><span class="n">source</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
         <span class="n">permuted_name</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">permuted</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">permuted_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">template_new_mons_aux</span><span class="p">:</span>
             <span class="n">template_new_mons_aux</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">permuted_name</span><span class="p">)</span>
@@ -698,7 +707,7 @@
     <span class="k">return</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">components</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="from_numbers_to_flat_tuples"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.from_numbers_to_flat_tuples">[docs]</a><span class="k">def</span> <span class="nf">from_numbers_to_flat_tuples</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+<div class="viewcode-block" id="from_numbers_to_flat_tuples"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.from_numbers_to_flat_tuples">[docs]</a><span class="k">def</span> <span class="nf">from_numbers_to_flat_tuples</span><span class="p">(</span><span class="n">lista</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
                                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
     <span class="sd">&quot;&quot;&quot;Flatten all monomials in the list represented as lists of lists to a</span>
 <span class="sd">    flat tuple.</span>
@@ -716,20 +725,20 @@
 <span class="sd">        List of monomials encoded as flat tuples of integers.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tuples</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">element</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">lista</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])):</span>
             <span class="n">tuples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">([</span><span class="mi">0</span><span class="p">]))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">tuples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">element</span><span class="p">)))</span>
+            <span class="n">tuples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">element</span><span class="o">.</span><span class="n">tolist</span><span class="p">())))</span>
     <span class="k">return</span> <span class="n">tuples</span></div>
 
 
 <div class="viewcode-block" id="is_knowable"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.is_knowable">[docs]</a><span class="k">def</span> <span class="nf">is_knowable</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">ArrayMonomial</span><span class="p">,</span>
                 <span class="n">hypergraph_scenario</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Determines whether a given monomial (which cannot be factorized into</span>
-<span class="sd">    smaller disconnected components) admits an identification with a monomial</span>
-<span class="sd">    of the original scenario.</span>
+    <span class="sd">&quot;&quot;&quot;Determines whether a given atomic monomial (which cannot be factorized</span>
+<span class="sd">    into smaller disconnected components) admits an identification with a</span>
+<span class="sd">    monomial of the original scenario.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -910,8 +919,10 @@
     <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;p&#39;</span>
     <span class="c1"># add parties if we are marginalizing over a distribution</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_nr_of_parties</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;_{&#39;</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parties</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">+=</span> <span class="n">p</span>
+        <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;}&#39;</span>
     <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;(&#39;</span>
     <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">:</span>
         <span class="n">name</span> <span class="o">+=</span> <span class="n">o</span>
@@ -952,33 +963,20 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sym_variables_to_be_given</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">variables_to_be_given</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">var</span><span class="p">,</span> <span class="n">term</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables_to_be_given</span><span class="p">):</span>
-        <span class="n">factors</span> <span class="o">=</span> <span class="n">term</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+        <span class="n">factors</span>  <span class="o">=</span> <span class="n">term</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
         <span class="n">nr_terms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span>
-        <span class="n">factors</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">))</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">]</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        for i in range(nr_terms):</span>
-<span class="sd">            # Split [&#39;A&#39;,...,&#39;3&#39;,&#39;io&#39;] into [&#39;A&#39;,...,&#39;3&#39;,&#39;i&#39;, &#39;o&#39;]</span>
-<span class="sd">            setting =  factors[i][-2]</span>
-<span class="sd">            output = factors[i][-1]</span>
-<span class="sd">            factors[i].pop()</span>
-<span class="sd">            factors[i].append(setting)</span>
-<span class="sd">            factors[i].append(output)</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span>
-        <span class="n">parties</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-        <span class="n">inputs</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">outputs</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">factors</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">))</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">])</span>
+        <span class="n">parties</span>  <span class="o">=</span> <span class="n">factors</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">inputs</span>   <span class="o">=</span> <span class="n">factors</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">outputs</span>  <span class="o">=</span> <span class="n">factors</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;p&#39;</span>
-        <span class="c1"># add parties if we are marginalizing over a distribution</span>
+        <span class="c1"># Add specification of parties if a marginal probability</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_nr_of_parties</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parties</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">+=</span> <span class="n">p</span>
+            <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span>
         <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;(&#39;</span>
-        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">+=</span> <span class="n">o</span>
+        <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
         <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;|&#39;</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">+=</span> <span class="n">i</span>
+        <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
         <span class="n">name</span> <span class="o">+=</span> <span class="s1">&#39;)&#39;</span>
         <span class="n">sym_variables_to_be_given</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
@@ -1095,99 +1093,6 @@
     <span class="k">for</span> <span class="n">outcomes_combination</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">outcomes_aux</span><span class="p">):</span>
         <span class="n">summ</span> <span class="o">+=</span> <span class="n">p_vector</span><span class="p">[(</span><span class="o">*</span><span class="n">outcomes_combination</span><span class="p">,</span> <span class="o">*</span><span class="n">settings_combination</span><span class="p">)]</span>
     <span class="k">return</span> <span class="n">summ</span></div>
-
-
-<div class="viewcode-block" id="hypergraphs_are_equal"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.hypergraphs_are_equal">[docs]</a><span class="k">def</span> <span class="nf">hypergraphs_are_equal</span><span class="p">(</span><span class="n">hypergraph1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                          <span class="n">hypergraph2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                          <span class="n">up_to_source_permutation</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span><span class="kc">True</span>
-                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns True if two hypergraphs are equvialent.</span>
-
-<span class="sd">    A hypergraph is as a list of hyperlinks or hyperedges. A hyperedge is a</span>
-<span class="sd">    binary list of 0 and 1 with a 1 in the i-th index only if the i-th party</span>
-<span class="sd">    is connected by this hyperlink. To see if two hypergraphs are equal,</span>
-<span class="sd">    the functions removes duplicate hyperlinks and checks if two lists of</span>
-<span class="sd">    hyperlinks are the same up to permutations. This is done by converting</span>
-<span class="sd">    to a set of hyperlinks and checking their equality.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    hypergraph1 : np.ndarray</span>
-<span class="sd">        Hypergraph where each row is a hyperedge.</span>
-<span class="sd">    hypergraph2 : np.ndarray</span>
-<span class="sd">        Hypergraph where each row is a hyperedge.</span>
-<span class="sd">    up_to_source_permutation : bool, optional</span>
-<span class="sd">        If one hypergraph is a row/source permutation of another, whether to</span>
-<span class="sd">        return True. By default True.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    bool</span>
-<span class="sd">        Whether two hypergraphs are equal.</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; hyper1 = np.array([[0, 1, 1], [1, 1, 0], [1, 0, 1]])</span>
-<span class="sd">    &gt;&gt;&gt; hyper2 = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])</span>
-<span class="sd">    &gt;&gt;&gt; hypergraphs_are_equal(hyper1, hyper2)</span>
-<span class="sd">    True</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">if</span> <span class="n">up_to_source_permutation</span><span class="p">:</span>
-        <span class="n">tuple_hypergraph1</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">hyperlink</span> <span class="ow">in</span> <span class="n">hypergraph1</span><span class="p">:</span>
-            <span class="n">tuple_hypergraph1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">hyperlink</span><span class="p">))</span>
-
-        <span class="n">tuple_hypergraph2</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">hyperlink</span> <span class="ow">in</span> <span class="n">hypergraph2</span><span class="p">:</span>
-            <span class="n">tuple_hypergraph2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">hyperlink</span><span class="p">))</span>
-
-        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">tuple_hypergraph2</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">tuple_hypergraph1</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">hypergraph1</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">hypergraph2</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">hypergraph1</span><span class="p">,</span> <span class="n">hypergraph2</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span></div>
-
-
-<div class="viewcode-block" id="hypergraph_of_a_factor"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.hypergraph_of_a_factor">[docs]</a><span class="k">def</span> <span class="nf">hypergraph_of_a_factor</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
-                           <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the hypergraph of a monomial.</span>
-
-<span class="sd">    We define the hypergraph of a monomial as the graph resulting from adding</span>
-<span class="sd">    an edge whenever two parties are connected by measuring the same copy of</span>
-<span class="sd">    a source.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    factors : np.ndarray</span>
-<span class="sd">        Operator represented in 2d array format.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        The hypergraph of the monomial.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">n_sources</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">party_slice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">factors</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>
-    <span class="n">n_parties</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">party_slice</span><span class="p">))</span>
-
-    <span class="n">hypergraph</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># The representation of the hypergraph will be a List of</span>
-    <span class="c1"># hyperlinks, Hyperlinks are lists of 0s and 1s. If element i of the list</span>
-    <span class="c1"># if the value 1 then this means party i is connected by this hyperlink.</span>
-    <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sources</span><span class="p">):</span>
-        <span class="n">inf_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">factors</span><span class="p">)[:,</span> <span class="n">source</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">inflation_index</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">inf_indices</span><span class="p">):</span>
-            <span class="n">parties_that_are_connected</span> <span class="o">=</span> <span class="n">party_slice</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="n">inf_indices</span> <span class="o">==</span> <span class="n">inflation_index</span><span class="p">)]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-            <span class="c1"># we only have a hyperlink if there is more than</span>
-            <span class="c1"># one party affected</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parties_that_are_connected</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">hyperlink</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_parties</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-                <span class="n">hyperlink</span><span class="p">[</span><span class="n">parties_that_are_connected</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">hypergraph</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyperlink</span><span class="p">)</span>
-    <span class="n">hypergraph</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">hypergraph</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">hypergraph</span></div>
 
 
 <div class="viewcode-block" id="monomialset_name2num"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.monomialset_name2num">[docs]</a><span class="k">def</span> <span class="nf">monomialset_name2num</span><span class="p">(</span><span class="n">monomials</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -1514,7 +1419,8 @@
 
 
 <div class="viewcode-block" id="to_representative"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.to_representative">[docs]</a><span class="k">def</span> <span class="nf">to_representative</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                      <span class="n">inflevels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span>
+                      <span class="n">inflevels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                      <span class="n">commuting</span><span class="p">:</span> <span class="nb">bool</span>
                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;This function takes a monomial and applies inflation</span>
 <span class="sd">    symmetries to bring it to a canonical form.</span>
@@ -1545,6 +1451,8 @@
 <span class="sd">        Input monomial that cannot be further factorised.</span>
 <span class="sd">    inflevels : np.array</span>
 <span class="sd">        Number of copies of each source in the inflated graph.</span>
+<span class="sd">    commuting : bool</span>
+<span class="sd">        Whether all the involved operators commute or not.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1570,8 +1478,8 @@
         <span class="k">for</span> <span class="n">perms</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">all_perms_per_source</span><span class="p">):</span>
             <span class="n">permuted</span> <span class="o">=</span> <span class="n">final_monomial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_sources</span><span class="p">):</span>
-                <span class="n">permuted</span> <span class="o">=</span> <span class="n">apply_source_perm_monomial_commuting</span><span class="p">(</span>
-                    <span class="n">permuted</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">perms</span><span class="p">[</span><span class="n">source</span><span class="p">])</span>
+                <span class="n">permuted</span> <span class="o">=</span> <span class="n">apply_source_perm_monomial</span><span class="p">(</span>
+                    <span class="n">permuted</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">perms</span><span class="p">[</span><span class="n">source</span><span class="p">],</span> <span class="n">commuting</span><span class="p">)</span>
             <span class="n">permuted</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">permuted</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">mon_lessthan_mon</span><span class="p">(</span><span class="n">permuted</span><span class="p">,</span> <span class="n">final_monomial</span><span class="p">):</span>
                 <span class="n">final_monomial</span> <span class="o">=</span> <span class="n">permuted</span>
@@ -1611,7 +1519,7 @@
     <span class="k">return</span> <span class="n">monomials_factors_names</span></div>
 
 
-<div class="viewcode-block" id="label_knowable_and_unknowable"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.label_knowable_and_unknowable">[docs]</a><span class="k">def</span> <span class="nf">label_knowable_and_unknowable</span><span class="p">(</span><span class="n">monomials_factors_input</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<div class="viewcode-block" id="label_knowable_and_unknowable"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.label_knowable_and_unknowable">[docs]</a><span class="k">def</span> <span class="nf">label_knowable_and_unknowable</span><span class="p">(</span><span class="n">monomials_factors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                                   <span class="n">hypergraph</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
                                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Given the list of monomials factorised, it labels each</span>
@@ -1631,317 +1539,26 @@
 <span class="sd">        Array of the same size as the input, with the labels of each monomial.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">monomials_factors_knowable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">monomials_factors_input</span><span class="p">)</span>
-    <span class="n">monomials_factors_knowable</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">monomials_factors_input</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">monomial_factors</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tqdm</span><span class="p">(</span><span class="n">monomials_factors_input</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="kc">True</span><span class="p">)):</span>
+    <span class="n">factors_are_knowable</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">monomials_factors</span><span class="p">)</span>
+    <span class="n">factors_are_knowable</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">monomials_factors</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">monomial_is_knowable</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">monomials_factors</span><span class="p">)</span>
+    <span class="n">monomial_is_knowable</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">monomials_factors</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">factors</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">monomials_factors</span><span class="p">):</span>
         <span class="n">factors_known_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">is_knowable</span><span class="p">(</span>
-            <span class="n">factors</span><span class="p">,</span> <span class="n">hypergraph</span><span class="p">)</span> <span class="k">for</span> <span class="n">factors</span> <span class="ow">in</span> <span class="n">monomial_factors</span><span class="p">]</span>
+            <span class="n">factor</span><span class="p">,</span> <span class="n">hypergraph</span><span class="p">)</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">]</span>
+        <span class="n">factors_are_knowable</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">factors_known_list</span>
         <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">factors_known_list</span><span class="p">):</span>
             <span class="n">knowable</span> <span class="o">=</span> <span class="s1">&#39;Yes&#39;</span>
         <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">factors_known_list</span><span class="p">):</span>
             <span class="n">knowable</span> <span class="o">=</span> <span class="s1">&#39;Semi&#39;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">knowable</span> <span class="o">=</span> <span class="s1">&#39;No&#39;</span>
-        <span class="n">monomials_factors_knowable</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">knowable</span>
-    <span class="k">return</span> <span class="n">monomials_factors_knowable</span></div>
-
-
-<div class="viewcode-block" id="reorder_according_to_known_semiknown_unknown"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.reorder_according_to_known_semiknown_unknown">[docs]</a><span class="k">def</span> <span class="nf">reorder_according_to_known_semiknown_unknown</span><span class="p">(</span><span class="n">input_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                                 <span class="n">tags</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
-                                                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reorder the list of monomials according to the known (tag &quot;Yes&quot;),</span>
-<span class="sd">    semiknown (tag &quot;Semi&quot;) and unknown monomials (tag &quot;No&quot;).</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    input_list : np.ndarray</span>
-<span class="sd">        Disordered list of monomials.</span>
-<span class="sd">    tags : np.ndarray</span>
-<span class="sd">        Array of the same size as the input, with the labels</span>
-<span class="sd">        (&quot;Yes&quot;, &quot;Semi&quot;, &quot;No&quot;) of each monomial.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Input list sorted according to the tags, first &quot;Yes&quot;,</span>
-<span class="sd">        then &quot;Semi&quot; and lastly &quot;No&quot;.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">reordered_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">input_list</span><span class="p">[</span><span class="n">tags</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Yes&#39;</span><span class="p">],</span>
-         <span class="n">input_list</span><span class="p">[</span><span class="n">tags</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Semi&#39;</span><span class="p">],</span>
-         <span class="n">input_list</span><span class="p">[</span><span class="n">tags</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;No&#39;</span><span class="p">]])</span>
-    <span class="k">return</span> <span class="n">reordered_list</span></div>
-
-
-<div class="viewcode-block" id="combine_products_of_unknowns"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.combine_products_of_unknowns">[docs]</a><span class="k">def</span> <span class="nf">combine_products_of_unknowns</span><span class="p">(</span><span class="n">monomials_factors_names_input</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                 <span class="n">monomials_factors_knowable</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                 <span class="n">monomials_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                 <span class="n">measurements</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">],</span>
-                                 <span class="n">substitutions</span><span class="p">:</span>
-                    <span class="n">Dict</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">],</span>
-                                 <span class="n">hypergraph</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                 <span class="n">names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                                 <span class="n">use_numba</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-                                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;This function returns the input list of monomials with the products of</span>
-<span class="sd">    unknown monomials combined into a single factor.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    monomials_factors_names_input : np.ndarray</span>
-<span class="sd">        Array where each row contains the integer representation of</span>
-<span class="sd">        the monomial and the factors of the monomial.</span>
-<span class="sd">    monomials_factors_knowable : np.ndarray</span>
-<span class="sd">        Array where each row contains the integer representation of</span>
-<span class="sd">        the monomial and the knowability of the monomials.</span>
-<span class="sd">    monomials_list : np.ndarray</span>
-<span class="sd">        List of all the *unfactorised* monomials in the moment matrix.</span>
-<span class="sd">    measurements : List[sympy.core.symbol.Symbol]</span>
-<span class="sd">        List of symbolic symbols representing the measurements.</span>
-<span class="sd">    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]</span>
-<span class="sd">        Dictionary of substitutions to be applied to the monomials.</span>
-<span class="sd">    hypergraph : np.ndarray</span>
-<span class="sd">        Hypergraph of the network where each row is an edge.</span>
-<span class="sd">    names : List[str]</span>
-<span class="sd">         List of string names of each party.</span>
-<span class="sd">    use_numba : bool, optional</span>
-<span class="sd">        If using numba, we need to apply substitutions without using</span>
-<span class="sd">        ncpol2sdpa. If False, we do everything with ncpol2sda. Defaults</span>
-<span class="sd">        to True.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Returns input list of monomials with products of unknown combined.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># If there is a semiknown factorization with &gt;1 unknowns, we must use the</span>
-    <span class="c1"># unfactorized variable. This part must be commented out when combining</span>
-    <span class="c1"># with scalar extension, and be used with a lot of care when using</span>
-    <span class="c1"># non-commuting variables (because now we use the fact that all operators</span>
-    <span class="c1"># commute to put the expressions in &quot;canonical form&quot;)</span>
-    <span class="n">n_known</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">monomials_factors_knowable</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Yes&#39;</span><span class="p">)</span>
-    <span class="n">n_something_known</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">monomials_factors_knowable</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;No&#39;</span><span class="p">)</span>
-
-    <span class="n">flatmeas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">measurements</span><span class="p">))</span>
-    <span class="n">measnames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">meas</span><span class="p">)</span> <span class="k">for</span> <span class="n">meas</span> <span class="ow">in</span> <span class="n">flatmeas</span><span class="p">])</span>
-
-    <span class="n">monomials_factors_names</span> <span class="o">=</span> <span class="n">monomials_factors_names_input</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">monomials_factors_names_input</span><span class="p">[</span>
-                                                <span class="n">n_known</span><span class="p">:</span><span class="n">n_something_known</span><span class="p">,</span> <span class="p">:]):</span>
-        <span class="n">var</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">where_unknown</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span><span class="ow">not</span> <span class="n">is_knowable</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">names</span><span class="p">),</span> <span class="n">hypergraph</span><span class="p">)</span>
-                                                         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">])</span>
-        <span class="n">factors_unknown</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[</span><span class="n">where_unknown</span><span class="p">]</span>
-        <span class="n">factors_known</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">where_unknown</span><span class="p">)]</span>
-
-        <span class="k">if</span> <span class="n">use_numba</span><span class="p">:</span>
-            <span class="n">joined_unknowns_name</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">factors_unknown</span><span class="p">)</span>
-            <span class="n">joined_unknowns_name_canonical</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">to_canonical</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span><span class="n">joined_unknowns_name</span><span class="p">,</span> <span class="n">names</span><span class="p">))),</span> <span class="n">names</span><span class="p">)</span>
-            <span class="n">new_line</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span><span class="p">,</span> <span class="n">factors_known</span><span class="o">.</span><span class="n">tolist</span><span class="p">(</span>
-            <span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">joined_unknowns_name_canonical</span><span class="p">]]</span>
-            <span class="n">monomials_factors_names</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="n">n_known</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_line</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">unknown_components</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">factors_unknown</span><span class="p">])</span>
-            <span class="n">unknown_operator</span> <span class="o">=</span> <span class="n">mul</span><span class="p">([</span><span class="n">flatmeas</span><span class="p">[</span><span class="n">measnames</span> <span class="o">==</span> <span class="n">op</span><span class="p">]</span>
-                                   <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">unknown_components</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-
-            <span class="c1"># It seems like ncpol2sdpa does not use as canonical form a</span>
-            <span class="c1"># lexicographic order, but the first representation appearing,</span>
-            <span class="c1"># which can be the adjoint of the lexicographic form. The</span>
-            <span class="c1">#  following loop tries to fix this</span>
-            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">unknown_operator</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">unknown_operator</span> <span class="o">=</span> <span class="n">apply_substitutions</span><span class="p">(</span>
-                                                <span class="n">unknown_operator</span><span class="o">.</span><span class="n">adjoint</span><span class="p">(),</span>
-                                                        <span class="n">substitutions</span><span class="p">)</span>
-            <span class="n">new_line</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span><span class="p">,</span> <span class="n">factors_known</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">unknown_operator</span><span class="p">)]]</span>
-            <span class="n">monomials_factors_names</span><span class="p">[</span><span class="n">monomials_factors_names_input</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-                                    <span class="o">==</span> <span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_line</span>
-
-    <span class="k">return</span> <span class="n">monomials_factors_names</span></div>
-
-
-<div class="viewcode-block" id="monomial_to_var_repr"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.monomial_to_var_repr">[docs]</a><span class="k">def</span> <span class="nf">monomial_to_var_repr</span><span class="p">(</span><span class="n">monomials_factors_names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                         <span class="n">monomials_factors_knowable</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                         <span class="n">monomials_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                         <span class="n">measurements</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">],</span>
-                         <span class="n">substitutions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">],</span>
-                         <span class="n">names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                         <span class="n">flag_use_semiknowns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                         <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;This function translates the factorization of monomials from string</span>
-<span class="sd">    representation to integer representation.</span>
-
-<span class="sd">    If the (i,j) entry of the moment matrix has variable v_m, then the</span>
-<span class="sd">    factorization v_m=v_o*v_p is encoded as an entry of</span>
-<span class="sd">    monomials_factors_names as, eg, [12, [&#39;A_0_1_1_0_0&#39;, &#39;A_0_2_2_0_0&#39;]].</span>
-<span class="sd">    This function translates all strings into integers, s.t. the output</span>
-<span class="sd">    is an array where each entry is something of the form [12, [4, 6]],</span>
-<span class="sd">    where m=12, o=4, p=6 in v_m=v_o*v_p.</span>
-
-<span class="sd">    Note! This function also brings to canonical form the factorization.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    monomials_factors_names_input : np.ndarray</span>
-<span class="sd">        Array where each row contains the integer representation of</span>
-<span class="sd">        the monomial and the factors of the monomial.</span>
-<span class="sd">    monomials_factors_knowable : np.ndarray</span>
-<span class="sd">        Array where each row contains the integer representation of</span>
-<span class="sd">        the monomial and the knowability of the monomials.</span>
-<span class="sd">    monomials_list : np.ndarray</span>
-<span class="sd">        List of all the *unfactorised* monomials in the moment matrix.</span>
-<span class="sd">    measurements : List[sympy.core.symbol.Symbol]</span>
-<span class="sd">        List of symbolic symbols representing the measurements.</span>
-<span class="sd">    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]</span>
-<span class="sd">        Dictionary of substitutions to be applied to the monomials.</span>
-<span class="sd">    names : List[str]</span>
-<span class="sd">        Name of each party.</span>
-<span class="sd">    flag_use_semiknowns : bool, optional</span>
-<span class="sd">        Whether we also do this for monomials that are factorised</span>
-<span class="sd">        into known and unknown factors. by default True.</span>
-<span class="sd">    verbose : int, optional</span>
-<span class="sd">        _description_, by default 0</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Same as input, but with integers instead of strings.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">flag_use_semiknowns</span><span class="p">:</span>
-        <span class="n">n_known</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">monomials_factors_knowable</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Yes&#39;</span><span class="p">)</span>
-        <span class="c1"># If we only consider fully-known monomials</span>
-        <span class="n">stop_counting</span> <span class="o">=</span> <span class="n">n_known</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">n_something_known</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">monomials_factors_knowable</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;No&#39;</span><span class="p">)</span>
-        <span class="c1"># If we also consider semi-known monomials, which are</span>
-        <span class="c1"># constraints of form v_1 = constant * v_2</span>
-        <span class="n">stop_counting</span> <span class="o">=</span> <span class="n">n_something_known</span>
-        <span class="n">max_variable_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)))</span>
-
-    <span class="n">new_monomials_list</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">monomials_factors_vars</span> <span class="o">=</span> <span class="n">monomials_factors_names</span><span class="p">[:</span><span class="n">stop_counting</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">monomial_factors</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tqdm</span><span class="p">(</span><span class="n">monomials_factors_vars</span><span class="p">,</span>
-                                     <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
-                                     <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Simplifying monomials        &#39;</span><span class="p">)):</span>
-        <span class="n">canonical_factors</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_name</span><span class="p">(</span><span class="n">canonicalize</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span>
-            <span class="n">factor</span><span class="p">,</span> <span class="n">names</span><span class="p">),</span> <span class="n">measurements</span><span class="p">,</span> <span class="n">substitutions</span><span class="p">,</span> <span class="n">names</span><span class="p">),</span> <span class="n">names</span><span class="p">)</span>
-                                         <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">monomial_factors</span><span class="p">]</span>
-        <span class="c1"># TODO does this change the input?</span>
-        <span class="n">monomials_factors_names</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">canonical_factors</span>
-        <span class="k">if</span> <span class="n">flag_use_semiknowns</span><span class="p">:</span>
-            <span class="n">factors_vars_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">canonical_factors</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">idx2</span><span class="p">,</span> <span class="n">factor</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">canonical_factors</span><span class="p">):</span>
-                <span class="n">factor_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">factor</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">factor_idx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">new_factor_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">monomials_list</span><span class="p">[</span><span class="n">factor_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># factor cannot be found, we assign it a new index</span>
-                    <span class="n">new_factor_idx</span> <span class="o">=</span> <span class="n">max_variable_idx</span> <span class="o">+</span> <span class="mi">1</span>
-                    <span class="n">max_variable_idx</span> <span class="o">=</span> <span class="n">new_factor_idx</span>
-                    <span class="n">new_monomials_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="p">[</span><span class="n">new_factor_idx</span><span class="p">,</span> <span class="nb">list</span><span class="p">([</span><span class="n">monomial_factors</span><span class="p">[</span><span class="n">idx2</span><span class="p">]])])</span>
-                <span class="n">factors_vars_list</span><span class="p">[</span><span class="n">idx2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_factor_idx</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># we change to representative variables at a later stage</span>
-            <span class="n">factors_vars_list</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span>
-                <span class="n">monomials_list</span><span class="p">[</span><span class="n">monomials_list</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">factor</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-                                 <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">canonical_factors</span><span class="p">]</span>
-
-        <span class="c1"># [canonical_mon2indx[factor] for factor in canonical_factors]</span>
-        <span class="n">monomials_factors_vars</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">factors_vars_list</span>
-
-    <span class="k">if</span> <span class="n">flag_use_semiknowns</span> <span class="ow">and</span> <span class="n">new_monomials_list</span><span class="p">:</span>
-        <span class="n">new_monomials_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_monomials_list</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
-        <span class="c1">#new_monomials_list[:, 0] = new_monomials_list[:, 0].astype(int)</span>
-
-    <span class="k">return</span> <span class="n">monomials_factors_vars</span><span class="p">,</span> <span class="n">new_monomials_list</span></div>
-
-
-<div class="viewcode-block" id="change_to_representative_variables"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.change_to_representative_variables">[docs]</a><span class="k">def</span> <span class="nf">change_to_representative_variables</span><span class="p">(</span><span class="n">monomials_factors_vars</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                       <span class="n">physical_monomials</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                       <span class="n">orbits</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
-                                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Change monomials to representative variables.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    monomials_factors_vars : np.ndarray</span>
-<span class="sd">        Input monomials.</span>
-<span class="sd">    physical_monomials : np.ndarray</span>
-<span class="sd">        List of positive/&quot;pyhsical&quot; monomials.</span>
-<span class="sd">    orbits : _type_</span>
-<span class="sd">        Dictionary mapping each monomial index to its orbit representative.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Tuple[np.ndarray, np.ndarray]</span>
-<span class="sd">        The two lists of monomials, monomials_factors_vars and</span>
-<span class="sd">        physical_monomials, but with the monomials replaced by their</span>
-<span class="sd">        representative.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">monomials_factors_reps</span> <span class="o">=</span> <span class="n">monomials_factors_vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">monomial_factors</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">monomials_factors_reps</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">monomial_factors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">factors_reps_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">orbits</span><span class="p">[</span><span class="n">factor</span><span class="p">]</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">monomial_factors</span><span class="p">]</span>
-            <span class="n">monomials_factors_reps</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">factors_reps_list</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Sanity check</span>
-            <span class="n">original</span> <span class="o">=</span> <span class="n">monomials_factors_vars</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">after_factor</span> <span class="o">=</span> <span class="n">monomials_factors_vars</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">assert</span> <span class="n">original</span> <span class="o">==</span> <span class="n">after_factor</span><span class="p">,</span> <span class="p">(</span>
-                                        <span class="s1">&#39;The variable </span><span class="si">{}</span><span class="s1"> is not assigned to&#39;</span>
-                                        <span class="o">+</span> <span class="s1">&#39;itself but to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">original</span><span class="p">,</span>
-                                                                <span class="n">after_factor</span><span class="p">))</span>
-
-    <span class="n">physical_monomials_out</span> <span class="o">=</span> <span class="n">physical_monomials</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">physical_monomials</span><span class="p">):</span>
-        <span class="n">physical_monomials_out</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">orbits</span><span class="p">[</span><span class="n">physical_monomials</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
-
-    <span class="k">return</span> <span class="n">monomials_factors_reps</span><span class="p">,</span> <span class="n">physical_monomials_out</span></div>
-
-
-<div class="viewcode-block" id="get_variables_the_user_can_specify"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.get_variables_the_user_can_specify">[docs]</a><span class="k">def</span> <span class="nf">get_variables_the_user_can_specify</span><span class="p">(</span><span class="n">monomials_factors_reps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                       <span class="n">monomials_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
-                                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return only the monomials that have a single variable,</span>
-<span class="sd">    all factors that can be fully known from a probability distribution,</span>
-<span class="sd">    and from which other monomials that factorise into products of these</span>
-<span class="sd">    can be known.</span>
-
-<span class="sd">    ASSUMPTION: no unknown monomials are present.</span>
-<span class="sd">    TODO: rewrite code so that we don&#39;t use this function</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    monomials_factors_reps : np.ndarray</span>
-<span class="sd">        Input monomials.</span>
-<span class="sd">    monomials_list : np.ndarray</span>
-<span class="sd">        List of all monomials and their index representation.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        All the monomials that have a single factor and are known.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">variables_to_be_given</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">factors</span> <span class="ow">in</span> <span class="n">monomials_factors_reps</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="c1">#variables_to_be_given.append([idx, monomials_list[</span>
-            <span class="c1">#                   monomials_list[:, 0] == str(idx)][0][1]])</span>
-            <span class="n">variables_to_be_given</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">monomials_list</span><span class="p">[</span><span class="n">monomials_list</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
-    <span class="k">return</span> <span class="n">variables_to_be_given</span></div>
+        <span class="n">monomial_is_knowable</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">knowable</span>
+    <span class="k">return</span> <span class="n">monomial_is_knowable</span><span class="p">,</span> <span class="n">factors_are_knowable</span></div>
 
 
 <div class="viewcode-block" id="substitute_sym_with_numbers"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.substitute_sym_with_numbers">[docs]</a><span class="k">def</span> <span class="nf">substitute_sym_with_numbers</span><span class="p">(</span><span class="n">symbolic_variables_to_be_given</span><span class="p">:</span>
-                                                <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">]],</span>
+                                     <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">]],</span>
                                 <span class="n">settings_per_party</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
                                 <span class="n">outcomes_per_party</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
                                 <span class="n">p_vector</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
@@ -1969,79 +1586,14 @@
 <span class="sd">        symbolic probability in the input is substituted with its numerical</span>
 <span class="sd">        value.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">variables_values</span> <span class="o">=</span> <span class="n">symbolic_variables_to_be_given</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">variables_values</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">symbolic_variables_to_be_given</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variables_values</span><span class="p">)):</span>
         <span class="n">variables_values</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">substitute_sym_with_value</span><span class="p">(</span>
-                                    <span class="n">symbolic_variables_to_be_given</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
-                                                        <span class="n">settings_per_party</span><span class="p">,</span>
-                                                        <span class="n">outcomes_per_party</span><span class="p">,</span>
-                                                        <span class="n">p_vector</span><span class="p">))</span>
+                                           <span class="n">symbolic_variables_to_be_given</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                                                             <span class="n">settings_per_party</span><span class="p">,</span>
+                                                             <span class="n">outcomes_per_party</span><span class="p">,</span>
+                                                             <span class="n">p_vector</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">variables_values</span></div>
-
-
-<div class="viewcode-block" id="objective_sym2index"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.objective_sym2index">[docs]</a><span class="k">def</span> <span class="nf">objective_sym2index</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
-                        <span class="n">monomials_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">StringMonomial</span><span class="p">]],</span>
-                        <span class="n">orbits</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
-                        <span class="n">canonical_mon2indx</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
-                        <span class="n">names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                        <span class="n">measurements</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">],</span>
-                        <span class="n">substitutions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">]</span>
-                        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Transform a symbolic expression into a dictionary of index variable</span>
-<span class="sd">    coefficients. This is interpretable by the solver.</span>
-
-<span class="sd">    NOTE: WARNING: many of the parameters of this function will be removed</span>
-<span class="sd">    in subsequent versions.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    objective : sympy.core.symbol.Symbol</span>
-<span class="sd">        Symbolic objective function, written in terms of the measurement</span>
-<span class="sd">        operators.</span>
-<span class="sd">    monomials_list : List[Tuple[int, StringMonomial]]</span>
-<span class="sd">        List of all monomials and their index representation.</span>
-<span class="sd">    orbits : Dict[int, int]</span>
-<span class="sd">        Dictionary mapping each monomial index to its orbit representative.</span>
-<span class="sd">    canonical_mon2indx : Dict[str, int]</span>
-<span class="sd">        Dictionary mapping each monomial string to its integer representative.</span>
-<span class="sd">    names : List[str]</span>
-<span class="sd">        All party names.</span>
-<span class="sd">    measurements : List[sympy.core.symbol.Symbol]</span>
-<span class="sd">        List of symbolic measurement operators.</span>
-<span class="sd">    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]</span>
-<span class="sd">        All substitutions to be applied to a symbolic monomial.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Dict[int, float]</span>
-<span class="sd">        A dictionary mapping each monomial index to a coefficient.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">monomials_list_len1</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">monomials_list</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">monomials_list_len1</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
-    <span class="n">monomials_list_len1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">monomials_list_len1</span><span class="p">)</span>
-
-    <span class="n">objective</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">objective</span><span class="p">)</span>
-    <span class="n">objective_as_dict</span> <span class="o">=</span> <span class="n">objective</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">()</span>
-    <span class="n">non_constant_objective_terms</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">objective_as_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
-            <span class="n">non_constant_objective_terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">coeff</span><span class="o">*</span><span class="n">var</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="n">coeff</span>
-    <span class="n">obj</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">offset</span><span class="p">}</span>
-    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">non_constant_objective_terms</span><span class="p">:</span>
-        <span class="n">coeff</span><span class="p">,</span> <span class="n">monomial</span> <span class="o">=</span> <span class="n">term</span><span class="o">.</span><span class="n">as_coeff_Mul</span><span class="p">()</span>
-        <span class="c1">#monomial_canon =  to_name(canonicalize(to_numbers(</span>
-        <span class="c1">#   str(monomial), names), measurements, substitutions, names), names)</span>
-        <span class="n">monomial_canon</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">to_representative</span><span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">monomial</span><span class="p">),</span> <span class="n">names</span><span class="p">))),</span> <span class="n">names</span><span class="p">)</span>
-        <span class="n">obj</span><span class="p">[</span><span class="n">canonical_mon2indx</span><span class="p">[</span><span class="n">monomial_canon</span><span class="p">]]</span> <span class="o">=</span> <span class="n">coeff</span>
-        <span class="c1">#obj[int(monomials_list_len1[monomials_list_len1[:, 1]</span>
-        <span class="c1">#                                == monomial_canon][0][0])] = coeff</span>
-    <span class="k">return</span> <span class="n">obj</span></div>
 
 
 <div class="viewcode-block" id="canonicalize"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.canonicalize">[docs]</a><span class="k">def</span> <span class="nf">canonicalize</span><span class="p">(</span><span class="n">list_of_operators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
@@ -2115,6 +1667,36 @@
     <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
         <span class="n">product</span> <span class="o">*=</span> <span class="n">flatmeas</span><span class="p">[</span><span class="n">measnames</span> <span class="o">==</span> <span class="n">part</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">product</span></div>
+
+<div class="viewcode-block" id="clean_coefficients"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.quantum.general_tools.clean_coefficients">[docs]</a><span class="k">def</span> <span class="nf">clean_coefficients</span><span class="p">(</span><span class="n">coefficients</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                       <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span>
+                       <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Clean the list of coefficients in a certificate.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coefficients : numpy.array</span>
+<span class="sd">      The list of coefficients.</span>
+<span class="sd">    chop_tol : float, optional</span>
+<span class="sd">      Coefficients in the dual certificate smaller in absolute value are</span>
+<span class="sd">      set to zero. Defaults to 1e-10.</span>
+<span class="sd">    round_decimals : int, optional</span>
+<span class="sd">      Coefficients that are not set to zero are rounded to the number</span>
+<span class="sd">      of decimals specified. Defaults to 3.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.array</span>
+<span class="sd">      The cleaned-up coefficients.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">coefficients</span><span class="p">)</span>
+    <span class="c1"># Set to zero very small coefficients</span>
+    <span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">chop_tol</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Take the biggest one and make it 1</span>
+    <span class="n">coeffs</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">chop_tol</span><span class="p">]))</span>
+    <span class="c1"># Round</span>
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">coeffs</span></div>
 </pre></div>
 
            </div>
