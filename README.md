@@ -29,11 +29,16 @@ You can also install the latest developed version with:
 
 `pip install git+https://github.com/ecboghiu/inflation.git@main`
 
-or clone the repository and run `python setup.py install` in the downloaded folder.
+or download the repository on your computer and run `python setup.py install` in the repository folder.
 
-## Getting started
+Tests are written outside the Python module, therefore they are not installed together with the package. To test the installation, clone the repository and run, in a Unix terminal, 
+```python -m unittest -v```
 
-Below is a simple complete ready-to-run example that shows that the W distribution is incompatible with the triangle scenario with quantum sources:
+inside the repository folder.
+
+## Example
+
+Below is a simple complete ready-to-run example that shows that the W distribution is incompatible with the triangle scenario with quantum sources by showing that a specific semidefinite programming relaxation is infeasible:
 
 ```
 from causalinflation import InflationProblem, InflationSDP
@@ -65,8 +70,17 @@ For more information about the theory and other features, please visit the [docu
 
 ## How to contribute
 
-If you want to contribute, visit the [documentation](https://ecboghiu.github.io/inflation/) to learn how the package works, and then submit an issue or create a pull request on the GitHub repository.
+Contributions are welcome and appreciated. If you want to contribute, you can read the [contribution guidelines](https://ecboghiu.github.io/inflation/CONTRIBUTE.md) or the [documentation guidelines](https://ecboghiu.github.io/inflation/_build/html/contribute.html). You can also read the [documentation](https://ecboghiu.github.io/inflation/) to learn more about how the package works.
+
 
 ## License
 
 CasualInflation is free open-source software released under the [Creative Commons License](https://github.com/ecboghiu/inflation/blob/main/LICENSE>).
+
+## Citing CausalInflation
+
+If you use CausalInflation in your work, please cite the following [paper](ARXIV LINK):
+
+- Emanuel-Cristian Boghiu and Alejandro Pozas-Kertjens, "CausalInflation: a Python package for classical and quantum causal compatibility", Nature ... 2022
+
+
