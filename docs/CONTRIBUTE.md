@@ -1,6 +1,6 @@
 This is the contribution guide for CausalInflation, a Python package for implementations of the inflation technique for causal inference. Contributions are very welcome and appreciated! 
 
-You can begin contributing by opening an issue on the [GitHub repository](https://github.com/ecboghiu/inflation) to report bugs, request features, etc. 
+You can begin contributing by opening an issue on the [GitHub repository](https://github.com/ecboghiu/inflation) to report bugs, request features, etc. Now we will outline some guidelines for contributing to the code, and for contributing to the documentation.
 
 # How to contribute to the code
 
