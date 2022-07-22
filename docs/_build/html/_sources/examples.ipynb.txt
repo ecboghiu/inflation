@@ -179,7 +179,7 @@
     "\n",
     "#### Feasibility as an optimisation\n",
     "\n",
-    "A more numerically robust approach is to convert feasibility problems to optimisation problems. Instead of imposing that the moment matrix $\\Gamma$ of the SDP relaxation is posivite semidefinite, we can maximize the minimum eigenvalue of $\\Gamma$ and check its sign. Clearly, if the result of the optimisation is negative, then one cannot find a matrix $\\Gamma$ that is positive semidefinite, thus the original program is infeasible. \n",
+    "A more numerically robust approach is to convert feasibility problems to optimisation problems. Instead of imposing that the moment matrix $\\Gamma$ of the SDP relaxation is positive semidefinite, we can maximize the minimum eigenvalue of $\\Gamma$ and check its sign. Clearly, if the result of the optimisation is negative, then one cannot find a matrix $\\Gamma$ that is positive semidefinite, thus the original program is infeasible. \n",
     "\n",
     "By setting the flag `feas_as_optim` to `True` in the `InflationSDP.solve()` method, feasibility problems are converted to optimisation problems. The result is stored in `InflationSDP.objective_value`. \n",
     "\n",
@@ -233,7 +233,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "We correctly recover the known critical visibility of the 2PR distribution in the quantum tripartite-line scenario, namely $v>\\frac{1}{2}$."
+    "We recover a critical visibility that is consistent with the known critical visibility of the 2PR distribution in the quantum tripartite-line scenario, namely $v>\\frac{1}{2}$. Higher order inflations or higher levels in the NPA hierarchy are expected (but not proved) to get a numerical visibility that gets asymptotically closer to $v=\\frac{1}{2}$ as the hierarchy increases."
    ]
   },
   {
@@ -321,7 +321,7 @@
     "\n",
     "The so-called \"local levels\" are a different choice of generating set for the moment matrix. Whereas NPA level $n$ is the $n$-times cartesian product (without duplicated elements) of the set of measurements of the parties together with the identity, local level $n$ refers to a generating set with all the products up to $n$ operators per party. For more details, see [Physical Review X 11.2 (2021): 021043](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043).\n",
     "\n",
-    "In what follows, we use the built-in method `build_columns` to generate the columns corresponding to NPA level 2 and local level 1. Then we do a union, generate the relaxation and again, solve the program. As it will now take a bit longer, we increase the verbosity level to see the progress: "
+    "In what follows, we use the built-in method `InflationSDP.build_columns()` to generate the columns corresponding to NPA level 2 and local level 1. Then we do a union, generate the relaxation and again, solve the program. As it will now take a bit longer, we increase the verbosity level to see the progress: "
    ]
   },
   {
@@ -333,12 +333,12 @@
     "npa2   = sdprelax.build_columns('npa2')\n",
     "local1 = sdprelax.build_columns('local1')\n",
     "\n",
-    "generatingset = npa2\n",
+    "newgeneratingset = npa2\n",
     "for mon in local1:\n",
-    "     if mon not in generatingset:\n",
-    "         generatingset.append(mon)\n",
+    "     if mon not in newgeneratingset:\n",
+    "         newgeneratingset.append(mon)\n",
     "\n",
-    "sdprelax.generate_relaxation(generatingset)\n",
+    "sdprelax.generate_relaxation(newgeneratingset)\n",
     "sdprelax.set_objective(objective = A1*B0*C0 + A0*B1*C0 + A0*B0*C1 - A1*B1*C1)\n",
     "\n",
     "sdprelax.verbose = 1\n",
@@ -370,7 +370,7 @@
    "source": [
     "### Example 4: Critical visibility of the 2PR distribution in the *classical* tripartite-line scenario\n",
     "\n",
-    "As an example, we find the critical visibility of the $P_{\\text{2PR}}$ distribution from Example 2, but in the classical tripartite line scenario with a second order inflation, and with the local level 1 generating set for the SDP relaxation:"
+    "As an example, we find the critical visibility of the $P_{\\text{2PR}}$ distribution from Example 2, but in the classical tripartite line scenario with a second order inflation, and with the local level 1 generating set for the SDP relaxation (local levels are introduced in Example 3):"
    ]
   },
   {
@@ -429,26 +429,40 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 12,
+   "execution_count": 5,
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
+      "0 Maximum smallest eigenvalue:    0.06623 \tvisibility = 0.5\n",
+      "1 Maximum smallest eigenvalue:   -0.01418 \tvisibility = 0.75\n",
+      "2 Maximum smallest eigenvalue:    0.02683 \tvisibility = 0.625\n",
+      "3 Maximum smallest eigenvalue:   0.006449 \tvisibility = 0.6875\n",
+      "4 Maximum smallest eigenvalue:  -0.003839 \tvisibility = 0.7188\n",
+      "5 Maximum smallest eigenvalue:   0.001311 \tvisibility = 0.7031\n",
+      "6 Maximum smallest eigenvalue:  -0.001262 \tvisibility = 0.7109\n",
+      "7 Maximum smallest eigenvalue:  2.489e-05 \tvisibility = 0.707\n",
+      "8 Maximum smallest eigenvalue: -0.0006186 \tvisibility = 0.709\n",
+      "9 Maximum smallest eigenvalue: -0.0002968 \tvisibility = 0.708\n",
+      "10 Maximum smallest eigenvalue:  -0.000136 \tvisibility = 0.7075\n",
+      "11 Maximum smallest eigenvalue: -5.554e-05 \tvisibility = 0.7073\n",
+      "12 Maximum smallest eigenvalue: -1.533e-05 \tvisibility = 0.7072\n",
+      "13 Maximum smallest eigenvalue:   4.78e-06 \tvisibility = 0.7071\n",
       "Critical visibility:  0.707122802734375\n"
      ]
     },
     {
      "data": {
       "text/latex": [
-       "$\\displaystyle - 0.25 \\langle A_{0} B_{0} \\rangle - 0.25 \\langle A_{0} B_{1} \\rangle - 0.25 \\langle A_{1} B_{0} \\rangle + 0.25 \\langle A_{1} B_{1} \\rangle + 0.707$"
+       "$\\displaystyle \\langle A_{0} B_{0} \\rangle + \\langle A_{0} B_{1} \\rangle + \\langle A_{1} B_{0} \\rangle - 1.0 \\langle A_{1} B_{1} \\rangle - 2.828$"
       ],
       "text/plain": [
-       "-0.25*\\langle A_{0} B_{0} \\rangle - 0.25*\\langle A_{0} B_{1} \\rangle - 0.25*\\langle A_{1} B_{0} \\rangle + 0.25*\\langle A_{1} B_{1} \\rangle + 0.707"
+       "\\langle A_{0} B_{0} \\rangle + \\langle A_{0} B_{1} \\rangle + \\langle A_{1} B_{0} \\rangle - 1.0*\\langle A_{1} B_{1} \\rangle - 2.828"
       ]
      },
-     "execution_count": 12,
+     "execution_count": 5,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -459,9 +473,9 @@
     "                                settings_per_party=[2, 2])\n",
     "bellscenario_relax = InflationSDP(bellscenario)\n",
     "bellscenario_relax.generate_relaxation('npa1')\n",
-    "sdp, v_crit = bisection(bellscenario_relax, P_PRbox_array, verbose=0)\n",
+    "sdp, v_crit = bisection(bellscenario_relax, P_PRbox_array, verbose=1)\n",
     "print(\"Critical visibility: \", v_crit)\n",
-    "sdp.certificate_as_correlators(clean=True)"
+    "sdp.certificate_as_correlators(clean=True)*-4"
    ]
   },
   {
@@ -501,7 +515,7 @@
     "bellscenario_relax.generate_relaxation('npa1')\n",
     "\n",
     "mmnts = bellscenario_relax.measurements\n",
-    "A0, B0, A1, B1 = (1-2*mmnts[party][0][setting][0] for setting in range(2) for party in range(2))\n",
+    "A0, B0, A1, B1 = (1-2*mmnts[party][0][x][0] for x in [0, 1] for party in [0, 1])\n",
     "\n",
     "bellscenario_relax.set_objective(A0*B0 + A0*B1 + A1*B0 - A1*B1)\n",
     "bellscenario_relax.solve()\n",
@@ -539,6 +553,26 @@
    "metadata": {},
    "outputs": [
     {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0 Maximum smallest eigenvalue:  0.0001523 \tvisibility = 0.5\n",
+      "1 Maximum smallest eigenvalue:  4.132e-05 \tvisibility = 0.75\n",
+      "2 Maximum smallest eigenvalue:  -0.003438 \tvisibility = 0.875\n",
+      "3 Maximum smallest eigenvalue: -0.0001925 \tvisibility = 0.8125\n",
+      "4 Maximum smallest eigenvalue:  3.192e-05 \tvisibility = 0.7812\n",
+      "5 Maximum smallest eigenvalue:  2.283e-05 \tvisibility = 0.7969\n",
+      "6 Maximum smallest eigenvalue: -1.537e-05 \tvisibility = 0.8047\n",
+      "7 Maximum smallest eigenvalue:  1.074e-05 \tvisibility = 0.8008\n",
+      "8 Maximum smallest eigenvalue:  3.994e-06 \tvisibility = 0.8027\n",
+      "9 Maximum smallest eigenvalue:  4.967e-07 \tvisibility = 0.8037\n",
+      "10 Maximum smallest eigenvalue: -6.335e-06 \tvisibility = 0.8042\n",
+      "11 Maximum smallest eigenvalue:  -1.92e-06 \tvisibility = 0.804\n",
+      "12 Maximum smallest eigenvalue:    5.5e-08 \tvisibility = 0.8038\n",
+      "13 Maximum smallest eigenvalue:  -8.25e-07 \tvisibility = 0.8039\n"
+     ]
+    },
+    {
      "data": {
       "text/plain": [
        "0.803863525390625"
@@ -560,7 +594,7 @@
     "cols = qtriangle_relax.build_columns('physical2', max_monomial_length=4)\n",
     "qtriangle_relax.generate_relaxation(cols)\n",
     "\n",
-    "sdp, v_crit = bisection(qtriangle_relax, P_W_array)\n",
+    "sdp, v_crit = bisection(qtriangle_relax, P_W_array, verbose=1)\n",
     "v_crit"
    ]
   },
@@ -639,11 +673,8 @@
   }
  ],
  "metadata": {
-  "interpreter": {
-   "hash": "00a39c23cf09218597099894b042ffa9fa6ee7ec336d8d61c9bbb23befd995be"
-  },
   "kernelspec": {
-   "display_name": "Python 3.8.5 ('base')",
+   "display_name": "Python 3.10.4 64-bit",
    "language": "python",
    "name": "python3"
   },
@@ -657,9 +688,14 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.8.5"
+   "version": "3.10.4"
   },
-  "orig_nbformat": 4
+  "orig_nbformat": 4,
+  "vscode": {
+   "interpreter": {
+    "hash": "369f2c481f4da34e4445cda3fffd2e751bd1c4d706f27375911949ba6bb62e1c"
+   }
+  }
  },
  "nbformat": 4,
  "nbformat_minor": 2

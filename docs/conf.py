@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../examples/'))  # This way the examples
 
 # -- Project information -----------------------------------------------------
 
-project = 'inflation'
+project = 'CausalInflation'
 copyright = '2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens'
 author = 'Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens'
 
@@ -37,7 +37,7 @@ release = '0.1'
 # ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon',
               'sphinx.ext.githubpages', 'nbsphinx', 'sphinx.ext.viewcode',
-              'sphinx.ext.autodoc.typehints']
+              'sphinx.ext.autodoc.typehints', 'm2r2']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates'] 

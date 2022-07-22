@@ -170,3 +170,4 @@ problemarr*
 *.json
 result_matlab_svetlichny.txt
 examples/debug.py
+docs/dev_examples.ipynb

@@ -70,7 +70,7 @@ For more information about the theory and other features, please visit the [docu
 
 ## How to contribute
 
-Contributions are welcome and appreciated. If you want to contribute, you can read the [contribution guidelines](https://ecboghiu.github.io/inflation/CONTRIBUTE.md) or the [documentation guidelines](https://ecboghiu.github.io/inflation/_build/html/contribute.html). You can also read the [documentation](https://ecboghiu.github.io/inflation/) to learn more about how the package works.
+Contributions are welcome and appreciated. If you want to contribute, you can read the [contribution guidelines](https://github.com/ecboghiu/inflation/blob/main/CONTRIBUTE.md) or the [documentation guidelines](https://ecboghiu.github.io/inflation/_build/html/contribute.html). You can also read the [documentation](https://ecboghiu.github.io/inflation/) to learn more about how the package works.
 
 
 ## License

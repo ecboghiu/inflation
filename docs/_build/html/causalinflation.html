@@ -1,26 +1,28 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>causalinflation package &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <title>causalinflation package &mdash; CausalInflation 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="causalinflation.quantum package" href="causalinflation.quantum.html" />
-    <link rel="prev" title="causalinflation" href="modules.html" /> 
+    <link rel="prev" title="API Reference" href="modules.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -28,7 +30,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> inflation
+            <a href="index.html" class="icon icon-home"> CausalInflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -38,13 +40,14 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">causalinflation</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">causalinflation package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="causalinflation.quantum.html">causalinflation.quantum package</a></li>
@@ -61,6 +64,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
         </div>
@@ -69,7 +73,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">inflation</a>
+          <a href="index.html">CausalInflation</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -77,7 +81,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="modules.html">causalinflation</a> &raquo;</li>
+          <li><a href="modules.html">API Reference</a> &raquo;</li>
       <li>causalinflation package</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/causalinflation.rst.txt" rel="nofollow"> View page source</a>
@@ -112,10 +116,10 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="causalinflation-package">
-<h1>causalinflation package<a class="headerlink" href="#causalinflation-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
-<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<section id="causalinflation-package">
+<h1>causalinflation package<a class="headerlink" href="#causalinflation-package" title="Permalink to this headline"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="causalinflation.quantum.html">causalinflation.quantum package</a><ul>
@@ -131,15 +135,15 @@
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-causalinflation.InflationProblem">
-<span id="causalinflation-inflationproblem-module"></span><h2>causalinflation.InflationProblem module<a class="headerlink" href="#module-causalinflation.InflationProblem" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-causalinflation.InflationProblem">
+<span id="causalinflation-inflationproblem-module"></span><h2>causalinflation.InflationProblem module<a class="headerlink" href="#module-causalinflation.InflationProblem" title="Permalink to this headline"></a></h2>
 <dl class="py class">
-<dt id="causalinflation.InflationProblem.InflationProblem">
-<em class="property">class </em><code class="sig-prename descclassname">causalinflation.InflationProblem.</code><code class="sig-name descname">InflationProblem</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dag</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">outcomes_per_party</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">settings_per_party</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">inflation_level_per_source</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationProblem.InflationProblem" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationProblem.InflationProblem">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">causalinflation.InflationProblem.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem.InflationProblem" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for enconding relevant details concerning the causal
 compatibibility scenario, e.g., DAG structure, number of inputs
@@ -161,92 +165,92 @@ e.g. [‘A’, ‘B’, …]</p></li>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="module-causalinflation.useful_distributions">
-<span id="causalinflation-useful-distributions-module"></span><h2>causalinflation.useful_distributions module<a class="headerlink" href="#module-causalinflation.useful_distributions" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-causalinflation.useful_distributions">
+<span id="causalinflation-useful-distributions-module"></span><h2>causalinflation.useful_distributions module<a class="headerlink" href="#module-causalinflation.useful_distributions" title="Permalink to this headline"></a></h2>
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_2PR">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_2PR</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_2PR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_2PR" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_2PR">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_2PR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_2PR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_2PR" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_2PR_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_2PR_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_2PR_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_2PR_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_2PR_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_2PR_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_2PR_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_2PR_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_CHSH_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_CHSH_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_CHSH_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_CHSH_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_CHSH_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_CHSH_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_CHSH_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_CHSH_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_Fritz">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_Fritz</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">out_a</span></em>, <em class="sig-param"><span class="n">out_b</span></em>, <em class="sig-param"><span class="n">out_c</span></em>, <em class="sig-param"><span class="n">in_x</span></em>, <em class="sig-param"><span class="n">in_y</span></em>, <em class="sig-param"><span class="n">in_z</span></em>, <em class="sig-param"><span class="n">visibility</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Fritz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Fritz" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_Fritz">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_Fritz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visibility</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Fritz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Fritz" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_GHZ">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_GHZ</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_GHZ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_GHZ" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_GHZ">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_GHZ</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_GHZ"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_GHZ" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_GHZ_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_GHZ_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_GHZ_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_GHZ_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_GHZ_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_GHZ_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_GHZ_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_GHZ_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_Mermin">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_Mermin</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Mermin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Mermin" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_Mermin">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_Mermin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Mermin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Mermin" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_Mermin_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_Mermin_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Mermin_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Mermin_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_Mermin_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_Mermin_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Mermin_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Mermin_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_PRbox_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_PRbox_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_PRbox_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_PRbox_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_PRbox_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_PRbox_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_PRbox_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_PRbox_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_Salman">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_Salman</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">vis</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Salman"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Salman" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_Salman">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_Salman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Salman"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Salman" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_Salman_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_Salman_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Salman_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Salman_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_Salman_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_Salman_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_Salman_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_Salman_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_W">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_W</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_W"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_W" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_W">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_W</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_W"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_W" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.P_W_array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">P_W_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visibility</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_W_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_W_array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.P_W_array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">P_W_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#P_W_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.P_W_array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.probfunc2array">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">probfunc2array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">noise</span></em>, <em class="sig-param"><span class="n">outcomes_per_party</span></em>, <em class="sig-param"><span class="n">settings_per_party</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#probfunc2array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.probfunc2array" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.probfunc2array">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">probfunc2array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#probfunc2array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.probfunc2array" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.useful_distributions.target_distribution_gen">
-<code class="sig-prename descclassname">causalinflation.useful_distributions.</code><code class="sig-name descname">target_distribution_gen</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">parameter1</span></em>, <em class="sig-param"><span class="n">parameter2</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#target_distribution_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.useful_distributions.target_distribution_gen" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.useful_distributions.target_distribution_gen">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.useful_distributions.</span></span><span class="sig-name descname"><span class="pre">target_distribution_gen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/useful_distributions.html#target_distribution_gen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.useful_distributions.target_distribution_gen" title="Permalink to this definition"></a></dt>
 <dd><p>This function has been copied from:
 <a class="reference external" href="https://github.com/tkrivachy/neural-network-for-nonlocality-in-networks/blob/master/sample_code/targets.py">https://github.com/tkrivachy/neural-network-for-nonlocality-in-networks/blob/master/sample_code/targets.py</a>
 parameter1 is usually a parameter of distribution (not always relevant). parameter2 is usually noise.</p>
 </dd></dl>
 
-</div>
-<div class="section" id="module-causalinflation">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-causalinflation" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="causalinflation">
-<h3>CausalInflation<a class="headerlink" href="#causalinflation" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="module-causalinflation">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-causalinflation" title="Permalink to this headline"></a></h2>
+<section id="causalinflation">
+<h3>CausalInflation<a class="headerlink" href="#causalinflation" title="Permalink to this headline"></a></h3>
 <dl class="simple">
 <dt>Provides</dt><dd><ol class="arabic simple">
 <li><p>xxxx</p></li>
@@ -255,8 +259,8 @@ parameter1 is usually a parameter of distribution (not always relevant). paramet
 </dd>
 </dl>
 <dl class="py class">
-<dt id="causalinflation.InflationProblem">
-<em class="property">class </em><code class="sig-prename descclassname">causalinflation.</code><code class="sig-name descname">InflationProblem</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dag</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">outcomes_per_party</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">settings_per_party</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">inflation_level_per_source</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationProblem">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for enconding relevant details concerning the causal
 compatibibility scenario, e.g., DAG structure, number of inputs
@@ -279,8 +283,8 @@ e.g. [‘A’, ‘B’, …]</p></li>
 </dd></dl>
 
 <dl class="py class">
-<dt id="causalinflation.InflationSDP">
-<em class="property">class </em><code class="sig-prename descclassname">causalinflation.</code><code class="sig-name descname">InflationSDP</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">InflationProblem</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#causalinflation.InflationProblem.InflationProblem" title="causalinflation.InflationProblem.InflationProblem">causalinflation.InflationProblem.InflationProblem</a></span></em>, <em class="sig-param"><span class="n">commuting</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">InflationProblem</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#causalinflation.InflationProblem.InflationProblem" title="causalinflation.InflationProblem.InflationProblem"><span class="pre">causalinflation.InflationProblem.InflationProblem</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for generating and solving an SDP relaxation for quantum inflation.</p>
 <dl class="field-list simple">
@@ -304,8 +308,8 @@ by default False.</p></li>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.build_columns">
-<code class="sig-name descname">build_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span></em>, <em class="sig-param"><span class="n">max_monomial_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">return_columns_numerical</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.build_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.build_columns" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.build_columns">
+<span class="sig-name descname"><span class="pre">build_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_specification</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_monomial_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_columns_numerical</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.build_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.build_columns" title="Permalink to this definition"></a></dt>
 <dd><p>Process the input for the columns of the SDP relaxation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -324,8 +328,8 @@ than 2 letters, and the generating set becomes:
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_correlators">
-<code class="sig-name descname">certificate_as_correlators</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.symbol.Symbol<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_correlators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_correlators" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_correlators">
+<span class="sig-name descname"><span class="pre">certificate_as_correlators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">sympy.core.symbol.Symbol</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_correlators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_correlators" title="Permalink to this definition"></a></dt>
 <dd><p>Give certificate as symbolic sum of 2-output correlators that
 is greater than or equal to 0. Only valid for 2-output problems.</p>
 <dl class="field-list simple">
@@ -350,8 +354,8 @@ of decimals specified. Defaults to 3.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_objective">
-<code class="sig-name descname">certificate_as_objective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.symbol.Symbol<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_objective" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_objective">
+<span class="sig-name descname"><span class="pre">certificate_as_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">sympy.core.symbol.Symbol</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_objective" title="Permalink to this definition"></a></dt>
 <dd><p>Give certificate as symbolic sum of operators that can be used
 as an objective function to optimse.</p>
 <dl class="field-list simple">
@@ -376,8 +380,8 @@ of decimals specified. Defaults to 3.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_probs">
-<code class="sig-name descname">certificate_as_probs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.symbol.Symbol<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_probs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_probs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_probs">
+<span class="sig-name descname"><span class="pre">certificate_as_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">sympy.core.symbol.Symbol</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_probs" title="Permalink to this definition"></a></dt>
 <dd><p>Give certificate as symbolic sum of probabilities that is greater
 than or equal to 0.</p>
 <dl class="field-list simple">
@@ -402,8 +406,8 @@ of decimals specified. Defaults to 3.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.dump_to_file">
-<code class="sig-name descname">dump_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.dump_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.dump_to_file" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.dump_to_file">
+<span class="sig-name descname"><span class="pre">dump_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.dump_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.dump_to_file" title="Permalink to this definition"></a></dt>
 <dd><p>Save the whole object to a file using <cite>pickle</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -413,8 +417,8 @@ of decimals specified. Defaults to 3.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.generate_relaxation">
-<code class="sig-name descname">generate_relaxation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'npa1'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.generate_relaxation">
+<span class="sig-name descname"><span class="pre">generate_relaxation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_specification</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">sympy.core.symbol.Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'npa1'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition"></a></dt>
 <dd><dl>
 <dt>Creates the SDP relaxation of the quantum inflation problem</dt><dd><p>using the NPA hierarchy and applies the symmetries inferred
 from inflation.</p>
@@ -492,8 +496,8 @@ identity <cite>sympy.S.One</cite> as the first element.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.set_distribution">
-<code class="sig-name descname">set_distribution</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">p</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">use_lpi_constraints</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_distribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_distribution" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.set_distribution">
+<span class="sig-name descname"><span class="pre">set_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_distribution" title="Permalink to this definition"></a></dt>
 <dd><p>Set numerically the knowable moments and semiknowable moments according
 to the probability distribution specified, p. If p is None, or the user
 doesn’t pass any argument to set_distribution, then this is understood
@@ -530,8 +534,8 @@ the corresponding variable free in the SDP approximation.
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.set_objective">
-<code class="sig-name descname">set_objective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective</span><span class="p">:</span> <span class="n">sympy.core.symbol.Symbol</span></em>, <em class="sig-param"><span class="n">direction</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'max'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_objective" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.set_objective">
+<span class="sig-name descname"><span class="pre">set_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">sympy.core.symbol.Symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'max'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_objective" title="Permalink to this definition"></a></dt>
 <dd><p>Set or change the objective function of the polynomial optimization
 problem.</p>
 <dl class="field-list simple">
@@ -545,8 +549,8 @@ problem.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.solve">
-<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interpreter</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'MOSEKFusion'</span></em>, <em class="sig-param"><span class="n">feas_as_optim</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">solverparameters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.solve" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interpreter</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MOSEKFusion'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feas_as_optim</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solverparameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.solve" title="Permalink to this definition"></a></dt>
 <dd><p>Call a solver on the SDP relaxation. Upon successful solution, it
 returns the primal and dual objective values along with the solution
 matrices.</p>
@@ -574,8 +578,8 @@ feasible and negative otherwise. By default False.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.write_to_file">
-<code class="sig-name descname">write_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.write_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.write_to_file" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.write_to_file">
+<span class="sig-name descname"><span class="pre">write_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.write_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.write_to_file" title="Permalink to this definition"></a></dt>
 <dd><p>Exports the problem to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -587,15 +591,15 @@ specified, it defaults to sparse SDPA format.</p>
 
 </dd></dl>
 
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="modules.html" class="btn btn-neutral float-left" title="causalinflation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="causalinflation.quantum.html" class="btn btn-neutral float-right" title="causalinflation.quantum package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

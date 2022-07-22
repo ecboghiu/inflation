@@ -17,7 +17,7 @@
     "* Generate the semidefinite programming relaxation of the desired inflation through `InflationSDP`.\n",
     "* Export the relaxation to a file and/or solve the problem.\n",
     "\n",
-    "We will now go through the steps above in more detail. This tutorial is available on the [documentation webpage](https://ecboghiu.github.io/inflation/) and it can also be downloaded as a ready-to-run [Jupyter Notebook]( ) from the [GitHub repository](https://github.com/ecboghiu/inflation). If already familiar with quantum inflation, the quickest way to get started is to run some examples from the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section, which can also be downloaded as a [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/examples/examples.ipynb).\n",
+    "We will now go through the steps above in more detail. This tutorial is available on the [documentation webpage](https://ecboghiu.github.io/inflation/) and it can also be downloaded as a ready-to-run [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/examples/tutorial.ipynb) from the [GitHub repository](https://github.com/ecboghiu/inflation). If already familiar with quantum inflation, the quickest way to get started is to run some examples from the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section, which can also be downloaded as a [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/examples/examples.ipynb).\n",
     "\n",
     "We start by importing everything that we will need:"
    ]
