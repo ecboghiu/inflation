@@ -20,9 +20,7 @@
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Advanced" href="advanced.html" />
-    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,47 +39,10 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples and features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Feasibility-problems-and-extraction-of-certificates">Feasibility problems and extraction of certificates</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario">Example 1: Infeasibility of the W distribution in the quantum triangle scenario</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Certificate-extraction">Certificate extraction</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario">Example 2: Critical visibility of the 2PR distribution in the quantum tripartite-line scenario</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Feasibility-as-an-optimisation">Feasibility as an optimisation</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#Optimization-of-Bell-operators">Optimization of Bell operators</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-3.-Upper-bounds-on-Mermin’s-inequality">Example 3. Upper bounds on Mermin’s inequality</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Customising-the-generating-set-for-the-semidefinite-relaxation">Customising the generating set for the semidefinite relaxation</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#Optimisation-over-classical-distributions-and-feasibility-problems">Optimisation over classical distributions and feasibility problems</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario">Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#Standard-NPA">Standard NPA</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources">Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">Example 6: Optimising the CHSH inequality in the Bell scenario</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#SDP-hierarchy-of-“physical-moments”">SDP hierarchy of “physical moments”</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy">Example 7: Critical visibility of the W distribution with the physical moments hierarchy</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#Linearized-polynomial-identification-(LPI)-constraints">Linearized polynomial identification (LPI) constraints</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints">Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">causalinflation</a></li>
@@ -104,7 +65,7 @@
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
       <li>Examples and features</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/examples.ipynb.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/dev_examples.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -855,14 +816,37 @@ is also incompatible with the same causal structure, as was the case in the othe
 </section>
 </section>
 </section>
+<section id="Device-independent-entanglement-certification">
+<h1>Device independent entanglement certification<a class="headerlink" href="#Device-independent-entanglement-certification" title="Permalink to this headline"></a></h1>
+<p>As mentioned in other sections, if we impose that all operators commute (by setting the <code class="docutils literal notranslate"><span class="pre">commuting</span></code> flag to <code class="docutils literal notranslate"><span class="pre">True</span></code> when instantiating <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>), we get a relaxation that tests causal compatibility with a classical DAG. If furthermore the DAG is that of global shared randomness, then our package implements the techniques introduced in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7, 021042</a>.</p>
+<p>Testing compatibility of a distribution <span class="math notranslate nohighlight">\(p(abc\ldots | xyz\ldots)\)</span> with a DAG with global shared randomness is the same as checking if the distribution <span class="math notranslate nohighlight">\(p(abc\ldots | xyz\ldots)\)</span> Bell-nonlocal. It is known that all distributions that are Bell-local form a set with the geometry of a polytope in the vector space of probability distributions. Linear programming techniques allow one to build an oracle that can tell whether a given distribution is inside or outside the polytope (i.e.,
+whether it is Bell local or Bell non-local). See Section II from the <a class="reference external" href="https://journals-aps-org.recursos.biblioteca.upc.edu/rmp/abstract/10.1103/RevModPhys.86.419">review</a> for more information.</p>
+<p>For many-body systems linear programming does not scale efficiently. The NPA hierarchy with all-to-all-commuting operators is an outer approximation of the linear programming method. In particular, the feasible set of the semidefinite programming relaxations strictly include the local set. However, given a sufficiently high level of the hierarchy, the feasible set becomes exactly the local set, i.e., it converges to the results of the linear program (see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7,
+021042</a>). For intermediate levels of the hierarchy, the approximation is less tight, but it is more efficiently implementable than the exact linear program.</p>
+<section id="Example-9:-Noise-robustness-of-DI-entanglement-certification-of-the-W-state">
+<h2>Example 9: Noise robustness of DI entanglement certification of the W state<a class="headerlink" href="#Example-9:-Noise-robustness-of-DI-entanglement-certification-of-the-W-state" title="Permalink to this headline"></a></h2>
+<p>For this, we use tools from the <a class="reference external" href="https://github.com/FlavioBaccari/Hierarchy-for-nonlocality-detection">Hierarchy for nonlocality detection</a> Github repository implementing the techniques from <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7, 021042</a>. This requires the use of the <a class="reference external" href="https://qutip.org/">QuTiP</a> Python package.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">get_W_reduced</span>
+<span class="kn">from</span> <span class="nn">qutip</span> <span class="kn">import</span> <span class="n">sigmax</span><span class="p">,</span> <span class="n">sigmaz</span>
+
+<span class="n">N</span> <span class="o">=</span> <span class="mi">7</span>
+
+<span class="n">W_state</span> <span class="o">=</span> <span class="n">get_W_reduced</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+<span class="n">W_operators</span> <span class="o">=</span> <span class="p">[[</span><span class="n">sigmax</span><span class="p">(),</span> <span class="n">sigmaz</span><span class="p">()]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="advanced.html" class="btn btn-neutral float-right" title="Advanced" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

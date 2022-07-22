@@ -3,19 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>causalinflation.quantum.InflationSDP &mdash; inflation 0.1 documentation</title><link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <title>causalinflation.quantum.InflationSDP &mdash; CausalInflation 0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -26,7 +25,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../../index.html" class="icon icon-home"> inflation
+            <a href="../../../index.html" class="icon icon-home"> CausalInflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -36,13 +35,15 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../modules.html">causalinflation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
 </ul>
 
         </div>
@@ -51,7 +52,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">inflation</a>
+          <a href="../../../index.html">CausalInflation</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -89,6 +90,7 @@
                                             <span class="n">monomialset_name2num</span><span class="p">,</span>
                                             <span class="n">monomialset_num2name</span><span class="p">,</span>
                                             <span class="n">factorize_monomials</span><span class="p">,</span>
+                                            <span class="n">factorize_monomial</span><span class="p">,</span>
                                             <span class="n">find_permutation</span><span class="p">,</span>
                                             <span class="n">apply_source_permutation_coord_input</span><span class="p">,</span>
                                             <span class="n">from_numbers_to_flat_tuples</span><span class="p">,</span>
@@ -274,7 +276,7 @@
                                        <span class="n">monomialset_name2num</span><span class="p">(</span><span class="n">remaining_monomials</span><span class="p">,</span>
                                                             <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">),</span>
                                               <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
-                                          <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Computing canonical forms    &quot;</span><span class="p">)):</span>
+                                          <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Computing canonical forms   &quot;</span><span class="p">)):</span>
             <span class="n">canonical</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">to_representative</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mon</span><span class="p">),</span>
                                                   <span class="bp">self</span><span class="o">.</span><span class="n">inflation_levels</span><span class="p">,</span>
                                                   <span class="bp">self</span><span class="o">.</span><span class="n">commuting</span><span class="p">),</span>
@@ -354,7 +356,7 @@
             <span class="n">monomials_factors_vars</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">factor_variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_reps</span> <span class="o">=</span> <span class="n">monomials_factors_vars</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_something_known</span><span class="p">]</span>
         <span class="c1"># Define trivial arrays for distribution and objective</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span>      <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span>      <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_objective_as_dict</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mf">0.</span><span class="p">}</span></div>
 
@@ -423,8 +425,9 @@
                                                             <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_reps</span><span class="p">,</span>
                                                             <span class="bp">self</span><span class="o">.</span><span class="n">monomials_list</span><span class="p">,</span>
                                                             <span class="n">stop_counting</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">mul</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">factors</span> <span class="ow">in</span> <span class="n">final_monomials_list_numerical</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_known</span><span class="p">]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+                              <span class="o">**</span><span class="p">{</span><span class="n">var</span><span class="p">:</span> <span class="n">mul</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">factors</span> <span class="ow">in</span> <span class="n">final_monomials_list_numerical</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_known</span><span class="p">]}}</span>
 
 
         <span class="c1"># The indices for the variables in the semiknowns also need shifting</span>
@@ -433,9 +436,18 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">var</span><span class="p">,</span> <span class="n">mul</span><span class="p">(</span><span class="n">val</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">val</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
                                                <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">final_monomials_list_numerical</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_known</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_something_known</span><span class="p">]])</span></div>
 
+        <span class="c1"># If there is an objective, update it with the numerical values set</span>
+        <span class="c1"># if XXX:</span>
+        <span class="c1">#     for all keys in the objective</span>
+        <span class="c1">#         if the key corresponds to a number</span>
+        <span class="c1">#             add the number to the variable 1</span>
+        <span class="c1">#             delete the key</span>
+        <span class="c1">#     self.objective_as_dict</span>
 
-<div class="viewcode-block" id="InflationSDP.set_objective"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.InflationSDP.set_objective">[docs]</a>    <span class="k">def</span> <span class="nf">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objective</span><span class="p">:</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
-                            <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+<div class="viewcode-block" id="InflationSDP.set_objective"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.InflationSDP.set_objective">[docs]</a>    <span class="k">def</span> <span class="nf">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">objective</span><span class="p">:</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
+                      <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Set or change the objective function of the polynomial optimization</span>
 <span class="sd">        problem.</span>
 
@@ -469,16 +481,16 @@
             <span class="c1"># objects that we have used previously</span>
             <span class="n">objective</span> <span class="o">=</span> <span class="n">simplify_polynomial</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">objective</span><span class="p">),</span>
                                             <span class="bp">self</span><span class="o">.</span><span class="n">substitutions</span><span class="p">)</span>
-            <span class="c1"># Write objective as dictionary</span>
+            <span class="c1"># Build string-to-variable dictionary</span>
             <span class="n">string2int_dict</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;0&#39;</span><span class="p">:</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span> <span class="s1">&#39;1&#39;</span><span class="p">},</span>
                                <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monomials_list_all</span><span class="p">[:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
-            <span class="n">objective_as_dict</span> <span class="o">=</span> <span class="n">objective</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">()</span>
             <span class="c1"># Express objective in terms of representatives</span>
             <span class="n">symmetrized_objective</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mf">0.</span><span class="p">}</span>
-            <span class="k">for</span> <span class="n">monomial</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">objective_as_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">monomial</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">objective</span><span class="o">.</span><span class="n">as_coefficients_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">monomial_variable</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">string2int_dict</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">monomial</span><span class="p">)])</span>
                 <span class="nb">repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_var2repr</span><span class="p">[</span><span class="n">monomial_variable</span><span class="p">]</span>
-                <span class="k">if</span> <span class="nb">repr</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">):</span>
+                <span class="c1"># If the objective contains a known value add it to the constant</span>
+                <span class="k">if</span> <span class="nb">repr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">:</span>
                     <span class="n">symmetrized_objective</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> \
                                             <span class="n">sign</span><span class="o">*</span><span class="n">coeff</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">[</span><span class="nb">repr</span><span class="p">]</span>
                 <span class="k">elif</span> <span class="nb">repr</span> <span class="ow">in</span> <span class="n">symmetrized_objective</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -492,8 +504,8 @@
         <span class="c1"># If there is a conflict between fixed known moments</span>
         <span class="c1"># and variables in the objective</span>
         <span class="n">vars_in_objective</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objective_as_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">vars_known</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
-            <span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">))</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span>
+        <span class="n">vars_known</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                               <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">val</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)]</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_known</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_in_objective</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
@@ -556,12 +568,13 @@
         <span class="c1"># Process the dual certificate in a generic form</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;feasible&#39;</span><span class="p">,</span> <span class="s1">&#39;infeasible&#39;</span><span class="p">]:</span>
             <span class="n">coeffs</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solution_object</span><span class="p">[</span><span class="s1">&#39;dual_certificate&#39;</span><span class="p">]</span>
-            <span class="n">names</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monomials_list</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_known</span><span class="p">]</span>
-            <span class="n">aux01</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;1&#39;</span><span class="p">]]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-            <span class="n">clean_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">aux01</span><span class="p">,</span> <span class="n">names</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dual_certificate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">clean_names</span><span class="p">)),</span>
+            <span class="n">names</span>       <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">monomials_list</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">coeffs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span>    <span class="c1"># We&#39;d probably want this cleaner</span>
+            <span class="n">aux01</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">clean_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">],</span> <span class="n">names</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dual_certificate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">coeffs</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                                                      <span class="n">clean_names</span><span class="p">)),</span>
                                              <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
-
             <span class="bp">self</span><span class="o">.</span><span class="n">dual_certificate_lowerbound</span> <span class="o">=</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="InflationSDP.certificate_as_probs"><a class="viewcode-back" href="../../../causalinflation.quantum.html#causalinflation.InflationSDP.certificate_as_probs">[docs]</a>    <span class="k">def</span> <span class="nf">certificate_as_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1030,6 +1043,28 @@
                     <span class="k">for</span> <span class="n">monomial_factors</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">meas_ops</span><span class="p">):</span>
                         <span class="n">monomial</span> <span class="o">=</span> <span class="n">apply_substitutions</span><span class="p">(</span>
                             <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">monomial_factors</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">substitutions</span><span class="p">)</span>
+                        <span class="c1"># The commutation rules in self.substitutions are not</span>
+                        <span class="c1"># enough in some occasions when the monomial can be</span>
+                        <span class="c1"># factorized. An example is (all indices are inflation</span>
+                        <span class="c1"># indices) A13A33A22 and A22A13A33. Both are the same</span>
+                        <span class="c1"># because they are composed of two disconnected objects,</span>
+                        <span class="c1"># but cannot be brought one to another via two-body</span>
+                        <span class="c1"># substitution rules. The solution below is to decompose</span>
+                        <span class="c1"># in disconnected components, order them canonically,</span>
+                        <span class="c1"># and recombine them.</span>
+                        <span class="n">factor_list</span> <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">as_ordered_factors</span><span class="p">()</span>
+                        <span class="n">num_to_symb</span> <span class="o">=</span> <span class="p">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">to_numbers</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">factor</span><span class="p">),</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span> <span class="n">factor</span>
+                                                      <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">factor_list</span><span class="p">}</span>
+                        <span class="n">reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                                        <span class="n">factorize_monomial</span><span class="p">(</span>
+                                            <span class="n">to_numbers</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">monomial</span><span class="p">),</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)))</span>
+                        <span class="c1"># Recombine sorting by party</span>
+                        <span class="n">reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">reordered</span><span class="p">,</span>
+                                                     <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                        <span class="n">monomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="n">num_to_symb</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">factor</span><span class="p">)]</span>
+                                            <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">reordered</span><span class="p">])</span>
                         <span class="n">mon_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">))</span>
                         <span class="k">if</span> <span class="n">monomial</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">symbols</span> <span class="ow">and</span> <span class="n">mon_length</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">block</span><span class="p">):</span>
                             <span class="n">symbols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
@@ -1230,13 +1265,24 @@
                                                       <span class="n">flatmeas</span><span class="p">,</span>
                                                       <span class="n">measnames</span><span class="p">,</span>
                                                       <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+            <span class="c1"># Bring columns to the canonical form using commutations of</span>
+            <span class="c1"># connected components</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">permuted_cols_ind</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">permuted_cols_ind</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">permuted_cols_ind</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span>
+                                 <span class="nb">sorted</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">factorize_monomial</span><span class="p">(</span>
+                                                          <span class="n">permuted_cols_ind</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                                                                          <span class="p">)),</span>
+                                        <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                                                       <span class="p">)</span>
             <span class="n">list_permuted</span> <span class="o">=</span> <span class="n">from_numbers_to_flat_tuples</span><span class="p">(</span><span class="n">permuted_cols_ind</span><span class="p">)</span>
-
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">total_perm</span>    <span class="o">=</span> <span class="n">find_permutation</span><span class="p">(</span><span class="n">list_permuted</span><span class="p">,</span> <span class="n">list_original</span><span class="p">)</span>
+                <span class="n">total_perm</span> <span class="o">=</span> <span class="n">find_permutation</span><span class="p">(</span><span class="n">list_permuted</span><span class="p">,</span> <span class="n">list_original</span><span class="p">)</span>
                 <span class="n">inflation_symmetries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">total_perm</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The generating set is not closed under source swaps. Some symmetries will not be implemented.&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The generating set is not closed under source swaps.&quot;</span><span class="o">+</span>
+                         <span class="s2">&quot;Some symmetries will not be implemented.&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">inflation_symmetries</span>
 
@@ -1349,14 +1395,13 @@
         <span class="n">multiple_unknowable</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">[</span><span class="n">_</span><span class="p">,</span> <span class="n">are_knowable</span><span class="p">]</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">factors_are_knowable</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">are_knowable</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">are_knowable</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">are_knowable</span><span class="p">)</span>
-                <span class="n">arent_knowable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">are_knowable</span><span class="p">)</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">arent_knowable</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">combine_unknowns</span><span class="p">:</span>
+                <span class="n">are_knowable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">are_knowable</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">are_knowable</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">combine_unknowns</span><span class="p">:</span>
                     <span class="c1"># Combine unknowables and reorder</span>
                     <span class="n">unknowable_factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
                         <span class="p">[</span><span class="n">factor</span>
                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">factor</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">monomials_factors</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-                            <span class="k">if</span> <span class="n">arent_knowable</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">are_knowable</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
                     <span class="n">unknowable_factors_ordered</span> <span class="o">=</span> \
                            <span class="n">unknowable_factors</span><span class="p">[</span><span class="n">unknowable_factors</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()]</span>
                     <span class="c1"># Ugly hack. np.concatenate and np.append were failing</span>

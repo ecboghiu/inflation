@@ -35,6 +35,7 @@ CasualInflation is free open-source software released under the `Creative Common
    advanced
    contribute
    modules
+   changelog
 
 Indices and tables
 ==================

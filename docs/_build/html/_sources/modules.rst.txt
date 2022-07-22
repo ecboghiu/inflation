@@ -1,4 +1,4 @@
-causalinflation
+API Reference
 ===============
 
 .. toctree::
