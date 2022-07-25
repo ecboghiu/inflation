@@ -7,7 +7,7 @@ import pickle
 
 def convert_to_human_readable(problem):
     """Convert the SDP relaxation to a human-readable format.
-    
+
     :param problem: The SDP relaxation to write.
     :type problem: :class:`inflapyon.InflationSDP`.
     :returns: tuple of the objective function in a string and a matrix of
@@ -47,6 +47,7 @@ def convert_to_human_readable(problem):
             objective = str(independent_term)
         else:
             objective = ''
+        is_first = False
     except KeyError:
         objective = ''
     for variable, coeff in problem._objective_as_dict.items():
@@ -55,6 +56,7 @@ def convert_to_human_readable(problem):
                 objective += f"+{float(coeff)}*{monomial_dict[variable]}"
             else:
                 objective += f"{float(coeff)}*{monomial_dict[variable]}"
+                is_first = False
 
     return objective, matrix
 
