@@ -12,14 +12,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                              OptimizeError, SolutionError, \
                              AccSolutionStatus, ProblemStatus
 
-    positive_vars  = np.array(positive_vars)
-
     solve_dual = True
     if solverparameters:
         solve_dual = True if 'solve_dual' not in solverparameters else solverparameters['solve_dual']
 
     use_positive_vars = False
-    if positive_vars.size > 0:
+    if len(positive_vars) > 0:
         use_positive_vars = True
 
     positionsmatrix = positionsmatrix.astype(np.uint16)
@@ -71,11 +69,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     mat_dim = positionsmatrix.shape[0]
 
+    # If the objective is a constant, treat it as a feasibility problem
     constant_objective = False
-    if list(objective.keys()) == [1]: # If there are only constants in the objective, treat it as a feasibility problem!
+    if list(objective.keys()) == [1]:
         constant_objective = True
         if verbose > 1:
-            print('Constant objective detected! Treating the problem as ' +
+            print('Constant objective detected. Treating the problem as ' +
                   'a feasibility problem.')
 
     M = Model('InfSDP')
