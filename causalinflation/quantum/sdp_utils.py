@@ -59,7 +59,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 Fii.append(Fi[idx])
         Fi = Fii
 
-        nr_variables -= len(semiknown_vars.shape)
+        nr_variables -= len(semiknown_vars)
     # Convert to MOSEK format
     for i in range(len(Fi)):
         F     = scipy.sparse.lil_matrix(Fi[i])
