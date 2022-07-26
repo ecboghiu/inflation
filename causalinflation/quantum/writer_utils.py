@@ -153,16 +153,26 @@ def write_to_sdpa(problem, filename):
                             new_var += 1
                 elif var <= problem._n_something_known + 1:
                     try:
-                        coeff, var = problem.semiknown_moments[var]
-                        var        = new_var_dict[int(var)]
-                        lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t{coeff}\n")
+                        coeff, subs = problem.semiknown_moments[var]
                     except KeyError:
+                        # There is no LPI constraint associated, so we treat it
+                        # as a regular unknown variable
                         try:
                             var = new_var_dict[int(var)]
                             lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
                         except KeyError:
                             new_var_dict[int(var)] = new_var
                             lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
+                            new_var += 1
+                    else:
+                        try:
+                            subs = new_var_dict[int(subs)]
+                            lines.append(f"{subs}\t1\t{ii+1}\t{jj+1}\t{coeff}\n")
+                        except KeyError:
+                            # The substituted variable is not yet in the
+                            # variable list, so we add it
+                            new_var_dict[int(subs)] = new_var
+                            lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t{coeff}\n")
                             new_var += 1
                 else:
                     try:
