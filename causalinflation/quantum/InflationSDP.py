@@ -283,8 +283,8 @@ class InflationSDP(object):
             monomials_factors_vars[idx][1] = factor_variables
         self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
-        self.known_moments      = {0: 0, 1: 1}
         self.semiknown_moments  = np.array([])
+        self.known_moments      = {0: 0., 1: 1.}
         self._objective_as_dict = {1: 0.}
 
     def set_distribution(self,
@@ -352,7 +352,7 @@ class InflationSDP(object):
                                                             self.semiknown_reps,
                                                             self.monomials_list,
                                                             stop_counting)
-        self.known_moments = {**{0: 0, 1: 1},
+        self.known_moments = {**{0: 0., 1: 1.},
                               **{var: mul(factors)
             for var, factors in final_monomials_list_numerical[:self._n_known]}}
 
