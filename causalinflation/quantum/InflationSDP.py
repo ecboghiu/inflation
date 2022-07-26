@@ -1,7 +1,6 @@
 import copy
 import itertools
 import numpy as np
-import pickle
 import sympy as sp
 
 from causalinflation import InflationProblem
@@ -1389,5 +1388,6 @@ class InflationSDP(object):
         filename : str
             Name of the file.
         """
+        import pickle
         with open(filename, 'w') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
