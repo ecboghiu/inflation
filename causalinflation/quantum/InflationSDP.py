@@ -1422,7 +1422,6 @@ class InflationSDP(object):
                 ispositive[i+self._n_known, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
 
-    def dump_to_file(self, filename):
     def _set_semiknowns(self):
         pass
 
