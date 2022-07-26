@@ -3,17 +3,15 @@ import scipy.sparse
 import sys
 
 def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
-                         objective: dict = {1: 0.}, known_vars={0: 0, 1: 1},
-                         semiknown_vars=[], positive_vars=[], verbose: int = 0,
-                         feas_as_optim: bool = False,
-                         solverparameters: dict = {}):
+                         objective={1: 0.}, known_vars={0: 0., 1: 1.},
+                         semiknown_vars={}, positive_vars=[],
+                         verbose=0, feas_as_optim=False, solverparameters={}):
 
     import mosek
     from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
                              OptimizeError, SolutionError, \
                              AccSolutionStatus, ProblemStatus
 
-    semiknown_vars = np.array(semiknown_vars)
     positive_vars  = np.array(positive_vars)
 
     solve_dual = True
@@ -24,23 +22,18 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     if positive_vars.size > 0:
         use_positive_vars = True
 
-    # The +1 is because positionsmatrix starts counting from 0,
-    # but then we have two reserved variables for 0 and 1
     positionsmatrix = positionsmatrix.astype(np.uint16)
-    if semiknown_vars.size > 0:
-        # TODO find a more elegant way to do this?
-        # When using proportionality constraints, we might get an entry is
+    if len(semiknown_vars) > 0:
+        # When using proportionality constraints, we might get an entry that is
         # proportional to a variable that is not found at any other entry, thus
-        # the total number of variables is not just the number of unknown entries
-        # of the moment matrix.
-        # However, if no new variables are to be found, the index of the biggest
-        # variable in semiknown_vars_array will be smaller than the maximum in all
-        # the entries of positionsmatrix.
-        nr_variables = max([int(np.max(semiknown_vars)), int(positionsmatrix.max())]) + 1
+        # the total number of variables is encoded in semiknown_vars instead of
+        # positionsmatrix.
+        nr_variables = max(max([val[1] for val in semiknown_vars.values()]),
+                           int(np.max(positionsmatrix))) + 1
     else:
         nr_variables = np.max(positionsmatrix) + 1
-    nr_known = len(known_vars)
-    nr_unknown = nr_variables - nr_known
+    nr_known        = len(known_vars)
+    nr_unknown      = nr_variables - nr_known
 
     F0 = scipy.sparse.lil_matrix(positionsmatrix.shape)
     for var in known_vars.keys():
@@ -55,25 +48,24 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         F[scipy.sparse.find(positionsmatrix == variable)[:2]] = 1
         Fi.append(F)
 
-    if semiknown_vars.size > 0:
+    if len(semiknown_vars) > 0:
         Fii = []
-        x1 = semiknown_vars[:, 0].astype(int)
-        k  = semiknown_vars[:, 1]
-        x2 = semiknown_vars[:, 2].astype(int)
-        for idx, variable in enumerate(set(range(nr_variables))
-                                       - set(known_vars.keys())):
-            if variable in x1:
-                Fi[x2[idx]-nr_known] = Fi[x2[idx]-nr_known] + k[idx] * Fi[x1[idx]-nr_known]
+        for idx, var in enumerate(set(range(nr_variables))
+                                  - set(known_vars.keys())):
+            if var in semiknown_vars.keys():
+                factor, subs      = semiknown_vars[var]
+                Fi[subs-nr_known] += factor*Fi[var-nr_known]
             else:
                 Fii.append(Fi[idx])
         Fi = Fii
 
-        nr_variables = nr_variables - semiknown_vars.shape[0]
-
+        nr_variables -= len(semiknown_vars.shape)
     # Convert to MOSEK format
     for i in range(len(Fi)):
-        F = scipy.sparse.lil_matrix(Fi[i])
-        Fi[i] = Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].todense().A[0]) #Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].todense().A[0])
+        F     = scipy.sparse.lil_matrix(Fi[i])
+        Fi[i] = Matrix.sparse(*F.shape,
+                              *F.nonzero(),
+                              F[F.nonzero()].todense().A[0])
 
     mat_dim = positionsmatrix.shape[0]
 
@@ -111,19 +103,16 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             if feas_as_optim:
                 ci_constraints.append(M.constraint(Expr.dot(Z,Matrix.eye(mat_dim)), Domain.equalsTo(1)))
     else:
-        # ! The primal formulation uses a lot more RAM and is slower!! Only use if the problem is not too big
+        # The primal formulation uses a lot more RAM and is slower.
+        # Only use if the problem is not too big
         x = M.variable(nr_variables, Domain.unbounded())
-        for var in range(nr_known):
-            M.constraint(x.index(var), Domain.equalsTo(float(known_vars[var])))
+        for var, val in known_values.items():
+            M.constraint(x.index(var), Domain.equalsTo(float(val)))
 
         if use_positive_vars:
             for i in positive_vars:
                 M.constraint(x.index(i), Domain.greaterThan(0))
 
-        #G = x.pick(positionsmatrix.astype(int).reshape((1,int(positionsmatrix.size)))).reshape([mat_dim, mat_dim])
-        #G = Expr.reshape(x.pick(positionsmatrix.astype(int).flatten()),[mat_dim, mat_dim])
-        #G = M.variable("G", Domain.unbounded([mat_dim, mat_dim]))
-        #const = M.constraint(G, Domain.inPSDCone(mat_dim))
         G = M.variable("G", Domain.inPSDCone(mat_dim))
         if not feas_as_optim:
             M.objective(ObjectiveSense.Maximize, 0)

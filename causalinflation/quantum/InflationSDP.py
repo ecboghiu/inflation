@@ -283,8 +283,8 @@ class InflationSDP(object):
             monomials_factors_vars[idx][1] = factor_variables
         self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
-        self.semiknown_moments  = np.array([])
         self.known_moments      = {0: 0., 1: 1.}
+        self.semiknown_moments  = {}
         self._objective_as_dict = {1: 0.}
 
     def set_distribution(self,
@@ -358,10 +358,10 @@ class InflationSDP(object):
 
 
         # The indices for the variables in the semiknowns also need shifting
-        self.semiknown_moments = np.array([])
+        self.semiknown_moments = {}
         if self.use_lpi_constraints:
-            self.semiknown_moments = np.array([[var, mul(val[:-1]), val[-1]]
-                                               for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]])
+            self.semiknown_moments = {var: [mul(val[:-1]), val[-1]]
+                                       for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]}
 
         # If there is an objective, update it with the numerical values set
         # if XXX:
@@ -473,12 +473,10 @@ class InflationSDP(object):
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-        semiknown_moments = self.semiknown_moments if self.use_lpi_constraints else []
-
         solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
                               "known_vars":       self.known_moments,
-                              "semiknown_vars":   semiknown_moments,
+                              "semiknown_vars":   self.semiknown_moments,
                               "positive_vars":    self.physical_monomials,
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
