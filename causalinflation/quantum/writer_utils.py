@@ -15,11 +15,9 @@ def convert_to_human_readable(problem):
     """
     ### Process moment matrix
     # Replacer for constants
-    constant_dict = dict(enumerate(problem.known_moments))
-    constant_replacer = np.vectorize(lambda x: constant_dict.get(x, x))
+    constant_replacer = np.vectorize(lambda x: problem.known_moments.get(x, x))
     # Replacer for remaining symbols
-    monomial_dict = dict([[var, "*".join(expr)]
-                        for var, expr in problem.final_monomials_list])
+    monomial_dict = dict(problem.monomials_list)
     def replace_known(monom):
         try:
             replacement = monomial_dict.get(float(monom), monom)
@@ -28,12 +26,9 @@ def convert_to_human_readable(problem):
         return replacement
     known_replacer = np.vectorize(replace_known)
     # Replacer for semiknowns
-    semiknown_list = np.zeros((problem.semiknown_moments.shape[0], 2),
-                            dtype=object)
-    for ii, semiknown in enumerate(problem.semiknown_moments):
-        semiknown_list[ii,0] = int(semiknown[0])
-        semiknown_list[ii,1] = f"{semiknown[1]}*{monomial_dict[int(semiknown[2])]}"
-    semiknown_dict = dict(semiknown_list)
+    semiknown_dict = {}
+    for key, val in problem.semiknown_moments.items():
+        semiknown_dict[key] = f"{val[0]}*{monomial_dict[int(val[1])]}"
     semiknown_replacer = np.vectorize(lambda x: semiknown_dict.get(x, str(x)))
     matrix = constant_replacer(problem.momentmatrix)
     matrix = semiknown_replacer(matrix)
@@ -87,27 +82,31 @@ def write_to_mat(problem, filename):
     """
     # MATLAB does not like 0s, so we shift all by 1
     final_positions_matrix = problem.momentmatrix + 1
-    nr_unknown_moments = int(np.max(final_positions_matrix))
-    semiknown_moments = np.array(problem.semiknown_moments)
-    if semiknown_moments != []:
-        semiknown_moments[:, 0] += 1
-        semiknown_moments[:, 2] += 1
-        nr_unknown_moments = int(max([np.max(semiknown_moments),
-                                      np.max(final_positions_matrix)]))
+    nr_unknown_moments     = int(np.max(final_positions_matrix))
+    known_moments          = np.array(list(problem.known_moments.items()))
+    known_moments[:, 0]    += 1
+    physical_monomials     = np.array(problem.physical_monomials) + 1
+    monomials_list         = problem.monomials_list
+    monomials_list[:,0]    += 1
+    semiknown_moments      = np.zeros((len(problem.semiknown_moments), 3),
+                                      dtype=object)
+    for idx, [var, [factor, subs]] in enumerate(problem.semiknown_moments):
+        semiknown_moments[idx, 0] = var + 1
+        semiknown_moments[idx, 1] = factor
+        semiknown_moments[idx, 2] = subs + 1
+    nr_unknown_moments = int(np.max(final_positions_matrix)
+                             - len(semiknown_moments))
     objective = np.array(list(problem._objective_as_dict.items())).astype(float)
-    if problem.physical_monomials.size > 0:
-        positive_variables = problem.physical_monomials[:, 0]
-    else:
-        positive_variables = []
+    objective[:, 0] += 1
 
     savemat(filename,
     mdict={'G': final_positions_matrix,
-           'known_moments': problem.known_moments,
+           'known_moments':      known_moments,
            'nr_unknown_moments': nr_unknown_moments,
-           'propto': semiknown_moments,
-           'obj': objective,
-           'monomials_string': problem.final_monomials_list,
-           "positive_vars": positive_variables
+           'propto':             semiknown_moments,
+           'obj':                objective,
+           'monomials_string':   monomials_list,
+           "positive_vars":      physical_monomials
            }
     )
 
@@ -121,20 +120,11 @@ def write_to_sdpa(problem, filename):
     """
     # Compute actual number of variables
     potential_nvars = problem.momentmatrix.max() - 1
-    known_vars = 0 if len(problem.known_moments) == 0 else len(problem.known_moments) - 2
-    semiknown_vars = 0 if len(problem.semiknown_moments) == 0 else len(problem.semiknown_moments)
-    nvars = potential_nvars - known_vars - semiknown_vars
+    known_vars      = len(problem.known_moments) - 2 # Except 0 and 1
+    semiknown_vars  = len(problem.semiknown_moments)
+    nvars           = potential_nvars - known_vars - semiknown_vars
 
     # Replacer for semiknowns
-    if len(problem.semiknown_moments) > 0:
-        semiknown_list = np.zeros((problem.semiknown_moments.shape[0], 2),
-                                  dtype=object)
-        for ii, semiknown in enumerate(problem.semiknown_moments):
-            semiknown_list[ii,0] = int(semiknown[0])
-            semiknown_list[ii,1] = semiknown[1:]
-        semiknown_dict = dict(semiknown_list)
-    else:
-        semiknown_dict = {}
     lines = []
     new_var_dict = {}
     new_var = 1
@@ -148,8 +138,12 @@ def write_to_sdpa(problem, filename):
                 elif var <= problem._n_known + 1:
                     try:
                         coeff = problem.known_moments[var]
-                        lines.append(f"0\t1\t{ii+1}\t{jj+1}\t-{abs(coeff)}\n")
-                    except IndexError:
+                        if coeff >= 0:
+                            coeff_str = f"-{coeff}"
+                        else:
+                            coeff_str = f"+{abs(coeff)}"
+                        lines.append(f"0\t1\t{ii+1}\t{jj+1}\t{coeff_str}\n")
+                    except KeyError:
                         try:
                             var = new_var_dict[int(var)]
                             lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
@@ -159,13 +153,17 @@ def write_to_sdpa(problem, filename):
                             new_var += 1
                 elif var <= problem._n_something_known + 1:
                     try:
-                        coeff, var = semiknown_dict[var]
-                        var = new_var_dict[int(var)]
+                        coeff, var = problem.semiknown_moments[var]
+                        var        = new_var_dict[int(var)]
                         lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t{coeff}\n")
                     except KeyError:
-                        new_var_dict[int(var)] = new_var
-                        lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
-                        new_var += 1
+                        try:
+                            var = new_var_dict[int(var)]
+                            lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
+                        except KeyError:
+                            new_var_dict[int(var)] = new_var
+                            lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
+                            new_var += 1
                 else:
                     try:
                         var = new_var_dict[int(var)]
