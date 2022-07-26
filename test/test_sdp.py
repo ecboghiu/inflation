@@ -278,10 +278,10 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp._n_unknown, 13,
                          "The count of unknowable moments is wrong")
 
-        sdp.set_distribution(self.GHZ(0.5 + 1e-4))
-        self.assertEqual(sdp.known_moments[9],
-                         (0.5+1e-4)/2 + (0.5-1e-4)/8,
-                         "Setting the distribution is failing")
+        sdp.set_distribution(self.GHZ(0.5 + 1e-3))
+        self.assertTrue(np.isclose(sdp.known_moments[9],
+                        (0.5+1e-3)/2 + (0.5-1e-3)/8),
+                        "Setting the distribution is failing")
         sdp.solve()
         self.assertEqual(sdp.status, 'infeasible',
                      "The NC SDP is not identifying incompatible distributions")
