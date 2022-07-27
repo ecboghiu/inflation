@@ -244,10 +244,10 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp._n_unknown, 2,
                          "The count of unknowable moments is wrong")
         meas = sdp.measurements
-        A0 = 1 - 2*meas[0][0][0][0]
-        A1 = 1 - 2*meas[0][0][1][0]
-        B0 = 1 - 2*meas[1][0][0][0]
-        B1 = 1 - 2*meas[1][0][1][0]
+        A0 = 2*meas[0][0][0][0] - 1
+        A1 = 2*meas[0][0][1][0] - 1
+        B0 = 2*meas[1][0][0][0] - 1
+        B1 = 2*meas[1][0][1][0] - 1
 
         sdp.set_objective(A0*(B0+B1)+A1*(B0-B1), 'max')
         self.assertEqual(len(sdp._objective_as_dict), 7,
@@ -255,6 +255,18 @@ class TestSDPOutput(unittest.TestCase):
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 2*np.sqrt(2)),
                         "The SDP is not recovering max(CHSH) = 2*sqrt(2)")
+        bias = 3/4
+        biased_chsh = 2.62132    # Value obtained by other means (ncpol2sdpa)
+        sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
+                        'A_1_1_0': bias,           # Variable for p(a=0|x=1)
+                        meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
+                        5: bias                    # Variable for p(b=0|y=1)
+                        })
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
+                        f"The SDP is not recovering max(CHSH) = {biased_chsh} "
+                        + "when the single-party marginals are biased towards "
+                        + str(bias))
 
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
@@ -266,10 +278,10 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp._n_unknown, 13,
                          "The count of unknowable moments is wrong")
 
-        sdp.set_distribution(self.GHZ(0.5 + 1e-4))
-        self.assertEqual(sdp.known_moments[9],
-                         (0.5+1e-4)/2 + (0.5-1e-4)/8,
-                         "Setting the distribution is failing")
+        sdp.set_distribution(self.GHZ(0.5 + 1e-3))
+        self.assertTrue(np.isclose(sdp.known_moments[9],
+                        (0.5+1e-3)/2 + (0.5-1e-3)/8),
+                        "Setting the distribution is failing")
         sdp.solve()
         self.assertEqual(sdp.status, 'infeasible',
                      "The NC SDP is not identifying incompatible distributions")
