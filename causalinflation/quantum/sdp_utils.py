@@ -12,14 +12,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                              OptimizeError, SolutionError, \
                              AccSolutionStatus, ProblemStatus
 
-    positive_vars  = np.array(positive_vars)
-
     solve_dual = True
     if solverparameters:
         solve_dual = True if 'solve_dual' not in solverparameters else solverparameters['solve_dual']
 
     use_positive_vars = False
-    if positive_vars.size > 0:
+    if len(positive_vars) > 0:
         use_positive_vars = True
 
     positionsmatrix = positionsmatrix.astype(np.uint16)
@@ -42,11 +40,13 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     # List of empty sparse matrices
     Fi = []
+    variables_order = []
     for variable in set(range(nr_variables)) - set(known_vars.keys()):
         # Set to 1 where the unknown variable is
         F = scipy.sparse.lil_matrix(positionsmatrix.shape)
         F[scipy.sparse.find(positionsmatrix == variable)[:2]] = 1
         Fi.append(F)
+        variables_order.append(variable)
 
     if len(semiknown_vars) > 0:
         Fii = []
@@ -69,11 +69,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     mat_dim = positionsmatrix.shape[0]
 
+    # If the objective is a constant, treat it as a feasibility problem
     constant_objective = False
-    if list(objective.keys()) == [1]: # If there are only constants in the objective, treat it as a feasibility problem!
+    if list(objective.keys()) == [1]:
         constant_objective = True
         if verbose > 1:
-            print('Constant objective detected! Treating the problem as ' +
+            print('Constant objective detected. Treating the problem as ' +
                   'a feasibility problem.')
 
     M = Model('InfSDP')
@@ -81,27 +82,40 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         Z = M.variable("Z", Domain.inPSDCone(mat_dim))
         if not constant_objective:
             ci_constraints = []
-            M.objective(ObjectiveSense.Minimize, Expr.add(float(objective[1]), Expr.dot(Z, F0)))
-            for i, F in enumerate(Fi):
-                vars_in_obj = np.array(sorted(list(objective.keys()))[1:], dtype=int)-2
-                if i in vars_in_obj:
-                    if use_positive_vars and i in positive_vars:
-                            ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.lessThan(-float(objective[i+2]))))  # TODO check that variables which are known dont appear in objective
+            M.objective(ObjectiveSense.Minimize,
+                        Expr.add(float(objective[1]),
+                        Expr.dot(Z, F0)))
+            for var, F in zip(variables_order, Fi):
+                if var in objective.keys():
+                    if use_positive_vars and (var in positive_vars):
+                        ci_constraints.append(
+                            M.constraint(Expr.dot(Z, F),
+                                         Domain.lessThan(-float(objective[var])))
+                                              )
                     else:
-                        ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.equalsTo(-float(objective[i+2]))))
+                        ci_constraints.append(
+                            M.constraint(Expr.dot(Z, F),
+                                         Domain.equalsTo(-float(objective[var])))
+                                              )
                 else:
-                    ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.equalsTo(0)))
+                    ci_constraints.append(
+                        M.constraint(Expr.dot(Z, F),
+                                     Domain.equalsTo(0)))
         else:
             M.objective(ObjectiveSense.Minimize, Expr.dot(Z, F0))
             ci_constraints = []
-            for i, F in enumerate(Fi):
-                F = Fi[i]
-                if use_positive_vars and i in positive_vars:
-                    ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.lessThan(0)))
+            for var, F in zip(variables_order, Fi):
+                # F = Fi[i]
+                if use_positive_vars and (var in positive_vars):
+                    ci_constraints.append(M.constraint(Expr.dot(Z, F),
+                                                       Domain.lessThan(0)))
                 else:
-                    ci_constraints.append(M.constraint(Expr.dot(Z,F), Domain.equalsTo(0)))
+                    ci_constraints.append(M.constraint(Expr.dot(Z, F),
+                                                       Domain.equalsTo(0)))
             if feas_as_optim:
-                ci_constraints.append(M.constraint(Expr.dot(Z,Matrix.eye(mat_dim)), Domain.equalsTo(1)))
+                ci_constraints.append(
+                    M.constraint(Expr.dot(Z, Matrix.eye(mat_dim)),
+                                 Domain.equalsTo(1)))
     else:
         # The primal formulation uses a lot more RAM and is slower.
         # Only use if the problem is not too big

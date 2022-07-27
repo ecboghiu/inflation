@@ -1,7 +1,6 @@
 import copy
 import itertools
 import numpy as np
-import pickle
 import sympy as sp
 
 from causalinflation import InflationProblem
@@ -358,8 +357,8 @@ class InflationSDP(object):
 
 
         # The indices for the variables in the semiknowns also need shifting
-        self.semiknown_moments = {}
         if self.use_lpi_constraints:
+            # self._set_semiknowns()
             self.semiknown_moments = {var: [mul(val[:-1]), val[-1]]
                                        for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]}
 
@@ -441,6 +440,49 @@ class InflationSDP(object):
                     "values of the known moments (e.g., call self.set_distribution() " +
                     "with no input or set to nan/None ) or remove the known " +
                     "variables from the objective function.")
+
+    def set_values(self,
+                   values: Dict[Union[sp.core.symbol.Symbol, int, str], float]
+                   ) -> None:
+        """Directly assign numerical values to variables in the moment matrix.
+        This is done via a dictionary where keys are the variables to have
+        numerical values assigned (either in their operator form, in string
+        form, or directly referring to the variable in the moment matrix), and
+        the values are the corresponding numerical quantities.
+
+        Parameters
+        ----------
+        values : Dict[Union[simpy.core.symbol.Symbol, int, str], float]
+            The description of the variables to be assigned numerical values and
+            the corresponding values.
+        """
+        self.known_moments = {0: 0., 1: 1.}
+        names_to_vars = dict(self.monomials_list[:, ::-1])
+        for key, val in values.items():
+            if type(key) == int:
+                self.known_moments[key] = val
+            elif any([type(key) == sp.core.symbol.Symbol,
+                      type(key) == sp.physics.quantum.operator.HermitianOperator,
+                      type(key) == str]):
+                try:
+                    key_int = names_to_vars[str(key)]
+                    self.known_moments[key_int] = val
+                except KeyError:
+                    raise Exception(f"The monomial {key} could not be found in "
+                                    + "the moment matrix. Please input it in "
+                                    + "the form as it appears in "
+                                    + "self.monomials_list.")
+            else:
+                raise Exception(f"The type of the monomial {key} to be "
+                                + "assigned is not understood. Please use "
+                                + "the integer associated to the monomial, "
+                                + "its product of Sympy symbols, or the string "
+                                + "representing the latter.")
+
+        if self.objective:
+            self._update_objective()
+        if self.use_lpi_constraints:
+            self._set_semiknowns()
 
     def solve(self, interpreter: str='MOSEKFusion',
                     feas_as_optim: bool=False,
@@ -1380,7 +1422,16 @@ class InflationSDP(object):
                 ispositive[i+self._n_known, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
 
-    def dump_to_file(self, filename):
+    def _set_semiknowns(self):
+        pass
+
+    def _update_objective(self):
+        for key, val in self.known_moments.items():
+            if (key > 1) and (key in self._objective_as_dict.keys()):
+                self._objective_as_dict[1] += self._objective_as_dict[key] * val
+                del self._objective_as_dict[key]
+
+    def _dump_to_file(self, filename):
         """
         Save the whole object to a file using `pickle`.
 
@@ -1389,5 +1440,6 @@ class InflationSDP(object):
         filename : str
             Name of the file.
         """
+        import pickle
         with open(filename, 'w') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
