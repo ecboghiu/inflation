@@ -436,10 +436,10 @@ class InflationSDP(object):
             if var in vars_in_objective:
                 raise Exception(
                     "You have variables in the objective that are also known " +
-                    "moments fixed by a distribution. Either erase the fixed " +
-                    "values of the known moments (e.g., call self.set_distribution() " +
-                    "with no input or set to nan/None ) or remove the known " +
-                    "variables from the objective function.")
+                    "moments fixed by a distribution. Please erase the fixed " +
+                    "values of the known moments by calling " +
+                    "self.set_distribution()  or remove the known variables " +
+                    "from the objective function.")
 
     def set_values(self,
                    values: Dict[Union[sp.core.symbol.Symbol, int, str], float]
