@@ -280,10 +280,11 @@ class InflationSDP(object):
                             self.names)] = var_idx
                     factor_variables.append(var_idx)
             monomials_factors_vars[idx][1] = factor_variables
-        self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
+        self.semiknowable_atoms = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
         self.known_moments      = {0: 0., 1: 1.}
         self.semiknown_moments  = {}
+        self.objective          = 0.
         self._objective_as_dict = {1: 0.}
 
     def set_distribution(self,
@@ -489,11 +490,33 @@ class InflationSDP(object):
                                 + "the integer associated to the monomial, "
                                 + "its product of Sympy symbols, or the string "
                                 + "representing the latter.")
-
-        if self.objective:
-            self._update_objective()
-        if self.use_lpi_constraints:
-            self._set_semiknowns()
+        if not only_specified_values:
+            # Assign numerical values to products of known atoms
+            for var, monomial_factors in self.semiknowable_atoms:
+                numeric_factors = np.array([values.get(factor, factor)
+                                            for factor in monomial_factors],
+                                           dtype=object)
+                if all(numeric_factors <= 1.):
+                    # When all atoms have numerical values the variable is known
+                    self.known_moments[var] = np.prod(numeric_factors)
+                elif self.use_lpi_constraints:
+                    if np.sum(numeric_factors > 1) == 1:
+                        # Compute the semiknown
+                        sorted_factors = np.sort(numeric_factors)
+                        self.semiknown_moments[var] = [sorted_factors[:-1].prod(),
+                                                       sorted_factors[-1]]
+                    elif ((np.sum(numeric_factors > 1) > 1)
+                        and (np.sum(numeric_factors <= 1.) > 0)):
+                        pos = np.where([mon[0] for mon in self.monomials_list]
+                                       == var)[0]
+                        monomial = self.monomials_list[pos][1]
+                        warn(f"The variable {var}, corresponding to monomial "
+                             + f"{monomial}, factorizes into a known part times"
+                             + " a product of variables. Recombining these "
+                             + "variables is not yet supported, so the variable"
+                             + " will be treated as unknown.")
+        if self.objective != 0:
+            self._update_objective()    #PASS THE SEMIKNOWNS THROUGH THE OBJECTIVE?
 
     def solve(self, interpreter: str='MOSEKFusion',
                     feas_as_optim: bool=False,
