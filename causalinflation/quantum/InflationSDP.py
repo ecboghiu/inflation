@@ -310,10 +310,6 @@ class InflationSDP(object):
         """
         _pdims = len(list(prob_array.shape))
         assert _pdims % 2 == 0, "The probability distribution must have equal number of inputs and outputs"
-        list(p.shape[:int(_pdims/2)]
-             ) == self.InflationProblem.outcomes_per_party
-        list(p.shape[int(_pdims/2):]
-             ) == self.InflationProblem.settings_per_party
 
         self.use_lpi_constraints = use_lpi_constraints
 
@@ -1417,9 +1413,6 @@ class InflationSDP(object):
             if all(factor_is_positive):
                 ispositive[i+self._n_known, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
-
-    def _set_semiknowns(self):
-        pass
 
     def _update_objective(self):
         for key, val in self.known_moments.items():
