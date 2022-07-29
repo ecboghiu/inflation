@@ -3,6 +3,9 @@ import scipy
 
 from typing import List, Dict, Tuple
 
+# Had to insert this because of circular imports
+from collections import defaultdict, deque
+
 try:
     from numba import jit
     from numba.types import bool_
@@ -444,8 +447,8 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
 
 
 def calculate_momentmatrix(cols: List,
-                           names: np.ndarray,
-                           verbose: int = 0
+                           verbose: int = 0,
+                           commuting = False
                            ) -> Tuple[np.ndarray, Dict]:
     """Calculate the moment matrix.
 
@@ -473,12 +476,14 @@ def calculate_momentmatrix(cols: List,
     Tuple[np.ndarray, Dict]
         The moment matrix, where each entry (i,j) stores the
         integer representation of a monomial. The Dict is a
-        mapping from string representation of monomial to integer
+        mapping from tuples representation of monomial to integer
         representation.
     """
 
     nrcols = len(cols)
-    vardic = {}
+    canonical_mon_to_idx_dict = dict()
+    # from_idx_to_canonical_mon_dict = dict()
+    # vardic = {}
     # Emi: so np.array([-1],dtype=np.uint16) evaluates to 65535, can we ensure
     # we will never have more than 65535 unique variables??
     # I'm not so convinced, so I go with int32 (~4 billion)
@@ -491,104 +496,100 @@ def calculate_momentmatrix(cols: List,
                   desc="Calculating moment matrix    "):
         for j in range(i, nrcols):
             mon1, mon2 = cols[i], cols[j]
-            if mon1.size <= 1 and mon2.size <= 1:
-                #print(mon1,mon2)
-                name = ' '
-                vardic[name] = varidx
-                momentmatrix[i, j] = vardic[name]
-                varidx += 1
+            # if mon1.size <= 1 and mon2.size <= 1:
+            #     #print(mon1,mon2)
+            #     from_canonical_mon_to_idx_dict[name] = varidx
+            #     from_idx_to_canonical_mon_dict[varidx] = tuple() #Represents no multiplication, i.e. 1.
+            #     momentmatrix[i, j] = varidx
+            #     varidx += 1
+            # else:
+            if not commuting:
+                mon_v1 = dot_mon(mon1, mon2)
             else:
-                mon = dot_mon(mon1, mon2)
-                if mon_is_zero(mon):
-                    # If sparse, we don't need this, but for readibility...
-                    momentmatrix[i, j] = 0
-                else:
-                    mon  = to_canonical(mon)
-                    name = to_name(mon, names)
-
-                    if name not in vardic:
-                        mon_rev  = to_canonical(dot_mon(mon2, mon1))
-                        rev_name = to_name(mon_rev, names)
-                        if rev_name not in vardic:
-                            vardic[name] = varidx
-                            if not np.array_equal(mon, mon_rev):
-                                vardic[rev_name] = varidx
-                            varidx += 1
-                        else:
-                            vardic[name] = vardic[rev_name]
-                        momentmatrix[i, j] = vardic[name]
-                    else:
-                        momentmatrix[i, j] = vardic[name]
-                    if i != j:
-                        # NOTE: Assuming a REAL moment matrix!!
-                        momentmatrix[j, i] = momentmatrix[i, j]
-    return momentmatrix, vardic
-
-
-def calculate_momentmatrix_commuting(cols: np.ndarray,
-                                     names: np.ndarray,
-                                     verbose: int = 0
-                                     ) -> np.ndarray:
-    """See description of 'calculate_momentmatrix'. The same, but we further
-    assume everything commutes with everything.
-
-    Parameters
-    ----------
-    cols : np.ndarray
-        List of np.ndarray representing the generating set.
-    names : np.ndarray
-        The string names of each party.
-    verbose : int, optional
-        How descriptive the prints are, by default 0.
-
-    Returns
-    -------
-    Tuple[np.ndarray, Dict]
-        The moment matrix, where each entry (i,j) stores the
-        integer representation of a monomial. The Dict is a a
-        mapping from string representation of monomial to integer
-        representation.
-    """
-    nrcols = len(cols)
-
-    vardic = {}
-    momentmatrix = scipy.sparse.lil_matrix((nrcols, nrcols), dtype=np.uint32)
-    if np.array_equal(cols[0], np.array([0])):
-        # Some function doesnt like [0] and needs [[0]]
-        cols[0] = np.array([cols[0]])
-    iteration = 0
-    varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i in tqdm(range(nrcols), disable=not verbose,
-                  desc="Calculating moment matrix"):
-        for j in range(i, nrcols):
-            mon1, mon2 = cols[i], cols[j]
-            if mon1.size <= 1 and mon2.size <= 1:
-                name = ' '
-                vardic[name] = varidx
-                momentmatrix[i, j] = vardic[name]
-                varidx += 1
+                mon_v1 = dot_mon_commuting(mon1, mon2)
+            if mon_is_zero(mon_v1):
+                # If sparse, we don't need this, but for readibility...
+                momentmatrix[i, j] = 0
             else:
-                mon = dot_mon_commuting(mon1, mon2)
-                if mon_is_zero(mon):
-                    # If sparse, we don't need this, but for readibility...
-                    momentmatrix[i, j] = 0
+                if not commuting:
+                    mon_v1 = to_canonical(mon_v1)
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1))
                 else:
-                    name = to_name(remove_projector_squares(mon), names)
-                    if name not in vardic:
-                        vardic[name] = varidx
-                        momentmatrix[i, j] = vardic[name]
-                        varidx += 1
-                    else:
-                        momentmatrix[i, j] = vardic[name]
-                    if i != j:
-                        # Assuming a REAL moment matrix!!
-                        momentmatrix[j, i] = momentmatrix[i, j]
-            iteration += 1
-    return momentmatrix, vardic
+                    mon_v2 = dot_mon_commuting(mon2, mon1)
+                mon_v1_as_tuples = tuple(tuple(op) for op in mon_v1)
+                mon_v2_as_tuples = tuple(tuple(op) for op in mon_v2)
+                mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0] #Would be better to use np.lexsort
+                if mon_as_tuples not in canonical_mon_to_idx_dict.keys():
+                    canonical_mon_to_idx_dict[mon_as_tuples] = varidx
+                    # from_idx_to_canonical_mon_dict[varidx] = np.array(mon_as_tuples)
+                    momentmatrix[i, j] = varidx
+                    momentmatrix[j, i] = varidx
+                    varidx += 1
+    return momentmatrix, canonical_mon_to_idx_dict
+
+
+# def calculate_momentmatrix_commuting(cols: np.ndarray,
+#                                      verbose: int = 0
+#                                      ) -> np.ndarray:
+#     """See description of 'calculate_momentmatrix'. The same, but we further
+#     assume everything commutes with everything.
+#
+#     Parameters
+#     ----------
+#     cols : np.ndarray
+#         List of np.ndarray representing the generating set.
+#     names : np.ndarray
+#         The string names of each party.
+#     verbose : int, optional
+#         How descriptive the prints are, by default 0.
+#
+#     Returns
+#     -------
+#     Tuple[np.ndarray, Dict]
+#         The moment matrix, where each entry (i,j) stores the
+#         integer representation of a monomial. The Dict is a a
+#         mapping from string representation of monomial to integer
+#         representation.
+#     """
+#     nrcols = len(cols)
+#
+#     vardic = {}
+#     momentmatrix = scipy.sparse.lil_matrix((nrcols, nrcols), dtype=np.uint32)
+#     if np.array_equal(cols[0], np.array([0])):
+#         # Some function doesnt like [0] and needs [[0]]
+#         cols[0] = np.array([cols[0]])
+#     iteration = 0
+#     varidx = 1  # We start from 1 because 0 is reserved for 0
+#     for i in tqdm(range(nrcols), disable=not verbose,
+#                   desc="Calculating moment matrix"):
+#         for j in range(i, nrcols):
+#             mon1, mon2 = cols[i], cols[j]
+#             if mon1.size <= 1 and mon2.size <= 1:
+#                 name = ' '
+#                 vardic[name] = varidx
+#                 momentmatrix[i, j] = vardic[name]
+#                 varidx += 1
+#             else:
+#                 mon = dot_mon_commuting(mon1, mon2)
+#                 if mon_is_zero(mon):
+#                     # If sparse, we don't need this, but for readibility...
+#                     momentmatrix[i, j] = 0
+#                 else:
+#                     name = to_name(remove_projector_squares(mon), names)
+#                     if name not in vardic:
+#                         vardic[name] = varidx
+#                         momentmatrix[i, j] = vardic[name]
+#                         varidx += 1
+#                     else:
+#                         momentmatrix[i, j] = vardic[name]
+#                     if i != j:
+#                         # Assuming a REAL moment matrix!!
+#                         momentmatrix[j, i] = momentmatrix[i, j]
+#             iteration += 1
+#     return momentmatrix, vardic
 
 ################################################################################
-# Had to insert this because of circular imports
-from collections import defaultdict, deque
+
 def factorize_monomial(monomial: np.ndarray
                        ) -> np.ndarray:
     """This function splits a moment/expectation value into products of

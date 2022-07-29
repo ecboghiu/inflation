@@ -2,6 +2,7 @@ import copy
 import numpy as np
 import sympy
 import warnings
+from functools import lru_cache
 
 from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
                                               to_canonical)
@@ -14,8 +15,11 @@ from itertools import permutations, product
 from ncpol2sdpa import flatten, generate_operators, generate_variables
 from ncpol2sdpa.nc_utils import apply_substitutions
 
-from typing import Dict, List, Tuple, Union, Any, NewType, TypeVar
+from typing import Dict, List, Tuple, Union, Any, Iterable #, NewType, TypeVar
 
+#Adding for hopefully-efficient moment matrix symmetrization
+from sympy.combinatorics import Permutation
+from sympy.combinatorics.perm_groups import PermutationGroup
 
 try:
     import numba
@@ -660,7 +664,7 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
             tuples.append(tuple(flatten(element.tolist())))
     return tuples
 
-
+@lru_cache(maxsize=None, typed=False)
 def is_knowable(monomial: ArrayMonomial) -> bool:
     """Determines whether a given atomic monomial (which cannot be factorized
     into smaller disconnected components) admits an identification with a
@@ -682,21 +686,21 @@ def is_knowable(monomial: ArrayMonomial) -> bool:
     # one operator per node in the network, if the corresponding graph is
     # the same as the scenario hypergraph.
 
-    if type(monomial) == list:
-        monomial = np.array(monomial)
-    assert monomial.ndim == 2, "You must enter a list of monomials. Hence,"\
+    monomial_as_array = np.asarray(monomial)
+    assert monomial_as_array.ndim == 2, "You must enter a list of monomials. Hence,"\
                         + " the number of dimensions of monomial must be 2"
-    parties = np.asarray(monomial)[:, 0].astype(int)
+    parties = monomial_as_array[:, 0].astype(int)
     # If there is more than one monomial of a party, it is not knowable
     if len(set(parties)) != len(parties):
         return False
     else:
        # We see if, for each source, there is at most one copy used
         return all([len(set(source[np.nonzero(source)])) <= 1
-                    for source in np.asarray(monomial)[:, 1:-2].T])
+                    for source in monomial_as_array[:, 1:-2].T])
 
 
-def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
+@lru_cache(maxsize=None, typed=False)
+def is_physical(monomial_in: Iterable[Iterable[int]],
                 sandwich_positivity=False
                 ) -> bool:
     """Determines whether a monomial is physical/positive. It is positive
@@ -1570,3 +1574,11 @@ def clean_coefficients(coefficients: np.array,
     # Round
     coeffs = np.round(coeffs, decimals=round_decimals)
     return coeffs
+
+
+
+def dimino_sympy(group_generators):
+    gens = [Permutation(list(gen)) for gen in group_generators]
+    group = PermutationGroup(gens)
+    group_elements = list(group.generate_dimino(af=True))
+    return group_elements
