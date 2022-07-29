@@ -1,6 +1,9 @@
 import numpy as np
 from itertools import chain
 from warnings import warn
+import methodtools
+from typing import Iterable
+
 
 class InflationProblem(object):
     """Class for enconding relevant details concerning the causal
@@ -128,7 +131,8 @@ class InflationProblem(object):
                      str(self.inflation_level_per_source) +
                      " inflation copies per source.")
 
-    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array) -> bool:
+    @methodtools.lru_cache(maxsize=None, typed=False)
+    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: Iterable[Iterable[int]]) -> bool:
         """
         We assume that the numpy vector-per-operator notation has:
         party_index in slot 0
@@ -136,7 +140,7 @@ class InflationProblem(object):
         effective_setting_index in slot -2
         """
         # Parties start at #1 in our numpy vector notation, so we drop by one.
-        parties_in_play = monomial_as_2d_numpy_array[:, 0] - 1
+        parties_in_play = np.asarray(monomial_as_2d_numpy_array)[:, 0] - 1
         # assert len(parties_in_play) == len(
         #     set(parties_in_play)), 'The same party appears to be referenced more than once.'
         parents_referenced = set()
