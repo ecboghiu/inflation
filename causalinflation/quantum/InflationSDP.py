@@ -442,7 +442,9 @@ class InflationSDP(object):
                     "from the objective function.")
 
     def set_values(self,
-                   values: Dict[Union[sp.core.symbol.Symbol, int, str], float]
+                   values: Dict[Union[sp.core.symbol.Symbol, int, str], float],
+                   use_lpi_constraints: bool = False,
+                   only_specified_values: bool = False,
                    ) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
@@ -455,7 +457,16 @@ class InflationSDP(object):
         values : Dict[Union[simpy.core.symbol.Symbol, int, str], float]
             The description of the variables to be assigned numerical values and
             the corresponding values.
+
+        use_lpi_constraints : bool
+            Specification whether linearized polynomial constraints (see, e.g.,
+            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+
+        only_specified_values : bool
+            Specification whether one wishes to fix only the variables provided,
+            or also the variables containing products of the monomials fixed.
         """
+        self.use_lpi_constraints = use_lpi_constraints
         self.known_moments = {0: 0., 1: 1.}
         names_to_vars = dict(self.monomials_list[:, ::-1])
         for key, val in values.items():
