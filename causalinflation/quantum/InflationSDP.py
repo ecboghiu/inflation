@@ -23,7 +23,8 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             generate_commuting_measurements,
                                             generate_noncommuting_measurements,
                                             from_coord_to_sym,
-                                            clean_coefficients)
+                                            clean_coefficients,
+                                            compute_numeric_value)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
                                               to_canonical)
@@ -288,26 +289,26 @@ class InflationSDP(object):
         self._objective_as_dict = {1: 0.}
 
     def set_distribution(self,
-                         p: np.ndarray,
+                         prob_array: np.ndarray,
                          use_lpi_constraints: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
-        to the probability distribution specified, p. If p is None, or the user
+        to the probability distribution specified. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
         as a request to delete information about past distributions. If p containts
         elements that are either None or nan, then this is understood as leaving
         the corresponding variable free in the SDP approximation.
         Args:
-            p (np.ndarray): Multidimensional array encoding the probability
-            vector, which is called as p[a,b,c,...,x,y,z,...] where a,b,c,...
-            are outputs and x,y,z,... are inputs. Note: even if the inputs have
-            cardinality 1, they must still be specified, and the corresponding
-            axis dimensions are 1.
+            prob_array (np.ndarray): Multidimensional array encoding the
+            distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
+            where a,b,c,... are outputs and x,y,z,... are inputs.
+            Note: even if the inputs have cardinality 1, they must be specified,
+            and the corresponding axis dimensions are 1.
 
             use_lpi_constraints (bool): Specification whether linearized
             polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
             will be imposed or not.
         """
-        _pdims = len(list(p.shape))
+        _pdims = len(list(prob_array.shape))
         assert _pdims % 2 == 0, "The probability distribution must have equal number of inputs and outputs"
         list(p.shape[:int(_pdims/2)]
              ) == self.InflationProblem.outcomes_per_party
@@ -321,55 +322,16 @@ class InflationSDP(object):
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
 
-        if self.use_lpi_constraints:
-            stop_counting = self._n_something_known
-        else:
-            stop_counting = self._n_known
-
-        # Extract variables whose value we can get from the probability distribution in a symbolic form
-        variables_to_be_given = [entry
+        atomic_knowable_variables = [entry
                 for idx, entry in enumerate(self.monomials_list[:self._n_known])
-                                   if len(self.semiknown_reps[idx][1]) == 1]
-        self.symbolic_variables_to_be_given = transform_vars_to_symb(variables_to_be_given,  # TODO change this name
-                                                                     max_nr_of_parties=self.InflationProblem.nr_parties)
-        if self.verbose > 1:
-            print("Simplest known variables: =",
-                  self.symbolic_variables_to_be_given)
-
-        # Substitute the list of known variables with symbolic values with numerical values
-        variables_values = substitute_sym_with_numbers(self.symbolic_variables_to_be_given,
-                                                       self.InflationProblem.settings_per_party,
-                                                       self.InflationProblem.outcomes_per_party,
-                                                       p)
-
-        assert (np.array(variables_values, dtype=object)[:, 0].astype(int).tolist()
-                == np.array(variables_to_be_given, dtype=object)[:, 0].astype(int).tolist())
-        if self.verbose > 1:
-            print("Variables' numerical values given p =", variables_values)
-
-        final_monomials_list_numerical = \
-                      substitute_variable_values_in_monlist(variables_values,
-                                                            self.semiknown_reps,
-                                                            self.monomials_list,
-                                                            stop_counting)
-        self.known_moments = {**{0: 0., 1: 1.},
-                              **{var: mul(factors)
-            for var, factors in final_monomials_list_numerical[:self._n_known]}}
-
-
-        # The indices for the variables in the semiknowns also need shifting
-        if self.use_lpi_constraints:
-            # self._set_semiknowns()
-            self.semiknown_moments = {var: [mul(val[:-1]), val[-1]]
-                                       for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]}
-
-        # If there is an objective, update it with the numerical values set
-        # if XXX:
-        #     for all keys in the objective
-        #         if the key corresponds to a number
-        #             add the number to the variable 1
-        #             delete the key
-        #     self.objective_as_dict
+                                   if len(self.semiknowable_atoms[idx][1]) == 1]
+        atomic_numerical_values = {var[0]: compute_numeric_value(var[1],
+                                                                 prob_array,
+                                                    self.InflationProblem.names)
+                                   for var in atomic_knowable_variables}
+        self.set_values(atomic_numerical_values,
+                        self.use_lpi_constraints,
+                        only_specified_values=False)
 
 
     def set_objective(self,
