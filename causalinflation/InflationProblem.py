@@ -51,7 +51,7 @@ class InflationProblem(object):
         if names:
             self.names = names
             if dag:
-                assert len(implicit_names_as_set.intersection(self.names)) == len(self.implicit_names_as_set), (
+                assert len(implicit_names_as_set.intersection(self.names)) == len(implicit_names_as_set), (
                     "Names read from DAG do not match names given as keyword argument.")
         elif dag:
             self.names = sorted(implicit_names_as_set)
@@ -135,7 +135,8 @@ class InflationProblem(object):
         outcome_index in slot -1
         effective_setting_index in slot -2
         """
-        parties_in_play = monomial_as_2d_numpy_array[:, 0]
+        # Parties start at #1 in our numpy vector notation, so we drop by one.
+        parties_in_play = monomial_as_2d_numpy_array[:, 0] - 1
         # assert len(parties_in_play) == len(
         #     set(parties_in_play)), 'The same party appears to be referenced more than once.'
         parents_referenced = set()
