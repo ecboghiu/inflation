@@ -2,7 +2,10 @@ import numpy as np
 from itertools import chain
 from warnings import warn
 import methodtools
-from typing import Iterable
+from typing import Tuple, Union, NewType
+ArrayMonomial = NewType("ArrayMonomial", Union[Tuple[Tuple[int]], np.ndarray])
+from copy import deepcopy
+# from types import MappingProxyType
 
 
 class InflationProblem(object):
@@ -28,8 +31,13 @@ class InflationProblem(object):
     verbose : int, optional
         How much information to print, by default 0.
     """
-    def __init__(self,  dag=[], outcomes_per_party=[], settings_per_party=[],
-                        inflation_level_per_source=[], names=[], verbose=0):
+    def __init__(self,
+                 dag=None,
+                 outcomes_per_party=tuple(),
+                 settings_per_party=tuple(),
+                 inflation_level_per_source=tuple(),
+                 names=tuple(),
+                 verbose=0):
         """Initialize the InflationProblem class.
         """
         self.verbose = verbose
@@ -132,7 +140,7 @@ class InflationProblem(object):
                      " inflation copies per source.")
 
     @methodtools.lru_cache(maxsize=None, typed=False)
-    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: Iterable[Iterable[int]]) -> bool:
+    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: ArrayMonomial) -> bool:
         """
         We assume that the numpy vector-per-operator notation has:
         party_index in slot 0
@@ -161,3 +169,30 @@ class InflationProblem(object):
                     return False
         else:
             return True
+
+    def rectify_fake_setting(self, monomial_as_2d_numpy_array: ArrayMonomial) -> ArrayMonomial:
+        # Parties start at #1 in our numpy vector notation.
+        new_mon = deepcopy(monomial_as_2d_numpy_array)
+        for o in new_mon:
+            party_index = o[0] - 1
+            effective_setting_as_integer = o[-2]
+            o_private_settings = self.extract_parent_values_from_effective_setting[
+                                        party_index][effective_setting_as_integer][0]
+            o[-2] = o_private_settings
+        return new_mon
+
+
+
+if __name__ == "__main__":
+    prob = InflationProblem(dag={'U_AB': ['A','B'],
+                                       'U_AC': ['A','C'],
+                                       'U_AD': ['A','D'],
+                                       'C': ['D'],
+                                       'A': ['B', 'C', 'D']},
+                                  outcomes_per_party=(2, 2, 2, 2),
+                                  settings_per_party=(3, 3, 3, 3),
+                                  inflation_level_per_source=(1, 1, 1),
+                                  names=('A', 'B', 'C', 'D'),
+                                  verbose=2)
+    print(len(prob.extract_parent_values_from_effective_setting))
+    print(prob.extract_parent_values_from_effective_setting[3])
