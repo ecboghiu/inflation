@@ -246,8 +246,8 @@ class InflationSDP(object):
         else:
             self.physical_monomials = [k for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.physical_q]
 
-        self.knowable_moments = {k: rectify_fake_setting(Mon.knowable_factors) for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
-        #TODO: Write the rectify_fake_settings code. Should be pretty easy.
+        self.knowable_moments = {k: self.InflationProblem.rectify_fake_setting(Mon.knowable_factors) for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
+
 
             #
             #
