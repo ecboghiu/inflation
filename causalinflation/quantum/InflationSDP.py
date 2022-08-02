@@ -918,11 +918,14 @@ class InflationSDP(object):
                                 physmons_per_party_per_length.append(physmons)
 
                         for mon_tuple in itertools.product(*physmons_per_party_per_length):
-                            concatenated = mon_tuple[0]
-                            for i in range(1, len(mon_tuple)):
-                                concatenated = np.concatenate((concatenated, mon_tuple[i]), axis=0)
-
-                            physical_monomials.append(concatenated.tolist())
+                            concatenated = np.concatenate(mon_tuple, axis=0)
+                            # Bring to canonical form
+                            monomial = np.vstack(
+                                           sorted(
+                                               np.concatenate(
+                                                   factorize_monomial(concatenated)),
+                                                  key=lambda x: x[0]))
+                            physical_monomials.append(monomial.tolist())
 
                 columns = physical_monomials
             else:
