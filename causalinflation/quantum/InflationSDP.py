@@ -376,8 +376,11 @@ class InflationSDP(object):
                 repr = self._var2repr[monomial_variable]
                 # If the objective contains a known value add it to the constant
                 if repr in self.known_moments:
+                    warn("Be aware that you have variables in the objective " +
+                         "that are also known moments fixed by your distribution.")
                     symmetrized_objective[1] += \
                                             sign*coeff*self.known_moments[repr]
+
                 elif repr in symmetrized_objective.keys():
                     symmetrized_objective[repr] += sign * coeff
                 else:
@@ -385,20 +388,6 @@ class InflationSDP(object):
             self._objective_as_dict = symmetrized_objective
         else:
             self._objective_as_dict = {1: sign * float(objective)}
-
-        # If there is a conflict between fixed known moments
-        # and variables in the objective
-        vars_in_objective = self._objective_as_dict.keys()
-        vars_known = [key for key, val in self.known_moments.items()
-                                               if (key > 1) and (val != np.nan)]
-        for var in vars_known:
-            if var in vars_in_objective:
-                raise Exception(
-                    "You have variables in the objective that are also known " +
-                    "moments fixed by a distribution. Please erase the fixed " +
-                    "values of the known moments by calling " +
-                    "self.set_distribution()  or remove the known variables " +
-                    "from the objective function.")
 
     def set_values(self,
                    values: Dict[Union[sp.core.symbol.Symbol, int, str], float],
