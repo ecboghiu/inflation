@@ -1,11 +1,20 @@
+# from __future__ import annotations
+# from __future__ import absolute_import
+# from __future__ import with_statement
 import numpy as np
-from general_tools import factorize_monomial, is_physical
+from causalinflation.quantum.general_tools import factorize_monomial, is_physical, is_knowable, to_representative_aux
 import itertools
 from functools import cached_property
 
+from typing import List, Tuple, Union
+# ListOrTuple = NewType("ListOrTuple", Union[List, Tuple])
+# MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
 class Monomial(object):
-    def __init__(self, array2d:np.ndarray, knowable_q, to_representative, **kwargs):
+    def __init__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]],
+                 atomic_is_knowable=is_knowable,
+                 to_representative=to_representative_aux,
+                 sandwich_positivity=False):
         """
         This class is incredibly inefficient unless knowable_q has built-in memoization.
         It is designed to categorize monomials into known, semiknown, unknown, etc.
@@ -16,17 +25,21 @@ class Monomial(object):
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
         self.as_tuples = tuple(tuple(vec) for vec in self.as_ndarray)
-        self.knowable_q = knowable_q
-        self.to_representative = to_representative
-        self.is_physical = lambda mon: is_physical(mon, **kwargs)
+        self.atomic_is_knowable = atomic_is_knowable
+        self.to_representative = lambda mon: tuple(tuple(vec) for vec in to_representative(mon))
+        self.is_physical = lambda mon: is_physical(mon, sandwich_positivity=sandwich_positivity)
 
-    def unknowable_q(self, mon):
-        return not self.knowable_q(mon)
+
+    def atomic_is_not_knowable(self, mon):
+        return not self.atomic_is_knowable(mon)
 
     def __str__(self):
         return np.array2string(self.as_ndarray)
 
     def __repr__(self):
+        return self.__str__()
+
+    def __hash__(self):
         return self.as_tuples
 
     @cached_property
@@ -36,34 +49,48 @@ class Monomial(object):
     @cached_property
     def knowable_factors(self):
         return [tuple(tuple(vec) for vec in np.take(factor, [0, -1, 2], axis=1))
-                for factor in self.factors if self.knowable_q(factor)]
+                for factor in self.factors if self.atomic_is_knowable(factor)]
 
     @cached_property
     def unknowable_factors(self):
-        raw_unknowns = tuple(filter(self.unknowable_q, self.factors))
-        if len(raw_unknowns) < 2:
-            if len(raw_unknowns) == 1:
-                return self.to_representative(raw_unknowns[0])
-            else:
-                return tuple()
+        raw_unknowns = tuple(filter(self.atomic_is_not_knowable, self.factors))
+        if len(raw_unknowns):
+            return self.to_representative(np.vstack(raw_unknowns))
         else:
-            candidate_unknown_part_representatives = []
-            for perm in itertools.permutations(raw_unknowns, len(raw_unknowns)):
-                candidate_unknown_part_representatives.append(self.to_representative(np.vstack(perm)))
-            return sorted(candidate_unknown_part_representatives)[0]
+            return tuple()
+        # if len(raw_unknowns) < 2:
+        #     if len(raw_unknowns) == 1:
+        #         return self.to_representative(raw_unknowns[0])
+        #     else:
+        #         return tuple()
+        # else:
+        #     candidate_unknown_part_representatives = []
+        #     for perm in itertools.permutations(raw_unknowns, len(raw_unknowns)):
+        #         candidate_unknown_part_representatives.append(self.to_representative(np.vstack(perm)))
+        #     assert len(set(
+        #         tuple(tuple(vec) for vec in monomial) for monomial in candidate_unknown_part_representatives)) <= 1, \
+        #         "The 'to_representative' function is incorrectly sensitive to factor order."
+        #     return sorted(candidate_unknown_part_representatives)[0]
 
     @cached_property
     def knowability_status(self):
-        if len(self.knowable_factors)==len(self.factors):
+        if len(self.knowable_factors) == len(self.factors):
             return 'Yes'
-        elif len(self.unknowable_factors)>0:
+        elif len(self.knowable_factors) > 0:
             return 'Semi'
         else:
             return 'No'
 
     @cached_property
+    def knowable_q(self):
+        return self.knowability_status == 'Yes'
+
+    @cached_property
     def physical_q(self):
-        return all(self.is_physical(factor) for factor in self.factors)
+        if self.knowable_q:
+            return True
+        else:
+            return self.is_physical(self.unknowable_factors)
 
 
 

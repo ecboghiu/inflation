@@ -466,10 +466,10 @@ def calculate_momentmatrix(cols: List,
     ----------
     cols : List
         List of np.ndarray representing the generating set.
-    names : np.ndarray
-        The string names of each party.
     verbose : int, optional
         _description_, by default 0
+    commuting : bool, optional
+        _description_, by default False
 
     Returns
     -------
@@ -514,17 +514,21 @@ def calculate_momentmatrix(cols: List,
                 if not commuting:
                     mon_v1 = to_canonical(mon_v1)
                     mon_v2 = to_canonical(dot_mon(mon2, mon1))
+                    mon_v1_as_tuples = tuple(tuple(op) for op in mon_v1)
+                    mon_v2_as_tuples = tuple(tuple(op) for op in mon_v2)
+                    mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0]  # Would be better to use np.lexsort
                 else:
-                    mon_v2 = dot_mon_commuting(mon2, mon1)
-                mon_v1_as_tuples = tuple(tuple(op) for op in mon_v1)
-                mon_v2_as_tuples = tuple(tuple(op) for op in mon_v2)
-                mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0] #Would be better to use np.lexsort
+                    mon_as_tuples = tuple(tuple(op) for op in remove_projector_squares(mon_v1))
                 if mon_as_tuples not in canonical_mon_to_idx_dict.keys():
                     canonical_mon_to_idx_dict[mon_as_tuples] = varidx
                     # from_idx_to_canonical_mon_dict[varidx] = np.array(mon_as_tuples)
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
+                else:
+                    known_varidx = canonical_mon_to_idx_dict[mon_as_tuples]
+                    momentmatrix[i, j] = known_varidx
+                    momentmatrix[j, i] = known_varidx
     return momentmatrix, canonical_mon_to_idx_dict
 
 

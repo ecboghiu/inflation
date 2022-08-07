@@ -1,20 +1,27 @@
 import unittest
 import numpy as np
-
+import warnings
 from ncpol2sdpa.nc_utils import flatten
 from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
 from causalinflation import InflationProblem, InflationSDP
 
 class TestGeneratingMonomials(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+
     bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
+    blilocal_names = ["v1", "v2", "v3"]
     inflation  = [2, 2]
     bilocality = InflationProblem(dag=bilocalDAG,
+                                  names=blilocal_names,
                                   settings_per_party=[1, 1, 1],
                                   outcomes_per_party=[2, 2, 2],
                                   inflation_level_per_source=inflation)
     bilocalSDP           = InflationSDP(bilocality)
     bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
     test_substitutions_scenario = InflationProblem(bilocalDAG,
+                                                   names=blilocal_names,
                                                    settings_per_party=[1, 2, 2],
                                                    outcomes_per_party=[3, 2, 3],
                                                    inflation_level_per_source=inflation)
@@ -79,7 +86,11 @@ class TestGeneratingMonomials(unittest.TestCase):
                          "Parsing the string description of columns is failing")
 
     def test_generate_with_identities(self):
-        oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
+        oneParty = InflationSDP(InflationProblem(dag={"h": ["v"]},
+                                                 outcomes_per_party=[2],
+                                                 settings_per_party=[2],
+                                                 inflation_level_per_source=[1],
+                                                 names=["v"]))
         _, columns = oneParty.build_columns([[], [0, 0]],
                                             return_columns_numerical=True)
         truth   = [[0],
@@ -177,6 +188,7 @@ class TestGeneratingMonomials(unittest.TestCase):
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
+                                                 names=('v'),
                                                  outcomes_per_party=[2],
                                                  settings_per_party=[2],
                                                  inflation_level_per_source=[2]
@@ -226,12 +238,14 @@ class TestSDPOutput(unittest.TestCase):
     cutInflation = InflationProblem({"lambda": ["a", "b"],
                                      "mu": ["b", "c"],
                                      "sigma": ["a", "c"]},
+                                     names=['a', 'b', 'c'],
                                      outcomes_per_party=[2, 2, 2],
                                      settings_per_party=[1, 1, 1],
                                      inflation_level_per_source=[2, 1, 1])
 
     def test_CHSH(self):
         bellScenario = InflationProblem({"lambda": ["a", "b"]},
+                                         names=("a", "b"),
                                          outcomes_per_party=[2, 2],
                                          settings_per_party=[2, 2],
                                          inflation_level_per_source=[1])
@@ -322,7 +336,8 @@ class TestSDPOutput(unittest.TestCase):
                                      "h3": ["a", "c"]},
                                      outcomes_per_party=[2, 2, 2],
                                      settings_per_party=[1, 1, 1],
-                                     inflation_level_per_source=[3, 3, 3]),
+                                     inflation_level_per_source=[3, 3, 3],
+                                     names=['a', 'b', 'c']),
                             commuting=False)
         cols = [np.array([0]),
                 np.array([[1, 1, 0, 1, 0, 0]]),
