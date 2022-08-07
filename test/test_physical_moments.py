@@ -1,102 +1,106 @@
 import unittest
 import numpy as np
-
-from causalinflation.quantum.general_tools import is_physical, remove_sandwich
+import warnings
+from causalinflation.quantum.general_tools import remove_sandwich
+from causalinflation.quantum.monomial_class import Monomial
 
 class QuantumInflationPhysicalMoments(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore", category=DeprecationWarning)
 
     def test_is_physical(self):
         # Single operator per party but not known
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [2, 1, 0, 1, 0, 0],
-                             [3, 1, 2, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+                             [3, 1, 2, 0, 0, 0]], sandwich_positivity=False)
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
         # Single operator per party but not known
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [3, 2, 1, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [3, 1, 1, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
         # Two non-commuting As or Bs or Cs
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 1, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [3, 1, 2, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), False, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, False, "Problem determining if physical or not.")
 
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 2, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [3, 1, 2, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 2, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [3, 2, 1, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [2, 2, 0, 2, 0, 0],
                              [3, 1, 2, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [2, 2, 0, 2, 0, 0],
                              [3, 2, 1, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [2, 1, 0, 2, 0, 0],
                              [3, 1, 1, 0, 0, 0],
                              [3, 2, 2, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
         # Two operators per party, commuting within party
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 2, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [2, 2, 0, 2, 0, 0],
                              [3, 1, 2, 0, 0, 0],
                              [3, 2, 1, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
         # Variations of previous
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 2, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [2, 2, 0, 2, 0, 0],
                              [3, 1, 2, 0, 0, 0],
                              [3, 2, 1, 0, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
         # Add another party, but still physical
         # < A11*A22*B11*B22*C12*C21*D(...) >
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 2, 2, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [2, 2, 0, 2, 0, 0],
                              [3, 1, 2, 0, 0, 0],
                              [3, 2, 1, 0, 0, 0],
                              [4, 2, 4, 4, 0, 0]])
-        self.assertEqual(is_physical(monomial), True, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, True, "Problem determining if physical or not.")
 
         # Only 2 parties, not physical
-        monomial = np.array([[1, 0, 1, 1, 0, 0],
+        monomial = Monomial([[1, 0, 1, 1, 0, 0],
                              [1, 0, 1, 2, 0, 0],
                              [2, 1, 0, 1, 0, 0],
                              [2, 2, 0, 2, 0, 0]])
-        self.assertEqual(is_physical(monomial), False, "Problem determining if physical or not.")
+        self.assertEqual(monomial.physical_q, False, "Problem determining if physical or not.")
 
-    def test_sandwhich(self):
+    def test_sandwich(self):
 
         # <A021*A022*A021*B101*B202*C120*C210>  Hexagon structure
         monomial = np.array([[1, 0, 2, 1, 0, 0],

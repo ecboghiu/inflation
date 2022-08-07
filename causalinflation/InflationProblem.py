@@ -2,7 +2,7 @@ import numpy as np
 from itertools import chain
 from warnings import warn
 import methodtools
-from typing import Tuple, Union, NewType
+from typing import Tuple, List, Union, NewType
 ArrayMonomial = NewType("ArrayMonomial", Union[Tuple[Tuple[int]], np.ndarray])
 from copy import deepcopy
 # from types import MappingProxyType
@@ -170,9 +170,9 @@ class InflationProblem(object):
         else:
             return True
 
-    def rectify_fake_setting(self, monomial_as_2d_numpy_array: ArrayMonomial) -> ArrayMonomial:
+    def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: ArrayMonomial) -> ArrayMonomial:
         # Parties start at #1 in our numpy vector notation.
-        new_mon = deepcopy(monomial_as_2d_numpy_array)
+        new_mon = np.array(monomial_as_2d_numpy_array, copy=True)
         for o in new_mon:
             party_index = o[0] - 1
             effective_setting_as_integer = o[-2]

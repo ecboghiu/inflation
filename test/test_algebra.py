@@ -1,4 +1,5 @@
 import unittest
+import warnings
 import numpy as np
 
 from causalinflation.quantum.general_tools import (to_name, to_canonical,
@@ -6,7 +7,12 @@ from causalinflation.quantum.general_tools import (to_name, to_canonical,
 from causalinflation.quantum.fast_npa import mon_lessthan_mon
 
 
+
 class TestNCAlgebra(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+
     names = ['A', 'B', 'C']
 
     def test_ordering_parties(self):

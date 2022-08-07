@@ -542,8 +542,8 @@ def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
 
 
 def to_numbers(monomial: str,
-               parties_names: List[str]
-               ) -> List[List[int]]:
+               parties_names: Tuple[str]
+               ) -> Tuple[Tuple[int]]:
     """Monomial from string to matrix representation.
 
     Given a monomial input in string format, return the matrix representation
@@ -554,13 +554,13 @@ def to_numbers(monomial: str,
     ----------
     monomial : str
         Monomial in string format.
-    parties_names : List[str]
-        List of party names.
+    parties_names : Tuple[str]
+        Tuple of party names.
 
     Returns
     -------
-    List[List[int]]
-        Monomial in list of lists format (equivalent to 2d array format by
+    Tuple[Tuple[int]]
+        Monomial in tuple of tuples format (equivalent to 2d array format by
         calling np.array() on the result).
     """
 
@@ -575,7 +575,7 @@ def to_numbers(monomial: str,
     # to get integer 2 is not supported by numba yet
     # https://github.com/numba/numba/issues/5723
     # That's very surprising!
-    # native python version is is aroung 5 micro seconds for small inputs
+    # native python version is is around 5 micro seconds for small inputs
 
     monomial_parts = monomial.split('*')
     monomial_parts_indices = np.zeros(shape=(len(monomial_parts),
@@ -603,11 +603,11 @@ def to_numbers(monomial: str,
     monomial_parts_indices = []
     for part in monomial_parts:
         atoms = part.split('_')
-        indices = ([parties_names_dict[atoms[0]]]
-                   + [int(j) for j in atoms[1:-2]]
-                   + [int(atoms[-2]), int(atoms[-1])])
+        indices = ((parties_names_dict[atoms[0]],)
+                   + tuple(int(j) for j in atoms[1:-2])
+                   + (int(atoms[-2]), int(atoms[-1])))
         monomial_parts_indices.append(indices)
-    return monomial_parts_indices
+    return tuple(monomial_parts_indices)
 
 
 def to_name(monomial_numbers: List[List[int]],
@@ -664,8 +664,19 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
             tuples.append(tuple(flatten(element.tolist())))
     return tuples
 
+def to_tuple_of_tuples(monomial: np.ndarray) -> Tuple[Tuple[int]]:
+    if monomial.ndim >= 2:
+        return tuple(to_tuple_of_tuples(operator) for operator in monomial)
+    elif monomial.ndim == 1:
+        return tuple(monomial.tolist())
+    else:
+        return monomial
+
 @lru_cache(maxsize=None, typed=False)
-def is_knowable(monomial: ArrayMonomial) -> bool:
+def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
+    return is_knowable(np.asarray(atomic_monomial))
+
+def is_knowable(monomial_as_array: np.ndarray) -> bool:
     """Determines whether a given atomic monomial (which cannot be factorized
     into smaller disconnected components) admits an identification with a
     monomial of the original scenario.
@@ -686,7 +697,7 @@ def is_knowable(monomial: ArrayMonomial) -> bool:
     # one operator per node in the network, if the corresponding graph is
     # the same as the scenario hypergraph.
 
-    monomial_as_array = np.asarray(monomial)
+    # monomial_as_array = np.asarray(monomial)
     assert monomial_as_array.ndim == 2, "You must enter a list of monomials. Hence,"\
                         + " the number of dimensions of monomial must be 2"
     parties = monomial_as_array[:, 0].astype(int)
@@ -733,7 +744,8 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
         Returns whether the monomial is positive or not.
     """
 
-    monomial = np.array(monomial_in, dtype=np.int8).copy()
+    # monomial = np.array(monomial_in, dtype=np.int8).copy()
+    monomial = np.array(monomial_in, dtype=np.int8, copy=True)
     if sandwich_positivity:
         monomial = remove_sandwich(monomial)
 
@@ -749,6 +761,13 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
                 res *= False
                 break
     return res
+
+# @lru_cache(maxsize=None, typed=False)
+# def atomic_is_physical_memoized(atomic_monomial_in: Tuple[Tuple[int]], **kwargs) -> bool:
+#     return atomic_is_physical(np.asarray(atomic_monomial_in), **kwargs)
+#
+
+
 
 
 def remove_sandwich(monomial: np.ndarray
@@ -788,6 +807,7 @@ def remove_sandwich(monomial: np.ndarray
                     factor_copy = np.delete(factor, (0, -1), axis=0)
             new_monomial = np.append(new_monomial, factor_copy, axis=0)
     return new_monomial
+
 
 
 def string2prob(term: str,
@@ -1068,7 +1088,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
 
 
 def factorize_monomial(monomial: np.ndarray
-                       ) -> np.ndarray:
+                       ) -> List[np.ndarray]:
     """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
 
@@ -1120,7 +1140,7 @@ def factorize_monomial(monomial: np.ndarray
      array([[3, 6, 6, 0, 0, 0]])]
 
     """
-    monomial = np.array(monomial, dtype=np.ubyte)
+    monomial = np.array(monomial, dtype=np.ubyte, copy=False)
     components_indices = np.zeros((len(monomial), 2), dtype=np.ubyte)
     # Add labels to see if the components have been used
     components_indices[:, 0] = np.arange(0, len(monomial), 1)
@@ -1156,7 +1176,7 @@ def factorize_monomial(monomial: np.ndarray
         monomial[np.array(component)] for component in disconnected_components]
 
     # Order each factor as determined by the input monomial. We store the
-    # the positions in the monomial so we can read it off afterwards.
+    # positions in the monomial so that we can read it off afterwards.
     # Method taken from
     # https://stackoverflow.com/questions/64944815/
     # sort-a-list-with-duplicates-based-on-another-
@@ -1315,7 +1335,7 @@ def to_representative_aux(monomial_component: np.ndarray
     """
 
     monomial_component = to_canonical(
-        monomial_component)  # Make sure all commutation rules are applied
+        np.asarray(monomial_component))  # Make sure all commutation rules are applied
     new_mon = monomial_component.copy()
     # -2 we ignore the first and the last two columns
     for source in range(monomial_component.shape[1] - 3):

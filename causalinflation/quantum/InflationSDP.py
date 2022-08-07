@@ -3,6 +3,7 @@ import itertools
 import numpy as np
 import pickle
 import sympy as sp
+from collections import Counter
 
 from causalinflation import InflationProblem
 from causalinflation.quantum.general_tools import (to_name, to_representative,
@@ -210,7 +211,7 @@ class InflationSDP(object):
                                                        self.unsymidx_to_canonical_mon_dict,
                                                        self.inflation_symmetries)
 
-
+        self.largest_moment_index = max(self.symidx_to_canonical_mon_dict.keys())
 
         #NOTE: self.symidx_to_canonical_mon_dict is meant to replace 'remaining monomials'
         #NOTE: self.symmetrized_mm_idxs is meant to replace
@@ -236,9 +237,9 @@ class InflationSDP(object):
 
 
         self.symidx_to_Monomials_dict = {k: Monomial(v,
-                                                     knowable_q=self.atomic_knowable_q,
+                                                     atomic_is_knowable=self.atomic_knowable_q,
                                                      to_representative=self.inflation_aware_to_representative,
-                                                     sandwich_positivity=True) for (k, v) in self.symidx_to_canonical_mon_dict}
+                                                     sandwich_positivity=True) for (k, v) in self.symidx_to_canonical_mon_dict.items()}
         ### HOW DOES to_representative work without knowing inflation level per source?? This seems like a really bad idea.
 
         if self.commuting:
@@ -246,7 +247,32 @@ class InflationSDP(object):
         else:
             self.physical_monomials = [k for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.physical_q]
 
-        self.knowable_moments = {k: self.InflationProblem.rectify_fake_setting(Mon.knowable_factors) for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
+        self.knowable_moments = {k: list(map(self.InflationProblem.rectify_fake_setting_atomic_factor, Mon.knowable_factors))
+                                 for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
+
+        self.knowability_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
+        self.knowability_statusus[[0, 1]] = 'Yes'
+        for i, monomial in self.symidx_to_Monomials_dict.items():
+            self.knowability_statusus[i] = monomial.knowability_status
+        # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
+        _counter = Counter(self.knowability_statusus)
+        self._n_known = _counter['Yes'] - 2
+        self._n_something_known = _counter['Semi']
+        self._n_unknown = _counter['No']
+        self.reordering_of_monomials = np.hstack((
+                np.flatnonzero(self.knowability_statusus == 'Yes'),
+                np.flatnonzero(self.knowability_statusus == 'Semi'),
+                np.flatnonzero(self.knowability_statusus == 'No')))
+
+
+
+        # self._n_known = len(self.knowable_moments)
+        # self._n_unknown = sum(mon.knowability_status == 'No' for mon in self.symidx_to_Monomials_dict.values())
+        # self._n_something_known = sum(mon.knowability_status == 'Semi' for mon in self.symidx_to_Monomials_dict.values())
+
+
+        #TODO: Restore self._monomials_list_all, as used in 'set_objective' (probably best to fix 'set_objective')
+        #TODO: Restore 'monomials_list' and 'semiknown_reps' for use in 'set_distribution'
 
 
             #
@@ -1254,17 +1280,17 @@ class InflationSDP(object):
 
 
 
-    @staticmethod
-    def _symmetrize_moment_matrix_via_sympy(momentmatrix: np.ndarray,
-                                  inflation_symmetries: np.ndarray):
-        initial_group = np.asarray(dimino_sympy(inflation_symmetries))
-        template_matrix = np.arange(np.prod(momentmatrix.shape)).reshape()
-        elevated_group = []
-        for perm in initial_group:
-            permuted_template = matrix_permute(template_matrix, perm)
-            elevated_group.append(permuted_template.ravel())
-            elevated_group.append(permuted_template.T.ravel())
-        return elevated_group
+    # @staticmethod
+    # def _symmetrize_moment_matrix_via_sympy(momentmatrix: np.ndarray,
+    #                               inflation_symmetries: np.ndarray):
+    #     initial_group = np.asarray(dimino_sympy(inflation_symmetries))
+    #     template_matrix = np.arange(np.prod(momentmatrix.shape)).reshape()
+    #     elevated_group = []
+    #     for perm in initial_group:
+    #         permuted_template = matrix_permute(template_matrix, perm)
+    #         elevated_group.append(permuted_template.ravel())
+    #         elevated_group.append(permuted_template.T.ravel())
+    #     return elevated_group
 
 
 
@@ -1304,7 +1330,7 @@ class InflationSDP(object):
         # the +2 is to include 0:0 and 1:1
         # orbits = {i: i for i in range(2+len(monomials_list))}
         # orbits = {i: i for i in np.unique(sdp.problem_arr.flat)}
-        orbits = np.unique(sdp.problem_arr.flat)
+        orbits = np.unique(symmetric_arr.flat)
         for permutation in tqdm(inflation_symmetries,
                                 disable=not self.verbose,
                                 desc="Applying symmetries          "):
@@ -1533,3 +1559,23 @@ if __name__ == "__main__":
                        commuting=False,
                        verbose=2)
     sdp.generate_relaxation('local1')
+
+    # cutInflation = InflationProblem({"lambda": ["a", "b"],
+    #                                  "mu": ["b", "c"],
+    #                                  "sigma": ["a", "c"]},
+    #                                  names=['a', 'b', 'c'],
+    #                                  outcomes_per_party=[2, 2, 2],
+    #                                  settings_per_party=[1, 1, 1],
+    #                                  inflation_level_per_source=[2, 1, 1])
+    # sdp = InflationSDP(cutInflation)
+    # sdp.generate_relaxation('local1')
+
+    # print(sdp.unsymmetrized_mm_idxs)
+    # print(list(sdp.unsymidx_to_canonical_mon_dict.items()))
+    # print(sdp.momentmatrix)
+    # print(len(sdp.symidx_to_canonical_mon_dict))
+    # print(len(sdp.symidx_to_Monomials_dict))
+    #
+    # for k, mon in sdp.symidx_to_Monomials_dict.items():
+    #
+    #     print(f"{k} := {mon}, {mon.knowability_status}")
