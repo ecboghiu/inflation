@@ -291,9 +291,13 @@ class InflationSDP(object):
         
         # For the bounds, monomials should be hashed in the same way as 
         # self.known_moments, self._objective_as_dict, etc.
-        self.monomial_upperbounds = {}
-        self.monomial_lowerbounds = {physical: 0 for physical 
+        self.moment_linear_equalities = []
+        self.moment_linear_inequalities = []
+        self.moment_lowerbounds = {physical: 0 for physical 
                                                     in self.physical_monomials}
+        self.moment_upperbounds = {}
+
+        
 
     def set_distribution(self,
                          prob_array: np.ndarray,
@@ -526,8 +530,10 @@ class InflationSDP(object):
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds":  self.monomial_lowerbounds,
-                              "var_upperbounds":  self.monomial_upperbounds,
+                              "var_lowerbounds":  self.moment_lowerbounds,
+                              "var_upperbounds":  self.moment_upperbounds,
+                              "var_equalities":   self.moment_linear_equalities,
+                              "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual":       dualise}
 
         # self.solution_object, lambdaval, self.status = \
