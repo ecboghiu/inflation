@@ -23,11 +23,13 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             generate_commuting_measurements,
                                             generate_noncommuting_measurements,
                                             from_coord_to_sym,
-                                            clean_coefficients)
+                                            clean_coefficients,
+                                            compute_numeric_value)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
                                               to_canonical)
-from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
+from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
+                                                solveSDP_MosekFUSION2)
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
@@ -280,38 +282,41 @@ class InflationSDP(object):
                             self.names)] = var_idx
                     factor_variables.append(var_idx)
             monomials_factors_vars[idx][1] = factor_variables
-        self.semiknown_reps = monomials_factors_vars[:self._n_something_known]
+        self.semiknowable_atoms = monomials_factors_vars[:self._n_something_known]
         # Define trivial arrays for distribution and objective
         self.known_moments      = {0: 0., 1: 1.}
         self.semiknown_moments  = {}
+        self.objective          = 0.
         self._objective_as_dict = {1: 0.}
+        
+        # For the bounds, monomials should be hashed in the same way as 
+        # self.known_moments, self._objective_as_dict, etc.
+        self.monomial_upperbounds = {}
+        self.monomial_lowerbounds = {physical: 0 for physical 
+                                                    in self.physical_monomials}
 
     def set_distribution(self,
-                         p: np.ndarray,
+                         prob_array: np.ndarray,
                          use_lpi_constraints: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
-        to the probability distribution specified, p. If p is None, or the user
+        to the probability distribution specified. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
         as a request to delete information about past distributions. If p containts
         elements that are either None or nan, then this is understood as leaving
         the corresponding variable free in the SDP approximation.
         Args:
-            p (np.ndarray): Multidimensional array encoding the probability
-            vector, which is called as p[a,b,c,...,x,y,z,...] where a,b,c,...
-            are outputs and x,y,z,... are inputs. Note: even if the inputs have
-            cardinality 1, they must still be specified, and the corresponding
-            axis dimensions are 1.
+            prob_array (np.ndarray): Multidimensional array encoding the
+            distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
+            where a,b,c,... are outputs and x,y,z,... are inputs.
+            Note: even if the inputs have cardinality 1, they must be specified,
+            and the corresponding axis dimensions are 1.
 
             use_lpi_constraints (bool): Specification whether linearized
             polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
             will be imposed or not.
         """
-        _pdims = len(list(p.shape))
+        _pdims = len(list(prob_array.shape))
         assert _pdims % 2 == 0, "The probability distribution must have equal number of inputs and outputs"
-        list(p.shape[:int(_pdims/2)]
-             ) == self.InflationProblem.outcomes_per_party
-        list(p.shape[int(_pdims/2):]
-             ) == self.InflationProblem.settings_per_party
 
         self.use_lpi_constraints = use_lpi_constraints
 
@@ -320,55 +325,16 @@ class InflationSDP(object):
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
 
-        if self.use_lpi_constraints:
-            stop_counting = self._n_something_known
-        else:
-            stop_counting = self._n_known
-
-        # Extract variables whose value we can get from the probability distribution in a symbolic form
-        variables_to_be_given = [entry
+        atomic_knowable_variables = [entry
                 for idx, entry in enumerate(self.monomials_list[:self._n_known])
-                                   if len(self.semiknown_reps[idx][1]) == 1]
-        self.symbolic_variables_to_be_given = transform_vars_to_symb(variables_to_be_given,  # TODO change this name
-                                                                     max_nr_of_parties=self.InflationProblem.nr_parties)
-        if self.verbose > 1:
-            print("Simplest known variables: =",
-                  self.symbolic_variables_to_be_given)
-
-        # Substitute the list of known variables with symbolic values with numerical values
-        variables_values = substitute_sym_with_numbers(self.symbolic_variables_to_be_given,
-                                                       self.InflationProblem.settings_per_party,
-                                                       self.InflationProblem.outcomes_per_party,
-                                                       p)
-
-        assert (np.array(variables_values, dtype=object)[:, 0].astype(int).tolist()
-                == np.array(variables_to_be_given, dtype=object)[:, 0].astype(int).tolist())
-        if self.verbose > 1:
-            print("Variables' numerical values given p =", variables_values)
-
-        final_monomials_list_numerical = \
-                      substitute_variable_values_in_monlist(variables_values,
-                                                            self.semiknown_reps,
-                                                            self.monomials_list,
-                                                            stop_counting)
-        self.known_moments = {**{0: 0., 1: 1.},
-                              **{var: mul(factors)
-            for var, factors in final_monomials_list_numerical[:self._n_known]}}
-
-
-        # The indices for the variables in the semiknowns also need shifting
-        if self.use_lpi_constraints:
-            # self._set_semiknowns()
-            self.semiknown_moments = {var: [mul(val[:-1]), val[-1]]
-                                       for var, val in final_monomials_list_numerical[self._n_known:self._n_something_known]}
-
-        # If there is an objective, update it with the numerical values set
-        # if XXX:
-        #     for all keys in the objective
-        #         if the key corresponds to a number
-        #             add the number to the variable 1
-        #             delete the key
-        #     self.objective_as_dict
+                                   if len(self.semiknowable_atoms[idx][1]) == 1]
+        atomic_numerical_values = {var[0]: compute_numeric_value(var[1],
+                                                                 prob_array,
+                                                    self.InflationProblem.names)
+                                   for var in atomic_knowable_variables}
+        self.set_values(atomic_numerical_values,
+                        self.use_lpi_constraints,
+                        only_specified_values=False)
 
 
     def set_objective(self,
@@ -413,12 +379,21 @@ class InflationSDP(object):
             # Express objective in terms of representatives
             symmetrized_objective = {1: 0.}
             for monomial, coeff in objective.as_coefficients_dict().items():
-                monomial_variable = int(string2int_dict[str(monomial)])
+                try:
+                    monomial_variable = int(string2int_dict[str(monomial)])
+                except KeyError:
+                    Exception("The objective function contains variables that" +
+                              " are not found in the generated relaxation." +
+                              " Consider adding more monomials to the" +
+                              " generating set.")
                 repr = self._var2repr[monomial_variable]
                 # If the objective contains a known value add it to the constant
                 if repr in self.known_moments:
+                    warn("Be aware that you have variables in the objective " +
+                         "that are also known moments fixed by your distribution.")
                     symmetrized_objective[1] += \
                                             sign*coeff*self.known_moments[repr]
+
                 elif repr in symmetrized_objective.keys():
                     symmetrized_objective[repr] += sign * coeff
                 else:
@@ -427,22 +402,10 @@ class InflationSDP(object):
         else:
             self._objective_as_dict = {1: sign * float(objective)}
 
-        # If there is a conflict between fixed known moments
-        # and variables in the objective
-        vars_in_objective = self._objective_as_dict.keys()
-        vars_known = [key for key, val in self.known_moments.items()
-                                               if (key > 1) and (val != np.nan)]
-        for var in vars_known:
-            if var in vars_in_objective:
-                raise Exception(
-                    "You have variables in the objective that are also known " +
-                    "moments fixed by a distribution. Either erase the fixed " +
-                    "values of the known moments (e.g., call self.set_distribution() " +
-                    "with no input or set to nan/None ) or remove the known " +
-                    "variables from the objective function.")
-
     def set_values(self,
-                   values: Dict[Union[sp.core.symbol.Symbol, int, str], float]
+                   values: Dict[Union[sp.core.symbol.Symbol, int, str], float],
+                   use_lpi_constraints: bool = False,
+                   only_specified_values: bool = False,
                    ) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
@@ -455,7 +418,16 @@ class InflationSDP(object):
         values : Dict[Union[simpy.core.symbol.Symbol, int, str], float]
             The description of the variables to be assigned numerical values and
             the corresponding values.
+
+        use_lpi_constraints : bool
+            Specification whether linearized polynomial constraints (see, e.g.,
+            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+
+        only_specified_values : bool
+            Specification whether one wishes to fix only the variables provided,
+            or also the variables containing products of the monomials fixed.
         """
+        self.use_lpi_constraints = use_lpi_constraints
         self.known_moments = {0: 0., 1: 1.}
         names_to_vars = dict(self.monomials_list[:, ::-1])
         for key, val in values.items():
@@ -478,14 +450,37 @@ class InflationSDP(object):
                                 + "the integer associated to the monomial, "
                                 + "its product of Sympy symbols, or the string "
                                 + "representing the latter.")
-
-        if self.objective:
-            self._update_objective()
-        if self.use_lpi_constraints:
-            self._set_semiknowns()
+        if not only_specified_values:
+            # Assign numerical values to products of known atoms
+            for var, monomial_factors in self.semiknowable_atoms:
+                numeric_factors = np.array([values.get(factor, factor)
+                                            for factor in monomial_factors],
+                                           dtype=object)
+                if all(numeric_factors <= 1.):
+                    # When all atoms have numerical values the variable is known
+                    self.known_moments[var] = np.prod(numeric_factors)
+                elif self.use_lpi_constraints:
+                    if np.sum(numeric_factors > 1) == 1:
+                        # Compute the semiknown
+                        sorted_factors = np.sort(numeric_factors)
+                        self.semiknown_moments[var] = [sorted_factors[:-1].prod(),
+                                                       sorted_factors[-1]]
+                    elif ((np.sum(numeric_factors > 1) > 1)
+                        and (np.sum(numeric_factors <= 1.) > 0)):
+                        pos = np.where([mon[0] for mon in self.monomials_list]
+                                       == var)[0]
+                        monomial = self.monomials_list[pos][1]
+                        warn(f"The variable {var}, corresponding to monomial "
+                             + f"{monomial}, factorizes into a known part times"
+                             + " a product of variables. Recombining these "
+                             + "variables is not yet supported, so the variable"
+                             + " will be treated as unknown.")
+        if self.objective != 0:
+            self._update_objective()    #PASS THE SEMIKNOWNS THROUGH THE OBJECTIVE?
 
     def solve(self, interpreter: str='MOSEKFusion',
                     feas_as_optim: bool=False,
+                    dualise: bool=True,
                     solverparameters=None):
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
@@ -502,7 +497,7 @@ class InflationSDP(object):
                 (2) max lambda such that Gamma - lambda*Id >= 0.
             The correspondence is that the result of (2) is positive if (1) is
             feasible and negative otherwise. By default False.
-        solverparameters : _type_, optional
+        solverparameters : dict, optional
             Extra parameters to be sent to the solver, by default None.
 
         """
@@ -523,9 +518,22 @@ class InflationSDP(object):
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters}
+        # solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
+        #                       "objective":        self._objective_as_dict,
+        #                       "known_vars":       self.known_moments,
+        #                       "semiknown_vars":   self.semiknown_moments,
+        #                       "positive_vars":    self.physical_monomials,
+        #                       "feas_as_optim":    feas_as_optim,
+        #                       "verbose":          self.verbose,
+        #                       "solverparameters": solverparameters,
+        #                       "var_lowerbounds":  {}, #self.monomial_lowerbounds,
+        #                       "var_upperbounds":  {}, #self.monomial_upperbounds,
+        #                       "solve_dual":       dualise}
 
         self.solution_object, lambdaval, self.status = \
                                       solveSDP_MosekFUSION(**solveSDP_arguments)
+        # self.solution_object, lambdaval, self.status = \
+        #                             solveSDP_MosekFUSION2(**solveSDP_arguments)
 
         # Process the solution
         if self.status == 'feasible':
@@ -537,9 +545,8 @@ class InflationSDP(object):
             coeffs      = self.solution_object['dual_certificate']
             names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
                             if idx > 1]    # We'd probably want this cleaner
-            aux01       = np.array([[0, '0'], [0, '1']], dtype=object)[:, 1]
             clean_names = np.concatenate((['0', '1'], names))
-            self.dual_certificate = np.array(list(zip(coeffs.keys(),
+            self.dual_certificate = np.array(list(zip([0]+list(coeffs.values()),
                                                       clean_names)),
                                              dtype=object)
             self.dual_certificate_lowerbound = 0
@@ -926,11 +933,14 @@ class InflationSDP(object):
                                 physmons_per_party_per_length.append(physmons)
 
                         for mon_tuple in itertools.product(*physmons_per_party_per_length):
-                            concatenated = mon_tuple[0]
-                            for i in range(1, len(mon_tuple)):
-                                concatenated = np.concatenate((concatenated, mon_tuple[i]), axis=0)
-
-                            physical_monomials.append(concatenated.tolist())
+                            concatenated = np.concatenate(mon_tuple, axis=0)
+                            # Bring to canonical form
+                            monomial = np.vstack(
+                                           sorted(
+                                               np.concatenate(
+                                                   factorize_monomial(concatenated)),
+                                                  key=lambda x: x[0]))
+                            physical_monomials.append(monomial.tolist())
 
                 columns = physical_monomials
             else:
@@ -1421,9 +1431,6 @@ class InflationSDP(object):
             if all(factor_is_positive):
                 ispositive[i+self._n_known, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
-
-    def _set_semiknowns(self):
-        pass
 
     def _update_objective(self):
         for key, val in self.known_moments.items():
