@@ -510,14 +510,6 @@ class InflationSDP(object):
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-        solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
-                              "objective":        self._objective_as_dict,
-                              "known_vars":       self.known_moments,
-                              "semiknown_vars":   self.semiknown_moments,
-                              "positive_vars":    self.physical_monomials,
-                              "feas_as_optim":    feas_as_optim,
-                              "verbose":          self.verbose,
-                              "solverparameters": solverparameters}
         # solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
         #                       "objective":        self._objective_as_dict,
         #                       "known_vars":       self.known_moments,
@@ -525,15 +517,23 @@ class InflationSDP(object):
         #                       "positive_vars":    self.physical_monomials,
         #                       "feas_as_optim":    feas_as_optim,
         #                       "verbose":          self.verbose,
-        #                       "solverparameters": solverparameters,
-        #                       "var_lowerbounds":  {}, #self.monomial_lowerbounds,
-        #                       "var_upperbounds":  {}, #self.monomial_upperbounds,
-        #                       "solve_dual":       dualise}
+        #                       "solverparameters": solverparameters}
+        solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
+                              "objective":        self._objective_as_dict,
+                              "known_vars":       self.known_moments,
+                              "semiknown_vars":   self.semiknown_moments,
+                              "positive_vars":    self.physical_monomials,
+                              "feas_as_optim":    feas_as_optim,
+                              "verbose":          self.verbose,
+                              "solverparameters": solverparameters,
+                              "var_lowerbounds":  self.monomial_lowerbounds,
+                              "var_upperbounds":  self.monomial_upperbounds,
+                              "solve_dual":       dualise}
 
-        self.solution_object, lambdaval, self.status = \
-                                      solveSDP_MosekFUSION(**solveSDP_arguments)
         # self.solution_object, lambdaval, self.status = \
-        #                             solveSDP_MosekFUSION2(**solveSDP_arguments)
+        #                               solveSDP_MosekFUSION(**solveSDP_arguments)
+        self.solution_object, lambdaval, self.status = \
+                                    solveSDP_MosekFUSION2(**solveSDP_arguments)
 
         # Process the solution
         if self.status == 'feasible':

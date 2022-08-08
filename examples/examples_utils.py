@@ -49,7 +49,7 @@ def bisection(InfSDP, probarray, tol_vis=1e-4, verbose=0, max_iter=20):
     while abs(v1 - v0) >= tol_vis and iteration < max_iter:
         pnoisy = vm * probarray + (1-vm) * np.ones(outputdims) / nroutputs#distribution(visibility=vm)
         InfSDP.set_distribution(pnoisy, use_lpi_constraints=False)
-        InfSDP.solve(feas_as_optim=True, solverparameters={'solve_dual': True})
+        InfSDP.solve(feas_as_optim=True, dualise=True)
         if verbose:
             print(iteration, "Maximum smallest eigenvalue:", "{:10.4g}".format(
                 InfSDP.primal_objective), "\tvisibility =", "{:.4g}".format(vm))
