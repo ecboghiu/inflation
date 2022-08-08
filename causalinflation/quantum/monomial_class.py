@@ -20,15 +20,19 @@ class Monomial(object):
         It is designed to categorize monomials into known, semiknown, unknown, etc.
         Note that if knowable_q changes (such as given partial information) we can update this on the fly.
         """
+        self.to_representative = lambda mon: tuple(tuple(vec) for vec in to_representative(mon))
         self.as_ndarray = np.asarray(array2d)
         assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array.'
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
         self.as_tuples = tuple(tuple(vec) for vec in self.as_ndarray)
         self.atomic_is_knowable = atomic_is_knowable
-        self.to_representative = lambda mon: tuple(tuple(vec) for vec in to_representative(mon))
+
         self.is_physical = lambda mon: is_physical(mon, sandwich_positivity=sandwich_positivity)
 
+    @cached_property
+    def as_representative(self):
+        return tuple(tuple(vec) for vec in self.to_representative(self.as_ndarray))
 
     def atomic_is_not_knowable(self, mon):
         return not self.atomic_is_knowable(mon)
@@ -40,7 +44,7 @@ class Monomial(object):
         return self.__str__()
 
     def __hash__(self):
-        return self.as_tuples
+        return self.as_representative
 
     @cached_property
     def factors(self):

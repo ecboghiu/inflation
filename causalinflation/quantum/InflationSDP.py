@@ -479,22 +479,33 @@ class InflationSDP(object):
             # objects that we have used previously
             objective = simplify_polynomial(sp.expand(objective),
                                             self.substitutions)
-            # Build string-to-variable dictionary
-            string2int_dict = {**{'0': '0', '1': '1'},
-                               **dict(self._monomials_list_all[:, ::-1])}
+            # # Build string-to-variable dictionary
+            # string2int_dict = {**{'0': '0', '1': '1'},
+            #                    **dict(self._monomials_list_all[:, ::-1])}
+
+            #Build monomial to index dictionary
+            self.symidx_from_Monomials_dict = {v.as_representative: k for (k, v) in self.symidx_to_Monomials_dict.items()}
+            acceptable_monomials = set(self.symidx_from_Monomials_dict.keys())
+
             # Express objective in terms of representatives
             symmetrized_objective = {1: 0.}
             for monomial, coeff in objective.as_coefficients_dict().items():
-                monomial_variable = int(string2int_dict[str(monomial)])
-                repr = self._var2repr[monomial_variable]
-                # If the objective contains a known value add it to the constant
-                if repr in self.known_moments:
-                    symmetrized_objective[1] += \
-                                            sign*coeff*self.known_moments[repr]
-                elif repr in symmetrized_objective.keys():
-                    symmetrized_objective[repr] += sign * coeff
+                monomial_as_str = str(monomial)
+                if monomial_as_str == '1':
+                    symmetrized_objective[1] += sign*coeff
                 else:
-                    symmetrized_objective[repr] = sign * coeff
+                    monomial_as_array = to_numbers(monomial_as_str, self.names)
+                    monomial_as_repr_array = self.inflation_aware_to_representative(np.asarray(monomial_as_array))
+                    assert monomial_as_repr_array in acceptable_monomials, 'Monomial specified does not appear in our moment matrix.'
+                    repr =  self.symidx_from_Monomials_dict[monomial_as_repr_array]
+                    # If the objective contains a known value add it to the constant
+                    if repr in self.known_moments.keys():
+                        symmetrized_objective[1] += \
+                                                sign*coeff*self.known_moments[repr]
+                    elif repr in symmetrized_objective.keys():
+                        symmetrized_objective[repr] += sign * coeff
+                    else:
+                        symmetrized_objective[repr] = sign * coeff
             self._objective_as_dict = symmetrized_objective
         else:
             self._objective_as_dict = {1: sign * float(objective)}
