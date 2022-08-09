@@ -710,7 +710,7 @@ def is_knowable(monomial_as_array: np.ndarray) -> bool:
                     for source in monomial_as_array[:, 1:-2].T])
 
 
-@lru_cache(maxsize=None, typed=False)
+# @lru_cache(maxsize=None, typed=False)
 def is_physical(monomial_in: Iterable[Iterable[int]],
                 sandwich_positivity=False
                 ) -> bool:
@@ -1602,3 +1602,49 @@ def dimino_sympy(group_generators):
     group = PermutationGroup(gens)
     group_elements = list(group.generate_dimino(af=True))
     return group_elements
+
+
+def compute_numeric_value(mon_string: str,
+                          p_array: np.ndarray,
+                          parties_names: List[str]
+                          ) -> float:
+    """Function which, given a monomial and a probability distribution p_array
+    called as p_array[a,b,c,...,x,y,z,...], returns the numerical value of the
+    probability associated to the monomial.
+    Note that this accepts marginals, for example, p(a|x), and then it
+    automatically computes all the summations over p[a,b,c,...,x,y,z,...].
+    Parameters
+    ----------
+    mon_string : String
+        Monomial associated to the probability.
+    p_array : np.ndarray
+        The probability distribution of dims
+        (outcomes_per_party, settings_per_party).
+    parties_names : List[str]
+        List of party names.
+    Returns
+    -------
+    float
+        The value of the symbolic probability (which can be a marginal)
+    Examples
+    --------
+    >>> p = 'A_1_2_3_i_o'
+    >>> compute_numeric_value(p, [2,2], [2,2], p_array)
+    parray[o,:,i,0].sum()
+    Note that we take the first setting (=0) for marginalised parties, in the
+    example above, the second party is marginalised.
+    """
+    n_parties  = p_array.ndim // 2
+    components = np.array([factor.split('_')
+                           for factor in mon_string.split('*')])
+    names   = components[:,  0]
+    inputs  = components[:, -2].astype(int)
+    outputs = components[:, -1].astype(int).tolist()
+    dont_marginalize = [parties_names.index(name) for name in names]
+    indices_to_sum   = list(set(range(n_parties)) - set(dont_marginalize))
+    marginal_dist    = np.sum(p_array, axis=tuple(indices_to_sum))
+
+    input_list       = np.zeros(n_parties, dtype=int)
+    input_list[dont_marginalize] = inputs
+    inputs_outputs   = outputs + input_list.tolist()
+    return marginal_dist[tuple(inputs_outputs)]
