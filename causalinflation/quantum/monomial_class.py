@@ -52,7 +52,7 @@ class Monomial(object):
 
     def factors_as_block(self, factors):
         if len(factors):
-            return np.vstack(factors)
+            return np.concatenate(factors)
         else:
             return np.empty((0, self.op_length), dtype=np.int8)
 
@@ -113,7 +113,7 @@ class Monomial(object):
         if self.knowable_q:
             return True
         else:
-            return self.is_physical(np.vstack(self.unknowable_factors))
+            return self.is_physical(np.concatenate(self.unknowable_factors))
 
     # def decomposition_given_dist(self, knowable_atoms_dict):
     #     yield_nan = lambda x: np.nan
