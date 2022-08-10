@@ -171,7 +171,7 @@ class InflationProblem(object):
             return True
 
     def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: ArrayMonomial) -> ArrayMonomial:
-        # Parties start at #1 in our numpy vector notation.
+        # Parties start at #1 in initial numpy vector notation, we reset that.
         new_mon = np.array(monomial_as_2d_numpy_array, copy=True)
         for o in new_mon:
             party_index = o[0] - 1
@@ -179,6 +179,7 @@ class InflationProblem(object):
             o_private_settings = self.extract_parent_values_from_effective_setting[
                                         party_index][effective_setting_as_integer][0]
             o[-2] = o_private_settings
+            o[0] = party_index
         return new_mon
 
 

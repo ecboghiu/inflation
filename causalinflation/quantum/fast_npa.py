@@ -594,7 +594,7 @@ def calculate_momentmatrix(cols: List,
 
 ################################################################################
 
-def factorize_monomial(monomial: np.ndarray
+def factorize_monomial(raw_monomial: np.ndarray
                        ) -> np.ndarray:
     """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
@@ -647,8 +647,9 @@ def factorize_monomial(monomial: np.ndarray
      array([[3, 6, 6, 0, 0, 0]])]
 
     """
-    monomial = np.array(monomial, dtype=np.ubyte)
-    components_indices = np.zeros((len(monomial), 2), dtype=np.ubyte)
+    # monomial = np.array(monomial, dtype=np.ubyte)
+    monomial = np.asarray(raw_monomial, dtype=np.uint8)
+    components_indices = np.zeros((len(monomial), 2), dtype=np.uint8)
     # Add labels to see if the components have been used
     components_indices[:, 0] = np.arange(0, len(monomial), 1)
 
@@ -680,28 +681,30 @@ def factorize_monomial(monomial: np.ndarray
         idx += 1
 
     disconnected_components = [
-        monomial[np.array(component)] for component in disconnected_components]
+        monomial[sorted(component)] for component in disconnected_components]
 
-    # Order each factor as determined by the input monomial. We store the
-    # the positions in the monomial so we can read it off afterwards.
-    # Method taken from
-    # https://stackoverflow.com/questions/64944815/
-    # sort-a-list-with-duplicates-based-on-another-
-    # list-with-same-items-but-different
-    monomial = monomial.tolist()
-    indexes = defaultdict(deque)
-    for i, x in enumerate(monomial):
-        indexes[tuple(x)].append(i)
+    #TODO: Why did we have this reordering code? Was it relevant for _build_cols_from_col_specs?
 
-    for idx, component in enumerate(disconnected_components):
-        # ordered_component = sorted(component.tolist(),
-        #                            key=lambda x: monomial.index(x))
-        ids = sorted([indexes[tuple(x)].popleft() for x in component.tolist()])
-        ordered_component = [monomial[id] for id in ids]
-        disconnected_components[idx] = np.array(ordered_component)
-
-    # Order independent factors canonically
-    disconnected_components = sorted(disconnected_components,
-                                     key=lambda x: x[0].tolist())
+    # # Order each factor as determined by the input monomial. We store the
+    # # the positions in the monomial so we can read it off afterwards.
+    # # Method taken from
+    # # https://stackoverflow.com/questions/64944815/
+    # # sort-a-list-with-duplicates-based-on-another-
+    # # list-with-same-items-but-different
+    # monomial = monomial.tolist()
+    # indexes = defaultdict(deque)
+    # for i, x in enumerate(monomial):
+    #     indexes[tuple(x)].append(i)
+    #
+    # for idx, component in enumerate(disconnected_components):
+    #     # ordered_component = sorted(component.tolist(),
+    #     #                            key=lambda x: monomial.index(x))
+    #     ids = sorted([indexes[tuple(x)].popleft() for x in component.tolist()])
+    #     ordered_component = [monomial[id] for id in ids]
+    #     disconnected_components[idx] = np.array(ordered_component)
+    #
+    # # Order independent factors canonically
+    # disconnected_components = sorted(disconnected_components,
+    #                                  key=lambda x: x[0].tolist())
 
     return disconnected_components

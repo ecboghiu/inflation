@@ -1,8 +1,10 @@
 import copy
 import numpy as np
 import sympy
-import warnings
+# import warnings
 from functools import lru_cache
+
+from numpy import ndarray
 
 from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
                                               to_canonical)
@@ -22,9 +24,9 @@ from sympy.combinatorics import Permutation
 from sympy.combinatorics.perm_groups import PermutationGroup
 
 try:
-    import numba
+    # import numba
     from numba import jit
-    int16_ = numba.int16
+    from numba import int16 as int16_
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
@@ -82,7 +84,7 @@ def substitute_variable_values_in_monlist(variables_values: np.ndarray,
     return final_monomials_list
 
 
-def generate_commuting_measurements(party: int,
+def generate_commuting_measurements(party: List[int],
                                     label: str
                                 ) -> List[List[List[sympy.core.symbol.Symbol]]]:
     """Generates the list of symbolic variables representing the measurements
@@ -111,7 +113,7 @@ def generate_commuting_measurements(party: int,
     return measurements
 
 
-def generate_noncommuting_measurements(party: int,
+def generate_noncommuting_measurements(party: List[int],
                                        label: str
                                 ) -> List[List[List[sympy.core.symbol.Symbol]]]:
     """Generates the list of sympy.core.symbol.Symbol variables representing the measurements
@@ -233,7 +235,7 @@ def mul(lst: List) -> Any:
 
     Example
     -------
-    >>> mul([2, A_1, B_2])
+    >>> mul([2, 'A_1', 'B_2'])
     2*A_1*B_2
     """
 
@@ -292,8 +294,8 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          permutation: List[int],
                                          commuting: bool,
                                          substitutions: Dict[sympy.core.symbol.Symbol,sympy.core.symbol.Symbol],
-                                         flatmeas: List[sympy.core.symbol.Symbol],
-                                         measnames: List[str],
+                                         flatmeas: Union[np.ndarray, List[sympy.core.symbol.Symbol]],
+                                         measnames: Union[np.ndarray, List[str]],
                                          names: List[str]
                                          ) -> List[sympy.core.symbol.Symbol]:
     """Applies a specific source permutation to the list of operators used to
@@ -543,7 +545,7 @@ def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
 
 def to_numbers(monomial: str,
                parties_names: Tuple[str]
-               ) -> Tuple[Tuple[int]]:
+               ) -> np.ndarray:
     """Monomial from string to matrix representation.
 
     Given a monomial input in string format, return the matrix representation
@@ -607,7 +609,7 @@ def to_numbers(monomial: str,
                    + tuple(int(j) for j in atoms[1:-2])
                    + (int(atoms[-2]), int(atoms[-1])))
         monomial_parts_indices.append(indices)
-    return tuple(monomial_parts_indices)
+    return np.array(monomial_parts_indices)
 
 
 def to_name(monomial_numbers: List[List[int]],
@@ -745,7 +747,7 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     """
 
     # monomial = np.array(monomial_in, dtype=np.int8).copy()
-    monomial = np.array(monomial_in, dtype=np.int8, copy=True)
+    monomial = np.array(monomial_in, dtype=np.uint8, copy=True)
     if sandwich_positivity:
         monomial = remove_sandwich(monomial)
 
@@ -1648,3 +1650,37 @@ def compute_numeric_value(mon_string: str,
     input_list[dont_marginalize] = inputs
     inputs_outputs   = outputs + input_list.tolist()
     return marginal_dist[tuple(inputs_outputs)]
+
+def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
+    """Function which, given an atomic monomial and a probability distribution prob_array
+        called as prob_array[a,b,c,...,x,y,z,...], returns the numerical value of the
+        probability associated to the monomial.
+        The atomic monomial is a list of length-3 vectors.
+        The first element indicates the party,
+        the second element indicates the setting,
+        the final element indicates the outcome.
+        Note that this accepts marginals and then
+        automatically computes all the summations over p[a,b,c,...,x,y,z,...].
+        Parameters
+        ----------
+
+        prob_array : np.ndarray
+            The probability distribution of dims
+            (outcomes_per_party, settings_per_party).
+        atom : np.ndarray
+            Monomial indicated a (commuting) collection of measurement operators.
+        Returns
+        -------
+        float
+            The value of the symbolic probability (which can be a marginal)
+        """
+    n_parties: int = prob_array.ndim // 2
+    participating_parties = atom[:,  0]
+    inputs = atom[:, -2].astype(int)
+    outputs = atom[:, -1].astype(int)
+    indices_to_sum = list(set(range(n_parties)).difference(participating_parties))
+    marginal_dist = np.sum(prob_array, axis=tuple(indices_to_sum))
+    input_list: ndarray = np.zeros(n_parties, dtype=int)
+    input_list[participating_parties] = inputs
+    outputs_inputs = np.concatenate((outputs, input_list))
+    return marginal_dist[tuple(outputs_inputs)]
