@@ -27,7 +27,7 @@ from causalinflation.quantum.general_tools import (to_representative,
                                             # clean_coefficients,
                                             compute_marginal)
 from causalinflation.quantum.fast_npa import calculate_momentmatrix
-from causalinflation.quantum.monomial_class import Monomial
+from causalinflation.quantum.monomial_class import Monomial, to_tuple_of_tuples
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION2
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
@@ -102,31 +102,31 @@ class InflationSDP(object):
                                  inflevels=self.inflation_levels,
                                  commuting=self.commuting))
 
-    def inflation_aware_to_name(self, mon: np.ndarray):
-        if len(mon)==0:
-            return 1
-        else:
-            factors_as_numpy_arrays = factorize_monomial(mon)
-            knowable_breakdown = [self.atomic_knowable_q(factor) for factor in factors_as_numpy_arrays]
-            factors_as_strings = []
-            for numpy_factor, knowable_status in zip(factors_as_numpy_arrays, knowable_breakdown):
-                if not knowable_status:
-                    operators_as_strings = []
-                    for op in numpy_factor:
-                        operators_as_strings.append('_'.join([self.names[op[0] - 1]]  # party idx
-                                               + [str(i) for i in op[1:]]))
-                    factors_as_strings.append('P['+', '.join(operators_as_strings)+']')
-            for numpy_factor, knowable_status in zip(factors_as_numpy_arrays, knowable_breakdown):
-                if knowable_status:
-                    effective_numpy_factor = np.take(numpy_factor, [0, -2, -1], axis=1)
-                    effective_numpy_factor = self.InflationProblem.rectify_fake_setting_atomic_factor(
-                        effective_numpy_factor)
-                    operators_as_strings = []
-                    for op in effective_numpy_factor:
-                        operators_as_strings.append('_'.join([self.names[op[0]]]  # party idx re-zeroed by rectify
-                                               + [str(i) for i in op[1:]]))
-                    factors_as_strings.append('P['+', '.join(operators_as_strings)+']')
-            return '*'.join(factors_as_strings)
+    # def inflation_aware_to_name(self, mon: np.ndarray):
+    #     if len(mon)==0:
+    #         return 1
+    #     else:
+    #         factors_as_numpy_arrays = factorize_monomial(mon)
+    #         knowable_breakdown = [self.atomic_knowable_q(factor) for factor in factors_as_numpy_arrays]
+    #         factors_as_strings = []
+    #         for numpy_factor, knowable_status in zip(factors_as_numpy_arrays, knowable_breakdown):
+    #             if not knowable_status:
+    #                 operators_as_strings = []
+    #                 for op in numpy_factor:
+    #                     operators_as_strings.append('_'.join([self.names[op[0] - 1]]  # party idx
+    #                                            + [str(i) for i in op[1:]]))
+    #                 factors_as_strings.append('P['+', '.join(operators_as_strings)+']')
+    #         for numpy_factor, knowable_status in zip(factors_as_numpy_arrays, knowable_breakdown):
+    #             if knowable_status:
+    #                 effective_numpy_factor = np.take(numpy_factor, [0, -2, -1], axis=1)
+    #                 effective_numpy_factor = self.InflationProblem.rectify_fake_setting_atomic_factor(
+    #                     effective_numpy_factor)
+    #                 operators_as_strings = []
+    #                 for op in effective_numpy_factor:
+    #                     operators_as_strings.append('_'.join([self.names[op[0]]]  # party idx re-zeroed by rectify
+    #                                            + [str(i) for i in op[1:]]))
+    #                 factors_as_strings.append('P['+', '.join(operators_as_strings)+']')
+    #         return '*'.join(factors_as_strings)
 
     def generate_relaxation(self,
                             column_specification:
@@ -230,50 +230,80 @@ class InflationSDP(object):
                                                        self.unsymidx_to_canonical_mon_dict,
                                                        self.inflation_symmetries)
 
-        largest_moment_index = max(self.symidx_to_canonical_mon_dict.keys())
+        # largest_moment_index = max(self.symidx_to_canonical_mon_dict.keys())
 
-        self.symidx_to_Monomials_dict = {k: Monomial(v,
+        self.list_of_monomials = [Monomial(v,
                                                      atomic_is_knowable=self.atomic_knowable_q,
-                                                     sandwich_positivity=True) for (k, v) in self.symidx_to_canonical_mon_dict.items()}
-        self._all_atomic_knowable = set()
-        for mon in self.symidx_to_Monomials_dict.values():
+                                                     sandwich_positivity=True,
+                                                     idx=k) for (k, v) in self.symidx_to_canonical_mon_dict.items()]
+        # self._all_atomic_knowable = set()
+        for mon in self.list_of_monomials:
             corrected_knowable_factors = [tuple(tuple(op) for op in
                                           self.InflationProblem.rectify_fake_setting_atomic_factor(atom))
                                     for atom in mon.knowable_factors]
             mon.knowable_factors = corrected_knowable_factors
-            self._all_atomic_knowable.update(corrected_knowable_factors)
+            # self._all_atomic_knowable.update(corrected_knowable_factors)
 
         # self._all_atomic_knowable = set(itertools.chain.from_iterable(mon.knowable_factors for mon in self.symidx_to_Monomials_dict.values()))
         #TODO: Everything AFTER THIS POINT in 'generate_relaxation' is only for legacy compatibility.
 
-        # if self.commuting:
-        #     self.physical_monomials = set(range(len(self.symidx_to_Monomials_dict)))
-        # else:
-        #     self.physical_monomials = set([k for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.physical_q])
+
 
         # self.knowable_moments = {k: list(map(self.InflationProblem.rectify_fake_setting_atomic_factor, Mon.knowable_factors))
         #                          for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
 
-        knowability_statusus = np.empty((largest_moment_index + 1,), dtype='<U4')
+        knowability_statusus = np.empty((len(self.list_of_monomials) + 2,), dtype='<U4')
         knowability_statusus[[0, 1]] = 'Yes'
-        for i, monomial in self.symidx_to_Monomials_dict.items():
-            knowability_statusus[i] = monomial.knowability_status
+        for monomial in self.list_of_monomials:
+            knowability_statusus[monomial.idx] = monomial.knowability_status
         # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
         _counter = Counter(knowability_statusus)
         self._n_known = _counter['Yes'] - 2 #TODO: rename all these 3 as knowable instead of known.
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
-        # self.reordering_of_monomials = np.argsort(np.concatenate((
-        #         np.flatnonzero(knowability_statusus == 'Yes'),
-        #         np.flatnonzero(knowability_statusus == 'Semi'),
-        #         np.flatnonzero(knowability_statusus == 'No'))))
 
+        self.reordering_of_monomials = np.argsort(np.concatenate((
+                np.flatnonzero(knowability_statusus == 'Yes'),
+                np.flatnonzero(knowability_statusus == 'No'),
+                np.flatnonzero(knowability_statusus == 'Semi'))))
+
+        #EXPERIMENTAL_REORDERING
+        self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
+        for mon in self.list_of_monomials:
+            mon.idx = self.reordering_of_monomials[mon.idx]
+            factors_as_strings = []
+            for atomic_unknowable_factor in mon.unknowable_factors:
+                operators_as_strings = []
+                for op in atomic_unknowable_factor:
+                    operators_as_strings.append('_'.join([self.names[op[0] - 1]]  # party idx
+                                                         + [str(i) for i in op[1:]]))
+                factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
+            mon.unknown_part_name = '*'.join(factors_as_strings)
+            factors_as_strings = []
+            for atomic_knowable_factor in mon.knowable_factors:
+                operators_as_strings = []
+                for op in atomic_knowable_factor:
+                    operators_as_strings.append('_'.join([self.names[op[0]]]  # party idx
+                                                         + [str(i) for i in op[1:]]))
+                factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
+            mon.knowable_factors_names = factors_as_strings
+            mon.knowable_part_name = '*'.join(factors_as_strings)
+            mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
+        #Note indexing starts from zero, for certificate compatibility.
+        self.monomial_names = np.array(['0', '1'] + [mon.name for mon in self.list_of_monomials])
+
+
+
+        if self.commuting:
+            self.physical_monomials = set(range(len(self.list_of_monomials)))
+        else:
+            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q])
 
 
 
         self.known_moments      = {0: 0., 1: 1.}
         self.nof_known_moments = len(self.known_moments)
-        # self.semiknown_moments  = dict()
+        self.semiknown_moments  = dict()
         self.objective          = 0.
         self._objective_as_dict = {1: 0.}
         self.distribution_has_been_set = False
@@ -283,15 +313,17 @@ class InflationSDP(object):
         # self.known_moments, self._objective_as_dict, etc.
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
-        #Upper and lower bounds are now directly incorprated into sdp_var namedtuple
-        # self.moment_lowerbounds = {physical: 0 for physical in self.physical_monomials}
-        # self.moment_upperbounds = {}
+        #Upper and lower bounds are now directly incorporated into sdp_var namedtuple
+        self.moment_lowerbounds = {physical_idx: 0 for physical_idx in self.physical_monomials}
+        self.moment_upperbounds = {}
+
 
 
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
-                         use_lpi_constraints: bool = False) -> None:
+                         use_lpi_constraints: bool = False,
+                         treat_as_support = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
@@ -318,153 +350,103 @@ class InflationSDP(object):
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
 
-        knowable_atoms_dict = defaultdict(lambda: np.nan)
-
-        if not (prob_array is None): #NOTE: USED WHEN NO DISTRIBUTION IS SPECIFIED.
-            _pdims = len(list(prob_array.shape))
-            assert _pdims % 2 == 0, "The probability distribution must have equal number of inputs and outputs"
-            # list(p.shape[:int(_pdims/2)]
-            #      ) == self.InflationProblem.outcomes_per_party
-            # list(p.shape[int(_pdims/2):]
-            #      ) == self.InflationProblem.settings_per_party
-            for atom in self._all_atomic_knowable:
-                knowable_atoms_dict[atom] = compute_marginal(prob_array, np.asarray(atom, dtype=int))
-
-        PreSDPVar = namedtuple('Mon',
-                                 ['sym_mm_idx', 'known_part', 'status', 'nothing_known'],
-                                 defaults=(1, "Free", False))
-        print(PreSDPVar._field_defaults)
-        sdp_var_dict = defaultdict(list)
-        """
-        We are now creating a dictionary associated with variables in the SDP.
-        Each variable is given by a unique 'unknown_part' of a semiknown variable.
-        With use_lpi_constraints=False we treat everything not known as wholly unknown.
-        With use_lpi_constraints=True we distinguish between semiknown and wholly unknown,
-         AND we also do not include semiknown terms at ALL if their known coefficient is zero.
-        """
-
-        def treat_as_unknown(idx, mon, known_part=1., known_indices=tuple()):
-            temp_pre_sdp_var = PreSDPVar(sym_mm_idx=idx, known_part=known_part)
-            if mon.physical_q:
-                temp_pre_sdp_var = temp_pre_sdp_var._replace(status='Physical')
-            if len(known_indices) == 0:
-                temp_pre_sdp_var = temp_pre_sdp_var._replace(nothing_known='True')
-                unknown_part = self.inflation_aware_to_representative(mon.as_ndarray)
-            else:
-                knowable_factors_which_are_not_known = [factor for (i, factor) in
-                                                        enumerate(mon.knowable_factors_uncompressed)
-                                                        if i not in known_indices]
-                unknown_part = self.inflation_aware_to_representative(np.concatenate((
-                    mon.factors_as_block(knowable_factors_which_are_not_known),
-                    mon.factors_as_block(mon.unknowable_factors),
-                )))
-            return (unknown_part, temp_pre_sdp_var)
-        def treat_as_known(idx, known_part):
-            self.known_moments[self.nof_known_moments] = known_part #THIS IS TERRIBLE FORM, ONLY KEPT FOR LEGACY TESTING.
-            self.nof_known_moments += 1
-            temp_pre_sdp_var = PreSDPVar(sym_mm_idx=idx,
-                                           known_part=known_part,
-                                           status='Known')
-            unknown_part = tuple()
-            return (unknown_part, temp_pre_sdp_var)
-        def treat_as_semiknown(idx, mon, valuation_of_knowable_part):
-            actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
-            known_part = float(np.prod(np.compress(
-                actually_known_factors,
-                valuation_of_knowable_part)))
-            nof_known_factors = np.count_nonzero(actually_known_factors)
-
-            if nof_known_factors == mon.nof_factors:
-                return treat_as_known(idx, known_part=known_part)
-            else:
-                return treat_as_unknown(idx, mon,
-                                      known_part=known_part,
-                                      known_indices=tuple(np.flatnonzero(actually_known_factors)))
+        hashable_prob_array = to_tuple_of_tuples(prob_array)
+        dict_which_groups_monomials_by_representative = defaultdict(list)
+        for mon in self.list_of_monomials:
+            mon.update_given_prob_dist(hashable_prob_array)
+            if mon.known_status == 'Semi' and (not self.use_lpi_constraints):
+                mon.known_status = 'No'
+                mon.unknown_part = mon.as_ndarray
+            mon.representative = self.inflation_aware_to_representative(mon.unknown_part)
+            dict_which_groups_monomials_by_representative[mon.representative].append(mon)
 
 
-        if not self.use_lpi_constraints:
-            for idx, mon in self.symidx_to_Monomials_dict.items():
-                known_part = np.prod([knowable_atoms_dict[knowable_atom] for knowable_atom in
-                                              mon.knowable_factors])
-                if (mon.knowability_status in {'No', 'Semi'}) or np.isnan(known_part):
-                    (unknown_part, pre_sdp_var) = treat_as_unknown(idx, mon)
+        if self.use_lpi_constraints:
+            for list_of_mon in dict_which_groups_monomials_by_representative.values():
+                if any(mon.known_status == 'Semi' for mon in list_of_mon):
+                    which_is_wholly_unknown = [mon.known_status == 'No' for mon in list_of_mon]
+                    if not np.count_nonzero(which_is_wholly_unknown) == 1:
+                        warn('Bug: found a semiknown with no counterpart.')
+                    # NEXT SIX LINES ARE FOR LEGACY COMPATABILITY
+                    list_of_mon_copy = list_of_mon.copy()
+                    wholly_unknown_mon = list_of_mon_copy.pop(np.flatnonzero(which_is_wholly_unknown)[0])
+                    for semiknown_mon in list_of_mon_copy:
+                        self.semiknown_moments[semiknown_mon.idx] = (semiknown_mon.known_value, wholly_unknown_mon.idx)
+            max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments.values())
+            # max(max(mon.known_value for mon in list_of_mon)
+            #                                 for v in dict_which_groups_monomials_by_representative.values())
+            assert max_semiknown_coefficient <= 1, 'Some semi-expressible-coefficient exceeds one.'
+
+
+        #NEXT LINES ARE FOR COMPATIBILITY
+        for mon in self.list_of_monomials:
+            if mon.known_status == 'Yes':
+                if treat_as_support and mon.known_value > 0:
+                    self.moment_lowerbounds[mon.idx] = 1
                 else:
-                    (unknown_part, pre_sdp_var) = treat_as_known(idx, known_part)
-                sdp_var_dict[unknown_part].append(pre_sdp_var)
-        else:
-            for idx, mon in self.symidx_to_Monomials_dict.items():
-                valuation_of_knowable_part = [knowable_atoms_dict[knowable_atom] for knowable_atom in
-                                              mon.knowable_factors]
-                if 0. not in valuation_of_knowable_part:
-                    (unknown_part, pre_sdp_var) = treat_as_semiknown(idx, mon, valuation_of_knowable_part)
-                    sdp_var_dict[unknown_part].append(pre_sdp_var)
-        self.presdpvar_dict = sdp_var_dict
+                    self.known_moments[mon.idx] = mon.known_value
 
-
-        for list_of_pre_sdp_vars in sdp_var_dict.values():
-            # to_representative check that semiknown match some wholly unknowns.
-            if any(temp_pre_sdp_var.nothing_known for temp_pre_sdp_var in list_of_pre_sdp_vars):
-                warn('Bug: found a semiknown with no counterpart.')
-        max_semiknown_coefficient = max(max(temp_pre_sdp_var.known_part for temp_pre_sdp_var in list_of_pre_sdp_vars)
-                                        for list_of_pre_sdp_vars in sdp_var_dict.values())
-        assert max_semiknown_coefficient <= 1, 'Some semi-expressible-coefficient exceeds one.'
-
-        """
-        We use the same boundkey format as Mosek, namely:
-            fx = FiXed (known, constant)
-            fr = FRee 
-            lo = LOwer bounded 
-            up = UPper bounded
-            ra = in some RAnge (for physical)
-        """
-
-        SDPVar = namedtuple('Var',
-                             ['csr_matrix', 'var_name', 'boundkey', 'lower_bound', 'upper_bound'],
-                             defaults=['fr', 0, 1])
-        """
-        'var_name' is important! It is used to comprehend user-specified equality or inequality constraints,
-        and it furthermore is used in interpreting certificates given by Mosek.
-        """
-
-        self.sdp_var_dict = dict()
-        #In MOST circumstances we combine the 'Identity' mask with other constant masks, but we leave the option open. In CG notation the ones are precisely the diagonal.
-        blank_sparse_array = dok_matrix(self.momentmatrix.shape, dtype=float)
-        for name, list_of_pre_sdp_vars in sdp_var_dict.items():
-            readable_name = self.inflation_aware_to_name(name)
-            current_sparse_mat = blank_sparse_array.copy()
-            for pre_sdp_var in list_of_pre_sdp_vars:
-                current_sparse_mat = current_sparse_mat + pre_sdp_var.known_part * dok_matrix(
-                    self.momentmatrix == pre_sdp_var.sym_mm_idx)
-            if list_of_pre_sdp_vars[0].status == 'Known':
-                temp_sdp_var = SDPVar(
-                    csr_matrix=current_sparse_mat.tocsr(),
-                    var_name=readable_name,
-                    boundkey='fx',
-                    lower_bound=1,
-                    upper_bound=1)
-            elif list_of_pre_sdp_vars[0].status == 'Physical':
-                temp_sdp_var = SDPVar(
-                    csr_matrix=current_sparse_mat.tocsr(),
-                    var_name=readable_name,
-                    boundkey='lo')
-            elif list_of_pre_sdp_vars[0].status == 'Free':
-                temp_sdp_var = SDPVar(csr_matrix=current_sparse_mat.tocsr(), var_name=readable_name)
-            else:
-                assert False, "pre_sdp_var namedtuples should have 'status' either 'Known' or 'Physical' or 'Free'."
-            self.sdp_var_dict[readable_name] = temp_sdp_var
-            ones_matrix = dok_matrix(self.momentmatrix == 1).tocsr()
-            if '1' in self.sdp_var_dict.keys():
-                old_sdp_var = self.sdp_var_dict['1']
-                old_csr_matrix = old_sdp_var.csr_matrix
-                new_csr_matrix = ones_matrix+old_csr_matrix
-                self.sdp_var_dict['1'] = old_sdp_var._replace(csr_matrix=new_csr_matrix)
-            else:
-                self.sdp_var_dict['1'] = SDPVar(
-                csr_matrix=dok_matrix(self.momentmatrix == 1).tocsr(),
-                var_name='1',
-                boundkey='fx',
-                lower_bound=1,
-                upper_bound=1)
+        # # NEXT LINES ARE PREPPING FOR SDP PREPROCESSING
+        #
+        # """
+        # We use the same boundkey format as Mosek, namely:
+        #     fx = FiXed (known, constant)
+        #     fr = FRee
+        #     lo = LOwer bounded
+        #     up = UPper bounded
+        #     ra = in some RAnge (for physical)
+        # """
+        #
+        # SDPVar = namedtuple('Var',
+        #                      ['csr_matrix', 'var_name', 'boundkey', 'lower_bound', 'upper_bound'],
+        #                      defaults=['fr', 0, 1])
+        # """
+        # 'var_name' is important! It is used to comprehend user-specified equality or inequality constraints,
+        # and it furthermore is used in interpreting certificates given by Mosek.
+        # """
+        #
+        # self.sdp_var_dict = dict()
+        # #In MOST circumstances we combine the 'Identity' mask with other constant masks, but we leave the option open. In CG notation the ones are precisely the diagonal.
+        # blank_sparse_array = dok_matrix(self.momentmatrix.shape, dtype=float)
+        # for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
+        #     readable_name = self.inflation_aware_to_name(representative)
+        #     current_sparse_mat = blank_sparse_array.copy()
+        #     for mon in list_of_mon:
+        #         current_sparse_mat = current_sparse_mat + mon.known_value * dok_matrix(
+        #             self.momentmatrix == mon.idx)
+        #     if list_of_mon[0].known_status == 'Yes':
+        #         temp_sdp_var = SDPVar(
+        #             csr_matrix=current_sparse_mat.tocsr(),
+        #             var_name=readable_name,
+        #             boundkey='fx',
+        #             lower_bound=1,
+        #             upper_bound=1)
+        #     elif list_of_mon[0].physical_q:
+        #         for mon in list_of_mon:
+        #             self.known_moments[mon.idx] = mon.known_value
+        #         temp_sdp_var = SDPVar(
+        #             csr_matrix=current_sparse_mat.tocsr(),
+        #             var_name=readable_name,
+        #             boundkey='lo',
+        #             lower_bound=1)
+        #     else:
+        #         temp_sdp_var = SDPVar(csr_matrix=current_sparse_mat.tocsr(),
+        #                               var_name=readable_name,
+        #                               boundkey='fr')
+        #     self.sdp_var_dict[readable_name] = temp_sdp_var
+        #     ones_matrix = dok_matrix(self.momentmatrix == 1).tocsr()
+        #     if '1' in self.sdp_var_dict.keys():
+        #         old_sdp_var = self.sdp_var_dict['1']
+        #         old_csr_matrix = old_sdp_var.csr_matrix
+        #         new_csr_matrix = ones_matrix+old_csr_matrix
+        #         self.sdp_var_dict['1'] = old_sdp_var._replace(csr_matrix=new_csr_matrix)
+        #     else:
+        #         self.sdp_var_dict['1'] = SDPVar(
+        #         csr_matrix=dok_matrix(self.momentmatrix == 1).tocsr(),
+        #         var_name='1',
+        #         boundkey='fx',
+        #         lower_bound=1,
+        #         upper_bound=1)
 
         if self.objective and not (prob_array is None):
             warn('Danger! User apparently set the objective before the distribution.')
@@ -512,7 +494,8 @@ class InflationSDP(object):
             #                    **dict(self._monomials_list_all[:, ::-1])}
 
             #Build monomial to index dictionary
-            self.symidx_from_Monomials_dict = {self.inflation_aware_to_representative(v.as_ndarray): k for (k, v) in self.symidx_to_Monomials_dict.items()}
+            self.symidx_from_Monomials_dict = {self.inflation_aware_to_representative(mon.as_ndarray): mon.idx
+                                               for mon in self.list_of_monomials}
             acceptable_monomials = set(self.symidx_from_Monomials_dict.keys())
 
             # Express objective in terms of representatives
@@ -582,16 +565,18 @@ class InflationSDP(object):
         #                       "feas_as_optim":    feas_as_optim,
         #                       "verbose":          self.verbose,
         #                       "solverparameters": solverparameters}
-        solveSDP_arguments = {"sdp_vars":         tuple(self.sdp_var_dict.values()),
+        # self.solution_object, lambdaval, self.status = \
+        #                               solveSDP_MosekFUSION(**solveSDP_arguments)
+        solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
-                              # "known_vars":       self.known_moments,
-                              # "semiknown_vars":   self.semiknown_moments,
-                              # "positive_vars":    self.physical_monomials,
+                              "known_vars":       self.known_moments,
+                              "semiknown_vars":   self.semiknown_moments,
+                              "positive_vars":    self.physical_monomials,
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters,
-                              # "var_lowerbounds":  self.moment_lowerbounds,
-                              # "var_upperbounds":  self.moment_upperbounds,
+                              "var_lowerbounds":  self.moment_lowerbounds,
+                              "var_upperbounds":  self.moment_upperbounds,
                               "var_equalities":   self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual":       dualise}
@@ -613,8 +598,7 @@ class InflationSDP(object):
             # names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
             #                 if idx > 1]    # We'd probably want this cleaner
             # reset keys to such that first key refers to the ones (constant) term.
-            rezeroed_idxs = np.array(list(coeffs.keys()))-1
-            names = [sdp_var_name for idx, sdp_var_name in enumerate(self.sdp_var_dict.keys()) if idx in rezeroed_idxs]
+            names = self.monomial_names.take(list(coeffs.keys()))
             # clean_names = np.concatenate((['0', '1'], names))
             # self.dual_certificate = np.array(list(zip([0]+list(coeffs.values()),
             #                                           clean_names)),
@@ -1390,19 +1374,27 @@ class InflationSDP(object):
         old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
                                                                                   return_index=True,
                                                                                   return_inverse=True)
+        print("momentmatrix", momentmatrix)
+        print("orbits", orbits)
+
         ###We need the check if the special indices 0 and 1 are IN orbits at all. IF not, we will need to shift the new
         ###indices up a bit.
-        if not 1 in orbits:
-            new_indices[new_indices>0] = new_indices+1
-            unsym_idx_to_sym_idx[unsym_idx_to_sym_idx>0] = unsym_idx_to_sym_idx+1
-        if not 0 in orbits:
-            new_indices = new_indices + 1
-            unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + 1
+        min_element = min(momentmatrix.flat)
+        old_representative_indices = old_representative_indices + min_element
+        unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + min_element
+        # if min_element > 1:
+        #     old_representative_indices[old_representative_indices>0] = old_representative_indices+1
+        #     unsym_idx_to_sym_idx[unsym_idx_to_sym_idx>0] = unsym_idx_to_sym_idx+1
+        # if min_element > 0:
+        #     old_representative_indices = old_representative_indices + 1
+        #     unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + 1
+        print("old_representative_indices", old_representative_indices)
+        print("new_indices", new_indices)
+        print("unsym_idx_to_sym_idx", unsym_idx_to_sym_idx)
 
         symmetrized_momentmatrix = unsym_idx_to_sym_idx.take(momentmatrix)
-        symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for old_idx, new_idx in zip(
-            old_representative_indices,
-            new_indices) if old_idx>=2}
+        symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in enumerate(
+            old_representative_indices) if old_idx>=2}
 
 
         # Remove from monomials_list all those that have disappeared. The -2 is
@@ -1443,29 +1435,29 @@ class InflationSDP(object):
 
 
 if __name__ == "__main__":
-    sdp = InflationSDP(InflationProblem(dag={'U_AB': ['A','B'],
-                                       'U_AC': ['A','C'],
-                                       'U_AD': ['A','D'],
-                                       'C': ['D'],
-                                       'A': ['B', 'C', 'D']},
-                                  outcomes_per_party=(2, 2, 2, 2),
-                                  settings_per_party=(1, 1, 1, 1),
-                                  inflation_level_per_source=(1, 1, 1),
-                                  names=('A', 'B', 'C', 'D'),
-                                  verbose=2),
-                       commuting=False,
-                       verbose=2)
-    sdp.generate_relaxation('local1')
-
-    # cutInflation = InflationProblem({"lambda": ["a", "b"],
-    #                                  "mu": ["b", "c"],
-    #                                  "sigma": ["a", "c"]},
-    #                                  names=['a', 'b', 'c'],
-    #                                  outcomes_per_party=[2, 2, 2],
-    #                                  settings_per_party=[1, 1, 1],
-    #                                  inflation_level_per_source=[2, 1, 1])
-    # sdp = InflationSDP(cutInflation)
+    # sdp = InflationSDP(InflationProblem(dag={'U_AB': ['A','B'],
+    #                                    'U_AC': ['A','C'],
+    #                                    'U_AD': ['A','D'],
+    #                                    'C': ['D'],
+    #                                    'A': ['B', 'C', 'D']},
+    #                               outcomes_per_party=(2, 2, 2, 2),
+    #                               settings_per_party=(1, 1, 1, 1),
+    #                               inflation_level_per_source=(1, 1, 1),
+    #                               names=('A', 'B', 'C', 'D'),
+    #                               verbose=2),
+    #                    commuting=False,
+    #                    verbose=2)
     # sdp.generate_relaxation('local1')
+
+    cutInflation = InflationProblem({"lambda": ["a", "b"],
+                                     "mu": ["b", "c"],
+                                     "sigma": ["a", "c"]},
+                                     names=['a', 'b', 'c'],
+                                     outcomes_per_party=[2, 2, 2],
+                                     settings_per_party=[1, 1, 1],
+                                     inflation_level_per_source=[2, 1, 1])
+    sdp = InflationSDP(cutInflation)
+    sdp.generate_relaxation('local1')
 
     # print(sdp.unsymmetrized_mm_idxs)
     # print(list(sdp.unsymidx_to_canonical_mon_dict.items()))
