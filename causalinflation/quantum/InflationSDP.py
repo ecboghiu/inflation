@@ -1,5 +1,7 @@
 # import copy
 import itertools
+import operator
+
 import numpy as np
 import pickle
 import sympy as sp
@@ -98,9 +100,12 @@ class InflationSDP(object):
             return first_test
 
     def inflation_aware_to_representative(self, mon: np.ndarray):
-        return tuple(tuple(vec) for vec in to_representative(mon,
-                                 inflevels=self.inflation_levels,
-                                 commuting=self.commuting))
+        if len(mon):
+            return tuple(tuple(vec) for vec in to_representative(mon,
+                                     inflevels=self.inflation_levels,
+                                     commuting=self.commuting))
+        else:
+            return tuple()
 
     # def inflation_aware_to_name(self, mon: np.ndarray):
     #     if len(mon)==0:
@@ -268,9 +273,9 @@ class InflationSDP(object):
                 np.flatnonzero(knowability_statusus == 'Semi'))))
 
         #EXPERIMENTAL_REORDERING
-        self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
+        # self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
         for mon in self.list_of_monomials:
-            mon.idx = self.reordering_of_monomials[mon.idx]
+            # mon.idx = self.reordering_of_monomials[mon.idx]
             factors_as_strings = []
             for atomic_unknowable_factor in mon.unknowable_factors:
                 operators_as_strings = []
@@ -354,28 +359,37 @@ class InflationSDP(object):
         dict_which_groups_monomials_by_representative = defaultdict(list)
         for mon in self.list_of_monomials:
             mon.update_given_prob_dist(hashable_prob_array)
-            if mon.known_status == 'Semi' and (not self.use_lpi_constraints):
-                mon.known_status = 'No'
-                mon.unknown_part = mon.as_ndarray
+            if mon.known_status == 'Semi':
+                if not self.use_lpi_constraints:
+                    mon.known_status = 'No'
+                    mon.unknown_part = mon.as_ndarray
+                elif mon.known_value == 0:
+                    mon.known_value = 0
+                    mon.known_status = 'Yes'
+                    mon.unknown_part = tuple()
             mon.representative = self.inflation_aware_to_representative(mon.unknown_part)
             dict_which_groups_monomials_by_representative[mon.representative].append(mon)
 
 
         if self.use_lpi_constraints:
-            for list_of_mon in dict_which_groups_monomials_by_representative.values():
+            for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
                 if any(mon.known_status == 'Semi' for mon in list_of_mon):
                     which_is_wholly_unknown = [mon.known_status == 'No' for mon in list_of_mon]
                     if not np.count_nonzero(which_is_wholly_unknown) == 1:
-                        warn('Bug: found a semiknown with no counterpart.')
+                        warn('Bug: found a semiknown with no counterpart.' + str(representative))
                     # NEXT SIX LINES ARE FOR LEGACY COMPATABILITY
                     list_of_mon_copy = list_of_mon.copy()
-                    wholly_unknown_mon = list_of_mon_copy.pop(np.flatnonzero(which_is_wholly_unknown)[0])
+                    list_of_mon_copy = sorted(list_of_mon_copy, key=operator.attrgetter('known_value'))
+                    big_val_mon = list_of_mon_copy.pop(-1)
+                    # wholly_unknown_mon = list_of_mon_copy.pop(np.flatnonzero(which_is_wholly_unknown)[0])
                     for semiknown_mon in list_of_mon_copy:
-                        self.semiknown_moments[semiknown_mon.idx] = (semiknown_mon.known_value, wholly_unknown_mon.idx)
+                        self.semiknown_moments[semiknown_mon.idx] = (np.true_divide(semiknown_mon.known_value,
+                                                                                    big_val_mon.known_value
+                                                                                    ), big_val_mon.idx)
             max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments.values())
             # max(max(mon.known_value for mon in list_of_mon)
             #                                 for v in dict_which_groups_monomials_by_representative.values())
-            assert max_semiknown_coefficient <= 1, 'Some semi-expressible-coefficient exceeds one.'
+            assert max_semiknown_coefficient <= 1, f'Some semi-expressible-coefficient exceeds one: {max_semiknown_coefficient}'
 
 
         #NEXT LINES ARE FOR COMPATIBILITY
@@ -1332,29 +1346,33 @@ class InflationSDP(object):
         """
 
         symmetric_arr = momentmatrix.copy()
-        if len(symmetric_arr.shape) == 2:
-            # TODO This is inelegant, remove the index.
-            #  Only here for compatibility reasons
-            aux = np.zeros((symmetric_arr.shape[0], symmetric_arr.shape[1], 2))
-            aux[:, :, 0] = symmetric_arr
-            symmetric_arr = aux.astype(int)
+        # if len(symmetric_arr.shape) == 2:
+        #     # TODO This is inelegant, remove the index.
+        #     #  Only here for compatibility reasons
+        #     aux = np.zeros((symmetric_arr.shape[0], symmetric_arr.shape[1], 2))
+        #     aux[:, :, 0] = symmetric_arr
+        #     symmetric_arr = aux.astype(int)
 
         indices_to_delete = []
         # the +2 is to include 0:0 and 1:1
         # orbits = {i: i for i in range(2+len(monomials_list))}
         # orbits = {i: i for i in np.unique(sdp.problem_arr.flat)}
-        orbits = np.unique(symmetric_arr.flat)
+        orbits = np.unique(momentmatrix.flat)
+        # print("orbits before symmetrization", orbits)
         for permutation in tqdm(inflation_symmetries,
                                 disable=not self.verbose,
                                 desc="Applying symmetries          "):
             for i, ip in enumerate(permutation):
                 for j, jp in enumerate(permutation):
-                    if symmetric_arr[i, j, 0] < symmetric_arr[ip, jp, 0]:
-                        indices_to_delete.append(int(symmetric_arr[ip, jp, 0]))
-                        orbits[symmetric_arr[ip, jp, 0]
-                               ] = symmetric_arr[i, j, 0]
-                        symmetric_arr[ip, jp, :] = symmetric_arr[i, j, :]
-
+                    if symmetric_arr[i, j] < symmetric_arr[ip, jp]:
+                        indices_to_delete.append(int(symmetric_arr[ip, jp]))
+                        orbits[symmetric_arr[ip, jp]
+                               ] = symmetric_arr[i, j]
+                        symmetric_arr[ip, jp] = symmetric_arr[i, j]
+        # print("orbits before adjustment", orbits)
+        orbits = np.concatenate((
+            np.arange(np.min(orbits)),
+            orbits))
         # Make the orbits go until the representative
         for key, val in enumerate(orbits):
             previous = 0
@@ -1370,27 +1388,31 @@ class InflationSDP(object):
                     warn("Your generating set might not have enough" +
                          "elements to fully impose inflation symmetries.")
             orbits[key] = val
+        # print("orbits after adjustment", orbits)
 
         old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
                                                                                   return_index=True,
                                                                                   return_inverse=True)
-        print("momentmatrix", momentmatrix)
-        print("orbits", orbits)
+        assert np.array_equal(old_representative_indices, new_indices
+                              ), 'Something unexpected happened when calculating orbits.'
+
+        # print("momentmatrix", momentmatrix)
+        # print("orbits", orbits)
 
         ###We need the check if the special indices 0 and 1 are IN orbits at all. IF not, we will need to shift the new
         ###indices up a bit.
-        min_element = min(momentmatrix.flat)
-        old_representative_indices = old_representative_indices + min_element
-        unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + min_element
+        # min_element = min(momentmatrix.flat)
+        # old_representative_indices = old_representative_indices + min_element
+        # unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + min_element
         # if min_element > 1:
         #     old_representative_indices[old_representative_indices>0] = old_representative_indices+1
         #     unsym_idx_to_sym_idx[unsym_idx_to_sym_idx>0] = unsym_idx_to_sym_idx+1
         # if min_element > 0:
         #     old_representative_indices = old_representative_indices + 1
         #     unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + 1
-        print("old_representative_indices", old_representative_indices)
-        print("new_indices", new_indices)
-        print("unsym_idx_to_sym_idx", unsym_idx_to_sym_idx)
+        # print("old_representative_indices", old_representative_indices)
+        # print("new_indices", new_indices)
+        # print("unsym_idx_to_sym_idx", unsym_idx_to_sym_idx)
 
         symmetrized_momentmatrix = unsym_idx_to_sym_idx.take(momentmatrix)
         symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in enumerate(
