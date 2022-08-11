@@ -401,6 +401,7 @@ def solveSDP_MosekFUSION2(positionsmatrix: scipy.sparse.lil_matrix,
             inequality[CONSTANT_KEY] = 0
 
     variables = set(positionsmatrix.flatten())
+    variables.discard(0)
 
     F0 = scipy.sparse.lil_matrix((mat_dim,mat_dim))
     Fi = {}
@@ -412,12 +413,14 @@ def solveSDP_MosekFUSION2(positionsmatrix: scipy.sparse.lil_matrix,
     # ! (From here onwards we no longer need positionsmatrix for anything.)
 
     # For positive variables, override the lower bound to be 0 if it is smaller
+    print("Positive vars:", positive_vars)
     for x in positive_vars:
         try:
             if var_lowerbounds[x] < 0:
                 var_lowerbounds[x] = 0
         except KeyError:
-            var_lowerbounds[x] = 0
+            if x>0:
+                var_lowerbounds[x] = 0
 
     # Remove variables that are fixed by known_vars from the list of
     # variables, and also remove the corresponding entries for its upper
@@ -856,7 +859,7 @@ def solveSDP_MosekFUSION2(positionsmatrix: scipy.sparse.lil_matrix,
                     assert ub - x_values[x] >= NEGATIVE_TOL, "Upper bound violated."
                 if var_inequalities:
                     assert np.all(A @ np.array(list(x_values.values())) +
-                                b.getDataAsArray() >= NEGATIVE_TOL), "Inequalities not satisftied."
+                                b.getDataAsArray() >= NEGATIVE_TOL), "Inequalities not satisfied."
                 if var_equalities:
                     assert np.allclose(C @ np.array(list(x_values.values())) +
                                 d.getDataAsArray(), 0), "Equalities not satisfied by the solution."
