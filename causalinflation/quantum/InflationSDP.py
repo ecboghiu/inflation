@@ -43,7 +43,7 @@ from scipy.sparse import dok_matrix
 try:
     from tqdm import tqdm
 except ImportError:
-    def tqdm(*args):
+    def tqdm(*args, **kwargs):
         return args[0]
 
 

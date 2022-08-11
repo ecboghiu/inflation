@@ -666,13 +666,7 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
             tuples.append(tuple(flatten(element.tolist())))
     return tuples
 
-def to_tuple_of_tuples(monomial: np.ndarray) -> Tuple[Tuple[int]]:
-    if monomial.ndim >= 2:
-        return tuple(to_tuple_of_tuples(operator) for operator in monomial)
-    elif monomial.ndim == 1:
-        return tuple(monomial.tolist())
-    else:
-        return monomial
+
 
 @lru_cache(maxsize=None, typed=False)
 def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
