@@ -595,7 +595,7 @@ def calculate_momentmatrix(cols: List,
 ################################################################################
 
 def factorize_monomial(raw_monomial: np.ndarray
-                       ) -> np.ndarray:
+                       ) -> Tuple[np.ndarray]:
     """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
 
@@ -615,7 +615,7 @@ def factorize_monomial(raw_monomial: np.ndarray
                         is for e.g. 2, then this operator is acting on
                         copy 2 of source j-1.
 
-    The output is a list of lists, where each list represents another
+    The output is a tuple of ndarrays where each array represents another
     monomial s.t. their product is equal to the original monomial.
 
     Parameters
@@ -625,8 +625,8 @@ def factorize_monomial(raw_monomial: np.ndarray
 
     Returns
     -------
-    np.ndarray
-        A list of lists, where each list represents the monomial factors.
+    Tuple[np.ndarray]
+        A tuple of ndarrays, where each array represents an atomic monomial factor.
 
     Examples
     --------
@@ -680,8 +680,8 @@ def factorize_monomial(raw_monomial: np.ndarray
             disconnected_components.append(component)
         idx += 1
 
-    disconnected_components = [
-        monomial[sorted(component)] for component in disconnected_components]
+    disconnected_components = tuple(
+        monomial[sorted(component)] for component in disconnected_components)
 
     #TODO: Why did we have this reordering code? Was it relevant for _build_cols_from_col_specs?
 

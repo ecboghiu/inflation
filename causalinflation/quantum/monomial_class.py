@@ -10,11 +10,90 @@ from typing import List, Tuple, Union
 # ListOrTuple = NewType("ListOrTuple", Union[List, Tuple])
 # MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
+def to_tuple_of_tuples(monomial: np.ndarray) -> Tuple[Tuple[int]]:
+    if monomial.ndim >= 2:
+        return tuple(to_tuple_of_tuples(operator) for operator in monomial)
+    elif monomial.ndim == 1:
+        return tuple(monomial.tolist())
+    else:
+        return monomial
+
+
+def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
+    """Function which, given an atomic monomial and a probability distribution prob_array
+        called as prob_array[a,b,c,...,x,y,z,...], returns the numerical value of the
+        probability associated to the monomial.
+        The atomic monomial is a list of length-3 vectors.
+        The first element indicates the party,
+        the second element indicates the setting,
+        the final element indicates the outcome.
+        Note that this accepts marginals and then
+        automatically computes all the summations over p[a,b,c,...,x,y,z,...].
+        Parameters
+        ----------
+
+        prob_array : np.ndarray
+            The probability distribution of dims
+            (outcomes_per_party, settings_per_party).
+        atom : np.ndarray
+            Monomial indicated a (commuting) collection of measurement operators.
+        Returns
+        -------
+        float
+            The value of the symbolic probability (which can be a marginal)
+        """
+    n_parties: int = prob_array.ndim // 2
+    participating_parties = atom[:,  0]
+    inputs = atom[:, -2].astype(int)
+    outputs = atom[:, -1].astype(int)
+    indices_to_sum = list(set(range(n_parties)).difference(participating_parties))
+    marginal_dist = np.sum(prob_array, axis=tuple(indices_to_sum))
+    input_list: ndarray = np.zeros(n_parties, dtype=int)
+    input_list[participating_parties] = inputs
+    outputs_inputs = np.concatenate((outputs, input_list))
+    return marginal_dist[tuple(outputs_inputs)]
 
 class Monomial(object):
+    # __frozen_atributes = [
+    #     'as_ndarray',
+    #      'n_ops',
+    #      'op_length',
+    #      'as_tuples',
+    #      'is_physical',
+    #      'factors',
+    #      'nof_factors',
+    #      'atomic_knowability_status',
+    #      'knowable_factors_uncompressed',
+    #      'knowable_factors',
+    #      'unknowable_factors',
+    #      'knowable_q',
+    #      'physical_q']
+    # __attributes_adjustable_by_user = [
+    #     'known_part_value',
+    #     'unknown_part_representative',
+    #     'unknown_part_name',
+    #     'known_part']
+    __slots__ = ['as_ndarray',
+                 'n_ops',
+                 'op_length',
+                 'as_tuples',
+                 'is_physical',
+                 'factors',
+                 'nof_factors',
+                 'atomic_knowability_status',
+                 'knowable_factors_uncompressed',
+                 'knowable_factors',
+                 'unknowable_factors',
+                 'unknowable_factors_as_block',
+                 '_unknowable_block_len',
+                 'knowability_status',
+                 'knowable_q',
+                 'physical_q',
+                 'idx'
+                 ]
     def __init__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]],
                  atomic_is_knowable=is_knowable,
-                 sandwich_positivity=False):
+                 sandwich_positivity=False, idx=0):
         """
         This class is incredibly inefficient unless knowable_q has built-in memoization.
         It is designed to categorize monomials into known, semiknown, unknown, etc.
@@ -26,16 +105,31 @@ class Monomial(object):
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
         self.as_tuples = tuple(tuple(vec) for vec in self.as_ndarray)
-        self.atomic_is_knowable = atomic_is_knowable
+        self.factors = factorize_monomial(self.as_ndarray)
+        self.nof_factors = len(self.factors)
+        self.atomic_knowability_status = tuple(atomic_is_knowable(atom) for atom in self.factors)
+        self.knowable_factors_uncompressed = tuple(atom for atom, knowable in
+                                                   zip(self.factors,
+                                                       self.atomic_knowability_status)
+                                                   if knowable)
+        self.unknowable_factors = tuple(atom for atom, knowable in
+                                                   zip(self.factors,
+                                                       self.atomic_knowability_status)
+                                                   if not knowable)
+        self.unknowable_factors_as_block = self.factors_as_block(self.unknowable_factors)
+        self.knowable_factors = tuple(tuple(tuple(vec) for vec in np.take(factor, [0, -2, -1], axis=1))
+                for factor in self.knowable_factors_uncompressed)
+        self.knowable_q = (len(self.knowable_factors) == self.nof_factors)
+        self.physical_q = self.knowable_q or is_physical(self.unknowable_factors_as_block,
+                                                         sandwich_positivity=sandwich_positivity)
+        self._unknowable_block_len = len(self.unknowable_factors_as_block)
 
-        self.is_physical = lambda mon: is_physical(mon, sandwich_positivity=sandwich_positivity)
-
-    # @cached_property
-    # def as_representative(self):
-    #     return tuple(tuple(vec) for vec in self.to_representative(self.as_ndarray))
-
-    def atomic_is_not_knowable(self, mon):
-        return not self.atomic_is_knowable(mon)
+        if self._unknowable_block_len == 0:
+            self.knowability_status = 'Yes'
+        elif self._unknowable_block_len == self.n_ops:
+            self.knowability_status = 'No'
+        else:
+            self.knowability_status = 'Semi'
 
     def __str__(self):
         return np.array2string(self.as_ndarray)
@@ -46,102 +140,49 @@ class Monomial(object):
     def __hash__(self):
         return hash(self.as_tuples)
 
-    @cached_property
-    def factors(self):
-        return factorize_monomial(self.as_ndarray)
-
     def factors_as_block(self, factors):
         if len(factors):
             return np.concatenate(factors)
         else:
             return np.empty((0, self.op_length), dtype=np.int8)
 
-    @cached_property
-    def nof_factors(self):
-        return len(self.factors)
-
-    @cached_property
-    def knowable_factors(self):
-        # return [tuple(tuple(vec) for vec in np.take(factor, [0, -2, -1], axis=1))
-        #         for factor in self.factors if self.atomic_is_knowable(factor)]
-        return [tuple(tuple(vec) for vec in np.take(factor, [0, -2, -1], axis=1))
-                for factor in self.knowable_factors_uncompressed]
-
-    @cached_property
-    def knowable_factors_uncompressed(self):
-        return tuple(filter(self.atomic_is_knowable, self.factors))
-
-    @cached_property
-    def unknowable_factors(self):
-        return tuple(filter(self.atomic_is_not_knowable, self.factors))
-
+    #knowability_status should not be used. Only after set_distribution is this relevant!
     # @cached_property
-    # def unknowable_part(self):
-    #     if len(self.unknowable_factors):
-    #         return self.to_representative(np.vstack(self.unknowable_factors))
+    # def knowability_status(self):
+    #     if len(self.knowable_factors) == self.nof_factors:
+    #         return 'Yes'
+    #     elif len(self.knowable_factors) > 0:
+    #         return 'Semi'
     #     else:
-    #         return tuple()
-        # if len(raw_unknowns) < 2:
-        #     if len(raw_unknowns) == 1:
-        #         return self.to_representative(raw_unknowns[0])
-        #     else:
-        #         return tuple()
-        # else:
-        #     candidate_unknown_part_representatives = []
-        #     for perm in itertools.permutations(raw_unknowns, len(raw_unknowns)):
-        #         candidate_unknown_part_representatives.append(self.to_representative(np.vstack(perm)))
-        #     assert len(set(
-        #         tuple(tuple(vec) for vec in monomial) for monomial in candidate_unknown_part_representatives)) <= 1, \
-        #         "The 'to_representative' function is incorrectly sensitive to factor order."
-        #     return sorted(candidate_unknown_part_representatives)[0]
+    #         return 'No'
 
-    @cached_property
-    def knowability_status(self):
-        if len(self.knowable_factors) == self.nof_factors:
-            return 'Yes'
-        elif len(self.knowable_factors) > 0:
-            return 'Semi'
+    def update_given_valuation_of_knowable_part(self, valuation_of_knowable_part):
+        actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
+        known_part_value = float(np.prod(np.compress(
+            actually_known_factors,
+            valuation_of_knowable_part)))
+        nof_known_factors = np.count_nonzero(actually_known_factors)
+        knowable_factors_which_are_not_known = [factor for factor, known in
+                                                zip(self.knowable_factors_uncompressed,
+                                                    actually_known_factors)
+                                                if not known]
+
+        unknown_part = np.concatenate((
+            self.factors_as_block(knowable_factors_which_are_not_known),
+            self.unknowable_factors_as_block))
+        unknown_len = len(unknown_part)
+        if unknown_len == 0:
+            status = 'Known'
+        elif unknown_len == self.n_ops:
+            status = 'Unknown'
         else:
-            return 'No'
+            status = 'Semiknown'
+        return (known_part_value, unknown_part, status)
 
-    @cached_property
-    def knowable_q(self):
-        return self.knowability_status == 'Yes'
 
-    @cached_property
-    def physical_q(self):
-        if self.knowable_q:
-            return True
-        else:
-            return self.is_physical(np.concatenate(self.unknowable_factors))
+class SDPVar(Monomial):
+    def __init__(self, mon: Monomial, prob_array: np.ndarray, use_lpi_constraints=False):
+        valuation_of_knowable_part
 
-    # def decomposition_given_dist(self, knowable_atoms_dict):
-    #     yield_nan = lambda x: np.nan
-    #     error_free_dict = defaultdict(yield_nan, knowable_atoms_dict)
-    #     #We want to know the values we can obtain.
-    #
-    #     return np.prod([knowable_atoms_dict[knowable_atom] for knowable_atom in error_free_dict])
 
-#
-#
-#
-# class AtomicMonomial(object):
-#     def __init__(self, array2d:np.ndarray, knowable_q, to_representative):
-#         self.knowable = knowable_q(array2d)
-#         if self.knowable:
-#             self.representative =
-#             return AtomicMonomial
-#
-#         self.as_ndarray = np.asarray(array1d)
-#         assert self.as_ndarray.ndim == 1, 'Expected 2 dimension numpy array.'
-#         self.n_ops, self.op_length = self.as_ndarray.shape
-#         self.as_tuple = tuple(self.as_ndarray)
-#
-#
-#
-#     def __str__(self):
-#         return np.array2string(self.as_ndarray)
-#
-#     def __repr__(self):
-#         return self.as_tuple
-#
+
