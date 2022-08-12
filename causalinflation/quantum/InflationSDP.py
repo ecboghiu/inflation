@@ -235,7 +235,7 @@ class InflationSDP(object):
                                                        self.unsymidx_to_canonical_mon_dict,
                                                        self.inflation_symmetries)
 
-        # largest_moment_index = max(self.symidx_to_canonical_mon_dict.keys())
+        self.largest_moment_index = max(self.symidx_to_canonical_mon_dict.keys())
 
         self.list_of_monomials = [Monomial(v,
                                                      atomic_is_knowable=self.atomic_knowable_q,
@@ -257,25 +257,26 @@ class InflationSDP(object):
         # self.knowable_moments = {k: list(map(self.InflationProblem.rectify_fake_setting_atomic_factor, Mon.knowable_factors))
         #                          for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
 
-        knowability_statusus = np.empty((len(self.list_of_monomials) + 2,), dtype='<U4')
+        knowability_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
         knowability_statusus[[0, 1]] = 'Yes'
         for monomial in self.list_of_monomials:
             knowability_statusus[monomial.idx] = monomial.knowability_status
         # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
         _counter = Counter(knowability_statusus)
-        self._n_known = _counter['Yes'] - 2 #TODO: rename all these 3 as knowable instead of known.
-        self._n_something_known = _counter['Semi']
-        self._n_unknown = _counter['No']
-
+        self._n_known = _counter['Yes'] - 2
+        self._n_something_known = 0
+        self._n_unknown = _counter['No'] + _counter['Semi']
+        #REORDERING INDICES (for compatibility)
         self.reordering_of_monomials = np.argsort(np.concatenate((
                 np.flatnonzero(knowability_statusus == 'Yes'),
                 np.flatnonzero(knowability_statusus == 'No'),
                 np.flatnonzero(knowability_statusus == 'Semi'))))
-
-        #EXPERIMENTAL_REORDERING
-        # self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
+        self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
         for mon in self.list_of_monomials:
-            # mon.idx = self.reordering_of_monomials[mon.idx]
+            mon.idx = self.reordering_of_monomials[mon.idx]
+
+
+        for mon in self.list_of_monomials:
             factors_as_strings = []
             for atomic_unknowable_factor in mon.unknowable_factors:
                 operators_as_strings = []
@@ -298,7 +299,7 @@ class InflationSDP(object):
         self.monomial_names = np.array(['0', '1'] + [mon.name for mon in self.list_of_monomials])
 
 
-
+        # ALAS, THIS IS RESET AFTER INDICES CHANGE DURING SET DISTRIBUTION
         if self.commuting:
             self.physical_monomials = set(range(len(self.list_of_monomials)))
         else:
@@ -370,6 +371,27 @@ class InflationSDP(object):
             mon.representative = self.inflation_aware_to_representative(mon.unknown_part)
             dict_which_groups_monomials_by_representative[mon.representative].append(mon)
 
+        """
+        This next block of code re-indexes the monomials (and the momentmatrix) 
+        to put the known variables first, then the unknown, then the semiknown.
+        """
+        known_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
+        known_statusus[[0, 1]] = 'Yes'
+        for monomial in self.list_of_monomials:
+            known_statusus[monomial.idx] = monomial.known_status
+        # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
+        _counter = Counter(known_statusus)
+        self._n_known = _counter['Yes'] - 2
+        self._n_something_known = _counter['Semi']
+        self._n_unknown = _counter['No']
+        _reordering_of_monomials = np.argsort(np.concatenate((
+            np.flatnonzero(known_statusus == 'Yes'),
+            np.flatnonzero(known_statusus == 'No'),
+            np.flatnonzero(known_statusus == 'Semi'))))
+        self.momentmatrix = _reordering_of_monomials.take(self.momentmatrix)
+        for mon in self.list_of_monomials:
+            mon.idx = _reordering_of_monomials[mon.idx]
+
 
         if self.use_lpi_constraints:
             for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
@@ -392,13 +414,20 @@ class InflationSDP(object):
             assert max_semiknown_coefficient <= 1, f'Some semi-expressible-coefficient exceeds one: {max_semiknown_coefficient}'
 
 
-        #NEXT LINES ARE FOR COMPATIBILITY
+        #RESET PROPERTIES
+        #Such as resetting physical_monomials using new indices.
+        if not self.commuting:
+            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q])
+        self.moment_lowerbounds = {physical_idx: 0 for physical_idx in self.physical_monomials}
+        self.moment_upperbounds = {}
+        self.known_moments = {0: 0., 1: 1.}
         for mon in self.list_of_monomials:
             if mon.known_status == 'Yes':
                 if treat_as_support and mon.known_value > 0:
                     self.moment_lowerbounds[mon.idx] = 1
                 else:
                     self.known_moments[mon.idx] = mon.known_value
+        self.nof_known_moments = len(self.known_moments)
 
         # # NEXT LINES ARE PREPPING FOR SDP PREPROCESSING
         #
