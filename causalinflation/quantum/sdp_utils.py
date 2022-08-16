@@ -413,7 +413,7 @@ def solveSDP_MosekFUSION2(positionsmatrix: scipy.sparse.lil_matrix,
     # ! (From here onwards we no longer need positionsmatrix for anything.)
 
     # For positive variables, override the lower bound to be 0 if it is smaller
-    print("Positive vars:", positive_vars)
+    # print("Positive vars:", positive_vars)
     for x in positive_vars:
         try:
             if var_lowerbounds[x] < 0:
