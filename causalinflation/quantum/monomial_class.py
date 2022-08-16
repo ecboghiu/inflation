@@ -12,7 +12,8 @@ from collections.abc import Iterable
 # ListOrTuple = NewType("ListOrTuple", Union[List, Tuple])
 # MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
-def to_tuple_of_tuples(monomial):
+
+def to_tuple_of_tuples(monomial: np.ndarray) -> tuple:
     if isinstance(monomial, tuple):
         return monomial
     elif isinstance(monomial, np.ndarray):
@@ -27,9 +28,11 @@ def to_tuple_of_tuples(monomial):
     else:
         return monomial
 
+
 @lru_cache(maxsize=None, typed=False)
 def compute_marginal_memoized(prob_array: Tuple, atom: Tuple[Tuple[int]]) -> float:
     return compute_marginal(np.asarray(prob_array), np.asarray(atom))
+
 
 def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
     """Function which, given an atomic monomial and a probability distribution prob_array
@@ -65,6 +68,7 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
     outputs_inputs = np.concatenate((outputs, input_list))
     return marginal_dist[tuple(outputs_inputs)]
 
+
 class Monomial(object):
     __slots__ = ['as_ndarray',
                  'n_ops',
@@ -93,6 +97,7 @@ class Monomial(object):
                  'representative',
                  'name'
                  ]
+
     def __init__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]],
                  atomic_is_knowable=is_knowable,
                  sandwich_positivity=False, idx=0):
@@ -102,6 +107,7 @@ class Monomial(object):
         Note that if knowable_q changes (such as given partial information) we can update this on the fly.
         """
         # self.to_representative = lambda mon: tuple(tuple(vec) for vec in to_representative(mon))
+
         self.idx = idx
         self.as_ndarray = np.asarray(array2d)
         assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array.'
@@ -122,7 +128,7 @@ class Monomial(object):
         self.unknowable_factors_as_block = self.factors_as_block(self.unknowable_factors)
         # self.knowable_factors = tuple(tuple(tuple(vec) for vec in np.take(factor, [0, -2, -1], axis=1))
         #         for factor in self.knowable_factors_uncompressed)
-        #knowable factors must be hashable, but this is taken care of after externally rectifying fake settings.
+        # knowable factors must be hashable, but this is taken care of after externally rectifying fake settings.
         self.knowable_factors = tuple(np.take(factor, [0, -2, -1], axis=1).astype(int)
                                       for factor in self.knowable_factors_uncompressed)
         self.knowable_q = (len(self.knowable_factors) == self.nof_factors)
@@ -136,6 +142,10 @@ class Monomial(object):
             self.knowability_status = 'No'
         else:
             self.knowability_status = 'Semi'
+
+        self.known_status = 'No'
+        self.unknown_part = self.unknowable_factors_as_block
+        self.known_value = 1.
 
     def __str__(self):
         return np.array2string(self.as_ndarray)
@@ -152,7 +162,7 @@ class Monomial(object):
         else:
             return np.empty((0, self.op_length), dtype=np.int8)
 
-    #knowability_status should not be used. Only after set_distribution is this relevant!
+    # knowability_status should not be used. Only after set_distribution is this relevant!
     # @cached_property
     # def knowability_status(self):
     #     if len(self.knowable_factors) == self.nof_factors:
@@ -167,7 +177,7 @@ class Monomial(object):
         self.known_value = float(np.prod(np.compress(
             actually_known_factors,
             valuation_of_knowable_part)))
-        nof_known_factors = np.count_nonzero(actually_known_factors)
+        # nof_known_factors = np.count_nonzero(actually_known_factors)
         knowable_factors_which_are_not_known = [factor for factor, known in
                                                 zip(self.knowable_factors_uncompressed,
                                                     actually_known_factors)
@@ -195,8 +205,3 @@ class Monomial(object):
                 compute_marginal_memoized(hashable_prob_array, atom)
                 for atom in self.knowable_factors])
             return self.update_given_valuation_of_knowable_part(valuation_of_knowable_part)
-
-
-
-
-

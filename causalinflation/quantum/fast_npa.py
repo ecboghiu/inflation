@@ -1,10 +1,10 @@
 import numpy as np
-import scipy
+from scipy.sparse import dok_matrix  # , coo_matrix, coo
 
 from typing import List, Dict, Tuple
 
 # Had to insert this because of circular imports
-from collections import defaultdict, deque
+# from collections import defaultdict, deque
 
 try:
     from numba import jit
@@ -73,6 +73,7 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
 
     return mon[np.argsort(mon[:, 0], kind='mergesort')]
 
+
 @jit(nopython=True, cache=cache)
 def mon_equal_mon(mon1: np.ndarray,
                   mon2: np.ndarray
@@ -95,6 +96,7 @@ def mon_equal_mon(mon1: np.ndarray,
     # one should use np.allclose
     return np.array_equal(mon1, mon2)
 
+
 @jit(nopython=True, cache=cache)
 def mon_times_mon(mon1: np.ndarray,
                   mon2: np.ndarray
@@ -116,6 +118,7 @@ def mon_times_mon(mon1: np.ndarray,
     """
 
     return np.concatenate(mon1, mon2)
+
 
 @jit(nopython=True, cache=cache)
 def dot_mon(mon1: np.ndarray,
@@ -155,7 +158,8 @@ def dot_mon(mon1: np.ndarray,
         return mon_sorted_by_parties(reverse_mon(mon1))
     return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)))
 
-#@jit(nopython=True, cache=cache)
+
+# @jit(nopython=True, cache=cache) Cannot handle lexsort.
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray
                       ) -> np.ndarray:
@@ -177,21 +181,22 @@ def dot_mon_commuting(mon1: np.ndarray,
     """
 
     if mon1.size <= 1:
-        return mon_lexsorted(mon2) # mon2
+        return mon_lexsorted(mon2)  # mon2
     if mon2.size <= 1:
-        return mon_lexsorted(mon1) #mon_sorted_by_parties(reverse_mon(mon1))
+        return mon_lexsorted(mon1)  #mon_sorted_by_parties(reverse_mon(mon1))
     # So it seems there is no implementation of lexsort in numba, so for now
     # we don't use a precompiled function
     # what we can do is use 'sorted' with the string representation of
     # the monomials which has a lexicographic ordering or implement a
     # lexicographic ordering in numba
     # numba issue: https://github.com/numba/numba/issues/3689
-    mon = np.concatenate((mon1, mon2)) # There is no need to do np.concatenate((reverse_mon(mon1), mon2))
-                                       # here because we sort lexicographically in the end anyway, so
-                                       # reversing the monomial is useless
+    mon = np.concatenate((mon1, mon2))  # There is no need to do np.concatenate((reverse_mon(mon1), mon2))
+                                        # here because we sort lexicographically in the end anyway, so
+                                        # reversing the monomial is useless
     return mon_lexsorted(mon)
 
 
+# @jit(nopython=True, cache=cache) Cannot handle lexsort.
 def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
     """Return a monomial sorted lexicographically.
 
@@ -217,7 +222,7 @@ def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
     return mon[np.lexsort(np.rot90(mon))]
 
 
-@jit(nopython=True, cache=cache)
+# @jit(nopython=True, cache=cache) Cannot handle lexsort
 def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     """Simplify the monomial by removing the squares. This is because we
     assume projectors, P^2=P.
@@ -233,7 +238,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
         Simplified monomial.
     """
 
-    to_keep = np.array([1]*mon.shape[0], dtype=bool_)  # bool_
+    to_keep = np.array([1]*mon.shape[0], dtype=bool)  # bool_
     prev_row = mon[0]
     for i in range(1, mon.shape[0]):
         row = mon[i]
@@ -270,6 +275,8 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     return False
 
 #@jit(nopython=True, cache=cache)
+
+
 def to_name(monomial_numbers: np.ndarray,
             parties_names: np.ndarray
             ) -> str:
@@ -302,8 +309,10 @@ def to_name(monomial_numbers: np.ndarray,
                                   [str(i) for i in letter[1:]])
                          for letter in np.asarray(monomial_numbers).tolist()])
 
+
 def to_tuples(monomial: np.ndarray):
     return tuple(tuple(vec) for vec in monomial.tolist())
+
 
 @jit(nopython=True, cache=cache)
 def commuting(letter1: np.array,
@@ -411,7 +420,7 @@ def mon_lessthan_mon(mon1: np.ndarray,
         True if mon1 < mon2 in lexicographic order.
     """
 
-    return A_lessthan_B(mon1.flatten(), mon2.flatten())
+    return A_lessthan_B(mon1.ravel(), mon2.ravel())
 
 
 @jit(nopython=True, cache=cache)
@@ -443,7 +452,7 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
         if not A_lessthan_B(mon[i-1], mon[i]):
             if commuting(mon[i-1], mon[i]):
                 # More elegant but doesn't work with numba
-                #mon[[i-1,i],:] = mon[[i,i-1],:]
+                # mon[[i-1,i],:] = mon[[i,i-1],:]
                 mon[i-1, :], mon[i, :] = mon[i, :].copy(), mon[i-1, :].copy()
                 # ?? Is it best to stop after one commutation, or just
                 #  keep going until the end of the array?
@@ -488,7 +497,7 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
 
 def calculate_momentmatrix(cols: List,
                            verbose: int = 0,
-                           commuting = False
+                           commuting=False
                            ) -> Tuple[np.ndarray, Dict]:
     """Calculate the moment matrix.
 
@@ -527,7 +536,7 @@ def calculate_momentmatrix(cols: List,
     # Emi: so np.array([-1],dtype=np.uint16) evaluates to 65535, can we ensure
     # we will never have more than 65535 unique variables??
     # I'm not so convinced, so I go with int32 (~4 billion)
-    momentmatrix = scipy.sparse.lil_matrix((nrcols, nrcols), dtype=np.uint32)
+    momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
     if np.array_equal(cols[0], np.array([0])):
         cols[0] = np.array([cols[0]])  # Some function needs [[0]] not []
     varidx = 1  # We start from 1 because 0 is reserved for 0
@@ -569,7 +578,7 @@ def calculate_momentmatrix(cols: List,
                     known_varidx = canonical_mon_to_idx_dict[mon_as_tuples]
                     momentmatrix[i, j] = known_varidx
                     momentmatrix[j, i] = known_varidx
-    return momentmatrix, canonical_mon_to_idx_dict
+    return momentmatrix.todense(), canonical_mon_to_idx_dict
 
 
 # def calculate_momentmatrix_commuting(cols: np.ndarray,
@@ -724,9 +733,6 @@ def factorize_monomial(raw_monomial: np.ndarray,
             disconnected_components.append(component)
         idx += 1
 
-
-
-
     disconnected_components = tuple(
         monomial[sorted(component)] for component in disconnected_components)
 
@@ -734,10 +740,10 @@ def factorize_monomial(raw_monomial: np.ndarray,
     if canonical_order:
         disconnected_components = tuple(sorted(disconnected_components, key=to_tuples))
 
-    #TODO: Why did we have this reordering code? Was it relevant for _build_cols_from_col_specs?
+    # TODO: Why did we have this reordering code? Was it relevant for _build_cols_from_col_specs?
 
     # # Order each factor as determined by the input monomial. We store the
-    # # the positions in the monomial so we can read it off afterwards.
+    # # the positions in the monomial, so we can read it off afterwards.
     # # Method taken from
     # # https://stackoverflow.com/questions/64944815/
     # # sort-a-list-with-duplicates-based-on-another-
