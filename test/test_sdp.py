@@ -163,27 +163,27 @@ class TestGeneratingMonomials(unittest.TestCase):
         self.assertDictEqual(subs, true_substitutions)
 
 
-    def test_c_substitutions(self):
-        scenario = InflationSDP(self.test_substitutions_scenario,
-                                commuting=True)
-        meas, subs, _ = scenario._generate_parties()
-
-        true_substitutions = {}
-        for party in meas:
-            # Idempotency
-            true_substitutions = {**true_substitutions,
-                                  **{op**2: op for op in flatten(party)}}
-            # Orthogonality
-            for inflation in party:
-                for measurement in inflation:
-                    for out1 in measurement:
-                        for out2 in measurement:
-                            if out1 == out2:
-                                true_substitutions[out1*out2] = out1
-                            else:
-                                true_substitutions[out1*out2] = 0
-
-        self.assertDictEqual(subs, true_substitutions)
+    # def test_c_substitutions(self):
+    #     scenario = InflationSDP(self.test_substitutions_scenario,
+    #                             commuting=True)
+    #     meas, subs, _ = scenario._generate_parties()
+    #
+    #     true_substitutions = {}
+    #     for party in meas:
+    #         # Idempotency
+    #         true_substitutions = {**true_substitutions,
+    #                               **{op**2: op for op in flatten(party)}}
+    #         # Orthogonality
+    #         for inflation in party:
+    #             for measurement in inflation:
+    #                 for out1 in measurement:
+    #                     for out2 in measurement:
+    #                         if out1 == out2:
+    #                             true_substitutions[out1*out2] = out1
+    #                         else:
+    #                             true_substitutions[out1*out2] = 0
+    #
+    #     self.assertDictEqual(subs, true_substitutions)
 
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
