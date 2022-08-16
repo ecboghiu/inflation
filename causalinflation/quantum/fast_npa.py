@@ -302,6 +302,8 @@ def to_name(monomial_numbers: np.ndarray,
                                   [str(i) for i in letter[1:]])
                          for letter in np.asarray(monomial_numbers).tolist()])
 
+def to_tuples(monomial: np.ndarray):
+    return tuple(tuple(vec) for vec in monomial.tolist())
 
 @jit(nopython=True, cache=cache)
 def commuting(letter1: np.array,
@@ -464,21 +466,24 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
         Monomial in canonical form w.r.t some lexicographic
         ordering.
     """
-
-    prev = mon
-    while True:
-        mon = nb_apply_substitutions(mon)
-        if np.array_equal(mon, prev):
-            break
+    if len(mon) <= 1:
+        return mon
+    else:
         prev = mon
-    # The two-body commutation rules in are not enough in some occasions when
-    # the monomial can be factorized. An example is (all indices are inflation
-    # indices) A13A33A22 and A22A13A33. The solution below is to decompose
-    # in disconnected components, order them canonically, and recombine them.
-    mon = np.concatenate(factorize_monomial(remove_projector_squares(mon)))
-    # Recombine reordering according to party
-    mon = np.vstack(sorted(mon, key=lambda x: x[0]))
-    return mon
+        while True:
+            mon = nb_apply_substitutions(mon)
+            if np.array_equal(mon, prev):
+                break
+            prev = mon
+        # The two-body commutation rules in are not enough in some occasions when
+        # the monomial can be factorized. An example is (all indices are inflation
+        # indices) A13A33A22 and A22A13A33. The solution below is to decompose
+        # in disconnected components, order them canonically, and recombine them.
+        mon = np.concatenate(factorize_monomial(remove_projector_squares(mon)))
+        # Recombine reordering according to party
+        # mon = np.vstack(sorted(mon, key=lambda x: x[0]))
+        mon = mon_sorted_by_parties(mon)
+        return mon
 
 
 def calculate_momentmatrix(cols: List,
@@ -549,11 +554,11 @@ def calculate_momentmatrix(cols: List,
                 if not commuting:
                     mon_v1 = to_canonical(mon_v1)
                     mon_v2 = to_canonical(dot_mon(mon2, mon1))
-                    mon_v1_as_tuples = tuple(tuple(op) for op in mon_v1)
-                    mon_v2_as_tuples = tuple(tuple(op) for op in mon_v2)
+                    mon_v1_as_tuples = to_tuples(mon_v1)
+                    mon_v2_as_tuples = to_tuples(mon_v2)
                     mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0]  # Would be better to use np.lexsort
                 else:
-                    mon_as_tuples = tuple(tuple(op) for op in remove_projector_squares(mon_v1))
+                    mon_as_tuples = to_tuples(remove_projector_squares(mon_v1))
                 if mon_as_tuples not in canonical_mon_to_idx_dict.keys():
                     canonical_mon_to_idx_dict[mon_as_tuples] = varidx
                     # from_idx_to_canonical_mon_dict[varidx] = np.array(mon_as_tuples)
@@ -629,7 +634,8 @@ def calculate_momentmatrix(cols: List,
 
 ################################################################################
 
-def factorize_monomial(raw_monomial: np.ndarray
+def factorize_monomial(raw_monomial: np.ndarray,
+                       canonical_order=True
                        ) -> Tuple[np.ndarray]:
     """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
@@ -718,8 +724,15 @@ def factorize_monomial(raw_monomial: np.ndarray
             disconnected_components.append(component)
         idx += 1
 
+
+
+
     disconnected_components = tuple(
         monomial[sorted(component)] for component in disconnected_components)
+
+    # We would like to have a canonical ordering of the factors.
+    if canonical_order:
+        disconnected_components = tuple(sorted(disconnected_components, key=to_tuples))
 
     #TODO: Why did we have this reordering code? Was it relevant for _build_cols_from_col_specs?
 

@@ -8,7 +8,8 @@ from functools import lru_cache
 
 from numpy import ndarray
 
-from causalinflation.quantum.fast_npa import (mon_lessthan_mon,
+from causalinflation.quantum.fast_npa import (factorize_monomial,
+                                              mon_lessthan_mon,
                                               mon_lexsorted,
                                               to_canonical,
                                               to_name,
@@ -20,7 +21,7 @@ from causalinflation.quantum.typing import ArrayMonomial, StringMonomial, IntMon
 from collections import defaultdict, deque
 from itertools import permutations, product
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-from ncpol2sdpa import flatten, generate_operators, generate_variables
+# from ncpol2sdpa import flatten, generate_operators, generate_variables
 from ncpol2sdpa.nc_utils import apply_substitutions
 
 from typing import Dict, List, Tuple, Union, Any, Iterable #, NewType, TypeVar
@@ -50,155 +51,6 @@ except ImportError:
 
 # TODO build a proper typing system, maybe use classes?
 
-
-
-def substitute_variable_values_in_monlist(variables_values: np.ndarray,
-                                          monomials_factors_reps: np.ndarray,
-                                          monomials_factors_names: np.ndarray,
-                                          stop_counting: int,
-                                          ) -> np.ndarray:
-    """Substitues the known monomials with their known numerical value. From
-    this the 'known_moments' and lpi constraints can be extracted for the SDP.
-
-    Parameters
-    ----------
-    variables_values : np.ndarray
-        Array describing the numerical value of known moments.
-    monomials_factors_reps : np.ndarray
-        Monomials factorised, in integer representation.
-    monomials_factors_names : np.ndarray
-        Monomials factorised, in string representation.
-    stop_counting : int
-        Only consider monomials up to this index.
-
-    Returns
-    -------
-    np.ndarray
-        The monomials list with the known monomials substituted
-        with numerical values.
-    """
-
-    vars_numeric_dict = {var: val for var, val in variables_values}
-    monomials_factors_numeric = copy.deepcopy(monomials_factors_reps)
-    for idx, [_, monomial_factors] in enumerate(monomials_factors_numeric):
-        factors_nums_list = []
-        for factor in monomial_factors:
-            try:
-                factors_nums_list.append(vars_numeric_dict[factor])
-            except KeyError:
-                factors_nums_list.append(factor)
-        monomials_factors_numeric[idx][1] = sorted(factors_nums_list)
-
-    final_monomials_list = monomials_factors_numeric + \
-                                monomials_factors_names[stop_counting:].tolist()
-    return final_monomials_list
-
-
-def generate_commuting_measurements(party: List[int],
-                                    label: str
-                                ) -> List[List[List[sympy.core.symbol.Symbol]]]:
-    """Generates the list of symbolic variables representing the measurements
-    for a given party. The variables are treated as commuting.
-
-    Parameters
-    ----------
-    party : int
-        Configuration indicating the configuration of m measurements and
-        d outcomes for each measurement. It is a list with m integers,
-        each of them representing the number of outcomes of the corresponding
-        measurement.
-    label : str
-        label to represent the given party
-
-    Returns
-    -------
-    List[List[List[sympy.core.symbol.Symbol]]]
-        List of measurements.
-    """
-
-    measurements = []
-    for i, p in enumerate(party):
-        measurements.append(generate_variables(label + '_%s_' % i, p - 1,
-                                               hermitian=True))
-    return measurements
-
-
-def generate_noncommuting_measurements(party: List[int],
-                                       label: str
-                                ) -> List[List[List[sympy.core.symbol.Symbol]]]:
-    """Generates the list of sympy.core.symbol.Symbol variables representing the measurements
-    for a given party. The variables are treated as non-commuting.
-
-    Parameters
-    ----------
-    party : int
-        Configuration indicating the configuration of m measurements and
-        d outcomes for each measurement. It is a list with m integers,
-        each of them representing the number of outcomes of the corresponding
-        measurement.
-    label : str
-        Label to represent the given party.
-
-    Returns
-    -------
-    List[List[List[sympy.core.symbol.Symbol]]]
-        List of measurements.
-    """
-    measurements = []
-    for i, p in enumerate(party):
-        measurements.append(generate_operators(label + '_%s_' % i, p - 1,
-                                               hermitian=True))
-    return measurements
-
-def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
-                      names: str,
-                      n_sources: int,
-                      measurements: List[List[List[sympy.core.symbol.Symbol]]]
-                      ) -> List[sympy.core.symbol.Symbol]:
-    """Go from the output of build_columns to a list of symbolic operators
-
-    TODO: change name to cols_num2sym
-
-    Parameters
-    ----------
-    ordered_cols_coord : List[List[List[int]]]
-        Generating set as a list of monomials represented as an array.
-    names : str
-        Names of each party.
-    n_sources : int
-        Number of sources.
-    measurements : List[List[List[sympy.core.symbol.Symbol]]]
-        List of symbolic operators representing the measurements. The list is
-        nested such that the first index corresponds to the party, the
-        second index to the measurement, and the third index to the outcome.
-
-    Returns
-    -------
-    List[sympy.core.symbol.Symbol]
-        The generating set but with symbolic monomials.
-    """
-
-    flatmeas = np.array(flatten(measurements))
-    measnames = np.array([str(meas) for meas in flatmeas])
-
-    res = [None] * len(ordered_cols_coord)
-    for ii, elements in enumerate(ordered_cols_coord):
-        if np.array_equal(elements, np.array([0])):
-            res[ii] = sympy.S.One
-        else:
-            product = sympy.S.One
-            for element in elements:
-                party = element[0]
-                name = names[party - 1] + '_'
-                for s in element[1:1 + n_sources]:
-                    name += str(s) + '_'
-                name += str(element[-2]) + '_' + str(element[-1])
-                term = flatmeas[measnames == name][0]
-                product *= term
-            res[ii] = product
-    return res
-
-
 def find_permutation(list1: List,
                      list2: List
                      ) -> List:
@@ -225,9 +77,8 @@ def find_permutation(list1: List,
     if (len(list1) != len(list2)) or (set(list1) != set(list2)):
         raise Exception('The two lists are not permutations of one another')
     else:
-        original_dict = {element: num for element, num in zip(list1,
-                                                            range(len(list1)))}
-        return [original_dict[element] for element in list2]
+        original_dict = {x: i for i, x in enumerate(list1)}
+        return [original_dict[x] for x in list2]
 
 
 def mul(lst: List) -> Any:
@@ -258,12 +109,12 @@ def mul(lst: List) -> Any:
     return result
 
 
-# @jit(nopython=True)
+# @jit(nopython=True)  # to make compatible with numba find a way to lexsort
 def apply_source_perm_monomial(monomial: np.ndarray,
-                                         source: int,
-                                         permutation: List,
-                                         commuting: bool
-                                         ) -> np.ndarray:
+                                source: int,
+                                permutation: List,
+                                commuting: bool_
+                                ) -> np.ndarray:
     """This applies a source swap to a monomial.
 
     We assume in the monomial that all operators COMMUTE with each other.
@@ -301,12 +152,8 @@ def apply_source_perm_monomial(monomial: np.ndarray,
 
 def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
-                                         permutation: List[int],
-                                         commuting: bool,
-                                         substitutions: Dict[sympy.core.symbol.Symbol,sympy.core.symbol.Symbol],
-                                         flatmeas: Union[np.ndarray, List[sympy.core.symbol.Symbol]],
-                                         measnames: Union[np.ndarray, List[str]],
-                                         names: List[str]
+                                         permutation: np.array,
+                                         commuting: bool
                                          ) -> List[sympy.core.symbol.Symbol]:
     """Applies a specific source permutation to the list of operators used to
     define the moment matrix. Outputs the permuted list of operators.
@@ -1056,119 +903,6 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
                                         desc="Factorizing monomials        ")):
         monomials_factors[idx][1] = factorize_monomial(monomial)
     return monomials_factors
-
-
-def factorize_monomial(monomial: np.ndarray
-                       ) -> List[np.ndarray]:
-    """This function splits a moment/expectation value into products of
-    moments according to the support of the operators within the moment.
-
-    The moment is encoded as a 2d array where each row is an operator.
-    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
-    In each row, the columns encode the following information:
-
-    First column:       The party index, *starting from 1*.
-                        (1 for A, 2 for B, etc.)
-    Last two columns:   The input x, starting from zero and then the
-                        output a, starting from zero.
-    In between:         This encodes the support of the operator. There
-                        are as many columns as sources/quantum states.
-                        Column j represents source j-1 (-1 because the 1st
-                        col is the party). If the value is 0, then this
-                        operator does not measure this source. If the value
-                        is for e.g. 2, then this operator is acting on
-                        copy 2 of source j-1.
-
-    The output is a list of lists, where each list represents another
-    monomial s.t. their product is equal to the original monomial.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        Monomial encoded as a 2d array where each row is an operator.
-
-    Returns
-    -------
-    np.ndarray
-        A list of lists, where each list represents the monomial factors.
-
-    Examples
-    --------
-    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
-                             [2, 1, 0, 2, 0, 0],
-                             [1, 0, 3, 3, 0, 0],
-                             [3, 3, 5, 0, 0, 0],
-                             [3, 1, 4, 0, 0, 0],
-                             [3, 6, 6, 0, 0, 0],
-                             [3, 4, 5, 0, 0, 0]])
-    >>> factorised = factorize_monomial(monomial)
-    [array([[1, 0, 1, 1, 0, 0]]),
-     array([[1, 0, 3, 3, 0, 0]]),
-     array([[2, 1, 0, 2, 0, 0],
-            [3, 1, 4, 0, 0, 0]]),
-     array([[3, 3, 5, 0, 0, 0],
-            [3, 4, 5, 0, 0, 0]]),
-     array([[3, 6, 6, 0, 0, 0]])]
-
-    """
-    monomial = np.array(monomial, dtype=np.ubyte, copy=False)
-    components_indices = np.zeros((len(monomial), 2), dtype=np.ubyte)
-    # Add labels to see if the components have been used
-    components_indices[:, 0] = np.arange(0, len(monomial), 1)
-
-    inflation_indices = monomial[:, 1:-2]
-    disconnected_components = []
-
-    idx = 0
-    while idx < len(monomial):
-        component = []
-        if components_indices[idx, 1] == 0:
-            component.append(idx)
-            components_indices[idx, 1] = 1
-            jdx = 0
-            # Iterate over all components that are connected
-            while jdx < len(component):
-                nonzero_sources = np.nonzero(
-                    inflation_indices[component[jdx]])[0]
-                for source in nonzero_sources:
-                    overlapping = inflation_indices[:,
-                           source] == inflation_indices[component[jdx], source]
-                    # Add the components that overlap to the lookup list
-                    component += components_indices[overlapping &
-                                (components_indices[:, 1] == 0)][:, 0].tolist()
-                    # Specify that the components that overlap have been used
-                    components_indices[overlapping, 1] = 1
-                jdx += 1
-        if len(component) > 0:
-            disconnected_components.append(component)
-        idx += 1
-
-    disconnected_components = [
-        monomial[np.array(component)] for component in disconnected_components]
-
-    # Order each factor as determined by the input monomial. We store the
-    # positions in the monomial so that we can read it off afterwards.
-    # Method taken from
-    # https://stackoverflow.com/questions/64944815/
-    # sort-a-list-with-duplicates-based-on-another-
-    # list-with-same-items-but-different
-    monomial = monomial.tolist()
-    indexes = defaultdict(deque)
-    for i, x in enumerate(monomial):
-        indexes[tuple(x)].append(i)
-
-    for idx, component in enumerate(disconnected_components):
-        # ordered_component = sorted(component.tolist(),
-        #                            key=lambda x: monomial.index(x))
-        ids = sorted([indexes[tuple(x)].popleft() for x in component.tolist()])
-        ordered_component = [monomial[id] for id in ids]
-        disconnected_components[idx] = np.array(ordered_component)
-
-    # Order independent factors canonically
-    disconnected_components = sorted(disconnected_components,
-                                     key=lambda x: x[0].tolist())
-
-    return disconnected_components
 
 
 @jit(nopython=True)
