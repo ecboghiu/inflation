@@ -57,16 +57,19 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
         float
             The value of the symbolic probability (which can be a marginal)
         """
-    n_parties: int = prob_array.ndim // 2
-    participating_parties = atom[:,  0]
-    inputs = atom[:, -2].astype(int)
-    outputs = atom[:, -1].astype(int)
-    indices_to_sum = list(set(range(n_parties)).difference(participating_parties))
-    marginal_dist = np.sum(prob_array, axis=tuple(indices_to_sum))
-    input_list: np.ndarray = np.zeros(n_parties, dtype=int)
-    input_list[participating_parties] = inputs
-    outputs_inputs = np.concatenate((outputs, input_list))
-    return marginal_dist[tuple(outputs_inputs)]
+    if len(atom):
+        n_parties: int = prob_array.ndim // 2
+        participating_parties = atom[:,  0]
+        inputs = atom[:, -2].astype(int)
+        outputs = atom[:, -1].astype(int)
+        indices_to_sum = list(set(range(n_parties)).difference(participating_parties))
+        marginal_dist = np.sum(prob_array, axis=tuple(indices_to_sum))
+        input_list: np.ndarray = np.zeros(n_parties, dtype=int)
+        input_list[participating_parties] = inputs
+        outputs_inputs = np.concatenate((outputs, input_list))
+        return marginal_dist[tuple(outputs_inputs)]
+    else:
+        return 1.
 
 
 class Monomial(object):
