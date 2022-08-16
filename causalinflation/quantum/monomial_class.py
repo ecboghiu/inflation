@@ -4,7 +4,7 @@
 import numpy as np
 from causalinflation.quantum.general_tools import factorize_monomial, is_physical, is_knowable  # to_representative_aux
 # import itertools
-from functools import cached_property
+# from functools import cached_property
 from functools import lru_cache
 
 from typing import List, Tuple, Union
@@ -108,7 +108,7 @@ class Monomial(object):
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
         self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
-        self.factors = factorize_monomial(self.as_ndarray)
+        self.factors = factorize_monomial(self.as_ndarray, canonical_order=False)
         self.nof_factors = len(self.factors)
         self.atomic_knowability_status = tuple(atomic_is_knowable(atom) for atom in self.factors)
         self.knowable_factors_uncompressed = tuple(atom for atom, knowable in

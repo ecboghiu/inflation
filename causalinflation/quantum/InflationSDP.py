@@ -266,13 +266,16 @@ class InflationSDP(object):
         # self.knowable_moments = {k: list(map(self.InflationProblem.rectify_fake_setting_atomic_factor, Mon.knowable_factors))
         #                          for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
 
-        knowability_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
-        knowability_statusus[[0, 1]] = 'Yes'
-        for monomial in self.list_of_monomials:
-            knowability_statusus[monomial.idx] = monomial.knowability_status
-        # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
+        # knowability_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
+        # knowability_statusus[[0, 1]] = 'Yes'
+        # for monomial in self.list_of_monomials:
+        #     knowability_statusus[monomial.idx] = monomial.knowability_status
+
+        """
+        Used only for internal diagnostics.
+        """
         _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
-        self._n_knowable = _counter['Yes']
+        self._n_knowable = _counter['Yes'] + 1 #TODO: PATCH LIST OF MONOMIALS TO INCLUDE 1
         self._n_something_knowable = _counter['Semi']
         self._n_unknowable = _counter['No']
 
@@ -287,7 +290,9 @@ class InflationSDP(object):
         # for mon in self.list_of_monomials:
         #     mon.idx = self.reordering_of_monomials[mon.idx]
 
-
+        """
+        Assigning each monomial a meaningful name. 
+        """
         for mon in self.list_of_monomials:
             factors_as_strings = []
             for atomic_unknowable_factor in mon.unknowable_factors:
@@ -306,7 +311,14 @@ class InflationSDP(object):
                 factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
             mon.knowable_factors_names = factors_as_strings
             mon.knowable_part_name = '*'.join(factors_as_strings)
-            mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
+            if len(mon.knowable_part_name):
+                if len(mon.unknown_part_name):
+                    mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
+                else:
+                    mon.name = mon.knowable_part_name
+            else:
+                mon.name = mon.unknown_part_name
+                # mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
 
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
         self.maskmatrices_name_dict["1"] = dok_matrix(self.momentmatrix == 1).tocsr()
@@ -323,8 +335,8 @@ class InflationSDP(object):
         self.moment_linear_inequalities = []
 
         self.reset_distribution()
-        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 1])
-        self._n_known = _counter['Yes']
+        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
+        self._n_known = _counter['Yes'] + 1 #TODO: PATCH LIST OF MONOMIALS TO INCLUDE 1
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
         if self.commuting:
@@ -413,8 +425,8 @@ class InflationSDP(object):
         # for monomial in self.list_of_monomials:
         #     known_statusus[monomial.idx] = monomial.known_status
 
-        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 1])
-        self._n_known = _counter['Yes']
+        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
+        self._n_known = _counter['Yes'] + 1 #TODO: PATCH LIST OF MONOMIALS TO INCLUDE 1
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
 
@@ -550,6 +562,7 @@ class InflationSDP(object):
         _idx_to_names_dict[1] = '1'
         self._objective_as_name_dict = {_idx_to_names_dict[k]: v for (k, v) in self._objective_as_idx_dict.items()}
 
+    #TODO: Implement set_values function (implemented in main branch)
 
     #TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
     def solve(self, interpreter: str='MOSEKFusion',
@@ -1301,14 +1314,14 @@ class InflationSDP(object):
                                         disable=not self.verbose,
                                         desc="Calculating symmetries       "):
             permuted_cols_ind = \
-                 apply_source_permutation_coord_input(self.generating_monomials,
-                                                      source,
-                                                      permutation,
-                                                      self.commuting,
-                                                      self.substitutions,
-                                                      flatmeas,
-                                                      measnames,
-                                                      self.names)
+                 apply_source_permutation_coord_input(columns=self.generating_monomials,
+                                                      source=source,
+                                                      permutation=permutation,
+                                                      commuting=self.commuting)
+                                                      # self.substitutions,
+                                                      # flatmeas,
+                                                      # measnames,
+                                                      # self.names)
             # Bring columns to the canonical form using commutations of
             # connected components
             for idx in range(len(permuted_cols_ind)):

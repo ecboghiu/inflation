@@ -163,27 +163,46 @@ class TestGeneratingMonomials(unittest.TestCase):
         self.assertDictEqual(subs, true_substitutions)
 
 
-    # def test_c_substitutions(self):
-    #     scenario = InflationSDP(self.test_substitutions_scenario,
-    #                             commuting=True)
-    #     meas, subs, _ = scenario._generate_parties()
-    #
-    #     true_substitutions = {}
-    #     for party in meas:
-    #         # Idempotency
-    #         true_substitutions = {**true_substitutions,
-    #                               **{op**2: op for op in flatten(party)}}
-    #         # Orthogonality
-    #         for inflation in party:
-    #             for measurement in inflation:
-    #                 for out1 in measurement:
-    #                     for out2 in measurement:
-    #                         if out1 == out2:
-    #                             true_substitutions[out1*out2] = out1
-    #                         else:
-    #                             true_substitutions[out1*out2] = 0
-    #
-    #     self.assertDictEqual(subs, true_substitutions)
+    def test_c_substitutions(self):
+        scenario = InflationSDP(self.test_substitutions_scenario,
+                                commuting=True)
+        meas, subs, _ = scenario._generate_parties()
+
+        true_substitutions = {}
+
+        flatmeas = flatten(meas)
+        #for m1, m2 in itertools.product(flatmeas, flatmeas):
+        for i in range(len(flatmeas)):
+            for j in range(i, len(flatmeas)):
+                m1 = flatmeas[i]
+                m2 = flatmeas[j]
+                if str(m1) > str(m2):
+                    true_substitutions[m1*m2] = m2*m1
+                elif str(m1) < str(m2):
+                    true_substitutions[m2*m1] = m1*m2
+                else:
+                    pass
+        for party in meas:
+            # Idempotency
+            true_substitutions = {**true_substitutions,
+                                  **{op**2: op for op in flatten(party)}}
+            # Orthogonality
+            for inflation in party:
+                for measurement in inflation:
+                    for out1 in measurement:
+                        for out2 in measurement:
+                            if out1 == out2:
+                                true_substitutions[out1*out2] = out1
+                            else:
+                                true_substitutions[out1*out2] = 0
+
+        self.assertEqual(len(subs), len(true_substitutions), "The number of substitutions is incorrect")
+
+        for k1, v1 in true_substitutions.items():
+            self.assertEqual(subs[k1], v1, "Substitution " + str(k1) + " is incorrect")
+
+
+        self.assertDictEqual(subs, true_substitutions)
 
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
@@ -214,11 +233,7 @@ class TestInflation(unittest.TestCase):
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
                                                              (1, 0),
-                                                             False,
-                                                             subs,
-                                                             flatmeas,
-                                                             measnames,
-                                                             names)
+                                                             False)
         self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "
                          + "being applied properly after inflation symmetries")
@@ -235,17 +250,17 @@ class TestSDPOutput(unittest.TestCase):
                         dist[a,b,c,0,0,0] = (1-v)/8
         return dist
 
-    cutInflation = InflationProblem({"lambda": ["a", "b"],
-                                     "mu": ["b", "c"],
-                                     "sigma": ["a", "c"]},
-                                     names=['a', 'b', 'c'],
+    cutInflation = InflationProblem({"lambda": ["A", "B"],
+                                     "mu": ["B", "C"],
+                                     "sigma": ["A", "C"]},
+                                     names=['A', 'B', 'C'],
                                      outcomes_per_party=[2, 2, 2],
                                      settings_per_party=[1, 1, 1],
                                      inflation_level_per_source=[2, 1, 1])
 
     def test_CHSH(self):
-        bellScenario = InflationProblem({"lambda": ["a", "b"]},
-                                         names=("a", "b"),
+        bellScenario = InflationProblem({"lambda": ["A", "B"]},
+                                         names=("A", "B"),
                                          outcomes_per_party=[2, 2],
                                          settings_per_party=[2, 2],
                                          inflation_level_per_source=[1])
@@ -253,15 +268,15 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8,
+        self.assertEqual(sdp._n_knowable, 8 + 1,  # '1' is included here
                          "The count of knowable moments is wrong")
         self.assertEqual(sdp._n_unknowable, 2,
                          "The count of unknowable moments is wrong")
         meas = sdp.measurements
-        A0 = 1 - 2*meas[0][0][0][0]
-        A1 = 1 - 2*meas[0][0][1][0]
-        B0 = 1 - 2*meas[1][0][0][0]
-        B1 = 1 - 2*meas[1][0][1][0]
+        A0 = 2*meas[0][0][0][0] - 1
+        A1 = 2*meas[0][0][1][0] - 1
+        B0 = 2*meas[1][0][0][0] - 1
+        B1 = 2*meas[1][0][1][0] - 1
 
         sdp.set_objective(A0*(B0+B1)+A1*(B0-B1), 'max')
         self.assertEqual(len(sdp._objective_as_name_dict), 7,
@@ -269,13 +284,25 @@ class TestSDPOutput(unittest.TestCase):
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 2*np.sqrt(2)),
                         "The SDP is not recovering max(CHSH) = 2*sqrt(2)")
+        # bias = 3/4
+        # biased_chsh = 2.62132    # Value obtained by other means (ncpol2sdpa)
+        # sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
+        #                 'A_1_1_0': bias,           # Variable for p(a=0|x=1)
+        #                 meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
+        #                 'B_1_1_0': bias            # Variable for p(b=0|y=1)
+        #                 })
+        # sdp.solve()
+        # self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
+        #                 f"The SDP is not recovering max(CHSH) = {biased_chsh} "
+        #                 + "when the single-party marginals are biased towards "
+        #                 + str(bias))
 
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8,
+        self.assertEqual(sdp._n_knowable, 8 + 1,  # '1' is included here
                          "The count of knowable moments is wrong")
         self.assertEqual(sdp._n_unknowable, 13,
                          "The count of unknowable moments is wrong")
@@ -325,7 +352,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8,
+        self.assertEqual(sdp._n_knowable, 8 + 1, # '1' is included here
                          "The count of knowable moments is wrong")
         self.assertEqual(sdp._n_unknowable, 11,
                          "The count of unknowable moments is wrong")
@@ -347,14 +374,15 @@ class TestSDPOutput(unittest.TestCase):
                         "The commuting SDP with feasibility as optimization " +
                         "is not recognizing compatible distributions")
 
-    def test_lpi_constraints(self):
-        sdp = InflationSDP(InflationProblem({"h1": ["a", "b"],
-                                     "h2": ["b", "c"],
-                                     "h3": ["a", "c"]},
-                                     outcomes_per_party=[2, 2, 2],
-                                     settings_per_party=[1, 1, 1],
-                                     inflation_level_per_source=[3, 3, 3],
-                                     names=['a', 'b', 'c']),
+    def test_lpi_bounds(self):
+        sdp = InflationSDP(
+                  InflationProblem({"h1": ["A", "B"],
+                                    "h2": ["B", "C"],
+                                    "h3": ["A", "C"]},
+                                    outcomes_per_party=[2, 2, 2],
+                                    settings_per_party=[1, 1, 1],
+                                    inflation_level_per_source=[3, 3, 3],
+                                    names=('A', 'B', 'C')),
                             commuting=False)
         cols = [np.array([0]),
                 np.array([[1, 1, 0, 1, 0, 0]]),
