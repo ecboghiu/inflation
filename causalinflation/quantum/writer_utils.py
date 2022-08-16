@@ -15,7 +15,7 @@ def convert_to_human_readable(problem):
     """
     ### Process moment matrix
     # Replacer for constants
-    constant_dict = dict(enumerate(problem.known_moments))
+    constant_dict = dict(enumerate(problem.known_moments_idx_dict))
     constant_replacer = np.vectorize(lambda x: constant_dict.get(x, x))
     # Replacer for remaining symbols
     monomial_dict = dict([[var, "*".join(expr)]
@@ -28,9 +28,9 @@ def convert_to_human_readable(problem):
         return replacement
     known_replacer = np.vectorize(replace_known)
     # Replacer for semiknowns
-    semiknown_list = np.zeros((problem.semiknown_moments.shape[0], 2),
-                            dtype=object)
-    for ii, semiknown in enumerate(problem.semiknown_moments):
+    semiknown_list = np.zeros((problem.semiknown_moments_idx_dict.shape[0], 2),
+                              dtype=object)
+    for ii, semiknown in enumerate(problem.semiknown_moments_idx_dict):
         semiknown_list[ii,0] = int(semiknown[0])
         semiknown_list[ii,1] = f"{semiknown[1]}*{monomial_dict[int(semiknown[2])]}"
     semiknown_dict = dict(semiknown_list)
@@ -86,21 +86,21 @@ def write_to_mat(problem, filename):
     # MATLAB does not like 0s, so we shift all by 1
     final_positions_matrix = problem.momentmatrix + 1
     nr_unknown_moments = int(np.max(final_positions_matrix))
-    semiknown_moments = np.array(problem.semiknown_moments)
+    semiknown_moments = np.array(problem.semiknown_moments_idx_dict)
     if semiknown_moments != []:
         semiknown_moments[:, 0] += 1
         semiknown_moments[:, 2] += 1
         nr_unknown_moments = int(max([np.max(semiknown_moments),
                                       np.max(final_positions_matrix)]))
     objective = np.array(list(problem._objective_as_dict.items())).astype(float)
-    if problem.physical_monomials.size > 0:
-        positive_variables = problem.physical_monomials[:, 0]
+    if problem.physical_monomial_idxs.size > 0:
+        positive_variables = problem.physical_monomial_idxs[:, 0]
     else:
         positive_variables = []
 
     savemat(filename,
     mdict={'G': final_positions_matrix,
-           'known_moments': problem.known_moments,
+           'known_moments': problem.known_moments_idx_dict,
            'nr_unknown_moments': nr_unknown_moments,
            'propto': semiknown_moments,
            'obj': objective,
@@ -119,15 +119,15 @@ def write_to_sdpa(problem, filename):
     """
     # Compute actual number of variables
     potential_nvars = problem.momentmatrix.max() - 1
-    known_vars = 0 if len(problem.known_moments) == 0 else len(problem.known_moments) - 2
-    semiknown_vars = 0 if len(problem.semiknown_moments) == 0 else len(problem.semiknown_moments)
+    known_vars = 0 if len(problem.known_moments_idx_dict) == 0 else len(problem.known_moments_idx_dict) - 2
+    semiknown_vars = 0 if len(problem.semiknown_moments_idx_dict) == 0 else len(problem.semiknown_moments_idx_dict)
     nvars = potential_nvars - known_vars - semiknown_vars
 
     # Replacer for semiknowns
-    if len(problem.semiknown_moments) > 0:
-        semiknown_list = np.zeros((problem.semiknown_moments.shape[0], 2),
+    if len(problem.semiknown_moments_idx_dict) > 0:
+        semiknown_list = np.zeros((problem.semiknown_moments_idx_dict.shape[0], 2),
                                   dtype=object)
-        for ii, semiknown in enumerate(problem.semiknown_moments):
+        for ii, semiknown in enumerate(problem.semiknown_moments_idx_dict):
             semiknown_list[ii,0] = int(semiknown[0])
             semiknown_list[ii,1] = semiknown[1:]
         semiknown_dict = dict(semiknown_list)
@@ -145,7 +145,7 @@ def write_to_sdpa(problem, filename):
                     lines.append(f"0\t1\t{ii+1}\t{jj+1}\t-1.0\n")
                 elif var <= problem._n_known + 1:
                     try:
-                        coeff = problem.known_moments[var]
+                        coeff = problem.known_moments_idx_dict[var]
                         lines.append(f"0\t1\t{ii+1}\t{jj+1}\t-{abs(coeff)}\n")
                     except IndexError:
                         try:

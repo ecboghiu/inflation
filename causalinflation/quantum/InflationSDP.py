@@ -30,7 +30,7 @@ from causalinflation.quantum.general_tools import (to_representative,
                                             compute_marginal)
 from causalinflation.quantum.fast_npa import calculate_momentmatrix
 from causalinflation.quantum.monomial_class import Monomial, to_tuple_of_tuples
-from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION2
+from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 # ncpol2sdpa >= 1.12.3 is required for quantum problems to work
@@ -39,7 +39,7 @@ from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
 from typing import List, Dict, Union, Tuple
 from warnings import warn
 
-from scipy.sparse import dok_matrix
+from scipy.sparse import dok_matrix, eye
 
 
 try:
@@ -237,6 +237,12 @@ class InflationSDP(object):
 
         self.largest_moment_index = max(self.symidx_to_canonical_mon_dict.keys())
 
+        # ZeroMon = Monomial([[]], idx=0)
+        # ZeroMon.name = '0'
+        # ZeroMon.mask_matrix =
+        # OneMon = Monomial([[]], idx=1)
+        # OneMon.mask_matrix =
+
         self.list_of_monomials = [Monomial(v,
                                                      atomic_is_knowable=self.atomic_knowable_q,
                                                      sandwich_positivity=True,
@@ -296,36 +302,45 @@ class InflationSDP(object):
             mon.knowable_factors_names = factors_as_strings
             mon.knowable_part_name = '*'.join(factors_as_strings)
             mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
+
+        self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
+        self.maskmatrices_name_dict["1"] = dok_matrix(self.momentmatrix == 1).tocsr()
+
         #Note indexing starts from zero, for certificate compatibility.
         self.monomial_names = np.array(['0', '1'] + [mon.name for mon in self.list_of_monomials])
 
+        self.objective = sp.S.Zero
+        self._objective_as_idx_dict = {1: 0.}
+        self._objective_as_name_dict = {'1': 0.}
 
-
-
-
-
-        self.known_moments      = {0: 0., 1: 1.}
-        self.nof_known_moments = len(self.known_moments)
-        self.semiknown_moments  = dict()
-        self.objective          = 0.
-        self._objective_as_dict = {1: 0.}
-        self.distribution_has_been_set = False
-
-        # ALAS, THIS IS RESET AFTER INDICES CHANGE DURING SET DISTRIBUTION
-        if self.commuting:
-            self.physical_monomials = set(range(len(self.list_of_monomials))).difference(self.known_moments.keys())
-        else:
-            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments.keys())
-
-
-        # For the bounds, monomials should be hashed in the same way as
-        # self.known_moments, self._objective_as_dict, etc.
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
-        #Upper and lower bounds are now directly incorporated into sdp_var namedtuple
-        self.moment_lowerbounds = {physical_idx: 0 for physical_idx in self.physical_monomials}
-        self.moment_upperbounds = {}
 
+        self.reset_distribution()
+        if self.commuting:
+            self.physical_monomial_idxs = set(range(len(self.list_of_monomials))).difference(self.known_moments_idx_dict.keys())
+            self.physical_monomial_names = set(self.monomial_names).difference(self.known_moments_idx_dict.keys())
+            self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
+            self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
+
+
+
+
+    def reset_distribution(self):
+        self.known_moments_idx_dict      = {0: 0., 1: 1.}
+        self.known_moments_name_dict = {'0': 0., '1': 1.}
+        self.nof_known_moments = len(self.known_moments_idx_dict)
+        self.semiknown_moments_idx_dict  = dict()
+        self.semiknown_moments_name_dict = dict()
+        self.distribution_has_been_set = False
+        # NOTE: INDICES ARE BAD, AS THEY CAN BE RESET SOMETIMES
+        if not self.commuting:
+            self.physical_monomial_idxs = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_idx_dict.keys())
+            self.physical_monomial_names = set([mon.name for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_name_dict.keys())
+            self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
+            self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
+        self.moment_upperbounds_idx_dict = dict()
+        self.moment_upperbounds_name_dict = dict()
 
 
 
@@ -354,7 +369,7 @@ class InflationSDP(object):
 
         self.use_lpi_constraints = use_lpi_constraints
 
-        if (len(self._objective_as_dict) > 1) and self.use_lpi_constraints:
+        if (len(self._objective_as_idx_dict) > 1) and self.use_lpi_constraints:
             warn("You have an objective function set. Be aware that imposing " +
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
@@ -408,31 +423,33 @@ class InflationSDP(object):
                     big_val_mon = list_of_mon_copy.pop(-1)
                     # wholly_unknown_mon = list_of_mon_copy.pop(np.flatnonzero(which_is_wholly_unknown)[0])
                     for semiknown_mon in list_of_mon_copy:
-                        self.semiknown_moments[semiknown_mon.idx] = (np.true_divide(semiknown_mon.known_value,
-                                                                                    big_val_mon.known_value
-                                                                                    ), big_val_mon.idx)
-            max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments.values())
+                        coeff = np.true_divide(semiknown_mon.known_value,big_val_mon.known_value)
+                        self.semiknown_moments_idx_dict[semiknown_mon.idx] = (coeff, big_val_mon.idx)
+                        self.semiknown_moments_name_dict[semiknown_mon.name] = (coeff, big_val_mon.name)
+            max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments_idx_dict.values())
             # max(max(mon.known_value for mon in list_of_mon)
             #                                 for v in dict_which_groups_monomials_by_representative.values())
             assert max_semiknown_coefficient <= 1, f'Some semi-expressible-coefficient exceeds one: {max_semiknown_coefficient}'
 
 
         #RESET PROPERTIES
-
-        self.moment_lowerbounds = {physical_idx: 0 for physical_idx in self.physical_monomials}
-        self.moment_upperbounds = {}
-        self.known_moments = {0: 0., 1: 1.}
+        self.reset_distribution()
         for mon in self.list_of_monomials:
             if mon.known_status == 'Yes':
                 if treat_as_support and mon.known_value > 0:
-                    self.moment_lowerbounds[mon.idx] = 1
+                    self.moment_lowerbounds_idx_dict[mon.idx] = 1
+                    self.moment_lowerbounds_name_dict[mon.name] = 1
                 else:
-                    self.known_moments[mon.idx] = mon.known_value
-        self.nof_known_moments = len(self.known_moments)
+                    self.known_moments_idx_dict[mon.idx] = mon.known_value
+                    self.known_moments_name_dict[mon.name] = mon.known_value
+        self.nof_known_moments = len(self.known_moments_idx_dict)
         #Such as resetting physical_monomials using new indices.
         if not self.commuting:
-            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments.keys())
-
+            self.physical_monomial_idxs = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_idx_dict.keys())
+            self.physical_monomial_names = set([mon.name for mon in self.list_of_monomials if mon.physical_q]).difference(
+                self.known_moments_name_dict.keys())
+            self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
+            self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
         # # NEXT LINES ARE PREPPING FOR SDP PREPROCESSING
         #
         # """
@@ -557,16 +574,20 @@ class InflationSDP(object):
                     assert monomial_as_repr_array in acceptable_monomials, 'Monomial specified does not appear in our moment matrix.'
                     repr =  self.symidx_from_Monomials_dict[monomial_as_repr_array]
                     # If the objective contains a known value add it to the constant
-                    if repr in self.known_moments.keys():
+                    if repr in self.known_moments_idx_dict.keys():
                         symmetrized_objective[1] += \
-                                                sign*coeff*self.known_moments[repr]
+                                                sign*coeff*self.known_moments_idx_dict[repr]
                     elif repr in symmetrized_objective.keys():
                         symmetrized_objective[repr] += sign * coeff
                     else:
                         symmetrized_objective[repr] = sign * coeff
-            self._objective_as_dict = symmetrized_objective
+            self._objective_as_idx_dict = symmetrized_objective
         else:
-            self._objective_as_dict = {1: sign * float(objective)}
+            self._objective_as_idx_dict = {1: sign * float(objective)}
+        _idx_to_names_dict = {mon.idx: mon.name for mon in self.list_of_monomials}
+        _idx_to_names_dict[0] = '0'
+        _idx_to_names_dict[1] = '1'
+        self._objective_as_name_dict = {_idx_to_names_dict[k]: v for (k, v) in self._objective_as_idx_dict.items()}
 
 
     #TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
@@ -598,7 +619,7 @@ class InflationSDP(object):
                             "Call 'InflationSDP.get_relaxation()' first")
         if not self.distribution_has_been_set:
             self.set_distribution(prob_array=None, use_lpi_constraints=False)
-        if feas_as_optim and len(self._objective_as_dict) > 1:
+        if feas_as_optim and len(self._objective_as_idx_dict) > 1:
             warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
@@ -614,24 +635,45 @@ class InflationSDP(object):
         #                       "solverparameters": solverparameters}
         # self.solution_object, lambdaval, self.status = \
         #                               solveSDP_MosekFUSION(**solveSDP_arguments)
-        solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
-                              "objective":        self._objective_as_dict,
-                              "known_vars":       self.known_moments,
-                              "semiknown_vars":   self.semiknown_moments,
-                              "positive_vars":    self.physical_monomials,
+        # solveSDP_arguments_OLD = {"positionsmatrix":  self.momentmatrix,
+        #                       "objective":        self._objective_as_dict,
+        #                       "known_vars":       self.known_moments,
+        #                       "semiknown_vars":   self.semiknown_moments,
+        #                       "positive_vars":    self.physical_monomials,
+        #                       "feas_as_optim":    feas_as_optim,
+        #                       "verbose":          self.verbose,
+        #                       "solverparameters": solverparameters,
+        #                       "var_lowerbounds":  self.moment_lowerbounds,
+        #                       "var_upperbounds":  self.moment_upperbounds,
+        #                       "var_equalities":   self.moment_linear_equalities,
+        #                       "var_inequalities": self.moment_linear_inequalities,
+        #                       "solve_dual":       dualise}
+        try:
+            del self.known_moments_name_dict["0"] #PATCH
+            del self.moment_lowerbounds_name_dict["0"]  # PATCH
+            self.physical_monomial_names.discard('0')
+        except:
+            pass
+        solveSDP_arguments = {"positionsmatrix":  self.maskmatrices_name_dict,
+                              "objective":        self._objective_as_name_dict,
+                              "known_vars":       self.known_moments_name_dict,
+                              "semiknown_vars":   self.semiknown_moments_name_dict,
+                              "positive_vars":    self.physical_monomial_names,
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds":  self.moment_lowerbounds,
-                              "var_upperbounds":  self.moment_upperbounds,
+                              "var_lowerbounds":  self.moment_lowerbounds_name_dict,
+                              "var_upperbounds":  self.moment_upperbounds_name_dict,
                               "var_equalities":   self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual":       dualise}
 
         # self.solution_object, lambdaval, self.status = \
         #                               solveSDP_MosekFUSION(**solveSDP_arguments)
+        # for k, v in solveSDP_arguments.items():
+        #     print(f"{k}: = {v}")
         self.solution_object, lambdaval, self.status = \
-                                    solveSDP_MosekFUSION2(**solveSDP_arguments)
+                                    solveSDP_MosekFUSION(**solveSDP_arguments)
 
         # Process the solution
         if self.status == 'feasible':
@@ -640,18 +682,20 @@ class InflationSDP(object):
 
         # Process the dual certificate in a generic form
         if self.status in ['feasible', 'infeasible']:
-
-            coeffs      = self.solution_object['dual_certificate']
-            # names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
-            #                 if idx > 1]    # We'd probably want this cleaner
-            # reset keys to such that first key refers to the ones (constant) term.
-            names = self.monomial_names.take(list(coeffs.keys()))
-            # clean_names = np.concatenate((['0', '1'], names))
-            # self.dual_certificate = np.array(list(zip([0]+list(coeffs.values()),
-            #                                           clean_names)),
-            #                                  dtype=object)
-            self.dual_certificate = dict(zip(names, coeffs.values()))
-            self.dual_certificate_lowerbound = 0
+            #
+            # coeffs      = self.solution_object['dual_certificate']
+            # # names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
+            # #                 if idx > 1]    # We'd probably want this cleaner
+            # # reset keys to such that first key refers to the ones (constant) term.
+            # # names = self.monomial_names.take(list(coeffs.keys()))
+            # names = list(coeffs.keys())
+            # # clean_names = np.concatenate((['0', '1'], names))
+            # # self.dual_certificate = np.array(list(zip([0]+list(coeffs.values()),
+            # #                                           clean_names)),
+            # #                                  dtype=object)
+            # self.dual_certificate = dict(zip(names, coeffs.values()))
+            self.dual_certificate = self.solution_object['dual_certificate']
+            # self.dual_certificate_lowerbound = 0
 
     # def certificate_as_probs(self, clean: bool = False,
     #                          chop_tol: float = 1e-10,
