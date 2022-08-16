@@ -86,6 +86,7 @@ class Monomial(object):
                  'knowable_q',
                  'physical_q',
                  'idx',
+                 'mask_matrix',
                  'known_status',
                  'known_value',
                  'unknown_part',
