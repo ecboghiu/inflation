@@ -1387,6 +1387,9 @@ class InflationSDP(object):
         # orbits = {i: i for i in range(2+len(monomials_list))}
         # orbits = {i: i for i in np.unique(sdp.problem_arr.flat)}
         orbits = np.unique(momentmatrix.flat)
+        orbits = np.concatenate((
+            np.arange(np.min(orbits)),
+            orbits))
         # print("orbits before symmetrization", orbits)
         for permutation in tqdm(inflation_symmetries,
                                 disable=not self.verbose,
@@ -1399,9 +1402,7 @@ class InflationSDP(object):
                                ] = symmetric_arr[i, j]
                         symmetric_arr[ip, jp] = symmetric_arr[i, j]
         # print("orbits before adjustment", orbits)
-        orbits = np.concatenate((
-            np.arange(np.min(orbits)),
-            orbits))
+
         # Make the orbits go until the representative
         for key, val in enumerate(orbits):
             previous = 0
