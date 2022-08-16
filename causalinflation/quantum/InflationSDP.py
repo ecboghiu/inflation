@@ -299,11 +299,7 @@ class InflationSDP(object):
         self.monomial_names = np.array(['0', '1'] + [mon.name for mon in self.list_of_monomials])
 
 
-        # ALAS, THIS IS RESET AFTER INDICES CHANGE DURING SET DISTRIBUTION
-        if self.commuting:
-            self.physical_monomials = set(range(len(self.list_of_monomials)))
-        else:
-            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q])
+
 
 
 
@@ -313,6 +309,12 @@ class InflationSDP(object):
         self.objective          = 0.
         self._objective_as_dict = {1: 0.}
         self.distribution_has_been_set = False
+
+        # ALAS, THIS IS RESET AFTER INDICES CHANGE DURING SET DISTRIBUTION
+        if self.commuting:
+            self.physical_monomials = set(range(len(self.list_of_monomials))).difference(self.known_moments.keys())
+        else:
+            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments.keys())
 
 
         # For the bounds, monomials should be hashed in the same way as
@@ -397,7 +399,7 @@ class InflationSDP(object):
             for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
                 if any(mon.known_status == 'Semi' for mon in list_of_mon):
                     which_is_wholly_unknown = [mon.known_status == 'No' for mon in list_of_mon]
-                    if not np.count_nonzero(which_is_wholly_unknown) == 1:
+                    if not np.count_nonzero(which_is_wholly_unknown) >= 1:
                         warn('Bug: found a semiknown with no counterpart.' + str(representative))
                     # NEXT SIX LINES ARE FOR LEGACY COMPATABILITY
                     list_of_mon_copy = list_of_mon.copy()
@@ -415,9 +417,7 @@ class InflationSDP(object):
 
 
         #RESET PROPERTIES
-        #Such as resetting physical_monomials using new indices.
-        if not self.commuting:
-            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q])
+
         self.moment_lowerbounds = {physical_idx: 0 for physical_idx in self.physical_monomials}
         self.moment_upperbounds = {}
         self.known_moments = {0: 0., 1: 1.}
@@ -428,6 +428,9 @@ class InflationSDP(object):
                 else:
                     self.known_moments[mon.idx] = mon.known_value
         self.nof_known_moments = len(self.known_moments)
+        #Such as resetting physical_monomials using new indices.
+        if not self.commuting:
+            self.physical_monomials = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments.keys())
 
         # # NEXT LINES ARE PREPPING FOR SDP PREPROCESSING
         #

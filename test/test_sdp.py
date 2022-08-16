@@ -281,7 +281,11 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-4))
-        print(sdp.known_moments)
+        # print(sdp.known_moments)
+        # for mon in sdp.list_of_monomials:
+        #     print(f"{mon.idx}: = {mon.name} (aka:) {mon.factors}")
+        # get_mon_9 = [mon.name for mon in sdp.list_of_monomials if mon.idx == 9]
+        # print(get_mon_9[0])
         self.assertEqual(sdp.known_moments[9],
                          (0.5+1e-4)/2 + (0.5-1e-4)/8,
                          "Setting the distribution is failing")
