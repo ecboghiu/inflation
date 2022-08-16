@@ -45,7 +45,8 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     np.array([[3,...],[4,...],[1,...]])
     """
 
-    return mon[np.arange(mon.shape[0])[::-1]]
+    # return mon[np.arange(mon.shape[0])[::-1]]
+    return np.flipud(mon)
 
 
 @jit(nopython=True, cache=cache)
@@ -72,6 +73,49 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
 
     return mon[np.argsort(mon[:, 0], kind='mergesort')]
 
+@jit(nopython=True, cache=cache)
+def mon_equal_mon(mon1: np.ndarray,
+                  mon2: np.ndarray
+                  ) -> bool:
+    """Check if two monomials are equal.
+
+    Parameters
+    ----------
+    mon1 : np.ndarray
+        First monomial as a 2d array.
+    mon2 : np.ndarray
+        Second monomial as a 2d array.
+
+    Returns
+    -------
+    bool
+        True if the two monomials are equal, False otherwise.
+    """
+    # np.array_equal is thought to work with integers, if floats are present
+    # one should use np.allclose
+    return np.array_equal(mon1, mon2)
+
+@jit(nopython=True, cache=cache)
+def mon_times_mon(mon1: np.ndarray,
+                  mon2: np.ndarray
+                  ) -> np.ndarray:
+    """Return the product of two monomials, which is a concatenation.
+    Warning: it does not simplify the resulting monomial!
+
+    Parameters
+    ----------
+    mon1 : np.ndarray
+        First monomial as a numpy array.
+    mon2 : np.ndarray
+        Second monomial as a numpy array.
+
+    Returns
+    -------
+    np.ndarray
+        Product of the two monomials.
+    """
+
+    return np.concatenate(mon1, mon2)
 
 @jit(nopython=True, cache=cache)
 def dot_mon(mon1: np.ndarray,
@@ -251,21 +295,12 @@ def to_name(monomial_numbers: np.ndarray,
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
 
-    # Numba version is 2x slower than without!! Probably not optimized for
-    # strings. But we need it to be able to call to_name within a numba
-    # function
-    if type(monomial_numbers) != np.ndarray:
-        monomial_numbers = np.array(monomial_numbers)
-    if type(parties_names) != np.ndarray:
-        parties_names = np.array(parties_names)
-
-     #np.zeros(monomial_numbers.shape[0], dtype=numba.types.unicode_type)
-    components = ['']*monomial_numbers.shape[0]
-    for i, monomial in enumerate(monomial_numbers):
-        arr1 = [parties_names[monomial[0] - 1]]
-        arr2 = [str(i) for i in monomial[1:]]
-        components[i] = '_'.join(arr1 + arr2)
-    return '*'.join(components)
+    if len(monomial_numbers) == 0:
+        return '1'
+    else:
+        return '*'.join(['_'.join([parties_names[letter[0] - 1]] +
+                                  [str(i) for i in letter[1:]])
+                         for letter in np.asarray(monomial_numbers).tolist()])
 
 
 @jit(nopython=True, cache=cache)
@@ -648,6 +683,9 @@ def factorize_monomial(raw_monomial: np.ndarray
 
     """
     # monomial = np.array(monomial, dtype=np.ubyte)
+    if len(raw_monomial) == 0:
+        return [raw_monomial]
+
     monomial = np.asarray(raw_monomial, dtype=np.uint8)
     components_indices = np.zeros((len(monomial), 2), dtype=np.uint8)
     # Add labels to see if the components have been used

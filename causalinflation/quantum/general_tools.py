@@ -1,4 +1,6 @@
 import copy
+import itertools
+
 import numpy as np
 import sympy
 # import warnings
@@ -6,8 +8,12 @@ from functools import lru_cache
 
 from numpy import ndarray
 
-from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
-                                              to_canonical)
+from causalinflation.quantum.fast_npa import (mon_lessthan_mon,
+                                              mon_lexsorted,
+                                              to_canonical,
+                                              to_name,
+                                              mon_equal_mon,
+                                              reverse_mon)
 from causalinflation.quantum.typing import ArrayMonomial, StringMonomial, IntMonomial
 
 
@@ -23,14 +29,18 @@ from typing import Dict, List, Tuple, Union, Any, Iterable #, NewType, TypeVar
 from sympy.combinatorics import Permutation
 from sympy.combinatorics.perm_groups import PermutationGroup
 
+
+
 try:
     # import numba
     from numba import jit
     from numba import int16 as int16_
+    from numba.types import bool_
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
     int16_ = np.uint16
+    bool_ = bool
 
 try:
     from tqdm import tqdm
@@ -483,8 +493,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     return new_monomials
 
 
-def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
-                                  ) -> List[sympy.core.symbol.Symbol]:
+def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
+                           ) -> List[sympy.core.symbol.Symbol]:
     """If we have powers of a monomial, such as A**3, return a list with
     the factors, [A, A, A].
 
@@ -513,6 +523,24 @@ def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
     factors = factors_expanded
     return factors
 
+def to_symbol(monomial: np.ndarray, names):
+    """Converts a monomial to a symbolic representation.
+    """
+    if np.array_equal(monomial, np.array([0])):
+        return 1
+
+    if type(monomial) == str:
+        monomial = to_numbers(monomial, names)
+    monomial = monomial.tolist()
+    symbols = []
+    for letter in monomial:
+        symbols.append(sympy.Symbol('_'.join([names[letter[0]-1]] +
+                                            [str(i) for i in letter[1:]]),
+                                    commutative=False))
+    prod = 1
+    for s in symbols:
+        prod *= s
+    return prod
 
 def to_numbers(monomial: str,
                parties_names: Tuple[str]
@@ -570,46 +598,22 @@ def to_numbers(monomial: str,
     if isinstance(monomial, str):
         monomial_parts = monomial.split('*')
     else:
-        factors = as_ordered_factors_for_powers(monomial)
+        factors = flatten_symbolic_powers(monomial)
         monomial_parts = [str(factor) for factor in factors]
 
     monomial_parts_indices = []
     for part in monomial_parts:
         atoms = part.split('_')
+        if atoms[0] not in parties_names_dict.keys():
+            print(monomial)
         indices = ((parties_names_dict[atoms[0]],)
                    + tuple(int(j) for j in atoms[1:-2])
                    + (int(atoms[-2]), int(atoms[-1])))
         monomial_parts_indices.append(indices)
-    return np.array(monomial_parts_indices)
+
+    return np.array(monomial_parts_indices, dtype=np.uint8)
 
 
-def to_name(monomial_numbers: List[List[int]],
-            parties_names: List[str]
-            ) -> str:
-    """Go from lists of numbers to string representation.
-
-    Comments: this is much quicker (10x) if monomial_numbers is a list of
-    lists than if it is a np.array (At least with the current implementation)!
-    Around 3-4 microsecs and more than 10 microsecs if input is np.array.
-
-    Parameters
-    ----------
-    monomial_numbers : np.ndarray
-        Monomial in matrix format.
-    parties_names : List[str]
-        List of party names.
-
-    Returns
-    -------
-    str
-        String representation of the input.
-    """
-
-    components = []
-    for monomial in monomial_numbers:
-        components.append('_'.join([parties_names[monomial[0] - 1]] # party idx
-                                   + [str(i) for i in monomial[1:]])) # x a
-    return '*'.join(components)
 
 
 def from_numbers_to_flat_tuples(lista: List[List[int]]
@@ -1283,8 +1287,8 @@ def apply_source_swap_monomial(monomial: np.ndarray,
     return new_factors
 
 
-# @jit(nopython=True)
-def to_representative_aux(monomial_component: np.ndarray
+# @jit(nopython=True)  # make to_canonical compatible with numba
+def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray
                           ) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps
     until we reach a stable point in terms of lexiographic ordering. This might
@@ -1317,10 +1321,48 @@ def to_representative_aux(monomial_component: np.ndarray
                     new_mon, source, old_val, new_val)
     return new_mon
 
+# @jit(nopython=True)  # remove the use of itertools
+def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
+                                  inflevels: np.array,
+                                  commuting: bool) -> np.ndarray:
+    # Now we must take into account that the application of symmetries plus
+    # applying commutation rules can give us an even smaller monomial
+    # (lexicographically). To deal with this, we will apply *all* possible
+    # source swaps and then apply commutation rules, and if the resulting
+    # monomial is smaller, we accept it.
+    # TODO: This is horribly inefficient if we have lots of symmetries
+    # TODO 2: to make it compatible with numba, avoid using itertools!
+    # (i.e., product, permutations)
+    nr_sources = inflevels.shape[0]
+    all_perms_per_source = [permutations(range(inflevels[source]))
+                            for source in range(nr_sources)]
 
+    final_monomial = mon_aux.copy()
+    prev = mon_aux
+    while True:
+        for perms in product(*all_perms_per_source):
+            permuted = final_monomial.copy()
+            for source in range(nr_sources):
+                permuted = apply_source_perm_monomial(permuted,
+                                                      source,
+                                                      np.array(perms[source]),
+                                                      commuting)
+            permuted = to_canonical(permuted)
+            if mon_lessthan_mon(permuted, final_monomial):
+                final_monomial = permuted
+        if np.array_equal(final_monomial, prev):
+            break
+        prev = final_monomial
+
+    return final_monomial
+
+
+# @jit(nopython=True)
 def to_representative(mon: np.ndarray,
                       inflevels: np.array,
-                      commuting: bool
+                      commuting: bool_,
+                      consider_conjugation_symmetries: bool_ = True,
+                      swaps_plus_commutations: bool_ = True,
                       ) -> np.ndarray:
     """This function takes a monomial and applies inflation
     symmetries to bring it to a canonical form.
@@ -1349,7 +1391,7 @@ def to_representative(mon: np.ndarray,
     ----------
     mon : np.ndarray
         Input monomial that cannot be further factorised.
-    inflevels : np.array
+    inflevels : np.ndarray
         Number of copies of each source in the inflated graph.
     commuting : bool
         Whether all the involved operators commute or not.
@@ -1360,65 +1402,33 @@ def to_representative(mon: np.ndarray,
         Input monomial in canonical form.
 
     """
+    if mon_equal_mon(mon, np.array([0])):
+        return mon
 
-    mon_aux = to_representative_aux(mon)
 
-    # Now we must take into account that the application of symmetries plues
-    # applying commutation rules can give us an even smaller monomial
-    # (lexicographically). To deal with this, we will apply *all* possible
-    # source swaps and then apply commutation rules, and if the resulting
-    # monomial is smaller, we accept it.
-    nr_sources = inflevels.shape[0]
-    all_perms_per_source = [permutations(
-        range(inflevels[source])) for source in range(nr_sources)]
+    # We apply source swaps until we reach a stable point in terms of
+    # lexiographic ordering. We do this by lowering the copy indices making
+    # them as low as possible from left to right. This might not be a global
+    # optimum.
+    final_monomial = to_repr_lower_copy_indices_with_swaps(mon)
 
-    final_monomial = mon_aux.copy()
-    prev = mon_aux
-    while True:
-        for perms in product(*all_perms_per_source):
-            permuted = final_monomial.copy()
-            for source in range(nr_sources):
-                permuted = apply_source_perm_monomial(
-                    permuted, source, perms[source], commuting)
-            permuted = to_canonical(permuted)
-            if mon_lessthan_mon(permuted, final_monomial):
-                final_monomial = permuted
-        if np.array_equal(final_monomial, prev):
-            break
-        prev = final_monomial
+    # Before we didn't consider that applying a source swap that decreases the
+    # ordering following by applying commutation rules can give us a smaller
+    # monomial lexicographically.
+    if swaps_plus_commutations:
+        final_monomial = to_repr_swap_plus_commutation(final_monomial, inflevels, commuting)
+
+    if consider_conjugation_symmetries:
+        mon_dagger = reverse_mon(mon)
+        mon_dagger_aux = to_repr_lower_copy_indices_with_swaps(mon_dagger)
+        if swaps_plus_commutations:
+            mon_dagger_aux = to_repr_swap_plus_commutation(mon_dagger_aux,
+                                                       inflevels,
+                                                       commuting)
+        if mon_lessthan_mon(mon_dagger_aux, final_monomial):
+            final_monomial = mon_dagger_aux
 
     return final_monomial
-
-
-def monomialset_num2name(monomials_factors: np.ndarray,
-                         names: List[str]
-                         ) -> np.ndarray:
-    """Change the list of monomials from a list of 2d arrays to a list of strings.
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    monomials_factors : np.ndarray
-        List of monomials.
-    names : List[str]
-        names[i] is the name of party i+1 (parties in [1,2,3,4...]).
-
-    Returns
-    -------
-    np.ndarray
-        Returns the input with the monomials replaced by their
-        string representation.
-    """
-
-    monomials_factors_names = monomials_factors.copy()
-    for idx, [_, monomial_factors] in enumerate(monomials_factors_names):
-        factors_names_list = [to_name(factors, names)
-                              for factors in monomial_factors]
-        monomials_factors_names[idx][1] = factors_names_list
-    return monomials_factors_names
-
-
 
 
 def substitute_sym_with_numbers(symbolic_variables_to_be_given:
@@ -1459,78 +1469,6 @@ def substitute_sym_with_numbers(symbolic_variables_to_be_given:
                                                              p_vector))
     return variables_values
 
-
-def canonicalize(list_of_operators: List[List[int]],
-                 measurements: List[List[List[sympy.core.symbol.Symbol]]],
-                 substitutions: Dict,
-                 parties_names: List[str]
-                 ) -> List[List[int]]:
-    """Brings a monomial, written as a list of lists of indices, into canonical
-    form. The canonical form depends on the commuting nature of the operators.
-    If all operators commute, it is a plain lexicographic ordering.
-
-    TODO: WARNING! This function goes through symbolic substitutions. This is slow
-    and will be removed in subsequent versions.
-
-    Parameters
-    ----------
-    list_of_operators : List[List[int]]
-        The input monomial.
-    measurements : List[List[List[sympy.core.symbol.Symbol]]]
-        All the symbolic measurement operators.
-    substitutions : Dict
-        Dictionary of symbolic substitutions to be applied to the monomial.
-    parties_names : List[str]
-        List of party names.
-
-    Returns
-    -------
-    List[List[int]]
-        The monomial in canonical form.
-    """
-
-    operator = from_indices_to_operators(list_of_operators, measurements)[0]
-    adjoint = apply_substitutions(operator.adjoint(), substitutions)
-    canonicalized = operator if str(operator) < str(adjoint) else adjoint
-
-    #flatmeas = np.array(flatten(measurements))
-    #measnames = np.array([str(meas) for meas in flatmeas])
-    #parties_names = sorted(np.unique([str(meas)[0] for meas in flatmeas]))
-    if str(canonicalized) != '0':
-        numbers = np.array(to_numbers(canonicalized, parties_names))
-        # TODO remove to list TODO 2 do this sorting by party somewhere else
-        return numbers[np.argsort(numbers[:, 0], kind='mergesort')].tolist()
-    else:
-        return 0
-
-
-def from_indices_to_operators(monomial_list: List[List[int]],
-                              measurements: List[List[List[sympy.core.symbol.Symbol]]]
-                              ) -> sympy.core.symbol.Symbol:
-    """Transforms a monomial, expressed as a list of lists of indices,
-    into its associated operator.
-
-    Parameters
-    ----------
-    monomial_list : List[List[int]]
-        Input monomal in array form.
-    measurements : List[List[List[sympy.core.symbol.Symbol]]]
-        All the measurement operators.
-
-    Returns
-    -------
-    Symbolic
-        Symbolic monomial.
-    """
-
-    flatmeas = np.array(flatten(measurements))
-    measnames = np.array([str(meas) for meas in flatmeas])
-    parties_names = sorted(np.unique([str(meas)[0] for meas in flatmeas]))
-    name = to_name(monomial_list, parties_names).split('*')
-    product = sympy.S.One
-    for part in name:
-        product *= flatmeas[measnames == part]
-    return product
 
 def clean_coefficients(coefficients: np.array,
                        chop_tol: float=1e-10,
@@ -1578,8 +1516,10 @@ def compute_numeric_value(mon_string: str,
     """Function which, given a monomial and a probability distribution p_array
     called as p_array[a,b,c,...,x,y,z,...], returns the numerical value of the
     probability associated to the monomial.
+
     Note that this accepts marginals, for example, p(a|x), and then it
     automatically computes all the summations over p[a,b,c,...,x,y,z,...].
+
     Parameters
     ----------
     mon_string : String
@@ -1601,6 +1541,8 @@ def compute_numeric_value(mon_string: str,
     Note that we take the first setting (=0) for marginalised parties, in the
     example above, the second party is marginalised.
     """
+    if mon_string == '1':
+        return 1.0
     n_parties  = p_array.ndim // 2
     components = np.array([factor.split('_')
                            for factor in mon_string.split('*')])
@@ -1616,36 +1558,25 @@ def compute_numeric_value(mon_string: str,
     inputs_outputs   = outputs + input_list.tolist()
     return marginal_dist[tuple(inputs_outputs)]
 
-def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
-    """Function which, given an atomic monomial and a probability distribution prob_array
-        called as prob_array[a,b,c,...,x,y,z,...], returns the numerical value of the
-        probability associated to the monomial.
-        The atomic monomial is a list of length-3 vectors.
-        The first element indicates the party,
-        the second element indicates the setting,
-        the final element indicates the outcome.
-        Note that this accepts marginals and then
-        automatically computes all the summations over p[a,b,c,...,x,y,z,...].
-        Parameters
-        ----------
+def flatten(nested):
+    """Keeps flattening a nested lists of lists until  the
+    first element of the resulting list is not a list.
+    """
+    while isinstance(nested[0], Iterable):
+        nested = list(itertools.chain.from_iterable(nested))
+        # nested = [item for sublist in nested for item in sublist]
+    return nested
 
-        prob_array : np.ndarray
-            The probability distribution of dims
-            (outcomes_per_party, settings_per_party).
-        atom : np.ndarray
-            Monomial indicated a (commuting) collection of measurement operators.
-        Returns
-        -------
-        float
-            The value of the symbolic probability (which can be a marginal)
-        """
-    n_parties: int = prob_array.ndim // 2
-    participating_parties = atom[:,  0]
-    inputs = atom[:, -2].astype(int)
-    outputs = atom[:, -1].astype(int)
-    indices_to_sum = list(set(range(n_parties)).difference(participating_parties))
-    marginal_dist = np.sum(prob_array, axis=tuple(indices_to_sum))
-    input_list: ndarray = np.zeros(n_parties, dtype=int)
-    input_list[participating_parties] = inputs
-    outputs_inputs = np.concatenate((outputs, input_list))
-    return marginal_dist[tuple(outputs_inputs)]
+def generate_noncommuting_measurements(nro_per_input, name):
+    """Rewritten function from ncpol2sdpa but without using the
+    quantum operators from Sympy, but just general NC variables.
+    """
+    ops_per_input = []
+    for x, nro in enumerate(nro_per_input):
+        ops_per_output_per_input = []
+        for o in range(nro):
+            ops_per_output_per_input.append(
+                sympy.Symbol(name + '_' + str(x) + '_' + str(o), commutative=False)
+            )
+        ops_per_input.append(ops_per_output_per_input)
+    return ops_per_input
