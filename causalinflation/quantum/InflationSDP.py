@@ -40,7 +40,7 @@ from typing import List, Dict, Union, Tuple
 import warnings
 # from warnings import warn
 
-from scipy.sparse import dok_matrix #, coo_matrix, eye
+from scipy.sparse import dok_matrix, coo_matrix
 
 
 try:
@@ -243,20 +243,24 @@ class InflationSDP(object):
         # ZeroMon = Monomial([[]], idx=0)
         # ZeroMon.name = '0'
         # ZeroMon.mask_matrix =
-        # OneMon = Monomial([[]], idx=1)
-        # OneMon.mask_matrix =
+        # sample_monomial = np.asarray(self.symidx_to_canonical_mon_dict[2], dtype=np.uint8)
+        #
+        OneMon = Monomial(np.empty((0, 3), dtype=int), idx=1)
 
         self.list_of_monomials = [Monomial(v,
                                                      atomic_is_knowable=self.atomic_knowable_q,
                                                      sandwich_positivity=True,
                                                      idx=k) for (k, v) in self.symidx_to_canonical_mon_dict.items()]
+
+        self.list_of_monomials.append(OneMon)
+        self.idx_dict_of_monomials = {mon.idx: mon for mon in sorted(self.list_of_monomials, key = operator.attrgetter('idx'))}
         # self._all_atomic_knowable = set()
         for mon in self.list_of_monomials:
             corrected_knowable_factors = [tuple(tuple(op) for op in
                                           self.InflationProblem.rectify_fake_setting_atomic_factor(atom))
                                     for atom in mon.knowable_factors]
             mon.knowable_factors = corrected_knowable_factors
-            mon.mask_matrix = dok_matrix(self.momentmatrix == mon.idx).tocsr()
+            mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
             # self._all_atomic_knowable.update(corrected_knowable_factors)
 
         # self._all_atomic_knowable = set(itertools.chain.from_iterable(mon.knowable_factors for mon in self.symidx_to_Monomials_dict.values()))
@@ -276,7 +280,7 @@ class InflationSDP(object):
         Used only for internal diagnostics.
         """
         _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
-        self._n_knowable = _counter['Yes'] + 1 #TODO: PATCH LIST OF MONOMIALS TO INCLUDE 1
+        self._n_knowable = _counter['Yes']
         self._n_something_knowable = _counter['Semi']
         self._n_unknowable = _counter['No']
 
@@ -321,12 +325,14 @@ class InflationSDP(object):
                 mon.name = mon.unknown_part_name
                 # mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
 
+        self.idx_dict_of_monomials[1].name = '1'
+
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
-        self.maskmatrices_name_dict["1"] = dok_matrix(self.momentmatrix == 1).tocsr()
+        # self.maskmatrices_name_dict["1"] = dok_matrix(self.momentmatrix == 1).tocsr()
         # self.maskmatrices_name_dict["0"] = dok_matrix(self.momentmatrix == 0).tocsr()
 
         #Note indexing starts from zero, for certificate compatibility.
-        self.monomial_names = np.array(['0', '1'] + [mon.name for mon in self.list_of_monomials])
+        self.monomial_names = [mon.name for mon in self.list_of_monomials]
 
         self.objective = sp.S.Zero
         self._objective_as_idx_dict = {1: 0.}
@@ -337,7 +343,7 @@ class InflationSDP(object):
 
         self.reset_distribution()
         _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
-        self._n_known = _counter['Yes'] + 1 #TODO: PATCH LIST OF MONOMIALS TO INCLUDE 1
+        self._n_known = _counter['Yes']
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
         if self.commuting:
@@ -353,10 +359,12 @@ class InflationSDP(object):
         for mon in self.list_of_monomials:
             if mon.idx > 1:
                 mon.known_status = 'No'
-                mon.known_value = 1.
-                mon.unknown_part = mon.as_ndarray
-        self.known_moments_idx_dict      = {0: 0., 1: 1.}
-        self.known_moments_name_dict = {'0': 0., '1': 1.}
+            elif mon.idx == 1:
+                mon.known_status = 'Yes'
+            mon.known_value = 1.
+            mon.unknown_part = mon.as_ndarray
+        self.known_moments_idx_dict      = {1: 1.}
+        self.known_moments_name_dict = {'1': 1.}
         self.nof_known_moments = len(self.known_moments_idx_dict)
         self.semiknown_moments_idx_dict  = dict()
         self.semiknown_moments_name_dict = dict()
@@ -427,7 +435,7 @@ class InflationSDP(object):
         #     known_statusus[monomial.idx] = monomial.known_status
 
         _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
-        self._n_known = _counter['Yes'] + 1 #TODO: PATCH LIST OF MONOMIALS TO INCLUDE 1
+        self._n_known = _counter['Yes']
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
 
@@ -632,12 +640,12 @@ class InflationSDP(object):
         #                       "var_equalities":   self.moment_linear_equalities,
         #                       "var_inequalities": self.moment_linear_inequalities,
         #                       "solve_dual":       dualise}
-        try:
-            del self.known_moments_name_dict["0"] #PATCH
-            del self.moment_lowerbounds_name_dict["0"]  # PATCH
-            self.physical_monomial_names.discard('0')
-        except:
-            pass
+        # try:
+        #     del self.known_moments_name_dict["0"] #PATCH
+        #     del self.moment_lowerbounds_name_dict["0"]  # PATCH
+        #     self.physical_monomial_names.discard('0')
+        # except:
+        #     pass
         solveSDP_arguments = {"positionsmatrix":  self.maskmatrices_name_dict,
                               "objective":        self._objective_as_name_dict,
                               "known_vars":       self.known_moments_name_dict,
@@ -1277,19 +1285,8 @@ class InflationSDP(object):
         problem_arr, canonical_mon_to_idx_dict = calculate_momentmatrix(_cols,
                                                                         verbose=self.verbose,
                                                                         commuting=self.commuting)
-
         idx_to_canonical_mon_dict = {idx: mon for (mon, idx) in canonical_mon_to_idx_dict.items() if idx>=2}
-        # # Remove duplicates in vardic that have the same index
-        # vardic_clean = {}
-        # for mon, idx in canonical_mon_to_idx_dict.items():
-        #     if idx not in vardic_clean:
-        #         vardic_clean[idx] = mon
-        # monomials_list = np.array(
-        #     list(vardic_clean.items()), dtype=str).astype(object)
-        # monomials_list = monomials_list[1:]  # Remove the '1': ' ' row
 
-        # TODO change from dense to sparse?
-        # problem_arr = problem_arr.todense()
 
         return problem_arr, idx_to_canonical_mon_dict
 
@@ -1459,7 +1456,7 @@ class InflationSDP(object):
 
         symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
         symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in enumerate(
-            old_representative_indices) if old_idx>=2}
+            old_representative_indices) if old_idx >= 2}
 
         return symmetric_arr, orbits, symidx_to_canonical_mon_dict
 
