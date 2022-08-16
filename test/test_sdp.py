@@ -253,9 +253,9 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_known, 8,
+        self.assertEqual(sdp._n_knowable, 8,
                          "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknown, 2,
+        self.assertEqual(sdp._n_unknowable, 2,
                          "The count of unknowable moments is wrong")
         meas = sdp.measurements
         A0 = 1 - 2*meas[0][0][0][0]
@@ -275,9 +275,9 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_known, 8,
+        self.assertEqual(sdp._n_knowable, 8,
                          "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknown, 13,
+        self.assertEqual(sdp._n_unknowable, 13,
                          "The count of unknowable moments is wrong")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
@@ -286,8 +286,14 @@ class TestSDPOutput(unittest.TestCase):
         #     print(f"{mon.idx}: = {mon.name} (aka:) {mon.factors}")
         # get_mon_9 = [mon.name for mon in sdp.list_of_monomials if mon.idx == 9]
         # print(get_mon_9[0])
-        self.assertEqual(sdp.known_moments_idx_dict[9],
-                         (0.5+1e-2) / 2 + (0.5-1e-2) / 8,
+        # self.assertEqual(sdp.known_moments_idx_dict[9],
+        #                  (0.5+1e-2) / 2 + (0.5-1e-2) / 8,
+        #                  "Setting the distribution is failing")
+        known_value = (0.5+1e-2) / 2 + (0.5-1e-2) / 8
+        print("Known value: ", known_value)
+        print(sdp.known_moments_name_dict)
+        self.assertIn(known_value,
+                        sdp.known_moments_name_dict.values(),
                          "Setting the distribution is failing")
         sdp.solve()
         self.assertEqual(sdp.status, 'infeasible',
@@ -297,9 +303,15 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions")
         sdp.set_distribution(self.GHZ(0.5 - 1e-4))
-        self.assertEqual(sdp.known_moments_idx_dict[9],
-                         (0.5-1e-4) / 2 + (0.5+1e-4) / 8,
-                         "Re-setting the distribution is failing")
+        # self.assertEqual(sdp.known_moments_idx_dict[9],
+        #                  (0.5-1e-4) / 2 + (0.5+1e-4) / 8,
+        #                  "Re-setting the distribution is failing")
+        known_value = (0.5 + 1e-4) / 2 + (0.5 - 1e-4) / 8
+        print("Known value: ", known_value)
+        print(sdp.known_moments_name_dict)
+        self.assertIn(known_value,
+                        sdp.known_moments_name_dict.values(),
+                         "Setting the distribution is failing")
         sdp.solve()
         self.assertEqual(sdp.status, 'feasible',
                        "The NC SDP is not recognizing compatible distributions")
@@ -313,9 +325,9 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_known, 8,
+        self.assertEqual(sdp._n_knowable, 8,
                          "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknown, 11,
+        self.assertEqual(sdp._n_unknowable, 11,
                          "The count of unknowable moments is wrong")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))

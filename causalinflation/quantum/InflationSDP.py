@@ -255,7 +255,7 @@ class InflationSDP(object):
                                           self.InflationProblem.rectify_fake_setting_atomic_factor(atom))
                                     for atom in mon.knowable_factors]
             mon.knowable_factors = corrected_knowable_factors
-            mon.mask_matrix = dok_matrix(self.momentmatrix == mon.idx).tobsr()
+            mon.mask_matrix = dok_matrix(self.momentmatrix == mon.idx).tocsr()
             # self._all_atomic_knowable.update(corrected_knowable_factors)
 
         # self._all_atomic_knowable = set(itertools.chain.from_iterable(mon.knowable_factors for mon in self.symidx_to_Monomials_dict.values()))
@@ -271,18 +271,21 @@ class InflationSDP(object):
         for monomial in self.list_of_monomials:
             knowability_statusus[monomial.idx] = monomial.knowability_status
         # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
-        _counter = Counter(knowability_statusus)
-        self._n_known = _counter['Yes'] - 2
-        self._n_something_known = 0
-        self._n_unknown = _counter['No'] + _counter['Semi']
-        #REORDERING INDICES (for compatibility)
-        self.reordering_of_monomials = np.argsort(np.concatenate((
-                np.flatnonzero(knowability_statusus == 'Yes'),
-                np.flatnonzero(knowability_statusus == 'No'),
-                np.flatnonzero(knowability_statusus == 'Semi'))))
-        self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
-        for mon in self.list_of_monomials:
-            mon.idx = self.reordering_of_monomials[mon.idx]
+        _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
+        self._n_knowable = _counter['Yes']
+        self._n_something_knowable = _counter['Semi']
+        self._n_unknowable = _counter['No']
+
+
+        # #REORDERING INDICES (for compatibility)
+        # self.reordering_of_monomials = np.argsort(np.concatenate((
+        #         np.flatnonzero(knowability_statusus == 'Yes'),
+        #         np.flatnonzero(knowability_statusus == 'No'),
+        #         np.flatnonzero(knowability_statusus == 'Semi'))))
+        # self.momentmatrix = self.reordering_of_monomials.take(self.momentmatrix)
+        # self.orbits = self.reordering_of_monomials.take(self.orbits)
+        # for mon in self.list_of_monomials:
+        #     mon.idx = self.reordering_of_monomials[mon.idx]
 
 
         for mon in self.list_of_monomials:
@@ -307,6 +310,7 @@ class InflationSDP(object):
 
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
         self.maskmatrices_name_dict["1"] = dok_matrix(self.momentmatrix == 1).tocsr()
+        # self.maskmatrices_name_dict["0"] = dok_matrix(self.momentmatrix == 0).tocsr()
 
         #Note indexing starts from zero, for certificate compatibility.
         self.monomial_names = np.array(['0', '1'] + [mon.name for mon in self.list_of_monomials])
@@ -319,6 +323,10 @@ class InflationSDP(object):
         self.moment_linear_inequalities = []
 
         self.reset_distribution()
+        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 1])
+        self._n_known = _counter['Yes']
+        self._n_something_known = _counter['Semi']
+        self._n_unknown = _counter['No']
         if self.commuting:
             self.physical_monomial_idxs = set(range(len(self.list_of_monomials))).difference(self.known_moments_idx_dict.keys())
             self.physical_monomial_names = set(self.monomial_names).difference(self.known_moments_idx_dict.keys())
@@ -329,6 +337,11 @@ class InflationSDP(object):
 
 
     def reset_distribution(self):
+        for mon in self.list_of_monomials:
+            if mon.idx > 1:
+                mon.known_status = 'No'
+                mon.known_value = 1.
+                mon.unknown_part = mon.as_ndarray
         self.known_moments_idx_dict      = {0: 0., 1: 1.}
         self.known_moments_name_dict = {'0': 0., '1': 1.}
         self.nof_known_moments = len(self.known_moments_idx_dict)
@@ -368,7 +381,7 @@ class InflationSDP(object):
             will be imposed or not.
         """
 
-
+        self.reset_distribution()
         self.use_lpi_constraints = use_lpi_constraints
 
         if (len(self._objective_as_idx_dict) > 1) and self.use_lpi_constraints:
@@ -395,22 +408,25 @@ class InflationSDP(object):
         This next block of code re-indexes the monomials (and the momentmatrix) 
         to put the known variables first, then the unknown, then the semiknown.
         """
-        known_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
-        known_statusus[[0, 1]] = 'Yes'
-        for monomial in self.list_of_monomials:
-            known_statusus[monomial.idx] = monomial.known_status
-        # self.knowability_statusus = [monomial.knowability_status for monomial in self.symidx_to_Monomials_dict.values()]
-        _counter = Counter(known_statusus)
-        self._n_known = _counter['Yes'] - 2
+        # known_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
+        # known_statusus[[0, 1]] = 'Yes'
+        # for monomial in self.list_of_monomials:
+        #     known_statusus[monomial.idx] = monomial.known_status
+
+        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 1])
+        self._n_known = _counter['Yes']
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
-        _reordering_of_monomials = np.argsort(np.concatenate((
-            np.flatnonzero(known_statusus == 'Yes'),
-            np.flatnonzero(known_statusus == 'No'),
-            np.flatnonzero(known_statusus == 'Semi'))))
-        self.momentmatrix = _reordering_of_monomials.take(self.momentmatrix)
-        for mon in self.list_of_monomials:
-            mon.idx = _reordering_of_monomials[mon.idx]
+
+        # #REORDERING TO KEEP KNOWN UP FRONT
+        # _reordering_of_monomials = np.argsort(np.concatenate((
+        #     np.flatnonzero(known_statusus == 'Yes'),
+        #     np.flatnonzero(known_statusus == 'No'),
+        #     np.flatnonzero(known_statusus == 'Semi'))))
+        # self.momentmatrix = _reordering_of_monomials.take(self.momentmatrix)
+        # self.orbits = _reordering_of_monomials.take(self.orbits)
+        # for mon in self.list_of_monomials:
+        #     mon.idx = _reordering_of_monomials[mon.idx]
 
 
         if self.use_lpi_constraints:
@@ -435,7 +451,7 @@ class InflationSDP(object):
 
 
         #RESET PROPERTIES
-        self.reset_distribution()
+
         for mon in self.list_of_monomials:
             if mon.known_status == 'Yes':
                 if treat_as_support and mon.known_value > 0:
@@ -452,67 +468,7 @@ class InflationSDP(object):
                 self.known_moments_name_dict.keys())
             self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
             self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
-        # # NEXT LINES ARE PREPPING FOR SDP PREPROCESSING
-        #
-        # """
-        # We use the same boundkey format as Mosek, namely:
-        #     fx = FiXed (known, constant)
-        #     fr = FRee
-        #     lo = LOwer bounded
-        #     up = UPper bounded
-        #     ra = in some RAnge (for physical)
-        # """
-        #
-        # SDPVar = namedtuple('Var',
-        #                      ['csr_matrix', 'var_name', 'boundkey', 'lower_bound', 'upper_bound'],
-        #                      defaults=['fr', 0, 1])
-        # """
-        # 'var_name' is important! It is used to comprehend user-specified equality or inequality constraints,
-        # and it furthermore is used in interpreting certificates given by Mosek.
-        # """
-        #
-        # self.sdp_var_dict = dict()
-        # #In MOST circumstances we combine the 'Identity' mask with other constant masks, but we leave the option open. In CG notation the ones are precisely the diagonal.
-        # blank_sparse_array = dok_matrix(self.momentmatrix.shape, dtype=float)
-        # for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
-        #     readable_name = self.inflation_aware_to_name(representative)
-        #     current_sparse_mat = blank_sparse_array.copy()
-        #     for mon in list_of_mon:
-        #         current_sparse_mat = current_sparse_mat + mon.known_value * dok_matrix(
-        #             self.momentmatrix == mon.idx)
-        #     if list_of_mon[0].known_status == 'Yes':
-        #         temp_sdp_var = SDPVar(
-        #             csr_matrix=current_sparse_mat.tocsr(),
-        #             var_name=readable_name,
-        #             boundkey='fx',
-        #             lower_bound=1,
-        #             upper_bound=1)
-        #     elif list_of_mon[0].physical_q:
-        #         for mon in list_of_mon:
-        #             self.known_moments[mon.idx] = mon.known_value
-        #         temp_sdp_var = SDPVar(
-        #             csr_matrix=current_sparse_mat.tocsr(),
-        #             var_name=readable_name,
-        #             boundkey='lo',
-        #             lower_bound=1)
-        #     else:
-        #         temp_sdp_var = SDPVar(csr_matrix=current_sparse_mat.tocsr(),
-        #                               var_name=readable_name,
-        #                               boundkey='fr')
-        #     self.sdp_var_dict[readable_name] = temp_sdp_var
-        #     ones_matrix = dok_matrix(self.momentmatrix == 1).tocsr()
-        #     if '1' in self.sdp_var_dict.keys():
-        #         old_sdp_var = self.sdp_var_dict['1']
-        #         old_csr_matrix = old_sdp_var.csr_matrix
-        #         new_csr_matrix = ones_matrix+old_csr_matrix
-        #         self.sdp_var_dict['1'] = old_sdp_var._replace(csr_matrix=new_csr_matrix)
-        #     else:
-        #         self.sdp_var_dict['1'] = SDPVar(
-        #         csr_matrix=dok_matrix(self.momentmatrix == 1).tocsr(),
-        #         var_name='1',
-        #         boundkey='fx',
-        #         lower_bound=1,
-        #         upper_bound=1)
+
 
         if self.objective and not (prob_array is None):
             warn('Danger! User apparently set the objective before the distribution.')
