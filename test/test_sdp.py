@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
 import warnings
-from ncpol2sdpa.nc_utils import flatten
-from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
+from causalinflation.quantum.general_tools import apply_source_permutation_coord_input, flatten
 from causalinflation import InflationProblem, InflationSDP
 
 class TestGeneratingMonomials(unittest.TestCase):
@@ -232,7 +231,7 @@ class TestInflation(unittest.TestCase):
 
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
-                                                             (1, 0),
+                                                             [1, 0],
                                                              False)
         self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "

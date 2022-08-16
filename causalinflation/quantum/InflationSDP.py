@@ -5,9 +5,9 @@ import operator
 import numpy as np
 import pickle
 import sympy as sp
-from collections import Counter, defaultdict, namedtuple
+from collections import Counter, defaultdict #, namedtuple
 
-from numpy import ndarray
+#from numpy import ndarray
 
 from causalinflation import InflationProblem
 from causalinflation.quantum.general_tools import (to_representative,
@@ -37,9 +37,10 @@ from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 
 from typing import List, Dict, Union, Tuple
-from warnings import warn
+import warnings
+# from warnings import warn
 
-from scipy.sparse import dok_matrix, eye
+from scipy.sparse import dok_matrix #, coo_matrix, eye
 
 
 try:
@@ -54,7 +55,7 @@ class InflationSDP(object):
 
     Parameters
     ----------
-    InflationProblem : InflationProblem
+    inflationproblem : InflationProblem
         Details of the scenario.
     commuting : bool, optional
         Whether variables in the problem are going to be commuting
@@ -397,7 +398,7 @@ class InflationSDP(object):
         self.use_lpi_constraints = use_lpi_constraints
 
         if (len(self._objective_as_idx_dict) > 1) and self.use_lpi_constraints:
-            warn("You have an objective function set. Be aware that imposing " +
+            warnings.warn("You have an objective function set. Be aware that imposing " +
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
 
@@ -440,13 +441,13 @@ class InflationSDP(object):
         # for mon in self.list_of_monomials:
         #     mon.idx = _reordering_of_monomials[mon.idx]
 
-
+        self._semiknowns_without_counterparts = set()
         if self.use_lpi_constraints:
             for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
                 if any(mon.known_status == 'Semi' for mon in list_of_mon):
                     which_is_wholly_unknown = [mon.known_status == 'No' for mon in list_of_mon]
                     if not np.count_nonzero(which_is_wholly_unknown) >= 1:
-                        warn('We found a semiknown with no counterpart.' + str(representative))
+                        self._semiknowns_without_counterparts.add(representative)
                     # NEXT SIX LINES ARE FOR LEGACY COMPATABILITY
                     list_of_mon_copy = list_of_mon.copy()
                     list_of_mon_copy = sorted(list_of_mon_copy, key=operator.attrgetter('known_value'))
@@ -456,6 +457,15 @@ class InflationSDP(object):
                         coeff = np.true_divide(semiknown_mon.known_value,big_val_mon.known_value)
                         self.semiknown_moments_idx_dict[semiknown_mon.idx] = (coeff, big_val_mon.idx)
                         self.semiknown_moments_name_dict[semiknown_mon.name] = (coeff, big_val_mon.name)
+            if self.verbose and len(self._semiknowns_without_counterparts):
+                warning_string = f'We found {len(self._semiknowns_without_counterparts)} semiknowns with no counterparts:'
+                for representative in self._semiknowns_without_counterparts:
+                    warning_string += ('\n' + np.array_str(np.asarray(representative)))
+                formatwarning_orig = warnings.formatwarning
+                warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
+                    formatwarning_orig(message, category, filename, lineno, line='')
+                warnings.warn(warning_string)
+
             max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments_idx_dict.values())
             # max(max(mon.known_value for mon in list_of_mon)
             #                                 for v in dict_which_groups_monomials_by_representative.values())
@@ -483,7 +493,7 @@ class InflationSDP(object):
 
 
         if self.objective and not (prob_array is None):
-            warn('Danger! User apparently set the objective before the distribution.')
+            warnings.warn('Danger! User apparently set the objective before the distribution.')
         self.distribution_has_been_set = True
 
     def set_objective(self,
@@ -512,7 +522,7 @@ class InflationSDP(object):
 
         if hasattr(self, 'use_lpi_constraints'):
             if self.use_lpi_constraints:
-                warn("You have the flag `use_lpi_constraints` set to True. Be " +
+                warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
                      "aware that imposing linearized polynomial constraints will " +
                      "constrain the optimization to distributions with fixed " +
                      "marginals.")
@@ -594,7 +604,7 @@ class InflationSDP(object):
         if not self.distribution_has_been_set:
             self.set_distribution(prob_array=None, use_lpi_constraints=False)
         if feas_as_optim and len(self._objective_as_idx_dict) > 1:
-            warn("You have a non-trivial objective, but set to solve a " +
+            warnings.warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
@@ -907,7 +917,7 @@ class InflationSDP(object):
             write_to_mat(self, filename)
 
     def build_columns(self, column_specification, max_monomial_length: int = 0,
-                      return_columns_numerical: bool = False) -> None:
+                      return_columns_numerical: bool = False) -> List[sp.core.symbol.Symbol]:
         """Process the input for the columns of the SDP relaxation.
 
         Parameters
@@ -1278,8 +1288,8 @@ class InflationSDP(object):
         #     list(vardic_clean.items()), dtype=str).astype(object)
         # monomials_list = monomials_list[1:]  # Remove the '1': ' ' row
 
-        # TODO change from dense to sparse !! Else useless, but this requires adapting code
-        problem_arr = problem_arr.todense()
+        # TODO change from dense to sparse?
+        # problem_arr = problem_arr.todense()
 
         return problem_arr, idx_to_canonical_mon_dict
 
@@ -1338,7 +1348,7 @@ class InflationSDP(object):
                 inflation_symmetries.append(total_perm)
             except:
                 if self.verbose > 0:
-                    warn("The generating set is not closed under source swaps."+
+                    warnings.warn("The generating set is not closed under source swaps."+
                          "Some symmetries will not be implemented.")
 
         return np.unique(inflation_symmetries, axis=0)
@@ -1363,7 +1373,8 @@ class InflationSDP(object):
     def _apply_inflation_symmetries(self,
                                     momentmatrix: np.ndarray,
                                     unsymidx_to_canonical_mon_dict: Dict,
-                                    inflation_symmetries: List[List[int]]
+                                    inflation_symmetries: np.ndarray,
+                                    conserve_memory=False
                                     ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """Applies the inflation symmetries to the moment matrix.
 
@@ -1371,8 +1382,8 @@ class InflationSDP(object):
         ----------
         momentmatrix : np.ndarray
             The moment matrix.
-        monomials_list : np.ndarray
-            The list of monomials as List[Tuple[int, ArrayMonomial]]
+        unsymidx_to_canonical_mon_dict : Dict
+            A dictionary of indices in the moment matrix to their association monomials as 2d numpy arrays.
         inflation_symmetries : List[List[int]]
 
 
@@ -1383,7 +1394,7 @@ class InflationSDP(object):
             and the symmetrized monomials list.
         """
 
-        symmetric_arr = momentmatrix.copy()
+
         # if len(symmetric_arr.shape) == 2:
         #     # TODO This is inelegant, remove the index.
         #     #  Only here for compatibility reasons
@@ -1391,25 +1402,35 @@ class InflationSDP(object):
         #     aux[:, :, 0] = symmetric_arr
         #     symmetric_arr = aux.astype(int)
 
-        indices_to_delete = []
+        # indices_to_delete = []
         # the +2 is to include 0:0 and 1:1
         # orbits = {i: i for i in range(2+len(monomials_list))}
         # orbits = {i: i for i in np.unique(sdp.problem_arr.flat)}
-        orbits = np.unique(momentmatrix.flat)
-        orbits = np.concatenate((
-            np.arange(np.min(orbits)),
-            orbits))
+        orbits, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
+        # (where_it_matters_rows, where_it_matters_cols) = np.unravel_index(where_it_matters_flat, momentmatrix.shape)
+        # orbits = np.unique(momentmatrix.data)
+        absent_indices = np.arange(np.min(orbits))
+        orbits = np.concatenate((absent_indices, orbits))
         # print("orbits before symmetrization", orbits)
+        symmetric_arr = momentmatrix.copy()
+
         for permutation in tqdm(inflation_symmetries,
                                 disable=not self.verbose,
                                 desc="Applying symmetries          "):
-            for i, ip in enumerate(permutation):
-                for j, jp in enumerate(permutation):
-                    if symmetric_arr[i, j] < symmetric_arr[ip, jp]:
-                        indices_to_delete.append(int(symmetric_arr[ip, jp]))
-                        orbits[symmetric_arr[ip, jp]
-                               ] = symmetric_arr[i, j]
-                        symmetric_arr[ip, jp] = symmetric_arr[i, j]
+            if conserve_memory:
+                for i, ip in enumerate(permutation):
+                    for j, jp in enumerate(permutation):
+                        if symmetric_arr[i, j] < symmetric_arr[ip, jp]:
+                            # indices_to_delete.append(int(symmetric_arr[ip, jp]))
+                            # orbits[symmetric_arr[ip, jp]] = symmetric_arr[i, j]
+                            symmetric_arr[ip, jp] = symmetric_arr[i, j]
+            else:
+                np.minimum(symmetric_arr, (symmetric_arr[permutation].T)[permutation].T, out=symmetric_arr)
+        orbits = np.concatenate((absent_indices, symmetric_arr.flat[where_it_matters_flat].flat))
+
+
+
+
         # print("orbits before adjustment", orbits)
 
         # Make the orbits go until the representative
@@ -1424,7 +1445,7 @@ class InflationSDP(object):
                     else:
                         previous = val
                 except KeyError:
-                    warn("Your generating set might not have enough" +
+                    warnings.warn("Your generating set might not have enough" +
                          "elements to fully impose inflation symmetries.")
             orbits[key] = val
         # print("orbits after adjustment", orbits)
@@ -1435,37 +1456,12 @@ class InflationSDP(object):
         assert np.array_equal(old_representative_indices, new_indices
                               ), 'Something unexpected happened when calculating orbits.'
 
-        # print("momentmatrix", momentmatrix)
-        # print("orbits", orbits)
 
-        ###We need the check if the special indices 0 and 1 are IN orbits at all. IF not, we will need to shift the new
-        ###indices up a bit.
-        # min_element = min(momentmatrix.flat)
-        # old_representative_indices = old_representative_indices + min_element
-        # unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + min_element
-        # if min_element > 1:
-        #     old_representative_indices[old_representative_indices>0] = old_representative_indices+1
-        #     unsym_idx_to_sym_idx[unsym_idx_to_sym_idx>0] = unsym_idx_to_sym_idx+1
-        # if min_element > 0:
-        #     old_representative_indices = old_representative_indices + 1
-        #     unsym_idx_to_sym_idx = unsym_idx_to_sym_idx + 1
-        # print("old_representative_indices", old_representative_indices)
-        # print("new_indices", new_indices)
-        # print("unsym_idx_to_sym_idx", unsym_idx_to_sym_idx)
-
-        symmetrized_momentmatrix = unsym_idx_to_sym_idx.take(momentmatrix)
+        symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
         symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in enumerate(
             old_representative_indices) if old_idx>=2}
 
-
-        # Remove from monomials_list all those that have disappeared. The -2 is
-        # because we are encoding 0 and 1 in two variables that we do not use
-        # remaining_variables = (set(range(len(monomials_list))) -
-        #                        set(np.array(indices_to_delete)-2))
-        # remaining_monomials = monomials_list[sorted(list(remaining_variables))]
-
-        # return symmetric_arr.astype(int), orbits, remaining_monomials
-        return symmetrized_momentmatrix, orbits, symidx_to_canonical_mon_dict
+        return symmetric_arr, orbits, symidx_to_canonical_mon_dict
 
 
     def dump_to_file(self, filename):
