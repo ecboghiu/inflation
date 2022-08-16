@@ -59,6 +59,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             if var in semiknown_vars.keys():
                 factor, subs      = semiknown_vars[var]
                 Fi[subs-nr_known] += factor*Fi[var-nr_known]
+                del variables_order[np.where(np.array(variables_order) == var)[0][0]]
             else:
                 Fii.append(Fi[idx])
         Fi = Fii
