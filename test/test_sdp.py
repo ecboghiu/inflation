@@ -357,5 +357,28 @@ class TestSDPOutput(unittest.TestCase):
                     ("Semiknown moments need to be of the form " +
                     "mon_index1 = (number<=1) * mon_index2, this is failing"))
 
-                    ("Semiknown moments need to be of the form " +
-                    "mon_index1 = (number<=1) * mon_index2, this is failing!"))
+    def test_lpi_output(self):
+        sdp = InflationSDP(
+                  InflationProblem({"h": ["a"]},
+                                    outcomes_per_party=[2],
+                                    settings_per_party=[2],
+                                    inflation_level_per_source=[2])
+                            )
+        [[[[A10], [A11]], [[A20], [A21]]]] = sdp.measurements
+        sdp.generate_relaxation([1,
+                                 A10, A11, A20, A21,
+                                 A10*A11, A10*A21, A11*A20, A20*A21])
+        sdp.set_distribution(np.array([[0.14873, 0.85168]]))
+        # sdp.set_objective(A10*A11*A20*A21) # This produces an error
+        sdp.set_objective(A11*A10*A20*A21)
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, 0.0918999),
+                        "Optimization of a simple SDP without LPI " +
+                        "constraints is not obtaining the correct known value")
+        sdp.set_distribution(np.array([[0.14873, 0.85168]]),
+            use_lpi_constraints=True
+            )
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, 0.0640776),
+                        "Optimization of a simple SDP with LPI-like " +
+                        "constraints is not obtaining the correct known value")
