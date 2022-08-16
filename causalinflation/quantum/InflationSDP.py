@@ -247,6 +247,7 @@ class InflationSDP(object):
                                           self.InflationProblem.rectify_fake_setting_atomic_factor(atom))
                                     for atom in mon.knowable_factors]
             mon.knowable_factors = corrected_knowable_factors
+            mon.mask_matrix = dok_matrix(self.momentmatrix == mon.idx).tobsr()
             # self._all_atomic_knowable.update(corrected_knowable_factors)
 
         # self._all_atomic_knowable = set(itertools.chain.from_iterable(mon.knowable_factors for mon in self.symidx_to_Monomials_dict.values()))

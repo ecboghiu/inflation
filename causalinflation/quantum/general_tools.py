@@ -335,40 +335,11 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
         if np.array_equal(monomial, np.array([0])):
             permuted_op_list.append(monomial)
         else:
-            new_factors = copy.deepcopy(monomial)
-            for i in range(len(monomial)):
-                if new_factors[i][1 + source] > 0:
-                    # Python starts counting at 0
-                    new_factors[i][1 + source] = permutation[
-                        new_factors[i][1 + source] - 1] + 1
-                else:
-                    continue
-
-            # There are monomials that can be reordered because of commutations
-            # (examples are operators of a same party with non-overlapping sets
-            # of copy indices). For commuting operators, this can be achieved
-            # by sorting the components. For noncommuting operators, an initial
-            # idea is to factorize the monomial, order the factors and rejoin.
-            # This is achieved with factorize_monomial
-            # NOTE: commuting is a very good attribute for a future SDP class
-            if commuting:
-                canonical = mon_lexsorted(new_factors) #sorted(new_factors)
-            else:
-                n_sources = len(measnames[0].split("_")[1:-2])
-                product = 1
-                for factor in new_factors:
-                    party = factor[0]
-                    name = names[party - 1] + '_'
-                    for s in factor[1:1 + n_sources]:
-                        name += str(s) + '_'
-                    name += str(factor[-2]) + '_' + str(factor[-1])
-                    term = flatmeas[measnames == name][0]
-                    product *= term
-
-                canonical = to_numbers(apply_substitutions(product,
-                                                         substitutions), names)
-
-            permuted_op_list.append(np.array(canonical, dtype=np.uint8))
+            newmon = apply_source_perm_monomial(monomial, source,
+                                                np.array(permutation),
+                                                commuting)
+            canonical = to_canonical(newmon)
+            permuted_op_list.append(canonical)
 
     return permuted_op_list
 
