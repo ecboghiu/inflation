@@ -332,7 +332,7 @@ class TestSDPOutput(unittest.TestCase):
         # self.assertEqual(sdp.known_moments_idx_dict[9],
         #                  (0.5-1e-4) / 2 + (0.5+1e-4) / 8,
         #                  "Re-setting the distribution is failing")
-        known_value = (0.5 + 1e-4) / 2 + (0.5 - 1e-4) / 8
+        known_value = (0.5 - 1e-4) / 2 + (0.5 + 1e-4) / 8
         print("Known value: ", known_value)
         print(sdp.known_moments_name_dict)
         self.assertIn(known_value,
