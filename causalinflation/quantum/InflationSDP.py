@@ -962,12 +962,13 @@ class InflationSDP(object):
                     raise Exception('The columns are not specified in a valid format.')
             elif type(column_specification[0]) in [int, sp.Symbol,
                                                    sp.core.power.Pow,
-                                                   sp.core.mul.Mul]:
+                                                   sp.core.mul.Mul,
+                                                   sp.core.numbers.One]:
                 columns = []
                 for col in column_specification:
                     # We also check the type element by element, and not only the first one
                     if type(col) in [int, sp.core.numbers.One]:
-                        if not np.isclose(col, 1):
+                        if not np.isclose(float(col), 1):
                             raise Exception('The columns are not specified in a valid format.')
                         else:
                             columns += [np.array([0], dtype=np.uint8)]
