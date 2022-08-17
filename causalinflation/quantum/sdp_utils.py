@@ -6,7 +6,7 @@ from warnings import warn
 from time import time
 
 
-def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
+def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
                          objective={'1': 0}, known_vars={},
                          semiknown_vars={}, positive_vars=[],
                          verbose=0, feas_as_optim=False, solverparameters={},
@@ -178,7 +178,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     #     coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
     #     Fi[x] = coeffmat
 
-    Fi = positionsmatrix.copy()
+    Fi = maskmatrices_name_dict.copy()
     Fi = {k: scipy.sparse.lil_matrix(v, dtype=np.float) for k, v in Fi.items()}
     variables = set(list(Fi.keys()))
     mat_dim = Fi[next(iter(Fi))].shape[0]

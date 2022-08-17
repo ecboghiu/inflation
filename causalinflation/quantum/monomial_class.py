@@ -12,6 +12,8 @@ from collections.abc import Iterable
 # ListOrTuple = NewType("ListOrTuple", Union[List, Tuple])
 # MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
+import sympy
+
 
 def to_tuple_of_tuples(monomial: np.ndarray) -> tuple:
     if isinstance(monomial, tuple):
@@ -158,6 +160,9 @@ class Monomial(object):
 
     def __hash__(self):
         return hash(self.as_tuples)
+    
+    def __equal__(self, other):
+        return np.array_equal(self.as_ndarray, other.as_ndarray)
 
     def factors_as_block(self, factors):
         if len(factors):
@@ -208,3 +213,61 @@ class Monomial(object):
                 compute_marginal_memoized(hashable_prob_array, atom)
                 for atom in self.knowable_factors])
             return self.update_given_valuation_of_knowable_part(valuation_of_knowable_part)
+
+    # TODO: realised late after writing that the Monomial class doesn't "know"
+    # the names, so I add it as input. This is not ideal, but I like the idea
+    # of to_symbol() being a method of the Monomial class, but I also don't 
+    # think there should be a .name attribute as that is quite wasteful.
+    def to_symbol(self, objective_compatible=False, standard_prob_notation=True):
+        def to_standardprob(f):
+            # Each factor is of the form "P[A_x_a, B_y_b, ..., Z_z_z]"
+            parties, inputs, outputs = np.array([t.strip().split('_') 
+                                                for t in f[2:-1].split(',')]
+                                                ).T.tolist()
+            p_divider = '' if all(len(p) == 1 for p in parties) else ','
+            # We will probably never have more than 1 digit cardinalities
+            # but who knows...
+            i_divider = '' if all(len(i) == 1 for i in inputs)  else ','
+            o_divider  = '' if all(len(o) == 1 for o in outputs) else ','
+            
+            name = ( 'p_{' + p_divider.join(parties) + '}' + 
+              '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')'
+                    )
+            
+            return sympy.Symbol(name, commutative=True)
+        
+        if (self.as_ndarray.shape[0] == 0 and self.as_ndarray.shape[1] != 0):  
+            # If identity monomial. NOTE: I add the second condition in case
+            # the 0 monomial might have shape (0, 0).
+            return 1
+        
+        if objective_compatible:
+            # This returns an object that can be plugged into 
+            # self.set_objective() and optimised over
+            # The Monomial class doesn't know 'names', so we can either pass
+            # them as input or deduce them, for now I deduce them,
+            # however it might be costly so I don't know whether to keep
+            # this or not
+            names = {}
+            namefactors = [[l.strip() for l in f[2:-1].split(',')] 
+                                      for f in self.name.split('*')]
+            for farray, fname in zip(self.factors, namefactors):
+                farray = farray.tolist()
+                for p_idx, p_str in zip(farray, fname):
+                    names[p_idx[0]] = p_str[0]
+                
+            prod = 1
+            for l in self.as_ndarray.tolist():
+                prod *= sympy.Symbol(names[l[0]] + '_' +
+                                     '_'.join([str(i) for i in l[1:]]),
+                                     commutative = False)
+            return prod
+        else:         
+            if standard_prob_notation and self.knowability_status == 'Yes':
+                # Convert P[A_x_a, B_y_b, ...] to p_{AB...}(ab...|xy...)
+                return np.prod([to_standardprob(n) 
+                                for n in self.name.split('*')])
+            else:
+                return np.prod([sympy.Symbol(n, commutative=True) 
+                                for n in self.name.split('*')])
+
