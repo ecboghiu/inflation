@@ -170,3 +170,6 @@ problemarr*
 *.json
 result_matlab_svetlichny.txt
 examples/debug.py
+
+#Visual Studio IDE
+.vs/
