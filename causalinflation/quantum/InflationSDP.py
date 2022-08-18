@@ -917,7 +917,7 @@ class InflationSDP(object):
                 physical_monomials = []
                 for freqs in party_frequencies:
                     if freqs == [0]*self.nr_parties:
-                        physical_monomials.append([0])
+                        physical_monomials.append(np.array([0]))
                     else:
                         physmons_per_party_per_length = []
                         for party, freq in enumerate(freqs):
@@ -946,7 +946,7 @@ class InflationSDP(object):
                                                np.concatenate(
                                                    factorize_monomial(concatenated)),
                                                   key=lambda x: x[0]))
-                            physical_monomials.append(monomial.tolist())
+                            physical_monomials.append(monomial)
 
                 columns = physical_monomials
             else:
