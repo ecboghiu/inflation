@@ -303,46 +303,46 @@ class InflationSDP(object):
         #     mon.idx = self.reordering_of_monomials[mon.idx]
 
         """
-        Assigning each monomial a meaningful name. 
+        Assigning each monomial a meaningful name. ONLY CALL AFTER RECTIFY SETTINGS!
         """
         for mon in self.list_of_monomials:
-            factors_as_strings = []
-            for atomic_unknowable_factor in mon.unknowable_factors:
-                operators_as_strings = []
-                for op in atomic_unknowable_factor:
-                    operators_as_strings.append('_'.join([self.names[op[0] - 1]]  # party idx
-                                                         + [str(i) for i in op[1:]]))
-                factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
-            mon.unknown_part_name = '*'.join(factors_as_strings)
-            factors_as_strings = []
-            for atomic_knowable_factor in mon.knowable_factors:
-                operators_as_strings = []
-                for op in atomic_knowable_factor:
-                    operators_as_strings.append('_'.join([self.names[op[0]]]  # party idx
-                                                         + [str(i) for i in op[1:]]))
-                factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
-            mon.knowable_factors_names = factors_as_strings
-            mon.knowable_part_name = '*'.join(factors_as_strings)
-            if len(mon.knowable_part_name):
-                if len(mon.unknown_part_name):
-                    mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
-                else:
-                    mon.name = mon.knowable_part_name
-            else:
-                mon.name = mon.unknown_part_name
-                # mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
+            mon.update_name_and_symbol_given_observed_names(observable_names=self.names)
+        #     factors_as_strings = []
+        #     for atomic_unknowable_factor in mon.unknowable_factors:
+        #         operators_as_strings = []
+        #         for op in atomic_unknowable_factor:
+        #             operators_as_strings.append('_'.join([self.names[op[0] - 1]]  # party idx
+        #                                                  + [str(i) for i in op[1:]]))
+        #         factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
+        #     mon.unknown_part_name = '*'.join(factors_as_strings)
+        #     factors_as_strings = []
+        #     for atomic_knowable_factor in mon.knowable_factors:
+        #         operators_as_strings = []
+        #         for op in atomic_knowable_factor:
+        #             operators_as_strings.append('_'.join([self.names[op[0] - 1]]  # party idx
+        #                                                  + [str(i) for i in op[1:]]))
+        #         factors_as_strings.append('P[' + ', '.join(operators_as_strings) + ']')
+        #     mon.knowable_factors_names = factors_as_strings
+        #     mon.knowable_part_name = '*'.join(factors_as_strings)
+        #     if len(mon.knowable_part_name):
+        #         if len(mon.unknown_part_name):
+        #             mon.name = '*'.join([mon.knowable_part_name, mon.unknown_part_name])
+        #         else:
+        #             mon.name = mon.knowable_part_name
+        #     else:
+        #         mon.name = mon.unknown_part_name
+        # print("Without patch: ", self.idx_dict_of_monomials[1].name)
+        # self.idx_dict_of_monomials[1].name = '1'
 
-        self.idx_dict_of_monomials[1].name = '1'
+
+        # This is useful for the certificates
+        self.name_dict_of_monomials = {mon.name: mon for mon in self.list_of_monomials}
+        #Note indexing starts from zero, for certificate compatibility. #TODO: Does it, though?
+        self.monomial_names = list(self.name_dict_of_monomials.keys())
 
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
-        # self.maskmatrices_name_dict["1"] = dok_matrix(self.momentmatrix == 1).tocsr()
-        # self.maskmatrices_name_dict["0"] = dok_matrix(self.momentmatrix == 0).tocsr()
 
-        #Note indexing starts from zero, for certificate compatibility.
-        self.monomial_names = [mon.name for mon in self.list_of_monomials]
-        
-        # This is useful for the certificates 
-        self._name2mon = {mon.name: mon for mon in self.list_of_monomials}
+
 
         self.objective = sp.S.Zero
         self._objective_as_idx_dict = {1: 0.}
@@ -786,7 +786,7 @@ class InflationSDP(object):
                  "to apply to other distributions")
             Warning(string)
         
-        mons = [self._name2mon[name] for name in cert.keys()]
+        mons = [self.name_dict_of_monomials[name] for name in cert.keys()]
         coeffs = np.array(list(cert.values()))
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
@@ -834,7 +834,7 @@ class InflationSDP(object):
                  "to apply to other distributions")
             Warning(string)
         
-        mons = [self._name2mon[name] for name in cert.keys()]
+        mons = [self.name_dict_of_monomials[name] for name in cert.keys()]
         coeffs = np.array(list(cert.values()))
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
@@ -886,7 +886,7 @@ class InflationSDP(object):
                  "to apply to other distributions")
             
 
-        mons = [self._name2mon[name] for name in cert.keys()]
+        mons = [self.name_dict_of_monomials[name] for name in cert.keys()]
         coeffs = np.array(list(cert.values()))
         if clean and not np.allclose(coeffs, 0):
             coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
@@ -1196,7 +1196,7 @@ class InflationSDP(object):
                 for party in block:
                     meas_ops.append(flatten(self.measurements[party]))
                 for monomial_factors in itertools.product(*meas_ops):
-                    mon = np.array([to_numbers(op, self.names)[0] for op in monomial_factors])
+                    mon = np.array([to_numbers(op, self.names)[0] for op in monomial_factors], dtype=np.uint8)
                     if self.commuting:
                         canon = remove_projector_squares(mon_lexsorted(mon))
                         if mon_is_zero(canon):
@@ -1215,7 +1215,8 @@ class InflationSDP(object):
                             if name not in allvars:
                                 allvars.add(name)
                                 if name == '1':
-                                    res.append(np.array([0]))
+                                    #TODO: Convention in this branch is to never use to_name or to_numbers. Hashing done via tuple format.
+                                    res.append(np.array([0], dtype=np.uint8))
                                 else:
                                     res.append(canon)
 

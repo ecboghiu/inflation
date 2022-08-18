@@ -179,7 +179,7 @@ class InflationProblem(object):
             o_private_settings = self.extract_parent_values_from_effective_setting[
                                         party_index][effective_setting_as_integer][0]
             o[-2] = o_private_settings
-            o[0] = party_index
+            # o[0] = party_index #DO NOT LOWER PARTY INDEX AS PART OF SETTING RECTIFICATION
         return new_mon
 
 
