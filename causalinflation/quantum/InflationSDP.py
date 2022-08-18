@@ -20,21 +20,21 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             find_permutation,
                                             apply_source_permutation_coord_input,
                                             from_numbers_to_flat_tuples,
-                                            generate_commuting_measurements,
                                             generate_noncommuting_measurements,
+                                            flatten,
                                             from_coord_to_sym,
                                             clean_coefficients,
                                             compute_numeric_value)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
-                                              to_canonical)
+                                              to_canonical,
+                                              remove_projector_squares,
+                                              mon_lexsorted,
+                                              mon_is_zero)
 from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
                                                 solveSDP_MosekFUSION2)
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
-# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-from ncpol2sdpa import flatten, projective_measurement_constraints
-from ncpol2sdpa.nc_utils import apply_substitutions, simplify_polynomial
 from typing import List, Dict, Union, Tuple
 from warnings import warn
 
@@ -375,8 +375,7 @@ class InflationSDP(object):
         if (sp.S.One*objective).free_symbols:
             # Sanitize input: pass through substitutions to get
             # objects that we have used previously
-            objective = simplify_polynomial(sp.expand(objective),
-                                            self.substitutions)
+            objective = sp.expand(objective)
             # Build string-to-variable dictionary
             string2int_dict = {**{'0': '0', '1': '1'},
                                **dict(self._monomials_list_all[:, ::-1])}
@@ -438,7 +437,6 @@ class InflationSDP(object):
             if type(key) == int:
                 self.known_moments[key] = val
             elif any([type(key) == sp.core.symbol.Symbol,
-                      type(key) == sp.physics.quantum.operator.HermitianOperator,
                       type(key) == str]):
                 try:
                     key_int = names_to_vars[str(key)]
@@ -999,67 +997,43 @@ class InflationSDP(object):
                     to_print.append(''.join([self.names[i] for i in col]))
             print("Column structure:", '+'.join(to_print))
 
-        if self.substitutions == {}:
-            if all([len(block) == len(np.unique(block)) for block in col_specs]):
-                # TODO maybe do things without sympy substitutions,
-                # but numba functions??
-                warn("You have not input substitution rules to the " +
-                     "generation of columns, but it is OK because you " +
-                     "are using local level 1")
+        res = []
+        allvars = set()
+        for block in col_specs:
+            if block == []:
+                res.append(np.array([0]))
+                allvars.add('1')
             else:
-                raise Exception("You must input substitution rules for columns "
-                                + "to be generated properly")
-        else:
-            # party_structure is something like:
-            # only the first element is special, and it determines whether we include 1 or not
-            # TODO change with numba functions
-            res = []
-            symbols = []
-            for block in col_specs:
-                if block == []:
-                    res.append([0])
-                    symbols.append(1)
-                else:
-                    meas_ops = []
-                    for party in block:
-                        meas_ops.append(flatten(self.measurements[party]))
-                    for monomial_factors in itertools.product(*meas_ops):
-                        monomial = apply_substitutions(
-                            np.prod(monomial_factors), self.substitutions)
-                        # The commutation rules in self.substitutions are not
-                        # enough in some occasions when the monomial can be
-                        # factorized. An example is (all indices are inflation
-                        # indices) A13A33A22 and A22A13A33. Both are the same
-                        # because they are composed of two disconnected objects,
-                        # but cannot be brought one to another via two-body
-                        # substitution rules. The solution below is to decompose
-                        # in disconnected components, order them canonically,
-                        # and recombine them.
-                        factor_list = monomial.as_ordered_factors()
-                        num_to_symb = {tuple(to_numbers(str(factor),
-                                                        self.names)[0]): factor
-                                                      for factor in factor_list}
-                        reordered = np.concatenate(
-                                        factorize_monomial(
-                                            to_numbers(str(monomial),
-                                                       self.names)))
-                        # Recombine sorting by party
-                        reordered = np.vstack(sorted(reordered,
-                                                     key=lambda x: x[0]))
-                        monomial = np.prod([num_to_symb[tuple(factor)]
-                                            for factor in reordered])
-                        mon_length = len(str(monomial).split('*'))
-                        if monomial not in symbols and mon_length == len(block):
-                            symbols.append(monomial)
-                            if monomial == 1:
-                                coords = [0]
-                            else:
-                                coords = []
-                                for factor in monomial.as_coeff_mul()[1]:
-                                    coords.append(*to_numbers(factor, self.names))
-                            res.append(coords)
-            sortd = sorted(res, key=len)
-            return [np.array(mon, dtype=np.uint8) for mon in sortd]
+                meas_ops = []
+                for party in block:
+                    meas_ops.append(flatten(self.measurements[party]))
+                for monomial_factors in itertools.product(*meas_ops):
+                    mon = np.array([to_numbers(op, self.names)[0]
+                                    for op in monomial_factors])
+                    if self.commuting:
+                        canon = remove_projector_squares(mon_lexsorted(mon))
+                        if mon_is_zero(canon):
+                            canon = 0
+                    else:
+                        canon = to_canonical(mon)
+                    if not np.array_equal(canon, 0):
+                        # If the block is [0, 0], and we have the monomial
+                        # A**2 which simplifies to A, then A would be included
+                        # in the block [0]. This is not a problem, but we use
+                        # the convention that [0, 0] means all monomials of
+                        # length 2 AFTER simplifications, so we omit monomials
+                        # of length 1.
+                        if canon.shape[0] == len(monomial_factors):
+                            name = to_name(canon, self.names)
+                            if name not in allvars:
+                                allvars.add(name)
+                                if name == '1':
+                                    res.append(np.array([0]))
+                                else:
+                                    res.append(canon)
+
+        sortd = sorted(res, key=len)
+        return sortd
 
     def _generate_parties(self):
         # TODO: change name to generate_measurements
@@ -1072,9 +1046,7 @@ class InflationSDP(object):
         copies c, input i, output o.
 
         It stores in `self.substitutions` a dictionary of substitution rules
-        containing commutation, orthogonality and square constraints. NOTE:
-        to use these substitutions in the moment matrix we need to use
-        ncpol2sdpa.
+        containing commutation, orthogonality and square constraints.
         """
 
         hypergraph = self.InflationProblem.hypergraph
@@ -1119,44 +1091,27 @@ class InflationSDP(object):
             # Generate measurements for every combination of indices. The two
             # outcome case is handled separately for having the same format always
             for indices in all_indices:
-                if outs == 2:
-                    if not commuting:
-                        meas = generate_noncommuting_measurements([outs + 1 for _ in range(ins)],
-                                                                  party + '_' + '_'.join(indices))
-                    else:
-                        meas = generate_commuting_measurements([outs + 1 for _ in range(ins)],
-                                                               party + '_' + '_'.join(indices))
-                    for i in range(ins):
-                        meas[i].pop(-1)
-                else:
-                    if not commuting:
-                        meas = generate_noncommuting_measurements([outs for _ in range(ins)],
-                                                                  party + '_' + '_'.join(indices))
-                    else:
-                        meas = generate_commuting_measurements([outs for _ in range(ins)],
-                                                               party + '_' + '_'.join(indices))
-
-                if commuting:
-                    subs = projective_measurement_constraints(meas)
-                    substitutions = {**substitutions, **subs}
+                meas = generate_noncommuting_measurements(
+                                                 [outs - 1 for _ in range(ins)],   # -1 because of normalization
+                                                 party + '_' + '_'.join(indices)
+                                                          )
                 party_meas.append(meas)
             measurements.append(party_meas)
 
-        if not commuting:
-            substitutions = {}
-            for party in measurements:
-                # Idempotency
-                substitutions = {**substitutions,
-                                 **{op**2: op for op in flatten(party)}}
-                # Orthogonality
-                for inf_copy in party:
-                    for measurement in inf_copy:
-                        for out1 in measurement:
-                            for out2 in measurement:
-                                if out1 == out2:
-                                    substitutions[out1*out2] = out1
-                                else:
-                                    substitutions[out1*out2] = 0
+        substitutions = {}
+        if commuting:
+            flatmeas = flatten(measurements)
+            for i in range(len(flatmeas)):
+                for j in range(i, len(flatmeas)):
+                    m1 = flatmeas[i]
+                    m2 = flatmeas[j]
+                    if str(m1) > str(m2):
+                        substitutions[m1*m2] = m2*m1
+                    elif str(m1) < str(m2):
+                        substitutions[m2*m1] = m1*m2
+                    else:
+                        pass
+        else:
             # Commutation of different parties
             for i in range(len(parties)):
                 for j in range(len(parties)):
@@ -1168,13 +1123,30 @@ class InflationSDP(object):
             for party, inf_measurements in enumerate(measurements):
                 sources = hypergraph[:, party].astype(bool)
                 inflation_indices = [np.compress(sources,
-                                                 str(flatten(inf_copy)[0]).split('_')[1:-2]).astype(int)
+                                                 str(flatten(inf_copy)[0]
+                                                     ).split('_')[1:-2]
+                                                 ).astype(int)
                                      for inf_copy in inf_measurements]
                 for ii, first_copy in enumerate(inf_measurements):
                     for jj, second_copy in enumerate(inf_measurements):
-                        if (jj > ii) and (all(inflation_indices[ii] != inflation_indices[jj])):
-                            for op1, op2 in itertools.product(flatten(first_copy), flatten(second_copy)):
+                        if ((jj > ii) and
+                            (all(inflation_indices[ii] != inflation_indices[jj]))):
+                            for op1, op2 in itertools.product(flatten(first_copy),
+                                                              flatten(second_copy)):
                                 substitutions[op2 * op1] = op1 * op2
+        for party in measurements:
+            # Idempotency
+            substitutions = {**substitutions,
+                             **{op**2: op for op in flatten(party)}}
+            # Orthogonality
+            for inf_copy in party:
+                for measurement in inf_copy:
+                    for out1 in measurement:
+                        for out2 in measurement:
+                            if out1 == out2:
+                                substitutions[out1*out2] = out1
+                            else:
+                                substitutions[out1*out2] = 0
 
         return measurements, substitutions, parties
 
@@ -1243,11 +1215,7 @@ class InflationSDP(object):
                  apply_source_permutation_coord_input(self.generating_monomials,
                                                       source,
                                                       permutation,
-                                                      self.commuting,
-                                                      self.substitutions,
-                                                      flatmeas,
-                                                      measnames,
-                                                      self.names)
+                                                      self.commuting)
             # Bring columns to the canonical form using commutations of
             # connected components
             for idx in range(len(permuted_cols_ind)):

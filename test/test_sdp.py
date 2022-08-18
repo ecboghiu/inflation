@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 
-from ncpol2sdpa.nc_utils import flatten
-from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
+from causalinflation.quantum.general_tools import (flatten,
+                                           apply_source_permutation_coord_input)
 from causalinflation import InflationProblem, InflationSDP
 
 class TestGeneratingMonomials(unittest.TestCase):
@@ -158,6 +158,18 @@ class TestGeneratingMonomials(unittest.TestCase):
         meas, subs, _ = scenario._generate_parties()
 
         true_substitutions = {}
+
+        flatmeas = flatten(meas)
+        for i in range(len(flatmeas)):
+            for j in range(i, len(flatmeas)):
+                m1 = flatmeas[i]
+                m2 = flatmeas[j]
+                if str(m1) > str(m2):
+                    true_substitutions[m1*m2] = m2*m1
+                elif str(m1) < str(m2):
+                    true_substitutions[m2*m1] = m1*m2
+                else:
+                    pass
         for party in meas:
             # Idempotency
             true_substitutions = {**true_substitutions,
@@ -172,7 +184,12 @@ class TestGeneratingMonomials(unittest.TestCase):
                             else:
                                 true_substitutions[out1*out2] = 0
 
-        self.assertDictEqual(subs, true_substitutions)
+        self.assertEqual(len(subs), len(true_substitutions),
+                         "The number of substitutions is incorrect")
+
+        for k1, v1 in true_substitutions.items():
+            self.assertEqual(subs[k1], v1,
+                             "Substitution for " + str(k1) + " is incorrect")
 
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
@@ -202,11 +219,7 @@ class TestInflation(unittest.TestCase):
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
                                                              (1, 0),
-                                                             False,
-                                                             subs,
-                                                             flatmeas,
-                                                             measnames,
-                                                             names)
+                                                             False)
         self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "
                          + "being applied properly after inflation symmetries")
