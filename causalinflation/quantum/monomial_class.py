@@ -61,7 +61,7 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
         """
     if len(atom):
         n_parties: int = prob_array.ndim // 2
-        participating_parties = atom[:,  0]
+        participating_parties = atom[:, 0] - 1  # Convention in numpy monomial format is first party = 1
         inputs = atom[:, -2].astype(int)
         outputs = atom[:, -1].astype(int)
         indices_to_sum = list(set(range(n_parties)).difference(participating_parties))
@@ -72,6 +72,72 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
         return marginal_dist[tuple(outputs_inputs)]
     else:
         return 1.
+
+
+def atomic_monomial_to_name(observable_names: Tuple[str],
+                            atom: Union[np.ndarray, Tuple[Tuple[int]]],
+                            human_readable_over_machine_readable=True):
+    atom_as_array = np.array(atom, dtype=int, copy=True)
+    if len(atom_as_array):
+        if human_readable_over_machine_readable:
+            if atom_as_array.shape[-1] == 3:
+                parties = np.take(observable_names,
+                                  atom_as_array[:, 0] - 1)  # Convention in numpy monomial format is first party = 1
+                inputs = [str(input) for input in atom_as_array[:, -2].astype(int).tolist()]
+                outputs = [str(output) for output in atom_as_array[:, -1].astype(int).tolist()]
+                p_divider = '' if all(len(p) == 1 for p in parties) else ','
+                # We will probably never have more than 1 digit cardinalities
+                # but who knows...
+                i_divider = '' if all(len(i) == 1 for i in inputs) else ','
+                o_divider = '' if all(len(o) == 1 for o in outputs) else ','
+                return ('p_{' + p_divider.join(parties) + '}' +
+                        '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')')
+            else:
+                operators_as_strings = []
+                for op in atom_as_array.tolist():
+                    operators_as_strings.append('_'.join([observable_names[op[0] - 1]]  # party idx
+                                                         + [str(i) for i in op[1:]]))
+                return 'P[' + ', '.join(operators_as_strings) + ']'
+        else:
+            return '**'.join([observable_names[op[0] - 1] + '_' + '_'.join([str(i) for i in op[1:]]) for op in atom])
+    else:
+        return '1'
+
+
+# def atomic_name_to_symbol(atomic_name,
+#                           human_readable_over_machine_readable=True):
+#     if atomic_name == '1':
+#         return sympy.S.One
+#     else:
+#         if human_readable_over_machine_readable:
+#             return sympy.Symbol(atomic_name, commutative=True)
+#         else:
+#             prod = sympy.S.One
+#             for op_name in atomic_name.split('**'):
+#                 prod *= sympy.Symbol(op_name,
+#                                      commutative=False)
+#             return prod
+
+
+def name_from_atomic_names(atomic_names):
+    # try:
+    return '*'.join(atomic_names)
+    # except:
+    #     return '1'
+    #
+    # if len(atomic_names) and (isinstance(atomic_names[0], str)):
+    #     # print(atomic_names)
+    #         return '*'.join(atomic_names)
+    # else:
+    #     return '1'
+
+def symbol_from_atomic_names(atomic_names):
+    prod = sympy.S.One
+    for op_name in atomic_names:
+        if op_name != '1':
+            prod *= sympy.Symbol(op_name,
+                                 commutative=True)
+    return prod
 
 
 class Monomial(object):
@@ -85,11 +151,8 @@ class Monomial(object):
                  'atomic_knowability_status',
                  'knowable_factors_uncompressed',
                  'knowable_factors',
-                 'knowable_factors_names',
-                 'knowable_part_name',
                  'unknowable_factors',
                  'unknowable_factors_as_block',
-                 'unknown_part_name',
                  '_unknowable_block_len',
                  'knowability_status',
                  'knowable_q',
@@ -100,7 +163,17 @@ class Monomial(object):
                  'known_value',
                  'unknown_part',
                  'representative',
-                 'name'
+                 # 'knowable_factors_names',
+                 # 'knowable_part_name',
+                 # 'knowable_part_machine_readable_name',
+                 # 'unknowable_part_name',
+                 # 'unknowable_part_machine_readable_name',
+                 '_names_of_factors',
+                 '_machine_readable_names_of_factors',
+                 'name',
+                 'machine_readable_name',
+                 'symbol',
+                 'machine_readable_symbol',
                  ]
 
     def __init__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]],
@@ -127,9 +200,9 @@ class Monomial(object):
                                                        self.atomic_knowability_status)
                                                    if knowable)
         self.unknowable_factors = tuple(atom for atom, knowable in
-                                                   zip(self.factors,
-                                                       self.atomic_knowability_status)
-                                                   if not knowable)
+                                        zip(self.factors,
+                                            self.atomic_knowability_status)
+                                        if not knowable)
         self.unknowable_factors_as_block = self.factors_as_block(self.unknowable_factors)
         # self.knowable_factors = tuple(tuple(tuple(vec) for vec in np.take(factor, [0, -2, -1], axis=1))
         #         for factor in self.knowable_factors_uncompressed)
@@ -148,8 +221,11 @@ class Monomial(object):
         else:
             self.knowability_status = 'Semi'
 
-        self.known_status = 'No'
-        self.unknown_part = self.unknowable_factors_as_block
+        if self.idx > 1:
+            self.known_status = 'No'
+        else:
+            self.known_status = 'Yes'
+        self.unknown_part = self.as_ndarray
         self.known_value = 1.
 
     def __str__(self):
@@ -160,7 +236,7 @@ class Monomial(object):
 
     def __hash__(self):
         return hash(self.as_tuples)
-    
+
     def __equal__(self, other):
         return np.array_equal(self.as_ndarray, other.as_ndarray)
 
@@ -202,6 +278,25 @@ class Monomial(object):
         else:
             self.known_status = 'Semi'
 
+    def update_name_and_symbol_given_observed_names(self, observable_names):
+        self._names_of_factors = [atomic_monomial_to_name(observable_names=observable_names,
+                                                          atom=atomic_factor,
+                                                          human_readable_over_machine_readable=True)
+                                  for atomic_factor in self.knowable_factors] + [
+                                     atomic_monomial_to_name(observable_names=observable_names,
+                                                             atom=atomic_factor,
+                                                             human_readable_over_machine_readable=True)
+                                     for atomic_factor in self.unknowable_factors]
+        self.name = name_from_atomic_names(self._names_of_factors)
+        self.symbol = symbol_from_atomic_names(self._names_of_factors)
+
+        self._machine_readable_names_of_factors = [atomic_monomial_to_name(observable_names=observable_names,
+                                                                           atom=atomic_factor,
+                                                                           human_readable_over_machine_readable=False)
+                                                   for atomic_factor in self.factors]
+        self.machine_readable_name = name_from_atomic_names(self._machine_readable_names_of_factors)
+        self.machine_readable_symbol = symbol_from_atomic_names(self._machine_readable_names_of_factors)
+
     def update_given_prob_dist(self, prob_array):
         if prob_array is None:
             self.known_status = 'No'
@@ -218,56 +313,59 @@ class Monomial(object):
     # the names, so I add it as input. This is not ideal, but I like the idea
     # of to_symbol() being a method of the Monomial class, but I also don't 
     # think there should be a .name attribute as that is quite wasteful.
-    def to_symbol(self, objective_compatible=False, standard_prob_notation=True):
-        def to_standardprob(f):
-            # Each factor is of the form "P[A_x_a, B_y_b, ..., Z_z_z]"
-            parties, inputs, outputs = np.array([t.strip().split('_') 
-                                                for t in f[2:-1].split(',')]
-                                                ).T.tolist()
-            p_divider = '' if all(len(p) == 1 for p in parties) else ','
-            # We will probably never have more than 1 digit cardinalities
-            # but who knows...
-            i_divider = '' if all(len(i) == 1 for i in inputs)  else ','
-            o_divider  = '' if all(len(o) == 1 for o in outputs) else ','
-            
-            name = ( 'p_{' + p_divider.join(parties) + '}' + 
-              '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')'
-                    )
-            
-            return sympy.Symbol(name, commutative=True)
-        
-        if (self.as_ndarray.shape[0] == 0 and self.as_ndarray.shape[1] != 0):  
-            # If identity monomial. NOTE: I add the second condition in case
-            # the 0 monomial might have shape (0, 0).
-            return 1
-        
+    def to_symbol(self, objective_compatible=False):
         if objective_compatible:
-            # This returns an object that can be plugged into 
-            # self.set_objective() and optimised over
-            # The Monomial class doesn't know 'names', so we can either pass
-            # them as input or deduce them, for now I deduce them,
-            # however it might be costly so I don't know whether to keep
-            # this or not
-            names = {}
-            namefactors = [[l.strip() for l in f[2:-1].split(',')] 
-                                      for f in self.name.split('*')]
-            for farray, fname in zip(self.factors, namefactors):
-                farray = farray.tolist()
-                for p_idx, p_str in zip(farray, fname):
-                    names[p_idx[0]] = p_str[0]
-                
-            prod = 1
-            for l in self.as_ndarray.tolist():
-                prod *= sympy.Symbol(names[l[0]] + '_' +
-                                     '_'.join([str(i) for i in l[1:]]),
-                                     commutative = False)
-            return prod
-        else:         
-            if standard_prob_notation and self.knowability_status == 'Yes':
-                # Convert P[A_x_a, B_y_b, ...] to p_{AB...}(ab...|xy...)
-                return np.prod([to_standardprob(n) 
-                                for n in self.name.split('*')])
-            else:
-                return np.prod([sympy.Symbol(n, commutative=True) 
-                                for n in self.name.split('*')])
-
+            return self.machine_readable_symbol
+        else:
+            return self.symbol
+        # def to_standardprob(f):
+        #     # Each factor is of the form "P[A_x_a, B_y_b, ..., Z_z_z]"
+        #     parties, inputs, outputs = np.array([t.strip().split('_')
+        #                                          for t in f[2:-1].split(',')]
+        #                                         ).T.tolist()
+        #     p_divider = '' if all(len(p) == 1 for p in parties) else ','
+        #     # We will probably never have more than 1 digit cardinalities
+        #     # but who knows...
+        #     i_divider = '' if all(len(i) == 1 for i in inputs) else ','
+        #     o_divider = '' if all(len(o) == 1 for o in outputs) else ','
+        #
+        #     name = ('p_{' + p_divider.join(parties) + '}' +
+        #             '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')'
+        #             )
+        #
+        #     return sympy.Symbol(name, commutative=True)
+        #
+        # if (self.as_ndarray.shape[0] == 0 and self.as_ndarray.shape[1] != 0):
+        #     # If identity monomial. NOTE: I add the second condition in case
+        #     # the 0 monomial might have shape (0, 0).
+        #     return 1
+        #
+        # if objective_compatible:
+        #     # This returns an object that can be plugged into
+        #     # self.set_objective() and optimised over
+        #     # The Monomial class doesn't know 'names', so we can either pass
+        #     # them as input or deduce them, for now I deduce them,
+        #     # however it might be costly, so I don't know whether to keep
+        #     # this or not
+        #     names = {}
+        #     namefactors = [[l.strip() for l in f[2:-1].split(',')]
+        #                    for f in self.name.split('*')]
+        #     for farray, fname in zip(self.factors, namefactors):
+        #         farray = farray.tolist()
+        #         for p_idx, p_str in zip(farray, fname):
+        #             names[p_idx[0]] = p_str[0]
+        #
+        #     prod = 1
+        #     for l in self.as_ndarray.tolist():
+        #         prod *= sympy.Symbol(names[l[0]] + '_' +
+        #                              '_'.join([str(i) for i in l[1:]]),
+        #                              commutative=False)
+        #     return prod
+        # else:
+        #     if standard_prob_notation and self.knowability_status == 'Yes':
+        #         # Convert P[A_x_a, B_y_b, ...] to p_{AB...}(ab...|xy...)
+        #         return np.prod([to_standardprob(n)
+        #                         for n in self.name.split('*')])
+        #     else:
+        #         return np.prod([sympy.Symbol(n, commutative=True)
+        #                         for n in self.name.split('*')])
