@@ -5,7 +5,6 @@ import warnings
 
 from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
                                               to_canonical)
-from causalinflation.quantum.typing import ArrayMonomial, StringMonomial, IntMonomial
 
 
 from collections import defaultdict, deque
@@ -661,7 +660,7 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
     return tuples
 
 
-def is_knowable(monomial: ArrayMonomial,
+def is_knowable(monomial: np.ndarray,
                 hypergraph_scenario: np.ndarray
                 ) -> bool:
     """Determines whether a given atomic monomial (which cannot be factorized
