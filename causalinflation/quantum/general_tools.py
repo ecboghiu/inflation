@@ -2,19 +2,11 @@ import copy
 import numpy as np
 import sympy
 import warnings
-
 from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
                                               to_canonical)
-
-
 from collections import defaultdict, deque
 from itertools import permutations, product
-# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-from ncpol2sdpa import flatten, generate_operators, generate_variables
-from ncpol2sdpa.nc_utils import apply_substitutions
-
 from typing import Dict, List, Tuple, Union, Any, NewType, TypeVar
-
 
 try:
     import numba
@@ -30,10 +22,6 @@ try:
 except ImportError:
     def tqdm(*args, **kwargs):
         return args[0]
-
-# TODO build a proper typing system, maybe use classes?
-
-
 
 def substitute_variable_values_in_monlist(variables_values: np.ndarray,
                                           monomials_factors_reps: np.ndarray,
@@ -106,32 +94,36 @@ def generate_commuting_measurements(party: int,
     return measurements
 
 
-def generate_noncommuting_measurements(party: int,
-                                       label: str
+def generate_noncommuting_measurements(outs_per_input: List[int],
+                                       name: str
                                 ) -> List[List[List[sympy.core.symbol.Symbol]]]:
-    """Generates the list of sympy.core.symbol.Symbol variables representing the measurements
-    for a given party. The variables are treated as non-commuting.
+    """Generates the list of sympy.core.symbol.Symbol variables representing the
+    measurements for a given party. The variables are treated as non-commuting.
+    This code is adapted from ncpol2sdpa. See
+    https://github.com/peterwittek/ncpol2sdpa/
 
     Parameters
     ----------
-    party : int
-        Configuration indicating the configuration of m measurements and
-        d outcomes for each measurement. It is a list with m integers,
-        each of them representing the number of outcomes of the corresponding
-        measurement.
-    label : str
-        Label to represent the given party.
+    outs_per_input : List of int
+        The number of outcomes of each measurement for a given party
+    name : Str
+        The name to be associated to the party
 
     Returns
     -------
-    List[List[List[sympy.core.symbol.Symbol]]]
-        List of measurements.
+    list
+        The list of Sympy operators
     """
-    measurements = []
-    for i, p in enumerate(party):
-        measurements.append(generate_operators(label + '_%s_' % i, p - 1,
-                                               hermitian=True))
-    return measurements
+    ops_per_input = []
+    for x, outs in enumerate(outs_per_input):
+        ops_per_output_per_input = []
+        for o in range(outs):
+            ops_per_output_per_input.append(
+                sympy.Symbol(name + '_' + str(x) + '_' + str(o),
+                             commutative=False)
+            )
+        ops_per_input.append(ops_per_output_per_input)
+    return ops_per_input
 
 def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
                       names: str,
@@ -285,11 +277,7 @@ def apply_source_perm_monomial(monomial: np.ndarray,
 def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
                                          permutation: List[int],
-                                         commuting: bool,
-                                         substitutions: Dict[sympy.core.symbol.Symbol,sympy.core.symbol.Symbol],
-                                         flatmeas: List[sympy.core.symbol.Symbol],
-                                         measnames: List[str],
-                                         names: List[str]
+                                         commuting: bool
                                          ) -> List[sympy.core.symbol.Symbol]:
     """Applies a specific source permutation to the list of operators used to
     define the moment matrix. Outputs the permuted list of operators.
@@ -308,14 +296,6 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
         Permutation of the copies of the specified source.
     commuting : bool
         Whether the operators commute or not.
-    substitutions : Dict[sympy.core.symbol.Symbol, sympy.core.symbol.Symbol]
-        Dictionary of substitutions to be applied to the operators.
-    flatmeas : List[sympy.core.symbol.Symbol]
-        List of measurements in the form of symbolic operators.
-    measnames : List[str]
-        Names of the measurements in `flatmeas`.
-    names : List[str]
-        String names of the parties.
 
     Returns
     -------
@@ -328,40 +308,11 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
         if np.array_equal(monomial, np.array([0])):
             permuted_op_list.append(monomial)
         else:
-            new_factors = copy.deepcopy(monomial)
-            for i in range(len(monomial)):
-                if new_factors[i][1 + source] > 0:
-                    # Python starts counting at 0
-                    new_factors[i][1 + source] = permutation[
-                        new_factors[i][1 + source] - 1] + 1
-                else:
-                    continue
-
-            # There are monomials that can be reordered because of commutations
-            # (examples are operators of a same party with non-overlapping sets
-            # of copy indices). For commuting operators, this can be achieved
-            # by sorting the components. For noncommuting operators, an initial
-            # idea is to factorize the monomial, order the factors and rejoin.
-            # This is achieved with factorize_monomial
-            # NOTE: commuting is a very good attribute for a future SDP class
-            if commuting:
-                canonical = mon_lexsorted(new_factors) #sorted(new_factors)
-            else:
-                n_sources = len(measnames[0].split("_")[1:-2])
-                product = 1
-                for factor in new_factors:
-                    party = factor[0]
-                    name = names[party - 1] + '_'
-                    for s in factor[1:1 + n_sources]:
-                        name += str(s) + '_'
-                    name += str(factor[-2]) + '_' + str(factor[-1])
-                    term = flatmeas[measnames == name][0]
-                    product *= term
-
-                canonical = to_numbers(apply_substitutions(product,
-                                                         substitutions), names)
-
-            permuted_op_list.append(np.array(canonical, dtype=np.uint8))
+            newmon = apply_source_perm_monomial(monomial, source,
+                                                np.array(permutation),
+                                                commuting)
+            canonical = to_canonical(newmon)
+            permuted_op_list.append(canonical)
 
     return permuted_op_list
 
@@ -1674,3 +1625,20 @@ def compute_numeric_value(mon_string: str,
     input_list[dont_marginalize] = inputs
     inputs_outputs   = outputs + input_list.tolist()
     return marginal_dist[tuple(inputs_outputs)]
+
+def flatten(nested):
+    """Keeps flattening a nested lists of lists until the
+    first element of the resulting list is not a list.
+
+    Parameters
+    ----------
+    nested : List of lists of arbitrary depth.
+
+    Returns
+    -------
+    list
+        The flat list of elements
+    """
+    while type(nested[0]) == list:
+        nested = [item for sublist in nested for item in sublist]
+    return nested
