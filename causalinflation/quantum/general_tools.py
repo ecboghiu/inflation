@@ -1546,7 +1546,7 @@ def from_indices_to_operators(monomial_list: List[List[int]],
         product *= flatmeas[measnames == part]
     return product
 
-def clean_coefficients(coefficients: np.array,
+def clean_coefficients(cert: Dict[int, float],
                        chop_tol: float=1e-10,
                        round_decimals: int=3) -> np.array:
     """Clean the list of coefficients in a certificate.
@@ -1567,14 +1567,12 @@ def clean_coefficients(coefficients: np.array,
     numpy.array
       The cleaned-up coefficients.
     """
-    coeffs = copy.deepcopy(coefficients)
-    # Set to zero very small coefficients
-    coeffs[np.abs(coeffs) <= chop_tol] = 0
-    # Take the biggest one and make it 1
-    coeffs /= np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
-    # Round
-    coeffs = np.round(coeffs, decimals=round_decimals)
-    return coeffs
+    max_val = np.abs(np.max(list(cert.values())))
+    for key, val in cert.items():
+        if abs(val) < chop_tol:
+            val = 0
+        cert[key] = np.round(val / max_val, decimals=round_decimals)
+    return cert
 
 def compute_numeric_value(mon_string: str,
                           p_array: np.ndarray,
