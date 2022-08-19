@@ -736,10 +736,14 @@ class InflationSDP(object):
             print('Writing the SDP program to ', filename)
         if extension == 'dat-s':
             write_to_sdpa(self, filename)
-        if extension == 'csv':
+        elif extension == 'csv':
             write_to_csv(self, filename)
         elif extension == 'mat':
             write_to_mat(self, filename)
+        else:
+            raise Exception('File format not supported. Please choose between' +
+                            ' the extensions .csv, .dat-s and .mat.')
+
     def clear_known_values(self) -> None:
         self.known_moments     = {0: 0., 1: 1.}
         self.semiknown_moments = {}
