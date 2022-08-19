@@ -400,6 +400,7 @@ class InflationSDP(object):
                     symmetrized_objective[repr] += sign * coeff
                 else:
                     symmetrized_objective[repr] = sign * coeff
+            #PASS THE SEMIKNOWNS THROUGH THE OBJECTIVE?
             self._objective_as_dict = symmetrized_objective
         else:
             self._objective_as_dict = {1: sign * float(objective)}
@@ -477,12 +478,13 @@ class InflationSDP(object):
                              + "variables is not yet supported, so the variable"
                              + " will be treated as unknown.")
         if self.objective != 0:
-            self._update_objective()    #PASS THE SEMIKNOWNS THROUGH THE OBJECTIVE?
 
     def solve(self, interpreter: str='MOSEKFusion',
                     feas_as_optim: bool=False,
                     dualise: bool=True,
                     solverparameters=None):
+            self.set_objective(self.objective,
+                               'max' if self.maximize else 'min')
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
@@ -1344,12 +1346,6 @@ class InflationSDP(object):
             if all(factor_is_positive):
                 ispositive[i+self._n_known, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
-
-    def _update_objective(self):
-        for key, val in self.known_moments.items():
-            if (key > 1) and (key in self._objective_as_dict.keys()):
-                self._objective_as_dict[1] += self._objective_as_dict[key] * val
-                del self._objective_as_dict[key]
 
     def _dump_to_file(self, filename):
         """
