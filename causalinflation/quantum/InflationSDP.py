@@ -553,7 +553,6 @@ class InflationSDP(object):
             self.dual_certificate = np.array(list(zip([0]+list(coeffs.values()),
                                                       clean_names)),
                                              dtype=object)
-            self.dual_certificate_lowerbound = 0
 
     def certificate_as_probs(self, clean: bool=False,
                              chop_tol: float=1e-10,
