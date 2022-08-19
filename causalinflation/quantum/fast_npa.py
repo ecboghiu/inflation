@@ -197,6 +197,25 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=True, cache=cache)
+def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool:
+    """Check if two monomials are equal. This is just a numba-ified version of
+    numpy.array_equal.
+
+    Parameters
+    ----------
+    mon1 : np.ndarray
+        First monomial as a 2d array.
+    mon2 : np.ndarray
+        Second monomial as a 2d array.
+    Returns
+    -------
+    bool
+        True if the two monomials are equal, False otherwise.
+    """
+    return np.array_equal(mon1, mon2)
+
+
+@jit(nopython=True, cache=cache)
 def mon_is_zero(mon: np.ndarray) -> bool_:
     """Function which checks if there is a product of two orthogonal projectors,
     and returns True if so.
@@ -222,20 +241,15 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
         prev_row = row
     return False
 
-#@jit(nopython=True, cache=cache)
-def to_name(monomial_numbers: np.ndarray,
-            parties_names: np.ndarray
-            ) -> str:
-    """Converts the 2d array representation of a monoial to a string.
-
-    _extended_summary_
+def to_name(monomial: np.ndarray, names: List[str]) -> str:
+    """Converts the 2d array representation of a monomial to a string.
 
     Parameters
     ----------
-    monomial_numbers : np.ndarray
-        Input monomial as 2d array.
-    parties_names : np.ndarray
-        Array of strings representing the parties.
+    monomial : np.ndarray
+        Monomial in matrix format.
+    names : List[str]
+        List of party names.
 
     Returns
     -------
@@ -248,21 +262,13 @@ def to_name(monomial_numbers: np.ndarray,
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
 
-    # Numba version is 2x slower than without!! Probably not optimized for
-    # strings. But we need it to be able to call to_name within a numba
-    # function
-    if type(monomial_numbers) != np.ndarray:
-        monomial_numbers = np.array(monomial_numbers)
-    if type(parties_names) != np.ndarray:
-        parties_names = np.array(parties_names)
+    if mon_equal_mon(monomial, np.array([0])):
+        return '1'
 
-     #np.zeros(monomial_numbers.shape[0], dtype=numba.types.unicode_type)
-    components = ['']*monomial_numbers.shape[0]
-    for i, monomial in enumerate(monomial_numbers):
-        arr1 = [parties_names[monomial[0] - 1]]
-        arr2 = [str(i) for i in monomial[1:]]
-        components[i] = '_'.join(arr1 + arr2)
-    return '*'.join(components)
+    # It is faster to convert to list of lists than to loop through numpy arrays
+    monomial = monomial.tolist()
+    return '*'.join(['_'.join([names[letter[0]-1]]+[str(i) for i in letter[1:]])
+                     for letter in monomial])
 
 
 @jit(nopython=True, cache=cache)

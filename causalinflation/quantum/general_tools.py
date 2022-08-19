@@ -3,7 +3,7 @@ import numpy as np
 import sympy
 import warnings
 from causalinflation.quantum.fast_npa import (mon_lessthan_mon, mon_lexsorted,
-                                              to_canonical)
+                                              to_canonical, to_name)
 from collections import defaultdict, deque
 from itertools import permutations, product
 from typing import Dict, List, Tuple, Union, Any, NewType, TypeVar
@@ -554,35 +554,6 @@ def to_numbers(monomial: str,
                    + [int(atoms[-2]), int(atoms[-1])])
         monomial_parts_indices.append(indices)
     return monomial_parts_indices
-
-
-def to_name(monomial_numbers: List[List[int]],
-            parties_names: List[str]
-            ) -> str:
-    """Go from lists of numbers to string representation.
-
-    Comments: this is much quicker (10x) if monomial_numbers is a list of
-    lists than if it a np.array (At least with the current implementation)!
-    Around 3-4 microsecs and more than 10 microsecs if input is np.array.
-
-    Parameters
-    ----------
-    monomial_numbers : np.ndarray
-        Monomial in matrix format.
-    parties_names : List[str]
-        List of party names.
-
-    Returns
-    -------
-    str
-        String representation of the input.
-    """
-
-    components = []
-    for monomial in monomial_numbers:
-        components.append('_'.join([parties_names[monomial[0] - 1]] # party idx
-                                   + [str(i) for i in monomial[1:]])) # x a
-    return '*'.join(components)
 
 
 def from_numbers_to_flat_tuples(lista: List[List[int]]
