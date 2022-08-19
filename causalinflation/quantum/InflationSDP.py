@@ -455,7 +455,8 @@ class InflationSDP(object):
         if not only_specified_values:
             # Assign numerical values to products of known atoms
             for var, monomial_factors in self.semiknowable_atoms:
-                numeric_factors = np.array([values.get(factor, factor)
+                numeric_factors = np.array([self.known_moments.get(factor,
+                                                                   factor)
                                             for factor in monomial_factors],
                                            dtype=object)
                 if all(numeric_factors <= 1.):
