@@ -13,14 +13,14 @@ class TestGeneratingMonomials(unittest.TestCase):
     blilocal_names = ["v1", "v2", "v3"]
     inflation  = [2, 2]
     bilocality = InflationProblem(dag=bilocalDAG,
-                                  names=blilocal_names,
+                                  order=blilocal_names,
                                   settings_per_party=[1, 1, 1],
                                   outcomes_per_party=[2, 2, 2],
                                   inflation_level_per_source=inflation)
     bilocalSDP           = InflationSDP(bilocality)
     bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
     test_substitutions_scenario = InflationProblem(bilocalDAG,
-                                                   names=blilocal_names,
+                                                   order=blilocal_names,
                                                    settings_per_party=[1, 2, 2],
                                                    outcomes_per_party=[3, 2, 3],
                                                    inflation_level_per_source=inflation)
@@ -88,8 +88,7 @@ class TestGeneratingMonomials(unittest.TestCase):
         oneParty = InflationSDP(InflationProblem(dag={"h": ["v"]},
                                                  outcomes_per_party=[2],
                                                  settings_per_party=[2],
-                                                 inflation_level_per_source=[1],
-                                                 names=["v"]))
+                                                 inflation_level_per_source=[1]))
         _, columns = oneParty.build_columns([[], [0, 0]],
                                             return_columns_numerical=True)
         truth   = [[0],
@@ -206,7 +205,6 @@ class TestGeneratingMonomials(unittest.TestCase):
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
-                                                 names=('v'),
                                                  outcomes_per_party=[2],
                                                  settings_per_party=[2],
                                                  inflation_level_per_source=[2]
@@ -252,14 +250,14 @@ class TestSDPOutput(unittest.TestCase):
     cutInflation = InflationProblem({"lambda": ["A", "B"],
                                      "mu": ["B", "C"],
                                      "sigma": ["A", "C"]},
-                                     names=['A', 'B', 'C'],
+                                     order=['A', 'B', 'C'],
                                      outcomes_per_party=[2, 2, 2],
                                      settings_per_party=[1, 1, 1],
                                      inflation_level_per_source=[2, 1, 1])
 
     def test_CHSH(self):
         bellScenario = InflationProblem({"lambda": ["A", "B"]},
-                                         names=("A", "B"),
+                                         order=("A", "B"),
                                          outcomes_per_party=[2, 2],
                                          settings_per_party=[2, 2],
                                          inflation_level_per_source=[1])
@@ -316,8 +314,8 @@ class TestSDPOutput(unittest.TestCase):
         #                  (0.5+1e-2) / 2 + (0.5-1e-2) / 8,
         #                  "Setting the distribution is failing")
         known_value = (0.5+1e-2) / 2 + (0.5-1e-2) / 8
-        print("Known value: ", known_value)
-        print(sdp.known_moments_name_dict)
+        # print("Known value: ", known_value)
+        # print(sdp.known_moments_name_dict)
         self.assertIn(known_value,
                         sdp.known_moments_name_dict.values(),
                          "Setting the distribution is failing")
@@ -333,8 +331,8 @@ class TestSDPOutput(unittest.TestCase):
         #                  (0.5-1e-4) / 2 + (0.5+1e-4) / 8,
         #                  "Re-setting the distribution is failing")
         known_value = (0.5 - 1e-4) / 2 + (0.5 + 1e-4) / 8
-        print("Known value: ", known_value)
-        print(sdp.known_moments_name_dict)
+        # print("Known value: ", known_value)
+        # print(sdp.known_moments_name_dict)
         self.assertIn(known_value,
                         sdp.known_moments_name_dict.values(),
                          "Setting the distribution is failing")
@@ -381,7 +379,7 @@ class TestSDPOutput(unittest.TestCase):
                                     outcomes_per_party=[2, 2, 2],
                                     settings_per_party=[1, 1, 1],
                                     inflation_level_per_source=[3, 3, 3],
-                                    names=('A', 'B', 'C')),
+                                    order=('A', 'B', 'C')),
                             commuting=False)
         cols = [np.array([0]),
                 np.array([[1, 1, 0, 1, 0, 0]]),
