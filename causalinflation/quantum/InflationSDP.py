@@ -478,13 +478,14 @@ class InflationSDP(object):
                              + "variables is not yet supported, so the variable"
                              + " will be treated as unknown.")
         if self.objective != 0:
-
-    def solve(self, interpreter: str='MOSEKFusion',
-                    feas_as_optim: bool=False,
-                    dualise: bool=True,
-                    solverparameters=None):
             self.set_objective(self.objective,
                                'max' if self.maximize else 'min')
+
+    def solve(self,
+              interpreter: str='MOSEKFusion',
+              feas_as_optim: bool=False,
+              dualise: bool=True,
+              solverparameters=None):
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
