@@ -1130,8 +1130,7 @@ class InflationSDP(object):
 
         inflevel  = self.InflationProblem.inflation_level_per_source
         n_sources = len(inflevel)
-        # Start with the identity permutation
-        inflation_symmetries = [list(range(len(self.generating_monomials)))]
+        inflation_symmetries = []
 
         # TODO do this function without relying on symbolic substitutions!!
         flatmeas  = np.array(flatten(self.measurements))
