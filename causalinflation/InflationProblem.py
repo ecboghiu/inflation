@@ -62,7 +62,7 @@ class InflationProblem(object):
             assert (len(implicit_names_as_set) == self.nr_parties), "DAG has a different number of outcome-associated variables than" \
                                                                     "were given by the user-specified cardinalities."
             if order:
-                sanity_check = (implicit_names_as_set.issubset(order) and implicit_names_as_set.issubset(order))
+                sanity_check = (implicit_names_as_set.issubset(order) and implicit_names_as_set.issuperset(order))
                 if sanity_check:
                     self.names = order
                     names_have_been_set_yet = True
