@@ -740,6 +740,9 @@ class InflationSDP(object):
             write_to_csv(self, filename)
         elif extension == 'mat':
             write_to_mat(self, filename)
+    def clear_known_values(self) -> None:
+        self.known_moments     = {0: 0., 1: 1.}
+        self.semiknown_moments = {}
 
     def build_columns(self, column_specification, max_monomial_length: int = 0,
                       return_columns_numerical: bool = False) -> None:
