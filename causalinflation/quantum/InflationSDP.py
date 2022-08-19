@@ -27,9 +27,9 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
                                             compute_numeric_value)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
-                                              to_canonical,
                                               dot_mon, mon_is_zero, mon_lexsorted,
                                               remove_projector_squares,
+                                              to_canonical, to_name)
 from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
                                                 solveSDP_MosekFUSION2)
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
