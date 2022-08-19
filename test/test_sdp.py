@@ -280,6 +280,17 @@ class TestSDPOutput(unittest.TestCase):
                         f"The SDP is not recovering max(CHSH) = {biased_chsh} "
                         + "when the single-party marginals are biased towards "
                         + str(bias))
+        bias = 1/4
+        biased_chsh = 2.55890
+        sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
+                        'A_1_1_0': bias,           # Variable for p(a=0|x=1)
+                        meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
+                        5: bias                    # Variable for p(b=0|y=1)
+                        })
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
+                        f"The SDP is not re-setting the objective correctly "
+                        + "after re-setting known values.")
 
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
