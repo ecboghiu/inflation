@@ -406,7 +406,8 @@ class InflationSDP(object):
             self._objective_as_dict = {1: sign * float(objective)}
 
     def set_values(self,
-                   values: Dict[Union[sp.core.symbol.Symbol, int, str], float],
+                   values: Dict[Union[sp.core.symbol.Symbol, sp.core.mul.Mul,
+                                      int, str], float],
                    use_lpi_constraints: bool = False,
                    only_specified_values: bool = False,
                    ) -> None:
@@ -436,8 +437,7 @@ class InflationSDP(object):
         for key, val in values.items():
             if type(key) == int:
                 self.known_moments[key] = val
-            elif any([type(key) == sp.core.symbol.Symbol,
-                      type(key) == str]):
+            elif type(key) in [str, sp.core.mul.Mul, sp.core.symbol.Symbol]:
                 try:
                     key_int = names_to_vars[str(key)]
                     self.known_moments[key_int] = val
