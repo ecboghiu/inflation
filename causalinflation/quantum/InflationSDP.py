@@ -28,9 +28,8 @@ from causalinflation.quantum.general_tools import (to_name, to_representative,
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
                                               to_canonical,
+                                              dot_mon, mon_is_zero, mon_lexsorted,
                                               remove_projector_squares,
-                                              mon_lexsorted,
-                                              mon_is_zero)
 from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
                                                 solveSDP_MosekFUSION2)
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
@@ -544,43 +543,34 @@ class InflationSDP(object):
             self.primal_objective = lambdaval
             self.objective_value  = lambdaval * (1 if self.maximize else -1)
 
-        # Process the dual certificate in a generic form
-        if self.status in ['feasible', 'infeasible']:
-            coeffs      = self.solution_object['dual_certificate']
-            names       = [self.monomials_list[idx-2,1] for idx in coeffs.keys()
-                            if idx > 1]    # We'd probably want this cleaner
-            clean_names = np.concatenate((['0', '1'], names))
-            self.dual_certificate = np.array(list(zip([0]+list(coeffs.values()),
-                                                      clean_names)),
-                                             dtype=object)
-
-    def certificate_as_probs(self, clean: bool=False,
-                             chop_tol: float=1e-10,
-                             round_decimals: int=3) -> sp.core.symbol.Symbol:
-        """Give certificate as symbolic sum of probabilities that is greater
-        than or equal to 0.
+    def certificate_as_string(self,
+                               clean: bool=False,
+                               chop_tol: float=1e-10,
+                               round_decimals: int=3) -> sp.core.add.Add:
+        """Give the certificate as a string with the notation of the operators
+        in the moment matrix.
 
         Parameters
         ----------
         clean : bool, optional
             If true, eliminate all coefficients that are smaller
             than 'chop_tol' and round to the number of decimals specified
-            `round_decimals`. Defaults to True.
+            `round_decimals`, by default False.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero. Defaults to 1e-8.
+            set to zero, by default 1e-8.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number
-            of decimals specified. Defaults to 3.
+            of decimals specified, by default 3.
 
         Returns
         -------
-        sympy.core.symbol.Symbol
-            The certificate in terms or probabilities and marginals.
+        sympy.core.add.Add
+            The certificate in terms of symbols representing the monomials in
+            the moment matrix. The certificate of infeasibility is cert > 0.
         """
         try:
-            coeffs = self.dual_certificate[:, 0].astype(float)
-            names  = self.dual_certificate[:, 1]
+            dual = self.solution_object['dual_certificate']
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
@@ -588,41 +578,77 @@ class InflationSDP(object):
             warn("Beware that, because the problem contains linearized " +
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions")
-        # C: why did I write this??
-        # names can still contain duplicated names, so we need to remove them
-        # new_dual_certificate = {tuple(name): 0 for name in names}
-        # for i, name in enumerate(names):
-        #     new_dual_certificate[tuple(name)] += coeffs[i]
-        # coeffs = np.array(list(new_dual_certificate.values()))
-        # names = list(new_dual_certificate.keys())
 
-        if clean and not np.allclose(coeffs, 0):
-            coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        # Quickfix to a bug introduced in some committ, we need this for the
-        # certificates
-        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
-        names_factorised = []
-        for mon in names[2:]:
-            factors = factorize_monomial(to_numbers(mon, self.names))
-            factors_name = [to_name(factor, self.names) for factor in factors]
-            names_factorised.append(factors_name)
-        names = names[:2].tolist() + names_factorised
+        vars_to_names = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
+        cert = str(dual[1])
+        for var, coeff in dual.items():
+            if var > 1:
+                cert += "+" if coeff > 0 else "-"
+                cert += f"{abs(coeff)}*{vars_to_names[var]}"
+        cert += " >= 0"
+        return cert
 
-        polynomial = 0
-        for i, row in enumerate(names):
-            asprobs = [string2prob(
-                term, self.InflationProblem.nr_parties) for term in row]
-            monomial = sp.S.One
-            for prob in asprobs:
-                monomial *= prob
-            monomial *= coeffs[i]
-            polynomial += monomial
-        return polynomial
+    def certificate_as_probs(self,
+                             clean: bool=False,
+                             chop_tol: float=1e-10,
+                             round_decimals: int=3) -> sp.core.add.Add:
+        """Give certificate as symbolic sum of probabilities. The certificate
+        of incompatibility is cert >= 0.
+
+        Parameters
+        ----------
+        clean : bool, optional
+            If true, eliminate all coefficients that are smaller
+            than 'chop_tol' and round to the number of decimals specified
+            `round_decimals`, by default False.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero, by default 1e-8.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number
+            of decimals specified, by default 3.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the certificate in terms or probabilities and
+            marginals. The certificate of incompatibility is cert >= 0.
+        """
+        try:
+            dual = self.solution_object['dual_certificate']
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call 'InflationSDP.solve()' first")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions")
+
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
+
+        vars_to_factors = dict(self.semiknowable_atoms)
+        vars_to_names   = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
+        cert = dual[1]
+        for var, coeff in dual.items():
+            if var > 1:
+                try:
+                    factors = 1
+                    for factor in vars_to_factors[var]:
+                        prob = string2prob(vars_to_names[factor],
+                                           self.nr_parties)
+                        factors *= prob
+                    cert += coeff * factors
+                except KeyError:
+                    cert += coeff * sp.Symbol(vars_to_names[var])
+        return cert
 
     def certificate_as_objective(self, clean: bool=False,
                                  chop_tol: float=1e-10,
-                                 round_decimals: int=3) -> sp.core.symbol.Symbol:
+                                 round_decimals: int=3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of operators that can be used
         as an objective function to optimse.
 
@@ -631,90 +657,21 @@ class InflationSDP(object):
         clean : bool, optional
             If true, eliminate all coefficients that are smaller
             than 'chop_tol', normalise and round to the number of decimals
-            specified `round_decimals`. Defaults to True.
+            specified `round_decimals`, by default False.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero. Defaults to 1e-8.
+            set to zero, by default 1e-8.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number
-            of decimals specified. Defaults to 3.
+            of decimals specified, by default 3.
 
         Returns
         -------
-        sympy.core.symbol.Symbol
+        sympy.core.add.Add
             The certificate as an objective function.
         """
         try:
-            coeffs = self.dual_certificate[:, 0].astype(float)
-            names = self.dual_certificate[:, 1]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve()' first")
-        if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions")
-        if clean and not np.allclose(coeffs, 0):
-            coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
-
-        # Quickfix to a bug introduced in some committ, we need this for the
-        # certificates
-        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
-        names_factorised = []
-        for mon in names[2:]:
-            factors = factorize_monomial(to_numbers(mon, self.names))
-            factors_name = [to_name(factor, self.names) for factor in factors]
-            names_factorised.append(factors_name)
-        names = names[:2].tolist() + names_factorised
-
-        polynomial = 0
-        for i, row in enumerate(names):
-            monomial = sp.S.One
-            for name in row:
-                if name == '1':
-                    monomial = sp.S.One
-                elif name == '0':
-                    monomial = sp.S.Zero
-                else:
-                    letters = name.split('*')
-                    for letter in letters:
-                        op = sp.Symbol(letter, commutative=False)
-                        monomial *= op
-            monomial *= coeffs[i]
-            polynomial += monomial
-        return polynomial
-
-    def certificate_as_correlators(self,
-                                   clean: bool=False,
-                                   chop_tol: float=1e-10,
-                                   round_decimals: int=3) -> sp.core.symbol.Symbol:
-        """Give certificate as symbolic sum of 2-output correlators that
-        is greater than or equal to 0. Only valid for 2-output problems.
-
-        Parameters
-        ----------
-        clean : bool, optional
-            If true, eliminate all coefficients that are smaller
-            than 'chop_tol', normalise and round to the number of decimals
-            specified `round_decimals`. Defaults to True.
-        chop_tol : float, optional
-            Coefficients in the dual certificate smaller in absolute value are
-            set to zero. Defaults to 1e-8.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are rounded to the number
-            of decimals specified. Defaults to 3.
-
-        Returns
-        -------
-        sympy.core.symbol.Symbol
-            The certificate in terms of correlators.
-        """
-        if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
-            raise Exception("Correlator certificates are only available " +
-                            "for 2-output problems")
-        try:
-            coeffs = self.dual_certificate[:, 0].astype(float)
-            names  = self.dual_certificate[:, 1]
+            dual = self.solution_object['dual_certificate']
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
@@ -723,60 +680,37 @@ class InflationSDP(object):
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions")
 
-        if clean and not np.allclose(coeffs, 0):
-            coeffs = clean_coefficients(coeffs, chop_tol, round_decimals)
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        # Quickfix to a bug introduced in some committ, we need this for the
-        # certificates
-        from causalinflation.quantum.general_tools import factorize_monomial, to_numbers, to_name
-        names_factorised = []
-        for mon in names[2:]:
-            factors = factorize_monomial(to_numbers(mon, self.names))
-            factors_name = [to_name(factor, self.names) for factor in factors]
-            names_factorised.append(factors_name)
-        names = names[:2].tolist() + names_factorised
+        cert = dual[1]
+        for var, coeff in dual.items():
+            if var > 1:
+                # Find position of the first appearance of the variable
+                i, j = np.array(np.where(self.momentmatrix == var))[:,0]
+                m1 = self.generating_monomials[i] if i > 0 else np.array([[0]])
+                m2 = self.generating_monomials[j] if j > 0 else np.array([[0]])
 
-        polynomial = 0
-        for i, row in enumerate(names):
-            poly1 = sp.S.One
-            if row[0] != '1' and row[0] != '0':
-                for name in row:
-                    factors = name.split('*')
-                    #correlator = '\langle '
-
-                    aux_prod = sp.S.One
-                    for factor_name in factors:
-                        simbolo = sp.Symbol(factor_name[0]+'_{'+factor_name[-3]+'}', commuting=True)
-                        projector = sp.Rational(1, 2)*(sp.S.One - simbolo)
-                        aux_prod *= projector
-                    aux_prod = sp.expand(aux_prod)
-                    # Now take products and make them a single variable to make them 'sticking togetther' easier
-                    suma = 0
-                    for var, coeff in aux_prod.as_coefficients_dict().items():
-                        if var == sp.S.One:
-                            expected_value = sp.S.One
-                        else:
-                            if str(var)[-3:-1] == '**':
-                                base, exp = var.as_base_exp()
-                                auxname = '<' + ''.join(str(base).split('*')) + '>'
-                                auxname = '\langle ' + ''.join(str(base).split('*')) + ' \\rangle'
-                                base = sp.Symbol(auxname, commutative=True)
-                                expected_value = base ** exp
-                            else:
-                                auxname = '<'+ ''.join(str(var).split('*')) + '>'
-                                auxname = '\langle ' + ' '.join(str(var).split('*')) + ' \\rangle'
-                                expected_value = sp.Symbol(auxname, commutative=True)
-                        suma += coeff*expected_value
-                    poly1 *= suma
+                # Create the monomial
+                monom  = dot_mon(m1, m2)
+                if self.commuting:
+                    canonical = remove_projector_squares(mon_lexsorted(monom))
+                    if mon_is_zero(canonical):
+                        canonical = 0
                 else:
-                    if row[0] == '1':
-                        poly1 = sp.S.One
-                    elif row[0] == '0':
-                        poly1 = sp.S.Zero
-            polynomial += coeffs[i]*poly1
-
-        return sp.expand(polynomial)
-
+                    canonical = to_canonical(monom)
+                # Generate symbolic representation
+                symb = 1
+                for element in canonical:
+                    party  = element[0] - 1                # Name indices from 0
+                    inf    = np.array(element[1:-2]) - 1   # Name indices from 0
+                    input  = element[-2]
+                    output = element[-1]
+                    inf[inf < 0] = 0             # Negative indices are not used
+                    inf_idx = self.inflation_levels@inf
+                    symb   *= self.measurements[party][inf_idx][input][output]
+                cert += coeff*symb
+        return cert
 
     def write_to_file(self, filename: str):
         """Exports the problem to a file.
