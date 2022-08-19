@@ -67,7 +67,7 @@ class InflationProblem(object):
                     self.names = order
                     names_have_been_set_yet = True
                 else:
-                    warn("Names read from DAG do not match names given as keyword argument. IGNORING user-specified-names.")
+                    warn("Names read from DAG do not match names given as keyword argument. IGNORING user-specified names.")
             if not names_have_been_set_yet:
                 if len(implicit_names_as_set)>1:
                     warn("Order of variables is inferred by the DAG according to lexicographic order.")
@@ -79,7 +79,7 @@ class InflationProblem(object):
                 self.names = order
                 names_have_been_set_yet = True
             else:
-                warn("Number of names does not match the user-specified cardinalities. IGNORING user-specified-names.")
+                warn("Number of names does not match the user-specified cardinalities. IGNORING user-specified names.")
         if not names_have_been_set_yet:
             self.names = [chr(ord('A') + i) for i in range(self.nr_parties)]
 
