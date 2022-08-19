@@ -36,7 +36,7 @@ class InflationProblem(object):
                  outcomes_per_party=tuple(),
                  settings_per_party=tuple(),
                  inflation_level_per_source=tuple(),
-                 names=tuple(),
+                 order=tuple(),
                  verbose=0):
         """Initialize the InflationProblem class.
         """
@@ -52,26 +52,38 @@ class InflationProblem(object):
             self.private_settings_per_party = [1] * self.nr_parties
         else:
             self.private_settings_per_party = settings_per_party
+            assert len(self.private_settings_per_party)==self.nr_parties, "Different numbers of cardinalities specified for inputs versus outputs."
 
 
         #We need to infer the names of the parties. If they are explicitly given, great. Otherwise, use DAG order.
-        if dag:
+        names_have_been_set_yet = False
+        if dag and (not names_have_been_set_yet):
             implicit_names_as_set = set(chain.from_iterable(dag.values()))
-        else:
-            implicit_names_as_set = set()
-        if names:
-            self.names = names
-            if dag:
-                assert len(implicit_names_as_set.intersection(self.names)) == len(implicit_names_as_set), (
-                    "Names read from DAG do not match names given as keyword argument.")
-        elif dag:
-            self.names = sorted(implicit_names_as_set)
-            warn("Assuming cardinalities are given for parties in lexicographical order.")
-        else:
+            assert (len(implicit_names_as_set) == self.nr_parties), "DAG has a different number of outcome-associated variables than" \
+                                                                    "were given by the user-specified cardinalities."
+            if order:
+                sanity_check = (implicit_names_as_set.issubset(order) and implicit_names_as_set.issubset(order))
+                if sanity_check:
+                    self.names = order
+                    names_have_been_set_yet = True
+                else:
+                    warn("Names read from DAG do not match names given as keyword argument. IGNORING user-specified-names.")
+            if not names_have_been_set_yet:
+                if len(implicit_names_as_set)>1:
+                    warn("Order of variables is inferred by the DAG according to lexicographic order.")
+                self.names = sorted(implicit_names_as_set)
+                names_have_been_set_yet = True
+        if order and (not names_have_been_set_yet):
+            sanity_check = (len(order) == self.nr_parties)
+            if sanity_check:
+                self.names = order
+                names_have_been_set_yet = True
+            else:
+                warn("Number of names does not match the user-specified cardinalities. IGNORING user-specified-names.")
+        if not names_have_been_set_yet:
             self.names = [chr(ord('A') + i) for i in range(self.nr_parties)]
-        assert len(self.names) == self.nr_parties, ("The number" +
-                                                    " of parties, as defined by the list of names" +
-                                                    " and the hypergraph, does not coincide")
+
+
 
         if not dag:
             warn("Hypergraph must be a non-empty list of lists. Defaulting to global source.")
