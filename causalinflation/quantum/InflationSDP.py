@@ -60,9 +60,10 @@ class InflationSDP(object):
             * 2: debug level,
         by default 0.
     """
-    def __init__(self, InflationProblem: InflationProblem,
-                       commuting: bool = False,
-                       verbose: int = 0):
+    def __init__(self,
+                 InflationProblem: InflationProblem,
+                 commuting: bool = False,
+                 verbose: int = 0):
         """Constructor for the InflationSDP class.
         """
 
@@ -107,7 +108,8 @@ class InflationSDP(object):
 
         Parameters
 
-        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
+        column_specification : Union[str, List[List[int]],
+                                     List[sympy.core.symbol.Symbol]]
             Describes the generating set of monomials {M_i}_i.
 
             (NOTATION) If we have 2 parties, we denote by {A, B} the set
@@ -133,14 +135,14 @@ class InflationSDP(object):
             while `local1` is {1, A, B, A*B}. Note that terms such as
             A*A are missing as that is more than N=1 measurements per party.
 
-            * `(str) 'physicalN'`: The subset of local level N with only all commuting operators.
-            We only consider commutation coming from having different supports.
-            `N` cannot be greater than the smallest number of copies of a source
-            in the inflated graph. For example, in the bilocal scenario
-            A-source-B-source-C with 2 outputs and no inputs, `physical2` only
-            gives 5 possibilities for Bob: {1, B_1_1_0_0, B_2_2_0_0,
-            B_1_1_0_0*B_2_2_0_0,  B_1_2_0_0*B_2_1_0_0}. There are no other
-            products where all operators commute. The full set of physical
+            * `(str) 'physicalN'`: The subset of local level N with only all
+            commuting operators. We only consider commutation coming from having
+            different supports. `N` cannot be greater than the smallest number
+            of copies of a source in the inflated graph. For example, in the
+            scenario A-source-B-source-C with 2 outputs and no inputs,
+            `physical2` only gives 5 possibilities for Bob: {1, B_1_1_0_0,
+            B_2_2_0_0, B_1_1_0_0*B_2_2_0_0,  B_1_2_0_0*B_2_1_0_0}. There are no
+            other products where all operators commute. The full set of physical
             generating monomials is built by taking the cartesian product
             between all possible physical monomials of each party.
 
@@ -153,10 +155,10 @@ class InflationSDP(object):
             C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as 'npa2' for
             3 parties. [[]] encodes the identity element.
 
-            * `List[sympy.core.symbol.Symbol]`: we can fully specify the generating set by
-            giving a list of symbolic operators built from the measurement
-            operators in `self.measurements`. This list needs to have the
-            identity `sympy.S.One` as the first element.
+            * `List[sympy.core.symbol.Symbol]`: we can fully specify the
+            generating set by giving a list of symbolic operators built from the
+            measurement operators in `self.measurements`. This list needs to
+            have the identity `sympy.S.One` as the first element.
         """
         self.use_lpi_constraints = False
 
@@ -187,7 +189,7 @@ class InflationSDP(object):
         # monomial that is not in the form of the ones found in
         # 'remaining_monomials'. The correct thing to do is to use a function
         # to bring the monomials in the user-inputted objective function
-        # to a canonoical form! But this is not implemented yet.
+        # to a canonical form! But this is not implemented yet.
         symmetric_arr, orbits, remaining_monomials \
                     = self._apply_inflation_symmetries(problem_arr,
                                                        self._monomials_list_all,
@@ -204,9 +206,9 @@ class InflationSDP(object):
                                               disable=not self.verbose,
                                           desc="Computing canonical forms   ")):
             canonical = to_name(to_representative(np.array(mon),
-                                                  self.inflation_levels,
-                                                  self.commuting),
-                                self.names)
+                                      self.inflation_levels,
+                                      self.commuting),
+                    self.names)
             remaining_monomials[idx][1] = canonical
             self._mon_string2int[canonical] = var
 
@@ -291,8 +293,8 @@ class InflationSDP(object):
         # self.known_moments, self._objective_as_dict, etc.
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
-        self.moment_lowerbounds = {physical: 0 for physical 
-                                                    in self.physical_monomials}
+        self.moment_lowerbounds = {physical: 0.
+                                   for physical in self.physical_monomials}
         self.moment_upperbounds = {}
 
         
@@ -318,7 +320,8 @@ class InflationSDP(object):
             will be imposed or not.
         """
         _pdims = len(list(prob_array.shape))
-        assert _pdims % 2 == 0, "The probability distribution must have equal number of inputs and outputs"
+        assert _pdims % 2 == 0, \
+                "The distribution must have equal number of inputs and outputs"
 
         self.use_lpi_constraints = use_lpi_constraints
 
@@ -407,8 +410,8 @@ class InflationSDP(object):
     def set_values(self,
                    values: Dict[Union[sp.core.symbol.Symbol, sp.core.mul.Mul,
                                       int, str], float],
-                   use_lpi_constraints: bool = False,
-                   only_specified_values: bool = False,
+                   use_lpi_constraints:   bool = False,
+                   only_specified_values: bool = False
                    ) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
@@ -501,6 +504,8 @@ class InflationSDP(object):
                 (2) max lambda such that Gamma - lambda*Id >= 0.
             The correspondence is that the result of (2) is positive if (1) is
             feasible and negative otherwise. By default False.
+        dualise : bool, optional
+            Optimize the dual problem (recommended), by default True.
         solverparameters : dict, optional
             Extra parameters to be sent to the solver, by default None.
 
@@ -740,7 +745,10 @@ class InflationSDP(object):
         self.known_moments     = {0: 0., 1: 1.}
         self.semiknown_moments = {}
 
-    def build_columns(self, column_specification, max_monomial_length: int = 0,
+    def build_columns(self,
+                      column_specification: Union[str, List[List[int]],
+                                                  List[sp.core.symbol.Symbol]],
+                      max_monomial_length: int = 0,
                       return_columns_numerical: bool = False) -> None:
         """Process the input for the columns of the SDP relaxation.
 
@@ -760,7 +768,7 @@ class InflationSDP(object):
         columns = None
         if type(column_specification) == list:
             # There are two possibilities: list of lists, or list of symbols
-            if type(column_specification[0]) == list or type(column_specification[0]) == np.ndarray:
+            if type(column_specification[0]) in [list, np.ndarray]:
                 if len(np.array(column_specification[1]).shape) == 2:
                     # If we are here, then the input to build columns is a list
                     # of monomials in array form, so we just return this
@@ -778,9 +786,9 @@ class InflationSDP(object):
                 columns = []
                 for col in column_specification:
                     if col == sp.S.One or col == 1:
-                        columns += [np.array([0],dtype=np.uint8)]
+                        columns += [np.array([0], dtype=np.uint8)]
                     else:
-                        columns += [np.array(to_numbers(str(col), self.names),dtype=np.uint8)]
+                        columns += [np.array(to_numbers(str(col), self.names), dtype=np.uint8)]
         elif type(column_specification) == str:
             if 'npa' in column_specification.lower():
                 npa_level = int(column_specification[3:])
@@ -964,9 +972,6 @@ class InflationSDP(object):
                                 else:
                                     res.append(canon)
 
-        sortd = sorted(res, key=len)
-        return sortd
-
     def _generate_parties(self):
         # TODO: change name to generate_measurements
         """Generates all the party operators and substitution rules in an
@@ -1081,6 +1086,7 @@ class InflationSDP(object):
                                 substitutions[out1*out2] = 0
 
         return measurements, substitutions, parties
+        return sorted(res, key=len)
 
     def _build_momentmatrix(self) -> None:
         """Generate the moment matrix.
@@ -1113,7 +1119,7 @@ class InflationSDP(object):
 
         return problem_arr, monomials_list, vardic
 
-    def _calculate_inflation_symmetries(self) -> List[List]:
+    def _calculate_inflation_symmetries(self) -> List[List[int]]:
         """Calculates all the symmetries and applies them to the set of
         operators used to define the moment matrix. The new set of operators
         is a permutation of the old. The function outputs a list of all
