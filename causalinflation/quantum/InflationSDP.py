@@ -385,10 +385,11 @@ class InflationSDP(object):
                 try:
                     monomial_variable = int(string2int_dict[str(monomial)])
                 except KeyError:
-                    Exception("The objective function contains variables that" +
-                              " are not found in the generated relaxation." +
-                              " Consider adding more monomials to the" +
-                              " generating set.")
+                    Exception(f"The variable {monomial} could not be found in" +
+                              " the generated relaxation. Check" +
+                              " self.monomial_list and input it in the form" +
+                              " that appears there, or consider adding more" +
+                              " monomials to the generating set.")
                 repr = self._var2repr[monomial_variable]
                 # If the objective contains a known value add it to the constant
                 if repr in self.known_moments:
