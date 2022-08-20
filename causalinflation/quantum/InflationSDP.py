@@ -171,7 +171,7 @@ class InflationSDP(object):
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
-        problem_arr, self._monomials_list_all, self._mon_string2int = \
+        momentmatrix, self._monomials_list_all, self._mon_string2int = \
                                                       self._build_momentmatrix()
         if self.verbose > 1:
             print("Number of variables before symmetrization:",
@@ -189,8 +189,8 @@ class InflationSDP(object):
         # 'remaining_monomials'. The correct thing to do is to use a function
         # to bring the monomials in the user-inputted objective function
         # to a canonical form! But this is not implemented yet.
-        symmetric_arr, orbits, remaining_monomials \
-                    = self._apply_inflation_symmetries(problem_arr,
+        self.momentmatrix, orbits, remaining_monomials \
+                    = self._apply_inflation_symmetries(momentmatrix,
                                                        self._monomials_list_all,
                                                        inflation_symmetries)
         # Associate the names of all copies to the same variable
@@ -228,7 +228,6 @@ class InflationSDP(object):
                               for key, val in self._mon_string2int.items()}
 
         # Change objects to new variables
-        self.momentmatrix = symmetric_arr[:, :, 0].astype(int)
         for i, row in enumerate(tqdm(self.momentmatrix,
                                      disable=not self.verbose,
                                      desc="Reassigning moment matrix indices")):
@@ -929,14 +928,7 @@ class InflationSDP(object):
             and the symmetrized monomials list.
         """
 
-        symmetric_arr = momentmatrix.copy()
-        if len(symmetric_arr.shape) == 2:
-            # TODO This is inelegant, remove the index.
-            #  Only here for compatibility reasons
-            aux = np.zeros((symmetric_arr.shape[0], symmetric_arr.shape[1], 2))
-            aux[:, :, 0] = symmetric_arr
-            symmetric_arr = aux.astype(int)
-
+        symmetric_mm      = momentmatrix.copy()
         indices_to_delete = []
         # the +2 is to include 0:0 and 1:1
         orbits = {i: i for i in range(2+len(monomials_list))}
@@ -945,11 +937,10 @@ class InflationSDP(object):
                                 desc="Applying symmetries          "):
             for i, ip in enumerate(permutation):
                 for j, jp in enumerate(permutation):
-                    if symmetric_arr[i, j, 0] < symmetric_arr[ip, jp, 0]:
-                        indices_to_delete.append(int(symmetric_arr[ip, jp, 0]))
-                        orbits[symmetric_arr[ip, jp, 0]
-                               ] = symmetric_arr[i, j, 0]
-                        symmetric_arr[ip, jp, :] = symmetric_arr[i, j, :]
+                    if symmetric_mm[i, j] < symmetric_mm[ip, jp]:
+                        indices_to_delete.append(int(symmetric_mm[ip, jp]))
+                        orbits[symmetric_mm[ip, jp]] = symmetric_mm[i, j]
+                        symmetric_mm[ip, jp]         = symmetric_mm[i, j]
 
         # Make the orbits go until the representative
         for key, val in orbits.items():
@@ -973,7 +964,7 @@ class InflationSDP(object):
                                set(np.array(indices_to_delete)-2))
         remaining_monomials = monomials_list[sorted(list(remaining_variables))]
 
-        return symmetric_arr.astype(int), orbits, remaining_monomials
+        return symmetric_mm.astype(int), orbits, remaining_monomials
 
     def _build_cols_from_col_specs(self, col_specs: List[List[int]]) -> None:
         """This builds the generating set for the moment matrix taking as input
