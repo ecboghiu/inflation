@@ -175,14 +175,6 @@ class InflationSDP(object):
         inflation_symmetries = self._calculate_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix.
-        # TODO: make it so that after this 'monomials_list' is no longer
-        # needed and can be safely deleted. Currently this list can get big
-        # which just occupies needless memory. Also currently its only used
-        # for the objective function, because the user might input some
-        # monomial that is not in the form of the ones found in
-        # 'remaining_monomials'. The correct thing to do is to use a function
-        # to bring the monomials in the user-inputted objective function
-        # to a canonical form! But this is not implemented yet.
         self.momentmatrix, orbits, remaining_monomials \
                     = self._apply_inflation_symmetries(momentmatrix,
                                                        self._monomials_list_all,
