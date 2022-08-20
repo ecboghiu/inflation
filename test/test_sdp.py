@@ -111,8 +111,6 @@ class TestInflation(unittest.TestCase):
                                 commuting=True)
         scenario._generate_parties()
         col_structure = [[], [0, 0]]
-        flatmeas = np.array(flatten(scenario.measurements))
-        measnames = np.array([str(meas) for meas in flatmeas])
 
         # Define moment matrix columns
         _, ordered_cols_num = scenario.build_columns(col_structure,
