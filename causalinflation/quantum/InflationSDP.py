@@ -22,7 +22,6 @@ from causalinflation.quantum.general_tools import (
                                            string2prob, to_numbers,
                                            to_representative)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
-                                              calculate_momentmatrix_commuting,
                                               dot_mon, mon_is_zero,
                                               mon_lexsorted,
                                               remove_projector_squares,
@@ -1040,17 +1039,10 @@ class InflationSDP(object):
         """
         _cols = [np.array(col, dtype=np.uint8)
                     for col in self.generating_monomials]
-        if not self.commuting:
-            problem_mm, vardic = \
-                            calculate_momentmatrix(_cols,
-                                                np.array(self.names),
-                                                verbose=self.verbose)
-        else:
-            problem_mm, vardic = \
-                            calculate_momentmatrix_commuting(_cols,
+        problem_mm, vardic = calculate_momentmatrix(_cols,
                                                     np.array(self.names),
-                                                    verbose=self.verbose)
-        # Remove duplicates in the dictionary of variables
+                                                    self.commuting,
+                                                    self.verbose)
         vardic_clean = {}
         for k, v in vardic.items():
             if v not in vardic_clean:
