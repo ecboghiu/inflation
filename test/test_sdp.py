@@ -101,96 +101,6 @@ class TestGeneratingMonomials(unittest.TestCase):
                          str(len(columns)) + " columns but " + str(truth) +
                          " were expected")
 
-    def test_nc_substitutions(self):
-        settings = [1, 2, 2]
-        outcomes = [3, 2, 3]
-        scenario = InflationSDP(self.test_substitutions_scenario)
-
-        meas, subs, _ = scenario._generate_parties()
-
-        true_substitutions = {}
-        for party in meas:
-            # Idempotency
-            true_substitutions = {**true_substitutions,
-                                  **{op**2: op for op in flatten(party)}}
-            # Orthogonality
-            for inflation in party:
-                for measurement in inflation:
-                    for out1 in measurement:
-                        for out2 in measurement:
-                            if out1 == out2:
-                                true_substitutions[out1*out2] = out1
-                            else:
-                                true_substitutions[out1*out2] = 0
-        # Commutation of different parties
-        for A in flatten(meas[0]):
-            for B in flatten(meas[1]):
-                true_substitutions[B*A] = A*B
-            for C in flatten(meas[2]):
-                true_substitutions[C*A] = A*C
-        for B in flatten(meas[1]):
-            for C in flatten(meas[2]):
-                true_substitutions[C*B] = B*C
-        # Commutation of operators for nonoverlapping copies
-        # Party A
-        for copy1 in flatten(meas[0][0]):
-            for copy2 in flatten(meas[0][1]):
-                true_substitutions[copy2*copy1] = copy1*copy2
-        # Party B, copies 11 and 22
-        for copy1 in flatten(meas[1][0]):
-            for copy2 in flatten(meas[1][3]):
-                true_substitutions[copy2*copy1] = copy1*copy2
-        # Party B, copies 12 and 21
-        for copy1 in flatten(meas[1][1]):
-            for copy2 in flatten(meas[1][2]):
-                true_substitutions[copy2*copy1] = copy1*copy2
-        # Party C
-        for copy1 in flatten(meas[2][0]):
-            for copy2 in flatten(meas[2][1]):
-                true_substitutions[copy2*copy1] = copy1*copy2
-
-        self.assertDictEqual(subs, true_substitutions)
-
-
-    def test_c_substitutions(self):
-        scenario = InflationSDP(self.test_substitutions_scenario,
-                                commuting=True)
-        meas, subs, _ = scenario._generate_parties()
-
-        true_substitutions = {}
-
-        flatmeas = flatten(meas)
-        for i in range(len(flatmeas)):
-            for j in range(i, len(flatmeas)):
-                m1 = flatmeas[i]
-                m2 = flatmeas[j]
-                if str(m1) > str(m2):
-                    true_substitutions[m1*m2] = m2*m1
-                elif str(m1) < str(m2):
-                    true_substitutions[m2*m1] = m1*m2
-                else:
-                    pass
-        for party in meas:
-            # Idempotency
-            true_substitutions = {**true_substitutions,
-                                  **{op**2: op for op in flatten(party)}}
-            # Orthogonality
-            for inflation in party:
-                for measurement in inflation:
-                    for out1 in measurement:
-                        for out2 in measurement:
-                            if out1 == out2:
-                                true_substitutions[out1*out2] = out1
-                            else:
-                                true_substitutions[out1*out2] = 0
-
-        self.assertEqual(len(subs), len(true_substitutions),
-                         "The number of substitutions is incorrect")
-
-        for k1, v1 in true_substitutions.items():
-            self.assertEqual(subs[k1], v1,
-                             "Substitution for " + str(k1) + " is incorrect")
-
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
@@ -199,9 +109,9 @@ class TestInflation(unittest.TestCase):
                                                  inflation_level_per_source=[2]
                                                  ),
                                 commuting=True)
-        meas, subs, names = scenario._generate_parties()
+        scenario._generate_parties()
         col_structure = [[], [0, 0]]
-        flatmeas = np.array(flatten(meas))
+        flatmeas = np.array(flatten(scenario.measurements))
         measnames = np.array([str(meas) for meas in flatmeas])
 
         # Define moment matrix columns

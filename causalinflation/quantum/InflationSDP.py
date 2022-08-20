@@ -73,8 +73,7 @@ class InflationSDP(object):
         self.names = self.InflationProblem.names
         if self.verbose > 1:
             print(self.InflationProblem)
-        self.measurements, self.substitutions, self.names \
-                                            = self._generate_parties()
+        self._generate_parties()
 
         self.nr_parties = len(self.names)
         self.hypergraph = self.InflationProblem.hypergraph
@@ -904,7 +903,78 @@ class InflationSDP(object):
         else:
             return columns_symbolical
 
-    def _build_cols_from_col_specs(self, col_specs: List[List]) -> None:
+    def _apply_inflation_symmetries(self,
+                                    momentmatrix: np.ndarray,
+                                    monomials_list: np.ndarray,
+                                    inflation_symmetries: List[List[int]]
+                                    ) -> Tuple[np.ndarray,
+                                               Dict[int, int],
+                                               np.ndarray]:
+        """Applies the inflation symmetries to the moment matrix.
+
+        Parameters
+        ----------
+        momentmatrix : np.ndarray
+            The moment matrix.
+        monomials_list : np.ndarray
+            The list of monomials as List[Tuple[int, ArrayMonomial]]
+        inflation_symmetries : List[List[int]]
+
+
+        Returns
+        -------
+        Tuple[np.ndarray, Dict[int, int], np.ndarray]
+            The symmetrized moment matrix, the orbits as a dictionary
+            and the symmetrized monomials list.
+        """
+
+        symmetric_arr = momentmatrix.copy()
+        if len(symmetric_arr.shape) == 2:
+            # TODO This is inelegant, remove the index.
+            #  Only here for compatibility reasons
+            aux = np.zeros((symmetric_arr.shape[0], symmetric_arr.shape[1], 2))
+            aux[:, :, 0] = symmetric_arr
+            symmetric_arr = aux.astype(int)
+
+        indices_to_delete = []
+        # the +2 is to include 0:0 and 1:1
+        orbits = {i: i for i in range(2+len(monomials_list))}
+        for permutation in tqdm(inflation_symmetries,
+                                disable=not self.verbose,
+                                desc="Applying symmetries          "):
+            for i, ip in enumerate(permutation):
+                for j, jp in enumerate(permutation):
+                    if symmetric_arr[i, j, 0] < symmetric_arr[ip, jp, 0]:
+                        indices_to_delete.append(int(symmetric_arr[ip, jp, 0]))
+                        orbits[symmetric_arr[ip, jp, 0]
+                               ] = symmetric_arr[i, j, 0]
+                        symmetric_arr[ip, jp, :] = symmetric_arr[i, j, :]
+
+        # Make the orbits go until the representative
+        for key, val in orbits.items():
+            previous = 0
+            changed = True
+            while changed:
+                try:
+                    val = orbits[val]
+                    if val == previous:
+                        changed = False
+                    else:
+                        previous = val
+                except KeyError:
+                    warn("Your generating set might not have enough" +
+                         "elements to fully impose inflation symmetries.")
+            orbits[key] = val
+
+        # Remove from monomials_list all those that have disappeared. The -2 is
+        # because we are encoding 0 and 1 in two variables that we do not use
+        remaining_variables = (set(range(len(monomials_list))) -
+                               set(np.array(indices_to_delete)-2))
+        remaining_monomials = monomials_list[sorted(list(remaining_variables))]
+
+        return symmetric_arr.astype(int), orbits, remaining_monomials
+
+    def _build_cols_from_col_specs(self, col_specs: List[List[int]]) -> None:
         """This builds the generating set for the moment matrix taking as input
         a block specified only the number of parties, and the party labels.
 
@@ -971,121 +1041,6 @@ class InflationSDP(object):
                                     res.append(np.array([0]))
                                 else:
                                     res.append(canon)
-
-    def _generate_parties(self):
-        # TODO: change name to generate_measurements
-        """Generates all the party operators and substitution rules in an
-        quantum inflation setup on a network given by a hypergraph. It uses
-        information stored in the `InflationSDP` instance.
-
-        It stores in `self.measurements` a list of lists of measurement
-        operators indexed as self.measurements[p][c][i][o] for party p,
-        copies c, input i, output o.
-
-        It stores in `self.substitutions` a dictionary of substitution rules
-        containing commutation, orthogonality and square constraints.
-        """
-
-        hypergraph = self.InflationProblem.hypergraph
-        settings   = self.InflationProblem.settings_per_party
-        outcomes   = self.InflationProblem.outcomes_per_party
-        inflation_level_per_source = self.InflationProblem.inflation_level_per_source
-        commuting = self.commuting
-
-        assert len(settings) == len(
-            outcomes), 'There\'s a different number of settings and outcomes'
-        assert len(
-            settings) == hypergraph.shape[1], 'The hypergraph does not have as many columns as parties'
-        substitutions = {}
-        measurements = []
-        # [chr(i) for i in range(ord('A'), ord('A') + hypergraph.shape[1])]
-        parties = self.names
-        n_states = hypergraph.shape[0]
-        for pos, [party, ins, outs] in enumerate(zip(parties, settings, outcomes)):
-            party_meas = []
-            # Generate all possible copy indices for a party
-            # party_states = sum(hypergraph[:, pos])
-            # all_inflation_indices = itertools.product(range(inflation_level), repeat=party_states)
-            all_inflation_indices = itertools.product(
-                                *[list(range(inflation_level_per_source[p_idx]))
-                                 for p_idx in np.nonzero(hypergraph[:, pos])[0]])
-            # Include zeros in the positions corresponding to states not feeding the party
-            all_indices = []
-            for inflation_indices in all_inflation_indices:
-                indices = []
-                i = 0
-                for idx in range(n_states):
-                    if hypergraph[idx, pos] == 0:
-                        indices.append('0')
-                    elif hypergraph[idx, pos] == 1:
-                        # The +1 is just to begin at 1
-                        indices.append(str(inflation_indices[i] + 1))
-                        i += 1
-                    else:
-                        raise Exception('You don\'t have a proper hypergraph')
-                all_indices.append(indices)
-
-            # Generate measurements for every combination of indices. The two
-            # outcome case is handled separately for having the same format always
-            for indices in all_indices:
-                meas = generate_noncommuting_measurements(
-                                                 [outs - 1 for _ in range(ins)],   # -1 because of normalization
-                                                 party + '_' + '_'.join(indices)
-                                                          )
-                party_meas.append(meas)
-            measurements.append(party_meas)
-
-        substitutions = {}
-        if commuting:
-            flatmeas = flatten(measurements)
-            for i in range(len(flatmeas)):
-                for j in range(i, len(flatmeas)):
-                    m1 = flatmeas[i]
-                    m2 = flatmeas[j]
-                    if str(m1) > str(m2):
-                        substitutions[m1*m2] = m2*m1
-                    elif str(m1) < str(m2):
-                        substitutions[m2*m1] = m1*m2
-                    else:
-                        pass
-        else:
-            # Commutation of different parties
-            for i in range(len(parties)):
-                for j in range(len(parties)):
-                    if i > j:
-                        for op1 in flatten(measurements[i]):
-                            for op2 in flatten(measurements[j]):
-                                substitutions[op1*op2] = op2*op1
-            # Operators for a same party with non-overlapping copy indices commute
-            for party, inf_measurements in enumerate(measurements):
-                sources = hypergraph[:, party].astype(bool)
-                inflation_indices = [np.compress(sources,
-                                                 str(flatten(inf_copy)[0]
-                                                     ).split('_')[1:-2]
-                                                 ).astype(int)
-                                     for inf_copy in inf_measurements]
-                for ii, first_copy in enumerate(inf_measurements):
-                    for jj, second_copy in enumerate(inf_measurements):
-                        if ((jj > ii) and
-                            (all(inflation_indices[ii] != inflation_indices[jj]))):
-                            for op1, op2 in itertools.product(flatten(first_copy),
-                                                              flatten(second_copy)):
-                                substitutions[op2 * op1] = op1 * op2
-        for party in measurements:
-            # Idempotency
-            substitutions = {**substitutions,
-                             **{op**2: op for op in flatten(party)}}
-            # Orthogonality
-            for inf_copy in party:
-                for measurement in inf_copy:
-                    for out1 in measurement:
-                        for out2 in measurement:
-                            if out1 == out2:
-                                substitutions[out1*out2] = out1
-                            else:
-                                substitutions[out1*out2] = 0
-
-        return measurements, substitutions, parties
         return sorted(res, key=len)
 
     def _build_momentmatrix(self) -> None:
@@ -1174,74 +1129,58 @@ class InflationSDP(object):
 
         return inflation_symmetries
 
-    def _apply_inflation_symmetries(self,
-                                    momentmatrix: np.ndarray,
-                                    monomials_list: np.ndarray,
-                                    inflation_symmetries: List[List[int]]
-                                    ) -> Tuple[np.ndarray, Dict[int, int], np.ndarray]:
-        """Applies the inflation symmetries to the moment matrix.
+    def _generate_parties(self):
+        """Generates all the party operators in the quantum inflation.
 
-        Parameters
-        ----------
-        momentmatrix : np.ndarray
-            The moment matrix.
-        monomials_list : np.ndarray
-            The list of monomials as List[Tuple[int, ArrayMonomial]]
-        inflation_symmetries : List[List[int]]
-
-
-        Returns
-        -------
-        Tuple[np.ndarray, Dict[int, int], np.ndarray]
-            The symmetrized moment matrix, the orbits as a dictionary
-            and the symmetrized monomials list.
+        It stores in `self.measurements` a list of lists of measurement
+        operators indexed as self.measurements[p][c][i][o] for party p,
+        copies c, input i, output o.
         """
+        hypergraph = self.InflationProblem.hypergraph
+        settings   = self.InflationProblem.settings_per_party
+        outcomes   = self.InflationProblem.outcomes_per_party
+        inflation_level_per_source = self.InflationProblem.inflation_level_per_source
+        commuting = self.commuting
 
-        symmetric_arr = momentmatrix.copy()
-        if len(symmetric_arr.shape) == 2:
-            # TODO This is inelegant, remove the index.
-            #  Only here for compatibility reasons
-            aux = np.zeros((symmetric_arr.shape[0], symmetric_arr.shape[1], 2))
-            aux[:, :, 0] = symmetric_arr
-            symmetric_arr = aux.astype(int)
-
-        indices_to_delete = []
-        # the +2 is to include 0:0 and 1:1
-        orbits = {i: i for i in range(2+len(monomials_list))}
-        for permutation in tqdm(inflation_symmetries,
-                                disable=not self.verbose,
-                                desc="Applying symmetries          "):
-            for i, ip in enumerate(permutation):
-                for j, jp in enumerate(permutation):
-                    if symmetric_arr[i, j, 0] < symmetric_arr[ip, jp, 0]:
-                        indices_to_delete.append(int(symmetric_arr[ip, jp, 0]))
-                        orbits[symmetric_arr[ip, jp, 0]
-                               ] = symmetric_arr[i, j, 0]
-                        symmetric_arr[ip, jp, :] = symmetric_arr[i, j, :]
-
-        # Make the orbits go until the representative
-        for key, val in orbits.items():
-            previous = 0
-            changed = True
-            while changed:
-                try:
-                    val = orbits[val]
-                    if val == previous:
-                        changed = False
+        assert len(settings) == len(outcomes),                                 \
+            'There\'s a different number of settings and outcomes'
+        assert len(settings) == hypergraph.shape[1],                           \
+            'The hypergraph does not have as many columns as parties'
+        measurements = []
+        parties = self.names
+        n_states = hypergraph.shape[0]
+        for pos, [party, ins, outs] in enumerate(zip(parties, settings, outcomes)):
+            party_meas = []
+            # Generate all possible copy indices for a party
+            all_inflation_indices = itertools.product(
+                                *[list(range(inflation_level_per_source[p_idx]))
+                                 for p_idx in np.nonzero(hypergraph[:, pos])[0]])
+            # Include zeros in the positions corresponding to states not feeding the party
+            all_indices = []
+            for inflation_indices in all_inflation_indices:
+                indices = []
+                i = 0
+                for idx in range(n_states):
+                    if hypergraph[idx, pos] == 0:
+                        indices.append('0')
+                    elif hypergraph[idx, pos] == 1:
+                        # The +1 is just to begin at 1
+                        indices.append(str(inflation_indices[i] + 1))
+                        i += 1
                     else:
-                        previous = val
-                except KeyError:
-                    warn("Your generating set might not have enough" +
-                         "elements to fully impose inflation symmetries.")
-            orbits[key] = val
+                        raise Exception('You don\'t have a proper hypergraph')
+                all_indices.append(indices)
 
-        # Remove from monomials_list all those that have disappeared. The -2 is
-        # because we are encoding 0 and 1 in two variables that we do not use
-        remaining_variables = (set(range(len(monomials_list))) -
-                               set(np.array(indices_to_delete)-2))
-        remaining_monomials = monomials_list[sorted(list(remaining_variables))]
-
-        return symmetric_arr.astype(int), orbits, remaining_monomials
+            # Generate measurements for every combination of indices. The two
+            # outcome case is handled separately for having the same format always
+            for indices in all_indices:
+                meas = generate_noncommuting_measurements(
+                                                 [outs - 1 for _ in range(ins)],   # -1 because of normalization
+                                                 party + '_' + '_'.join(indices)
+                                                          )
+                party_meas.append(meas)
+            measurements.append(party_meas)
+        self.measurements = measurements
 
     def _factorize_monomials(self,
                              monomials: np.ndarray,
