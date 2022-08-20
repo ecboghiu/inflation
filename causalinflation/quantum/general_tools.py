@@ -54,15 +54,14 @@ def generate_noncommuting_measurements(outs_per_input: List[int],
         ops_per_input.append(ops_per_output_per_input)
     return ops_per_input
 
-def from_coord_to_sym(ordered_cols_coord: List[List[List[int]]],
-                      names: str,
-                      n_sources: int,
-                      measurements: List[List[List[sympy.core.symbol.Symbol]]]
-                      ) -> List[sympy.core.symbol.Symbol]:
+
+def cols_num2_sym(ordered_cols_coord: List[List[List[int]]],
+                  names: str,
+                  n_sources: int,
+                  measurements: List[List[List[sympy.core.symbol.Symbol]]]
+                  ) -> List[sympy.core.symbol.Symbol]:
     """Go from the output of build_columns to a list of symbolic operators
-
-    TODO: change name to cols_num2sym
-
+    
     Parameters
     ----------
     ordered_cols_coord : List[List[List[int]]]
