@@ -7,10 +7,10 @@ from causalinflation.quantum.general_tools import (
                                            apply_source_permutation_coord_input,
                                            clean_coefficients,
                                            compute_numeric_value,
+                                           cols_num2sym,
                                            factorize_monomials,
                                            find_permutation,
                                            flatten,
-                                           from_coord_to_sym,
                                            from_numbers_to_flat_tuples,
                                            generate_noncommuting_measurements,
                                            is_physical,
@@ -847,7 +847,7 @@ class InflationSDP(object):
             raise Exception('I have not understood the format of the '
                             + 'column specification')
 
-        columns_symbolical = from_coord_to_sym(columns,
+        columns_symbolical = cols_num2sym(columns,
                                                self.names,
                                                self.nr_sources,
                                                self.measurements)
