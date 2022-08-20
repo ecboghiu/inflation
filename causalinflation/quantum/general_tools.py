@@ -55,7 +55,7 @@ def generate_noncommuting_measurements(outs_per_input: List[int],
     return ops_per_input
 
 
-def cols_num2_sym(ordered_cols_coord: List[List[List[int]]],
+def cols_num2sym(ordered_cols_coord: List[List[List[int]]],
                   names: str,
                   n_sources: int,
                   measurements: List[List[List[sympy.core.symbol.Symbol]]]
