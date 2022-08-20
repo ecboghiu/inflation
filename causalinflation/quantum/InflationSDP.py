@@ -1,33 +1,30 @@
-import copy
 import itertools
 import numpy as np
 import sympy as sp
 
 from causalinflation import InflationProblem
-from causalinflation.quantum.general_tools import (to_name, to_representative,
-                                            to_numbers, mul,
-                                            transform_vars_to_symb,
-                                            substitute_variable_values_in_monlist,
-                                            substitute_sym_with_numbers,
-                                            string2prob,
-                                            phys_mon_1_party_of_given_len,
-                                            is_physical,
-                                            label_knowable_and_unknowable,
-                                            monomialset_name2num,
-                                            monomialset_num2name,
-                                            factorize_monomials,
-                                            factorize_monomial,
-                                            find_permutation,
-                                            apply_source_permutation_coord_input,
-                                            from_numbers_to_flat_tuples,
-                                            generate_noncommuting_measurements,
-                                            flatten,
-                                            from_coord_to_sym,
-                                            clean_coefficients,
-                                            compute_numeric_value)
+from causalinflation.quantum.general_tools import (
+                                           apply_source_permutation_coord_input,
+                                           clean_coefficients,
+                                           compute_numeric_value,
+                                           factorize_monomial,
+                                           factorize_monomials,
+                                           find_permutation,
+                                           flatten,
+                                           from_coord_to_sym,
+                                           from_numbers_to_flat_tuples,
+                                           generate_noncommuting_measurements,
+                                           is_physical,
+                                           label_knowable_and_unknowable,
+                                           monomialset_name2num,
+                                           monomialset_num2name,
+                                           phys_mon_1_party_of_given_len,
+                                           string2prob, to_numbers,
+                                           to_representative)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               calculate_momentmatrix_commuting,
-                                              dot_mon, mon_is_zero, mon_lexsorted,
+                                              dot_mon, mon_is_zero,
+                                              mon_lexsorted,
                                               remove_projector_squares,
                                               to_canonical, to_name)
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
@@ -67,21 +64,24 @@ class InflationSDP(object):
         """Constructor for the InflationSDP class.
         """
 
-        self.verbose = verbose
-        self.commuting = commuting
-        self.InflationProblem = InflationProblem
-        self.names = self.InflationProblem.names
+        self.commuting             = commuting
+        self.InflationProblem      = InflationProblem
+        self.verbose               = verbose
+
+        self.hypergraph            = self.InflationProblem.hypergraph
+        self.inflation_levels = self.InflationProblem.inflation_level_per_source
+        self.names                 = self.InflationProblem.names
+        self.nr_parties            = len(self.names)
+        self.nr_sources            = self.InflationProblem.nr_sources
+        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
+        self.setting_cardinalities = self.InflationProblem.settings_per_party
         if self.verbose > 1:
             print(self.InflationProblem)
         self._generate_parties()
 
-        self.nr_parties = len(self.names)
-        self.hypergraph = self.InflationProblem.hypergraph
-        self.inflation_levels = self.InflationProblem.inflation_level_per_source
-        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
-        self.setting_cardinalities = self.InflationProblem.settings_per_party
-        self.maximize = True    # Direction of the optimization
-
+    ########################################################################
+    # PUBLIC ROUTINES EXPOSED TO THE USER                                  #
+    ########################################################################
     def generate_relaxation(self,
                             column_specification:
                                 Union[str,
@@ -127,12 +127,12 @@ class InflationSDP(object):
             B*B*B}. This is known to converge to the quantum set Q for
             N->\infty.
 
-            * `(str) 'localN'`: where N is an integer. This gives a subset of NPA level N+1.
-            Local level N considers monomials that have at most
-            N measurement operators per party. For example, `local1` is a
-            subset of `npa2`; for 2 parties, `npa2` is {1, A, B, A*A, A*B, B*B}
-            while `local1` is {1, A, B, A*B}. Note that terms such as
-            A*A are missing as that is more than N=1 measurements per party.
+            * `(str) 'localN'`: where N is an integer. Local level N considers
+            monomials that have at most N measurement operators per party. For
+            example, `local1` is a subset of `npa2`; for 2 parties, `npa2` is
+            {1, A, B, A*A, A*B, B*B} while `local1` is {1, A, B, A*B}. Note that
+            terms such as A*A are missing as that is more than N=1 measurements
+            per party.
 
             * `(str) 'physicalN'`: The subset of local level N with only all
             commuting operators. We only consider commutation coming from having
@@ -159,13 +159,11 @@ class InflationSDP(object):
             measurement operators in `self.measurements`. This list needs to
             have the identity `sympy.S.One` as the first element.
         """
-        self.use_lpi_constraints = False
-
         # Process the column_specification input and store the result
         # in self.generating_monomials.
         self.generating_monomials_sym, self.generating_monomials = \
                         self.build_columns(column_specification,
-                            return_columns_numerical=True)
+                                           return_columns_numerical=True)
 
         if self.verbose > 0:
             print("Number of columns:", len(self.generating_monomials))
@@ -181,14 +179,6 @@ class InflationSDP(object):
         inflation_symmetries = self._calculate_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix.
-        # TODO: make it so that after this 'monomials_list' is no longer
-        # needed and can be safely deleted. Currently this list can get big
-        # which just occupies needless memory. Also currently its only used
-        # for the objective function, because the user might input some
-        # monomial that is not in the form of the ones found in
-        # 'remaining_monomials'. The correct thing to do is to use a function
-        # to bring the monomials in the user-inputted objective function
-        # to a canonical form! But this is not implemented yet.
         self.momentmatrix, orbits, remaining_monomials \
                     = self._apply_inflation_symmetries(momentmatrix,
                                                        self._monomials_list_all,
@@ -199,23 +189,21 @@ class InflationSDP(object):
 
         # Bring remaining monomials to a representative form, and add the
         # corresponding identifications to the dictionary
-        for idx, [var, mon] in enumerate(tqdm(
-                                       monomialset_name2num(remaining_monomials,
-                                                            self.names),
+        for idx, [var, mon] in enumerate(tqdm(remaining_monomials,
                                               disable=not self.verbose,
-                                          desc="Computing canonical forms   ")):
-            canonical = to_name(to_representative(np.array(mon),
-                                      self.inflation_levels,
-                                      self.commuting),
-                    self.names)
-            remaining_monomials[idx][1] = canonical
-            self._mon_string2int[canonical] = var
+                                         desc="Computing canonical forms    ")):
+            canonical = to_name(
+                            to_representative(
+                                          np.array(to_numbers(mon, self.names)),
+                                              self.inflation_levels,
+                                              self.commuting),
+                                self.names)
+            remaining_monomials[idx][1]     = canonical
+            self._mon_string2int[canonical] = int(var)
 
-        monomials_factors, monomials_unfactorised_reordered \
+        monomials_factors, self.monomials_list \
                             = self._factorize_monomials(remaining_monomials,
                                                         combine_unknowns=True)
-
-        self.monomials_list = monomials_unfactorised_reordered
 
         # Reassign the integer variable names to ordered from 1 to N
         variable_dict = {**{0: 0, 1: 1},
@@ -235,8 +223,10 @@ class InflationSDP(object):
                 self.momentmatrix[i, j] = self._var2repr[col]
 
         for idx in range(len(self.monomials_list)):
-            self.monomials_list[idx, 0] = self._var2repr[self.monomials_list[idx, 0]]
-            monomials_factors[idx, 0]   = self._var2repr[monomials_factors[idx, 0]]
+            self.monomials_list[idx, 0] = \
+                self._var2repr[self.monomials_list[idx, 0]]
+            monomials_factors[idx, 0]   = \
+                self._var2repr[monomials_factors[idx, 0]]
 
         # Find all the positive monomials
         if self.commuting:
@@ -281,31 +271,25 @@ class InflationSDP(object):
                     factor_variables.append(var_idx)
             monomials_factors_vars[idx][1] = factor_variables
         self.semiknowable_atoms = monomials_factors_vars[:self._n_something_known]
-        # Define trivial arrays for distribution and objective
-        self.known_moments      = {0: 0., 1: 1.}
-        self.semiknown_moments  = {}
-        self.objective          = 0.
-        self._objective_as_dict = {1: 0.}
-        
-        # For the bounds, monomials should be hashed in the same way as 
-        # self.known_moments, self._objective_as_dict, etc.
-        self.moment_linear_equalities = []
-        self.moment_linear_inequalities = []
-        self.moment_lowerbounds = {positive: 0.
-                                   for positive in positive_monomials}
-        self.moment_upperbounds = {}
 
-        
+        # Define trivial arrays for values, objective, etc.
+        self.known_moments              = {0: 0., 1: 1.}
+        self.semiknown_moments          = {}
+        self.objective                  = 0.
+        self._objective_as_dict         = {1: 0.}
+        self.use_lpi_constraints        = False
+        self.maximize                   = True
+        self.moment_linear_equalities   = []
+        self.moment_linear_inequalities = []
+        self.moment_lowerbounds         = {positive: 0.
+                                           for positive in positive_monomials}
+        self.moment_upperbounds         = {}
 
     def set_distribution(self,
                          prob_array: np.ndarray,
                          use_lpi_constraints: bool = False) -> None:
-        """Set numerically the knowable moments and semiknowable moments according
-        to the probability distribution specified. If p is None, or the user
-        doesn't pass any argument to set_distribution, then this is understood
-        as a request to delete information about past distributions. If p containts
-        elements that are either None or nan, then this is understood as leaving
-        the corresponding variable free in the SDP approximation.
+        """Set numerically the knowable moments and semiknowable moments
+        according to the probability distribution specified.
         Args:
             prob_array (np.ndarray): Multidimensional array encoding the
             distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
@@ -333,12 +317,11 @@ class InflationSDP(object):
                                    if len(self.semiknowable_atoms[idx][1]) == 1]
         atomic_numerical_values = {var[0]: compute_numeric_value(var[1],
                                                                  prob_array,
-                                                    self.InflationProblem.names)
+                                                                 self.names)
                                    for var in atomic_knowable_variables}
         self.set_values(atomic_numerical_values,
                         self.use_lpi_constraints,
                         only_specified_values=False)
-
 
     def set_objective(self,
                       objective: sp.core.symbol.Symbol,
@@ -372,8 +355,6 @@ class InflationSDP(object):
         self.objective = objective
 
         if (sp.S.One*objective).free_symbols:
-            # Sanitize input: pass through substitutions to get
-            # objects that we have used previously
             objective = sp.expand(objective)
             # Build string-to-variable dictionary
             string2int_dict = {**{'0': '0', '1': '1'},
@@ -538,9 +519,9 @@ class InflationSDP(object):
             self.objective_value  = lambdaval * (1 if self.maximize else -1)
 
     def certificate_as_string(self,
-                               clean: bool=False,
-                               chop_tol: float=1e-10,
-                               round_decimals: int=3) -> sp.core.add.Add:
+                              clean: bool=False,
+                              chop_tol: float=1e-10,
+                              round_decimals: int=3) -> sp.core.add.Add:
         """Give the certificate as a string with the notation of the operators
         in the moment matrix.
 
@@ -830,14 +811,14 @@ class InflationSDP(object):
                                "'physical322'.")
                     assert length == self.nr_parties or length == 1, message
                     if length == 1:
-                        physmon_lens = [inf_level]*self.InflationProblem.nr_sources
+                        physmon_lens = [inf_level]*self.nr_sources
                     else:
                         physmon_lens = [int(inf_level)
                                         for inf_level in column_specification[8:]]
                     max_total_mon_length = sum(physmon_lens)
                 except:
                     # If no numbers come after, by default we use all physical operators
-                    physmon_lens = self.InflationProblem.inflation_level_per_source
+                    physmon_lens = self.inflation_levels
                     max_total_mon_length = sum(physmon_lens)
 
                 if max_monomial_length > 0:
@@ -865,12 +846,12 @@ class InflationSDP(object):
                             if freq > 0:
                                 #template_of_len_party_0 = template_physmon_all_lens[freq-1]
                                 #with_correct_party_idx = physmon_change_party_in_template(template_of_len_party_0, party)
-                                physmons = phys_mon_1_party_of_given_len(self.InflationProblem.hypergraph,
-                                                                         self.InflationProblem.inflation_level_per_source,
+                                physmons = phys_mon_1_party_of_given_len(self.hypergraph,
+                                                                         self.inflation_levels,
                                                                          party, freq,
-                                                                         self.InflationProblem.settings_per_party,
-                                                                         self.InflationProblem.outcomes_per_party,
-                                                                         self.InflationProblem.names)
+                                                                         self.setting_cardinalities,
+                                                                         self.outcome_cardinalities,
+                                                                         self.names)
                                 physmons_per_party_per_length.append(physmons)
 
                         for mon_tuple in itertools.product(*physmons_per_party_per_length):
@@ -893,7 +874,7 @@ class InflationSDP(object):
 
         columns_symbolical = from_coord_to_sym(columns,
                                                self.names,
-                                               self.InflationProblem.nr_sources,
+                                               self.nr_sources,
                                                self.measurements)
 
         if return_columns_numerical:
@@ -901,6 +882,9 @@ class InflationSDP(object):
         else:
             return columns_symbolical
 
+    ########################################################################
+    # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX              #
+    ########################################################################
     def _apply_inflation_symmetries(self,
                                     momentmatrix: np.ndarray,
                                     monomials_list: np.ndarray,
@@ -984,7 +968,6 @@ class InflationSDP(object):
         ----------
         col_specs : List[List[int]]
             The column specification as specified in the method description.
-
         """
 
         if self.verbose > 1:
@@ -1036,7 +1019,6 @@ class InflationSDP(object):
     def _build_momentmatrix(self) -> None:
         """Generate the moment matrix.
         """
-
         _cols = [np.array(col, dtype=np.uint8)
                     for col in self.generating_monomials]
         if not self.commuting:
@@ -1075,15 +1057,9 @@ class InflationSDP(object):
             Returns a list of all permutations of the operators implied by
             the inflation symmetries.
         """
-
-
-        inflevel  = self.InflationProblem.inflation_level_per_source
-        n_sources = len(inflevel)
+        inflevel  = self.inflation_levels
+        n_sources = self.nr_sources
         inflation_symmetries = []
-
-        # TODO do this function without relying on symbolic substitutions!!
-        flatmeas  = np.array(flatten(self.measurements))
-        measnames = np.array([str(meas) for meas in flatmeas])
 
         list_original = from_numbers_to_flat_tuples(self.generating_monomials)
         for source, permutation in tqdm(sorted(
@@ -1113,8 +1089,8 @@ class InflationSDP(object):
                 inflation_symmetries.append(total_perm)
             except:
                 if self.verbose > 0:
-                    warn("The generating set is not closed under source swaps."+
-                         "Some symmetries will not be implemented.")
+                    warn("The generating set is not closed under source " +
+                         "swaps. Some symmetries will not be implemented.")
 
         return inflation_symmetries
 
@@ -1125,34 +1101,31 @@ class InflationSDP(object):
         operators indexed as self.measurements[p][c][i][o] for party p,
         copies c, input i, output o.
         """
-        hypergraph = self.InflationProblem.hypergraph
-        settings   = self.InflationProblem.settings_per_party
-        outcomes   = self.InflationProblem.outcomes_per_party
-        inflation_level_per_source = self.InflationProblem.inflation_level_per_source
-        commuting = self.commuting
+        settings = self.setting_cardinalities
+        outcomes = self.outcome_cardinalities
 
         assert len(settings) == len(outcomes),                                 \
             'There\'s a different number of settings and outcomes'
-        assert len(settings) == hypergraph.shape[1],                           \
+        assert len(settings) == self.hypergraph.shape[1],                      \
             'The hypergraph does not have as many columns as parties'
         measurements = []
-        parties = self.names
-        n_states = hypergraph.shape[0]
+        parties  = self.names
+        n_states = self.hypergraph.shape[0]
         for pos, [party, ins, outs] in enumerate(zip(parties, settings, outcomes)):
             party_meas = []
             # Generate all possible copy indices for a party
             all_inflation_indices = itertools.product(
-                                *[list(range(inflation_level_per_source[p_idx]))
-                                 for p_idx in np.nonzero(hypergraph[:, pos])[0]])
+                                *[list(range(self.inflation_levels[p_idx]))
+                                 for p_idx in np.nonzero(self.hypergraph[:, pos])[0]])
             # Include zeros in the positions corresponding to states not feeding the party
             all_indices = []
             for inflation_indices in all_inflation_indices:
                 indices = []
                 i = 0
                 for idx in range(n_states):
-                    if hypergraph[idx, pos] == 0:
+                    if self.hypergraph[idx, pos] == 0:
                         indices.append('0')
-                    elif hypergraph[idx, pos] == 1:
+                    elif self.hypergraph[idx, pos] == 1:
                         # The +1 is just to begin at 1
                         indices.append(str(inflation_indices[i] + 1))
                         i += 1
@@ -1160,8 +1133,7 @@ class InflationSDP(object):
                         raise Exception('You don\'t have a proper hypergraph')
                 all_indices.append(indices)
 
-            # Generate measurements for every combination of indices. The two
-            # outcome case is handled separately for having the same format always
+            # Generate measurements for every combination of indices.
             for indices in all_indices:
                 meas = generate_noncommuting_measurements(
                                                  [outs - 1 for _ in range(ins)],   # -1 because of normalization
@@ -1171,6 +1143,9 @@ class InflationSDP(object):
             measurements.append(party_meas)
         self.measurements = measurements
 
+    ########################################################################
+    # ROUTINES RELATED TO THE PROCESSING OF MONOMIALS                      #
+    ########################################################################
     def _factorize_monomials(self,
                              monomials: np.ndarray,
                              combine_unknowns: bool=True
@@ -1199,7 +1174,7 @@ class InflationSDP(object):
         monomials_factors_names = monomialset_num2name(
             monomials_factors, self.names)
         is_knowable, factors_are_knowable = label_knowable_and_unknowable(
-                            monomials_factors, self.InflationProblem.hypergraph)
+                            monomials_factors, self.hypergraph)
 
         # Some counting
         self._n_known           = np.sum(is_knowable[:, 1] == 'Yes')
@@ -1271,6 +1246,9 @@ class InflationSDP(object):
                 ispositive[i+self._n_known, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
 
+    ########################################################################
+    # OTHER ROUTINES                                                       #
+    ########################################################################
     def _dump_to_file(self, filename):
         """
         Save the whole object to a file using `pickle`.
