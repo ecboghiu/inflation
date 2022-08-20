@@ -5,9 +5,8 @@ import warnings
 from causalinflation.quantum.fast_npa import (factorize_monomial,
                                               mon_lessthan_mon, mon_lexsorted,
                                               to_canonical, to_name)
-from collections import defaultdict, deque
 from itertools import permutations, product
-from typing import Dict, List, Tuple, Union, Any, NewType, TypeVar
+from typing import Dict, List, Tuple, Union
 
 try:
     import numba
@@ -23,77 +22,6 @@ try:
 except ImportError:
     def tqdm(*args, **kwargs):
         return args[0]
-
-def substitute_variable_values_in_monlist(variables_values: np.ndarray,
-                                          monomials_factors_reps: np.ndarray,
-                                          monomials_factors_names: np.ndarray,
-                                          stop_counting: int,
-                                          ) -> np.ndarray:
-    """Substitues the known monomials with their known numerical value. From
-    this the 'known_moments' and lpi constraints can be extracted for the SDP.
-
-    Parameters
-    ----------
-    variables_values : np.ndarray
-        Array describing the numerical value of known moments.
-    monomials_factors_reps : np.ndarray
-        Monomials factorised, in integer representation.
-    monomials_factors_names : np.ndarray
-        Monomials factorised, in string representation.
-    stop_counting : int
-        Only consider monomials up to this index.
-
-    Returns
-    -------
-    np.ndarray
-        The monomials list with the known monomials substituted
-        with numerical values.
-    """
-
-    vars_numeric_dict = {var: val for var, val in variables_values}
-    monomials_factors_numeric = copy.deepcopy(monomials_factors_reps)
-    for idx, [_, monomial_factors] in enumerate(monomials_factors_numeric):
-        factors_nums_list = []
-        for factor in monomial_factors:
-            try:
-                factors_nums_list.append(vars_numeric_dict[factor])
-            except KeyError:
-                factors_nums_list.append(factor)
-        monomials_factors_numeric[idx][1] = sorted(factors_nums_list)
-
-    final_monomials_list = monomials_factors_numeric + \
-                                monomials_factors_names[stop_counting:].tolist()
-    return final_monomials_list
-
-
-def generate_commuting_measurements(party: int,
-                                    label: str
-                                ) -> List[List[List[sympy.core.symbol.Symbol]]]:
-    """Generates the list of symbolic variables representing the measurements
-    for a given party. The variables are treated as commuting.
-
-    Parameters
-    ----------
-    party : int
-        Configuration indicating the configuration of m measurements and
-        d outcomes for each measurement. It is a list with m integers,
-        each of them representing the number of outcomes of the corresponding
-        measurement.
-    label : str
-        label to represent the given party
-
-    Returns
-    -------
-    List[List[List[sympy.core.symbol.Symbol]]]
-        List of measurements.
-    """
-
-    measurements = []
-    for i, p in enumerate(party):
-        measurements.append(generate_variables(label + '_%s_' % i, p - 1,
-                                               hermitian=True))
-    return measurements
-
 
 def generate_noncommuting_measurements(outs_per_input: List[int],
                                        name: str
@@ -206,35 +134,6 @@ def find_permutation(list1: List,
         return [original_dict[element] for element in list2]
 
 
-def mul(lst: List) -> Any:
-    """Multiply all elements of a list.
-
-    Parameters
-    ----------
-    lst : List
-        Input list with elements that have a supported '*' multiplication.
-
-    Returns
-    -------
-    Any
-        Product of all elements.
-
-    Example
-    -------
-    >>> mul([2, A_1, B_2])
-    2*A_1*B_2
-    """
-
-    if type(lst[0]) == str:
-        result = '*'.join(lst)
-    else:
-        result = 1
-        for element in lst:
-            result *= element
-    return result
-
-
-# @jit(nopython=True)
 def apply_source_perm_monomial(monomial: np.ndarray,
                                          source: int,
                                          permutation: List,
@@ -316,44 +215,6 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
             permuted_op_list.append(canonical)
 
     return permuted_op_list
-
-
-@jit(nopython=True)
-def apply_source_permutation_monomial(monomial: np.ndarray,
-                                      source: int,
-                                      permutation: np.ndarray
-                                      ) -> np.ndarray:
-    """Applies a source permutation to a single monomial.
-
-    SPEED NOTE: if you want to apply a simple source swap as opposed
-    to an arbitrary permutation, use apply_source_swap_monomial instead,
-    as it is 25x faster.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        Input monomial in 2d array format.
-    source : int
-        Source that is being swapped.
-    permutation : np.ndarray
-        Permutation of the copies of the specified source.
-
-    Returns
-    -------
-    np.ndarray
-        Monomial with the specified source permuted.
-    """
-
-    new_factors = monomial.copy()
-    for i in range(len(new_factors)):
-        if new_factors[i, 1 + source] > 0:
-             # Python starts counting at 0
-            new_factors[i, 1 + source] = permutation[
-                                            new_factors[i,1 + source] - 1] + 1
-        else:
-            continue
-
-    return new_factors
 
 
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
@@ -781,56 +642,6 @@ def string2prob(term: str,
         name += i
     name += ')'
     return sympy.symbols(name, commuting=True)
-
-
-def transform_vars_to_symb(variables_to_be_given: List[np.ndarray],
-                           max_nr_of_parties: int = 2
-                           ) -> List[np.ndarray]:
-    """Transforms a list of knowable variables to a list of symbolic
-    probabilities. See Examples.
-
-    TODO: Rewrite using `string2prob`
-
-    Parameters
-    ----------
-    variables_to_be_given : np.ndarray
-        A 2d array of type object
-    max_nr_of_parties : int, optional
-        What is the maximum number of parties. By default 2. If the number of
-        parties is 4, then pABCD(abcd|xyzw) gets simplified to p(abcd|xyzw).
-
-    Returns
-    -------
-    List[List]
-        Same format as input, but string monomials replaced with symbolic
-        probabilities.
-
-    Example
-    -------
-    >>> transform_vars_to_symb([[3, 'B_1_0_1_0_0'],
-                                [6, 'A_1_1_0_1_3*B_1_0_1_2_0']])
-    [[3, pB(0|0)], [6, p(30|12)]]
-    """
-    sym_variables_to_be_given = copy.deepcopy(variables_to_be_given)
-    for idx, [var, term] in enumerate(variables_to_be_given):
-        factors  = term.split('*')
-        nr_terms = len(factors)
-        factors  = np.array([list(factor.split('_')) for factor in factors])
-        parties  = factors[:, 0]
-        inputs   = factors[:, -2]
-        outputs  = factors[:, -1]
-        name = 'p'
-        # Add specification of parties if a marginal probability
-        if len(parties) < max_nr_of_parties:
-            name += ''.join(parties)
-        name += '('
-        name += ''.join(outputs)
-        name += '|'
-        name += ''.join(inputs)
-        name += ')'
-        sym_variables_to_be_given[idx][1] = sympy.symbols(name)
-
-    return sym_variables_to_be_given
 
 
 def substitute_sym_with_value(syminput: sympy.core.symbol.Symbol,
@@ -1293,117 +1104,6 @@ def label_knowable_and_unknowable(monomials_factors: np.ndarray,
         monomial_is_knowable[idx][1] = knowable
     return monomial_is_knowable, factors_are_knowable
 
-
-def substitute_sym_with_numbers(symbolic_variables_to_be_given:
-                                     List[Tuple[int, sympy.core.symbol.Symbol]],
-                                settings_per_party: List[int],
-                                outcomes_per_party: List[int],
-                                p_vector: np.ndarray
-                                ) -> List[Tuple[int, float]]:
-    """Substitute all symbolic variables of the form 'p(ab..|xy..)' with
-    the corresponding value or marginal computed from p_vector.
-
-    _extended_summary_
-
-    Parameters
-    ----------
-    symbolic_variables_to_be_given : List[Tuple[int, sympy.core.symbol.Symbol]]
-        A list of structure [...,[int, symbolic_prob],...]
-    settings_per_party : List[int]
-        Measurement setting cardinality per party.
-    outcomes_per_party : List[int]
-        Measurement output cardinality per party.
-    p_vector : np.ndarray
-        Probability vector indexed ad p[a,b,c,...,x,y,z...]
-
-    Returns
-    -------
-    List[Tuple[int, float]]
-        A nested list of type [..., [int, float], ...] where every
-        symbolic probability in the input is substituted with its numerical
-        value.
-    """
-    variables_values = copy.deepcopy(symbolic_variables_to_be_given)
-    for i in range(len(variables_values)):
-        variables_values[i][1] = float(substitute_sym_with_value(
-                                           symbolic_variables_to_be_given[i][1],
-                                                             settings_per_party,
-                                                             outcomes_per_party,
-                                                             p_vector))
-    return variables_values
-
-
-def canonicalize(list_of_operators: List[List[int]],
-                 measurements: List[List[List[sympy.core.symbol.Symbol]]],
-                 substitutions: Dict,
-                 parties_names: List[str]
-                 ) -> List[List[int]]:
-    """Brings a monomial, written as a list of lists of indices, into canonical
-    form. The canonical form depends on the commuting nature of the operators.
-    If all operators commute, it is a plain lexicographic ordering.
-
-    TODO: WARNING! This function goes through symbolic substitutions. This is slow
-    and will be removed in subsequent versions.
-
-    Parameters
-    ----------
-    list_of_operators : List[List[int]]
-        The input monomial.
-    measurements : List[List[List[sympy.core.symbol.Symbol]]]
-        All the symbolic measurement operators.
-    substitutions : Dict
-        Dictionary of symbolic substitutions to be applied to the monomial.
-    parties_names : List[str]
-        List of party names.
-
-    Returns
-    -------
-    List[List[int]]
-        The monomial in canonical form.
-    """
-
-    operator = from_indices_to_operators(list_of_operators, measurements)[0]
-    adjoint = apply_substitutions(operator.adjoint(), substitutions)
-    canonicalized = operator if str(operator) < str(adjoint) else adjoint
-
-    #flatmeas = np.array(flatten(measurements))
-    #measnames = np.array([str(meas) for meas in flatmeas])
-    #parties_names = sorted(np.unique([str(meas)[0] for meas in flatmeas]))
-    if str(canonicalized) != '0':
-        numbers = np.array(to_numbers(canonicalized, parties_names))
-        # TODO remove to list TODO 2 do this sorting by party somewhere else
-        return numbers[np.argsort(numbers[:, 0], kind='mergesort')].tolist()
-    else:
-        return 0
-
-
-def from_indices_to_operators(monomial_list: List[List[int]],
-                              measurements: List[List[List[sympy.core.symbol.Symbol]]]
-                              ) -> sympy.core.symbol.Symbol:
-    """Transforms a monomial, expressed as a list of lists of indices,
-    into its associated operator.
-
-    Parameters
-    ----------
-    monomial_list : List[List[int]]
-        Input monomal in array form.
-    measurements : List[List[List[sympy.core.symbol.Symbol]]]
-        All the measurement operators.
-
-    Returns
-    -------
-    Symbolic
-        Symbolic monomial.
-    """
-
-    flatmeas = np.array(flatten(measurements))
-    measnames = np.array([str(meas) for meas in flatmeas])
-    parties_names = sorted(np.unique([str(meas)[0] for meas in flatmeas]))
-    name = to_name(monomial_list, parties_names).split('*')
-    product = sympy.S.One
-    for part in name:
-        product *= flatmeas[measnames == part]
-    return product
 
 def clean_coefficients(cert: Dict[int, float],
                        chop_tol: float=1e-10,
