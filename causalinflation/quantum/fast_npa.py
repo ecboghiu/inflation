@@ -19,7 +19,6 @@ except ImportError:
 
 cache = True
 
-
 @jit(nopython=True, cache=cache)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """Output the monomial reversed, which means reverse the row of the 2d
@@ -41,13 +40,12 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     >>> reverse_mon(np.array([[1,...],[4,...],[3,...]]))
     np.array([[3,...],[4,...],[1,...]])
     """
-
     return mon[np.arange(mon.shape[0])[::-1]]
 
 
 @jit(nopython=True, cache=cache)
 def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
-    """Sort by parties the monomial, i.e., sort by the first column in
+    """Sort the monomial by parties, i.e., sort by the first column in
     the 2d representation of the monomial.
 
     Parameters
@@ -64,22 +62,17 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
     --------
     >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
     np.array([[1,...],[3,...],[4,...]])
-
     """
-
     return mon[np.argsort(mon[:, 0], kind='mergesort')]
 
 
 @jit(nopython=True, cache=cache)
-def dot_mon(mon1: np.ndarray,
-            mon2: np.ndarray
-            ) -> np.ndarray:
+def dot_mon(mon1: np.ndarray, mon2: np.ndarray) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
 
     For hermitian operators this is the same as reversed(mon1)*mon2.
     Since all parties commute, the output is ordered by parties. We do
     not assume any other commutation rules.
-
 
     Parameters
     ----------
@@ -99,21 +92,19 @@ def dot_mon(mon1: np.ndarray,
     >>> mon2 = np.array([[7,8,9]])
     >>> dot_mon(mon1, mon2)
     np.array([[4,5,6],[1,2,3],[7,8,9]])
-
     """
-
     if mon1.size <= 1:
         return mon2
     if mon2.size <= 1:
         return mon_sorted_by_parties(reverse_mon(mon1))
     return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)))
 
-#@jit(nopython=True, cache=cache)
+
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray
                       ) -> np.ndarray:
     """A faster implementation of `dot_mon` that assumes that all
-    operators commute. This implies we order everything lexiographically.
+    operators commute. This implies we order everything lexicographically.
 
     Parameters
     ----------
@@ -128,33 +119,23 @@ def dot_mon_commuting(mon1: np.ndarray,
         Returns (mon1)^\dagger*mon2 with the assumption that
         everything commutes with everything.
     """
-
     if mon1.size <= 1:
-        return mon_lexsorted(mon2) # mon2
+        return mon_lexsorted(mon2)
     if mon2.size <= 1:
-        return mon_lexsorted(mon1) #mon_sorted_by_parties(reverse_mon(mon1))
-    # So it seems there is no implementation of lexsort in numba, so for now
-    # we don't use a precompiled function
-    # what we can do is use 'sorted' with the string representation of
-    # the monomials which has a lexicographic ordering or implement a
-    # lexicographic ordering in numba
-    # numba issue: https://github.com/numba/numba/issues/3689
-    mon = np.concatenate((mon1, mon2)) # There is no need to do np.concatenate((reverse_mon(mon1), mon2))
-                                       # here because we sort lexicographically in the end anyway, so
-                                       # reversing the monomial is useless
+        return mon_lexsorted(mon1)
+    mon = np.concatenate((mon1, mon2))
     return mon_lexsorted(mon)
 
 
 def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
-    """Return a monomial sorted lexicographically.
-
-    The sorting keys are as follows. The first key is the parties, the second
-    key is the inflation indices and the last keys are the input and output
-    cardinalities. More informally, once we sorted all the parties together,
-    within a party group we group all operators with the same inflation-copy
-    index for the first source together, and within this group we group all
-    operators with the same inflation-copy index for the second source
-    together and so on until the last keys.
+    """Return a monomial sorted lexicographically. The sorting keys are as
+    follows. The first key is the parties, the second key is the inflation
+    indices and the last keys are the input and output cardinalities. More
+    informally, once we sorted all the parties together, within a party group we
+    group all operators with the same inflation-copy index for the first source
+    together, and within this group we group all operators with the same
+    inflation-copy index for the second source together and so on until the last
+    keys.
 
     Parameters
     ----------
@@ -166,7 +147,6 @@ def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
     np.ndarray
         Sorted monomial.
     """
-
     return mon[np.lexsort(np.rot90(mon))]
 
 
@@ -185,8 +165,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     np.ndarray
         Simplified monomial.
     """
-
-    to_keep = np.array([1]*mon.shape[0], dtype=bool_)  # bool_
+    to_keep = np.array([1]*mon.shape[0], dtype=bool_)
     prev_row = mon[0]
     for i in range(1, mon.shape[0]):
         row = mon[i]
@@ -217,10 +196,8 @@ def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool:
 
 @jit(nopython=True, cache=cache)
 def mon_is_zero(mon: np.ndarray) -> bool_:
-    """Function which checks if there is a product of two orthogonal projectors,
-    and returns True if so.
-
-    _extended_summary_
+    """Check if there is a product of two orthogonal projectors, returning True
+    if so.
 
     Parameters
     ----------
@@ -232,7 +209,6 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     bool
         True if the monomial is zero, False otherwise.
     """
-
     prev_row = mon[0]
     for i in range(1, mon.shape[0]):
         row = mon[i]
@@ -261,7 +237,6 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
     >>> to_name([[1 1,0,3], [4,1,2,6], [2,3,3,4]], ['a','bb','x','Z'])
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
-
     if mon_equal_mon(monomial, np.array([0])):
         return '1'
 
@@ -272,13 +247,9 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
 
 
 @jit(nopython=True, cache=cache)
-def commuting(letter1: np.array,
-              letter2: np.array
-              ) -> bool_:
-    """Determine if two letters/operators commute.
-
-    TODO accept arbitrary commutation rules.
-    Currently this only takes into accounts commutation coming of inflation
+def commuting(letter1: np.array, letter2: np.array) -> bool_:
+    """Determine if two letters/operators commute. Currently this only takes
+    into account commutations coming of inflation
 
     Parameters
     ----------
@@ -298,15 +269,12 @@ def commuting(letter1: np.array,
     >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
     True
 
-    A^11_00 does not commute with A^12_00 as they overlap on source 1.
+    A^11_00 does not commute with A^12_00 since they overlap on source 1.
     >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
     """
 
     if letter1[0] != letter2[0]:
-        # if exactly same support and input, but then different outputs,
-        #  they commute (but the product should be 0 anyway!! so the last
-        #  thing shouldnt be relevant)
         return True
     if np.array_equal(letter1[1:-1], letter2[1:-1]):
         return True
@@ -314,8 +282,8 @@ def commuting(letter1: np.array,
     inf1, inf2 = letter1[1:-2], letter2[1:-2]
     inf1, inf2 = inf1[np.nonzero(inf1)], inf2[np.nonzero(inf2)]
 
-    # if at least one in inf1-inf2 is 0, then there is one source in common
-    # therefore they don't commute.
+    # If at least one in inf1-inf2 is 0, then there is one source in common
+    # and therefore the letters don't commute.
     # If all are 0, then this case is covered in the first conditional,
     # they commute regardless of the value of the output
     return True if np.all(inf1-inf2) else False
@@ -323,7 +291,7 @@ def commuting(letter1: np.array,
 
 @jit(nopython=True, cache=cache)
 def A_lessthan_B(A: np.array, B: np.array) -> bool_:
-    """Compares two letters/measurement operators lexicographically.
+    """Compare two letters/measurement operators lexicographically.
 
     Parameters
     ----------
@@ -337,17 +305,6 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     bool
         True if A is less than B.
     """
-    # if A.size == 0:
-    #     return True
-    # if B.size == 0:
-    #     return False
-    # if A[0] < B[0]:
-    #     return True
-    # if A[0] > B[0]:
-    #     return False
-    # return A_lessthan_B(A[1:], B[1:])
-    # Above is more 'elegant' but im not sure about how efficient recursive
-    # functions are
     for i in range(A.shape[0]):
         if A[i] != B[i]:
             return A[i] < B[i]
@@ -355,14 +312,9 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
 
 
 @jit(nopython=True, cache=cache)
-def mon_lessthan_mon(mon1: np.ndarray,
-                     mon2: np.ndarray
-                     ) -> bool_:
-    """Compares two monomials and returns True if mon1 < mon2 in lexicographic
+def mon_lessthan_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
+    """Compare two monomials and returns True if mon1 < mon2 in lexicographic
     order.
-
-    It flattens then 2D array representing the monomial to and uses
-    the function A_lessthan_B.
 
     Parameters
     ----------
@@ -376,20 +328,13 @@ def mon_lessthan_mon(mon1: np.ndarray,
     bool
         True if mon1 < mon2 in lexicographic order.
     """
-
     return A_lessthan_B(mon1.flatten(), mon2.flatten())
 
 
 @jit(nopython=True, cache=cache)
 def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
-    """Apply substitutions to a monomial.
-
-    Currently it only supports commutations arising from operators having
-    completely different support. It goes in a loop applying the substitutions
-    until it reaches a fixed point, if it finds two letters that commute and
-    are not in lexicographic ordering. This function does a single loop from
-    the first row to the last applying all substitutions along the way and
-    then it returns.
+    """Apply substitutions to a monomial. Currently it only supports
+    commutations arising from operators having completely different support.
 
     Parameters
     ----------
@@ -401,23 +346,16 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     np.ndarray
         Simplified input monomial.
     """
-
     if mon_in.shape[0] == 1:
         return mon_in
     mon = mon_in.copy()
     for i in range(1, mon.shape[0]):
         if not A_lessthan_B(mon[i-1], mon[i]):
             if commuting(mon[i-1], mon[i]):
-                # More elegant but doesn't work with numba
-                #mon[[i-1,i],:] = mon[[i,i-1],:]
                 mon[i-1, :], mon[i, :] = mon[i, :].copy(), mon[i-1, :].copy()
-                # ?? Is it best to stop after one commutation, or just
-                #  keep going until the end of the array?
-                #return mon
     return mon
 
 
-# @jit(nopython=True, cache=cache)
 def to_canonical(mon: np.ndarray) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
 
@@ -432,7 +370,6 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
         Monomial in canonical form w.r.t some lexicographic
         ordering.
     """
-
     prev = mon
     while True:
         mon = nb_apply_substitutions(mon)
@@ -451,7 +388,8 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
 
 def calculate_momentmatrix(cols: List,
                            names: np.ndarray,
-                           verbose: int = 0
+                           commuting: bool=False,
+                           verbose: int=0
                            ) -> Tuple[np.ndarray, Dict]:
     """Calculate the moment matrix.
 
@@ -471,6 +409,8 @@ def calculate_momentmatrix(cols: List,
         List of np.ndarray representing the generating set.
     names : np.ndarray
         The string names of each party.
+    commuting: bool, optional
+        Whether the variables in the problem commute or not, by default False.
     verbose : int, optional
         _description_, by default 0
 
@@ -482,7 +422,10 @@ def calculate_momentmatrix(cols: List,
         mapping from string representation of monomial to integer
         representation.
     """
-
+    if commuting:
+        dot_fn = dot_mon_commuting
+    else:
+        dot_fn = dot_mon
     nrcols = len(cols)
     vardic = {}
     # Emi: so np.array([-1],dtype=np.uint16) evaluates to 65535, can we ensure
@@ -498,17 +441,16 @@ def calculate_momentmatrix(cols: List,
         for j in range(i, nrcols):
             mon1, mon2 = cols[i], cols[j]
             if mon1.size <= 1 and mon2.size <= 1:
-                #print(mon1,mon2)
                 name = ' '
                 vardic[name] = varidx
                 momentmatrix[i, j] = vardic[name]
                 varidx += 1
             else:
-                mon = dot_mon(mon1, mon2)
                 if mon_is_zero(mon):
                     # If sparse, we don't need this, but for readibility...
                     momentmatrix[i, j] = 0
                 else:
+                mon = dot_fn(mon1, mon2)
                     mon  = to_canonical(mon)
                     name = to_name(mon, names)
 
@@ -530,67 +472,6 @@ def calculate_momentmatrix(cols: List,
                         momentmatrix[j, i] = momentmatrix[i, j]
     return momentmatrix, vardic
 
-
-def calculate_momentmatrix_commuting(cols: np.ndarray,
-                                     names: np.ndarray,
-                                     verbose: int = 0
-                                     ) -> np.ndarray:
-    """See description of 'calculate_momentmatrix'. The same, but we further
-    assume everything commutes with everything.
-
-    Parameters
-    ----------
-    cols : np.ndarray
-        List of np.ndarray representing the generating set.
-    names : np.ndarray
-        The string names of each party.
-    verbose : int, optional
-        How descriptive the prints are, by default 0.
-
-    Returns
-    -------
-    Tuple[np.ndarray, Dict]
-        The moment matrix, where each entry (i,j) stores the
-        integer representation of a monomial. The Dict is a a
-        mapping from string representation of monomial to integer
-        representation.
-    """
-    nrcols = len(cols)
-
-    vardic = {}
-    momentmatrix = scipy.sparse.lil_matrix((nrcols, nrcols), dtype=np.uint32)
-    if np.array_equal(cols[0], np.array([0])):
-        # Some function doesnt like [0] and needs [[0]]
-        cols[0] = np.array([cols[0]])
-    iteration = 0
-    varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i in tqdm(range(nrcols), disable=not verbose,
-                  desc="Calculating moment matrix"):
-        for j in range(i, nrcols):
-            mon1, mon2 = cols[i], cols[j]
-            if mon1.size <= 1 and mon2.size <= 1:
-                name = ' '
-                vardic[name] = varidx
-                momentmatrix[i, j] = vardic[name]
-                varidx += 1
-            else:
-                mon = dot_mon_commuting(mon1, mon2)
-                if mon_is_zero(mon):
-                    # If sparse, we don't need this, but for readibility...
-                    momentmatrix[i, j] = 0
-                else:
-                    name = to_name(remove_projector_squares(mon), names)
-                    if name not in vardic:
-                        vardic[name] = varidx
-                        momentmatrix[i, j] = vardic[name]
-                        varidx += 1
-                    else:
-                        momentmatrix[i, j] = vardic[name]
-                    if i != j:
-                        # Assuming a REAL moment matrix!!
-                        momentmatrix[j, i] = momentmatrix[i, j]
-            iteration += 1
-    return momentmatrix, vardic
 
 ################################################################################
 # Had to insert this because of circular imports
