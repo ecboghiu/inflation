@@ -1042,16 +1042,15 @@ class InflationSDP(object):
         _cols = [np.array(col, dtype=np.uint8)
                     for col in self.generating_monomials]
         if not self.commuting:
-            problem_arr, vardic = \
+            problem_mm, vardic = \
                             calculate_momentmatrix(_cols,
                                                 np.array(self.names),
                                                 verbose=self.verbose)
         else:
-            problem_arr, vardic = \
+            problem_mm, vardic = \
                             calculate_momentmatrix_commuting(_cols,
                                                     np.array(self.names),
                                                     verbose=self.verbose)
-
         # Remove duplicates in vardic that have the same index
         vardic_clean = {}
         for k, v in vardic.items():
@@ -1062,9 +1061,9 @@ class InflationSDP(object):
         monomials_list = monomials_list[1:]  # Remove the '1': ' ' row
 
         # TODO change from dense to sparse !! Else useless, but this requires adapting code
-        problem_arr = problem_arr.todense()
+        problem_mm = problem_mm.todense().A
 
-        return problem_arr, monomials_list, vardic
+        return problem_mm, monomials_list, vardic
 
     def _calculate_inflation_symmetries(self) -> List[List[int]]:
         """Calculates all the symmetries and applies them to the set of
