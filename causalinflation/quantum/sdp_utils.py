@@ -180,9 +180,6 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             if var_lowerbounds[x] >= xval:
                 # We warn the user when these are incompatible, but the
                 # program will continue.
-                # TODO Should we remove this check? It is unlikely that
-                # the bounds will be incompatible with fixed values, if the
-                # user uses our program correctly.
                 UserWarning(
                     "Lower bound {} for variable {}".format(var_lowerbounds[x],
                                                             x) +
@@ -268,9 +265,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     # Convert to MOSEK format.
     b = Matrix.sparse(*b.shape, *b.nonzero(), b[b.nonzero()].A[0])
-    # A = Matrix.sparse(*A.shape, *A.nonzero(), A[A.nonzero()].A[0])
     d = Matrix.sparse(*d.shape, *d.nonzero(), d[d.nonzero()].A[0])
-    # C = Matrix.sparse(*C.shape, *C.nonzero(), C[C.nonzero()].A[0])
     F0 = Matrix.sparse(*F0.shape, *F0.nonzero(), F0[F0.nonzero()].A[0])
     for x in variables:
         F = Fi[x]
@@ -502,7 +497,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             print("   Termination code: {0} {1}".format(symname, desc))
         else:
             status_str = 'other'
-            print("Another unexpected problem status {0} is obtained.".format(status))
+            print("Another unexpected problem, status {0}".format(status) +
+                  " has been obtained.")
     except OptimizeError as e:
         print("Optimization failed. Error: {0}".format(e))
         return None, None, None
@@ -518,14 +514,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         # c0
         certificate = {CONSTANT_KEY: objective[CONSTANT_KEY]}
         if constant_objective and feas_as_optim:
-            # For feas as optim we don't need the offset c0
+            # For feasibility as optimization we don't need the offset c0
             certificate[CONSTANT_KEY] = 0
-
         # + Tr Z F0 = \sum_i x_{known i} * F_{known i}
         for x in known_vars:
             support = Fi[x].nonzero()
             certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
-
         # - L · lb
         if var_lowerbounds:
             if solve_dual:
@@ -534,7 +528,6 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 Lvalues = [-c.dual() for c in lb_constraints]
             for i, (x, lb) in enumerate(var_lowerbounds.items()):
                 certificate[CONSTANT_KEY] -= Lvalues[i] * lb
-
         # + U · ub
         if var_upperbounds:
             if solve_dual:
@@ -543,20 +536,16 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 Uvalues = [-c.dual() for c in ub_constraints]
             for i, (x, ub) in enumerate(var_upperbounds.items()):
                 certificate[CONSTANT_KEY] += Uvalues[i] * ub
-
         # + I · b
         if var_inequalities:
             Ivalues = I.level() if solve_dual else -ineq_constraint.dual()
             certificate[CONSTANT_KEY] += Ivalues @ b.getDataAsArray()
-
         # + E · d
         if var_equalities:
             Evalues = E.level() if solve_dual else -eq_constraint.dual()
             certificate[CONSTANT_KEY] += Evalues @ d.getDataAsArray()
 
         # If feasible, make sure the bounds are satisfied.
-        # TODO Maybe remove this check in the future if we find this
-        # error never appears
         if status_str == 'feasible':
             NEGATIVE_TOL = -1e-8 # How tolerant we are with negative values
             try:
@@ -575,7 +564,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                                        d.getDataAsArray(), 0),                 \
                            "Equalities not satisfied by the solution."
             except AssertionError as e:
-                print("Error: The solution does not satisfy some constraints. {}".format(e))
+                print("Error: The solution does not satisfy some constraints." +
+                      "{}".format(e))
                 return None, None, None
 
         vars_of_interest = {'sol': primal, 'G': xmat, 'Z': ymat,
