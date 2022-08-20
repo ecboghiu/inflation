@@ -240,9 +240,9 @@ class InflationSDP(object):
 
         # Find all the positive monomials
         if self.commuting:
-            self.physical_monomials = monomials_factors[:,0]
+            positive_monomials = monomials_factors[:, 0]
         else:
-            self.physical_monomials = self._find_positive_monomials(
+            positive_monomials = self._find_positive_monomials(
                 monomials_factors, sandwich_positivity=True)
 
         if self.verbose > 0:
@@ -250,11 +250,11 @@ class InflationSDP(object):
                     self._n_known, self._n_something_known-self._n_known,
                     self._n_unknown)
             print("Number of positive unknown variables =",
-                  len(self.physical_monomials) - self._n_known)
+                  len(positive_monomials) - self._n_known)
             if self.verbose > 1:
                 print("Positive variables:",
                       [self.monomials_list[phys-2]
-                                           for phys in self.physical_monomials])
+                                           for phys in positive_monomials])
 
         # Store the variables that will be relevant when setting a distribution
         # and into which variables they factorize
@@ -291,8 +291,8 @@ class InflationSDP(object):
         # self.known_moments, self._objective_as_dict, etc.
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
-        self.moment_lowerbounds = {physical: 0.
-                                   for physical in self.physical_monomials}
+        self.moment_lowerbounds = {positive: 0.
+                                   for positive in positive_monomials}
         self.moment_upperbounds = {}
 
         
@@ -507,7 +507,6 @@ class InflationSDP(object):
             Optimize the dual problem (recommended), by default True.
         solverparameters : dict, optional
             Extra parameters to be sent to the solver, by default None.
-
         """
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
@@ -522,7 +521,6 @@ class InflationSDP(object):
                               "objective":        self._objective_as_dict,
                               "known_vars":       self.known_moments,
                               "semiknown_vars":   self.semiknown_moments,
-                              "positive_vars":    self.physical_monomials,
                               "feas_as_optim":    feas_as_optim,
                               "verbose":          self.verbose,
                               "solverparameters": solverparameters,
