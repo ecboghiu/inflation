@@ -434,7 +434,7 @@ class InflationSDP(object):
             or also the variables containing products of the monomials fixed.
         """
         self.use_lpi_constraints = use_lpi_constraints
-        self.known_moments = {0: 0., 1: 1.}
+        self.clear_known_values()
         names_to_vars = dict(self.monomials_list[:, ::-1])
         for key, val in values.items():
             if type(key) == int:
