@@ -30,8 +30,7 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               dot_mon, mon_is_zero, mon_lexsorted,
                                               remove_projector_squares,
                                               to_canonical, to_name)
-from causalinflation.quantum.sdp_utils import (solveSDP_MosekFUSION,
-                                                solveSDP_MosekFUSION2)
+from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 from typing import List, Dict, Union, Tuple
@@ -515,14 +514,6 @@ class InflationSDP(object):
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-        # solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
-        #                       "objective":        self._objective_as_dict,
-        #                       "known_vars":       self.known_moments,
-        #                       "semiknown_vars":   self.semiknown_moments,
-        #                       "positive_vars":    self.physical_monomials,
-        #                       "feas_as_optim":    feas_as_optim,
-        #                       "verbose":          self.verbose,
-        #                       "solverparameters": solverparameters}
         solveSDP_arguments = {"positionsmatrix":  self.momentmatrix,
                               "objective":        self._objective_as_dict,
                               "known_vars":       self.known_moments,
@@ -536,11 +527,8 @@ class InflationSDP(object):
                               "var_equalities":   self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual":       dualise}
-
-        # self.solution_object, lambdaval, self.status = \
-        #                               solveSDP_MosekFUSION(**solveSDP_arguments)
         self.solution_object, lambdaval, self.status = \
-                                    solveSDP_MosekFUSION2(**solveSDP_arguments)
+                                      solveSDP_MosekFUSION(**solveSDP_arguments)
 
         # Process the solution
         if self.status == 'feasible':
