@@ -7,7 +7,6 @@ from causalinflation.quantum.general_tools import (
                                            apply_source_permutation_coord_input,
                                            clean_coefficients,
                                            compute_numeric_value,
-                                           factorize_monomial,
                                            factorize_monomials,
                                            find_permutation,
                                            flatten,
@@ -22,8 +21,8 @@ from causalinflation.quantum.general_tools import (
                                            string2prob, to_numbers,
                                            to_representative)
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
-                                              dot_mon, mon_is_zero,
-                                              mon_lexsorted,
+                                              dot_mon, factorize_monomial,
+                                              mon_is_zero, mon_lexsorted,
                                               remove_projector_squares,
                                               to_canonical, to_name)
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
