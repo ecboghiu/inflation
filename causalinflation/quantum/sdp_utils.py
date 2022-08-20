@@ -6,11 +6,11 @@ from warnings import warn
 
 def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                          objective={1: 0.}, known_vars={0: 0., 1: 1.},
-                         semiknown_vars={}, positive_vars=[],
-                         verbose=0, feas_as_optim=False, solverparameters={},
-                         var_lowerbounds={}, var_upperbounds={},
-                         var_inequalities=[], var_equalities=[],
-                         solve_dual=True) -> Tuple[Dict, float, str]:
+                         semiknown_vars={}, verbose=0, feas_as_optim=False,
+                         solverparameters={}, var_lowerbounds={},
+                         var_upperbounds={}, var_inequalities=[],
+                         var_equalities=[], solve_dual=True
+                         ) -> Tuple[Dict, float, str]:
     """Internal function to solve the SDP with the MOSEK Fusion API.
 
     Now follows an extended description of how the SDP is encoded. In general,
@@ -96,10 +96,6 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     semiknown_vars : dict, optional
         Dictionary encoding proportionality constraints between
         different monomials, by default {}.
-    positive_vars : list, optional
-        List of monomials that are positive, by default []. Internally,
-        for all variables in postive_vars, we override the lower bound
-        to be 0 if it is negative or not set.
     var_lowerbounds : dict, optional
         Dictionary of lower bounds for monomials, by default {}.
     var_upperbounds : dict, optional
@@ -170,14 +166,6 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
         coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
         Fi[x] = coeffmat
-
-    # For positive variables, override the lower bound to be 0 if it is smaller
-    for x in positive_vars:
-        try:
-            if var_lowerbounds[x] < 0:
-                var_lowerbounds[x] = 0
-        except KeyError:
-            var_lowerbounds[x] = 0
 
     # Remove variables that are fixed by known_vars from the list of
     # variables, and also remove the corresponding entries for its upper
