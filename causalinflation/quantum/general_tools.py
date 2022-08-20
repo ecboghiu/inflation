@@ -4,6 +4,7 @@ import sympy
 import warnings
 from causalinflation.quantum.fast_npa import (factorize_monomial,
                                               mon_lessthan_mon, mon_lexsorted,
+                                              nb_first_index, nb_unique,
                                               to_canonical, to_name)
 from itertools import permutations, product
 from typing import Dict, List, Tuple, Union
@@ -11,11 +12,9 @@ from typing import Dict, List, Tuple, Union
 try:
     import numba
     from numba import jit
-    int16_ = numba.int16
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-    int16_ = np.uint16
 
 try:
     from tqdm import tqdm
@@ -701,75 +700,6 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
                                         desc="Factorizing monomials        ")):
         monomials_factors[idx][1] = factorize_monomial(monomial)
     return monomials_factors
-
-
-@jit(nopython=True)
-def nb_first_index(array: np.ndarray,
-                   item: float
-                   ) -> int:
-    """Find the first index of an item in an array.
-
-    Parameters
-    ----------
-    array : np.ndarray
-         The array to search.
-    item : float
-        The item to find.
-
-    Returns
-    -------
-    int
-        The index where the first item is found.
-
-    Examples
-    --------
-    >>> array = np.array([1, 2, 3, 4, 5, 6])
-    >>> nb_first_index(array, 5)
-    4
-    """
-
-    for idx, val in enumerate(array):
-        if abs(val - item) < 1e-10:
-            return idx
-
-
-@jit(nopython=True)
-def nb_unique(arr: np.ndarray
-              ) -> Tuple[np.ndarray, np.ndarray]:
-    """Find the unique elements in an array without sorting
-    and in order of appearance.
-
-    Parameters
-    ----------
-    arr : np.ndarray
-        The array to search.
-
-    Returns
-    -------
-    Tuple[np.ndarray, np.ndarray]
-        The unique values unsorted and their indices.
-
-    Examples
-    --------
-    >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
-    (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
-    """
-
-    # One can use return_index=True with np.unique but I find this incompatible with numba so I do it by hand
-    uniquevals = np.unique(arr)
-    nr_uniquevals = uniquevals.shape[0]
-
-    indices = np.zeros(nr_uniquevals).astype(int16_)
-    for i in range(nr_uniquevals):
-        indices[i] = nb_first_index(arr, uniquevals[i])
-    indices.sort()
-
-    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int16_)
-    for i in range(nr_uniquevals):
-        # Undo the sorting done by np.unique()
-        uniquevals_unsorted[i] = arr[indices[i]]
-
-    return uniquevals_unsorted, indices
 
 
 @jit(nopython=True)
