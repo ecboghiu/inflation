@@ -2,19 +2,13 @@ import copy
 import numpy as np
 import sympy
 import warnings
-from causalinflation.quantum.fast_npa import (factorize_monomial,
+from causalinflation.quantum.fast_npa import (apply_source_swap_monomial,
+                                              factorize_monomial,
                                               mon_lessthan_mon, mon_lexsorted,
                                               nb_first_index, nb_unique,
                                               to_canonical, to_name)
 from itertools import permutations, product
 from typing import Dict, List, Tuple, Union
-
-try:
-    import numba
-    from numba import jit
-except ImportError:
-    def jit(*args, **kwargs):
-        return lambda f: f
 
 try:
     from tqdm import tqdm
@@ -702,54 +696,6 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
     return monomials_factors
 
 
-@jit(nopython=True)
-def apply_source_swap_monomial(monomial: np.ndarray,
-                               source: int,
-                               copy1: int,
-                               copy2: int
-                               ) -> np.ndarray:
-    """Applies a swap of two sources to a monomial.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        2d array representation of a monomial.
-    source : int
-         Integer in values [0, ..., nr_sources]
-    copy1 : int
-        Represents the copy of the source that swaps with copy2
-    copy2 : int
-        Represents the copy of the source that swaps with copy1
-
-    Returns
-    -------
-    np.ndarray
-         The new monomial with swapped sources.
-
-    Examples
-    --------
-    >>> monomial = np.array([[1, 2, 3, 0, 0, 0]])
-    >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
-                                             [2, 1, 3, 0, 0, 0]]),
-                                             1,  # source
-                                             2,  # copy1
-                                             3)  # copy2
-    array([[1, 0, 3, 1, 0, 0],
-           [2, 1, 2, 0, 0, 0]])
-    """
-
-    new_factors = monomial.copy()
-    for i in range(new_factors.shape[0]):
-        copy = new_factors[i, 1 + source]
-        if copy > 0:
-            if copy == copy1:
-                new_factors[i, 1 + source] = copy2
-            elif copy == copy2:
-                new_factors[i, 1 + source] = copy1
-    return new_factors
-
-
-# @jit(nopython=True)
 def to_representative_aux(monomial_component: np.ndarray
                           ) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps

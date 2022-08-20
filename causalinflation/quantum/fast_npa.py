@@ -45,6 +45,52 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     return True
 
 
+@jit(nopython=True)
+def apply_source_swap_monomial(monomial: np.ndarray,
+                               source: int,
+                               copy1: int,
+                               copy2: int
+                               ) -> np.ndarray:
+    """Applies a swap of two sources to a monomial.
+
+    Parameters
+    ----------
+    monomial : np.ndarray
+        2d array representation of a monomial.
+    source : int
+         Integer in values [0, ..., nr_sources]
+    copy1 : int
+        Represents the copy of the source that swaps with copy2
+    copy2 : int
+        Represents the copy of the source that swaps with copy1
+
+    Returns
+    -------
+    np.ndarray
+         The new monomial with swapped sources.
+
+    Examples
+    --------
+    >>> monomial = np.array([[1, 2, 3, 0, 0, 0]])
+    >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
+                                             [2, 1, 3, 0, 0, 0]]),
+                                             1,  # source
+                                             2,  # copy1
+                                             3)  # copy2
+    array([[1, 0, 3, 1, 0, 0],
+           [2, 1, 2, 0, 0, 0]])
+    """
+    new_factors = monomial.copy()
+    for i in range(new_factors.shape[0]):
+        copy = new_factors[i, 1 + source]
+        if copy > 0:
+            if copy == copy1:
+                new_factors[i, 1 + source] = copy2
+            elif copy == copy2:
+                new_factors[i, 1 + source] = copy1
+    return new_factors
+
+
 def calculate_momentmatrix(cols: List,
                            names: np.ndarray,
                            commuting: bool=False,
