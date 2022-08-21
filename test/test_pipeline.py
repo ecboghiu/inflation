@@ -5,7 +5,38 @@ from causalinflation.quantum.general_tools import (flatten,
                                            apply_source_permutation_coord_input)
 from causalinflation import InflationProblem, InflationSDP
 
-class TestGeneratingMonomials(unittest.TestCase):
+class TestLPI(unittest.TestCase):
+     def test_lpi_bounds(self):
+         sdp = InflationSDP(
+                   InflationProblem({"h1": ["a", "b"],
+                                     "h2": ["b", "c"],
+                                     "h3": ["a", "c"]},
+                                     outcomes_per_party=[2, 2, 2],
+                                     settings_per_party=[1, 1, 1],
+                                     inflation_level_per_source=[3, 3, 3]),
+                             commuting=False)
+         cols = [np.array([0]),
+                 np.array([[1, 1, 0, 1, 0, 0]]),
+                 np.array([[2, 2, 1, 0, 0, 0],
+                           [2, 3, 1, 0, 0, 0]]),
+                 np.array([[3, 0, 2, 2, 0, 0],
+                           [3, 0, 3, 2, 0, 0]]),
+                 np.array([[1, 1, 0, 1, 0, 0],
+                           [2, 2, 1, 0, 0, 0],
+                           [2, 3, 1, 0, 0, 0],
+                           [3, 0, 2, 2, 0, 0],
+                           [3, 0, 3, 2, 0, 0]])]
+         sdp.generate_relaxation(cols)
+         sdp.set_distribution(np.ones((2,2,2,1,1,1))/8,
+                              use_lpi_constraints=True)
+
+         self.assertTrue(np.all([abs(val[0]) <= 1.
+                                 for val in sdp.semiknown_moments.values()]),
+                     ("Semiknown moments need to be of the form " +
+                     "mon_index1 = (number<=1) * mon_index2, this is failing."))
+
+
+class TestMonomialGeneration(unittest.TestCase):
     bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
     inflation  = [2, 2]
     bilocality = InflationProblem(dag=bilocalDAG,
@@ -14,10 +45,6 @@ class TestGeneratingMonomials(unittest.TestCase):
                                   inflation_level_per_source=inflation)
     bilocalSDP           = InflationSDP(bilocality)
     bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
-    test_substitutions_scenario = InflationProblem(bilocalDAG,
-                                                   settings_per_party=[1, 2, 2],
-                                                   outcomes_per_party=[3, 2, 3],
-                                                   inflation_level_per_source=inflation)
     # Column structure for the NPA level 2 in a tripartite scenario
     col_structure = [[],
                      [0], [1], [2],
@@ -51,6 +78,15 @@ class TestGeneratingMonomials(unittest.TestCase):
                    B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
                    C_0_1_0_0*C_0_2_0_0]
 
+    def test_generating_columns_c(self):
+       truth = 37
+       columns = self.bilocalSDP_commuting.build_columns(self.col_structure,
+                                                return_columns_numerical=False)
+       self.assertEqual(len(columns), truth,
+                        "With commuting variables, there are  " +
+                        str(len(columns)) + " columns but " + str(truth) +
+                        " were expected.")
+
     def test_generating_columns_nc(self):
         truth = 41
         columns = self.bilocalSDP.build_columns(self.col_structure,
@@ -58,25 +94,25 @@ class TestGeneratingMonomials(unittest.TestCase):
         self.assertEqual(len(columns), truth,
                          "With noncommuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
-                         " were expected")
+                         " were expected.")
 
     def test_generation_from_columns(self):
         columns = self.bilocalSDP.build_columns(self.actual_cols,
                                                 return_columns_numerical=False)
         self.assertEqual(columns, self.actual_cols,
-                         "The direct copying of columns is failing")
+                         "The direct copying of columns is failing.")
 
     def test_generation_from_lol(self):
         columns = self.bilocalSDP.build_columns(self.col_structure,
                                                 return_columns_numerical=False)
         self.assertEqual(columns, self.actual_cols,
-                         "Parsing a list-of-list description of columns fails")
+                         "Parsing a list-of-list description of columns fails.")
 
     def test_generation_from_str(self):
         columns = self.bilocalSDP.build_columns('npa2',
                                                 return_columns_numerical=False)
         self.assertEqual(columns, self.actual_cols,
-                         "Parsing the string description of columns is failing")
+                        "Parsing the string description of columns is failing.")
 
     def test_generate_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
@@ -86,51 +122,15 @@ class TestGeneratingMonomials(unittest.TestCase):
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
         truth = [np.array(mon) for mon in truth]
-        self.assertTrue(len(columns) == len(truth), "The number of columns is incorrect.")
-        areequal = np.all([np.array_equal(columns[i], truth[i]) for i in range(len(columns))])
+        self.assertTrue(len(columns) == len(truth),
+                        "Generating columns with identities is not producing " +
+                        "the correct number of columns.")
+        areequal = np.all([np.array_equal(col, tru)
+                          for col, tru in zip(columns, truth)])
         self.assertTrue(areequal,
-                         "The column generation is not capable of handling " +
-                         "monomials that reduce to the identity")
+                        "The column generation is not capable of handling " +
+                        "monomials that reduce to the identity.")
 
-    def test_generating_columns_c(self):
-        truth = 37
-        columns = self.bilocalSDP_commuting.build_columns(self.col_structure,
-                                                 return_columns_numerical=False)
-        self.assertEqual(len(columns), truth,
-                         "With commuting variables, there are  " +
-                         str(len(columns)) + " columns but " + str(truth) +
-                         " were expected")
-
-class TestInflation(unittest.TestCase):
-    def test_commutations_after_symmetrization(self):
-        scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
-                                                 outcomes_per_party=[2],
-                                                 settings_per_party=[2],
-                                                 inflation_level_per_source=[2]
-                                                 ),
-                                commuting=True)
-        scenario._generate_parties()
-        col_structure = [[], [0, 0]]
-
-        # Define moment matrix columns
-        _, ordered_cols_num = scenario.build_columns(col_structure,
-                                                  return_columns_numerical=True)
-
-        expected = [[0],
-                    [[1, 2, 0, 0], [1, 2, 1, 0]],
-                    [[1, 1, 0, 0], [1, 2, 0, 0]],
-                    [[1, 1, 1, 0], [1, 2, 0, 0]],
-                    [[1, 1, 0, 0], [1, 2, 1, 0]],
-                    [[1, 1, 1, 0], [1, 2, 1, 0]],
-                    [[1, 1, 0, 0], [1, 1, 1, 0]]]
-
-        permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
-                                                             0,
-                                                             (1, 0),
-                                                             False)
-        self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
-                         "The commuting relations of different copies are not "
-                         + "being applied properly after inflation symmetries")
 
 class TestSDPOutput(unittest.TestCase):
     def GHZ(self, v):
@@ -159,11 +159,11 @@ class TestSDPOutput(unittest.TestCase):
         sdp = InflationSDP(bellScenario)
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
-                         "The number of generating columns is not correct")
+                         "The number of generating columns is not correct.")
         self.assertEqual(sdp._n_known, 8,
-                         "The count of knowable moments is wrong")
+                         "The count of knowable moments is wrong.")
         self.assertEqual(sdp._n_unknown, 2,
-                         "The count of unknowable moments is wrong")
+                         "The count of unknowable moments is wrong.")
         meas = sdp.measurements
         A0 = 2*meas[0][0][0][0] - 1
         A1 = 2*meas[0][0][1][0] - 1
@@ -200,96 +200,67 @@ class TestSDPOutput(unittest.TestCase):
                         f"The SDP is not re-setting the objective correctly "
                         + "after re-setting known values.")
 
-    def test_GHZ_NC(self):
-        sdp = InflationSDP(self.cutInflation)
-        sdp.generate_relaxation('local1')
-        self.assertEqual(len(sdp.generating_monomials), 18,
-                         "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_known, 8,
-                         "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknown, 13,
-                         "The count of unknowable moments is wrong")
-
-        sdp.set_distribution(self.GHZ(0.5 + 1e-3))
-        self.assertTrue(np.isclose(sdp.known_moments[9],
-                        (0.5+1e-3)/2 + (0.5-1e-3)/8),
-                        "Setting the distribution is failing")
-        sdp.solve()
-        self.assertEqual(sdp.status, 'infeasible',
-                     "The NC SDP is not identifying incompatible distributions")
-        sdp.solve(feas_as_optim=True)
-        self.assertTrue(sdp.primal_objective <= 0,
-                        "The NC SDP with feasibility as optimization is not " +
-                        "identifying incompatible distributions")
-        sdp.set_distribution(self.GHZ(0.5 - 1e-4))
-        self.assertEqual(sdp.known_moments[9],
-                         (0.5-1e-4)/2 + (0.5+1e-4)/8,
-                         "Re-setting the distribution is failing")
-        sdp.solve()
-        self.assertEqual(sdp.status, 'feasible',
-                       "The NC SDP is not recognizing compatible distributions")
-        sdp.solve(feas_as_optim=True)
-        self.assertTrue(sdp.primal_objective >= 0,
-                        "The NC SDP with feasibility as optimization is not " +
-                        "recognizing compatible distributions")
-
     def test_GHZ_commuting(self):
         sdp = InflationSDP(self.cutInflation, commuting=True)
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
-                         "The number of generating columns is not correct")
+                         "The number of generating columns is not correct.")
         self.assertEqual(sdp._n_known, 8,
-                         "The count of knowable moments is wrong")
+                         "The count of knowable moments is wrong.")
         self.assertEqual(sdp._n_unknown, 11,
-                         "The count of unknowable moments is wrong")
+                         "The count of unknowable moments is wrong.")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
         sdp.solve()
         self.assertEqual(sdp.status, 'infeasible',
-              "The commuting SDP is not identifying incompatible distributions")
+             "The commuting SDP is not identifying incompatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective <= 0,
                         "The commuting SDP with feasibility as optimization " +
-                        "is not identifying incompatible distributions")
+                        "is not identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
         sdp.solve()
         self.assertEqual(sdp.status, 'feasible',
-                "The commuting SDP is not recognizing compatible distributions")
+               "The commuting SDP is not recognizing compatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective >= 0,
                         "The commuting SDP with feasibility as optimization " +
-                        "is not recognizing compatible distributions")
+                        "is not recognizing compatible distributions.")
 
-    def test_lpi_bounds(self):
-        sdp = InflationSDP(
-                  InflationProblem({"h1": ["a", "b"],
-                                    "h2": ["b", "c"],
-                                    "h3": ["a", "c"]},
-                                    outcomes_per_party=[2, 2, 2],
-                                    settings_per_party=[1, 1, 1],
-                                    inflation_level_per_source=[3, 3, 3]),
-                            commuting=False)
-        cols = [np.array([0]),
-                np.array([[1, 1, 0, 1, 0, 0]]),
-                np.array([[2, 2, 1, 0, 0, 0],
-                          [2, 3, 1, 0, 0, 0]]),
-                np.array([[3, 0, 2, 2, 0, 0],
-                          [3, 0, 3, 2, 0, 0]]),
-                np.array([[1, 1, 0, 1, 0, 0],
-                          [2, 2, 1, 0, 0, 0],
-                          [2, 3, 1, 0, 0, 0],
-                          [3, 0, 2, 2, 0, 0],
-                          [3, 0, 3, 2, 0, 0]]),
-        ]
-        sdp.generate_relaxation(cols)
-        sdp.set_distribution(self.GHZ(0.5), use_lpi_constraints=True)
+    def test_GHZ_NC(self):
+        sdp = InflationSDP(self.cutInflation)
+        sdp.generate_relaxation('local1')
+        self.assertEqual(len(sdp.generating_monomials), 18,
+                         "The number of generating columns is not correct.")
+        self.assertEqual(sdp._n_known, 8,
+                         "The count of knowable moments is wrong.")
+        self.assertEqual(sdp._n_unknown, 13,
+                         "The count of unknowable moments is wrong.")
 
-        self.assertTrue(np.all([val[0] <= 1.
-                                for val in sdp.semiknown_moments.values()]),
-                    ("Semiknown moments need to be of the form " +
-                    "mon_index1 = (number<=1) * mon_index2, this is failing"))
+        sdp.set_distribution(self.GHZ(0.5 + 1e-3))
+        self.assertTrue(np.isclose(sdp.known_moments[9],
+                        (0.5+1e-3)/2 + (0.5-1e-3)/8),
+                        "Setting the distribution is failing.")
+        sdp.solve()
+        self.assertEqual(sdp.status, 'infeasible',
+                    "The NC SDP is not identifying incompatible distributions.")
+        sdp.solve(feas_as_optim=True)
+        self.assertTrue(sdp.primal_objective <= 0,
+                        "The NC SDP with feasibility as optimization is not " +
+                        "identifying incompatible distributions.")
+        sdp.set_distribution(self.GHZ(0.5 - 1e-4))
+        self.assertEqual(sdp.known_moments[9],
+                         (0.5-1e-4)/2 + (0.5+1e-4)/8,
+                         "Re-setting the distribution is failing.")
+        sdp.solve()
+        self.assertEqual(sdp.status, 'feasible',
+                      "The NC SDP is not recognizing compatible distributions.")
+        sdp.solve(feas_as_optim=True)
+        self.assertTrue(sdp.primal_objective >= 0,
+                        "The NC SDP with feasibility as optimization is not " +
+                        "recognizing compatible distributions.")
 
-    def test_lpi_output(self):
+    def test_lpi(self):
         sdp = InflationSDP(
                   InflationProblem({"h": ["a"]},
                                     outcomes_per_party=[2],
@@ -305,12 +276,43 @@ class TestSDPOutput(unittest.TestCase):
         sdp.set_objective(A11*A10*A20*A21)
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 0.0918999),
-                        "Optimization of a simple SDP without LPI " +
-                        "constraints is not obtaining the correct known value")
+                        "Optimization of a simple SDP without LPI-like " +
+                        "constraints is not obtaining the correct known value.")
         sdp.set_distribution(np.array([[0.14873, 0.85168]]),
             use_lpi_constraints=True
             )
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 0.0640776),
                         "Optimization of a simple SDP with LPI-like " +
-                        "constraints is not obtaining the correct known value")
+                        "constraints is not obtaining the correct known value.")
+
+
+class TestSymmetries(unittest.TestCase):
+    def test_commutations_after_symmetrization(self):
+        scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
+                                                 outcomes_per_party=[2],
+                                                 settings_per_party=[2],
+                                                 inflation_level_per_source=[2]
+                                                 ),
+                                commuting=True)
+        scenario._generate_parties()
+        col_structure = [[], [0, 0]]
+
+        _, ordered_cols_num = scenario.build_columns(col_structure,
+                                                  return_columns_numerical=True)
+
+        expected = [[0],
+                    [[1, 2, 0, 0], [1, 2, 1, 0]],
+                    [[1, 1, 0, 0], [1, 2, 0, 0]],
+                    [[1, 1, 1, 0], [1, 2, 0, 0]],
+                    [[1, 1, 0, 0], [1, 2, 1, 0]],
+                    [[1, 1, 1, 0], [1, 2, 1, 0]],
+                    [[1, 1, 0, 0], [1, 1, 1, 0]]]
+
+        permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
+                                                             0,
+                                                             (1, 0),
+                                                             False)
+        self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
+                         "The commuting relations of different copies are not "
+                         + "being applied properly after inflation symmetries.")
