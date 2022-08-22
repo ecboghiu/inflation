@@ -794,8 +794,7 @@ class InflationSDP(object):
         
         polynomial = 0
         for mon, coeff in cert.items():
-            polynomial += coeff * mon.to_symbol(objective_compatible=False,
-                                                standard_prob_notation=True)
+            polynomial += coeff * mon.symbol
 
         return sp.expand(polynomial)
     
@@ -842,7 +841,7 @@ class InflationSDP(object):
         
         polynomial = 0
         for mon, coeff in cert.items():
-            polynomial += coeff * mon.to_symbol(objective_compatible=True)
+            polynomial += coeff * mon.machine_readable_symbol
 
         return sp.expand(polynomial)
 
@@ -885,6 +884,7 @@ class InflationSDP(object):
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions")
             
+        names = self.names
 
         mons = [self.name_dict_of_monomials[name] for name in cert.keys()]
         coeffs = np.array(list(cert.values()))
@@ -911,11 +911,16 @@ class InflationSDP(object):
             if mon != CONSTANT_MOMENT:
                 factors = mon.name.split('*')
                 monomial = 1
-                for name in factors:
+                for factor in mon.factors:
+                    factor = factor.tolist()
                     # Each factor is of the form "P[A_x_a, B_y_b, ..., Z_z_z]"
-                    parties, inputs, _ = np.array([t.strip().split('_') 
-                                                   for t in name[2:-1].split(',')]
-                                                  ).T.tolist()
+                    # parties, inputs, _ = np.array([t.strip().split('_') 
+                    #                                for t in name[2:-1].split(',')]
+                    #                               ).T.tolist()
+                    parties, inputs = [], []
+                    for l in factor:
+                        parties.append(names[l[0] - 1])
+                        inputs.append(str(l[-2]))
 
                     aux_prod = 1
                     for p, x in zip(parties, inputs):
