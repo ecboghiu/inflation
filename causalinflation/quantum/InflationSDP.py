@@ -336,36 +336,55 @@ class InflationSDP(object):
                  "constrain the optimization to distributions with fixed " +
                  "marginals.")
 
-        self.objective = objective
+        self.objective = sp.expand(objective)
 
         if (sp.S.One*objective).free_symbols:
-            objective = sp.expand(objective)
-            # Build string-to-variable dictionary
-            string2int_dict = {**{'0': '0', '1': '1'},
-                               **dict(self._monomials_list_all[:, ::-1])}
             # Express objective in terms of representatives
             symmetrized_objective = {1: 0.}
-            for monomial, coeff in objective.as_coefficients_dict().items():
-                try:
-                    monomial_variable = int(string2int_dict[str(monomial)])
-                except KeyError:
-                    Exception(f"The variable {monomial} could not be found in" +
-                              " the generated relaxation. Check" +
-                              " self.monomial_list and input it in the form" +
-                              " that appears there, or consider adding more" +
-                              " monomials to the generating set.")
-                repr = self._var2repr[monomial_variable]
-                # If the objective contains a known value add it to the constant
-                if repr in self.known_moments:
-                    warn("Be aware that you have variables in the objective " +
-                      "that are also known moments fixed by your distribution.")
-                    symmetrized_objective[1] += \
-                                            sign*coeff*self.known_moments[repr]
-
-                elif repr in symmetrized_objective.keys():
-                    symmetrized_objective[repr] += sign * coeff
+            for monom, coeff in self.objective.as_coefficients_dict().items():
+                if monom == sp.S.One:
+                    symmetrized_objective[1] += coeff
                 else:
-                    symmetrized_objective[repr] = sign * coeff
+                    # Sanitize input by moving monomials to canonical form
+                    monom_num       = to_numbers(str(monom), self.names)
+                    monom_canonical = to_canonical(np.array(monom_num))
+                    if not np.array_equal(monom_canonical, 0):
+                        try:
+                            repr = self._mon2indx[to_name(monom_canonical,
+                                                          self.names)]
+                        except KeyError:
+                            # If monomial is not found in the moment matrix,
+                            # look at whether its representative is
+                            monom_rep = to_representative(monom_canonical,
+                                                          self.inflation_levels,
+                                                          self.commuting)
+                            try:
+                                repr = self._mon2indx[to_name(monom_rep,
+                                                              self.names)]
+                            except KeyError:
+                                raise Exception(f"The variable {monom} could " +
+                                    "not be found in the generated relaxation."
+                                    + " Check self.monomial_list and input it" +
+                                    " in the form that appears there, or " +
+                                    "consider adding more monomials to the " +
+                                    "generating set.")
+                    else:
+                        if self.verbose > 0:
+                            warn(f"The variable {monom} in the objective " +
+                                 "function simplifies to 0 with the current " +
+                                 "substitution rules.")
+
+                    if repr in self.known_moments:
+                        warn("Be aware that you have variables in the " +
+                             "objective that are also known moments fixed " +
+                             "by the distribution specified.")
+                        symmetrized_objective[1] += \
+                                             sign*coeff*self.known_moments[repr]
+
+                    elif repr in symmetrized_objective.keys():
+                        symmetrized_objective[repr] += sign * coeff
+                    else:
+                        symmetrized_objective[repr] = sign * coeff
             #PASS THE SEMIKNOWNS THROUGH THE OBJECTIVE?
             self._objective_as_dict = symmetrized_objective
         else:
