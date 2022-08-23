@@ -21,7 +21,7 @@ except ImportError:
 ################################################################################
 # GENERATION FUNCTIONS                                                         #
 ################################################################################
-def generate_noncommuting_measurements(outs_per_input: List[int],
+def generate_operators(outs_per_input: List[int],
                                        name: str
                                 ) -> List[List[List[sympy.core.symbol.Symbol]]]:
     """Generates the list of sympy.core.symbol.Symbol variables representing the
