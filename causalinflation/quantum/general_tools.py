@@ -6,11 +6,9 @@ matrices.
 import copy
 import numpy as np
 import sympy
-from causalinflation.quantum.fast_npa import (apply_source_swap_monomial,
-                                              factorize_monomial,
-                                              mon_lessthan_mon, mon_lexsorted,
-                                              nb_first_index, nb_unique,
-                                              to_canonical, to_name)
+from .fast_npa import (apply_source_swap_monomial, factorize_monomial,
+                       mon_lessthan_mon, mon_lexsorted,nb_first_index,
+                       nb_unique, to_canonical, to_name)
 from itertools import permutations, product
 from typing import Dict, List, Tuple, Union
 

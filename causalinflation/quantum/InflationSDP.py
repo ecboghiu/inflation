@@ -9,31 +9,19 @@ import numpy as np
 import sympy as sp
 
 from causalinflation import InflationProblem
-from causalinflation.quantum.general_tools import (
-                                           apply_source_permutation_coord_input,
-                                           clean_coefficients,
-                                           compute_numeric_value,
-                                           cols_num2sym,
-                                           factorize_monomials,
-                                           find_permutation,
-                                           flatten,
-                                           from_numbers_to_flat_tuples,
-                                           generate_noncommuting_measurements,
-                                           is_physical,
-                                           label_knowable_and_unknowable,
-                                           monomialset_name2num,
-                                           monomialset_num2name,
-                                           phys_mon_1_party_of_given_len,
-                                           string2prob, to_numbers,
-                                           to_representative)
-from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
-                                              dot_mon, factorize_monomial,
-                                              mon_is_zero, mon_lexsorted,
-                                              remove_projector_squares,
-                                              to_canonical, to_name)
-from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
-from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
-                                                  write_to_sdpa)
+from .general_tools import (apply_source_permutation_coord_input,
+                            clean_coefficients, compute_numeric_value,
+                            cols_num2sym, factorize_monomials, find_permutation,
+                            flatten, from_numbers_to_flat_tuples,
+                            generate_noncommuting_measurements, is_physical,
+                            label_knowable_and_unknowable, monomialset_name2num,
+                            monomialset_num2name, phys_mon_1_party_of_given_len,
+                            string2prob, to_numbers, to_representative)
+from .fast_npa import (calculate_momentmatrix, dot_mon, factorize_monomial,
+                       mon_is_zero, mon_lexsorted, remove_projector_squares,
+                       to_canonical, to_name)
+from .sdp_utils import solveSDP_MosekFUSION
+from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 from typing import List, Dict, Union, Tuple
 from warnings import warn
 

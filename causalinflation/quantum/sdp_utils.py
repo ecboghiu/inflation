@@ -308,21 +308,21 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             A = A.tocsr()
             AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
             for i in range(len(variables)):
-                slicee = A[:, i]
-                slicee_moseksparse = Matrix.sparse(*slicee.shape,
-                                                   *slicee.nonzero(),
-                                                   slicee[slicee.nonzero()].A[0])
-                AtI.append(Expr.dot(slicee_moseksparse, I))
+                slice = A[:, i]
+                slice_moseksparse = Matrix.sparse(*slice.shape,
+                                                  *slice.nonzero(),
+                                                  slice[slice.nonzero()].A[0])
+                AtI.append(Expr.dot(slice_moseksparse, I))
         if var_equalities:
             E = M.variable(len(var_equalities), Domain.unbounded())
             C = C.tocsr()
             CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
             for i in range(len(variables)):
-                slicee = C[:, i]
-                slicee_moseksparse = Matrix.sparse(*slicee.shape,
-                                                   *slicee.nonzero(),
-                                                   slicee[slicee.nonzero()].A[0])
-                CtI.append(Expr.dot(slicee_moseksparse, E))
+                slice = C[:, i]
+                slice_moseksparse = Matrix.sparse(*slice.shape,
+                                                  *slice.nonzero(),
+                                                  slice[slice.nonzero()].A[0])
+                CtI.append(Expr.dot(slice_moseksparse, E))
 
         # Define and set objective function
         # Tr Z F0 - L·lb + U·ub + I·b + E·d + c0
