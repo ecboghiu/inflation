@@ -60,7 +60,7 @@ def nb_first_index(array: np.ndarray, item: float) -> int:
 
     Parameters
     ----------
-    array : np.ndarray
+    array : numpy.ndarray
          The array to search.
     item : float
         The item to find.
@@ -72,7 +72,7 @@ def nb_first_index(array: np.ndarray, item: float) -> int:
 
     Examples
     --------
-    >>> array = np.array([1, 2, 3, 4, 5, 6])
+    >>> array = numpy.array([1, 2, 3, 4, 5, 6])
     >>> nb_first_index(array, 5)
     4
     """
@@ -88,12 +88,12 @@ def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     Parameters
     ----------
-    arr : np.ndarray
+    arr : numpy.ndarray
         The array to search.
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray]
+    Tuple[numpy.ndarray, numpy.ndarray]
         The unique values unsorted and their indices.
 
     Examples
@@ -172,14 +172,14 @@ def dot_mon(mon1: np.ndarray, mon2: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon1 : np.ndarray
+    mon1 : numpy.ndarray
         Monomial as a numpy array.
-    mon2 : np.ndarray
+    mon2 : numpy.ndarray
         Monomial as a numpy array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Output monomial ordered by parties.
 
     Examples
@@ -202,14 +202,14 @@ def dot_mon_commuting(mon1: np.ndarray, mon2: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon1 : np.ndarray
+    mon1 : numpy.ndarray
         Monomial as a numpy array.
-    mon2 : np.ndarray
+    mon2 : numpy.ndarray
         Monomial as a numpy array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Returns (mon1)^\dagger*mon2 with the assumption that
         everything commutes with everything.
     """
@@ -228,9 +228,9 @@ def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool:
 
     Parameters
     ----------
-    mon1 : np.ndarray
+    mon1 : numpy.ndarray
         First monomial as a 2d array.
-    mon2 : np.ndarray
+    mon2 : numpy.ndarray
         Second monomial as a 2d array.
     Returns
     -------
@@ -247,7 +247,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Input monomial as 2d array.
 
     Returns
@@ -271,9 +271,9 @@ def mon_lessthan_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
 
     Parameters
     ----------
-    mon1 : np.ndarray
+    mon1 : numpy.ndarray
         Input monomial as a 2d array.
-    mon2 : np.ndarray
+    mon2 : numpy.ndarray
         Input monomial as a 2d array.
 
     Returns
@@ -296,12 +296,12 @@ def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Monomial as a numpy array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Sorted monomial.
     """
     return mon[np.lexsort(np.rot90(mon))]
@@ -314,12 +314,12 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Input monomial as 2d array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Sorted monomial.
 
     Examples
@@ -338,12 +338,12 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Input monomial as 2d array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Reversed monomial.
 
     Examples
@@ -367,7 +367,7 @@ def apply_source_swap_monomial(monomial: np.ndarray,
 
     Parameters
     ----------
-    monomial : np.ndarray
+    monomial : numpy.ndarray
         2d array representation of a monomial.
     source : int
          Integer in values [0, ..., nr_sources]
@@ -378,7 +378,7 @@ def apply_source_swap_monomial(monomial: np.ndarray,
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
          The new monomial with swapped sources.
 
     Examples
@@ -428,12 +428,12 @@ def factorize_monomial(monomial: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    monomial : np.ndarray
+    monomial : numpy.ndarray
         Monomial encoded as a 2d array where each row is an operator.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         A list of lists, where each list represents the monomial factors.
 
     Examples
@@ -518,12 +518,12 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon_in : np.ndarray
+    mon_in : numpy.ndarray
         Input monomial as a 2d array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Simplified input monomial.
     """
     if mon_in.shape[0] == 1:
@@ -543,12 +543,12 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Input monomial as 2d array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Simplified monomial.
     """
     to_keep = np.array([1]*mon.shape[0], dtype=bool_)
@@ -566,12 +566,12 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Input monomial as a 2d array.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Monomial in canonical form w.r.t some lexicographic
         ordering.
     """
@@ -595,7 +595,7 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
 
     Parameters
     ----------
-    monomial : np.ndarray
+    monomial : numpy.ndarray
         Monomial in matrix format.
     names : List[str]
         List of party names.
@@ -641,8 +641,8 @@ def calculate_momentmatrix(cols: List,
     Parameters
     ----------
     cols : List
-        List of np.ndarray representing the generating set.
-    names : np.ndarray
+        List of numpy.ndarray representing the generating set.
+    names : numpy.ndarray
         The string names of each party.
     commuting: bool, optional
         Whether the variables in the problem commute or not. By default
@@ -652,7 +652,7 @@ def calculate_momentmatrix(cols: List,
 
     Returns
     -------
-    Tuple[np.ndarray, Dict]
+    Tuple[numpy.ndarray, Dict]
         The moment matrix, where each entry (i,j) stores the integer
         representation of a monomial. The Dict is a mapping from string
         representation to integer representation.
