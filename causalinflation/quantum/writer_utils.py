@@ -14,7 +14,7 @@ def convert_to_human_readable(problem):
     """Convert the SDP relaxation to a human-readable format.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflapyon.InflationSDP`.
+    :type problem: :class:`causalinflation.InflationSDP`
     :returns: tuple of the objective function in a string and a matrix of
               strings as the symbolic representation of the moment matrix
     """
@@ -65,7 +65,7 @@ def write_to_csv(problem, filename):
     """Export the problem in a human-readable form in a CSV table.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflapyon.InflationSDP`.
+    :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
     objective, matrix = convert_to_human_readable(problem)
@@ -82,7 +82,7 @@ def write_to_mat(problem, filename):
     """Export the problem to MATLAB .mat file.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflapyon.InflationSDP`.
+    :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
     # MATLAB does not like 0s, so we shift all by 1
@@ -116,11 +116,11 @@ def write_to_mat(problem, filename):
     )
 
 def write_to_sdpa(problem, filename):
-    """Export the problem to a file in  . See specifications at
+    """Export the problem to a file in .dat-s format. See specifications at
     http://euler.nmt.edu/~brian/sdplib/FORMAT.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflapyon.InflationSDP`.
+    :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
     # Compute actual number of variables

@@ -645,9 +645,10 @@ def calculate_momentmatrix(cols: List,
     names : np.ndarray
         The string names of each party.
     commuting: bool, optional
-        Whether the variables in the problem commute or not, by default False.
+        Whether the variables in the problem commute or not. By default
+        ``False``.
     verbose : int, optional
-        How much information to print, by default 0.
+        How much information to print. By default ``0``.
 
     Returns
     -------

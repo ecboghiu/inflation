@@ -36,14 +36,6 @@ causalinflation.quantum.sdp\_utils module
    :undoc-members:
    :show-inheritance:
 
-causalinflation.quantum.typing module
--------------------------------------
-
-.. automodule:: causalinflation.quantum.typing
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 causalinflation.quantum.writer\_utils module
 --------------------------------------------
 
