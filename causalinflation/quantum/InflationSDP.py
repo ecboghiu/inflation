@@ -13,7 +13,7 @@ from .general_tools import (apply_source_permutation_coord_input,
                             clean_coefficients, compute_numeric_value,
                             cols_num2sym, factorize_monomials, find_permutation,
                             flatten, from_numbers_to_flat_tuples,
-                            generate_noncommuting_measurements, is_physical,
+                            generate_operators, is_physical,
                             label_knowable_and_unknowable, monomialset_name2num,
                             monomialset_num2name, phys_mon_1_party_of_given_len,
                             string2prob, to_numbers, to_representative)
@@ -1136,7 +1136,7 @@ class InflationSDP(object):
             # (see [arXiv:quant-ph/0306129]), whereby the last operator is
             # understood to be written as the identity minus the rest.
             for indices in all_indices:
-                meas = generate_noncommuting_measurements(
+                meas = generate_operators(
                                                  [outs - 1 for _ in range(ins)],
                                                  party + '_' + '_'.join(indices)
                                                           )
