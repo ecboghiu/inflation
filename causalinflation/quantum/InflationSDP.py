@@ -1,3 +1,9 @@
+"""
+The module generates the semidefinite program associated to a quantum inflation
+instance (see arXiv:1909.10519).
+
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+"""
 import itertools
 import numpy as np
 import sympy as sp

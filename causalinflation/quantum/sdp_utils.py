@@ -1,3 +1,7 @@
+"""
+This file contains the functions to send the problems to SDP solvers.
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+"""
 import numpy as np
 import scipy.sparse
 import sys

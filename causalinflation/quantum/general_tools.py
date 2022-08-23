@@ -1,3 +1,8 @@
+"""
+This file contains helper functions to manipulate monomials and generate moment
+matrices.
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+"""
 import copy
 import numpy as np
 import sympy

@@ -1,3 +1,8 @@
+"""
+This file contains helper functions to write and export the problems into
+various formats.
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+"""
 import numpy as np
 from scipy.io import savemat
 from warnings import warn
