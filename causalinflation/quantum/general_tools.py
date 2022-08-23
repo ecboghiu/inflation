@@ -240,7 +240,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
         column a monomial in matrix form (each row is an operator
         and each column has the operator indices).
     verbose : int, optional
-        Whether to print progress bar, by default 0.
+        Whether to print progress bar. By default ``0``.
 
     Returns
     -------
@@ -325,7 +325,7 @@ def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
     monomial_in : Union[List[List[int]], np.ndarray]
         Input monomial in 2d array format.
     sandwich_positivity : bool, optional
-        Whether to consider sandwiching, by default False.
+        Whether to consider sandwiching. By default ``False``.
 
     Returns
     -------

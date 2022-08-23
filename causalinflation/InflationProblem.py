@@ -15,19 +15,18 @@ class InflationProblem(object):
     ----------
     dag : list, optional
         Dictionary where each key is a hyperedge connecting different
-        parties, by default it is a single source connecting all parties.
+        parties. By default it is a single source connecting all parties.
     outcomes_per_party : list, optional
-        Measurement outcome cardinalities, by default 2 for all parties.
+        Measurement outcome cardinalities. By default ``2`` for all parties.
     settings_per_party : list, optional
-        Measurement setting cardinalities, by default 1 for all parties.
+        Measurement setting cardinalities. By default ``1`` for all parties.
     inflation_level_per_source : list, optional
-        Number of copies per source in the inflated graph, by default 1
-        for all sources.
+        Number of copies per source in the inflated graph. By default ``1`` for
+        all sources.
     names : List[int], optional
-        Name of each party, default is alphabetical labels,
-        e.g. ['A', 'B', ...]
+        Name of each party, default is alphabetical labels, e.g. ['A', 'B', ...]
     verbose : int, optional
-        How much information to print, by default 0.
+        How much information to print. By default ``0``.
     """
     def __init__(self, dag=[], outcomes_per_party=[], settings_per_party=[],
                  inflation_level_per_source=[], names=[], verbose=0):

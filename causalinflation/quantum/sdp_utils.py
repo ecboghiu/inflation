@@ -15,78 +15,73 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                          var_upperbounds={}, var_inequalities=[],
                          var_equalities=[], solve_dual=True
                          ) -> Tuple[Dict, float, str]:
-    """Internal function to solve the SDP with the MOSEK Fusion API.
+    r"""Internal function to solve the SDP with the MOSEK Fusion API.
 
     Now follows an extended description of how the SDP is encoded. In general,
     it is prefered to solve using the dual formulation, which is the default.
 
     The primal is written as follows:
 
-    max c0 + c·x                                      Eq.(1)
-    s.t. F0 + \sum Fi xi >= 0
+    .. math::
 
-    F0 is the constant entries of the moment matrix, and Fi is the matrix
-    storing whose entry (n,m) stores the value of the coefficient of the moment
-    xi at position (n,m) in the moment matrix.
+        \text{max}\quad & c_0 + c\cdot x\\
+        \text{s.t.}\quad & F_0 + \sum F_i x_i \succeq 0
 
-    The dual of Eq (1) is:
+    :math:`F_0` is the constant entries of the moment matrix, and :math:`F_i` is
+    the matrix whose entry :math:`(n,m)`` stores the value of the coefficient of
+    the moment :math:`x_i` at position :math:`(n,m)`` in the moment matrix.
 
-    min c0 + Tr Z F0                                  Eq.(2)
-    s.t. Tr Z Fi = - ci for all i
-         Z >= 0
+    The dual of the equation above is:
 
-    Typically, all the probability information is stored in F0, and the
-    coefficients Fi don't depend on the probabilities. However, if we use LPI
-    constraints, then Fi can depend on the probabilities. The form of the SDP
-    does not change, in any case.
+    .. math::
+
+        \text{min}\quad & c_0+\text{Tr}(Z\cdot F_0)\\
+        \text{s.t.}\quad & \text{Tr}(Z\cdot F_i) = - c_i \,\forall\, i,\\
+        &Z \succeq 0.
+
+    Typically, all the probability information is stored in :math:`F_0`, and the
+    coefficients :math:`F_i` do not depend on the probabilities. However, if we
+    use LPI constraints, then :math:`F_i` can depend on the probabilities. The
+    form of the SDP does not change, in any case.
 
     If we have a constant objective function, then we have a feasibility
     problem. It can be relaxed to:
 
-    max lambda                                         Eq.(3)
-    s.t. F0 + \sum Fi xi - lambda \Id >= 0
+    .. math::
+        \text{max}\quad&\lambda\\
+        \text{s.t.}\quad& F_0 + \sum F_i x_i - \lambda \cdot 1 \succeq 0
 
     with dual:
 
-    min Tr Z F0                                        Eq.(4)
-    s.t. Tr Z Fi = 0 for all i
-            Z >= 0, Tr Z = 1
+    .. math::
+        \text{min}\quad & \text{Tr}(Z\cdot F_0) \\
+        \text{s.t.}\quad & \text{Tr}(Z\cdot F_i) = 0 \,\forall\, i,\\
+            & Z \succeq 0,\,\text{Tr} Z = 1.
 
-    This still allows for the extraction of certificates. If we use a Z_P1
-    obtained from running problem (4) on probability P1, and we find
-    Tr Z_P1 F0[P2] < 0, then clearly this is an upper bound of (4), and thus
-    we can certify that the optimisation will be negative when using P2.
+    This still allows for the extraction of certificates. If we use a
+    :math:`Z_{P_1}` obtained from running the problem above on the probability
+    distribution :math:`P_1`, and we find that
+    :math:`\text{Tr}[Z_{P_1}\cdot F_0(P_2)] < 0`, then clearly this is an upper
+    bound of the optimal value of the problem, and thus we can certify that the
+    optimisation will be negative when using :math:`P_2`.
 
     If we have upper and lower bounds on the variables, the problems change as
     follows:
 
-    max c0 + c·x                                        Eq.(5)
-    s.t. F0 + \sum Fi xi >= 0,
-         xi - l_i >=0,
-         u_i - xi >= 0
+    .. math::
+        \text{max}\quad & c_0 + c\cdot x \\
+        \text{s.t.}\quad & F_0 + \sum F_i x_i \succeq 0,\\
+        & x_i - l_i \geq 0,\\
+        & u_i - x_i \geq 0,
 
     with dual:
 
-    min Tr Z F0 - L·l + U·u                             Eq.(6)
-    s.t. Tr Z Fi = - ci + Ui - Li for all i
-         Z >= 0, L >= 0, U >= 0
+    .. math::
+        \text{min}\quad & \text{Tr}(Z\cdot F_0 - L\cdot l + U\cdot u) \\
+        \text{s.t.}\quad & \text{Tr}(Z \cdot F_i) = -c_i+U_i-L_i \,\forall\,i,\\
+        & Z \succeq 0,\,L \geq 0,\,U \geq 0.
 
-    Relaxed feasibility problems change as follows when we have upper and lower
-    bounds:
-
-    min Tr Z F0 - L·l + U·u                             Eq.(7)
-    s.t. Tr Z Fi = Ui - Li for all i
-         Z >= 0, L >= 0, U >= 0, Tr Z = 1
-
-    The unrelaxed version simply lacks the Tr Z = 1 constraint. Note that if we
-    use values extracted from a minimisation over a distribution P1, say Z_P1,
-    L_P1, U_P1, and evaluate the expression on a distribution P2 and find that
-    it is negative:
-
-    Tr Z_P1 F0[P2] - L_P1·l + U_P1·u <= 0,
-
-    this again upper bounds the global optimum of (7), so we can certify that
-    P2 leads to an infeasible unrelaxed feasibility problem.
+    The relaxed feasibility problems change accordingly.
 
     Parameters
     ----------
@@ -94,34 +89,34 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         Matrix of positions of the monomials in the moment matrix.
     objective : dict, optional
         Dictionary with keys as monomials and as values the monomial's
-        coefficient in the objective function, by default {1: 0.}
+        coefficient in the objective function. By default ``{1: 0.}``
     known_vars : dict, optional
-        Dictionary of values for monomials (keys), by default {0: 0., 1: 1.}
+        Dictionary of values for monomials (keys). By default ``{0: 0., 1: 1.}``
     semiknown_vars : dict, optional
         Dictionary encoding proportionality constraints between
-        different monomials, by default {}.
+        different monomials. By default ``{}``.
     var_lowerbounds : dict, optional
-        Dictionary of lower bounds for monomials, by default {}.
+        Dictionary of lower bounds for monomials. By default ``{}``.
     var_upperbounds : dict, optional
-        Dictionary of upper bounds for monomials, by default {}.
+        Dictionary of upper bounds for monomials. By default ``{}``.
     var_inequalities : list, optional
-        List of inequalities enconded as dictionaries of coefficients,
-        by default [].
+        List of inequalities enconded as dictionaries of coefficients. By
+        default ``[]``.
     var_equalities : list, optional
-        List of equalities enconded as dictionaries of coefficients,
-        by default [].
+        List of equalities enconded as dictionaries of coefficients. By default
+        ``[]``.
     solve_dual : bool, optional
-        Whether to solve the dual (True) or primal (False) formulation,
-        by default True.
+        Whether to solve the dual (True) or primal (False) formulation. By
+        default ``True``.
     verbose : int, optional
-        How much information to display to the user, by default 0.
+        How much information to display to the user. By default ``0``.
     feas_as_optim : bool, optional
         Whether to treat feasibility problems, where the objective is,
-        constant, as an optimisation problem, by default False.
+        constant, as an optimisation problem. By default ``False``.
     solverparameters : dict, optional
         Dictionary of parameters to pass to the MOSEK solver, see
-        https://docs.mosek.com/latest/pythonfusion/solver-parameters.html,
-        by default {}.
+        https://docs.mosek.com/latest/pythonfusion/solver-parameters.html. By
+        default ``{}``.
 
     Returns
     -------

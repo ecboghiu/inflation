@@ -39,15 +39,14 @@ class InflationSDP(object):
     InflationProblem : InflationProblem
         Details of the scenario.
     commuting : bool, optional
-        Whether variables in the problem are going to be commuting
-        (classical problem) or non-commuting (quantum problem),
-        by default False.
+        Whether variables in the problem are going to be commuting (classical
+        problem) or non-commuting (quantum problem). By default ``False``.
     verbose : int, optional
         Optional parameter for level of verbose:
+
             * 0: quiet (default),
             * 1: verbose,
-            * 2: debug level,
-        by default 0.
+            * 2: debug level.
     """
     def __init__(self,
                  InflationProblem: InflationProblem,
@@ -80,16 +79,16 @@ class InflationSDP(object):
                                       List[List[int]],
                                       List[sp.core.symbol.Symbol]] = 'npa1'
                             ) -> None:
-        """Creates the SDP relaxation of the quantum inflation problem
-        using the NPA hierarchy and applies the symmetries inferred
-        from inflation.
+        r"""Creates the SDP relaxation of the quantum inflation problem using
+        the NPA hierarchy and applies the symmetries inferred from inflation.
 
         It takes as input the generating set of monomials {M_i}_i. The moment
         matrix Gamma is defined by all the possible inner products between these
         monomials:
 
         .. math::
-            \Gamma[i, j] := \operatorname{tr} (\rho * (M_i)^\dagger M_j).
+
+            \Gamma[i, j] := \operatorname{tr} (\rho \cdot (M_i)^\dagger M_j).
 
         The set {M_i} is specified by the parameter `column_specification`.
 
@@ -98,56 +97,46 @@ class InflationSDP(object):
         in the moment matrix.
 
         Parameters
-
-        column_specification : Union[str, List[List[int]],
-                                     List[sympy.core.symbol.Symbol]]
+        ----------
+        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             Describes the generating set of monomials {M_i}_i.
 
-            (NOTATION) If we have 2 parties, we denote by {A, B} the set
-            of all measurement operators of these two parties. That is, {A, B}
-            represents {A_{InflIndices1}_x_a, B_{InflIndices2}_y_b} for all
-            possible indices {InflIndices1, InflIndices2, x, a, y, b}.
-            Similarly, the product {A*B} represents the product of the
-            operators of A and B for all possible indices. Note that with this
-            notation, A*A and A**2 represent different sets.
-
             * `(str) 'npaN'`: where N is an integer. This represents level N in
-            the Navascues-Pironio-Acin hierarchy [arXiv:quant-ph/0607119]. For
-            example, level 3 with measurements {A, B} will give the set
-            {1, A, B, A*A, A*B, B*B, A*A*A, A*A*B, A*B*C, A*B*B, B*B*B}.
-            This is known to converge to the quantum set Q for N->\infty.
+              the Navascues-Pironio-Acin hierarchy [arXiv:quant-ph/0607119]. For
+              example, level 3 with measurements {A, B} will give the set
+              {1, A, B, A*A, A*B, B*B, A*A*A, A*A*B, A*B*C, A*B*B, B*B*B} for
+              all inflation, input and output indices. This hierarchy is known
+              to converge to the quantum set for :math:`N\rightarrow\infty`.
 
             * `(str) 'localN'`: where N is an integer. Local level N considers
-            monomials that have at most N measurement operators per party. For
-            example, `local1` is a subset of `npa2`; for 2 parties, `npa2` is
-            {1, A, B, A*A, A*B, B*B} while `local1` is {1, A, B, A*B}. Note that
-            terms such as A*A are missing as that is more than N=1 measurements
-            per party.
+              monomials that have at most N measurement operators per party. For
+              example, `local1` is a subset of `npa2`; for 2 parties, `npa2` is
+              {1, A, B, A*A, A*B, B*B} while `local1` is {1, A, B, A*B}.
 
-            * `(str) 'physicalN'`: The subset of local level N with only all
-            commuting operators. We only consider commutation coming from having
-            different supports. `N` cannot be greater than the smallest number
-            of copies of a source in the inflated graph. For example, in the
-            scenario A-source-B-source-C with 2 outputs and no inputs,
-            `physical2` only gives 5 possibilities for B: {1, B_1_1_0_0,
-            B_2_2_0_0, B_1_1_0_0*B_2_2_0_0,  B_1_2_0_0*B_2_1_0_0}. There are no
-            other products where all operators commute. The full set of physical
-            generating monomials is built by taking the cartesian product
-            between all possible physical monomials of each party.
+            * `(str) 'physicalN'`: The subset of local level N with only
+              operators that have non-negative expectation values with any
+              state. `N` cannot be greater than the smallest number of copies of
+              a source in the inflated graph. For example, in the scenario
+              A-source-B-source-C with 2 outputs and no inputs, `physical2` only
+              gives 5 possibilities for B: {1, B_1_1_0_0, B_2_2_0_0,
+              B_1_1_0_0*B_2_2_0_0,  B_1_2_0_0*B_2_1_0_0}. There are no other
+              products where all operators commute. The full set of physical
+              generating monomials is built by taking the cartesian product
+              between all possible physical monomials of each party.
 
             * `List[List[int]]`: This encodes a party block structure.
-            Each integer encodes a party. Within a party block, all missing
-            input, output and inflation  indices are taken into account.
-            For example, [[], [0], [1], [0, 1]] gives the set {1, A, B, A*B},
-            which is the same as 'local1'. The set [[], [0], [1], [2], [0, 0],
-            [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]] is the same as {1, A, B,
-            C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as 'npa2' for
-            3 parties. [[]] encodes the identity element.
+              Each integer encodes a party. Within a party block, all missing
+              input, output and inflation  indices are taken into account.
+              For example, [[], [0], [1], [0, 1]] gives the set {1, A, B, A*B},
+              which is the same as 'local1'. The set [[], [0], [1], [2], [0, 0],
+              [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]] is the same as {1, A, B,
+              C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as 'npa2' for
+              3 parties. [[]] encodes the identity element.
 
             * `List[sympy.core.symbol.Symbol]`: we can fully specify the
-            generating set by giving a list of symbolic operators built from the
-            measurement operators in `self.measurements`. This list needs to
-            have the identity `sympy.S.One` as the first element.
+              generating set by giving a list of symbolic operators built from the
+              measurement operators in `self.measurements`. This list needs to
+              have the identity `sympy.S.One` as the first element.
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.
@@ -281,16 +270,20 @@ class InflationSDP(object):
                          use_lpi_constraints: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments
         according to the probability distribution specified.
-        Args:
-            prob_array (np.ndarray): Multidimensional array encoding the
-            distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
-            where a,b,c,... are outputs and x,y,z,... are inputs.
-            Note: even if the inputs have cardinality 1, they must be specified,
-            and the corresponding axis dimensions are 1.
 
-            use_lpi_constraints (bool): Specification whether linearized
-            polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
-            will be imposed or not.
+        Parameters
+        ----------
+            prob_array : numpy.ndarray
+                Multidimensional array encoding the distribution, which is
+                called as ``prob_array[a,b,c,...,x,y,z,...]`` where a, b, c, ...
+                are outputs and x, y, z, ... are inputs.
+                Note: even if the inputs have cardinality 1 they must be
+                specified, and the corresponding axis dimensions are 1.
+
+            use_lpi_constraints : bool, optional
+                Specification whether linearized polynomial constraints (see,
+                e.g., Eq. (D6) in arXiv:2203.16543) will be imposed or not. By
+                default False.
         """
         _pdims = len(list(prob_array.shape))
         assert _pdims % 2 == 0, \
@@ -325,9 +318,8 @@ class InflationSDP(object):
         objective : sympy.core.symbol.Symbol
             Describes the objective function.
         direction : str, optional
-            Direction of the optimization (max/min), by default 'max'
+            Direction of the optimization (max/min). By default ``'max'``.
         """
-
         assert direction in ['max', 'min'], ('The direction parameter should be'
                                              + ' set to either "max" or "min"')
         if direction == 'max':
@@ -395,13 +387,15 @@ class InflationSDP(object):
             variable index in the moment matrix. The value of each key is the
             numerical value to be assigned.
 
-        use_lpi_constraints : bool
+        use_lpi_constraints : bool, optional
             Specification whether linearized polynomial constraints (see, e.g.,
-            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+            Eq. (D6) in arXiv:2203.16543) will be imposed or not. By default
+            ``False``.
 
-        only_specified_values : bool
+        only_specified_values : bool, optional
             Specification whether one wishes to fix only the variables provided,
-            or also the variables containing products of the monomials fixed.
+            or also the variables containing products of the monomials fixed. By
+            default ``False``.
         """
         self.use_lpi_constraints = use_lpi_constraints
         self.clear_known_values()
@@ -459,25 +453,30 @@ class InflationSDP(object):
               feas_as_optim: bool=False,
               dualise: bool=True,
               solverparameters=None):
-        """Call a solver on the SDP relaxation. Upon successful solution, it
+        r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
 
         Parameters
         ----------
         interpreter : str, optional
-            The solver to be called, by default 'MOSEKFusion'.
+            The solver to be called. By default ``'MOSEKFusion'``.
         feas_as_optim : bool, optional
             Instead of solving the feasibility problem
-                (1) find vars such that Gamma >= 0
-            setting this label to True solves instead the problem
-                (2) max lambda such that Gamma - lambda*Id >= 0.
+
+                :math:`(1) \text{ find vars such that } \Gamma \succeq 0`
+
+            setting this label to ``True`` solves instead the problem
+
+                :math:`(2) \text{ max }\lambda\text{ such that }
+                \Gamma - \lambda\cdot 1 \succeq 0.`
+
             The correspondence is that the result of (2) is positive if (1) is
-            feasible and negative otherwise. By default False.
+            feasible, and negative otherwise. By default ``False``.
         dualise : bool, optional
-            Optimize the dual problem (recommended), by default True.
+            Optimize the dual problem (recommended). By default ``True``.
         solverparameters : dict, optional
-            Extra parameters to be sent to the solver, by default None.
+            Extra parameters to be sent to the solver. By default ``None``.
         """
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
@@ -520,15 +519,15 @@ class InflationSDP(object):
         Parameters
         ----------
         clean : bool, optional
-            If true, eliminate all coefficients that are smaller than
-            'chop_tol', normalise and round to the number of decimals specified
-            by `round_decimals`, by default False.
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals specified
+            by ``round_decimals``. By default ``False``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero, by default 1e-8.
+            set to zero. By default ``1e-8``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
-            decimals specified, by default 3.
+            decimals specified. By default ``3``.
 
         Returns
         -------
@@ -587,15 +586,15 @@ class InflationSDP(object):
         Parameters
         ----------
         clean : bool, optional
-            If true, eliminate all coefficients that are smaller than
-            'chop_tol', normalise and round to the number of decimals specified
-            by `round_decimals`, by default False.
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals specified
+            by ``round_decimals``. By default ``False``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero, by default 1e-8.
+            set to zero. By default ``1e-8``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
-            decimals specified, by default 3.
+            decimals specified. By default ``3``.
 
         Returns
         -------
@@ -642,15 +641,15 @@ class InflationSDP(object):
         Parameters
         ----------
         clean : bool, optional
-            If true, eliminate all coefficients that are smaller than
-            'chop_tol', normalise and round to the number of decimals specified
-            by `round_decimals`, by default False.
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals specified
+            by ``round_decimals``. By default ``False``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero, by default 1e-8.
+            set to zero. By default ``1e-8``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
-            decimals specified, by default 3.
+            decimals specified. By default ``3``.
 
         Returns
         -------
@@ -694,15 +693,17 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        column_specification : Union[str, List[List[int]],
-                                     List[sympy.core.symbol.Symbol]]
-            See description in the self.generate_relaxation()` method.
+        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
+            See description in the ``self.generate_relaxation()`` method.
         max_monomial_length : int, optional
             Maximum number of letters in a monomial in the generating set,
-            by default 0 (no limit). Example: if we choose 'local1' for 3
-            parties, this gives the set {1, A, B, C, A*B, A*C, B*C, A*B*C}.
-            If we set max_monomial_length=2, the generating set is instead:
-            {1, A, B, C, A*B, A*C, B*C}.
+            By default ``0`` (no limit). Example: if we choose ``'local1'`` for
+            three parties, it gives the set {1, A, B, C, A*B, A*C, B*C, A*B*C}.
+            If we set ``max_monomial_length=2``, the generating set is instead:
+            {1, A, B, C, A*B, A*C, B*C}. By default ``0``.
+        return_columns_numerical : bool, optional
+            Whether to return the columns also in integer array form (like the
+            output of ``to_numbers``). By default ``False``.
         """
         columns = None
         if type(column_specification) == list:
@@ -1247,7 +1248,7 @@ class InflationSDP(object):
             condition for positivity, but it has the form U·A·U^*, where A
             satisfies the condition. These monomials also have always
             non-negative expectation. This flag determines whether these
-            monomials are also added to the list of non-negative operators, by
+            monomials are also added to the list of non-negative operators. By
             default True.
 
         Returns
