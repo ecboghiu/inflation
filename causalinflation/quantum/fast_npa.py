@@ -1,3 +1,9 @@
+"""
+This file contains helper functions to manipulate monomials and generate moment
+matrices. The functions in this file can be accelerated by JIT compilation in
+numba.
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+"""
 import numpy as np
 import scipy
 
