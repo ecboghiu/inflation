@@ -11,6 +11,7 @@ causalinflation.quantum.InflationSDP module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 causalinflation.quantum.fast\_npa module
 ----------------------------------------
@@ -19,6 +20,7 @@ causalinflation.quantum.fast\_npa module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 causalinflation.quantum.general\_tools module
 ---------------------------------------------
@@ -27,6 +29,7 @@ causalinflation.quantum.general\_tools module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 causalinflation.quantum.sdp\_utils module
 -----------------------------------------
@@ -35,6 +38,7 @@ causalinflation.quantum.sdp\_utils module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 causalinflation.quantum.writer\_utils module
 --------------------------------------------
@@ -43,6 +47,7 @@ causalinflation.quantum.writer\_utils module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 Module contents
 ---------------
@@ -51,3 +56,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
