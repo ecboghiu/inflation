@@ -71,7 +71,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
 
     Parameters
     ----------
-    hypergraph : np.ndarray
+    hypergraph : numpy.ndarray
          Hypergraph of the scenario.
     inflevels : np.array
         The number of copies of each source in the inflated scenario.
@@ -90,7 +90,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
 
     Returns
     -------
-    List[np.ndarray]
+    List[numpy.ndarray]
         An array containing all possible positive monomials of the given
         length.
     """
@@ -157,7 +157,7 @@ def apply_source_perm_monomial(monomial: np.ndarray,
 
     Parameters
     ----------
-    monomial : np.ndarray
+    monomial : numpy.ndarray
         Input monomial in 2d array format.
     source : int
         The source that is being swapped.
@@ -168,7 +168,7 @@ def apply_source_perm_monomial(monomial: np.ndarray,
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Input monomial with the specified source swapped.
     """
     new_factors = monomial.copy()
@@ -190,16 +190,15 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          permutation: List[int],
                                          commuting: bool
                                          ) -> List[sympy.core.symbol.Symbol]:
-    """Apply a specific source permutation to the list of operators used to
-    define the moment matrix. Outputs the permuted list of operators.
-    The operators are enconded as lists of numbers denoting
-    [party, source_1_copy, source_2_copy, ..., input, output]
-    A product of operators is a list of such lists transformed into a
-    np.ndarray.
+    """Apply a specific source permutation to a list of operators. Outputs the
+    permuted list of operators. The operators are enconded as lists of numbers
+    denoting [party, source_1_copy, source_2_copy, ..., input, output]. A
+    product of operators is a list of such lists transformed into a Numpy
+    ndarray.
 
     Parameters
     ----------
-    columns : List[np.ndarray]
+    columns : List[numpy.ndarray]
         Generating set as a list of monomials in 2d array format.
     source : int
         Source that is being swapped.
@@ -210,7 +209,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
 
     Returns
     -------
-    List[np.ndarray]
+    List[numpy.ndarray]
         List of operators with the specified source permuted.
     """
     permuted_op_list = []
@@ -234,7 +233,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
 
     Parameters
     ----------
-    monomials_as_numbers : np.ndarray
+    monomials_as_numbers : numpy.ndarray
         An ndarray of type object where each row has the integer
         representation of a monomial in the 1st column and in the 2nd
         column a monomial in matrix form (each row is an operator
@@ -244,7 +243,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Same as monomials_as_numbers but with the
         factorized monomials.
     """
@@ -263,9 +262,9 @@ def is_knowable(monomial: np.ndarray, hypergraph_scenario: np.ndarray) -> bool:
 
     Parameters
     ----------
-    monomial : Union[List[List[int]], np.ndarray]
+    monomial : Union[List[List[int]], numpy.ndarray]
         List of operators, denoted each by a list of indices
-    hypergraph_scenario : np.ndarray
+    hypergraph_scenario : numpy.ndarray
         Binary matrix representing the scenario.
 
     Returns
@@ -307,22 +306,20 @@ def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
     non-negative expectation value.
 
     This code also supports the detection of "sandwiches", i.e., monomials
-    of the form
-    $\\langle \\psi | A_1 A_2 A_1 | \\psi \\rangle$
-    where $A_1$ and $A_2$ do not commute. In principle we do not know the
-    value of this term. However, note that $A_1$ can be absorbed into
-    $| \\psi \\rangle$ forming an unnormalised quantum state
-    $| \\psi' \\rangle$, thus
-    $\\langle \\psi' | A_2 | \\psi' \\rangle$
-    Note that while we know the value $\\langle \\psi | A_2 | \\psi \\rangle$
-    we do not know $\\langle \\psi' | A_2 | \\psi' \\rangle$ because of the
-    unknown normalisation, however we know it must be positive, thus
-    $\\langle \\psi | A_1 A_2 A_1 | \\psi \\rangle \geq 0$.
+    of the form :math:`\\langle \\psi | A_1 A_2 A_1 | \\psi \\rangle` where
+    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
+    value of this term. However, note that :math:`A_1` can be absorbed into
+    :math:`| \\psi \\rangle` forming an unnormalised quantum state
+    :math:`| \\psi' \\rangle`, thus :math:`\\langle \\psi'|A_2|\\psi' \\rangle`.
+    Note that while we know the value :math:`\\langle\\psi |A_2| \\psi\\rangle`,
+    we do not know :math:`\\langle \\psi' | A_2 | \\psi' \\rangle` because of
+    the unknown normalisation, however we know it must be non-negative,
+    :math:`\\langle \\psi | A_1 A_2 A_1 | \\psi \\rangle \geq 0`.
     This simple example can be extended to various layers of sandwiching.
 
     Parameters
     ----------
-    monomial_in : Union[List[List[int]], np.ndarray]
+    monomial_in : Union[List[List[int]], numpy.ndarray]
         Input monomial in 2d array format.
     sandwich_positivity : bool, optional
         Whether to consider sandwiching. By default ``False``.
@@ -356,15 +353,15 @@ def label_knowable_and_unknowable(monomials_factors: np.ndarray,
 
     Parameters
     ----------
-    monomials_factors_input : np.ndarray
+    monomials_factors_input : numpy.ndarray
         Ndarray of factorised monomials. Each row encodes the integer
         representation and the factors of the monomial.
-    hypergraph : np.ndarray
+    hypergraph : numpy.ndarray
         The hypergraph of the network.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Array of the same size as the input, with the labels of each monomial.
     """
     factors_are_knowable       = np.empty_like(monomials_factors)
@@ -391,12 +388,12 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    monomial : np.ndarray
+    monomial : numpy.ndarray
         Input monomial.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Output monomial without one layer of sandwiching.
     """
     new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
@@ -523,14 +520,14 @@ def monomialset_name2num(monomials: np.ndarray, names: List[str]) -> np.ndarray:
 
     Parameters
     ----------
-    monomials : np.ndarray
+    monomials : numpy.ndarray
         Input monomials list.
     names : List[str]
          List of party names
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Same dimensions as input monomials, but each monomial is in
         string format.
     """
@@ -550,14 +547,14 @@ def monomialset_num2name(monomials_factors: np.ndarray,
 
     Parameters
     ----------
-    monomials_factors : np.ndarray
+    monomials_factors : numpy.ndarray
         List of monomials.
     names : List[str]
         names[i] is the name of party i+1 (parties in [1,2,3,4...]).
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Returns the input with the monomials replaced by their
         string representation.
     """
@@ -656,12 +653,12 @@ def to_representative_aux(monomial_component: np.ndarray
 
     Parameters
     ----------
-    monomial_component : np.ndarray
+    monomial_component : numpy.ndarray
         Input monomial.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         An equivalent monomial closer to its representative form.
     """
     monomial_component = to_canonical(monomial_component)
@@ -686,27 +683,26 @@ def to_representative(mon: np.ndarray,
     """Take a monomial and applies inflation symmetries to bring it to a
     canonical form.
 
-    Example:
-    Assume the monomial is something like:
-    < D^350_00 D^450_00 D^150_00 E^401_00 F^031_00 >
+    Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
+    D^{150}_{00} E^{401}_{00} F^{031}_{00} \\rangle`. Let us put the inflation
+    copies as a matrix:
 
-    Let us put the inflation copies as a matrix:
+    ::
 
-    [[3 5 0],
-     [4 5 0],
-     [1 5 0],
-     [4 0 1],
-     [0 3 1]]
+        [[3 5 0],
+         [4 5 0],
+         [1 5 0],
+         [4 0 1],
+         [0 3 1]]
 
     For each column we assign to the first row index 1. Then the next different
-    one will be 2, and the third different will be 3.
-    We ignore 0s.
-    Col1 (unique=[3,4,1])) [3 4 1 4 0] --> [1 4 3 4 0] --> [1 2 3 2 0] Done!
-    Col2 (unique=[5,3])    [5 5 5 0 3] --> [1 1 1 0 3] --> [1 1 1 0 2] Done!
+    one will be 2, and so on. Therefore, the representative of the monomial
+    above is :math:`\\langle D^{110}_{00} D^{210}_{00} D^{350}_{00} E^{201}_{00}
+    F^{021}_{00} \\rangle`.
 
     Parameters
     ----------
-    mon : np.ndarray
+    mon : numpy.ndarray
         Input monomial that cannot be further factorised.
     inflevels : np.array
         Number of copies of each source in the inflated graph.
@@ -715,15 +711,15 @@ def to_representative(mon: np.ndarray,
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Input monomial in canonical form.
 
     """
     mon_aux = to_representative_aux(mon)
 
-    # The application of symmetries plus  applying commutation rules can give
-    # an even smaller monomial (lexicographically). To deal with this, we apply
-    # all possible source swaps and then apply commutation rules, and if the
+    # The application of symmetries plus applying commutation rules can give an
+    # even smaller monomial (lexicographically). To deal with this, we apply all
+    # possible source swaps and then apply commutation rules, and if the
     # resulting monomial is smaller, we accept it.
     nr_sources = inflevels.shape[0]
     all_perms_per_source = [permutations(
@@ -793,7 +789,7 @@ def compute_numeric_value(mon_string: str,
     ----------
     mon_str : String
         Monomial associated to the probability.
-    p_array : np.ndarray
+    p_array : numpy.ndarray
         The probability distribution of dims
         (outcomes_per_party, settings_per_party).
     parties_names : List[str]

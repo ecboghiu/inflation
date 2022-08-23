@@ -32,7 +32,8 @@ except ImportError:
         return args[0]
 
 class InflationSDP(object):
-    """Class for generating and solving an SDP relaxation for quantum inflation.
+    """
+    Class for generating and solving an SDP relaxation for quantum inflation.
 
     Parameters
     ----------
@@ -88,7 +89,7 @@ class InflationSDP(object):
 
         .. math::
 
-            \Gamma[i, j] := \operatorname{tr} (\rho \cdot (M_i)^\dagger M_j).
+            \Gamma[i, j] := \operatorname{tr} (\rho \cdot M_i^\dagger M_j).
 
         The set {M_i} is specified by the parameter `column_specification`.
 
@@ -581,7 +582,7 @@ class InflationSDP(object):
                              chop_tol: float=1e-10,
                              round_decimals: int=3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
-        of incompatibility is cert >= 0.
+        of incompatibility is `cert >= 0`.
 
         Parameters
         ----------
@@ -905,15 +906,15 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        momentmatrix : np.ndarray
+        momentmatrix : numpy.ndarray
             The moment matrix.
-        monomials_list : np.ndarray
+        monomials_list : numpy.ndarray
             The list of monomials as List[Tuple[int, ArrayMonomial]]
         inflation_symmetries : List[List[int]]
 
         Returns
         -------
-        Tuple[np.ndarray, Dict[int, int], np.ndarray]
+        Tuple[numpy.ndarray, Dict[int, int], numpy.ndarray]
             The symmetrized moment matrix, the orbits as a dictionary
             and the symmetrized monomials list.
         """
@@ -1156,7 +1157,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        monomials : np.ndarray
+        monomials : numpy.ndarray
             List of unfactorised monomials.
         combine_unknowns : bool
             Whether combining the unknown monomials into a single one.
@@ -1164,7 +1165,7 @@ class InflationSDP(object):
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[numpy.ndarray, numpy.ndarray]
             The factorised monomials reordered according to know, semiknown
             and unknown moments and also the corresponding unfactorised
             monomials, also reordered.
@@ -1241,7 +1242,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        monomials_factors : np.ndarray
+        monomials_factors : numpy.ndarray
             List of monomials separated by factors.
         sandwich_positivity : bool
             It is possible that a monomial a priori does not satisfy the
@@ -1253,7 +1254,7 @@ class InflationSDP(object):
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             The list of monomials that have always non-negative expectation.
         """
         ispositive       = np.empty_like(monomials_factors)
