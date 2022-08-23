@@ -3,6 +3,7 @@
 # from __future__ import with_statement
 import numpy as np
 from causalinflation.quantum.general_tools import factorize_monomial, is_physical, is_knowable  # to_representative_aux
+from causalinflation.quantum.fast_npa import mon_equal_mon
 # import itertools
 # from functools import cached_property
 from functools import lru_cache
@@ -237,8 +238,17 @@ class Monomial(object):
     def __hash__(self):
         return hash(self.as_tuples)
 
-    def __equal__(self, other):
-        return np.array_equal(self.as_ndarray, other.as_ndarray)
+    def __eq__(self, other):
+        # TODO: What if they have different nd_arrays BUT the same
+        # representative factors? I add a quick hack for this   
+        try:
+            if len(self.factors) != len(other.factors):
+                return False
+            if len(self.factors) == 1 and len(other.factors) == 1:
+                return mon_equal_mon(self.as_ndarray, self.as_ndarray)
+            return set(self.name.split('*')) == set(other.name.split('*'))
+        except AttributeError:  # likely .name not defined for one of the monomials
+            return np.array_equal(self.as_ndarray, other.as_ndarray)
 
     def factors_as_block(self, factors):
         if len(factors):
