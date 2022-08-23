@@ -388,8 +388,6 @@ class InflationSDP(object):
         self.moment_upperbounds_idx_dict = dict()
         self.moment_upperbounds_name_dict = dict()
 
-
-
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
@@ -794,7 +792,7 @@ class InflationSDP(object):
         
         polynomial = 0
         for mon, coeff in cert.items():
-            polynomial += coeff * mon.symbol
+            polynomial += coeff * mon.to_symbol()
 
         return sp.expand(polynomial)
     
@@ -841,7 +839,7 @@ class InflationSDP(object):
         
         polynomial = 0
         for mon, coeff in cert.items():
-            polynomial += coeff * mon.machine_readable_symbol
+            polynomial += coeff * mon.to_symbol(objective_compatible=True)
 
         return sp.expand(polynomial)
 
