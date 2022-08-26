@@ -362,7 +362,7 @@ class InflationSDP(object):
 
 
 
-        self.objective = sp.S.Zero
+        self.objective = {self.One: 0}
         self._objective_as_idx_dict = {1: 0.}
         self._objective_as_name_dict = {'1': 0.}
 
@@ -780,9 +780,7 @@ class InflationSDP(object):
         self.known_moments_name_dict = {mon.name : v for mon, v in self.known_moments.items()}
         self.semiknown_moments_name_dict = {mon.name : (v[0], v[1].name) for mon, v in self.semiknown_moments.items()}
         
-        # if self.objective != 0:
-        #     self._update_objective()  # TODO function missing take it from atomic-complete
-
+        self._update_objective()
 
 
 
@@ -892,24 +890,50 @@ class InflationSDP(object):
                      "constrain the optimization to distributions with fixed " +
                      "marginals.")
 
-        self.objective = objective
-
         if (sp.S.One*objective).free_symbols:
             objective = sp.expand(objective)
-            symmetrized_objective = {}
+            symmetrized_objective = {self.One: 0}
             for mon, coeff in objective.as_coefficients_dict().items():
-                mon = self._sanitise_monomial(mon)
-                try:
-                    symmetrized_objective[mon] += sign * coeff
-                except KeyError:
-                    symmetrized_objective[mon] = sign * coeff
+                Mon = self._sanitise_monomial(mon)
+                if Mon in symmetrized_objective:
+                    symmetrized_objective[Mon] += sign * coeff
+                else:
+                    symmetrized_objective[Mon] = sign * coeff
         else:
             symmetrized_objective = {self.One: sign * float(objective)}
 
-        self._objective_as_dict = symmetrized_objective
+        self.objective = symmetrized_objective
         
-        # For compatibility purposes
-        self._objective_as_name_dict = {k.name: v for (k, v) in self._objective_as_dict.items()}
+        self._update_objective()
+        
+
+    def _update_objective(self):
+        """Process the objective with the information from known_moments
+        and semiknown_moments.
+        """
+        if list(self.objective.keys()) != [self.One]:
+            self._processed_objective = self.objective.copy()
+            for m, value in self.known_moments.items():
+                if m != self.One and m in self._processed_objective:
+                    self._processed_objective[self.One] += self._processed_objective[m] * value
+                    del self._processed_objective[m]
+            if hasattr(self, 'use_lpi_constraints'):
+                if self.use_lpi_constraints:
+                    for v1, (k, v2) in self.semiknown_moments.items():
+                        # obj = ... + c1*v1 + c2*v2,
+                        # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
+                        # therefore we need to add to the coefficient of v2 the term c1*k 
+                        if v1 in self._processed_objective:
+                            c1 = self._processed_objective[v1]
+                            if v2 in self._processed_objective:
+                                self._processed_objective[v2] += c1 * k
+                            else:
+                                self._processed_objective[v2] = c1 * k
+                            del self._processed_objective[v1]
+                        
+            # For compatibility purposes
+            self._objective_as_name_dict = {k.name: v for (k, v) in self._processed_objective.items()}
+
 
     def _sanitise_monomial(self, mon: Any) -> Monomial:
         """Bring a monomial into the form used internally.
