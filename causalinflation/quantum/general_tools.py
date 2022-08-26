@@ -1216,7 +1216,8 @@ def clean_coefficients(coefficients: np.ndarray,
     # Set to zero very small coefficients
     coeffs[np.abs(coeffs) <= chop_tol] = 0
     # Take the biggest one and make it 1
-    coeffs /= np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
+    normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
+    coeffs /= normalising_factor
     # Round
     coeffs = np.round(coeffs, decimals=round_decimals)
     return coeffs

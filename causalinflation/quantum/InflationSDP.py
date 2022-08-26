@@ -14,7 +14,7 @@ from causalinflation.quantum.general_tools import (to_representative,
                                             to_numbers,
                                             to_symbol,
                                             flatten,
-                                            # flatten_symbolic_powers,
+                                            flatten_symbolic_powers,
                                             phys_mon_1_party_of_given_len,
                                             is_knowable,
                                             factorize_monomial,
@@ -33,17 +33,22 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               mon_lexsorted,
                                               mon_is_zero)
 from causalinflation.quantum.monomial_class import (Monomial,
-                                                    to_tuple_of_tuples)
+                                                    to_tuple_of_tuples,
+                                                    compute_marginal)
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Any
 import warnings
+# Force warnings.warn() to omit the source code line in the message
+# Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
+formatwarning_orig = warnings.formatwarning
+warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
+    formatwarning_orig(message, category, filename, lineno, line='')
 # from warnings import warn
 
 from scipy.sparse import dok_matrix, coo_matrix
-
 
 try:
     from tqdm import tqdm
@@ -103,13 +108,28 @@ class InflationSDP(object):
         else:
             return first_test
 
-    def inflation_aware_to_representative(self, mon: np.ndarray):
+    def inflation_aware_to_representative(self, mon: np.ndarray,
+                                          swaps_plus_commutations=True,
+                                          consider_conjugation_symmetries=True):
         if len(mon):
-            return tuple(tuple(vec) for vec in to_representative(mon,
-                                                                 swaps_plus_commutations=True,
-                                                                 consider_conjugation_symmetries=True,
-                                                                 inflevels=self.inflation_levels,
-                                                                 commuting=self.commuting))
+            Mon = Monomial(to_canonical(mon), 
+                               atomic_is_knowable=self.atomic_knowable_q,
+                               sandwich_positivity=True)
+            try:
+                # TODO: Elie, maybe this would be a good place to implement 
+                # the orbits dictionary approach to reduce to canonical form?
+                raise KeyError
+                return self.orbits[Mon].as_tuples  # Assuming the dictionary takes Monomial objects as keys
+            except KeyError:
+                reprr = to_representative(mon, swaps_plus_commutations=swaps_plus_commutations,
+                                            consider_conjugation_symmetries=consider_conjugation_symmetries,
+                                            inflevels=self.inflation_levels,
+                                            commuting=self.commuting)
+                MonReprr = Monomial(reprr, atomic_is_knowable=self.atomic_knowable_q,
+                                            sandwich_positivity=True)
+                MonReprr.update_name_and_symbol_given_observed_names(self.names)
+                #self.orbits[Mon] = MonReprr  # TODO Add the input monomial to the orbits dictionary when it is created, not it is an array
+                return MonReprr.as_tuples
         else:
             return tuple()
 
@@ -251,12 +271,11 @@ class InflationSDP(object):
         OneMon = Monomial(np.empty((0, 3), dtype=int), idx=1)
         OneMon.name = '1'  # Quick hack to make self._name2mon work
 
-        self.list_of_monomials = [Monomial(v,
+        self.list_of_monomials = [OneMon] + [Monomial(v,
                                                      atomic_is_knowable=self.atomic_knowable_q,
                                                      sandwich_positivity=True,
                                                      idx=k) for (k, v) in self.symidx_to_canonical_mon_dict.items()]
 
-        self.list_of_monomials.append(OneMon)
 
 
         
@@ -362,6 +381,9 @@ class InflationSDP(object):
             self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
             self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
 
+        # Hack to avoid calculating the representative factors unless needed
+        # They are needed if we want to set values of unknowable moments
+        self.__factor_reps_computed__ = False
 
 
 
@@ -373,9 +395,11 @@ class InflationSDP(object):
                 mon.known_status = 'Yes'
             mon.known_value = 1.
             mon.unknown_part = mon.as_ndarray
-        self.known_moments_idx_dict      = {1: 1.}
+        self.known_moments = {}
+        self.known_moments_idx_dict = {1: 1.}
         self.known_moments_name_dict = {'1': 1.}
         self.nof_known_moments = len(self.known_moments_idx_dict)
+        self.semiknown_moments = {}
         self.semiknown_moments_idx_dict  = dict()
         self.semiknown_moments_name_dict = dict()
         self.distribution_has_been_set = False
@@ -388,6 +412,134 @@ class InflationSDP(object):
         self.moment_upperbounds_idx_dict = dict()
         self.moment_upperbounds_name_dict = dict()
 
+    # def set_distribution(self,
+    #                      prob_array: Union[np.ndarray, None],
+    #                      use_lpi_constraints: bool = False,
+    #                      treat_as_support = False) -> None:
+    #     """Set numerically the knowable moments and semiknowable moments according
+    #     to the probability distribution specified. If p is None, or the user
+    #     doesn't pass any argument to set_distribution, then this is understood
+    #     as a request to delete information about past distributions.
+    #     Args:
+    #         prob_array (np.ndarray): Multidimensional array encoding the
+    #         distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
+    #         where a,b,c,... are outputs and x,y,z,... are inputs.
+    #     Note: even if the inputs have cardinality 1, they must be specified,
+    #         and the corresponding axis dimensions are 1.
+
+    #         use_lpi_constraints (bool): Specification whether linearized
+    #         polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
+    #         will be imposed or not.
+    #     """
+
+    #     self.reset_distribution()
+        
+    #     if prob_array is None:
+    #         # From a user perspective set_distribution(None) should be
+    #         # equivalent to reset_distribution()
+    #         return
+        
+    #     self.use_lpi_constraints = use_lpi_constraints
+
+    #     if (len(self._objective_as_idx_dict) > 1) and self.use_lpi_constraints:
+    #         warnings.warn("You have an objective function set. Be aware that imposing " +
+    #              "linearized polynomial constraints will constrain the " +
+    #              "optimization to distributions with fixed marginals.")
+
+    #     hashable_prob_array = to_tuple_of_tuples(prob_array)
+    #     dict_which_groups_monomials_by_representative = defaultdict(list)
+    #     for mon in self.list_of_monomials:
+    #         mon.update_given_prob_dist(hashable_prob_array)
+    #         if mon.known_status == 'Semi':
+    #             if not self.use_lpi_constraints:
+    #                 mon.known_status = 'No'
+    #                 mon.unknown_part = mon.as_ndarray
+    #             elif mon.known_value == 0:
+    #                 mon.known_value = 0
+    #                 mon.known_status = 'Yes'
+    #                 mon.unknown_part = tuple()
+    #         mon.representative = self.inflation_aware_to_representative(mon.unknown_part)
+    #         dict_which_groups_monomials_by_representative[mon.representative].append(mon)
+
+    #     """
+    #     This next block of code re-indexes the monomials (and the momentmatrix) 
+    #     to put the known variables first, then the unknown, then the semiknown.
+    #     """
+    #     # known_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
+    #     # known_statusus[[0, 1]] = 'Yes'
+    #     # for monomial in self.list_of_monomials:
+    #     #     known_statusus[monomial.idx] = monomial.known_status
+
+    #     _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
+    #     self._n_known = _counter['Yes']
+    #     self._n_something_known = _counter['Semi']
+    #     self._n_unknown = _counter['No']
+
+    #     # #REORDERING TO KEEP KNOWN UP FRONT
+    #     # _reordering_of_monomials = np.argsort(np.concatenate((
+    #     #     np.flatnonzero(known_statusus == 'Yes'),
+    #     #     np.flatnonzero(known_statusus == 'No'),
+    #     #     np.flatnonzero(known_statusus == 'Semi'))))
+    #     # self.momentmatrix = _reordering_of_monomials.take(self.momentmatrix)
+    #     # self.orbits = _reordering_of_monomials.take(self.orbits)
+    #     # for mon in self.list_of_monomials:
+    #     #     mon.idx = _reordering_of_monomials[mon.idx]
+
+    #     self._semiknowns_without_counterparts = set()
+    #     if self.use_lpi_constraints:
+    #         for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
+    #             if any(mon.known_status == 'Semi' for mon in list_of_mon):
+    #                 which_is_wholly_unknown = [mon.known_status == 'No' for mon in list_of_mon]
+    #                 if not np.count_nonzero(which_is_wholly_unknown) >= 1:
+    #                     self._semiknowns_without_counterparts.add(representative)
+    #                 # NEXT SIX LINES ARE FOR LEGACY COMPATABILITY
+    #                 list_of_mon_copy = list_of_mon.copy()
+    #                 list_of_mon_copy = sorted(list_of_mon_copy, key=operator.attrgetter('known_value'))
+    #                 big_val_mon = list_of_mon_copy.pop(-1)
+    #                 # wholly_unknown_mon = list_of_mon_copy.pop(np.flatnonzero(which_is_wholly_unknown)[0])
+    #                 for semiknown_mon in list_of_mon_copy:
+    #                     coeff = np.true_divide(semiknown_mon.known_value,big_val_mon.known_value)
+    #                     self.semiknown_moments_idx_dict[semiknown_mon.idx] = (coeff, big_val_mon.idx)
+    #                     self.semiknown_moments_name_dict[semiknown_mon.name] = (coeff, big_val_mon.name)
+    #         if self.verbose and len(self._semiknowns_without_counterparts):
+    #             warning_string = f'We found {len(self._semiknowns_without_counterparts)} semiknowns with no counterparts:'
+    #             for representative in self._semiknowns_without_counterparts:
+    #                 warning_string += ('\n' + np.array_str(np.asarray(representative)))
+    #             formatwarning_orig = warnings.formatwarning
+    #             warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
+    #                 formatwarning_orig(message, category, filename, lineno, line='')
+    #             warnings.warn(warning_string)
+
+    #         max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments_idx_dict.values())
+    #         # max(max(mon.known_value for mon in list_of_mon)
+    #         #                                 for v in dict_which_groups_monomials_by_representative.values())
+    #         assert max_semiknown_coefficient <= 1, f'Some semi-expressible-coefficient exceeds one: {max_semiknown_coefficient}'
+
+
+    #     #RESET PROPERTIES
+
+    #     for mon in self.list_of_monomials:
+    #         if mon.known_status == 'Yes':
+    #             if treat_as_support and mon.known_value > 0:
+    #                 self.moment_lowerbounds_idx_dict[mon.idx] = 1
+    #                 self.moment_lowerbounds_name_dict[mon.name] = 1
+    #             else:
+    #                 self.known_moments_idx_dict[mon.idx] = mon.known_value
+    #                 self.known_moments_name_dict[mon.name] = mon.known_value
+    #     self.nof_known_moments = len(self.known_moments_idx_dict)
+    #     #Such as resetting physical_monomials using new indices.
+    #     if not self.commuting:
+    #         self.physical_monomial_idxs = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_idx_dict.keys())
+    #         self.physical_monomial_names = set([mon.name for mon in self.list_of_monomials if mon.physical_q]).difference(
+    #             self.known_moments_name_dict.keys())
+    #         self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
+    #         self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
+
+
+    #     if self.objective and not (prob_array is None):
+    #         warnings.warn('Danger! User apparently set the objective before the distribution.')
+    #     self.distribution_has_been_set = True
+
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
@@ -395,9 +547,7 @@ class InflationSDP(object):
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
-        as a request to delete information about past distributions. If prob_array contains
-        elements that are either None or nan, then this is understood as leaving
-        the corresponding variable free in the SDP approximation.
+        as a request to delete information about past distributions.
         Args:
             prob_array (np.ndarray): Multidimensional array encoding the
             distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
@@ -423,100 +573,221 @@ class InflationSDP(object):
             warnings.warn("You have an objective function set. Be aware that imposing " +
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
+            
+        atomic_knowable = [m for m in self.list_of_monomials 
+                           if m.nof_factors == 1 and m.knowability_status == 'Yes'] 
+        
+        values = {atomic: compute_marginal(prob_array, atomic.as_ndarray)
+                  for atomic in atomic_knowable}
+        
+        # Compute self.known_moments and self.semiknown_moments
+        self.set_values(values, use_lpi_constraints=use_lpi_constraints,
+                                only_knowable_moments=True)
 
-        hashable_prob_array = to_tuple_of_tuples(prob_array)
-        dict_which_groups_monomials_by_representative = defaultdict(list)
-        for mon in self.list_of_monomials:
-            mon.update_given_prob_dist(hashable_prob_array)
-            if mon.known_status == 'Semi':
-                if not self.use_lpi_constraints:
-                    mon.known_status = 'No'
-                    mon.unknown_part = mon.as_ndarray
-                elif mon.known_value == 0:
-                    mon.known_value = 0
-                    mon.known_status = 'Yes'
-                    mon.unknown_part = tuple()
-            mon.representative = self.inflation_aware_to_representative(mon.unknown_part)
-            dict_which_groups_monomials_by_representative[mon.representative].append(mon)
+        # Compute names dictionaries
+        self.known_moments_name_dict = {}
+        self.moment_lowerbounds_name_dict = {}
+        for mon, value in self.known_moments.items():
+            self.known_moments_name_dict[mon.name] = value
+            if treat_as_support and not np.isclose(value, 0):
+                self.moment_lowerbounds_name_dict[mon.name] = 1
+        for x in filter(lambda m: m.physical_q, self.list_of_monomials):
+            self.moment_lowerbounds_name_dict[x.name] = 1 if treat_as_support else 0
 
+        # if self.objective and not (prob_array is None):
+        #     warnings.warn('Danger! User apparently set the objective before the distribution.')
+        # self.distribution_has_been_set = True
+
+    def set_values(self, values: Dict[Union[sp.core.symbol.Symbol, str, Monomial], float],
+                         use_lpi_constraints: bool = False,
+                         normalised: bool = True,
+                         only_knowable_moments: bool = True,
+                         only_specified_values: bool = False,
+                         ) -> None:
+        """Directly assign numerical values to variables in the moment matrix.
+        This is done via a dictionary where keys are the variables to have
+        numerical values assigned (either in their operator form, in string
+        form, or directly referring to the variable in the moment matrix), and
+        the values are the corresponding numerical quantities. 
+
+        Parameters
+        ----------
+        values : Dict[Union[simpy.core.symbol.Symbol, str, Monomial], float]
+            The description of the variables to be assigned numerical values and
+            the corresponding values. The keys can be either of the Monomial class,
+            symbols or strings (which should be the name of some Monomial).
+
+        use_lpi_constraints : bool
+            Specification whether linearized polynomial constraints (see, e.g.,
+            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+
+        only_specified_values : bool
+            Specifies whether one wishes to fix only the variables provided (True),
+            or also the variables containing products of the monomials fixed (False).
+            If only_specified_values is True, unknowable variables can also be fixed.
+            
+        set_uknowable_moments : bool
+            Specifies whether the user wishes to also set the values of 
+            monomials that are not a priori knowable.
+            
+        normalised: bool
+            Specifies whether the unit monomial '1' is given value 1.0 even if
+            '1' is not included in the values dictionary (default, True), or if 
+            is left as a free variable (False).
         """
-        This next block of code re-indexes the monomials (and the momentmatrix) 
-        to put the known variables first, then the unknown, then the semiknown.
-        """
-        # known_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
-        # known_statusus[[0, 1]] = 'Yes'
-        # for monomial in self.list_of_monomials:
-        #     known_statusus[monomial.idx] = monomial.known_status
+        
+        # TODO: Note to Elie from Emi. I have given some thought about this and  
+        # I wrote this in two ways: one where the user can specify unknowable
+        # moments and one where they cannot. In the first I need to find
+        # the representatives of ALL factors, and in the other I can use
+        # the functions you wrote and find the representative only of the
+        # semiknown unknowable factors.
+        # An example of fixing unknown monomials could be (me) trying to study
+        # the impact of nonconvex constraints by fixing one of the variables. 
+        # E.g., relax v=v1*v2 by fixing v1 and letting v2 be 
+        # free and then doing a sweep in the values of v1.
+        
+        self.reset_distribution()
+        
+        self.use_lpi_constraints = use_lpi_constraints
 
-        _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
-        self._n_known = _counter['Yes']
-        self._n_something_known = _counter['Semi']
-        self._n_unknown = _counter['No']
+        # Sanitise the values dictionary
+        values_clean = {}
+        for k in list(values.keys()):
+            k_sanitised = self._sanitise_monomial(k)
+            if not np.array_equal(k_sanitised, 0):  # TODO do this comparison well
+                values_clean[k_sanitised] = values[k]
+            else:
+                warnings.warn("The variable " + k + " in the values provided " +
+                              "simplifies to 0 with the current substitution rules.")
+        
+        # Check that the keys are consistent with the flags set
+        for k in values_clean:
+            if only_specified_values is False:
+                if k.nof_factors > 1:
+                    raise Exception("set_values: The monomial " + str(k) + " is not an " +
+                                    "atomic monomial, but composed of several factors. " + 
+                                    "Please provide values only for atomic monomials. " +
+                                    "If you want to manually be able to set values for " +
+                                    "non-atomic monomials, set only_specified_values to True.")
+            if k.knowability_status != 'Yes' and only_knowable_moments is True:
+                raise Exception("set_values: You are trying to set the value of " + str(k) +
+                                "which is not fully knowable in standard scenarios. " +
+                                "Set set_only_knowable_moments to False for this feature.")
+        
+        if normalised:
+            OneMonomial = Monomial(np.empty((0, 3), dtype=np.uint8))
+            OneMonomial.name = '1'
+            values_clean[OneMonomial] = 1
+            
+        if only_specified_values:
+            # If only_specified_values=True, then ONLY the Monomials that
+            # are keys in the values dictionary are fixed. Any other monomial
+            # that is semi-known relative to the information in the dictionary
+            # is left free.
+            self.known_moments = values_clean
+            self.semiknown_moments = {}
+            if self.use_lpi_constraints and self.verbose >= 1:
+                warnings.warn("set_values: Both only_specified_values=True and use_lpi_constraints=True has been detected. "
+                              "With only_specified_values=True, only moments that match exactly " +
+                              "those provided in the values dictionary will be set. Values for moments " +
+                              "that are products of others moments will not be inferred automatically, " +
+                              "and neither will proportionality constraints between moments (LPI constraints). "+
+                              "Set only_specified_values=False for these features.")
+            return
+            
+        # Some more pre-processing!
+        if only_knowable_moments:
+            # This is some hack to be able to use Elie's Monomial methods.
+            # I want the values_clean dictionary to still be a dictionary of
+            # Monomials, but it is difficult to check if a knowable factor
+            # is in this dictionary in this format. So I will make an auxiliary
+            # with keys atomic monomials as tuples without the inflation indices.
+            values_clean_as_knowabletuple = {k.knowable_factors[0]: v
+                                            for k, v in list(values_clean.items())}
+        else:
+            # With this option, we don't use Elie's code but bring every
+            # factor to its representative form. This is done only once.
+            if not self.__factor_reps_computed__:
+                for mon in self.list_of_monomials:
+                    # For the representantive, its easier to store it in .as_ndarray
+                    # so that __eq__() between Monomials works as expected,
+                    # rather than the .representative attribute.
+                    mon.as_ndarray = self.inflation_aware_to_representative(mon.as_ndarray) 
+                    mon._factors_repr = [to_tuple_of_tuples(  # So that it is hashable
+                                            self.inflation_aware_to_representative(factor)
+                                            )
+                                        for factor in mon.factors]
+                self.__factor_reps_computed__ = True  # So they are not computed again
 
-        # #REORDERING TO KEEP KNOWN UP FRONT
-        # _reordering_of_monomials = np.argsort(np.concatenate((
-        #     np.flatnonzero(known_statusus == 'Yes'),
-        #     np.flatnonzero(known_statusus == 'No'),
-        #     np.flatnonzero(known_statusus == 'Semi'))))
-        # self.momentmatrix = _reordering_of_monomials.take(self.momentmatrix)
-        # self.orbits = _reordering_of_monomials.take(self.orbits)
-        # for mon in self.list_of_monomials:
-        #     mon.idx = _reordering_of_monomials[mon.idx]
-
-        self._semiknowns_without_counterparts = set()
-        if self.use_lpi_constraints:
-            for representative, list_of_mon in dict_which_groups_monomials_by_representative.items():
-                if any(mon.known_status == 'Semi' for mon in list_of_mon):
-                    which_is_wholly_unknown = [mon.known_status == 'No' for mon in list_of_mon]
-                    if not np.count_nonzero(which_is_wholly_unknown) >= 1:
-                        self._semiknowns_without_counterparts.add(representative)
-                    # NEXT SIX LINES ARE FOR LEGACY COMPATABILITY
-                    list_of_mon_copy = list_of_mon.copy()
-                    list_of_mon_copy = sorted(list_of_mon_copy, key=operator.attrgetter('known_value'))
-                    big_val_mon = list_of_mon_copy.pop(-1)
-                    # wholly_unknown_mon = list_of_mon_copy.pop(np.flatnonzero(which_is_wholly_unknown)[0])
-                    for semiknown_mon in list_of_mon_copy:
-                        coeff = np.true_divide(semiknown_mon.known_value,big_val_mon.known_value)
-                        self.semiknown_moments_idx_dict[semiknown_mon.idx] = (coeff, big_val_mon.idx)
-                        self.semiknown_moments_name_dict[semiknown_mon.name] = (coeff, big_val_mon.name)
-            if self.verbose and len(self._semiknowns_without_counterparts):
-                warning_string = f'We found {len(self._semiknowns_without_counterparts)} semiknowns with no counterparts:'
-                for representative in self._semiknowns_without_counterparts:
-                    warning_string += ('\n' + np.array_str(np.asarray(representative)))
-                formatwarning_orig = warnings.formatwarning
-                warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
-                    formatwarning_orig(message, category, filename, lineno, line='')
-                warnings.warn(warning_string)
-
-            max_semiknown_coefficient = max(coeiff for (coeiff, idx) in self.semiknown_moments_idx_dict.values())
-            # max(max(mon.known_value for mon in list_of_mon)
-            #                                 for v in dict_which_groups_monomials_by_representative.values())
-            assert max_semiknown_coefficient <= 1, f'Some semi-expressible-coefficient exceeds one: {max_semiknown_coefficient}'
-
-
-        #RESET PROPERTIES
-
-        for mon in self.list_of_monomials:
-            if mon.known_status == 'Yes':
-                if treat_as_support and mon.known_value > 0:
-                    self.moment_lowerbounds_idx_dict[mon.idx] = 1
-                    self.moment_lowerbounds_name_dict[mon.name] = 1
+        self.known_moments = values_clean  # By this point, we made sure we only have atomic factors
+        
+        self.semiknown_moments = {}
+        if only_knowable_moments:
+            # Use the Monomial methods developed by Elie that rely on knowability status
+            for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):   
+                #if mon.knowability_status != 'No':
+                valuation = [values_clean_as_knowabletuple[f] if f in values_clean_as_knowabletuple else np.nan 
+                                for f in mon.knowable_factors]
+                mon.update_given_valuation_of_knowable_part(valuation)
+                if mon.known_status == 'Yes':
+                    self.known_moments[mon] = mon.known_value
+                elif mon.known_status == 'Semi': 
+                    if self.use_lpi_constraints:
+                        # TODO: Elie, I think we need to bring to representative 
+                        # form the unknowable factors as block in order to 
+                        # be able to find them in the list of all monomials
+                        # if they are there.
+                        if np.isclose(mon.known_value, 0):
+                            self.known_moments[mon] = 0
+                        else:
+                            reprr = self.inflation_aware_to_representative(
+                                            to_canonical(mon.unknown_part))
+                            unknown = Monomial(reprr, atomic_is_knowable=self.atomic_knowable_q,
+                                                    sandwich_positivity=True)
+                            unknown.update_name_and_symbol_given_observed_names(self.names)
+                            self.semiknown_moments[mon] = (mon.known_value, unknown)
                 else:
-                    self.known_moments_idx_dict[mon.idx] = mon.known_value
-                    self.known_moments_name_dict[mon.name] = mon.known_value
-        self.nof_known_moments = len(self.known_moments_idx_dict)
-        #Such as resetting physical_monomials using new indices.
-        if not self.commuting:
-            self.physical_monomial_idxs = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_idx_dict.keys())
-            self.physical_monomial_names = set([mon.name for mon in self.list_of_monomials if mon.physical_q]).difference(
-                self.known_moments_name_dict.keys())
-            self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
-            self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
+                    pass
+        else:
+            # We don't use Elie's Monomial methods, as those rely on knowability status.
+            # Here, the knowability status of an atomic monomial is simply
+            # whether it is in the values dictionary or not. This allows the user
+            # to also set unknowable monomials.
+            for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):   
+                unknowns_to_join = []
+                known = 1
+                for i, factor_repr in enumerate(mon._factors_repr):
+                    if factor_repr in values_clean:
+                        known *= values_clean[factor_repr]
+                    else:
+                        unknowns_to_join.append(mon.factors[i])
+                if len(unknowns_to_join) == 0:
+                    self.known_moments[mon] = known
+                else:
+                    if self.use_lpi_constraints:
+                        if len(unknowns_to_join) < mon.nof_factors:
+                            if np.isclose(known, 0):
+                                self.known_moments[mon] = 0
+                            else:
+                                unknown = Monomial(self.inflation_aware_to_representative(
+                                                            to_canonical(np.concatenate(unknowns_to_join))),
+                                                            atomic_is_knowable=self.atomic_knowable_q,
+                                                            sandwich_positivity=True)
+                                unknown.update_name_and_symbol_given_observed_names(self.names)
+                                self.semiknown_moments[mon] = (known, unknown)
+                        
+
+                        
+        # Name dictionaries for compatibility purposes only
+        self.known_moments_name_dict = {mon.name : v for mon, v in self.known_moments.items()}
+        self.semiknown_moments_name_dict = {mon.name : (v[0], v[1].name) for mon, v in self.semiknown_moments.items()}
+        
+        # if self.objective != 0:
+        #     self._update_objective()  # TODO function missing take it from atomic-complete
 
 
-        if self.objective and not (prob_array is None):
-            warnings.warn('Danger! User apparently set the objective before the distribution.')
-        self.distribution_has_been_set = True
+
 
     def set_objective(self,
                       objective: sp.core.symbol.Symbol,
@@ -594,98 +865,50 @@ class InflationSDP(object):
         _idx_to_names_dict[1] = '1'
         self._objective_as_name_dict = {_idx_to_names_dict[k]: v for (k, v) in self._objective_as_idx_dict.items()}
 
-    # #TODO: Implement set_values function (implemented in main branch)
-    # def set_values(self,
-    #                values: Dict[Union[sp.core.symbol.Symbol, str], float],
-    #                use_lpi_constraints: bool = False,
-    #                only_specified_values: bool = False,
-    #                normalised: bool = True) -> None:
-    #     """Directly assign numerical values to variables in the moment matrix.
-    #     This is done via a dictionary where keys are the variables to have
-    #     numerical values assigned (either in their operator form, in string
-    #     form, or directly referring to the variable in the moment matrix), and
-    #     the values are the corresponding numerical quantities.
-
-    #     Parameters
-    #     ----------
-    #     values : Dict[Union[simpy.core.symbol.Symbol, int, str], float]
-    #         The description of the variables to be assigned numerical values and
-    #         the corresponding values.
-
-    #     use_lpi_constraints : bool
-    #         Specification whether linearized polynomial constraints (see, e.g.,
-    #         Eq. (D6) in arXiv:2203.16543) will be imposed or not.
-
-    #     only_specified_values : bool
-    #         Specification whether one wishes to fix only the variables provided,
-    #         or also the variables containing products of the monomials fixed.
-            
-    #     normalised: bool
-    #         Specifies whether the unit monomial '1' is given value 1.0 (True) 
-    #         or is left as a free variable (False).
-    #     """
-    #     # Sanitise the values dictionary
-    #     for k in list(values.keys()):
-    #         if type(k) != str:
-    #             knum = np.concatenate([to_numbers(str(f), self.names)
-    #                                     for f in flatten_symbolic_powers(k)])
-    #         else:
-    #             knum = to_numbers(str(k), self.names)            
-    #         knumcanon = to_canonical(knum)
-    #         if not np.array_equal(knumcanon, 0):
-    #             knumcanon = to_representative(knumcanon, self.inflation_levels,
-    #                                           self.commuting, True, True)
-    #             knumcanon = to_name(knumcanon, self.names)
-    #             if knumcanon != k:
-    #                 values[knumcanon] = values[k]
-    #                 del values[k]
-    #         else:
-    #             raise Exception("The variable " + k + " in the values provided " +
-    #                             "simplifies to 0 with the current substitution rules.")
-        
-    #     if normalised:
-    #         values['1'] = 1
-        
-    #     self.combine_unknowns = True
-    #     self.use_lpi_constraints = use_lpi_constraints
-    #     self.known_moments = values  # Add all known values to known moments
-    #     if not only_specified_values:
-    #         for moment, factors in self.moments_composed.items():
-    #             coeff = 1
-    #             unknown_factors = []
-    #             unknown_factors_rep = []
-    #             for factor in factors:
-    #                 factor_rep = to_name(to_representative(to_numbers(factor,
-    #                                                                   self.names),
-    #                                                        self.inflation_levels,
-    #                                                        self.commuting,
-    #                                                        True, True),
-    #                                      self.names)
-    #                 try:
-    #                     coeff *= values[factor_rep]
-    #                 except KeyError:
-    #                     unknown_factors.append(factor)
-    #                     unknown_factors_rep.append(factor_rep)
-    #             if len(unknown_factors) == 0:
-    #                 self.known_moments[moment] = coeff
-    #             elif len(unknown_factors) == len(factors):
-    #                 # There are no known atomic monomials for this moment
-    #                 pass  
-    #             else:
-    #                 # Semiknown case
-    #                 combined_unknowns = to_numbers('*'.join(unknown_factors),
-    #                                             self.names)
-    #                 combined_unknowns_rep = to_name(to_representative(
-    #                                                         combined_unknowns,
-    #                                                         self.inflation_levels,
-    #                                                         self.commuting,
-    #                                                         True, True),
-    #                                                 self.names)
-    #                 if self.use_lpi_constraints:
-    #                     self.semiknown_moments[moment] = (coeff, combined_unknowns_rep)
-
-    #     if self.objective != 0:
-    #         self._update_objective() 
+    def _sanitise_monomial(self, mon: Any) -> Monomial:
+        """Bring a monomial into the form used internally.
+        """
+        if type(mon) in [int, float, sp.core.numbers.Number]:
+            if np.isclose(float(mon), 1):
+                OneMon = Monomial(np.empty((0, 3), dtype=np.uint8))
+                OneMon.name = '1'
+                return OneMon
+            else:
+                raise Exception("Constant monomial can only be the identity monomial.")
+        elif type(mon) in [sp.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
+            # This assumes the monomial is in "machine readable symbolic" form
+            array = np.concatenate([to_numbers(op, self.names)
+                                    for op in flatten_symbolic_powers(mon)])
+        elif type(mon) in [tuple, list]:
+            array = np.array(mon, dtype=np.uint8)
+        elif type(mon) == str:
+            # If it is a string, I assume it is the name of one of the 
+            # monomials in self.list_of_monomials
+            # TODO: think what happens when the string is not exactly 
+            # the name of one of the monomials in self.list_of_monomials
+            for m in self.list_of_monomials:
+                if m.name == mon:
+                    return m
+            Exception(f"sanitise_monomial: {mon} in string format is not found in `list_of_monomials`.")
+        elif type(mon) == Monomial:
+            # If the user passes a proper Monomial, if they instantiated it
+            # themselves, it can be in a form not found in list_of_monomials
+            # I only extract the          
+            if mon in self.list_of_monomials:
+                return mon
+            else:
+                array = mon.as_ndarray
+                
+        canon = to_canonical(array)
+        if np.array_equal(canon, 0):
+            return 0  # TODO: Or ZeroMonomial once that is implemented?
+        else:
+            reprr = self.inflation_aware_to_representative(canon)
+            reprr = Monomial(reprr, atomic_is_knowable=self.atomic_knowable_q,
+                                    sandwich_positivity=True)
+            reprr.update_name_and_symbol_given_observed_names(self.names)
+            return reprr
+   
 
     #TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
     def solve(self, interpreter: str='MOSEKFusion',
@@ -714,8 +937,8 @@ class InflationSDP(object):
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
-        if not self.distribution_has_been_set:
-            self.set_distribution(prob_array=None, use_lpi_constraints=False)
+        # if not self.distribution_has_been_set:
+        #     self.set_distribution(prob_array=None, use_lpi_constraints=False)
         if feas_as_optim and len(self._objective_as_idx_dict) > 1:
             warnings.warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
