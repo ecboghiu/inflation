@@ -106,7 +106,10 @@ def atomic_monomial_to_name(observable_names: Tuple[str],
                                                          + [str(i) for i in op[1:]]))
                 return 'P[' + ', '.join(operators_as_strings) + ']'
         else:
-            return '*'.join([observable_names[op[0] - 1] + '_' + '_'.join([str(i) for i in op[1:]]) for op in atom])
+            res = '*'.join([observable_names[op[0] - 1] + '_' +
+                             '_'.join([str(i) for i in op[1:]])
+                             for op in atom])
+            return res
     else:
         return '1'
 
@@ -322,12 +325,20 @@ class Monomial(object):
         self.name = name_from_atomic_names(self._names_of_factors)
         self.symbol = symbol_from_atomic_names(self._names_of_factors)
 
-        self._machine_readable_names_of_factors = [atomic_monomial_to_name(observable_names=observable_names,
-                                                                           atom=atomic_factor,
-                                                                           human_readable_over_machine_readable=False)
-                                                   for atomic_factor in self.factors]
-        self.machine_readable_name = name_from_atomic_names(self._machine_readable_names_of_factors)
-        self.machine_readable_symbol = symbol_from_atomic_names(self._machine_readable_names_of_factors)
+        # self._machine_readable_names_of_factors = [atomic_monomial_to_name(observable_names=observable_names,
+        #                                                                    atom=atomic_factor,
+        #                                                                    human_readable_over_machine_readable=False)
+        #                                            for atomic_factor in self.factors]
+        # self.machine_readable_name = name_from_atomic_names(self._machine_readable_names_of_factors)
+        
+        self.machine_readable_name = atomic_monomial_to_name(observable_names=observable_names,
+                                            atom=self.as_tuples,
+                                            human_readable_over_machine_readable=False)
+        
+        self.machine_readable_symbol = (sympy.S.One if self.machine_readable_name == '1' else
+                                        np.prod([sympy.Symbol(op, commutative=False) 
+                                                 for op in self.machine_readable_name.split('*')]) )
+        
 
     def update_given_prob_dist(self, prob_array):
         if prob_array is None:

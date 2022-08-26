@@ -268,17 +268,16 @@ class InflationSDP(object):
         # ZeroMon.mask_matrix =
         # sample_monomial = np.asarray(self.symidx_to_canonical_mon_dict[2], dtype=np.uint8)
         #
-        OneMon = Monomial(np.empty((0, 3), dtype=int), idx=1)
-        OneMon.name = '1'  # Quick hack to make self._name2mon work
+        OneMoment = Monomial(np.empty((0, 3), dtype=int), idx=1)
+        OneMoment.name = '1'
+        self.One = OneMoment  # Emi: I think it makes sense to have this, 
+                              # as we reference this in other places and its a pain
+                              # to redefine it
+        self.list_of_monomials = [self.One] + [Monomial(v,
+                                                         atomic_is_knowable=self.atomic_knowable_q,
+                                                         sandwich_positivity=True, idx=k)
+                                               for (k, v) in self.symidx_to_canonical_mon_dict.items()]
 
-        self.list_of_monomials = [OneMon] + [Monomial(v,
-                                                     atomic_is_knowable=self.atomic_knowable_q,
-                                                     sandwich_positivity=True,
-                                                     idx=k) for (k, v) in self.symidx_to_canonical_mon_dict.items()]
-
-
-
-        
         self.idx_dict_of_monomials = {mon.idx: mon for mon in sorted(self.list_of_monomials, key = operator.attrgetter('idx'))}
         # self._all_atomic_knowable = set()
         for mon in self.list_of_monomials:
@@ -402,7 +401,7 @@ class InflationSDP(object):
         self.semiknown_moments = {}
         self.semiknown_moments_idx_dict  = dict()
         self.semiknown_moments_name_dict = dict()
-        self.distribution_has_been_set = False
+        #self.distribution_has_been_set = False
         # NOTE: INDICES ARE BAD, AS THEY CAN BE RESET SOMETIMES
         if not self.commuting:
             self.physical_monomial_idxs = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_idx_dict.keys())
@@ -676,9 +675,7 @@ class InflationSDP(object):
                                 "Set set_only_knowable_moments to False for this feature.")
         
         if normalised:
-            OneMonomial = Monomial(np.empty((0, 3), dtype=np.uint8))
-            OneMonomial.name = '1'
-            values_clean[OneMonomial] = 1
+            values_clean[self.One] = 1
             
         if only_specified_values:
             # If only_specified_values=True, then ONLY the Monomials that
@@ -789,10 +786,85 @@ class InflationSDP(object):
 
 
 
+    # def set_objective(self,
+    #                   objective: sp.core.symbol.Symbol,
+    #                   direction: str ='max') -> None:
+    #     #TODO: Use self.orbits instead of self.inflation_aware_to_representative
+    #     """Set or change the objective function of the polynomial optimization
+    #     problem.
+
+    #     Parameters
+    #     ----------
+    #     objective : sympy.core.symbol.Symbol
+    #         Describes the objective function.
+    #     direction : str, optional
+    #         Direction of the optimization (max/min), by default 'max'
+    #     """
+
+    #     assert direction in ['max', 'min'], ('The direction parameter should be'
+    #                                          + ' set to either "max" or "min"')
+    #     if direction == 'max':
+    #         sign = 1
+    #         self.maximize = True
+    #     else:
+    #         sign = -1
+    #         self.maximize = False
+
+    #     if hasattr(self, 'use_lpi_constraints'):
+    #         if self.use_lpi_constraints:
+    #             warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
+    #                  "aware that imposing linearized polynomial constraints will " +
+    #                  "constrain the optimization to distributions with fixed " +
+    #                  "marginals.")
+
+    #     self.objective = objective
+
+    #     if (sp.S.One*objective).free_symbols:
+    #         # Sanitize input: pass through substitutions to get
+    #         # objects that we have used previously
+    #         objective = sp.expand(objective)
+    #         # # Build string-to-variable dictionary
+    #         # string2int_dict = {**{'0': '0', '1': '1'},
+    #         #                    **dict(self._monomials_list_all[:, ::-1])}
+
+    #         #Build monomial to index dictionary
+    #         self.symidx_from_Monomials_dict = {self.inflation_aware_to_representative(mon.as_ndarray): mon.idx
+    #                                            for mon in self.list_of_monomials}
+    #         acceptable_monomials = set(self.symidx_from_Monomials_dict.keys())
+
+    #         # Express objective in terms of representatives
+    #         symmetrized_objective = {1: 0.}
+    #         for monomial, coeff in objective.as_coefficients_dict().items():
+    #             # print(f"{monomial}: = {coeff}")
+    #             monomial_as_str = str(monomial)
+    #             if monomial_as_str == '1':
+    #                 symmetrized_objective[1] += sign*coeff
+    #             else:
+    #                 monomial_as_array = to_numbers(monomial_as_str, self.names)
+    #                 monomial_as_repr_array = self.inflation_aware_to_representative(np.asarray(monomial_as_array))
+    #                 #TODO: Check for operator equal to zero
+    #                 #TODO: Use orbits instead of to_representative if possible.
+    #                 assert monomial_as_repr_array in acceptable_monomials, 'Monomial specified does not appear in our moment matrix.'
+    #                 repr =  self.symidx_from_Monomials_dict[monomial_as_repr_array]
+    #                 # If the objective contains a known value add it to the constant
+    #                 if repr in self.known_moments_idx_dict.keys():
+    #                     symmetrized_objective[1] += \
+    #                                             sign*coeff*self.known_moments_idx_dict[repr]
+    #                 elif repr in symmetrized_objective.keys():
+    #                     symmetrized_objective[repr] += sign * coeff
+    #                 else:
+    #                     symmetrized_objective[repr] = sign * coeff
+    #         self._objective_as_idx_dict = symmetrized_objective
+    #     else:
+    #         self._objective_as_idx_dict = {1: sign * float(objective)}
+    #     _idx_to_names_dict = {mon.idx: mon.name for mon in self.list_of_monomials}
+    #     _idx_to_names_dict[0] = '0'
+    #     _idx_to_names_dict[1] = '1'
+    #     self._objective_as_name_dict = {_idx_to_names_dict[k]: v for (k, v) in self._objective_as_idx_dict.items()}
+
     def set_objective(self,
                       objective: sp.core.symbol.Symbol,
                       direction: str ='max') -> None:
-        #TODO: Use self.orbits instead of self.inflation_aware_to_representative
         """Set or change the objective function of the polynomial optimization
         problem.
 
@@ -823,59 +895,26 @@ class InflationSDP(object):
         self.objective = objective
 
         if (sp.S.One*objective).free_symbols:
-            # Sanitize input: pass through substitutions to get
-            # objects that we have used previously
             objective = sp.expand(objective)
-            # # Build string-to-variable dictionary
-            # string2int_dict = {**{'0': '0', '1': '1'},
-            #                    **dict(self._monomials_list_all[:, ::-1])}
-
-            #Build monomial to index dictionary
-            self.symidx_from_Monomials_dict = {self.inflation_aware_to_representative(mon.as_ndarray): mon.idx
-                                               for mon in self.list_of_monomials}
-            acceptable_monomials = set(self.symidx_from_Monomials_dict.keys())
-
-            # Express objective in terms of representatives
-            symmetrized_objective = {1: 0.}
-            for monomial, coeff in objective.as_coefficients_dict().items():
-                # print(f"{monomial}: = {coeff}")
-                monomial_as_str = str(monomial)
-                if monomial_as_str == '1':
-                    symmetrized_objective[1] += sign*coeff
-                else:
-                    monomial_as_array = to_numbers(monomial_as_str, self.names)
-                    monomial_as_repr_array = self.inflation_aware_to_representative(np.asarray(monomial_as_array))
-                    #TODO: Check for operator equal to zero
-                    #TODO: Use orbits instead of to_representative if possible.
-                    assert monomial_as_repr_array in acceptable_monomials, 'Monomial specified does not appear in our moment matrix.'
-                    repr =  self.symidx_from_Monomials_dict[monomial_as_repr_array]
-                    # If the objective contains a known value add it to the constant
-                    if repr in self.known_moments_idx_dict.keys():
-                        symmetrized_objective[1] += \
-                                                sign*coeff*self.known_moments_idx_dict[repr]
-                    elif repr in symmetrized_objective.keys():
-                        symmetrized_objective[repr] += sign * coeff
-                    else:
-                        symmetrized_objective[repr] = sign * coeff
-            self._objective_as_idx_dict = symmetrized_objective
+            symmetrized_objective = {}
+            for mon, coeff in objective.as_coefficients_dict().items():
+                mon = self._sanitise_monomial(mon)
+                try:
+                    symmetrized_objective[mon] += sign * coeff
+                except KeyError:
+                    symmetrized_objective[mon] = sign * coeff
         else:
-            self._objective_as_idx_dict = {1: sign * float(objective)}
-        _idx_to_names_dict = {mon.idx: mon.name for mon in self.list_of_monomials}
-        _idx_to_names_dict[0] = '0'
-        _idx_to_names_dict[1] = '1'
-        self._objective_as_name_dict = {_idx_to_names_dict[k]: v for (k, v) in self._objective_as_idx_dict.items()}
+            symmetrized_objective = {self.One: sign * float(objective)}
+
+        self._objective_as_dict = symmetrized_objective
+        
+        # For compatibility purposes
+        self._objective_as_name_dict = {k.name: v for (k, v) in self._objective_as_dict.items()}
 
     def _sanitise_monomial(self, mon: Any) -> Monomial:
         """Bring a monomial into the form used internally.
         """
-        if type(mon) in [int, float, sp.core.numbers.Number]:
-            if np.isclose(float(mon), 1):
-                OneMon = Monomial(np.empty((0, 3), dtype=np.uint8))
-                OneMon.name = '1'
-                return OneMon
-            else:
-                raise Exception("Constant monomial can only be the identity monomial.")
-        elif type(mon) in [sp.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
+        if type(mon) in [sp.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
             # This assumes the monomial is in "machine readable symbolic" form
             array = np.concatenate([to_numbers(op, self.names)
                                     for op in flatten_symbolic_powers(mon)])
@@ -889,7 +928,7 @@ class InflationSDP(object):
             for m in self.list_of_monomials:
                 if m.name == mon:
                     return m
-            Exception(f"sanitise_monomial: {mon} in string format is not found in `list_of_monomials`.")
+            raise Exception(f"sanitise_monomial: {mon} in string format is not found in `list_of_monomials`.")
         elif type(mon) == Monomial:
             # If the user passes a proper Monomial, if they instantiated it
             # themselves, it can be in a form not found in list_of_monomials
@@ -898,6 +937,15 @@ class InflationSDP(object):
                 return mon
             else:
                 array = mon.as_ndarray
+        else: # If they are number type
+            try:
+                if np.isclose(float(mon), 1):
+                    return self.One
+                else:
+                    raise Exception(f"Constant monomial {mon} can only be the identity monomial.")
+            except:
+                # This can happen if calling float() gives an error
+                Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
                 
         canon = to_canonical(array)
         if np.array_equal(canon, 0):
