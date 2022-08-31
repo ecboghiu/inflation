@@ -91,7 +91,7 @@ class TestGeneratingMonomials(unittest.TestCase):
                                                  inflation_level_per_source=[1]))
         _, columns = oneParty.build_columns([[], [0, 0]],
                                             return_columns_numerical=True)
-        truth   = [[0],
+        truth   = [[[0]],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
         truth = [np.array(mon) for mon in truth]
@@ -215,11 +215,20 @@ class TestInflation(unittest.TestCase):
         flatmeas = np.array(flatten(meas))
         measnames = np.array([str(meas) for meas in flatmeas])
 
+        lexorder = np.array([[1, 1, 1, 0, 0, 0],
+                             [1, 1, 2, 0, 0, 0],
+                             [1, 2, 1, 0, 0, 0],
+                             [1, 2, 2, 0, 0, 0],
+                             [2, 1, 0, 1, 0, 0],
+                             [2, 1, 0, 2, 0, 0],
+                             [2, 2, 0, 1, 0, 0],
+                             [2, 2, 0, 2, 0, 0]])
+
         # Define moment matrix columns
         _, ordered_cols_num = scenario.build_columns(col_structure,
                                                   return_columns_numerical=True)
 
-        expected = [[0],
+        expected = [[[0]],
                     [[1, 2, 0, 0], [1, 2, 1, 0]],
                     [[1, 1, 0, 0], [1, 2, 0, 0]],
                     [[1, 1, 1, 0], [1, 2, 0, 0]],
@@ -230,7 +239,8 @@ class TestInflation(unittest.TestCase):
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
                                                              [1, 0],
-                                                             False)
+                                                             False,
+                                                             lexorder)
         self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "
                          + "being applied properly after inflation symmetries")
@@ -381,7 +391,7 @@ class TestSDPOutput(unittest.TestCase):
                                     inflation_level_per_source=[3, 3, 3],
                                     order=('A', 'B', 'C')),
                             commuting=False)
-        cols = [np.array([0]),
+        cols = [np.array([[0]]),
                 np.array([[1, 1, 0, 1, 0, 0]]),
                 np.array([[2, 2, 1, 0, 0, 0],
                           [2, 3, 1, 0, 0, 0]]),
@@ -393,9 +403,9 @@ class TestSDPOutput(unittest.TestCase):
                           [3, 0, 2, 2, 0, 0],
                           [3, 0, 3, 2, 0, 0]]),
         ]
-        sdp.generate_relaxation(cols)
+        sdp.generate_relaxation(cols) 
         sdp.set_distribution(self.GHZ(0.5), use_lpi_constraints=True)
-
-        ""
-        # self.assertTrue(np.all(sdp.semiknown_moments[:, 1] <= 1),
-        #             ("All known coefficients should be between zero and one."))
+        semiknown_coeffs = np.array([v[0] for k, v in sdp.semiknown_moments.items()])
+        
+        self.assertTrue(np.all(semiknown_coeffs <= 1),
+                    ("All known coefficients should be between zero and one."))

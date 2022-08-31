@@ -33,12 +33,12 @@ from sympy.combinatorics.perm_groups import PermutationGroup
 try:
     # import numba
     from numba import jit
-    from numba import int16 as int16_
+    from numba import int64 as int64_
     from numba.types import bool_
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-    int16_ = np.uint16
+    int64_ = np.int64
     bool_ = bool
 
 try:
@@ -46,6 +46,9 @@ try:
 except ImportError:
     def tqdm(*args, **kwargs):
         return args[0]
+
+nopython = False
+cache = False
 
 # TODO build a proper typing system, maybe use classes?
 
@@ -107,11 +110,12 @@ def mul(lst: List) -> Any:
     return result
 
 
-# @jit(nopython=True)  # to make compatible with numba find a way to lexsort
+# @jit(nopython=nopython)  # TODO
 def apply_source_perm_monomial(monomial: np.ndarray,
                                 source: int,
                                 permutation: Union[List, np.ndarray],
-                                commuting: bool_
+                                commuting: bool_,
+                                lexorder
                                 ) -> np.ndarray:
     """This applies a source swap to a monomial.
 
@@ -135,15 +139,13 @@ def apply_source_perm_monomial(monomial: np.ndarray,
     """
 
     new_factors = monomial.copy()
-    for i in range(len(monomial)):
+    for i in range(monomial.shape[0]):
         if new_factors[i][1 + source] > 0:
-            # Python starts counting at 0
             new_factors[i][1 + source] = permutation[
-                new_factors[i][1 + source] - 1] + 1
-        else:
-            continue
+                                            new_factors[i][1 + source] - 1] + 1
     if commuting:
-        return mon_lexsorted(new_factors)
+        aux = 2 + 2
+        return mon_lexsorted(new_factors, lexorder)
     else:
         return new_factors
 
@@ -151,7 +153,8 @@ def apply_source_perm_monomial(monomial: np.ndarray,
 def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
                                          permutation: np.ndarray,
-                                         commuting: bool
+                                         commuting: bool,
+                                         lexorder
                                          ) -> List[sympy.core.symbol.Symbol]:
     """Applies a specific source permutation to the list of operators used to
     define the moment matrix. Outputs the permuted list of operators.
@@ -180,19 +183,19 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     """
     permuted_op_list = []
     for monomial in columns:
-        if np.array_equal(monomial, np.array([0])):
+        if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
             permuted_op_list.append(monomial)
         else:
             newmon = apply_source_perm_monomial(monomial, source,
                                                 np.asarray(permutation),
-                                                commuting)
-            canonical = to_canonical(newmon)
+                                                commuting, lexorder)
+            canonical = to_canonical(newmon, lexorder)
             permuted_op_list.append(canonical)
 
     return permuted_op_list
 
 
-@jit(nopython=True)
+@jit(nopython=nopython)
 def apply_source_permutation_monomial(monomial: np.ndarray,
                                       source: int,
                                       permutation: np.ndarray
@@ -236,7 +239,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   max_monomial_length: int,
                                   settings_per_party: Tuple[int],
                                   outputs_per_party: Tuple[int],
-                                  names: Tuple[str]
+                                  names: Tuple[str],
+                                  lexorder
                                   ) -> List[np.ndarray]:
     """Generates all possible positive monomials given a scenario and a
     maximum length.
@@ -290,7 +294,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     # that by applying all possible source swaps, you get all possible
     # commuting products of the same length.
     initial_monomial = np.zeros(
-        (max_monomial_length, 1+nr_sources+2), dtype=np.uint8)
+        (max_monomial_length, 1+nr_sources+2), dtype=np.uint16)
     for mon_idx in range(max_monomial_length):
         initial_monomial[mon_idx, 0] = 1+party
         initial_monomial[mon_idx, -1] = 0  # output_comb[mon_idx]  # Default 0
@@ -306,7 +310,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
             permuted = apply_source_perm_monomial(
-                permuted, source, perms[source], True)
+                permuted, source, np.array(perms[source]), True, lexorder)
         permuted_name = to_name(permuted, names)
         if permuted_name not in template_new_mons_aux:
             template_new_mons_aux.append(permuted_name)
@@ -365,7 +369,7 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
 def to_symbol(monomial: np.ndarray, names: Tuple[str]) -> sympy.core.symbol.Symbol:
     """Converts a monomial to a symbolic representation.
     """
-    if np.array_equal(monomial, np.array([0])):
+    if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
         return sympy.S.One
 
     if type(monomial) == str:
@@ -451,7 +455,7 @@ def to_numbers(monomial: str,
                    + (int(atoms[-2]), int(atoms[-1])))
         monomial_parts_indices.append(indices)
 
-    return np.array(monomial_parts_indices, dtype=np.uint8)
+    return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
 def from_numbers_to_flat_tuples(lista: List[List[int]]
@@ -473,7 +477,7 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
     """
     tuples = []
     for element in lista:
-        if np.array_equal(element, np.array([0])):
+        if np.array_equal(element, np.array([[0]], dtype=np.uint16)):
             tuples.append(tuple([0]))
         else:
             tuples.append(tuple(flatten(element.tolist())))
@@ -554,7 +558,7 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     """
 
     # monomial = np.array(monomial_in, dtype=np.int8).copy()
-    monomial = np.array(monomial_in, dtype=np.uint8, copy=True)
+    monomial = np.array(monomial_in, dtype=np.uint16, copy=True)
     if sandwich_positivity:
         monomial = remove_sandwich(monomial)
 
@@ -893,7 +897,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
     return monomials_factors
 
 
-@jit(nopython=True)
+@jit(nopython=nopython)
 def nb_first_index(array: np.ndarray,
                    item: float
                    ) -> int:
@@ -923,7 +927,7 @@ def nb_first_index(array: np.ndarray,
             return idx
 
 
-@jit(nopython=True)
+@jit(nopython=nopython)
 def nb_unique(arr: np.ndarray
               ) -> Tuple[np.ndarray, np.ndarray]:
     """Find the unique elements in an array without sorting
@@ -949,12 +953,12 @@ def nb_unique(arr: np.ndarray
     uniquevals = np.unique(arr)
     nr_uniquevals = uniquevals.shape[0]
 
-    indices = np.zeros(nr_uniquevals).astype(int16_)
+    indices = np.zeros(nr_uniquevals).astype(int64_)
     for i in range(nr_uniquevals):
         indices[i] = nb_first_index(arr, uniquevals[i])
     indices.sort()
 
-    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int16_)
+    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int64_)
     for i in range(nr_uniquevals):
         # Undo the sorting done by np.unique()
         uniquevals_unsorted[i] = arr[indices[i]]
@@ -962,7 +966,7 @@ def nb_unique(arr: np.ndarray
     return uniquevals_unsorted, indices
 
 
-@jit(nopython=True)
+# @jit(nopython=nopython)
 def apply_source_swap_monomial(monomial: np.ndarray,
                                source: int,
                                copy1: int,
@@ -1009,8 +1013,9 @@ def apply_source_swap_monomial(monomial: np.ndarray,
     return new_factors
 
 
-# @jit(nopython=True)  # make to_canonical compatible with numba
-def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.ndarray:
+# @jit(nopython=nopython)  # make to_canonical compatible with numba
+def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
+                                          lexorder: np.ndarray) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps
     until we reach a stable point in terms of lexiographic ordering. This might
     not be a global optimum if we also take into account the commutativity.
@@ -1027,7 +1032,7 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.
     """
 
     monomial_component = to_canonical(
-        np.asarray(monomial_component))  # Make sure all commutation rules are applied
+        np.asarray(monomial_component), lexorder)  # Make sure all commutation rules are applied
     new_mon = monomial_component.copy()
     # -2 we ignore the first and the last two columns
     for source in range(monomial_component.shape[1] - 3):
@@ -1042,11 +1047,10 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.
                     new_mon, source, old_val, new_val)
     return new_mon
 
-# @jit(nopython=True)  # remove the use of itertools
-
-
+# @jit(nopython=nopython)  # remove the use of itertools
 def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                   inflevels: np.ndarray,
+                                  lexorder: np.ndarray,
                                   commuting: bool) -> np.ndarray:
     # Now we must take into account that the application of symmetries plus
     # applying commutation rules can give us an even smaller monomial
@@ -1069,8 +1073,9 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                 permuted = apply_source_perm_monomial(permuted,
                                                       source,
                                                       np.asarray(perms[source]),
-                                                      commuting)
-            permuted = to_canonical(permuted)
+                                                      commuting,
+                                                      lexorder)
+            permuted = to_canonical(permuted, lexorder)
             if mon_lessthan_mon(permuted, final_monomial):
                 final_monomial = permuted
         if np.array_equal(final_monomial, prev):
@@ -1080,10 +1085,11 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
     return final_monomial
 
 
-# @jit(nopython=True)
+# @jit(nopython=nopython)
 def to_representative(mon: np.ndarray,
                       inflevels: np.ndarray,
-                      commuting: bool_,
+                      lexorder: np.ndarray,
+                      commuting: bool_ = False,
                       consider_conjugation_symmetries: bool_ = True,
                       swaps_plus_commutations: bool_ = True,
                       ) -> np.ndarray:
@@ -1125,27 +1131,29 @@ def to_representative(mon: np.ndarray,
         Input monomial in canonical form.
 
     """
-    if mon_equal_mon(mon, np.array([0])):
+    if mon_equal_mon(mon, np.array([[0]], dtype=np.uint16)):
         return mon
 
     # We apply source swaps until we reach a stable point in terms of
     # lexiographic ordering. We do this by lowering the copy indices making
     # them as low as possible from left to right. This might not be a global
     # optimum.
-    final_monomial = to_repr_lower_copy_indices_with_swaps(mon)
+    final_monomial = to_repr_lower_copy_indices_with_swaps(mon, lexorder)
 
     # Before we didn't consider that applying a source swap that decreases the
     # ordering following by applying commutation rules can give us a smaller
     # monomial lexicographically.
     if swaps_plus_commutations:
-        final_monomial = to_repr_swap_plus_commutation(final_monomial, inflevels, commuting)
+        final_monomial = to_repr_swap_plus_commutation(final_monomial, inflevels,
+                                                       lexorder, commuting)
 
     if consider_conjugation_symmetries:
         mon_dagger = reverse_mon(mon)
-        mon_dagger_aux = to_repr_lower_copy_indices_with_swaps(mon_dagger)
+        mon_dagger_aux = to_repr_lower_copy_indices_with_swaps(mon_dagger, lexorder)
         if swaps_plus_commutations:
             mon_dagger_aux = to_repr_swap_plus_commutation(mon_dagger_aux,
                                                        inflevels,
+                                                       lexorder,
                                                        commuting)
         if mon_lessthan_mon(mon_dagger_aux, final_monomial):
             final_monomial = mon_dagger_aux

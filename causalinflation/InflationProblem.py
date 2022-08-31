@@ -70,7 +70,8 @@ class InflationProblem(object):
                     warn("Names read from DAG do not match names given as keyword argument. IGNORING user-specified names.")
             if not names_have_been_set_yet:
                 if len(implicit_names_as_set)>1:
-                    warn("Order of variables is inferred by the DAG according to lexicographic order.")
+                    if self.verbose > 0:
+                        warn("Order of variables is inferred by the DAG according to lexicographic order.")
                 self.names = sorted(implicit_names_as_set)
                 names_have_been_set_yet = True
         if order and (not names_have_been_set_yet):
