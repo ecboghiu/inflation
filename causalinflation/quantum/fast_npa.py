@@ -6,13 +6,48 @@ from typing import List, Dict, Tuple
 # Had to insert this because of circular imports
 # from collections import defaultdict, deque
 
+##########################################
+# Problems with cached functions with numba, while developing I recommend
+# cleaning the cache, later we can remove this
+import os
+
+def kill_files(folder):
+    for the_file in os.listdir(folder):
+        file_path = os.path.join(folder, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print("failed on filepath: %s" % file_path)
+
+def kill_numba_cache():
+
+    root_folder = os.path.realpath(__file__ + "/../../")
+
+    for root, dirnames, filenames in os.walk(root_folder):
+        for dirname in dirnames:
+            if dirname == "__pycache__":
+                try:
+                    kill_files(root + "/" + dirname)
+                except Exception as e:
+                    print("failed on %s", root)
+kill_numba_cache()
+##########################################
+
 try:
     from numba import jit
     from numba.types import bool_
+    from numba.types import uint16 as uint16_
+    from numba.types import int64 as int64_
+    from numba import types
+    from numba.typed import Dict as nb_Dict
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
     bool_ = bool
+    uint16_ = np.uint16
+    int64_ = np.int64
+    nb_Dict = dict
 
 try:
     from tqdm import tqdm
@@ -20,10 +55,185 @@ except ImportError:
     def tqdm(*args, **kwargs):
         return args[0]
 
-cache = True
+cache = False
+nopython = True
+if nopython == False:
+    bool_ = bool
+    uint16_ = np.uint16
+    nb_Dict = dict
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_op_eq_op(op1: np.ndarray, op2: np.ndarray) -> bool_:
+    """Check if two operators are equal.
+    
+    NOTE: There is no check for shape consistency. As this is
+    an internal function, it is assumed it is used correctly.
+    """
+    # if mon1.shape[0] != mon2.shape[0]: # TODO
+    #     return False
+    for i in range(op1.shape[0]):
+        if op1[i] != op2[i]:
+            return False
+    return True
+    #return np.array_equal(mon1, mon1)  # Slower when compiled with numba
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_linsearch(arr: np.array, value) -> int:
+    """Return the index of the first element in arr that is equal to value
+    or -1 if the element is not found."""
+    for index in range(arr.shape[0]):
+        if arr[index] == value:
+            return index
+    return -1
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_unique(arr: np.ndarray
+              ) -> Tuple[np.ndarray, np.ndarray]:
+    """Find the unique elements in an array without sorting
+    and in order of appearance.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        The array to search.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray]
+        The unique values unsorted and their indices.
+
+    Examples
+    --------
+    >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
+    (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
+    """
+
+    # One can use return_index=True with np.unique but I find this incompatible with numba so I do it by hand
+    uniquevals = np.unique(arr)
+    nr_uniquevals = uniquevals.shape[0]
+
+    indices = np.zeros(nr_uniquevals).astype(int64_)
+    for i in range(nr_uniquevals):
+        indices[i] = nb_linsearch(arr, uniquevals[i])
+    indices.sort()
+
+    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int64_)
+    for i in range(nr_uniquevals):
+        # Undo the sorting done by np.unique()
+        uniquevals_unsorted[i] = arr[indices[i]]
+
+    return uniquevals_unsorted, indices
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_op_lexorder(op: np.array, lexorder: np.ndarray) -> int:
+    """Map each operator to a unique integer for hashing and lexicographic
+    ordering comparison purposes.
+    """
+    # # summ = op[0]
+    # # prod = 1
+    # # for i in range(1, op.shape[0]):
+    # #     prod *= NB_RADIX
+    # #     summ += op[i]*prod
+    # # return summ
+    # Performance note: instead of having a matrix where the first column 
+    # stores the lexicographic order, we can have a matrix where the rows are
+    # ordered in the custom lexico-graphical order and then we simply return
+    # the row index where the row is equal to the input. Strangely enough,
+    # that is 40% slower with Numba! It is a headscratcher why returning 
+    # i instead of lexorder[i, 0] is slower...
+    for i in range(lexorder.shape[0]):          
+        if nb_op_eq_op(lexorder[i, :], op):
+            return i
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
+    """Convert a monomial to its lexicographic representation, as an 
+    array of integers representing the lex rank of each operator."""
+    lex = np.zeros(mon.shape[0], dtype=uint16_)
+    for i in range(mon.shape[0]):
+        lex[i] = nb_op_lexorder(mon[i], lexorder)
+    return lex
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_lexrepr_to_mon(lexrepr: np.ndarray, lexorder: np.ndarray) -> np.array:
+    """Convert a monomial to its lexicographic representation, as an 
+    array of integers representing the lex rank of each operator."""
+    mon = np.zeros(mon.shape, dtype=uint16_)
+    for i in range(lexrepr.shape[0]):
+        mon[i] = nb_op_lexorder(mon[i], lexorder)
+    return lexorder[lexrepr]
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_sort_lexorder(op_lexorder: np.array) -> np.array:
+    """Find the permutation that brings the operator to its lexicographic
+    ordering. E.g.: [3, 1, 2, 0] -perm-> [0, 1, 2, 3] """
+    perm = np.zeros(op_lexorder.shape[0], dtype=uint16_)
+    for i in range(op_lexorder.shape[0]):
+        perm[op_lexorder[i]] = i
+    return perm
+
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def nb_find_perm(perm, ref_perm):
+#     """Find the permutation that brings one list to the other. This is useful
+#     for sorting by parties."""
+#     res = np.zeros(perm.shape[0], dtype=uint16_)
+#     for i in range(perm.shape[0]):
+#         res[i] = nb_linsearch(perm, ref_perm[i])
+#     return res
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
+    """Sorts a monomial lexicographically."""
+    mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
+    return mon[np.argsort(mon_lexrepr, kind='quicksort')]  # TODO Slow?, find a better way
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_op_lessthan_op(op1: np.array, op2: np.array, lexorder: np.ndarray) -> bool_:
+    """Compares the lexicographic rank of two operators."""
+    return nb_op_lexorder(op1, lexorder) < nb_op_lexorder(op2, lexorder)
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_op1_commuteswith_op2(op1: np.array, op2: np.array,
+                            commutation_mat: np.ndarray,
+                            lexorder: np.ndarray
+                            ) -> bool_:
+    """Compares the lexicographic rank of two operators. commutation_mat
+    is a matrix whose (i, j) entry is 1 if the i-th operator commutes with
+    the j-th. i, j are the lexicographic ranks of the operators.
+    """
+    return commutation_mat[nb_op_lexorder(op1, lexorder), 
+                           nb_op_lexorder(op2, lexorder)]
+
+    
+# # @jit(nopython=nopython, cache=cache, forceobj=not nopython) Cannot handle lexsort.
+# def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
+#     """Return a monomial sorted lexicographically.
+
+#     The sorting keys are as follows. The first key is the parties, the second
+#     key is the inflation indices and the last keys are the input and output
+#     cardinalities. More informally, once we sorted all the parties together,
+#     within a party group we group all operators with the same inflation-copy
+#     index for the first source together, and within this group we group all
+#     operators with the same inflation-copy index for the second source
+#     together and so on until the last keys.
+
+#     Parameters
+#     ----------
+#     mon : np.ndarray
+#         Monomial as a numpy array.
+
+#     Returns
+#     -------
+#     np.ndarray
+#         Sorted monomial.
+#     """
+
+#     return mon[np.lexsort(np.rot90(mon))]
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """Output the monomial reversed, which means reverse the row of the 2d
     matrix representing the monomial. This represents the complex conjugate
@@ -49,8 +259,8 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     return np.flipud(mon)
 
 
-@jit(nopython=True, cache=cache)
-def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.array) -> np.ndarray:
     """Sort by parties the monomial, i.e., sort by the first column in
     the 2d representation of the monomial.
 
@@ -58,6 +268,10 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
     ----------
     mon : np.ndarray
         Input monomial as 2d array.
+        
+    lexorder : np.array
+        Specifies the order of the parties in the lexicographic order.
+        Warning: Parties must be indexed starting from 1, and not 0.
 
     Returns
     -------
@@ -71,33 +285,20 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
 
     """
 
-    return mon[np.argsort(mon[:, 0], kind='mergesort')]
+    PARTY_ORDER, _ = nb_unique(lexorder[:, 0])
+    mon_sorted = np.zeros_like(mon)
+    i_old = 0
+    i_new = 0
+    for i in range(PARTY_ORDER.shape[0]):
+        pblock = mon[mon[:, 0] == PARTY_ORDER[i]]
+        i_new += pblock.shape[0]
+        mon_sorted[i_old:i_new] = pblock
+        i_old = i_new
+    return mon_sorted
+    #return mon[np.argsort(mon[:, 0], kind='mergesort')]
 
 
-@jit(nopython=True, cache=cache)
-def mon_equal_mon(mon1: np.ndarray,
-                  mon2: np.ndarray
-                  ) -> bool:
-    """Check if two monomials are equal.
-
-    Parameters
-    ----------
-    mon1 : np.ndarray
-        First monomial as a 2d array.
-    mon2 : np.ndarray
-        Second monomial as a 2d array.
-
-    Returns
-    -------
-    bool
-        True if the two monomials are equal, False otherwise.
-    """
-    # np.array_equal is thought to work with integers, if floats are present
-    # one should use np.allclose
-    return np.array_equal(mon1, mon2)
-
-
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_times_mon(mon1: np.ndarray,
                   mon2: np.ndarray
                   ) -> np.ndarray:
@@ -117,12 +318,24 @@ def mon_times_mon(mon1: np.ndarray,
         Product of the two monomials.
     """
 
-    return np.concatenate(mon1, mon2)
+    return np.concatenate((mon1, mon2))
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
+    if mon1.shape != mon2.shape:
+        return False
+    else:
+        #return np.array_equal(mon1, mon2)  # slower
+        for i in range(mon1.shape[0]):
+            if not nb_op_eq_op(mon1[i], mon2[i]):
+                return False
+        return True
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
-            mon2: np.ndarray
+            mon2: np.ndarray,
+            lexorder: np.array
             ) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
 
@@ -155,13 +368,15 @@ def dot_mon(mon1: np.ndarray,
     if mon1.size <= 1:
         return mon2
     if mon2.size <= 1:
-        return mon_sorted_by_parties(reverse_mon(mon1))
-    return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)))
+        return mon_sorted_by_parties(reverse_mon(mon1), lexorder)
+    return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)),
+                                 lexorder)
 
 
-# @jit(nopython=True, cache=cache) Cannot handle lexsort.
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython) Cannot handle lexsort.
 def dot_mon_commuting(mon1: np.ndarray,
-                      mon2: np.ndarray
+                      mon2: np.ndarray,
+                      lexorder: np.ndarray,
                       ) -> np.ndarray:
     """A faster implementation of `dot_mon` that assumes that all
     operators commute. This implies we order everything lexiographically.
@@ -181,48 +396,15 @@ def dot_mon_commuting(mon1: np.ndarray,
     """
 
     if mon1.size <= 1:
-        return mon_lexsorted(mon2)  # mon2
+        if mon2.size <= 1:
+            return mon2    
+        return mon_lexsorted(mon2, lexorder)
     if mon2.size <= 1:
-        return mon_lexsorted(mon1)  #mon_sorted_by_parties(reverse_mon(mon1))
-    # So it seems there is no implementation of lexsort in numba, so for now
-    # we don't use a precompiled function
-    # what we can do is use 'sorted' with the string representation of
-    # the monomials which has a lexicographic ordering or implement a
-    # lexicographic ordering in numba
-    # numba issue: https://github.com/numba/numba/issues/3689
-    mon = np.concatenate((mon1, mon2))  # There is no need to do np.concatenate((reverse_mon(mon1), mon2))
-                                        # here because we sort lexicographically in the end anyway, so
-                                        # reversing the monomial is useless
-    return mon_lexsorted(mon)
+        return mon_lexsorted(mon1, lexorder)
 
+    return mon_lexsorted(np.concatenate((mon1, mon2)), lexorder)
 
-# @jit(nopython=True, cache=cache) Cannot handle lexsort.
-def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
-    """Return a monomial sorted lexicographically.
-
-    The sorting keys are as follows. The first key is the parties, the second
-    key is the inflation indices and the last keys are the input and output
-    cardinalities. More informally, once we sorted all the parties together,
-    within a party group we group all operators with the same inflation-copy
-    index for the first source together, and within this group we group all
-    operators with the same inflation-copy index for the second source
-    together and so on until the last keys.
-
-    Parameters
-    ----------
-    mon : np.ndarray
-        Monomial as a numpy array.
-
-    Returns
-    -------
-    np.ndarray
-        Sorted monomial.
-    """
-
-    return mon[np.lexsort(np.rot90(mon))]
-
-
-# @jit(nopython=True, cache=cache) Cannot handle lexsort
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     """Simplify the monomial by removing the squares. This is because we
     assume projectors, P^2=P.
@@ -238,45 +420,24 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
         Simplified monomial.
     """
 
-    to_keep = np.array([1]*mon.shape[0], dtype=bool)  # bool_
-    prev_row = mon[0]
+    to_keep = np.ones(mon.shape[0], dtype=bool_)
     for i in range(1, mon.shape[0]):
-        row = mon[i]
-        if np.array_equal(row, prev_row):
+        if nb_op_eq_op(mon[i], mon[i-1]):
             to_keep[i] = False
-        prev_row = row
     return mon[to_keep]
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_is_zero(mon: np.ndarray) -> bool_:
     """Function which checks if there is a product of two orthogonal projectors,
-    and returns True if so.
+    and returns True if so."""
 
-    _extended_summary_
-
-    Parameters
-    ----------
-    mon : np.ndarray
-        Input monomial as 2d array.
-
-    Returns
-    -------
-    bool
-        True if the monomial is zero, False otherwise.
-    """
-
-    prev_row = mon[0]
     for i in range(1, mon.shape[0]):
-        row = mon[i]
-        if row[-1] != prev_row[-1] and np.array_equal(row[:-1], prev_row[:-1]):
+        if mon[i, -1] != mon[i-1, -1] and nb_op_eq_op(mon[i,:-1], mon[i-1,:-1]):
             return True
-        prev_row = row
     return False
 
-#@jit(nopython=True, cache=cache)
-
-
+#@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_name(monomial_numbers: np.ndarray,
             parties_names: np.ndarray
             ) -> str:
@@ -314,7 +475,7 @@ def to_tuples(monomial: np.ndarray):
     return tuple(tuple(vec) for vec in monomial.tolist())
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def commuting(letter1: np.array,
               letter2: np.array
               ) -> bool_:
@@ -364,7 +525,7 @@ def commuting(letter1: np.array,
     return True if np.all(inf1-inf2) else False
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     """Compares two letters/measurement operators lexicographically.
 
@@ -397,7 +558,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     return True
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lessthan_mon(mon1: np.ndarray,
                      mon2: np.ndarray
                      ) -> bool_:
@@ -423,7 +584,7 @@ def mon_lessthan_mon(mon1: np.ndarray,
     return A_lessthan_B(mon1.ravel(), mon2.ravel())
 
 
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     """Apply substitutions to a monomial.
 
@@ -460,8 +621,8 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     return mon
 
 
-# @jit(nopython=True, cache=cache)
-def to_canonical(mon: np.ndarray) -> np.ndarray:
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def to_canonical(mon: np.ndarray, lexorder: np.array) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
 
     Parameters
@@ -491,11 +652,12 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
         mon = np.concatenate(factorize_monomial(remove_projector_squares(mon)))
         # Recombine reordering according to party
         # mon = np.vstack(sorted(mon, key=lambda x: x[0]))
-        mon = mon_sorted_by_parties(mon)
+        mon = mon_sorted_by_parties(mon, lexorder)
         return mon
 
 
 def calculate_momentmatrix(cols: List,
+                           lexorder,
                            verbose: int = 0,
                            commuting=False
                            ) -> Tuple[np.ndarray, Dict]:
@@ -537,8 +699,6 @@ def calculate_momentmatrix(cols: List,
     # we will never have more than 65535 unique variables??
     # I'm not so convinced, so I go with int32 (~4 billion)
     momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
-    if np.array_equal(cols[0], np.array([0])):
-        cols[0] = np.array([cols[0]])  # Some function needs [[0]] not []
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i in tqdm(range(nrcols),
                   disable=not verbose,
@@ -553,16 +713,16 @@ def calculate_momentmatrix(cols: List,
             #     varidx += 1
             # else:
             if not commuting:
-                mon_v1 = dot_mon(mon1, mon2)
+                mon_v1 = dot_mon(mon1, mon2, lexorder)
             else:
-                mon_v1 = dot_mon_commuting(mon1, mon2)
+                mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
             if mon_is_zero(mon_v1):
                 # If sparse, we don't need this, but for readibility...
                 momentmatrix[i, j] = 0
             else:
                 if not commuting:
-                    mon_v1 = to_canonical(mon_v1)
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1))
+                    mon_v1 = to_canonical(mon_v1, lexorder)
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), lexorder)
                     mon_v1_as_tuples = to_tuples(mon_v1)
                     mon_v2_as_tuples = to_tuples(mon_v2)
                     mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0]  # Would be better to use np.lexsort
@@ -701,8 +861,8 @@ def factorize_monomial(raw_monomial: np.ndarray,
     if len(raw_monomial) == 0:
         return [raw_monomial]
 
-    monomial = np.asarray(raw_monomial, dtype=np.uint8)
-    components_indices = np.zeros((len(monomial), 2), dtype=np.uint8)
+    monomial = np.asarray(raw_monomial, dtype=np.uint16)
+    components_indices = np.zeros((len(monomial), 2), dtype=np.uint16)
     # Add labels to see if the components have been used
     components_indices[:, 0] = np.arange(0, len(monomial), 1)
 
@@ -765,3 +925,4 @@ def factorize_monomial(raw_monomial: np.ndarray,
     #                                  key=lambda x: x[0].tolist())
 
     return disconnected_components
+    

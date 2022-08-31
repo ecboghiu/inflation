@@ -14,21 +14,35 @@ class TestNCAlgebra(unittest.TestCase):
         warnings.simplefilter("ignore", category=DeprecationWarning)
 
     names = ['A', 'B', 'C']
+    lexorder =  np.array([[1, 0, 1, 1, 0, 0],
+                          [1, 0, 1, 2, 0, 0],
+                          [1, 0, 2, 1, 0, 0],
+                          [1, 0, 2, 2, 0, 0],
+                          [2, 1, 1, 0, 0, 0],
+                          [2, 1, 2, 0, 0, 0],
+                          [2, 2, 1, 0, 0, 0],
+                          [2, 2, 2, 0, 0, 0],
+                          [3, 1, 0, 1, 0, 0],
+                          [3, 1, 0, 2, 0, 0],
+                          [3, 2, 0, 1, 0, 0],
+                          [3, 2, 0, 2, 0, 0]])
 
     def test_ordering_parties(self):
+        PARTY_ORDER = np.array([1, 2, 3])
         monomial_string = 'A_0_1_1_0_0*A_0_1_2_0_0*C_2_0_1_0_0*B_1_2_0_0_0'
         result  = to_name(
                       to_canonical(
-                          np.array(to_numbers(monomial_string, self.names))),
+                          np.array(to_numbers(monomial_string, self.names)), self.lexorder),
                       self.names)
         correct = 'A_0_1_1_0_0*A_0_1_2_0_0*B_1_2_0_0_0*C_2_0_1_0_0'
         self.assertEqual(result, correct, "to_canonical fails to order parties")
 
     def test_commutation(self):
+        PARTY_ORDER = np.array([1, 2, 3])
         monomial_string = 'A_2_1_0_0_0*A_1_2_0_0_0*B_1_0_1_0_0'
         result  = to_name(
                       to_canonical(
-                          np.array(to_numbers(monomial_string, self.names))),
+                          np.array(to_numbers(monomial_string, self.names)), self.lexorder),
                       self.names)
         correct = 'A_1_2_0_0_0*A_2_1_0_0_0*B_1_0_1_0_0'
         self.assertEqual(result, correct,
