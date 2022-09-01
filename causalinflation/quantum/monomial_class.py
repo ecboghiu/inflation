@@ -14,6 +14,8 @@ from collections.abc import Iterable
 # MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
 import sympy
+from itertools import chain
+
 
 
 def to_tuple_of_tuples(monomial: np.ndarray) -> tuple:
@@ -173,6 +175,7 @@ class Monomial(object):
                  'known_value',
                  'unknown_part',
                  'representative',
+                 'to_representative_function',
                  '_factors_repr', # Elie: See comment the 'set_values' method
                  # 'knowable_factors_names',
                  # 'knowable_part_name',
@@ -189,7 +192,9 @@ class Monomial(object):
 
     def __init__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]],
                  atomic_is_knowable=is_knowable,
-                 sandwich_positivity=False, idx=0):
+                 sandwich_positivity=False,
+                 idx=0,
+                 to_representative_function=np.asarray):
         """
         This class is incredibly inefficient unless knowable_q has built-in memoization.
         It is designed to categorize monomials into known, semiknown, unknown, etc.
@@ -202,8 +207,9 @@ class Monomial(object):
         assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array.'
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
-        self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+
         self.factors = factorize_monomial(self.as_ndarray, canonical_order=False)
+        self.as_tuples = tuple(chain.from_iterable(sorted([to_tuple_of_tuples(factor) for factor in self.factors])))
         self.nof_factors = len(self.factors)
         self.atomic_knowability_status = tuple(atomic_is_knowable(atom) for atom in self.factors)
         self.knowable_factors_uncompressed = tuple(atom for atom, knowable in
@@ -224,6 +230,7 @@ class Monomial(object):
         self.physical_q = self.knowable_q or is_physical(self.unknowable_factors_as_block,
                                                          sandwich_positivity=sandwich_positivity)
         self._unknowable_block_len = len(self.unknowable_factors_as_block)
+        self.to_representative_function = to_representative_function
 
         if self._unknowable_block_len == 0:
             self.knowability_status = 'Yes'
@@ -247,32 +254,35 @@ class Monomial(object):
 
     def __repr__(self):
         return self.__str__()
-    
+
+    def update_representative(self):
+        self.as_tuples = tuple(chain.from_iterable(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
 
     def __hash__(self):
+        # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
         return hash(self.as_tuples)
 
-    def __eq__(self, other):
-        if isinstance(other, Monomial):
-            # TODO: What if they have different nd_arrays BUT the same
-            # representative factors? This is currently not being done 
-            # correctly..
-            return mon_equal_mon(self.as_ndarray, other.as_ndarray)
-        elif isinstance(other, tuple):  
-            # TODO: Should we actually allow for this comparison??
-            # If we do NOT allow for this comparison, then we need to 
-            # be able to instantiante Monomials very easily from tuples.
-            # However right now when instantiating Monomials, certain things
-            # are calculated like the factors or knowability status, making
-            # initialisation slow. For now, I will just allow for comparison
-            # between tuples and monomials.
-            return self.as_tuples == other
-        elif isinstance(other, list):
-            return self.as_tuples == tuple(map(tuple, other))
-        elif isinstance(other, np.ndarray):
-            return mon_equal_mon(self.as_ndarray, other)
-        else:
-            raise Exception("Don't know how to compare {} to {}".format(self, other))
+    # def __eq__(self, other):
+    #     if isinstance(other, Monomial):
+    #         # TODO: What if they have different nd_arrays BUT the same
+    #         # representative factors? This is currently not being done
+    #         # correctly..
+    #         return mon_equal_mon(self.as_ndarray, other.as_ndarray)
+    #     elif isinstance(other, tuple):
+    #         # TODO: Should we actually allow for this comparison??
+    #         # If we do NOT allow for this comparison, then we need to
+    #         # be able to instantiante Monomials very easily from tuples.
+    #         # However right now when instantiating Monomials, certain things
+    #         # are calculated like the factors or knowability status, making
+    #         # initialisation slow. For now, I will just allow for comparison
+    #         # between tuples and monomials.
+    #         return self.as_tuples == other
+    #     elif isinstance(other, list):
+    #         return self.as_tuples == tuple(map(tuple, other))
+    #     elif isinstance(other, np.ndarray):
+    #         return mon_equal_mon(self.as_ndarray, other)
+    #     else:
+    #         raise Exception("Don't know how to compare {} to {}".format(self, other))
 
 
     def factors_as_block(self, factors):
