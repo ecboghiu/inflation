@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.sparse import dok_matrix  # , coo_matrix, coo
 
-from typing import List, Dict, Tuple
+from causalinflation.quantum.types import List, Dict, Tuple
+#import causalinflation
 
 # Had to insert this because of circular imports
 # from collections import defaultdict, deque
@@ -31,7 +32,7 @@ def kill_numba_cache():
                     kill_files(root + "/" + dirname)
                 except Exception as e:
                     print("failed on %s", root)
-kill_numba_cache()
+#kill_numba_cache()
 ##########################################
 
 try:
@@ -46,7 +47,7 @@ except ImportError:
         return lambda f: f
     bool_ = bool
     uint16_ = np.uint16
-    int64_ = np.int64
+    int64_ = np.int
     nb_Dict = dict
 
 try:
@@ -55,11 +56,12 @@ except ImportError:
     def tqdm(*args, **kwargs):
         return args[0]
 
-cache = False
+cache = True
 nopython = True
 if nopython == False:
     bool_ = bool
     uint16_ = np.uint16
+    int64_ = np.int
     nb_Dict = dict
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -78,7 +80,7 @@ def nb_op_eq_op(op1: np.ndarray, op2: np.ndarray) -> bool_:
     #return np.array_equal(mon1, mon1)  # Slower when compiled with numba
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_linsearch(arr: np.array, value) -> int:
+def nb_linsearch(arr: np.ndarray, value) -> int:
     """Return the index of the first element in arr that is equal to value
     or -1 if the element is not found."""
     for index in range(arr.shape[0]):
@@ -476,7 +478,7 @@ def to_tuples(monomial: np.ndarray):
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def commuting(letter1: np.array,
+def nb_commuting(letter1: np.array,
               letter2: np.array
               ) -> bool_:
     """Determine if two letters/operators commute.
@@ -499,11 +501,11 @@ def commuting(letter1: np.array,
     Examples
     --------
     A^11_00 commutes with A^22_00
-    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
+    >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
     True
 
     A^11_00 does not commute with A^12_00 as they overlap on source 1.
-    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
+    >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
     """
 
@@ -560,7 +562,8 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lessthan_mon(mon1: np.ndarray,
-                     mon2: np.ndarray
+                     mon2: np.ndarray,
+                     lexorder: np.ndarray,
                      ) -> bool_:
     """Compares two monomials and returns True if mon1 < mon2 in lexicographic
     order.
@@ -580,12 +583,15 @@ def mon_lessthan_mon(mon1: np.ndarray,
     bool
         True if mon1 < mon2 in lexicographic order.
     """
+    mon1_lexrank = nb_mon_to_lexrepr(mon1, lexorder)
+    mon2_lexrank = nb_mon_to_lexrepr(mon2, lexorder)
 
-    return A_lessthan_B(mon1.ravel(), mon2.ravel())
+    #return A_lessthan_B(mon1.ravel(), mon2.ravel())
+    return A_lessthan_B(mon1_lexrank, mon2_lexrank)
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
+def nb_apply_substitutions(mon_in: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
     """Apply substitutions to a monomial.
 
     Currently it only supports commutations arising from operators having
@@ -609,20 +615,24 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     if mon_in.shape[0] == 1:
         return mon_in
     mon = mon_in.copy()
+    #mon = nb_mon_to_lexrepr(mon_in, lexorder)
     for i in range(1, mon.shape[0]):
-        if not A_lessthan_B(mon[i-1], mon[i]):
-            if commuting(mon[i-1], mon[i]):
+        if not A_lessthan_B(mon[i-1], mon[i]): #mon[i-1] > mon[i]: #
+            if nb_commuting(mon[i-1], mon[i]):#notcomm[i-1, i]: #
                 # More elegant but doesn't work with numba
                 # mon[[i-1,i],:] = mon[[i,i-1],:]
                 mon[i-1, :], mon[i, :] = mon[i, :].copy(), mon[i-1, :].copy()
+                #mon[i-1], mon[i] = mon[i].copy(), mon[i-1].copy()
                 # ?? Is it best to stop after one commutation, or just
                 #  keep going until the end of the array?
                 #return mon
     return mon
+    #return lexorder[mon]
 
 
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def to_canonical(mon: np.ndarray, lexorder: np.array) -> np.ndarray:
+#@jit(nopython=nopython, cache=cache, forceobj=not nopython) 
+def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
+                 ) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
 
     Parameters
@@ -636,27 +646,74 @@ def to_canonical(mon: np.ndarray, lexorder: np.array) -> np.ndarray:
         Monomial in canonical form w.r.t some lexicographic
         ordering.
     """
-    if len(mon) <= 1:
+    if mon.shape[0] <= 1:
         return mon
     else:
-        prev = mon
-        while True:
-            mon = nb_apply_substitutions(mon)
-            if np.array_equal(mon, prev):
-                break
-            prev = mon
-        # The two-body commutation rules in are not enough in some occasions when
-        # the monomial can be factorized. An example is (all indices are inflation
-        # indices) A13A33A22 and A22A13A33. The solution below is to decompose
-        # in disconnected components, order them canonically, and recombine them.
-        mon = np.concatenate(factorize_monomial(remove_projector_squares(mon)))
-        # Recombine reordering according to party
-        # mon = np.vstack(sorted(mon, key=lambda x: x[0]))
-        mon = mon_sorted_by_parties(mon, lexorder)
-        return mon
+        # # prev = mon.copy()
+        # # while True:
+        # #     mon = nb_apply_substitutions(mon, notcomm, lexorder)
+        # #     if mon_equal_mon(mon, prev):
+        # #         break
+        # #     prev = mon.copy()
+        # # # The two-body commutation rules in are not enough in some occasions when
+        # # # the monomial can be factorized. An example is (all indices are inflation
+        # # # indices) A13A33A22 and A22A13A33. The solution below is to decompose
+        # # # in disconnected components, order them canonically, and recombine them.
+        # # mon = np.concatenate(factorize_monomial(remove_projector_squares(mon)))
+        # # # Recombine reordering according to party
+        # # # mon = np.vstack(sorted(mon, key=lambda x: x[0]))
+        # # mon = mon_sorted_by_parties(mon, lexorder)
+        
+        mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
+        mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
+        mon = lexorder[mon]
+        mon = remove_projector_squares(mon)
+        
+        return mon    
+    
+    
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_to_canonical_lexinput(mon_lexorder: np.array, notcomm: np.ndarray
+                                ) -> np.array:
+    if mon_lexorder.shape[0] <= 1:
+        return mon_lexorder
+
+    # Take only the rows and columns of notcomm that appear in the monomial,
+    # in the correct order.
+
+    sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
+    # comm_paths_toleft = np.zeros((mon_lexorder.shape[0], mon_lexorder.shape[0]), dtype=int)
+    
+    # idx = nb_linsearch(sub_notcomm[0], 1)
+    # if idx == 1: # If the first operator cannot be moved at all
+    #     m1 = np.array([mon_lexorder[0]])
+    #     m2 = to_canonical(mon_lexorder[1:], notcomm)
+    #     print(1, m1, m2)
+    #     return np.concatenate((m1, m2))
+    # else:
+    minimo = mon_lexorder[0]
+    minimo_idx = 0
+    for op in range(1, mon_lexorder.shape[0]):
+        #print(sub_notcomm[op][:op])
+        #idx = nb_linsearch(sub_notcomm[op][:op], np.ones(1, dtype=np.int32)[0])
+        where = np.where(sub_notcomm[op, :op] == 1)[0]
+        if where.size < 1: # TODO make nb_linsearch work, its faster
+        #if idx < 0: # means no collider was found
+            if mon_lexorder[op] < minimo:
+                minimo_idx = op
+                minimo = mon_lexorder[op]
+    if minimo <= mon_lexorder[0]:
+        m1 = np.array([mon_lexorder[minimo_idx]])
+        m2 = np.concatenate((mon_lexorder[:minimo_idx], mon_lexorder[minimo_idx+1:]))
+        return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
+    else:
+        m1 = np.array([mon_lexorder[0]])
+        m2 = mon_lexorder[1:]
+        return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
 
 
 def calculate_momentmatrix(cols: List,
+                           notcomm,
                            lexorder,
                            verbose: int = 0,
                            commuting=False
@@ -721,8 +778,8 @@ def calculate_momentmatrix(cols: List,
                 momentmatrix[i, j] = 0
             else:
                 if not commuting:
-                    mon_v1 = to_canonical(mon_v1, lexorder)
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), lexorder)
+                    mon_v1 = to_canonical(mon_v1, notcomm, lexorder)
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder)
                     mon_v1_as_tuples = to_tuples(mon_v1)
                     mon_v2_as_tuples = to_tuples(mon_v2)
                     mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0]  # Would be better to use np.lexsort
@@ -925,4 +982,88 @@ def factorize_monomial(raw_monomial: np.ndarray,
     #                                  key=lambda x: x[0].tolist())
 
     return disconnected_components
+    
+if __name__ == '__main__':
+    import numpy as np
+    import timeit
+    lexorder = np.array([[1, 1, 1, 0, 0, 0],
+                         [1, 1, 2, 0, 0, 0],
+                         [1, 2, 1, 0, 0, 0],
+                         [1, 2, 2, 0, 0, 0],
+                         [1, 3, 2, 0, 0, 0],
+                         [2, 1, 0, 1, 0, 0],
+                         [2, 1, 0, 2, 0, 0],
+                         [2, 2, 0, 1, 0, 0],
+                         [2, 2, 0, 2, 0, 0],
+                         [3, 0, 1, 1, 0, 0],
+                         [3, 0, 1, 2, 0, 0],
+                         [3, 0, 2, 1, 0, 0],
+                         [3, 0, 2, 2, 0, 0]]) 
+    
+    notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=int)
+    notcomm[0, 1] = 1; notcomm[0, 2] = 1;
+    notcomm[1, 3] = 1
+    notcomm[1, 4] = 1
+    notcomm[2, 3] = 1
+    notcomm[3, 4] = 1
+    notcomm[5, 6] = 1; notcomm[5, 7] = 1;
+    notcomm[6, 8] = 1
+    notcomm[7, 8] = 1
+    notcomm[8, 10] = 1; notcomm[9, 11] = 1;
+    notcomm[10, 12] = 1
+    notcomm[11, 12] = 1
+    notcomm = notcomm + notcomm.T
+    
+    np.random.seed(132)
+    
+    mon_lexorder = np.random.permutation(lexorder.shape[0])[:7]
+    
+    
+    
+    @jit(nopython=True)
+    def nb_to_canonical_lexinput(mon_lexorder: np.array, notcomm: np.ndarray
+                                 ) -> np.array:
+        if mon_lexorder.shape[0] <= 1:
+            return mon_lexorder
+
+        # Take only the rows and columns of notcomm that appear in the monomial,
+        # in the correct order.
+
+        sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
+        # comm_paths_toleft = np.zeros((mon_lexorder.shape[0], mon_lexorder.shape[0]), dtype=int)
+        
+        # idx = nb_linsearch(sub_notcomm[0], 1)
+        # if idx == 1: # If the first operator cannot be moved at all
+        #     m1 = np.array([mon_lexorder[0]])
+        #     m2 = to_canonical(mon_lexorder[1:], notcomm)
+        #     print(1, m1, m2)
+        #     return np.concatenate((m1, m2))
+        # else:
+        minimo = mon_lexorder[0]
+        minimo_idx = 0
+        for op in range(1, mon_lexorder.shape[0]):
+            #print(sub_notcomm[op][:op])
+            #idx = nb_linsearch(sub_notcomm[op][:op], np.ones(1, dtype=np.int32)[0])
+            where = np.where(sub_notcomm[op, :op] == 1)[0]
+            if where.size < 1: # TODO make nb_linsearch work, its faster
+            #if idx < 0: # means no collider was found
+                if mon_lexorder[op] < minimo:
+                    minimo_idx = op
+                    minimo = mon_lexorder[op]
+        if minimo <= mon_lexorder[0]:
+            m1 = np.array([mon_lexorder[minimo_idx]])
+            m2 = np.concatenate((mon_lexorder[:minimo_idx], mon_lexorder[minimo_idx+1:]))
+            return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
+        else:
+            m1 = np.array([mon_lexorder[0]])
+            m2 = mon_lexorder[1:]
+            return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
+    
+    
+    #def to_comm(monomial, notcomm, lexorder):
+        
+        
+    
+
+    
     

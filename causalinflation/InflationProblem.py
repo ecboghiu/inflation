@@ -2,7 +2,8 @@ import numpy as np
 from itertools import chain
 from warnings import warn
 import methodtools
-from typing import Tuple, List, Union, NewType
+#from typing import Tuple, List, Union, NewType
+from causalinflation.quantum.types import Tuple, List, Union, NewType
 ArrayMonomial = NewType("ArrayMonomial", Union[Tuple[Tuple[int]], np.ndarray])
 from copy import deepcopy
 # from types import MappingProxyType

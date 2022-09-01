@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union, Any, NewType
+from typing import Dict, List, Tuple, Union, Any, NewType, Iterable
 import sympy
 import numpy
 

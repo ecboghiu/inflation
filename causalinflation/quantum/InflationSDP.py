@@ -33,7 +33,8 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               remove_projector_squares,
                                               mon_lexsorted,
                                               mon_is_zero,
-                                              nb_mon_to_lexrepr)
+                                              nb_mon_to_lexrepr,
+                                              nb_commuting)
 from causalinflation.quantum.monomial_class import (Monomial,
                                                     to_tuple_of_tuples,
                                                     compute_marginal)
@@ -41,7 +42,8 @@ from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
 from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
                                                   write_to_sdpa)
 
-from typing import List, Dict, Union, Tuple, Any
+from causalinflation.quantum.types import List, Dict, Tuple, Union, Any
+#from typing import List, Dict, Union, Tuple, Any
 import warnings
 # Force warnings.warn() to omit the source code line in the message
 # Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -116,6 +118,41 @@ class InflationSDP(object):
         self._default_lexorder = arr[np.lexsort(np.rot90(arr))]
         # self._PARTY_ORDER = 1 + np.array(list(range(self.nr_parties)))
         self._lexorder = self._default_lexorder.copy()
+        
+        # Given that most operators commute, we want the matrix encoding the
+        # commutations to be sparse, so self._default_commgraph[i, j] = 0
+        # implies commutation, and self._default_commgraph[i, j] = 1 is
+        # non-commutation.
+        self._default_notcomm = np.zeros((self._lexorder.shape[0],
+                                               self._lexorder.shape[0]), dtype=int) 
+        for i in range(self._lexorder.shape[0]):
+            for j in range(i, self._lexorder.shape[0]):
+                if i == j:
+                    self._default_notcomm[i, j] = 0
+                else:
+                    self._default_notcomm[i, j] = int(not nb_commuting(self._lexorder[i],
+                                                                    self._lexorder[j]))
+                    self._default_notcomm[j, i] = self._default_notcomm[i, j]
+        self._notcomm = self._default_notcomm.copy() # ? Ideas for a better name? 
+        
+        
+    def commutation_relationships(self):
+        """This returns a user-friendly representation of the commutation relationships."""
+        from collections import namedtuple
+        nonzero = namedtuple('NonZeroExpressions','exprs')
+        data = []
+        for i in range(self._lexorder.shape[0]):
+            for j in range(i, self._lexorder.shape[0]):
+                # Most operators commute as they belong to different parties,
+                # so it is more interested to list those that DONT'T commute.
+                if self._notcomm[i, j] != 0:
+                    op1 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
+                    op2 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
+                    if self.verbose > 0:
+                        print(f"{str(op1*op2-op2*op1)} ≠ 0.")
+                    data.append(op1*op2-op2*op1)
+        return nonzero(data)
+
         
     def lexicographic_order(self) -> dict:
         """This returns a user-friendly representation of the lexicographic order."""
@@ -213,7 +250,7 @@ class InflationSDP(object):
                                           swaps_plus_commutations=True,
                                           consider_conjugation_symmetries=True):
         if len(mon):
-            Mon = Monomial(to_canonical(mon, self._lexorder), 
+            Mon = Monomial(to_canonical(mon, self._notcomm, self._lexorder), 
                                atomic_is_knowable=self.atomic_knowable_q,
                                sandwich_positivity=True)
             try:
@@ -223,6 +260,7 @@ class InflationSDP(object):
                 return self.orbits[Mon].as_tuples  # Assuming the dictionary takes Monomial objects as keys
             except KeyError:
                 reprr = to_representative(mon, self.inflation_levels,
+                                          self._notcomm,
                                           self._lexorder,
                                           swaps_plus_commutations=swaps_plus_commutations,
                                           consider_conjugation_symmetries=consider_conjugation_symmetries,
@@ -861,7 +899,7 @@ class InflationSDP(object):
                             self.known_moments[mon] = 0
                         else:
                             reprr = self.inflation_aware_to_representative(
-                                            to_canonical(mon.unknown_part, self._lexorder))
+                                            to_canonical(mon.unknown_part.astype(np.uint16), self._notcomm, self._lexorder))
                             unknown = Monomial(reprr, atomic_is_knowable=self.atomic_knowable_q,
                                                     sandwich_positivity=True)
                             unknown.update_name_and_symbol_given_observed_names(self.names)
@@ -890,7 +928,8 @@ class InflationSDP(object):
                                 self.known_moments[mon] = 0
                             else:
                                 unknown = Monomial(self.inflation_aware_to_representative(
-                                                            to_canonical(np.concatenate(unknowns_to_join), self._lexorder)),
+                                                            to_canonical(np.concatenate(unknowns_to_join),
+                                                                         self._notcomm, self._lexorder)),
                                                             atomic_is_knowable=self.atomic_knowable_q,
                                                             sandwich_positivity=True)
                                 unknown.update_name_and_symbol_given_observed_names(self.names)
@@ -1099,7 +1138,7 @@ class InflationSDP(object):
                 # This can happen if calling float() gives an error
                 Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
                 
-        canon = to_canonical(array, self._lexorder)
+        canon = to_canonical(array, self._notcomm, self._lexorder)
         if np.array_equal(canon, 0):
             return 0  # TODO: Or ZeroMonomial once that is implemented?
         else:
@@ -1552,7 +1591,9 @@ class InflationSDP(object):
                                 physmons_per_party_per_length.append(physmons)
 
                         for mon_tuple in itertools.product(*physmons_per_party_per_length):
-                            physical_monomials.append(to_canonical(np.concatenate(mon_tuple), self._lexorder))
+                            physical_monomials.append(to_canonical(np.concatenate(mon_tuple),
+                                                                   self._notcomm,
+                                                                   self._lexorder))
 
                 columns = physical_monomials
             else:
@@ -1640,7 +1681,7 @@ class InflationSDP(object):
                         if mon_is_zero(canon):
                             canon = 0
                     else:
-                        canon = to_canonical(mon, self._lexorder)
+                        canon = to_canonical(mon, self._notcomm, self._lexorder)
                     if not np.array_equal(canon, 0):
                         # If the block is [0, 0], and we have the monomial
                         # A**2 which simplifies to A, then A would be included
@@ -1781,6 +1822,7 @@ class InflationSDP(object):
         _cols = [np.array(col, dtype=np.uint16)
                     for col in self.generating_monomials]
         problem_arr, canonical_mon_to_idx_dict = calculate_momentmatrix(_cols,
+                                                                        self._notcomm,
                                                                         self._lexorder,
                                                                         verbose=self.verbose,
                                                                         commuting=self.commuting)
@@ -1824,6 +1866,7 @@ class InflationSDP(object):
                                                       source,
                                                       permutation,
                                                       self.commuting,
+                                                      self._notcomm,
                                                       self._lexorder)
                                                       # self.substitutions,
                                                       # flatmeas,
@@ -1833,7 +1876,9 @@ class InflationSDP(object):
             # connected components
             for idx in range(len(permuted_cols_ind)):
                 if len(permuted_cols_ind[idx].shape) > 1:
-                    permuted_cols_ind[idx] = to_canonical(permuted_cols_ind[idx], self._lexorder)
+                    permuted_cols_ind[idx] = to_canonical(permuted_cols_ind[idx],
+                                                          self._notcomm,
+                                                          self._lexorder)
                     # permuted_cols_ind[idx] = np.vstack(
                     #              sorted(np.concatenate(factorize_monomial(
                     #                                       permuted_cols_ind[idx]

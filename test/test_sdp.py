@@ -204,6 +204,8 @@ class TestGeneratingMonomials(unittest.TestCase):
 
 class TestInflation(unittest.TestCase):
     def test_commutations_after_symmetrization(self):
+        from causalinflation.quantum.fast_npa import nb_commuting
+        
         scenario = InflationSDP(InflationProblem(dag={"h": ["v"]},
                                                  outcomes_per_party=[2],
                                                  settings_per_party=[2],
@@ -215,14 +217,20 @@ class TestInflation(unittest.TestCase):
         flatmeas = np.array(flatten(meas))
         measnames = np.array([str(meas) for meas in flatmeas])
 
-        lexorder = np.array([[1, 1, 1, 0, 0, 0],
-                             [1, 1, 2, 0, 0, 0],
-                             [1, 2, 1, 0, 0, 0],
-                             [1, 2, 2, 0, 0, 0],
-                             [2, 1, 0, 1, 0, 0],
-                             [2, 1, 0, 2, 0, 0],
-                             [2, 2, 0, 1, 0, 0],
-                             [2, 2, 0, 2, 0, 0]])
+        lexorder = np.array([[1, 1, 0, 0],
+                             [1, 1, 1, 0],
+                             [1, 2, 0, 0],
+                             [1, 2, 1, 0]])
+        notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=int)
+        for i in range(lexorder.shape[0]):
+            for j in range(i+1, lexorder.shape[0]):
+                notcomm[i, j] = int(not nb_commuting(lexorder[i],
+                                                                   lexorder[j]))
+
+        # notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=int)
+        # notcomm[0, 1] = 1
+        # notcomm[2, 3] = 1
+        # notcomm = notcomm + notcomm.T
 
         # Define moment matrix columns
         _, ordered_cols_num = scenario.build_columns(col_structure,
@@ -240,6 +248,7 @@ class TestInflation(unittest.TestCase):
                                                              0,
                                                              [1, 0],
                                                              False,
+                                                             notcomm,
                                                              lexorder)
         self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "
