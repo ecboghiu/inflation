@@ -22,7 +22,8 @@ from itertools import permutations, product
 # from ncpol2sdpa import flatten, generate_operators, generate_variables
 # from ncpol2sdpa.nc_utils import apply_substitutions
 
-from typing import Dict, List, Tuple, Union, Any, Iterable #, NewType, TypeVar
+#from typing import Dict, List, Tuple, Union, Any, Iterable #, NewType, TypeVar
+from causalinflation.quantum.types import List, Dict, Tuple, Union, Any, Iterable
 
 #Adding for hopefully-efficient moment matrix symmetrization
 from sympy.combinatorics import Permutation
@@ -144,7 +145,6 @@ def apply_source_perm_monomial(monomial: np.ndarray,
             new_factors[i][1 + source] = permutation[
                                             new_factors[i][1 + source] - 1] + 1
     if commuting:
-        aux = 2 + 2
         return mon_lexsorted(new_factors, lexorder)
     else:
         return new_factors
@@ -154,6 +154,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
                                          permutation: np.ndarray,
                                          commuting: bool,
+                                         notcomm,
                                          lexorder
                                          ) -> List[sympy.core.symbol.Symbol]:
     """Applies a specific source permutation to the list of operators used to
@@ -189,7 +190,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
             newmon = apply_source_perm_monomial(monomial, source,
                                                 np.asarray(permutation),
                                                 commuting, lexorder)
-            canonical = to_canonical(newmon, lexorder)
+            canonical = to_canonical(newmon, notcomm, lexorder)
             permuted_op_list.append(canonical)
 
     return permuted_op_list
@@ -1015,6 +1016,7 @@ def apply_source_swap_monomial(monomial: np.ndarray,
 
 # @jit(nopython=nopython)  # make to_canonical compatible with numba
 def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
+                                          notcomm: np.ndarray,
                                           lexorder: np.ndarray) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps
     until we reach a stable point in terms of lexiographic ordering. This might
@@ -1032,7 +1034,7 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
     """
 
     monomial_component = to_canonical(
-        np.asarray(monomial_component), lexorder)  # Make sure all commutation rules are applied
+        np.asarray(monomial_component), notcomm, lexorder)  # Make sure all commutation rules are applied
     new_mon = monomial_component.copy()
     # -2 we ignore the first and the last two columns
     for source in range(monomial_component.shape[1] - 3):
@@ -1050,6 +1052,7 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
 # @jit(nopython=nopython)  # remove the use of itertools
 def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                   inflevels: np.ndarray,
+                                  notcomm: np.ndarray,
                                   lexorder: np.ndarray,
                                   commuting: bool) -> np.ndarray:
     # Now we must take into account that the application of symmetries plus
@@ -1075,8 +1078,8 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                                       np.asarray(perms[source]),
                                                       commuting,
                                                       lexorder)
-            permuted = to_canonical(permuted, lexorder)
-            if mon_lessthan_mon(permuted, final_monomial):
+            permuted = to_canonical(permuted, notcomm, lexorder)
+            if mon_lessthan_mon(permuted, final_monomial, lexorder):
                 final_monomial = permuted
         if np.array_equal(final_monomial, prev):
             break
@@ -1088,6 +1091,7 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
 # @jit(nopython=nopython)
 def to_representative(mon: np.ndarray,
                       inflevels: np.ndarray,
+                      notcomm: np.ndarray,
                       lexorder: np.ndarray,
                       commuting: bool_ = False,
                       consider_conjugation_symmetries: bool_ = True,
@@ -1138,24 +1142,26 @@ def to_representative(mon: np.ndarray,
     # lexiographic ordering. We do this by lowering the copy indices making
     # them as low as possible from left to right. This might not be a global
     # optimum.
-    final_monomial = to_repr_lower_copy_indices_with_swaps(mon, lexorder)
+    final_monomial = to_repr_lower_copy_indices_with_swaps(mon, notcomm, lexorder)
 
     # Before we didn't consider that applying a source swap that decreases the
     # ordering following by applying commutation rules can give us a smaller
     # monomial lexicographically.
     if swaps_plus_commutations:
         final_monomial = to_repr_swap_plus_commutation(final_monomial, inflevels,
+                                                       notcomm,
                                                        lexorder, commuting)
 
     if consider_conjugation_symmetries:
         mon_dagger = reverse_mon(mon)
-        mon_dagger_aux = to_repr_lower_copy_indices_with_swaps(mon_dagger, lexorder)
+        mon_dagger_aux = to_repr_lower_copy_indices_with_swaps(mon_dagger, notcomm, lexorder)
         if swaps_plus_commutations:
             mon_dagger_aux = to_repr_swap_plus_commutation(mon_dagger_aux,
                                                        inflevels,
+                                                       notcomm,
                                                        lexorder,
                                                        commuting)
-        if mon_lessthan_mon(mon_dagger_aux, final_monomial):
+        if mon_lessthan_mon(mon_dagger_aux, final_monomial, lexorder):
             final_monomial = mon_dagger_aux
 
     return final_monomial
