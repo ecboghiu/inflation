@@ -42,7 +42,7 @@ class InflationProblem(object):
         if not dag:
             warn("Hypergraph must be a non-empty list of lists. " +
                  "Defaulting to one global source.")
-            self.hypergraph = np.array([1]*self.nr_parties, dtype=np.uint8)
+            self.hypergraph = np.array([[1]*self.nr_parties], dtype=np.uint8)
         else:
             self.hypergraph, self.graph_equalities = \
                                                     self._dag_to_hypergraph(dag)
