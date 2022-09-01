@@ -83,26 +83,32 @@ class InflationSDP(object):
     """
     def __init__(self, inflationproblem: InflationProblem,
                  commuting: bool = False,
+                 supports_problem: bool = False,
                  verbose: int = 0):
         """Constructor for the InflationSDP class.
         """
-
+        self.supports_problem = supports_problem
         self.verbose = verbose
         self.commuting = commuting
-        self.InflationProblem = inflationproblem
+        self.InflationProblem = inflationproblem #Worth storing?
         self.names = self.InflationProblem.names
         if self.verbose > 1:
             print(self.InflationProblem)
-        self.measurements, self.substitutions, self.names \
-                                            = self._generate_parties()
+
         
 
         self.nr_parties = len(self.names)
         self.nr_sources = self.InflationProblem.nr_sources
         self.hypergraph = self.InflationProblem.hypergraph
         self.inflation_levels = self.InflationProblem.inflation_level_per_source
-        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
+        if self.supports_problem:
+            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + 1
+        else:
+            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         self.setting_cardinalities = self.InflationProblem.settings_per_party
+
+        (self.measurements, self.substitutions, self.names) = self._generate_parties()
+
         self.maximize = True    # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
         self.is_knowable_q_split_node_check = self.InflationProblem.is_knowable_q_split_node_check
@@ -139,7 +145,7 @@ class InflationSDP(object):
     def commutation_relationships(self):
         """This returns a user-friendly representation of the commutation relationships."""
         from collections import namedtuple
-        nonzero = namedtuple('NonZeroExpressions','exprs')
+        nonzero = namedtuple('NonZeroExpressions', 'exprs')
         data = []
         for i in range(self._lexorder.shape[0]):
             for j in range(i, self._lexorder.shape[0]):
@@ -446,20 +452,6 @@ class InflationSDP(object):
                                     for atom in mon.knowable_factors]
             mon.knowable_factors = corrected_knowable_factors
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
-            # self._all_atomic_knowable.update(corrected_knowable_factors)
-
-        # self._all_atomic_knowable = set(itertools.chain.from_iterable(mon.knowable_factors for mon in self.symidx_to_Monomials_dict.values()))
-        #TODO: Everything AFTER THIS POINT in 'generate_relaxation' is only for legacy compatibility.
-
-
-
-        # self.knowable_moments = {k: list(map(self.InflationProblem.rectify_fake_setting_atomic_factor, Mon.knowable_factors))
-        #                          for (k, Mon) in self.symidx_to_Monomials_dict.items() if Mon.knowability_status == 'Yes'}
-
-        # knowability_statusus = np.empty((self.largest_moment_index + 1,), dtype='<U4')
-        # knowability_statusus[[0, 1]] = 'Yes'
-        # for monomial in self.list_of_monomials:
-        #     knowability_statusus[monomial.idx] = monomial.knowability_status
 
         """
         Used only for internal diagnostics.
@@ -468,6 +460,12 @@ class InflationSDP(object):
         self._n_knowable = _counter['Yes']
         self._n_something_knowable = _counter['Semi']
         self._n_unknowable = _counter['No']
+
+        if self.commuting:
+            self.possibly_physical_monomials = self.list_of_monomials
+        else:
+            self.possibly_physical_monomials = [mon for mon in self.list_of_monomials if mon.physical_q]
+
 
 
         # #REORDERING INDICES (for compatibility)
@@ -519,34 +517,36 @@ class InflationSDP(object):
         self.monomial_names = list(self.name_dict_of_monomials.keys())
 
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
-
-
-
-        self.objective = {self.One: 0}
-        self._objective_as_idx_dict = {1: 0.}
-        self._objective_as_name_dict = {'1': 0.}
+        # self.maskmatrices_idx_dict = {mon.idx: mon.mask_matrix for mon in self.list_of_monomials}
+        self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
 
-        self.reset_distribution()
+        self.set_objective(None) #Equivalent to reset_objective
+        self.set_values(None) #Equivalent to reset_values
+
+
         _counter = Counter([mon.known_status for mon in self.list_of_monomials if mon.idx > 0])
         self._n_known = _counter['Yes']
         self._n_something_known = _counter['Semi']
         self._n_unknown = _counter['No']
-        if self.commuting:
-            self.physical_monomial_idxs = set(range(len(self.list_of_monomials))).difference(self.known_moments_idx_dict.keys())
-            self.physical_monomial_names = set(self.monomial_names).difference(self.known_moments_idx_dict.keys())
-            self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
-            self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
+
+
+
+
+
 
         # Hack to avoid calculating the representative factors unless needed
         # They are needed if we want to set values of unknowable moments
         self.__factor_reps_computed__ = False
 
+    def reset_objective(self):
+        self.objective = {self.One: 0}
+        self._objective_as_name_dict = {'1': 0.}
+        # self._objective_as_idx_dict = {1: 0.}
 
-
-    def reset_distribution(self):
+    def reset_values(self):
         for mon in self.list_of_monomials:
             if mon.idx > 1:
                 mon.known_status = 'No'
@@ -554,22 +554,49 @@ class InflationSDP(object):
                 mon.known_status = 'Yes'
             mon.known_value = 1.
             mon.unknown_part = mon.as_ndarray
-        self.known_moments = {}
-        self.known_moments_idx_dict = {1: 1.}
+
+        self.known_moments = {self.One: 1.}
+        self.nof_known_moments = len(self.known_moments)
+        self.semiknown_moments = dict()
+        self.moment_upperbounds = dict()
+        # TODO: REMOVE ALL REFERENCES TO NAME DICTS
         self.known_moments_name_dict = {'1': 1.}
-        self.nof_known_moments = len(self.known_moments_idx_dict)
-        self.semiknown_moments = {}
-        self.semiknown_moments_idx_dict  = dict()
         self.semiknown_moments_name_dict = dict()
-        #self.distribution_has_been_set = False
-        # NOTE: INDICES ARE BAD, AS THEY CAN BE RESET SOMETIMES
-        if not self.commuting:
-            self.physical_monomial_idxs = set([mon.idx for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_idx_dict.keys())
-            self.physical_monomial_names = set([mon.name for mon in self.list_of_monomials if mon.physical_q]).difference(self.known_moments_name_dict.keys())
-            self.moment_lowerbounds_idx_dict = {physical_idx: 0 for physical_idx in self.physical_monomial_idxs}
-            self.moment_lowerbounds_name_dict = {physical_name: 0 for physical_name in self.physical_monomial_names}
-        self.moment_upperbounds_idx_dict = dict()
         self.moment_upperbounds_name_dict = dict()
+        # self.known_moments_idx_dict = {1: 1.}
+        # self.semiknown_moments_idx_dict  = dict()
+        # self.moment_upperbounds_idx_dict = dict()
+        self.reset_physical_lowerbounds()
+
+    def reset_physical_lowerbounds(self):
+        self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
+        self.moment_lowerbounds = {mon: 0. for mon in self.physical_monomials}
+        #BELOW TO BE DEPRECATED
+        self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
+        self.moment_lowerbounds_name_dict = {name: 0 for name in self.physical_monomial_names}
+        # self.physical_monomial_idxs = set(mon.idx for mon in self.physical_monomials)
+        # self.moment_lowerbounds_idx_dict = {idx: 0. for idx in self.physical_monomial_idxs}
+
+
+    def update_physical_lowerbounds(self):
+        self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
+        for mon in self.physical_monomials.difference(self.moment_lowerbounds.keys()):
+            self.moment_lowerbounds[mon] = 0.
+        for mon in self.physical_monomials.intersection(self.moment_lowerbounds.keys()):
+            self.moment_lowerbounds[mon] = max(0., self.moment_lowerbounds[mon])
+        #BELOW TO BE DEPRECATED
+        self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
+        for name in self.physical_monomial_names.difference(self.moment_lowerbounds_name_dict.keys()):
+            self.moment_lowerbounds_name_dict[name] = 0.
+        for name in self.physical_monomial_names.intersection(self.moment_lowerbounds_name_dict.keys()):
+            self.moment_lowerbounds_name_dict[name] = max(0., self.moment_lowerbounds_name_dict[name])
+        # self.physical_monomial_idxs = set(mon.idx for mon in self.physical_monomials)
+        # for idx in self.physical_monomial_idxs.difference(self.moment_lowerbounds_idx_dict.keys()):
+        #     self.moment_lowerbounds_idx_dict[idx] = 0.
+        # for idx in self.physical_monomial_idxs.intersection(self.moment_lowerbounds_idx_dict.keys()):
+        #     self.moment_lowerbounds_idx_dict[idx] = max(0., self.moment_lowerbounds_idx_dict[idx])
+
+
 
     # def set_distribution(self,
     #                      prob_array: Union[np.ndarray, None],
@@ -701,8 +728,7 @@ class InflationSDP(object):
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
-                         use_lpi_constraints: bool = False,
-                         treat_as_support = False) -> None:
+                         use_lpi_constraints: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
@@ -718,46 +744,32 @@ class InflationSDP(object):
             polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
             will be imposed or not.
         """
-
-        self.reset_distribution()
+        # Reset is performed by set_values
+        # self.reset_distribution()
         
         if prob_array is None:
             # From a user perspective set_distribution(None) should be
-            # equivalent to reset_distribution()
-            return
-        
-        self.use_lpi_constraints = use_lpi_constraints
+            # equivalent to reset_distribution(), i.e., set_values({})
+            values = dict()
+        else:
+            atomic_knowable = [m for m in self.list_of_monomials
+                               if m.nof_factors == 1 and m.knowability_status == 'Yes']
 
-        if (len(self._objective_as_idx_dict) > 1) and self.use_lpi_constraints:
-            warnings.warn("You have an objective function set. Be aware that imposing " +
-                 "linearized polynomial constraints will constrain the " +
-                 "optimization to distributions with fixed marginals.")
-            
-        atomic_knowable = [m for m in self.list_of_monomials 
-                           if m.nof_factors == 1 and m.knowability_status == 'Yes'] 
-        
-        values = {atomic: compute_marginal(prob_array, atomic.as_ndarray)
-                  for atomic in atomic_knowable}
-        
-        # Compute self.known_moments and self.semiknown_moments
+            values = {atomic: compute_marginal(prob_array, atomic.as_ndarray)
+                      for atomic in atomic_knowable}
+
+        # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(values, use_lpi_constraints=use_lpi_constraints,
                                 only_knowable_moments=True)
 
-        # Compute names dictionaries
-        self.known_moments_name_dict = {}
-        self.moment_lowerbounds_name_dict = {}
-        for mon, value in self.known_moments.items():
-            self.known_moments_name_dict[mon.name] = value
-            if treat_as_support and not np.isclose(value, 0):
-                self.moment_lowerbounds_name_dict[mon.name] = 1
-        for x in filter(lambda m: m.physical_q, self.list_of_monomials):
-            self.moment_lowerbounds_name_dict[x.name] = 1 if treat_as_support else 0
+
+
 
         # if self.objective and not (prob_array is None):
         #     warnings.warn('Danger! User apparently set the objective before the distribution.')
         # self.distribution_has_been_set = True
 
-    def set_values(self, values: Dict[Union[sp.core.symbol.Symbol, str, Monomial], float],
+    def set_values(self, values: Union[Dict[Union[sp.core.symbol.Symbol, str, Monomial], float], None],
                          use_lpi_constraints: bool = False,
                          normalised: bool = True,
                          only_knowable_moments: bool = True,
@@ -806,12 +818,21 @@ class InflationSDP(object):
         # E.g., relax v=v1*v2 by fixing v1 and letting v2 be 
         # free and then doing a sweep in the values of v1.
         
-        self.reset_distribution()
+        self.reset_values()
+        if (values is None) or (len(values) == 0):
+            # From a user perspective set_values(None) should be
+            # equivalent to reset_distribution().
+            return
         
         self.use_lpi_constraints = use_lpi_constraints
 
+        if (len(self.objective) > 1) and self.use_lpi_constraints:
+            warnings.warn("You have an objective function set. Be aware that imposing " +
+                 "linearized polynomial constraints will constrain the " +
+                 "optimization to distributions with fixed marginals.")
+
         # Sanitise the values dictionary
-        values_clean = {}
+        values_clean = dict()
         for k in list(values.keys()):
             k_sanitised = self._sanitise_monomial(k)
             if not np.array_equal(k_sanitised, 0):  # TODO do this comparison well
@@ -843,7 +864,7 @@ class InflationSDP(object):
             # that is semi-known relative to the information in the dictionary
             # is left free.
             self.known_moments = values_clean
-            self.semiknown_moments = {}
+            # self.semiknown_moments = dict() # Already reset by reset_distribution
             if self.use_lpi_constraints and self.verbose >= 1:
                 warnings.warn("set_values: Both only_specified_values=True and use_lpi_constraints=True has been detected. "
                               "With only_specified_values=True, only moments that match exactly " +
@@ -879,7 +900,7 @@ class InflationSDP(object):
 
         self.known_moments = values_clean  # By this point, we made sure we only have atomic factors
         
-        self.semiknown_moments = {}
+        # self.semiknown_moments = dict() # Already reset by reset_distribution
         if only_knowable_moments:
             # Use the Monomial methods developed by Elie that rely on knowability status
             for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):   
@@ -934,13 +955,32 @@ class InflationSDP(object):
                                                             sandwich_positivity=True)
                                 unknown.update_name_and_symbol_given_observed_names(self.names)
                                 self.semiknown_moments[mon] = (known, unknown)
-                        
 
-                        
+
+
         # Name dictionaries for compatibility purposes only
         self.known_moments_name_dict = {mon.name : v for mon, v in self.known_moments.items()}
         self.semiknown_moments_name_dict = {mon.name : (v[0], v[1].name) for mon, v in self.semiknown_moments.items()}
-        
+
+        if self.supports_problem:
+            # Convert positive known values into lower bounds.
+            nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
+            for mon in nonzero_known_monomials:
+                self.moment_lowerbounds[mon] = 1.
+                del self.known_moments[mon]
+            self.semiknown_moments = dict()
+            # Name dictionaries for compatibility purposes only, block in code for easy commenting out.
+            nonzero_known_monomial_names = [name for name, value in self.known_moments_name_dict.items() if not np.isclose(value, 0)]
+            for name in nonzero_known_monomial_names:
+                self.moment_lowerbounds_name_dict[name] = 1.
+                del self.known_moments_name_dict[name]
+            self.semiknown_moments_name_dict = dict()
+
+            # TODO: ADD EQUALITY CONSTRAINTS FOR SUPPORTS PROBLEM!
+
+        # Create lowerbounds list for physical but unknown moments
+        self.update_physical_lowerbounds()
+
         self._update_objective()
 
 
@@ -1022,8 +1062,8 @@ class InflationSDP(object):
     #     self._objective_as_name_dict = {_idx_to_names_dict[k]: v for (k, v) in self._objective_as_idx_dict.items()}
 
     def set_objective(self,
-                      objective: sp.core.symbol.Symbol,
-                      direction: str ='max') -> None:
+                      objective: Union[sp.core.symbol.Symbol, None],
+                      direction: str = 'max') -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
 
@@ -1043,6 +1083,12 @@ class InflationSDP(object):
         else:
             sign = -1
             self.maximize = False
+
+        self.reset_objective()
+        # From a user perspective set_objective(None) should be
+        # equivalent to reset_objective()
+        if objective is None:
+            return
 
         if hasattr(self, 'use_lpi_constraints'):
             if self.use_lpi_constraints:
@@ -1178,7 +1224,7 @@ class InflationSDP(object):
                             "Call 'InflationSDP.get_relaxation()' first")
         # if not self.distribution_has_been_set:
         #     self.set_distribution(prob_array=None, use_lpi_constraints=False)
-        if feas_as_optim and len(self._objective_as_idx_dict) > 1:
+        if feas_as_optim and len(self._objective_as_name_dict) > 1:
             warnings.warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
@@ -1331,7 +1377,7 @@ class InflationSDP(object):
         sympy.core.symbol.Symbol
             The certificate in terms of correlators.
         """
-        if not all([o == 2 for o in self.InflationProblem.outcomes_per_party]):
+        if not all([o == 2 for o in self.outcome_cardinalities]):
             raise Exception("Correlator certificates are only available " +
                             "for 2-output problems")
         try:
@@ -1545,14 +1591,14 @@ class InflationSDP(object):
                                "'physical322'.")
                     assert length == self.nr_parties or length == 1, message
                     if length == 1:
-                        physmon_lens = [inf_level]*self.InflationProblem.nr_sources
+                        physmon_lens = [inf_level]*self.nr_sources
                     else:
                         physmon_lens = [int(inf_level)
                                         for inf_level in column_specification[8:]]
                     max_total_mon_length = sum(physmon_lens)
                 except:
                     # If no numbers come after, by default we use all physical operators
-                    physmon_lens = self.InflationProblem.inflation_level_per_source
+                    physmon_lens = self.inflation_levels
                     max_total_mon_length = sum(physmon_lens)
 
                 if max_monomial_length > 0:
@@ -1581,12 +1627,12 @@ class InflationSDP(object):
                             if freq > 0:
                                 #template_of_len_party_0 = template_physmon_all_lens[freq-1]
                                 #with_correct_party_idx = physmon_change_party_in_template(template_of_len_party_0, party)
-                                physmons = phys_mon_1_party_of_given_len(self.InflationProblem.hypergraph,
-                                                                         self.InflationProblem.inflation_level_per_source,
+                                physmons = phys_mon_1_party_of_given_len(self.hypergraph,
+                                                                         self.inflation_levels,
                                                                          party, freq,
-                                                                         self.InflationProblem.settings_per_party,
-                                                                         self.InflationProblem.outcomes_per_party,
-                                                                         self.InflationProblem.names,
+                                                                         self.setting_cardinalities,
+                                                                         self.outcome_cardinalities,
+                                                                         self.names,
                                                                          self._lexorder)
                                 physmons_per_party_per_length.append(physmons)
 
@@ -1717,10 +1763,10 @@ class InflationSDP(object):
         ncpol2sdpa.
         """
 
-        hypergraph = self.InflationProblem.hypergraph
-        settings   = self.InflationProblem.settings_per_party
-        outcomes   = self.InflationProblem.outcomes_per_party
-        inflation_level_per_source = self.InflationProblem.inflation_level_per_source
+        hypergraph = self.hypergraph
+        settings   = self.setting_cardinalities
+        outcomes   = self.outcome_cardinalities
+        inflation_level_per_source = self.inflation_levels
         commuting = self.commuting
 
         assert len(settings) == len(
