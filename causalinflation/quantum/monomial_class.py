@@ -7,6 +7,7 @@ from causalinflation.quantum.general_tools import factorize_monomial, is_physica
 # import itertools
 # from functools import cached_property
 from functools import lru_cache
+from functools import total_ordering
 
 from typing import List, Tuple, Union
 from collections.abc import Iterable
@@ -156,11 +157,14 @@ class AtomicMonomialMeta(type):
         else:
             # print('Existing Instance')
             return self.cache[quick_key]
+
+@total_ordering
 class AtomicMonomial(metaclass=AtomicMonomialMeta):
     __slots__ = ['as_ndarray',
                  'n_ops',
                  'op_length',
                  'as_tuples',
+                 'signature',
                  'inflation_indices_are_irrelevant',
                  'knowable_q',
                  'knowability_status',
@@ -196,6 +200,7 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
             self.as_tuples = to_tuple_of_tuples(np.take(self.as_ndarray, [0, -2, -1], axis=1))
         else:
             self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+        self.signature = self.as_tuples
 
     def __str__(self):
         # If a human readable name is available, we use it.
@@ -211,10 +216,17 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         if not self.inflation_indices_are_irrelevant:
             self.as_ndarray = to_representative_function(self.as_ndarray)
             self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+            self.signature = self.as_tuples
 
     def __hash__(self):
         # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
-        return hash(self.as_tuples)
+        return hash(self.signature)
+
+    def __eq__(self, other):
+        return self.signature == other.signature
+    def __lt__(self, other):
+        return self.signature < other.signature
+
 
     def update_name_and_symbol_given_observed_names(self, observable_names):
         self.name = atomic_monomial_to_name(observable_names=observable_names,
@@ -234,6 +246,8 @@ class Monomial(object):
                  'is_physical',
                  'factors',
                  'factors_as_atomic_monomials',
+                 'signature',
+                 'is_atomic',
                  'nof_factors',
                  'atomic_knowability_status',
                  'knowable_factors_uncompressed',
@@ -250,7 +264,7 @@ class Monomial(object):
                  'known_value',
                  'unknown_part',
                  'representative',
-                 'to_representative_function',
+                 'unknown_signature',
                  'irrelevant_copy_indices_status',
                  'factors_with_irrelevant_copy_indices',
                  'factors_with_relevant_copy_indices',
@@ -290,9 +304,16 @@ class Monomial(object):
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
 
         self.factors = factorize_monomial(self.as_ndarray, canonical_order=False)
-        self.factors_as_atomic_monomials = [AtomicMonomial(factor, atomic_is_knowable=atomic_is_knowable) for factor in self.factors]
-
         self.nof_factors = len(self.factors)
+        self.is_atomic = (self.nof_factors <= 1)
+        self.factors_as_atomic_monomials = [AtomicMonomial(factor, atomic_is_knowable=atomic_is_knowable) for factor in self.factors]
+        if self.nof_factors == 1:
+            self.signature = self.factors_as_atomic_monomials[0] #So as to match atomic signature
+        else:
+            self.signature = tuple(sorted(self.factors_as_atomic_monomials))
+        self.unknown_signature = self.signature
+
+
 
         #TODO: Elie to Alex: I'm in the middle of a large overhaul to make use of AtomicMonomial objects.
 
@@ -335,7 +356,7 @@ class Monomial(object):
         self.physical_q = self.knowable_q or is_physical(self.unknowable_factors_as_block,
                                                          sandwich_positivity=sandwich_positivity)
         self._unknowable_block_len = len(self.unknowable_factors_as_block)
-        self.to_representative_function = to_representative_function
+        # self.to_representative_function = to_representative_function
 
         if self._unknowable_block_len == 0:
             self.knowability_status = 'Yes'
@@ -363,7 +384,11 @@ class Monomial(object):
 
     def update_atomic_constituents(self, to_representative_function):
         for atomic_mon in self.factors_as_atomic_monomials:
-            atomic_mon.update_hash_via_to_representative_function(to_representative_function)
+            atomic_mon.update_hash_via_to_representative_function(to_representative_function) #Automatically changes self.factors_as_atomic_monomials
+        if self.nof_factors == 1:
+            self.signature = self.factors_as_atomic_monomials[0]
+        else:
+            self.signature = tuple(sorted(self.factors_as_atomic_monomials))
 
     def update_hash_via_to_representative_function(self, to_representative_function):
         # self.factors_with_relevant_copy_indices = tuple(to_representative_function(factor) for factor in self.factors_with_relevant_copy_indices)
@@ -377,7 +402,12 @@ class Monomial(object):
 
     def __hash__(self):
         # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
-        return hash(self.as_tuples)
+        return hash(self.signature)
+
+    def __eq__(self, other):
+        return self.signature == other.signature
+    def __lt__(self, other):
+        return self.signature < other.signature
 
     # def __eq__(self, other):
     #     if isinstance(other, Monomial):
@@ -439,6 +469,27 @@ class Monomial(object):
             self.known_status = 'No'
         else:
             self.known_status = 'Semi'
+
+    #TODO: Function is WORK IN PROGRESS!
+    def update_given_some_atomic_monomials(self, set_of_known_atomic_monomials, remove_bad_values=False):
+        if remove_bad_values:
+            set_of_known_atomic_monomials = set(atomic_mon for atomic_mon in set_of_known_atomic_monomials if (atomic_mon.known_status and (not np.isnan(atomic_mon.known_value))))
+        relevant_atomic_known_monomials = set(atomic_mon for atomic_mon in set_of_known_atomic_monomials if atomic_mon in self.factors_as_atomic_monomials)
+        known_value = 1
+        for mon in relevant_atomic_known_monomials:
+            known_value *= mon.known_value
+        raw_unknown_signature = tuple(sorted(mon for mon in self.factors_as_atomic_monomials if mon not in set_of_known_atomic_monomials))
+        unknown_len = len(self.unknown_signature)
+        if unknown_len == 0:
+            self.known_status = 'Yes'
+        elif unknown_len == self.n_ops:
+            self.known_status = 'No'
+        else:
+            self.known_status = 'Semi'
+        if unknown_len == 1:
+            self.unknown_signature = raw_unknown_signature[0] #treat atomic cases special
+        else:
+            self.unknown_signature = raw_unknown_signature
 
     def update_name_and_symbol_given_observed_names(self, observable_names):
         self._names_of_factors = sorted([atomic_monomial_to_name(observable_names=observable_names,
