@@ -37,10 +37,10 @@ def kill_numba_cache():
 
 try:
     from numba import jit
-    from numba.types import bool_
+    from numba.types import bool_, void
     from numba.types import uint16 as uint16_
     from numba.types import int64 as int64_
-    from numba import types
+    # from numba import types
     from numba.typed import Dict as nb_Dict
 except ImportError:
     def jit(*args, **kwargs):
@@ -49,7 +49,7 @@ except ImportError:
     uint16_ = np.uint16
     int64_ = np.int
     nb_Dict = dict
-
+    void = None
 try:
     from tqdm import tqdm
 except ImportError:
@@ -67,7 +67,7 @@ if nopython == False:
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_op_eq_op(op1: np.ndarray, op2: np.ndarray) -> bool_:
     """Check if two operators are equal.
-    
+
     NOTE: There is no check for shape consistency. As this is
     an internal function, it is assumed it is used correctly.
     """
@@ -137,34 +137,35 @@ def nb_op_lexorder(op: np.array, lexorder: np.ndarray) -> int:
     # #     prod *= NB_RADIX
     # #     summ += op[i]*prod
     # # return summ
-    # Performance note: instead of having a matrix where the first column 
+    # Performance note: instead of having a matrix where the first column
     # stores the lexicographic order, we can have a matrix where the rows are
     # ordered in the custom lexico-graphical order and then we simply return
     # the row index where the row is equal to the input. Strangely enough,
-    # that is 40% slower with Numba! It is a headscratcher why returning 
+    # that is 40% slower with Numba! It is a headscratcher why returning
     # i instead of lexorder[i, 0] is slower...
-    for i in range(lexorder.shape[0]):          
+    for i in range(lexorder.shape[0]):
         if nb_op_eq_op(lexorder[i, :], op):
             return i
 
-
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
-    """Convert a monomial to its lexicographic representation, as an 
+    """Convert a monomial to its lexicographic representation, as an
     array of integers representing the lex rank of each operator."""
     lex = np.zeros(mon.shape[0], dtype=uint16_)
     for i in range(mon.shape[0]):
         lex[i] = nb_op_lexorder(mon[i], lexorder)
     return lex
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_lexrepr_to_mon(lexrepr: np.ndarray, lexorder: np.ndarray) -> np.array:
-    """Convert a monomial to its lexicographic representation, as an 
-    array of integers representing the lex rank of each operator."""
-    mon = np.zeros(mon.shape, dtype=uint16_)
-    for i in range(lexrepr.shape[0]):
-        mon[i] = nb_op_lexorder(mon[i], lexorder)
-    return lexorder[lexrepr]
+
+# # Elie: This function does not work, nor is it used anywhere, so I'm commenting it out.
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def nb_lexrepr_to_mon(lexrepr: np.ndarray, lexorder: np.ndarray) -> np.array:
+#     """Convert a monomial to its lexicographic representation, as an
+#     array of integers representing the lex rank of each operator."""
+#     mon = np.zeros(mon.shape, dtype=uint16_)
+#     for i in range(lexrepr.shape[0]):
+#         mon[i] = nb_op_lexorder(mon[i], lexorder)
+#     return lexorder[lexrepr]
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_sort_lexorder(op_lexorder: np.array) -> np.array:
@@ -206,10 +207,10 @@ def nb_op1_commuteswith_op2(op1: np.array, op2: np.array,
     is a matrix whose (i, j) entry is 1 if the i-th operator commutes with
     the j-th. i, j are the lexicographic ranks of the operators.
     """
-    return commutation_mat[nb_op_lexorder(op1, lexorder), 
+    return commutation_mat[nb_op_lexorder(op1, lexorder),
                            nb_op_lexorder(op2, lexorder)]
 
-    
+
 # # @jit(nopython=nopython, cache=cache, forceobj=not nopython) Cannot handle lexsort.
 # def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
 #     """Return a monomial sorted lexicographically.
@@ -270,7 +271,7 @@ def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.array) -> np.ndarray:
     ----------
     mon : np.ndarray
         Input monomial as 2d array.
-        
+
     lexorder : np.array
         Specifies the order of the parties in the lexicographic order.
         Warning: Parties must be indexed starting from 1, and not 0.
@@ -374,6 +375,17 @@ def dot_mon(mon1: np.ndarray,
     return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)),
                                  lexorder)
 
+# @guvectorize(["void(int8[:, :], int8[:, :], int8[:, :])",
+#               "void(int32[:, :], int32[:, :], int32[:, :])",
+#               "void(int64[:, :], int64[:, :], int64[:, :])"],
+#              '(n, m), (n, m) -> (n, m)',
+#              nopython=True, cache=False)
+# def dot_mon(mon1: np.ndarray,
+#             mon2: np.ndarray,
+#             res: np.ndarray
+#             ):
+#     res = _dot_mon(mon1, mon2)
+
 
 # @jit(nopython=nopython, cache=cache, forceobj=not nopython) Cannot handle lexsort.
 def dot_mon_commuting(mon1: np.ndarray,
@@ -399,7 +411,7 @@ def dot_mon_commuting(mon1: np.ndarray,
 
     if mon1.size <= 1:
         if mon2.size <= 1:
-            return mon2    
+            return mon2
         return mon_lexsorted(mon2, lexorder)
     if mon2.size <= 1:
         return mon_lexsorted(mon1, lexorder)
@@ -630,7 +642,7 @@ def nb_apply_substitutions(mon_in: np.ndarray, notcomm: np.ndarray, lexorder: np
     #return lexorder[mon]
 
 
-#@jit(nopython=nopython, cache=cache, forceobj=not nopython) 
+#@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
                  ) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
@@ -663,15 +675,15 @@ def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
         # # # Recombine reordering according to party
         # # # mon = np.vstack(sorted(mon, key=lambda x: x[0]))
         # # mon = mon_sorted_by_parties(mon, lexorder)
-        
+
         mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
         mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
         mon = lexorder[mon]
         mon = remove_projector_squares(mon)
-        
-        return mon    
-    
-    
+
+        return mon
+
+
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_to_canonical_lexinput(mon_lexorder: np.array, notcomm: np.ndarray
                                 ) -> np.array:
@@ -683,7 +695,7 @@ def nb_to_canonical_lexinput(mon_lexorder: np.array, notcomm: np.ndarray
 
     sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
     # comm_paths_toleft = np.zeros((mon_lexorder.shape[0], mon_lexorder.shape[0]), dtype=int)
-    
+
     # idx = nb_linsearch(sub_notcomm[0], 1)
     # if idx == 1: # If the first operator cannot be moved at all
     #     m1 = np.array([mon_lexorder[0]])
@@ -982,7 +994,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
     #                                  key=lambda x: x[0].tolist())
 
     return disconnected_components
-    
+
 if __name__ == '__main__':
     import numpy as np
     import timeit
@@ -998,8 +1010,8 @@ if __name__ == '__main__':
                          [3, 0, 1, 1, 0, 0],
                          [3, 0, 1, 2, 0, 0],
                          [3, 0, 2, 1, 0, 0],
-                         [3, 0, 2, 2, 0, 0]]) 
-    
+                         [3, 0, 2, 2, 0, 0]])
+
     notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=int)
     notcomm[0, 1] = 1; notcomm[0, 2] = 1;
     notcomm[1, 3] = 1
@@ -1013,13 +1025,13 @@ if __name__ == '__main__':
     notcomm[10, 12] = 1
     notcomm[11, 12] = 1
     notcomm = notcomm + notcomm.T
-    
+
     np.random.seed(132)
-    
+
     mon_lexorder = np.random.permutation(lexorder.shape[0])[:7]
-    
-    
-    
+
+
+
     @jit(nopython=True)
     def nb_to_canonical_lexinput(mon_lexorder: np.array, notcomm: np.ndarray
                                  ) -> np.array:
@@ -1031,7 +1043,7 @@ if __name__ == '__main__':
 
         sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
         # comm_paths_toleft = np.zeros((mon_lexorder.shape[0], mon_lexorder.shape[0]), dtype=int)
-        
+
         # idx = nb_linsearch(sub_notcomm[0], 1)
         # if idx == 1: # If the first operator cannot be moved at all
         #     m1 = np.array([mon_lexorder[0]])
@@ -1058,12 +1070,11 @@ if __name__ == '__main__':
             m1 = np.array([mon_lexorder[0]])
             m2 = mon_lexorder[1:]
             return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
-    
-    
-    #def to_comm(monomial, notcomm, lexorder):
-        
-        
-    
 
-    
-    
+
+    #def to_comm(monomial, notcomm, lexorder):
+
+
+
+
+
