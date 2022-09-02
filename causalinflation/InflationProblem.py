@@ -2,16 +2,19 @@ import numpy as np
 from itertools import chain
 from warnings import warn
 import methodtools
-#from typing import Tuple, List, Union, NewType
-from causalinflation.quantum.types import Tuple, List, Union, NewType
+# from typing import Tuple, List, Union, NewType
+from causalinflation.quantum.types import Tuple, Union, NewType
+
 ArrayMonomial = NewType("ArrayMonomial", Union[Tuple[Tuple[int]], np.ndarray])
-from copy import deepcopy
+
+
+# from copy import deepcopy
 # from types import MappingProxyType
 
 
 class InflationProblem(object):
-    """Class for enconding relevant details concerning the causal
-    compatibibility scenario, e.g., DAG structure, number of inputs
+    """Class for encoding relevant details concerning the causal
+    compatibility scenario, e.g., DAG structure, number of inputs
     per party, etc.
 
     Parameters
@@ -26,12 +29,13 @@ class InflationProblem(object):
     inflation_level_per_source : list, optional
         Number of copies per source in the inflated graph, by default 1
         for all sources.
-    names : List[int], optional
+    order : List[int], optional
         Name of each party, default is alphabetical labels,
         e.g. ['A', 'B', ...]
     verbose : int, optional
         How much information to print, by default 0.
     """
+
     def __init__(self,
                  dag=None,
                  outcomes_per_party=tuple(),
@@ -53,24 +57,26 @@ class InflationProblem(object):
             self.private_settings_per_party = [1] * self.nr_parties
         else:
             self.private_settings_per_party = settings_per_party
-            assert len(self.private_settings_per_party)==self.nr_parties, "Different numbers of cardinalities specified for inputs versus outputs."
+            assert len(
+                self.private_settings_per_party) == self.nr_parties, "Different numbers of cardinalities specified for inputs versus outputs."
 
-
-        #We need to infer the names of the parties. If they are explicitly given, great. Otherwise, use DAG order.
+        # We need to infer the names of the parties. If they are explicitly given, great. Otherwise, use DAG order.
         names_have_been_set_yet = False
         if dag and (not names_have_been_set_yet):
             implicit_names_as_set = set(chain.from_iterable(dag.values()))
-            assert (len(implicit_names_as_set) == self.nr_parties), "DAG has a different number of outcome-associated variables than" \
-                                                                    "were given by the user-specified cardinalities."
+            assert (
+                        len(implicit_names_as_set) == self.nr_parties), "DAG has a different number of outcome-associated variables than" \
+                                                                        + "were given by the user-specified cardinalities."
             if order:
                 sanity_check = (implicit_names_as_set.issubset(order) and implicit_names_as_set.issuperset(order))
                 if sanity_check:
                     self.names = order
                     names_have_been_set_yet = True
                 else:
-                    warn("Names read from DAG do not match names given as keyword argument. IGNORING user-specified names.")
+                    warn(
+                        "Names read from DAG do not match names given as keyword argument. IGNORING user-specified names.")
             if not names_have_been_set_yet:
-                if len(implicit_names_as_set)>1:
+                if len(implicit_names_as_set) > 1:
                     if self.verbose > 0:
                         warn("Order of variables is inferred by the DAG according to lexicographic order.")
                 self.names = sorted(implicit_names_as_set)
@@ -85,16 +91,14 @@ class InflationProblem(object):
         if not names_have_been_set_yet:
             self.names = [chr(ord('A') + i) for i in range(self.nr_parties)]
 
-
-
         if not dag:
-            warn("Hypergraph must be a non-empty list of lists. Defaulting to global source.")
+            warn("Hypergraph must be a non-empty dict of lists. Defaulting to global source.")
             self.dag = {'h_global': self.names}
         else:
             self.dag = dag
 
         nodes_with_children = list(dag.keys())
-        #NEW PROPERTY ADDED BY ELIE
+        # NEW PROPERTY ADDED BY ELIE
         self.split_node_model = not set(nodes_with_children).isdisjoint(self.names)
         names_to_integers_dict = {party: position for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties), dtype=np.uint8)
@@ -128,30 +132,27 @@ class InflationProblem(object):
         self.hypergraph = hypergraph
 
         assert self.hypergraph.shape[1] == self.nr_parties, \
-               (f"The number of parties derived from the DAG is {self.hypergraph.shape[1]} and " +
-                f"from the specification of outcomes it is {self.nr_parties} instead")
+            (f"The number of parties derived from the DAG is {self.hypergraph.shape[1]} and " +
+             f"from the specification of outcomes it is {self.nr_parties} instead")
 
         if np.array(inflation_level_per_source).size == 0:
             if self.verbose > 0:
                 print("Inflation level per source must be a non-empty list. Defaulting to 1 (standard NPA).")
-            self.inflation_level_per_source = np.array([1]*self.nr_sources)
+            self.inflation_level_per_source = np.array([1] * self.nr_sources)
         elif type(inflation_level_per_source) == int:
-            self.inflation_level_per_source = np.array([inflation_level_per_source]*self.nr_sources)
+            self.inflation_level_per_source = np.array([inflation_level_per_source] * self.nr_sources)
         else:
             self.inflation_level_per_source = np.array(inflation_level_per_source)
             assert self.nr_sources == len(self.inflation_level_per_source), ("The number of sources,"
-                                + " as described by the hypergraph and the list of inflation levels, does not coincide")
-
-
-
+                                                                             + " as described by the hypergraph and the list of inflation levels, does not coincide")
 
     def __repr__(self):
         return ("InflationProblem with " + str(self.hypergraph.tolist()) +
-                    " as hypergraph, " + str(self.outcomes_per_party) +
-                     " outcomes per party, "+ str(self.settings_per_party) +
-                     " settings per party and " +
-                     str(self.inflation_level_per_source) +
-                     " inflation copies per source.")
+                " as hypergraph, " + str(self.outcomes_per_party) +
+                " outcomes per party, " + str(self.settings_per_party) +
+                " settings per party and " +
+                str(self.inflation_level_per_source) +
+                " inflation copies per source.")
 
     @methodtools.lru_cache(maxsize=None, typed=False)
     def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: ArrayMonomial) -> bool:
@@ -169,7 +170,7 @@ class InflationProblem(object):
         for p in parties_in_play:
             parents_referenced.update(self.parents_per_party[p])
         if not parents_referenced.issubset(parties_in_play):
-            #Case of not an ancestorally closed set.
+            # Case of not an ancestrally closed set.
             return False
         # Parties start at #1 in our numpy vector notation.
         outcomes_by_party = {(o[0] - 1): o[-1] for o in monomial_as_2d_numpy_array}
@@ -186,28 +187,27 @@ class InflationProblem(object):
 
     def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: ArrayMonomial) -> ArrayMonomial:
         # Parties start at #1 in initial numpy vector notation, we reset that.
-        new_mon = np.array(monomial_as_2d_numpy_array, copy=False) #Danger.
+        new_mon = np.array(monomial_as_2d_numpy_array, copy=False)  # Danger.
         for o in new_mon:
             party_index = o[0] - 1
             effective_setting_as_integer = o[-2]
             o_private_settings = self.extract_parent_values_from_effective_setting[
-                                        party_index][effective_setting_as_integer][0]
+                party_index][effective_setting_as_integer][0]
             o[-2] = o_private_settings
             # o[0] = party_index #DO NOT LOWER PARTY INDEX AS PART OF SETTING RECTIFICATION
         return new_mon
 
 
-
 if __name__ == "__main__":
-    prob = InflationProblem(dag={'U_AB': ['A','B'],
-                                       'U_AC': ['A','C'],
-                                       'U_AD': ['A','D'],
-                                       'C': ['D'],
-                                       'A': ['B', 'C', 'D']},
-                                  outcomes_per_party=(2, 2, 2, 2),
-                                  settings_per_party=(3, 3, 3, 3),
-                                  inflation_level_per_source=(1, 1, 1),
-                                  names=('A', 'B', 'C', 'D'),
-                                  verbose=2)
+    prob = InflationProblem(dag={'U_AB': ['A', 'B'],
+                                 'U_AC': ['A', 'C'],
+                                 'U_AD': ['A', 'D'],
+                                 'C': ['D'],
+                                 'A': ['B', 'C', 'D']},
+                            outcomes_per_party=(2, 2, 2, 2),
+                            settings_per_party=(3, 3, 3, 3),
+                            inflation_level_per_source=(1, 1, 1),
+                            order=('A', 'B', 'C', 'D'),
+                            verbose=2)
     print(len(prob.extract_parent_values_from_effective_setting))
     print(prob.extract_parent_values_from_effective_setting[3])
