@@ -752,6 +752,10 @@ class InflationSDP(object):
             # equivalent to reset_distribution(), i.e., set_values({})
             values = dict()
         else:
+            #We want the monomial class to be able to compute its own known and unknown parts given atomic valuations.
+            #Let the atoms be in the form of tuples of tuples.
+
+
             atomic_knowable = [m for m in self.list_of_monomials
                                if m.nof_factors == 1 and m.knowability_status == 'Yes']
 
@@ -835,6 +839,7 @@ class InflationSDP(object):
         values_clean = dict()
         for k in list(values.keys()):
             k_sanitised = self._sanitise_monomial(k)
+            #TODO: Elie to Emi: Shouldn't we KEEP the fact that these are equal to zero, no?
             if not np.array_equal(k_sanitised, 0):  # TODO do this comparison well
                 values_clean[k_sanitised] = values[k]
             else:
@@ -872,6 +877,7 @@ class InflationSDP(object):
                               "that are products of others moments will not be inferred automatically, " +
                               "and neither will proportionality constraints between moments (LPI constraints). "+
                               "Set only_specified_values=False for these features.")
+            self.cleanup_after_set_values()
             return
             
         # Some more pre-processing!
@@ -888,14 +894,16 @@ class InflationSDP(object):
             # factor to its representative form. This is done only once.
             if not self.__factor_reps_computed__:
                 for mon in self.list_of_monomials:
-                    # For the representantive, its easier to store it in .as_ndarray
-                    # so that __eq__() between Monomials works as expected,
-                    # rather than the .representative attribute.
-                    mon.as_ndarray = self.inflation_aware_to_representative(mon.as_ndarray) 
-                    mon._factors_repr = [to_tuple_of_tuples(  # So that it is hashable
-                                            self.inflation_aware_to_representative(factor)
-                                            )
-                                        for factor in mon.factors]
+                    # For the representantive we use the monomial self-hashing feature.
+                    #TODO: make use of atomic monomial self-hashing in set_objective as well!
+                    # mon.update_hash_via_to_representative_function(self.inflation_aware_to_representative)
+                    mon.update_atomic_constituents(self.inflation_aware_to_representative)
+                    mon.update_hash_via_to_representative_function(self.inflation_aware_to_representative)
+                    # mon.as_ndarray = self.inflation_aware_to_representative(mon.as_ndarray)
+                    # mon._factors_repr = [to_tuple_of_tuples(  # So that it is hashable
+                    #                         self.inflation_aware_to_representative(factor)
+                    #                         )
+                    #                     for factor in mon.factors]
                 self.__factor_reps_computed__ = True  # So they are not computed again
 
         self.known_moments = values_clean  # By this point, we made sure we only have atomic factors
@@ -935,9 +943,9 @@ class InflationSDP(object):
             for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):   
                 unknowns_to_join = []
                 known = 1
-                for i, factor_repr in enumerate(mon._factors_repr):
-                    if factor_repr in values_clean:
-                        known *= values_clean[factor_repr]
+                for i, atomic_mon in enumerate(mon.factors_as_atomic_monomials):
+                    if atomic_mon in values_clean:
+                        known *= values_clean[atomic_mon]
                     else:
                         unknowns_to_join.append(mon.factors[i])
                 if len(unknowns_to_join) == 0:
@@ -956,8 +964,12 @@ class InflationSDP(object):
                                 unknown.update_name_and_symbol_given_observed_names(self.names)
                                 self.semiknown_moments[mon] = (known, unknown)
 
+        self.cleanup_after_set_values()
+        return
 
 
+
+    def cleanup_after_set_values(self):
         # Name dictionaries for compatibility purposes only
         self.known_moments_name_dict = {mon.name : v for mon, v in self.known_moments.items()}
         self.semiknown_moments_name_dict = {mon.name : (v[0], v[1].name) for mon, v in self.semiknown_moments.items()}
@@ -980,8 +992,8 @@ class InflationSDP(object):
 
         # Create lowerbounds list for physical but unknown moments
         self.update_physical_lowerbounds()
-
         self._update_objective()
+        return
 
 
 
@@ -1149,8 +1161,10 @@ class InflationSDP(object):
             # This assumes the monomial is in "machine readable symbolic" form
             array = np.concatenate([to_numbers(op, self.names)
                                     for op in flatten_symbolic_powers(mon)])
+            assert array.ndim <= 2, "Cannot allow 3d arrays as monomial representations."
         elif type(mon) in [tuple, list]:
             array = np.array(mon, dtype=np.uint16)
+            assert array.ndim <= 2, "Cannot allow 3d arrays as monomial representations."
         elif type(mon) == str:
             # If it is a string, I assume it is the name of one of the 
             # monomials in self.list_of_monomials
@@ -1170,8 +1184,7 @@ class InflationSDP(object):
             array = mon.as_ndarray
             if hasattr(self, 'list_of_monomials'):
                 # If the user passes a proper Monomial, if they instantiated it
-                # themselves, it can be in a form not found in list_of_monomials
-                # I only extract the          
+                # themselves, it can be in a form not found in list_of_monomials.
                 if mon in self.list_of_monomials:
                     return mon
         else: # If they are number type
@@ -1188,7 +1201,11 @@ class InflationSDP(object):
         if np.array_equal(canon, 0):
             return 0  # TODO: Or ZeroMonomial once that is implemented?
         else:
-            reprr = self.inflation_aware_to_representative(canon)
+            # assert canon.ndim == 2, print("ERROR: ", canon)
+            reprr = np.asarray(self.inflation_aware_to_representative(canon))  # Elie to Emi: I think we can just pass "canon" forward.
+            assert reprr.ndim <= 2, "Cannot allow 3d arrays as monomial representations." + \
+                                    np.array2string(canon) + \
+                                    np.array2string(reprr)
             reprr = Monomial(reprr, atomic_is_knowable=self.atomic_knowable_q,
                                     sandwich_positivity=True)
             reprr.update_name_and_symbol_given_observed_names(self.names)
