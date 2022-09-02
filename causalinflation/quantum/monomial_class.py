@@ -3,7 +3,7 @@
 # from __future__ import with_statement
 import numpy as np
 from causalinflation.quantum.general_tools import factorize_monomial, is_physical, is_knowable  # to_representative_aux
-from causalinflation.quantum.fast_npa import mon_equal_mon
+# from causalinflation.quantum.fast_npa import mon_equal_mon
 # import itertools
 # from functools import cached_property
 from functools import lru_cache
@@ -14,7 +14,8 @@ from collections.abc import Iterable
 # MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
 import sympy
-from itertools import chain
+# from itertools import chain
+from operator import attrgetter
 
 
 
@@ -85,11 +86,11 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
 
 def atomic_monomial_to_name(observable_names: Tuple[str],
                             atom: Union[np.ndarray, Tuple[Tuple[int]]],
-                            human_readable_over_machine_readable=True):
+                            human_readable_over_machine_readable=True) -> str:
     atom_as_array = np.array(atom, dtype=int, copy=True)
     if len(atom_as_array):
         if human_readable_over_machine_readable:
-            if atom_as_array.shape[-1] == 3:
+            if atom_as_array.shape[-1] == 3: #this handles the KNOWN factors.
                 parties = np.take(observable_names,
                                   atom_as_array[:, 0] - 1)  # Convention in numpy monomial format is first party = 1
                 inputs = [str(input) for input in atom_as_array[:, -2].astype(int).tolist()]
@@ -103,7 +104,7 @@ def atomic_monomial_to_name(observable_names: Tuple[str],
                         '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')')
             else:
                 operators_as_strings = []
-                for op in atom_as_array.tolist():
+                for op in atom_as_array.tolist(): #this handles the UNKNOWN factors.
                     operators_as_strings.append('_'.join([observable_names[op[0] - 1]]  # party idx
                                                          + [str(i) for i in op[1:]]))
                 return 'P[' + ', '.join(operators_as_strings) + ']'
@@ -115,33 +116,18 @@ def atomic_monomial_to_name(observable_names: Tuple[str],
     else:
         return '1'
 
-
-# def atomic_name_to_symbol(atomic_name,
-#                           human_readable_over_machine_readable=True):
-#     if atomic_name == '1':
-#         return sympy.S.One
-#     else:
-#         if human_readable_over_machine_readable:
-#             return sympy.Symbol(atomic_name, commutative=True)
-#         else:
-#             prod = sympy.S.One
-#             for op_name in atomic_name.split('**'):
-#                 prod *= sympy.Symbol(op_name,
-#                                      commutative=False)
-#             return prod
+def symbol_from_atomic_name(atomic_name):
+    if atomic_name == '1':
+        return sympy.S.One
+    elif atomic_name == '0':
+        return sympy.S.Zero
+    else:
+        return sympy.Symbol(atomic_name, commutative=True)
 
 
 def name_from_atomic_names(atomic_names):
-    # try:
     return '*'.join(atomic_names)
-    # except:
-    #     return '1'
-    #
-    # if len(atomic_names) and (isinstance(atomic_names[0], str)):
-    #     # print(atomic_names)
-    #         return '*'.join(atomic_names)
-    # else:
-    #     return '1'
+
 
 def symbol_from_atomic_names(atomic_names):
     prod = sympy.S.One
@@ -151,6 +137,94 @@ def symbol_from_atomic_names(atomic_names):
                                  commutative=True)
     return prod
 
+def symbol_from_atomic_symbols(atomic_symbols):
+    prod = sympy.S.One
+    for sym in atomic_symbols:
+        prod *= sym
+    return prod
+
+# Elie comment: using class memoization via https://stackoverflow.com/questions/47785795/memoized-objects-still-have-their-init-invoked
+class AtomicMonomialMeta(type):
+    def __init__(self, name, bases, namespace):
+        super().__init__(name, bases, namespace)
+        self.cache = dict()
+    def __call__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]], **kwargs):
+        quick_key = to_tuple_of_tuples(array2d)
+        if quick_key not in self.cache:
+            # print('New Instance')
+            self.cache[quick_key] = super().__call__(array2d, **kwargs)
+        else:
+            # print('Existing Instance')
+            return self.cache[quick_key]
+class AtomicMonomial(metaclass=AtomicMonomialMeta):
+    __slots__ = ['as_ndarray',
+                 'n_ops',
+                 'op_length',
+                 'as_tuples',
+                 'inflation_indices_are_irrelevant',
+                 'knowable_q',
+                 'knowability_status',
+                 'known_status',
+                 'known_value',
+                 'name',
+                 'symbol']
+    def __init__(self, array2d: Union[np.ndarray, Tuple[Tuple[int]], List[List[int]]],
+                 atomic_is_knowable=is_knowable):
+        """
+        This class is incredibly inefficient unless knowable_q has built-in memoization.
+        It is designed to categorize monomials into known, semiknown, unknown, etc.
+        Note that if knowable_q changes (such as given partial information) we can update this on the fly.
+        """
+        # self.to_representative = lambda mon: tuple(tuple(vec) for vec in to_representative(mon))
+
+        self.as_ndarray = np.asarray(array2d)
+        if len(self.as_ndarray):
+            assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array.'
+        else:
+            self.as_ndarray = np.empty((0, 3), dtype=np.uint8)
+        self.n_ops, self.op_length = self.as_ndarray.shape
+        assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
+        self.inflation_indices_are_irrelevant = is_knowable(self.as_ndarray)
+        self.knowable_q = self.inflation_indices_are_irrelevant and atomic_is_knowable(self.as_ndarray)
+        if self.knowable_q:
+            self.knowability_status = 'Yes'
+        else:
+            self.knowability_status = 'No'
+        self.known_value = 1.
+        self.known_status = False
+        if self.inflation_indices_are_irrelevant:
+            self.as_tuples = to_tuple_of_tuples(np.take(self.as_ndarray, [0, -2, -1], axis=1))
+        else:
+            self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+
+    def __str__(self):
+        # If a human readable name is available, we use it.
+        try:
+            return self.name
+        except AttributeError:
+            return np.array2string(self.as_ndarray)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def update_hash_via_to_representative_function(self, to_representative_function):
+        if not self.inflation_indices_are_irrelevant:
+            self.as_ndarray = to_representative_function(self.as_ndarray)
+            self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+
+    def __hash__(self):
+        # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
+        return hash(self.as_tuples)
+
+    def update_name_and_symbol_given_observed_names(self, observable_names):
+        self.name = atomic_monomial_to_name(observable_names=observable_names,
+                                                                 atom=self.as_ndarray,
+                                                                 human_readable_over_machine_readable=True)
+        self.symbol = symbol_from_atomic_names([self.name])
+
+
+
+
 
 class Monomial(object):
     __slots__ = ['as_ndarray',
@@ -159,6 +233,7 @@ class Monomial(object):
                  'as_tuples',
                  'is_physical',
                  'factors',
+                 'factors_as_atomic_monomials',
                  'nof_factors',
                  'atomic_knowability_status',
                  'knowable_factors_uncompressed',
@@ -176,14 +251,17 @@ class Monomial(object):
                  'unknown_part',
                  'representative',
                  'to_representative_function',
-                 '_factors_repr', # Elie: See comment the 'set_values' method
+                 'irrelevant_copy_indices_status',
+                 'factors_with_irrelevant_copy_indices',
+                 'factors_with_relevant_copy_indices',
+                 '_factors_repr', # Emi to Elie: See comment the 'set_values' method
                  # 'knowable_factors_names',
                  # 'knowable_part_name',
                  # 'knowable_part_machine_readable_name',
                  # 'unknowable_part_name',
                  # 'unknowable_part_machine_readable_name',
                  '_names_of_factors',
-                 '_machine_readable_names_of_factors',
+                 # '_machine_readable_names_of_factors',
                  'name',
                  'machine_readable_name',
                  'symbol',
@@ -204,14 +282,22 @@ class Monomial(object):
 
         self.idx = idx
         self.as_ndarray = np.asarray(array2d)
-        assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array.'
+        if len(self.as_ndarray):
+            assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array:' + np.array2string(self.as_ndarray)
+        else:
+            self.as_ndarray = np.empty((0, 3), dtype=np.uint8)
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
 
         self.factors = factorize_monomial(self.as_ndarray, canonical_order=False)
-        self.as_tuples = tuple(chain.from_iterable(sorted([to_tuple_of_tuples(factor) for factor in self.factors])))
+        self.factors_as_atomic_monomials = [AtomicMonomial(factor, atomic_is_knowable=atomic_is_knowable) for factor in self.factors]
+
         self.nof_factors = len(self.factors)
+
+        #TODO: Elie to Alex: I'm in the middle of a large overhaul to make use of AtomicMonomial objects.
+
         self.atomic_knowability_status = tuple(atomic_is_knowable(atom) for atom in self.factors)
+
         self.knowable_factors_uncompressed = tuple(atom for atom, knowable in
                                                    zip(self.factors,
                                                        self.atomic_knowability_status)
@@ -226,6 +312,25 @@ class Monomial(object):
         # knowable factors must be hashable, but this is taken care of after externally rectifying fake settings.
         self.knowable_factors = tuple(np.take(factor, [0, -2, -1], axis=1).astype(int)
                                       for factor in self.knowable_factors_uncompressed)
+
+        #We distinguish between factor for which the copy indices are relevant, and factors for which they are not.
+        self.irrelevant_copy_indices_status = tuple(is_knowable(atom) for atom in self.unknowable_factors)
+        self.factors_with_relevant_copy_indices = tuple(factor for factor, copy_index_irrelevance in
+                                                        zip(self.unknowable_factors,
+                                                            self.irrelevant_copy_indices_status)
+                                                        if not copy_index_irrelevance)
+        self.factors_with_irrelevant_copy_indices = tuple(np.take(factor, [0, -2, -1], axis=1)
+                    for factor, copy_index_irrelevance in
+                    zip(self.unknowable_factors,
+                        self.irrelevant_copy_indices_status)
+                    if copy_index_irrelevance)
+        self.factors_with_irrelevant_copy_indices = self.knowable_factors + self.factors_with_irrelevant_copy_indices
+        self.factors_with_irrelevant_copy_indices = tuple(sorted(to_tuple_of_tuples(factor) for factor in self.factors_with_irrelevant_copy_indices))
+
+        # self.as_tuples = self.factors_with_irrelevant_copy_indices + tuple(
+        #     sorted([to_tuple_of_tuples(factor) for factor in self.factors_with_relevant_copy_indices]))
+        self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+
         self.knowable_q = (len(self.knowable_factors) == self.nof_factors)
         self.physical_q = self.knowable_q or is_physical(self.unknowable_factors_as_block,
                                                          sandwich_positivity=sandwich_positivity)
@@ -247,6 +352,7 @@ class Monomial(object):
         self.known_value = 1.
 
     def __str__(self):
+        #If a human readable name is available, we use it.
         try:
             return self.name
         except AttributeError:
@@ -255,8 +361,19 @@ class Monomial(object):
     def __repr__(self):
         return self.__str__()
 
-    def update_representative(self):
-        self.as_tuples = tuple(chain.from_iterable(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
+    def update_atomic_constituents(self, to_representative_function):
+        for atomic_mon in self.factors_as_atomic_monomials:
+            atomic_mon.update_hash_via_to_representative_function(to_representative_function)
+
+    def update_hash_via_to_representative_function(self, to_representative_function):
+        # self.factors_with_relevant_copy_indices = tuple(to_representative_function(factor) for factor in self.factors_with_relevant_copy_indices)
+        # # WARNING: WE CANNOT STACK THE FACTORS AFTER CONVERTING TO REPRESENTATIVE!
+        # # The alternative is to call to_representative_function on the entire as_ndarray, instead of on the individual factors.
+        # self.as_tuples = self.factors_with_irrelevant_copy_indices + tuple(sorted(
+        #     to_tuple_of_tuples(factor) for factor in self.factors_with_relevant_copy_indices))
+        self.as_ndarray = to_representative_function(self.as_ndarray)
+        self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+
 
     def __hash__(self):
         # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
@@ -335,18 +452,13 @@ class Monomial(object):
         self.name = name_from_atomic_names(self._names_of_factors)
         self.symbol = symbol_from_atomic_names(self._names_of_factors)
 
-        # self._machine_readable_names_of_factors = [atomic_monomial_to_name(observable_names=observable_names,
-        #                                                                    atom=atomic_factor,
-        #                                                                    human_readable_over_machine_readable=False)
-        #                                            for atomic_factor in self.factors]
-        # self.machine_readable_name = name_from_atomic_names(self._machine_readable_names_of_factors)
         
         self.machine_readable_name = atomic_monomial_to_name(observable_names=observable_names,
-                                            atom=self.as_tuples,
+                                            atom=self.as_ndarray,
                                             human_readable_over_machine_readable=False)
-        
+
         self.machine_readable_symbol = (sympy.S.One if self.machine_readable_name == '1' else
-                                        np.prod([sympy.Symbol(op, commutative=False) 
+                                        np.prod([sympy.Symbol(op, commutative=False)
                                                  for op in self.machine_readable_name.split('*')]) )
         
 
