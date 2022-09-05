@@ -194,12 +194,9 @@ class InflationSDP(object):
         self._mon2indx = {key: variable_dict[val]
                               for key, val in self._mon_string2int.items()}
 
-        # Change objects to new variables
-        for i, row in enumerate(tqdm(self.momentmatrix,
-                                     disable=not self.verbose,
-                                     desc="Reassigning moment matrix indices")):
-            for j, col in enumerate(row):
-                self.momentmatrix[i, j] = self._var2repr[col]
+        # Change objects to new variables: vectorize the dictionary
+        var2repr_replacer = np.vectorize(self._var2repr.__getitem__)
+        self.momentmatrix = var2repr_replacer(self.momentmatrix)
 
         for idx in range(len(self.monomials_list)):
             self.monomials_list[idx, 0] = \
