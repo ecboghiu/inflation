@@ -15,8 +15,7 @@ from typing import Dict, List, Tuple, Union
 try:
     from tqdm import tqdm
 except ImportError:
-    def tqdm(*args, **kwargs):
-        return args[0]
+    from ..utils import blank_tqdm as tqdm
 
 ################################################################################
 # GENERATION FUNCTIONS                                                         #
