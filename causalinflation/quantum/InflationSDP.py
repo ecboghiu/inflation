@@ -766,7 +766,7 @@ class InflationSDP(object):
                 local_length = local_level * self.nr_parties
                 # Determine maximum length
                 if ((max_monomial_length > 0)
-                    and (max_monomial_length < local_level)):
+                    and (max_monomial_length < local_length)):
                     max_length = max_monomial_length
                 else:
                     max_length = local_length
