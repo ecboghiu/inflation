@@ -219,8 +219,9 @@ class InflationSDP(object):
 
         if self.verbose > 1:
             print("Number of knowable, semi-knowable and unknown variables:",
-                    self._n_known, self._n_something_known-self._n_known,
-                    self._n_unknown)
+                  self.n_knowable,
+                  self.n_something_knowable - self.n_knowable,
+                  self.n_unknowable)
             print("Number of non-negative variables:", len(positive_monomials))
             if self.verbose > 1:
                 print("Non-negative monomials:",
@@ -243,8 +244,8 @@ class InflationSDP(object):
                 except KeyError:
                     # If the unknown variable doesn't appear anywhere else, add
                     # it to the list
-                    self._n_unknown += 1
-                    var_idx = self._n_something_known + self._n_unknown
+                    self.n_unknowable += 1
+                    var_idx = self.n_something_knowable + self.n_unknowable
                     self._mon2indx[to_name(to_representative(np.array(factor),
                                                           self.inflation_levels,
                                                              self.commuting),
@@ -252,7 +253,7 @@ class InflationSDP(object):
                     factor_variables.append(var_idx)
             monomials_factors_vars[idx][1] = factor_variables
         self.semiknowable_atoms = \
-                                monomials_factors_vars[:self._n_something_known]
+                              monomials_factors_vars[:self.n_something_knowable]
 
         # Define trivial arrays for values, objective, etc.
         self.known_moments       = {0: 0., 1: 1.}
@@ -299,7 +300,9 @@ class InflationSDP(object):
                  "optimization to distributions with fixed marginals.")
 
         atomic_knowable_variables = [entry
-                for idx, entry in enumerate(self.monomials_list[:self._n_known])
+                for idx, entry in enumerate(
+                                           self.monomials_list[:self.n_knowable]
+                                            )
                                    if len(self.semiknowable_atoms[idx][1]) == 1]
         atomic_numerical_values = {var[0]: compute_numeric_value(var[1],
                                                                  prob_array,
@@ -1211,9 +1214,9 @@ class InflationSDP(object):
                             monomials_factors, self.hypergraph)
 
         # Some counting
-        self._n_known           = np.sum(is_knowable[:, 1] == 'Yes')
-        self._n_something_known = np.sum(is_knowable[:, 1] != 'No')
-        self._n_unknown         = np.sum(is_knowable[:, 1] == 'No')
+        self.n_knowable           = np.sum(is_knowable[:, 1] == 'Yes')
+        self.n_something_knowable = np.sum(is_knowable[:, 1] != 'No')
+        self.n_unknowable         = np.sum(is_knowable[:, 1] == 'No')
 
         # Recombine multiple unknowable variables into one, and reorder the
         # factors so the unknowable is always last
@@ -1292,15 +1295,15 @@ class InflationSDP(object):
         ispositive       = np.empty_like(monomials_factors)
         ispositive[:, 0] = monomials_factors[:, 0]
         ispositive[:, 1] = False
-        ispositive[:self._n_known, 1] = True    # Knowable moments are positive
-        for i, row in enumerate(monomials_factors[self._n_known:]):
+        ispositive[:self.n_knowable, 1] = True  # Knowable moments are positive
+        for i, row in enumerate(monomials_factors[self.n_knowable:]):
             factors = row[1]
             factor_is_positive = []
             for factor in factors:
                 isphysical = is_physical(factor, sandwich_positivity)
                 factor_is_positive.append(isphysical)
             if all(factor_is_positive):
-                ispositive[i+self._n_known, 1] = True
+                ispositive[i+self.n_knowable, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
 
     ########################################################################

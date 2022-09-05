@@ -1,0 +1,20 @@
+Fix the problems in the processing of certificates (in origin they work without problem)
+
+Check number of columns and symmetries in 322 inflations (NPA2, NPA2+LL1). Also do 112 and 122 inflations
+
+Inflation 322, NPA3 shows the warning that symmetries are incomplete, which is not true
+
+Check that physical2 recovers the NSI result in the two-outcome triangle (Figs 2 and 3 in the paper)
+
+Understand what's up in the implementation of physicalN
+
+Remove the todense in the generation/processing of the moment matrix
+
+CRITICAL: Number of columns depends on the order of the inflation copies. Triangle, INF223NPA3 gives 1107, INF232NPA3 gives 1109, INF322NPA3 gives 1111. NPA1 and NPA2 seem to work fine. INF112 is good at least up to NPA3. INF221 and INF113 are good at least up to NPA4. INF331 is fine up to NPA2, but at NPA3 it says that the columns are not symmetric under permutations and the variable counts are different despite the fact that the number of columns is the same. INF123 gives problems with the number of columns for NPA3 (NPA123 and NPA132 give different numbers already). This has been fixed, but there are still problems (below)
+
+CRITICAL: Triangle with INF223NPA3 produces the same number of columns, but the application of symmetries triggers the warning and the variable counts differ. Same in INF123NPA3. And same in INF23NPA3. YOU SHOULD ATTACK THIS FIRST!!! In the case of INF122NPA3, all counts match but the symmetries fail. You should attack this first. This has been fixed, but there are still problems (below)
+
+The number of variables without symmetryzing differs in INF23NPA3 and INF32NPA3.
+
+------------------------------------
+When factorizing, for the known factors, instead of finding the variable (in pathological moment matrices the variables may not be present) associate another object that is later on associated to the value. This should be applied in L263 onwards of InflationSDP
