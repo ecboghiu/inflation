@@ -531,9 +531,7 @@ def monomialset_name2num(monomials: np.ndarray, names: List[str]) -> np.ndarray:
         string format.
     """
     monomials_numbers = monomials.copy()
-    for i, line in enumerate(tqdm(monomials,
-                                 disable=True,
-                                 desc="Converting monomial names to numbers")):
+    for i, line in enumerate(monomials):
         monomials_numbers[i][1] = to_numbers(line[1], names)
     monomials_numbers[:, 0] = monomials_numbers[:, 0].astype(int)
     return monomials_numbers
