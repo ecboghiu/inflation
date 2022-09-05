@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to contribute &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>How to contribute &mdash; CausalInflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,11 +39,12 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html#Partial-information-support">Partial information support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">How to contribute</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-contribute-to-the-code">How to contribute to the code</a><ul>
@@ -110,14 +112,14 @@
 }
 </style>
 <section id="how-to-contribute">
-<h1>How to contribute<a class="headerlink" href="#how-to-contribute" title="Permalink to this headline"></a></h1>
+<h1>How to contribute<a class="headerlink" href="#how-to-contribute" title="Permalink to this headline">¶</a></h1>
 <p>This is the contribution guide for CausalInflation, a Python package for implementations of the inflation technique for causal inference. Contributions are very welcome and appreciated!</p>
 <p>You can begin contributing by opening an issue on the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a> to report bugs, request features, etc. Now we will outline some guidelines for contributing to the code, and for contributing to the documentation.</p>
 <section id="how-to-contribute-to-the-code">
-<h2>How to contribute to the code<a class="headerlink" href="#how-to-contribute-to-the-code" title="Permalink to this headline"></a></h2>
+<h2>How to contribute to the code<a class="headerlink" href="#how-to-contribute-to-the-code" title="Permalink to this headline">¶</a></h2>
 <p>If you want to contribute to the code, please fork the repository and submit a pull request.</p>
 <section id="install-in-develop-mode">
-<h3>Install in develop mode<a class="headerlink" href="#install-in-develop-mode" title="Permalink to this headline"></a></h3>
+<h3>Install in develop mode<a class="headerlink" href="#install-in-develop-mode" title="Permalink to this headline">¶</a></h3>
 <p>It is recommended to install the package in <a class="reference external" href="https://stackoverflow.com/questions/19048732/python-setup-py-develop-vs-install">develop mode</a>, which can be done with the following command in the terminal:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">develop</span>
 </pre></div>
@@ -125,7 +127,7 @@
 <p>This way the package does not need to reinstalled after every modification.</p>
 </section>
 <section id="testing">
-<h3>Testing<a class="headerlink" href="#testing" title="Permalink to this headline"></a></h3>
+<h3>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h3>
 <p>If you add new features, please write tests for them. Testing is done within the <a class="reference external" href="https://docs.python.org/3/library/unittest.html">Unit testing framework</a>. You can copy one of the existing tests to start with, and then adapt it to your code modification. To run the tests on your own computer, once you have cloned the repository, you can run the following command in the terminal:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">unittest</span> <span class="o">-</span><span class="n">v</span>
 </pre></div>
@@ -139,7 +141,7 @@
 </ul>
 <p>One suggestion is to write tests for a function in advance, and then write the function itself. This way you can easily see if your function is working as expected. Another suggestion is to you use breakpoints, which allow you to stop a program mid-way and inspect variable values, to debug your function. Most coding environments, such as <a class="reference external" href="https://code.visualstudio.com/docs/editor/debugging">Visual Studio Code</a>, support this feature.</p>
 <section id="special-note-about-test-debugging-for-visual-studio-code-users">
-<h4>Special note about test debugging for Visual Studio Code users<a class="headerlink" href="#special-note-about-test-debugging-for-visual-studio-code-users" title="Permalink to this headline"></a></h4>
+<h4>Special note about test debugging for Visual Studio Code users<a class="headerlink" href="#special-note-about-test-debugging-for-visual-studio-code-users" title="Permalink to this headline">¶</a></h4>
 <p>At the time of writing this (July 2022), there is a bug when trying to debug tests. It seems that the best <a class="reference external" href="https://github.com/microsoft/vscode-python/issues/10722">solution</a> is to add the following to the <code class="docutils literal notranslate"><span class="pre">.vscode/launch.json</span></code> file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Python: Test debug config&quot;</span><span class="p">,</span>
@@ -153,7 +155,7 @@
 </section>
 </section>
 <section id="style-guidelines">
-<h3>Style guidelines<a class="headerlink" href="#style-guidelines" title="Permalink to this headline"></a></h3>
+<h3>Style guidelines<a class="headerlink" href="#style-guidelines" title="Permalink to this headline">¶</a></h3>
 <p>CausalInflation code is developed according the standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions.</p>
 <ul class="simple">
 <li><p>In general, try to follow <a class="reference external" href="https://peps.python.org/pep-0008/">PEP 8</a> (code) and <a class="reference external" href="https://peps.python.org/pep-0257/">PEP 257</a> (docstrings) guidelines.</p></li>
@@ -164,7 +166,7 @@
 </section>
 </section>
 <section id="how-to-contribute-to-the-documentation">
-<h2>How to contribute to the documentation<a class="headerlink" href="#how-to-contribute-to-the-documentation" title="Permalink to this headline"></a></h2>
+<h2>How to contribute to the documentation<a class="headerlink" href="#how-to-contribute-to-the-documentation" title="Permalink to this headline">¶</a></h2>
 <p>The documentation is built using Sphinx. The webpage is hosted with GitHub Pages. Currently, GitHup Pages is set to look for an <code class="docutils literal notranslate"><span class="pre">index.html</span></code> file in the <code class="docutils literal notranslate"><span class="pre">/docs</span></code> folder in the repository. Currently, this is not very clean, as small changes in the documentation lead to changing many HTML files, thus the commits are large. In the future, we will look into migrating the HTML build to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch of the repository, leading to a cleaner repository.</p>
 <p>Since the documentation has already been created, you do not need to generate a configuration file.</p>
 <p>The main file is <code class="docutils literal notranslate"><span class="pre">docs/index.rst</span></code>, which outlines the structure of the documentation. One can update <code class="docutils literal notranslate"><span class="pre">index.rst</span></code> to include additional files or to remove files. It needs to be written in the <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">reStructuredText</a> format.</p>

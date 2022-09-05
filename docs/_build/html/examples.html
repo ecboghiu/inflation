@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples and features &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Examples and features &mdash; CausalInflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -40,7 +39,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
@@ -78,6 +77,11 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#Linearized-polynomial-identification-(LPI)-constraints">Linearized polynomial identification (LPI) constraints</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints">Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Partial-information-support">Partial information support</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-9:-Eavesdropped-quantum-repeater">Example 9: Eavesdropped quantum repeater</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-10:-Device-independent-entanglement-certification">Example 10: Device independent entanglement certification</a></li>
 </ul>
 </li>
 </ul>
@@ -391,8 +395,8 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Examples-and-features">
-<h1>Examples and features<a class="headerlink" href="#Examples-and-features" title="Permalink to this headline"></a></h1>
-<p>Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>.</p>
+<h1>Examples and features<a class="headerlink" href="#Examples-and-features" title="Permalink to this headline">¶</a></h1>
+<p>Here we will showcase different types of problems that the package can solve. The examples can also be downloaded as a Jupyter notebook from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>. To improve the readibility of the notebook, supporting code has been moved to the <code class="docutils literal notranslate"><span class="pre">examples_utils.py</span></code> file, which needs to be in the same directory in order to run the notebook, together with the figures in the <code class="docutils literal notranslate"><span class="pre">figures</span></code> folder.</p>
 <p>We begin by importing the functions that we will need:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -404,9 +408,9 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Feasibility-problems-and-extraction-of-certificates">
-<h2>Feasibility problems and extraction of certificates<a class="headerlink" href="#Feasibility-problems-and-extraction-of-certificates" title="Permalink to this headline"></a></h2>
+<h2>Feasibility problems and extraction of certificates<a class="headerlink" href="#Feasibility-problems-and-extraction-of-certificates" title="Permalink to this headline">¶</a></h2>
 <section id="Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario">
-<h3>Example 1: Infeasibility of the W distribution in the quantum triangle scenario<a class="headerlink" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario" title="Permalink to this headline"></a></h3>
+<h3>Example 1: Infeasibility of the W distribution in the quantum triangle scenario<a class="headerlink" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario" title="Permalink to this headline">¶</a></h3>
 <p>Consider determining if the following distribution, the so-called “W distribution” (due to its similarity to the <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.62.062314">W state</a>), is compatible with the triangle scenario:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}P_{A B C}=\frac{[100]+[010]+[001]}{3}, \quad \text {i.e.,} \quad P_{A B C}(a b c)= \begin{cases}\frac{1}{3} &amp; \text { if } a+b+c=1, \\ 0 &amp; \text { otherwise. }\end{cases}\end{split}\]</div>
@@ -450,7 +454,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>The problem status is reported as infeasible, therefore this serves as a proof that the W distribution is incompatible with the quantum triangle scenario.</p>
 <section id="Certificate-extraction">
-<h4>Certificate extraction<a class="headerlink" href="#Certificate-extraction" title="Permalink to this headline"></a></h4>
+<h4>Certificate extraction<a class="headerlink" href="#Certificate-extraction" title="Permalink to this headline">¶</a></h4>
 <p>We can furthermore recover a certificate of infeasibility as a polynomial inequality in the probabilities, <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz) \geq 0\)</span> . This means that any other correlations vector <span class="math notranslate nohighlight">\(p'(abc|xyz)\)</span> that also satisfies the inequality, <span class="math notranslate nohighlight">\(\text{Poly}(p'(abc|xyz) \geq 0\)</span>, is guaranteed to lead to an infeasible SDP. There are built-in methods to extract the symbolic form of <span class="math notranslate nohighlight">\(\text{Poly}(p(abc|xyz))\)</span>:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -466,7 +470,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="math notranslate nohighlight">
-$\displaystyle 0.46 p(000|000) p_{A}(0|0) + 0.456 p(000|000) p_{B}(0|0) + 0.457 p(000|000) p_{C}(0|0) + 0.616 p(000|000) + 0.232 p_{AB}(00|00)^{2} + 0.103 p_{AB}(00|00) p_{AC}(00|00) + 0.046 p_{AB}(00|00) p_{A}(0|0) + 0.096 p_{AB}(00|00) p_{BC}(00|00) + 0.041 p_{AB}(00|00) p_{B}(0|0) - 0.365 p_{AB}(00|00) p_{C}(0|0) + 0.131 p_{AB}(00|00) + 0.231 p_{AC}(00|00)^{2} + 0.046 p_{AC}(00|00) p_{A}(0|0) + 0.095 p_{AC}(00|00) p_{BC}(00|00) - 0.363 p_{AC}(00|00) p_{B}(0|0) + 0.045 p_{AC}(00|00) p_{C}(0|0) + 0.13 p_{AC}(00|00) - 0.454 p_{A}(0|0)^{2} - 0.365 p_{A}(0|0) p_{BC}(00|00) + 1.0 p_{A}(0|0) p_{B}(0|0) p_{C}(0|0) - 0.732 p_{A}(0|0) p_{B}(0|0) - 0.731 p_{A}(0|0) p_{C}(0|0) + 0.371 p_{A}(0|0) + 0.228 p_{BC}(00|00)^{2} + 0.042 p_{BC}(00|00) p_{B}(0|0) + 0.044 p_{BC}(00|00) p_{C}(0|0) + 0.129 p_{BC}(00|00) - 0.443 p_{B}(0|0)^{2} - 0.726 p_{B}(0|0) p_{C}(0|0) + 0.365 p_{B}(0|0) - 0.446 p_{C}(0|0)^{2} + 0.369 p_{C}(0|0) + 0.481$</div></div>
+$\displaystyle 0.476 p(000|000) p_{A}(0|0) + 0.476 p(000|000) p_{B}(0|0) + 0.476 p(000|000) p_{C}(0|0) + 0.75 p(000|000) + 0.217 p_{AB}(00|00)^{2} + 0.085 p_{AB}(00|00) p_{AC}(00|00) + 0.059 p_{AB}(00|00) p_{A}(0|0) + 0.085 p_{AB}(00|00) p_{BC}(00|00) + 0.059 p_{AB}(00|00) p_{B}(0|0) - 0.359 p_{AB}(00|00) p_{C}(0|0) + 0.126 p_{AB}(00|00) + 0.217 p_{AC}(00|00)^{2} + 0.059 p_{AC}(00|00) p_{A}(0|0) + 0.085 p_{AC}(00|00) p_{BC}(00|00) - 0.359 p_{AC}(00|00) p_{B}(0|0) + 0.059 p_{AC}(00|00) p_{C}(0|0) + 0.126 p_{AC}(00|00) - 0.476 p_{A}(0|0)^{2} - 0.359 p_{A}(0|0) p_{BC}(00|00) + 1.0 p_{A}(0|0) p_{B}(0|0) p_{C}(0|0) - 0.765 p_{A}(0|0) p_{B}(0|0) - 0.765 p_{A}(0|0) p_{C}(0|0) + 0.365 p_{A}(0|0) + 0.217 p_{BC}(00|00)^{2} + 0.059 p_{BC}(00|00) p_{B}(0|0) + 0.059 p_{BC}(00|00) p_{C}(0|0) + 0.126 p_{BC}(00|00) - 0.476 p_{B}(0|0)^{2} - 0.765 p_{B}(0|0) p_{C}(0|0) + 0.365 p_{B}(0|0) - 0.476 p_{C}(0|0)^{2} + 0.365 p_{C}(0|0) + 0.563$</div></div>
 </div>
 <p>In the above, lower indices indicate marginals. For example, <span class="math notranslate nohighlight">\(p_{AC}(ac|xz) := \sum_b p(abc|xyz)\)</span>. Note that due to no-signaling, in this example the marginal is independent of the setting <span class="math notranslate nohighlight">\(y\)</span>.</p>
 <p>Finally, given that we only have two outcomes, we can also express the certificate in “correlator form”, where the correlators are defined as</p>
@@ -491,12 +495,12 @@ $\displaystyle 0.46 p(000|000) p_{A}(0|0) + 0.456 p(000|000) p_{B}(0|0) + 0.457 
 </div>
 <div class="output_area docutils container">
 <div class="math notranslate nohighlight">
-$\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0.0285 \langle A_{0} B_{0} C_{0} \rangle \langle B_{0} \rangle + 0.0285625 \langle A_{0} B_{0} C_{0} \rangle \langle C_{0} \rangle - 0.1628125 \langle A_{0} B_{0} C_{0} \rangle + 0.0145 \langle A_{0} B_{0} \rangle^{2} + 0.0064375 \langle A_{0} B_{0} \rangle \langle A_{0} C_{0} \rangle - 0.0699375 \langle A_{0} B_{0} \rangle \langle A_{0} \rangle + 0.006 \langle A_{0} B_{0} \rangle \langle B_{0} C_{0} \rangle - 0.068625 \langle A_{0} B_{0} \rangle \langle B_{0} \rangle + 0.004625 \langle A_{0} B_{0} \rangle \langle C_{0} \rangle + 0.20225 \langle A_{0} B_{0} \rangle + 0.0144375 \langle A_{0} C_{0} \rangle^{2} - 0.0698125 \langle A_{0} C_{0} \rangle \langle A_{0} \rangle + 0.0059375 \langle A_{0} C_{0} \rangle \langle B_{0} C_{0} \rangle + 0.0045 \langle A_{0} C_{0} \rangle \langle B_{0} \rangle - 0.069 \langle A_{0} C_{0} \rangle \langle C_{0} \rangle + 0.2025625 \langle A_{0} C_{0} \rangle - 0.037875 \langle A_{0} \rangle^{2} + 0.0049375 \langle A_{0} \rangle \langle B_{0} C_{0} \rangle - 0.125 \langle A_{0} \rangle \langle B_{0} \rangle \langle C_{0} \rangle - 0.0335 \langle A_{0} \rangle \langle B_{0} \rangle - 0.0330625 \langle A_{0} \rangle \langle C_{0} \rangle + 0.0456249999999999 \langle A_{0} \rangle + 0.01425 \langle B_{0} C_{0} \rangle^{2} - 0.06825 \langle B_{0} C_{0} \rangle \langle B_{0} \rangle - 0.0685 \langle B_{0} C_{0} \rangle \langle C_{0} \rangle + 0.200625 \langle B_{0} C_{0} \rangle - 0.037125 \langle B_{0} \rangle^{2} - 0.0328125 \langle B_{0} \rangle \langle C_{0} \rangle + 0.0449374999999999 \langle B_{0} \rangle - 0.0371875 \langle C_{0} \rangle^{2} + 0.0433124999999999 \langle C_{0} \rangle + 0.493750000000001$</div></div>
+$\displaystyle 0.02975 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0.02975 \langle A_{0} B_{0} C_{0} \rangle \langle B_{0} \rangle + 0.02975 \langle A_{0} B_{0} C_{0} \rangle \langle C_{0} \rangle - 0.183 \langle A_{0} B_{0} C_{0} \rangle + 0.0135625 \langle A_{0} B_{0} \rangle^{2} + 0.0053125 \langle A_{0} B_{0} \rangle \langle A_{0} C_{0} \rangle - 0.0695625 \langle A_{0} B_{0} \rangle \langle A_{0} \rangle + 0.0053125 \langle A_{0} B_{0} \rangle \langle B_{0} C_{0} \rangle - 0.0695625 \langle A_{0} B_{0} \rangle \langle B_{0} \rangle + 0.0045 \langle A_{0} B_{0} \rangle \langle C_{0} \rangle + 0.222125 \langle A_{0} B_{0} \rangle + 0.0135625 \langle A_{0} C_{0} \rangle^{2} - 0.0695625 \langle A_{0} C_{0} \rangle \langle A_{0} \rangle + 0.0053125 \langle A_{0} C_{0} \rangle \langle B_{0} C_{0} \rangle + 0.0045 \langle A_{0} C_{0} \rangle \langle B_{0} \rangle - 0.0695625 \langle A_{0} C_{0} \rangle \langle C_{0} \rangle + 0.222125 \langle A_{0} C_{0} \rangle - 0.0420625 \langle A_{0} \rangle^{2} + 0.0045 \langle A_{0} \rangle \langle B_{0} C_{0} \rangle - 0.125 \langle A_{0} \rangle \langle B_{0} \rangle \langle C_{0} \rangle - 0.0386875 \langle A_{0} \rangle \langle B_{0} \rangle - 0.0386875 \langle A_{0} \rangle \langle C_{0} \rangle + 0.052125 \langle A_{0} \rangle + 0.0135625 \langle B_{0} C_{0} \rangle^{2} - 0.0695625 \langle B_{0} C_{0} \rangle \langle B_{0} \rangle - 0.0695625 \langle B_{0} C_{0} \rangle \langle C_{0} \rangle + 0.222125 \langle B_{0} C_{0} \rangle - 0.0420625 \langle B_{0} \rangle^{2} - 0.0386875 \langle B_{0} \rangle \langle C_{0} \rangle + 0.052125 \langle B_{0} \rangle - 0.0420625 \langle C_{0} \rangle^{2} + 0.052125 \langle C_{0} \rangle + 0.548499999999999$</div></div>
 </div>
 </section>
 </section>
 <section id="Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario">
-<h3>Example 2: Critical visibility of the 2PR distribution in the quantum tripartite-line scenario<a class="headerlink" href="#Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario" title="Permalink to this headline"></a></h3>
+<h3>Example 2: Critical visibility of the 2PR distribution in the quantum tripartite-line scenario<a class="headerlink" href="#Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario" title="Permalink to this headline">¶</a></h3>
 <p>It is known that the 2PR distribution, defined as:</p>
 <div class="math notranslate nohighlight">
 \[P_{\text{2PR}}(abc|xyz) := \frac{1+ (-1)^{a+b+c+xy+yz}}{8}\]</div>
@@ -507,7 +511,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 \[P_{\text{2PR,v}} := v P_{\text{2PR}}  + (1-v)/8\]</div>
 <p>A simple approach would be to vary the parameter <span class="math notranslate nohighlight">\(v\)</span> from <span class="math notranslate nohighlight">\(v{=}1\)</span> to <span class="math notranslate nohighlight">\(v{=}0\)</span> and find the <span class="math notranslate nohighlight">\(v_{\text{crit}}\)</span> for which the problem status changes from infeasible to feasible. However, there is a more robust method available.</p>
 <section id="Feasibility-as-an-optimisation">
-<h4>Feasibility as an optimisation<a class="headerlink" href="#Feasibility-as-an-optimisation" title="Permalink to this headline"></a></h4>
+<h4>Feasibility as an optimisation<a class="headerlink" href="#Feasibility-as-an-optimisation" title="Permalink to this headline">¶</a></h4>
 <p>A more numerically robust approach is to convert feasibility problems to optimisation problems. Instead of imposing that the moment matrix <span class="math notranslate nohighlight">\(\Gamma\)</span> of the SDP relaxation is positive semidefinite, we can maximize the minimum eigenvalue of <span class="math notranslate nohighlight">\(\Gamma\)</span> and check its sign. Clearly, if the result of the optimisation is negative, then one cannot find a matrix <span class="math notranslate nohighlight">\(\Gamma\)</span> that is positive semidefinite, thus the original program is infeasible.</p>
 <p>By setting the flag <code class="docutils literal notranslate"><span class="pre">feas_as_optim</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> in the <code class="docutils literal notranslate"><span class="pre">InflationSDP.solve()</span></code> method, feasibility problems are converted to optimisation problems. The result is stored in <code class="docutils literal notranslate"><span class="pre">InflationSDP.objective_value</span></code>.</p>
 <p>We encode the inflation scenario and generate the relaxation corresponding to NPA level 2:</p>
@@ -549,17 +553,17 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 </section>
 </section>
 <section id="Optimization-of-Bell-operators">
-<h2>Optimization of Bell operators<a class="headerlink" href="#Optimization-of-Bell-operators" title="Permalink to this headline"></a></h2>
+<h2>Optimization of Bell operators<a class="headerlink" href="#Optimization-of-Bell-operators" title="Permalink to this headline">¶</a></h2>
 <p>One can use inflation techniques to not only run causal compatibility problems, but also to optimize over the generated relaxation, and therefore get upper bounds on the values of various Bell operators.</p>
 <section id="Example-3.-Upper-bounds-on-Mermin’s-inequality">
-<h3>Example 3. Upper bounds on Mermin’s inequality<a class="headerlink" href="#Example-3.-Upper-bounds-on-Mermin’s-inequality" title="Permalink to this headline"></a></h3>
+<h3>Example 3. Upper bounds on Mermin’s inequality<a class="headerlink" href="#Example-3.-Upper-bounds-on-Mermin’s-inequality" title="Permalink to this headline">¶</a></h3>
 <p>Let us consider Mermin’s inequality, written in the correlator form introduced in Example 1:</p>
 <div class="math notranslate nohighlight">
 \[\text{Mermin} = \langle A_1 B_0 C_0 \rangle +  \langle A_0 B_1 C_0 \rangle +  \langle A_0 B_0 C_1 \rangle -  \langle A_1 B_1 C_1 \rangle\]</div>
 <p>It is known that the algebraic maximum of 4 is achieved in the tripartite scenario both with global shared randomness and also global non-signaling sources. However, one can see a difference between quantum and general no-signaling sources when restricting to the triangle scenario from Example 1.</p>
 <p>First we generate the relaxation corresponding to a second order inflation of the triangle of NPA level 2:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
@@ -575,7 +579,7 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 </div>
 <p>We implement the objective function after extracting the measurement operators and solve the program:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mmnts</span> <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">measurements</span>
@@ -589,26 +593,35 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-3.999999995695141
+3.999999981256284
 </pre></div></div>
 </div>
 <p>Notice that we get a value that is within numerical precision the algebraic maximum of 4. To improve on this result, we will need to do a tighter SDP relaxation.</p>
 <section id="Customising-the-generating-set-for-the-semidefinite-relaxation">
-<h4>Customising the generating set for the semidefinite relaxation<a class="headerlink" href="#Customising-the-generating-set-for-the-semidefinite-relaxation" title="Permalink to this headline"></a></h4>
+<h4>Customising the generating set for the semidefinite relaxation<a class="headerlink" href="#Customising-the-generating-set-for-the-semidefinite-relaxation" title="Permalink to this headline">¶</a></h4>
 <p>To get a tighter SDP relaxation, we will add more monomoials to the generating set. Namely, we will use the union of the monomoials corresponding to NPA level 2 and local level 1.</p>
 <p>The so-called “local levels” are a different choice of generating set for the moment matrix. Whereas NPA level <span class="math notranslate nohighlight">\(n\)</span> is the <span class="math notranslate nohighlight">\(n\)</span>-times cartesian product (without duplicated elements) of the set of measurements of the parties together with the identity, local level <span class="math notranslate nohighlight">\(n\)</span> refers to a generating set with all the products up to <span class="math notranslate nohighlight">\(n\)</span> operators per party. For more details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021):
 021043</a>.</p>
 <p>In what follows, we use the built-in method <code class="docutils literal notranslate"><span class="pre">InflationSDP.build_columns()</span></code> to generate the columns corresponding to NPA level 2 and local level 1. Then we do a union, generate the relaxation and again, solve the program. As it will now take a bit longer, we increase the verbosity level to see the progress:</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">npa2</span>   <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
+                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
+                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">sdprelax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
+<span class="c1"># sdprelax.generate_relaxation(&#39;npa2&#39;)</span>
+
+<span class="n">npa2</span>   <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
 <span class="n">local1</span> <span class="o">=</span> <span class="n">sdprelax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
 
 <span class="n">newgeneratingset</span> <span class="o">=</span> <span class="n">npa2</span>
@@ -620,22 +633,103 @@ $\displaystyle 0.02875 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle +
 <span class="n">sdprelax</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span> <span class="o">=</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span><span class="p">)</span>
 
 <span class="n">sdprelax</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="c1"># sdprelax.solve()</span>
-<span class="c1"># sdprelax.objective_value</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">objective_value</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Problem
+  Name                   : InflationSDP
+  Objective sense        : min
+  Type                   : CONIC (conic optimization problem)
+  Constraints            : 17840
+  Cones                  : 0
+  Scalar variables       : 1904
+  Matrix variables       : 1
+  Integer variables      : 0
+
+Optimizer started.
+Presolve started.
+Linear dependency checker started.
+Linear dependency checker terminated.
+Eliminator started.
+Freed constraints in eliminator : 0
+Eliminator terminated.
+Eliminator - tries                  : 1                 time                   : 0.00
+Lin. dep.  - tries                  : 1                 time                   : 0.00
+Lin. dep.  - number                 : 0
+Presolve terminated. Time: 0.00
+Problem
+  Name                   : InflationSDP
+  Objective sense        : min
+  Type                   : CONIC (conic optimization problem)
+  Constraints            : 17840
+  Cones                  : 0
+  Scalar variables       : 1904
+  Matrix variables       : 1
+  Integer variables      : 0
+
+Optimizer  - threads                : 10
+Optimizer  - solved problem         : the primal
+Optimizer  - Constraints            : 17840
+Optimizer  - Cones                  : 0
+Optimizer  - Scalar variables       : 1903              conic                  : 0
+Optimizer  - Semi-definite variables: 1                 scalarized             : 381501
+Factor     - setup time             : 42.25             dense det. time        : 0.00
+Factor     - ML order time          : 23.17             GP order time          : 0.00
+Factor     - nonzeros before factor : 1.59e+08          after factor           : 1.59e+08
+Factor     - dense dim.             : 0                 flops                  : 2.11e+12
+ITE PFEAS    DFEAS    GFEAS    PRSTATUS   POBJ              DOBJ              MU       TIME
+0   1.6e+01  1.0e+00  2.0e+00  0.00e+00   3.000000000e+00   2.000000000e+00   1.0e+00  42.80
+1   1.3e+01  8.1e-01  8.5e-01  -9.07e-02  3.487979591e+00   2.580713241e+00   8.1e-01  95.83
+2   1.2e+01  7.6e-01  6.1e-01  2.22e+00   3.483341402e+00   2.780474156e+00   7.6e-01  148.36
+3   9.4e+00  5.9e-01  3.1e-01  2.15e+00   3.149042793e+00   2.755718677e+00   5.9e-01  200.86
+4   5.1e+00  3.2e-01  7.2e-02  2.15e+00   2.785156189e+00   2.652930004e+00   3.2e-01  253.20
+5   2.1e+00  1.3e-01  2.1e-02  1.71e+00   2.798676199e+00   2.753887725e+00   1.3e-01  307.19
+6   9.2e-01  5.8e-02  6.2e-03  1.15e+00   3.243497120e+00   3.224193440e+00   5.8e-02  360.02
+7   5.8e-01  3.6e-02  3.0e-03  1.15e+00   3.312418650e+00   3.300547408e+00   3.6e-02  413.49
+8   3.4e-01  2.1e-02  1.3e-03  1.08e+00   3.286460712e+00   3.279587719e+00   2.1e-02  466.16
+9   6.6e-02  4.1e-03  1.0e-04  1.03e+00   3.169765786e+00   3.168363941e+00   4.1e-03  523.41
+10  3.4e-02  2.1e-03  3.9e-05  9.95e-01   3.131104307e+00   3.130378455e+00   2.1e-03  575.97
+11  4.7e-03  2.9e-04  1.8e-06  1.05e+00   3.093621307e+00   3.093521974e+00   2.9e-04  631.95
+12  1.3e-03  8.2e-05  2.7e-07  1.06e+00   3.087462535e+00   3.087435240e+00   8.2e-05  685.74
+13  1.9e-05  1.2e-06  4.5e-10  1.02e+00   3.085076390e+00   3.085075990e+00   1.2e-06  740.50
+14  3.8e-08  2.5e-08  3.1e-14  1.00e+00   3.085044523e+00   3.085044522e+00   2.4e-09  796.34
+Optimizer terminated. Time: 796.39
+
+
+Interior-point solution summary
+  Problem status  : PRIMAL_AND_DUAL_FEASIBLE
+  Solution status : OPTIMAL
+  Primal.  obj: 3.0850445229e+00    nrm: 1e+00    Viol.  con: 7e-09    var: 4e-10    barvar: 0e+00
+  Dual.    obj: 3.0850445221e+00    nrm: 3e+00    Viol.  con: 0e+00    var: 2e-16    barvar: 5e-09
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+3.0850445229084524
+</pre></div></div>
 </div>
 <p>After running the above, we can certify then that the Mermin inequality cannot have a value larger than <span class="math notranslate nohighlight">\(3.085\)</span> for the quantum triangle causal scenario.</p>
 </section>
 </section>
 </section>
 <section id="Optimisation-over-classical-distributions-and-feasibility-problems">
-<h2>Optimisation over classical distributions and feasibility problems<a class="headerlink" href="#Optimisation-over-classical-distributions-and-feasibility-problems" title="Permalink to this headline"></a></h2>
+<h2>Optimisation over classical distributions and feasibility problems<a class="headerlink" href="#Optimisation-over-classical-distributions-and-feasibility-problems" title="Permalink to this headline">¶</a></h2>
 <p>With quantum inflation, we can also optimize over a relaxation of the set of distributions compatible with a classical DAG. This works by imposing at the level of the SDP relaxation the constraint that all operators defining the moments commute. The effect of this constraint is that previously different variables in the moment matrix become identical. For example, <span class="math notranslate nohighlight">\(\langle A_{x} A_{x'} \rangle \neq \langle A_{x'} A_{x} \rangle\)</span> in general in quantum mechanics, but if we assume all
 operators commute, then they become equal.</p>
 <p>To enable this feauture one simply adds the flag <code class="docutils literal notranslate"><span class="pre">commuting=True</span></code> when instantiating the <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code> object.</p>
 <section id="Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario">
-<h3>Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario<a class="headerlink" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario" title="Permalink to this headline"></a></h3>
+<h3>Example 4: Critical visibility of the 2PR distribution in the <em>classical</em> tripartite-line scenario<a class="headerlink" href="#Example-4:-Critical-visibility-of-the-2PR-distribution-in-the-classical-tripartite-line-scenario" title="Permalink to this headline">¶</a></h3>
 <p>As an example, we find the critical visibility of the <span class="math notranslate nohighlight">\(P_{\text{2PR}}\)</span> distribution from Example 2, but in the classical tripartite line scenario with a second order inflation, and with the local level 1 generating set for the SDP relaxation (local levels are introduced in Example 3):</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -666,14 +760,14 @@ operators commute, then they become equal.</p>
 </section>
 </section>
 <section id="Standard-NPA">
-<h2>Standard NPA<a class="headerlink" href="#Standard-NPA" title="Permalink to this headline"></a></h2>
+<h2>Standard NPA<a class="headerlink" href="#Standard-NPA" title="Permalink to this headline">¶</a></h2>
 <p>If the DAG corresponds to a single global shared source scenario, then doing an inflation does not grant any advantage. In this case, the semidefinite programming relaxation defaults to being the same as the <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">NPA hierarcy</a>. If we set the <code class="docutils literal notranslate"><span class="pre">commuting</span></code> flag to <code class="docutils literal notranslate"><span class="pre">True</span></code> then this is a relaxation of the set of distributions classically with global shared randomness, as introduced in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7,
 021042</a>. We will show this with two simple examples.</p>
 <section id="Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources">
-<h3>Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources<a class="headerlink" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources" title="Permalink to this headline"></a></h3>
+<h3>Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources<a class="headerlink" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources" title="Permalink to this headline">¶</a></h3>
 <p>We recover the critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}=\frac{1}{\sqrt{2}}\)</span> for a <a class="reference external" href="https://link.springer.com/article/10.1007/BF02058098">Popeschu-Rohrlich box</a> in the Bell scenario.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bellscenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]},</span>
@@ -710,7 +804,7 @@ Critical visibility:  0.707122802734375
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -720,7 +814,7 @@ $\displaystyle \langle A_{0} B_{0} \rangle + \langle A_{0} B_{1} \rangle + \lang
 <p>Notice that the dual certificate that we extract in correlator form (which has been renormalised and rounded numerically) is the CHSH inequality tangent to the quantum set of correlations.</p>
 </section>
 <section id="Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario">
-<h3>Example 6: Optimising the CHSH inequality in the Bell scenario<a class="headerlink" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario" title="Permalink to this headline"></a></h3>
+<h3>Example 6: Optimising the CHSH inequality in the Bell scenario<a class="headerlink" href="#Example-6:-Optimising-the-CHSH-inequality-in-the-Bell-scenario" title="Permalink to this headline">¶</a></h3>
 <p>To find upper bounds on the values for the CHSH Bell operator, recovered in Example 5, we run a similar program to that in Example 2:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
@@ -744,17 +838,17 @@ $\displaystyle \langle A_{0} B_{0} \rangle + \langle A_{0} B_{1} \rangle + \lang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-2.8284271751751255
+2.8284271429557952
 </pre></div></div>
 </div>
 <p>We correctly recover the Tsirelson bound for the CHSH inequality.</p>
 </section>
 </section>
 <section id="SDP-hierarchy-of-“physical-moments”">
-<h2>SDP hierarchy of “physical moments”<a class="headerlink" href="#SDP-hierarchy-of-“physical-moments”" title="Permalink to this headline"></a></h2>
+<h2>SDP hierarchy of “physical moments”<a class="headerlink" href="#SDP-hierarchy-of-“physical-moments”" title="Permalink to this headline">¶</a></h2>
 <p>For the generation of the semidefinite programming relaxation, besides NPA levels and local levels, we also implement a hierachy of “physical moments” of level <span class="math notranslate nohighlight">\(n\)</span>. This is a subset of local level <span class="math notranslate nohighlight">\(n\)</span> of all the monomials for which all operators in that monomial commute due to non-overlapping support in the inflated graph.</p>
 <section id="Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy">
-<h3>Example 7: Critical visibility of the W distribution with the physical moments hierarchy<a class="headerlink" href="#Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy" title="Permalink to this headline"></a></h3>
+<h3>Example 7: Critical visibility of the W distribution with the physical moments hierarchy<a class="headerlink" href="#Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy" title="Permalink to this headline">¶</a></h3>
 <p>As an application, we show how we can recover the critical visibility <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx=0.8038\)</span> of the W distribution in the triangle causal scenario achieved with the generating set corresponding to local level 2 with monomials of maximum length 4, as shown in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>. This corresponds to a moment matrix of size 1175x1175. However, by using the second level of the physical moments
 hierarchy of monomials up to length 4, we recover the same results with a smaller moment matrix:</p>
 <div class="nbinput docutils container">
@@ -783,18 +877,18 @@ hierarchy of monomials up to length 4, we recover the same results with a smalle
 <div class="highlight"><pre>
 0 Maximum smallest eigenvalue:  0.0001523       visibility = 0.5
 1 Maximum smallest eigenvalue:  4.132e-05       visibility = 0.75
-2 Maximum smallest eigenvalue:  -0.003438       visibility = 0.875
-3 Maximum smallest eigenvalue: -0.0001925       visibility = 0.8125
+2 Maximum smallest eigenvalue:  -0.003502       visibility = 0.875
+3 Maximum smallest eigenvalue:  -0.000197       visibility = 0.8125
 4 Maximum smallest eigenvalue:  3.192e-05       visibility = 0.7812
 5 Maximum smallest eigenvalue:  2.283e-05       visibility = 0.7969
-6 Maximum smallest eigenvalue: -1.537e-05       visibility = 0.8047
+6 Maximum smallest eigenvalue: -1.558e-05       visibility = 0.8047
 7 Maximum smallest eigenvalue:  1.074e-05       visibility = 0.8008
-8 Maximum smallest eigenvalue:  3.994e-06       visibility = 0.8027
-9 Maximum smallest eigenvalue:  4.967e-07       visibility = 0.8037
-10 Maximum smallest eigenvalue: -6.335e-06      visibility = 0.8042
-11 Maximum smallest eigenvalue:  -1.92e-06      visibility = 0.804
-12 Maximum smallest eigenvalue:    5.5e-08      visibility = 0.8038
-13 Maximum smallest eigenvalue:  -8.25e-07      visibility = 0.8039
+8 Maximum smallest eigenvalue:  3.997e-06       visibility = 0.8027
+9 Maximum smallest eigenvalue:   4.96e-07       visibility = 0.8037
+10 Maximum smallest eigenvalue: -6.422e-06      visibility = 0.8042
+11 Maximum smallest eigenvalue: -1.948e-06      visibility = 0.804
+12 Maximum smallest eigenvalue:  5.734e-08      visibility = 0.8038
+13 Maximum smallest eigenvalue: -8.405e-07      visibility = 0.8039
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -810,7 +904,7 @@ hierarchy of monomials up to length 4, we recover the same results with a smalle
 </section>
 </section>
 <section id="Linearized-polynomial-identification-(LPI)-constraints">
-<h2>Linearized polynomial identification (LPI) constraints<a class="headerlink" href="#Linearized-polynomial-identification-(LPI)-constraints" title="Permalink to this headline"></a></h2>
+<h2>Linearized polynomial identification (LPI) constraints<a class="headerlink" href="#Linearized-polynomial-identification-(LPI)-constraints" title="Permalink to this headline">¶</a></h2>
 <p>LPI constraints were introduced in <a class="reference external" href="https://arxiv.org/abs/2203.16543">arXiv:2203.16543</a>. They are proportionality constraints between different entries of the moment matrix. Due to nature of the inflated graph, many of the moments in the moment matrix factorise into products of other moments.</p>
 <p>As a simplified example, consider the moment <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> in the inflated triangle of order two. In the triangle, we have three sources, <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{AC}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The upper indices in the operators of the previous moment indicate on which copy of the sources the operator is acting. The value 0 means that the party does not measure the corresponding source. For example, <span class="math notranslate nohighlight">\(B^{201}_{yb}\)</span> represents Bob
 measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of setting <span class="math notranslate nohighlight">\(y\)</span> on copy 2 of <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and copy 1 of <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. Notice that because of the non-overlapping support of some of the moments, the moment factorises as follows:</p>
@@ -819,7 +913,7 @@ measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of set
 <p>The moment <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} \rangle\)</span> is known to be equal to <span class="math notranslate nohighlight">\(p_A(a|x)\)</span>, but <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> is unknown. Therefore, we have a linear proportionality relationship between the variables <span class="math notranslate nohighlight">\(\langle A^{110}_{xa} B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span> and <span class="math notranslate nohighlight">\(\langle B^{202}_{x'a'} B^{201}_{yb} \rangle\)</span>.</p>
 <p>Proportionality constraints of these form can be automatically implemented by setting <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> when using the <code class="docutils literal notranslate"><span class="pre">set_distribution()</span></code> method.</p>
 <section id="Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints">
-<h3>Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints<a class="headerlink" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints" title="Permalink to this headline"></a></h3>
+<h3>Example 8: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints<a class="headerlink" href="#Example-8:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints" title="Permalink to this headline">¶</a></h3>
 <p>We will now show how using LPI constraints lead to tighter relaxations. For example, we can certify incompatiblity with the triangle for noisier W distributions than before.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -849,9 +943,148 @@ measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of set
 0.765045166015625
 </pre></div></div>
 </div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W_array</span><span class="p">,</span> <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">feas_as_optim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dualise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">objective_value</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+-0.037262938235857856
+</pre></div></div>
+</div>
 <p>The critical value for the noise that we achieve, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.7650\)</span>, is lower than the critical value for the noise that we achieved in Example 7, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.8039\)</span>.</p>
-<p><strong>Warning!</strong> The tradeoff of using LPI constraints is that the dual certificate is no longer valid for other distributions. We can still certify incompatibility of a specific distribution <span class="math notranslate nohighlight">\(P_0\)</span> with a certain causal model with the extracted certificate <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_0)&gt;0\)</span> when using LPI constraints, but if attempt to check other distributions <span class="math notranslate nohighlight">\(P_1\)</span> with the same certificate, satisfying he inequality <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_1)&gt;0\)</span> no longer guarantees that <span class="math notranslate nohighlight">\(P_1\)</span>
-is also incompatible with the same causal structure, as was the case in the other scenarios (e.g., in Example 1).</p>
+<p><strong>Warning!</strong> The tradeoff of using LPI constraints is that the dual certificate is no longer valid for other distributions. We can still certify incompatibility of a specific distribution <span class="math notranslate nohighlight">\(P_0\)</span> with a certain causal model with the extracted certificate <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_0)&gt;0\)</span> when using LPI constraints, but when checking other distributions <span class="math notranslate nohighlight">\(P_1\)</span> with the same certificate, satisfying he inequality <span class="math notranslate nohighlight">\(\text{Poly}_{P_0}(P_1)&gt;0\)</span> no longer guarantees that <span class="math notranslate nohighlight">\(P_1\)</span> is also
+incompatible with the same causal structure.</p>
+</section>
+</section>
+<section id="Partial-information-support">
+<h2>Partial information support<a class="headerlink" href="#Partial-information-support" title="Permalink to this headline">¶</a></h2>
+<p>It is also interesting to study scenarios where not all the information about a particular distribution in the original scenario is known. Specifying particular elements of a distribution in an <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code> object is achieved via the use of the function <code class="docutils literal notranslate"><span class="pre">InflationSDP.set_values()</span></code>, which admits as input a dictionary where the keys are the variables to be assigned numerical quantities, and the corresponding values are the quantities themselves.</p>
+<section id="Example-9:-Eavesdropped-quantum-repeater">
+<h3>Example 9: Eavesdropped quantum repeater<a class="headerlink" href="#Example-9:-Eavesdropped-quantum-repeater" title="Permalink to this headline">¶</a></h3>
+<p>An important example is the the analysis of cryptographic scenarios, where the honest parties may know their joint distribution but they cannot know their joint distribution together with a potential adversary. One simple such scenario is considered in Sec. VII in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>. This scenario considers the quantum repeater/entanglement swapping experiment from Example 2 but with a hidden adversary,
+Eve, which is eavesdropping the sources <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> in an attempt to extract information about the secret key Alice and Charlie are trying to establish. Using quantum inflation, one can derive strict bounds on the amount of information Eve can extract about the secret key, as detailed in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>. To implement this example with our package one would write:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">EveGuessingProbability</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rhoABE&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">],</span>
+                                <span class="s2">&quot;rhoBCE&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">]},</span>
+                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">meas</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>  <span class="c1"># accessed as meas[party][0][setting][outcome]</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">visibilities</span><span class="p">,</span> <span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">visibility</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">visibilities</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">EveGuessingProbability</span><span class="p">(</span><span class="n">visibility</span><span class="p">)</span>  <span class="c1"># p[a,b,c,x,z] == p(a,b,c,x,z)</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">meas</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">p0</span>
+                         <span class="o">-</span> <span class="n">meas</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">known_values</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># 3 body terms</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">][</span><span class="n">a</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">z</span><span class="p">][</span><span class="n">c</span><span class="p">]]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">z</span><span class="p">]</span>
+    <span class="c1"># 2 body terms</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">][</span><span class="n">a</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,:,</span><span class="n">x</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">][</span><span class="n">a</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">z</span><span class="p">][</span><span class="n">c</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,:,</span><span class="n">c</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">z</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]</span><span class="o">*</span><span class="n">meas</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">z</span><span class="p">][</span><span class="n">c</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[:,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">z</span><span class="p">])</span>
+    <span class="c1"># 1 body terms</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">][</span><span class="n">a</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,:,:,</span><span class="n">x</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">b</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[:,</span><span class="n">b</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">known_values</span><span class="p">[</span><span class="n">meas</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">z</span><span class="p">][</span><span class="n">c</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">z</span><span class="p">])</span>
+
+    <span class="n">InfSDP</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">known_values</span><span class="p">)</span>
+    <span class="c1">#  InfSDP.solve()  # It takes several hours to solve</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">visibility</span><span class="p">,</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">objective_value</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">objective_value</span>
+</pre></div>
+</div>
+</div>
+<p>After running the code above and plotting the curve:</p>
+<center><p><img alt="drawing" class="no-scaled-link" src="_images/repeater.PNG" style="width: 400px;" /></p>
+</center><p>we recover the correct bounds from <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>.</p>
+</section>
+<section id="Example-10:-Device-independent-entanglement-certification">
+<h3>Example 10: Device independent entanglement certification<a class="headerlink" href="#Example-10:-Device-independent-entanglement-certification" title="Permalink to this headline">¶</a></h3>
+<p>As mentioned in other sections, if all operators commute (by setting the <code class="docutils literal notranslate"><span class="pre">commuting</span></code> flag to <code class="docutils literal notranslate"><span class="pre">True</span></code> when instantiating <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>), we get a relaxation that tests causal compatibility with a classical DAG. If furthermore the DAG is that of global shared randomness, then our package implements the techniques introduced in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7, 021042</a>.</p>
+<p>Testing compatibility of a distribution <span class="math notranslate nohighlight">\(p(abc\ldots | xyz\ldots)\)</span> with a DAG with global shared randomness is the same as checking if the distribution <span class="math notranslate nohighlight">\(p(abc\ldots | xyz\ldots)\)</span> is Bell-nonlocal. It is known that all distributions that are Bell-local form a set with the geometry of a polytope in the space of probability distributions. Linear programming techniques allow one to build an oracle that can tell whether a given distribution is inside or outside the polytope. See Section
+II from the <a class="reference external" href="https://journals-aps-org.recursos.biblioteca.upc.edu/rmp/abstract/10.1103/RevModPhys.86.419">Bell nonlocality review</a> for more information. For many-body systems linear programming does not scale efficiently. The NPA hierarchy with all-to-all-commuting operators is an outer approximation of the linear programming method. In particular, the feasible set of the semidefinite programming relaxations strictly include the local set. However, given a sufficiently high level of the
+hierarchy, the feasible set becomes exactly the local set, i.e., it converges to the results of the linear program. For intermediate levels of the hierarchy, the approximation is less tight, but it is more efficiently implementable than the exact linear program.</p>
+<p>In what follows, we reproduce a simple example from <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7, 021042</a> where we certify entanglement of the W state and the noise robustness of this technique. For this, we use tools from the <a class="reference external" href="https://github.com/FlavioBaccari/Hierarchy-for-nonlocality-detection">Hierarchy for nonlocality detection</a> Github repository. This requires the use of the <a class="reference external" href="https://qutip.org/">QuTiP</a> Python package to simulate measurements on
+the W state.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationSDP</span><span class="p">,</span> <span class="n">InflationProblem</span>
+<span class="kn">from</span> <span class="nn">qutip</span> <span class="kn">import</span> <span class="n">sigmax</span><span class="p">,</span> <span class="n">sigmaz</span>
+<span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">get_W_reduced</span><span class="p">,</span> <span class="n">bisect_W</span>
+
+<span class="n">N</span> <span class="o">=</span> <span class="mi">7</span>  <span class="c1"># How many spins in the system</span>
+<span class="n">outcomes_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">N</span>  <span class="c1"># 2 measurements per site</span>
+<span class="n">settings_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">N</span>  <span class="c1"># 2 outcomes per site</span>
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">outcomes_per_party</span><span class="o">=</span><span class="n">outcomes_per_party</span><span class="p">,</span>
+                           <span class="n">settings_per_party</span><span class="o">=</span><span class="n">settings_per_party</span><span class="p">,</span>
+                           <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
+
+<span class="n">W_state</span> <span class="o">=</span> <span class="n">get_W_reduced</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+<span class="n">W_operators</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">v</span><span class="o">.</span><span class="n">proj</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">meas</span><span class="o">.</span><span class="n">eigenstates</span><span class="p">()[</span><span class="mi">1</span><span class="p">]]</span>
+                          <span class="k">for</span> <span class="n">meas</span> <span class="ow">in</span> <span class="p">[</span><span class="n">sigmax</span><span class="p">(),</span> <span class="n">sigmaz</span><span class="p">()]]</span>
+                          <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)]</span>
+
+<span class="n">bisect_W</span><span class="p">(</span><span class="n">InfSDP</span><span class="p">,</span> <span class="n">W_state</span><span class="p">,</span> <span class="n">W_operators</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 Maximum smallest eigenvalue:    0.00911       visibility = 0.5
+1 Maximum smallest eigenvalue:  -0.001149       visibility = 0.75
+2 Maximum smallest eigenvalue:    0.00412       visibility = 0.625
+3 Maximum smallest eigenvalue:   0.001523       visibility = 0.6875
+4 Maximum smallest eigenvalue:  0.0001972       visibility = 0.7188
+5 Maximum smallest eigenvalue: -0.0004732       visibility = 0.7344
+6 Maximum smallest eigenvalue: -0.0001374       visibility = 0.7266
+7 Maximum smallest eigenvalue:  3.007e-05       visibility = 0.7227
+8 Maximum smallest eigenvalue:  -5.36e-05       visibility = 0.7246
+9 Maximum smallest eigenvalue: -1.176e-05       visibility = 0.7236
+10 Maximum smallest eigenvalue:  9.159e-06      visibility = 0.7231
+11 Maximum smallest eigenvalue: -1.298e-06      visibility = 0.7234
+12 Maximum smallest eigenvalue:  3.931e-06      visibility = 0.7233
+13 Maximum smallest eigenvalue:  1.317e-06      visibility = 0.7233
+</pre></div></div>
+</div>
+<p>We correctly recover the results for the W state visibility for <span class="math notranslate nohighlight">\(N=7\)</span> from Table I in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Phys. Rev. X 7, 021042</a>.</p>
 </section>
 </section>
 </section>

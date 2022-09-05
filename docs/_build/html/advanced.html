@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Advanced &mdash; CausalInflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -40,11 +39,12 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html#Partial-information-support">Partial information support</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Performance-considerations">Performance considerations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Solving-the-dual-versus-the-primal-formulation-of-the-SDP">Solving the dual versus the primal formulation of the SDP</a></li>
@@ -361,16 +361,16 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Advanced">
-<h1>Advanced<a class="headerlink" href="#Advanced" title="Permalink to this headline"></a></h1>
+<h1>Advanced<a class="headerlink" href="#Advanced" title="Permalink to this headline">¶</a></h1>
 <p>In this section we will consider some advanced aspects related to the package.</p>
 <section id="Performance-considerations">
-<h2>Performance considerations<a class="headerlink" href="#Performance-considerations" title="Permalink to this headline"></a></h2>
+<h2>Performance considerations<a class="headerlink" href="#Performance-considerations" title="Permalink to this headline">¶</a></h2>
 <section id="Solving-the-dual-versus-the-primal-formulation-of-the-SDP">
-<h3>Solving the dual versus the primal formulation of the SDP<a class="headerlink" href="#Solving-the-dual-versus-the-primal-formulation-of-the-SDP" title="Permalink to this headline"></a></h3>
+<h3>Solving the dual versus the primal formulation of the SDP<a class="headerlink" href="#Solving-the-dual-versus-the-primal-formulation-of-the-SDP" title="Permalink to this headline">¶</a></h3>
 <p>For semidefinite programs that appear often in causal compatibility problems, using the dual formulation speeds up the solve time and significantly lowers RAM usage.</p>
 <p>Consider the following example, where we use the MOSEK Fusion API to solve the primal version of a program, and then the dual:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
@@ -388,12 +388,10 @@ div.rendered_html tbody tr:hover {
 <span class="n">sdprelax</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W_array</span><span class="p">)</span>
 
 <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">interpreter</span><span class="o">=</span><span class="s1">&#39;MOSEKFusion&#39;</span><span class="p">,</span>
-               <span class="n">solverparameters</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;solve_dual&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">dualise</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The primal formulation was solved in &quot;</span><span class="p">,</span> <span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">,</span> <span class="s2">&quot;seconds.&quot;</span><span class="p">)</span>
 <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">interpreter</span><span class="o">=</span><span class="s1">&#39;MOSEKFusion&#39;</span><span class="p">,</span>
-               <span class="n">solverparameters</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;solve_dual&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<span class="n">sdprelax</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">dualise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The dual formulation was solved in &quot;</span><span class="p">,</span> <span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">,</span> <span class="s2">&quot;seconds.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -403,8 +401,8 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-The primal formulation was solved in  12.6172034740448 seconds.
-The dual formulation was solved in  0.6822028160095215 seconds.
+The primal formulation was solved in  11.732698917388916 seconds.
+The dual formulation was solved in  0.29100584983825684 seconds.
 </pre></div></div>
 </div>
 <p>Notice that there is an order of magnitude difference between the primal and dual formulations of the same problem. This is not true for all problems, but for the semidefinite programming relaxations generated for causal compatibility, almost always the dual formulation is more efficient. This should be taken into account when attempting to solve a relaxation. In what follows, we recompile some useful information for different interfaces.</p>
@@ -417,10 +415,10 @@ MOSEK, you would need to write the dual formulation manually, which when dualise
 </ul>
 </section>
 <section id="Large-scale-problems">
-<h3>Large scale problems<a class="headerlink" href="#Large-scale-problems" title="Permalink to this headline"></a></h3>
+<h3>Large scale problems<a class="headerlink" href="#Large-scale-problems" title="Permalink to this headline">¶</a></h3>
 <p>For solving large scale semidefinite programs, it is recommended to use the MOSEK Fusion API, as going through interfaces for conic problems, such as PICOS or CVXPY, usually has an overhead in the pre-processing state (for example, there can be a higher RAM usage in the preprocessing stage than when solving the problem, which can lead to out-of-memory errors). There does not seem to be such an overhead when using YALMIP, however the user needs to export the problem to MATLAB.</p>
-<p>For large problems, it is recommended to try using a first-order SDP solver, such as <a class="reference external" href="https://www.cvxgrp.org/scs/">SCS</a>, if using second-order SDP solvers, such as MOSEK, is too slow or too memory-consuming. To use SCS the problem needs to be exported to the user’s interface of choice and to have SCS installed.</p>
-<p>It is also worth considering using symmetries to block-diagonalise the semidefinite program. This can be done with <a class="reference external" href="https://replab.github.io/web/">RepLAB</a> in MATLAB. Symmetries arising from inflation can be calculated with <code class="docutils literal notranslate"><span class="pre">InflationSDP._calcualte_inflation_symmetries()</span></code>, and they are encoded as permutations of the list of generating monomials which leave the SDP the SDP invariant. This then can be used in RepLAB to block-diagonalise the problem (see this <a class="reference external" href="https://replab.github.io/applis/SDP.html#Block-diagonalizing-a-symmetric-SDP-matrix">example from
+<p>For large problems, it is recommended to try using a first-order SDP solver, such as <a class="reference external" href="https://www.cvxgrp.org/scs/">SCS</a>, if using second-order SDP solvers, such as MOSEK, is too slow or too memory-consuming. To use SCS the problem needs to be exported to the user’s interface of choice and have SCS installed.</p>
+<p>It is also worth considering using symmetries to block-diagonalise the semidefinite program. This can be done with <a class="reference external" href="https://replab.github.io/web/">RepLAB</a> in MATLAB. Symmetries arising from inflation can be calculated with <code class="docutils literal notranslate"><span class="pre">InflationSDP._calculate_inflation_symmetries()</span></code>, and they are encoded as permutations of the list of generating monomials which leave the SDP invariant. This then can be used in RepLAB to block-diagonalise the problem (see this <a class="reference external" href="https://replab.github.io/applis/SDP.html#Block-diagonalizing-a-symmetric-SDP-matrix">example from
 RepLAB</a>). A more in-depth example with code detailing this will be added to the Examples section in the future.</p>
 </section>
 </section>
