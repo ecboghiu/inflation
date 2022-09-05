@@ -242,7 +242,7 @@ class TestSDPOutput(unittest.TestCase):
                         (0.5+1e-3)/2 + (0.5-1e-3)/8),
                         "Setting the distribution is failing.")
         sdp.solve()
-        self.assertEqual(sdp.status, 'infeasible',
+        self.assertTrue(sdp.status in ['infeasible', 'unknown'],
                     "The NC SDP is not identifying incompatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective <= 0,
