@@ -88,7 +88,7 @@ class InflationProblem(object):
                 " as hypergraph, " + str(self.outcomes_per_party) +
                 " outcomes per party, " + str(self.settings_per_party) +
                 " settings per party and " +
-                str(self.inflation_level_per_source) +
+                str(self.inflation_level_per_source.tolist()) +
                 " inflation copies per source.")
 
     def _dag_to_hypergraph(self, dag):

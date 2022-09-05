@@ -45,8 +45,8 @@ class InflationSDP(object):
         Optional parameter for level of verbose:
 
             * 0: quiet (default),
-            * 1: verbose,
-            * 2: debug level.
+            * 1: monitor level: track program process,
+            * 2: debug level: show properties of objects created.
     """
     def __init__(self,
                  InflationProblem: InflationProblem,
@@ -144,7 +144,7 @@ class InflationSDP(object):
                         self.build_columns(column_specification,
                                            return_columns_numerical=True)
 
-        if self.verbose > 0:
+        if self.verbose > 1:
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
@@ -197,6 +197,12 @@ class InflationSDP(object):
         # Change objects to new variables: vectorize the dictionary
         var2repr_replacer = np.vectorize(self._var2repr.__getitem__)
         self.momentmatrix = var2repr_replacer(self.momentmatrix)
+        if self.verbose > 1:
+            unique_vars  = set(np.unique(self.momentmatrix))
+            total_n_vars = len(unique_vars)
+            print("Number of variables after symmetrization:",
+                  len(unique_vars - set([0, 1])),
+                  f"({total_n_vars} if counting with 0 and 1)")
 
         for idx in range(len(self.monomials_list)):
             self.monomials_list[idx, 0] = \
@@ -211,15 +217,14 @@ class InflationSDP(object):
             positive_monomials = self._find_positive_monomials(
                 monomials_factors, sandwich_positivity=True)
 
-        if self.verbose > 0:
-            print("Number of known, semi-known and unknown variables =",
+        if self.verbose > 1:
+            print("Number of knowable, semi-knowable and unknown variables:",
                     self._n_known, self._n_something_known-self._n_known,
                     self._n_unknown)
-            print("Number of positive unknown variables =",
-                  len(positive_monomials) - self._n_known)
+            print("Number of non-negative variables:", len(positive_monomials))
             if self.verbose > 1:
-                print("Positive variables:",
-                      [self.monomials_list[phys-2]
+                print("Non-negative monomials:",
+                      [self.monomials_list[phys-2, 1]
                                            for phys in positive_monomials])
 
         # Store the variables that will be relevant when setting a distribution
@@ -319,6 +324,9 @@ class InflationSDP(object):
         """
         assert direction in ['max', 'min'], ('The direction parameter should be'
                                              + ' set to either "max" or "min"')
+
+        if self.verbose > 0:
+            print("Setting objective")
         if direction == 'max':
             sign = 1
             self.maximize = True
@@ -416,6 +424,8 @@ class InflationSDP(object):
         self.use_lpi_constraints = use_lpi_constraints
         self.clear_known_values()
         names_to_vars = dict(self.monomials_list[:, ::-1])
+        if self.verbose > 0:
+            print("Assigning numerical values to monoatomic known variables")
         for key, val in values.items():
             if type(key) == int:
                 self.known_moments[key] = val
@@ -435,6 +445,10 @@ class InflationSDP(object):
                                 + "its product of Sympy symbols, or the string "
                                 + "representing the latter.")
         if not only_specified_values:
+            if self.verbose > 0:
+                lpi_msg = 'and semi-known ' if self.use_lpi_constraints else ''
+                print("Assigning numerical values to multi-atomic "
+                      + f"known {lpi_msg}variables")
             # Assign numerical values to products of known atoms
             for var, monomial_factors in self.semiknowable_atoms:
                 numeric_factors = np.array([self.known_moments.get(factor,
@@ -959,7 +973,7 @@ class InflationSDP(object):
                     else:
                         previous = val
                 except KeyError:
-                    warn("Your generating set might not have enough" +
+                    warn("Your generating set might not have enough " +
                          "elements to fully impose inflation symmetries.")
             orbits[key] = val
 
@@ -1103,6 +1117,9 @@ class InflationSDP(object):
                 if self.verbose > 0:
                     warn("The generating set is not closed under source " +
                          "swaps. Some symmetries will not be implemented.")
+        if self.verbose > 1:
+            print(f"The inflation DAG has {len(inflation_symmetries)} " +
+                   "symmetry generators")
         return inflation_symmetries
 
     def _generate_parties(self):
