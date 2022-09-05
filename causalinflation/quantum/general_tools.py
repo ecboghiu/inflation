@@ -12,11 +12,6 @@ from .fast_npa import (apply_source_swap_monomial, factorize_monomial,
 from itertools import permutations, product
 from typing import Dict, List, Tuple, Union
 
-try:
-    from tqdm import tqdm
-except ImportError:
-    from ..utils import blank_tqdm as tqdm
-
 ################################################################################
 # GENERATION FUNCTIONS                                                         #
 ################################################################################
@@ -75,7 +70,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     inflevels : np.array
         The number of copies of each source in the inflated scenario.
     party : int
-        Party index. NOTE: starting from 0!
+        Party index. NOTE: starting from 0
     max_monomial_length : int
         The maximum number of operators in the monomial.
     settings_per_party : List[int]
@@ -247,9 +242,7 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
         factorized monomials.
     """
     monomials_factors = monomials_as_numbers.copy()
-    for idx, [_, monomial] in enumerate(tqdm(monomials_factors,
-                                        disable=not verbose,
-                                        desc="Factorizing monomials        ")):
+    for idx, [_, monomial] in enumerate(monomials_factors):
         monomials_factors[idx][1] = factorize_monomial(monomial)
     return monomials_factors
 

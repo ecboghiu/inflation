@@ -45,8 +45,8 @@ class InflationSDP(object):
         Optional parameter for level of verbose:
 
             * 0: quiet (default),
-            * 1: verbose,
-            * 2: debug level.
+            * 1: monitor level: track program process,
+            * 2: debug level: show properties of objects created.
     """
     def __init__(self,
                  InflationProblem: InflationProblem,
@@ -144,7 +144,7 @@ class InflationSDP(object):
                         self.build_columns(column_specification,
                                            return_columns_numerical=True)
 
-        if self.verbose > 0:
+        if self.verbose > 1:
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
@@ -197,6 +197,12 @@ class InflationSDP(object):
         # Change objects to new variables: vectorize the dictionary
         var2repr_replacer = np.vectorize(self._var2repr.__getitem__)
         self.momentmatrix = var2repr_replacer(self.momentmatrix)
+        if self.verbose > 1:
+            unique_vars  = set(np.unique(self.momentmatrix))
+            total_n_vars = len(unique_vars)
+            print("Number of variables after symmetrization:",
+                  len(unique_vars - set([0, 1])),
+                  f"({total_n_vars} if counting with 0 and 1)")
 
         for idx in range(len(self.monomials_list)):
             self.monomials_list[idx, 0] = \
@@ -211,15 +217,15 @@ class InflationSDP(object):
             positive_monomials = self._find_positive_monomials(
                 monomials_factors, sandwich_positivity=True)
 
-        if self.verbose > 0:
-            print("Number of known, semi-known and unknown variables =",
-                    self._n_known, self._n_something_known-self._n_known,
-                    self._n_unknown)
-            print("Number of positive unknown variables =",
-                  len(positive_monomials) - self._n_known)
+        if self.verbose > 1:
+            print("Number of knowable, semi-knowable and unknown variables:",
+                  self.n_knowable,
+                  self.n_something_knowable - self.n_knowable,
+                  self.n_unknowable)
+            print("Number of non-negative variables:", len(positive_monomials))
             if self.verbose > 1:
-                print("Positive variables:",
-                      [self.monomials_list[phys-2]
+                print("Non-negative monomials:",
+                      [self.monomials_list[phys-2, 1]
                                            for phys in positive_monomials])
 
         # Store the variables that will be relevant when setting a distribution
@@ -238,8 +244,8 @@ class InflationSDP(object):
                 except KeyError:
                     # If the unknown variable doesn't appear anywhere else, add
                     # it to the list
-                    self._n_unknown += 1
-                    var_idx = self._n_something_known + self._n_unknown
+                    self.n_unknowable += 1
+                    var_idx = self.n_something_knowable + self.n_unknowable
                     self._mon2indx[to_name(to_representative(np.array(factor),
                                                           self.inflation_levels,
                                                              self.commuting),
@@ -247,7 +253,7 @@ class InflationSDP(object):
                     factor_variables.append(var_idx)
             monomials_factors_vars[idx][1] = factor_variables
         self.semiknowable_atoms = \
-                                monomials_factors_vars[:self._n_something_known]
+                              monomials_factors_vars[:self.n_something_knowable]
 
         # Define trivial arrays for values, objective, etc.
         self.known_moments       = {0: 0., 1: 1.}
@@ -294,7 +300,9 @@ class InflationSDP(object):
                  "optimization to distributions with fixed marginals.")
 
         atomic_knowable_variables = [entry
-                for idx, entry in enumerate(self.monomials_list[:self._n_known])
+                for idx, entry in enumerate(
+                                           self.monomials_list[:self.n_knowable]
+                                            )
                                    if len(self.semiknowable_atoms[idx][1]) == 1]
         atomic_numerical_values = {var[0]: compute_numeric_value(var[1],
                                                                  prob_array,
@@ -319,6 +327,9 @@ class InflationSDP(object):
         """
         assert direction in ['max', 'min'], ('The direction parameter should be'
                                              + ' set to either "max" or "min"')
+
+        if self.verbose > 0:
+            print("Setting objective")
         if direction == 'max':
             sign = 1
             self.maximize = True
@@ -416,6 +427,8 @@ class InflationSDP(object):
         self.use_lpi_constraints = use_lpi_constraints
         self.clear_known_values()
         names_to_vars = dict(self.monomials_list[:, ::-1])
+        if self.verbose > 0:
+            print("Assigning numerical values to monoatomic known variables")
         for key, val in values.items():
             if type(key) == int:
                 self.known_moments[key] = val
@@ -435,6 +448,10 @@ class InflationSDP(object):
                                 + "its product of Sympy symbols, or the string "
                                 + "representing the latter.")
         if not only_specified_values:
+            if self.verbose > 0:
+                lpi_msg = 'and semi-known ' if self.use_lpi_constraints else ''
+                print("Assigning numerical values to multi-atomic "
+                      + f"known {lpi_msg}variables")
             # Assign numerical values to products of known atoms
             for var, monomial_factors in self.semiknowable_atoms:
                 numeric_factors = np.array([self.known_moments.get(factor,
@@ -959,7 +976,7 @@ class InflationSDP(object):
                     else:
                         previous = val
                 except KeyError:
-                    warn("Your generating set might not have enough" +
+                    warn("Your generating set might not have enough " +
                          "elements to fully impose inflation symmetries.")
             orbits[key] = val
 
@@ -1103,6 +1120,9 @@ class InflationSDP(object):
                 if self.verbose > 0:
                     warn("The generating set is not closed under source " +
                          "swaps. Some symmetries will not be implemented.")
+        if self.verbose > 1:
+            print(f"The inflation DAG has {len(inflation_symmetries)} " +
+                   "symmetry generators")
         return inflation_symmetries
 
     def _generate_parties(self):
@@ -1194,9 +1214,9 @@ class InflationSDP(object):
                             monomials_factors, self.hypergraph)
 
         # Some counting
-        self._n_known           = np.sum(is_knowable[:, 1] == 'Yes')
-        self._n_something_known = np.sum(is_knowable[:, 1] != 'No')
-        self._n_unknown         = np.sum(is_knowable[:, 1] == 'No')
+        self.n_knowable           = np.sum(is_knowable[:, 1] == 'Yes')
+        self.n_something_knowable = np.sum(is_knowable[:, 1] != 'No')
+        self.n_unknowable         = np.sum(is_knowable[:, 1] == 'No')
 
         # Recombine multiple unknowable variables into one, and reorder the
         # factors so the unknowable is always last
@@ -1275,15 +1295,15 @@ class InflationSDP(object):
         ispositive       = np.empty_like(monomials_factors)
         ispositive[:, 0] = monomials_factors[:, 0]
         ispositive[:, 1] = False
-        ispositive[:self._n_known, 1] = True    # Knowable moments are positive
-        for i, row in enumerate(monomials_factors[self._n_known:]):
+        ispositive[:self.n_knowable, 1] = True  # Knowable moments are positive
+        for i, row in enumerate(monomials_factors[self.n_knowable:]):
             factors = row[1]
             factor_is_positive = []
             for factor in factors:
                 isphysical = is_physical(factor, sandwich_positivity)
                 factor_is_positive.append(isphysical)
             if all(factor_is_positive):
-                ispositive[i+self._n_known, 1] = True
+                ispositive[i+self.n_knowable, 1] = True
         return monomials_factors[ispositive[:, 1].astype(bool), 0]
 
     ########################################################################

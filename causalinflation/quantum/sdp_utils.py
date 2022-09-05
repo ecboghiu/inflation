@@ -274,7 +274,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     if list(objective.keys()) == [CONSTANT_KEY]:
         constant_objective = True
         if verbose > 1:
-            print('Constant objective detected! Treating the problem as ' +
+            print('Constant objective detected. Treating the problem as ' +
                   'a feasibility problem.')
 
     if var_lowerbounds:
@@ -285,7 +285,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     if verbose > 1:
         print('Pre-processing took', time() - t0, "seconds.")
         t0 = time()
-        print("Building the model.")
+    if verbose > 0:
+        print("Building the model")
 
     M = Model('InflationSDP')
 
@@ -445,9 +446,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         M.objective(ObjectiveSense.Maximize, mosek_obj)
 
     if verbose > 1:
-        print('Built the model in', time() - t0, 'seconds.')
+        print('Model built in', time() - t0, 'seconds.')
+        M.writeTask('InflationSDPModel.ptf')
+        print('Model saved to InflationSDPModel.ptf.')
         t0 = time()
-        print("Solving the model.")
+    if verbose > 0:
+        print("Solving the model")
 
     # Solving and readout
     xmat, ymat, primal, dual = None, None, None, None
