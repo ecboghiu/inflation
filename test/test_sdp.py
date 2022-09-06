@@ -316,6 +316,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
         sdp.generate_relaxation('local1')
+        self.assertEqual(sdp.One.name, '1', "The unit monomial is not being named correctly.")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
         self.assertEqual(sdp._n_knowable, 8 + 1,  # '1' is included here
