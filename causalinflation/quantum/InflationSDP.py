@@ -448,7 +448,8 @@ class InflationSDP(object):
         # Emi: I think it makes sense to have this,
         # as we reference this in other places and its a pain
         # to redefine it
-
+        self.just_inflation_indices = np.array_equal(self._lexorder,
+                                                     self._default_lexorder)  # Use lighter version of to_rep
         self.list_of_monomials = [self.One] + [Monomial(v,
                                                         atomic_is_knowable=self.atomic_knowable_q,
                                                         sandwich_positivity=True, idx=k)
@@ -457,7 +458,7 @@ class InflationSDP(object):
         for mon in self.list_of_monomials:
             self.set_of_atomic_monomials.update(mon.factors_as_atomic_monomials)
         # set(itertools.chain.from_iterable((mon.factors_as_atomic_monomials for mon in self.list_of_monomials)))
-        if not np.array_equal(self._lexorder, self._default_lexorder):
+        if not self.just_inflation_indices:
             # If we have a custom lexorder, then it might be that the user
             # chooses A_2_0_2 to be lower than A_1_0_1. There are compelling reasons
             # to allow this for a general NPO program (e.g., if we want to
@@ -870,19 +871,19 @@ class InflationSDP(object):
 
         # Some more pre-processing!
         # Elie to Emi: We need to call to representative on everything ONLY in order to handle semiknowns.
-        if (self.use_lpi_constraints or not only_knowable_moments) and not self.__factor_reps_computed__:
-            for atomic_mon in self.set_of_atomic_monomials:
-                atomic_mon.update_hash_via_to_representative_function(self.inflation_aware_to_ndarray_representative)
-            # for mon in self.list_of_monomials:
-            #     # For the representantive we use the monomial self-hashing feature.
-            #     mon.update_atomic_constituents(self.inflation_aware_to_representative)
-            #     mon.update_hash_via_to_representative_function(self.inflation_aware_to_representative)
-            #     # mon.as_ndarray = self.inflation_aware_to_representative(mon.as_ndarray)
-            #     # mon._factors_repr = [to_tuple_of_tuples(  # So that it is hashable
-            #     #                         self.inflation_aware_to_representative(factor)
-            #     #                         )
-            #     #                     for factor in mon.factors]
-            self.__factor_reps_computed__ = True  # So they are not computed again
+        # if (self.use_lpi_constraints or not only_knowable_moments) and not self.__factor_reps_computed__:
+        #     for atomic_mon in self.set_of_atomic_monomials:
+        #         atomic_mon.update_hash_via_to_representative_function(self.inflation_aware_to_ndarray_representative)
+        #     # for mon in self.list_of_monomials:
+        #     #     # For the representantive we use the monomial self-hashing feature.
+        #     #     mon.update_atomic_constituents(self.inflation_aware_to_representative)
+        #     #     mon.update_hash_via_to_representative_function(self.inflation_aware_to_representative)
+        #     #     # mon.as_ndarray = self.inflation_aware_to_representative(mon.as_ndarray)
+        #     #     # mon._factors_repr = [to_tuple_of_tuples(  # So that it is hashable
+        #     #     #                         self.inflation_aware_to_representative(factor)
+        #     #     #                         )
+        #     #     #                     for factor in mon.factors]
+        #     self.__factor_reps_computed__ = True  # So they are not computed again
 
         atomic_known_moments = {k.knowable_factors[0]: v for k, v in self.known_moments.items() if (k.nof_factors == 1)}
         for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):
@@ -894,6 +895,11 @@ class InflationSDP(object):
                     if np.isclose(mon.known_value, 0):
                         self.known_moments[mon] = 0
                     else:
+
+                        unknown_CompoundMonomial.update_atomic_constituents(
+                            to_representative_function=self.inflation_aware_to_ndarray_representative,
+                            just_inflation_indices=self.just_inflation_indices
+                        )
                         self.semiknown_moments[mon] = (value, unknown_CompoundMonomial)
             else:
                 pass
@@ -1194,7 +1200,7 @@ class InflationSDP(object):
                                                    atomic_is_knowable=self.atomic_knowable_q,
                                                    sandwich_positivity=True)
             reprr.update_atomic_constituents(to_representative_function=self.inflation_aware_to_ndarray_representative,
-                                             not_just_inflation_indices=False)
+                                             just_inflation_indices=self.just_inflation_indices)
             reprr.update_rectified_arrays_based_on_fake_setting_correction(
                 self.InflationProblem.rectify_fake_setting_atomic_factor)
             reprr.update_name_and_symbol_given_observed_names(self.names)
