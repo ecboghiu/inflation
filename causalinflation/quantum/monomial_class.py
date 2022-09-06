@@ -446,8 +446,8 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         return self.__str__()
 
     # Elie note to Emi: This should eventually not be neccessary, if we call the update outcome of the Monomial class.
-    def update_atomic_constituents(self, to_representative_function, not_just_inflation_indices=False):
-        if not_just_inflation_indices:
+    def update_atomic_constituents(self, to_representative_function, just_inflation_indices=False):
+        if not just_inflation_indices:
             for atomic_mon in self.factors_as_atomic_monomials:
                 atomic_mon.update_hash_via_to_representative_function(to_representative_function)
         else:
@@ -478,11 +478,14 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            if not self.nof_factors == other.nof_factors:
-                return False
-            else:
-                return all((atom1 == atom2) for atom1, atom2 in zip(self.factors_as_atomic_monomials,
-                                                             other.factors_as_atomic_monomials))
+            # TODO: Use collections.Counter instead of sorted list
+            return sorted(self.factors_as_atomic_monomials) == sorted(other.factors_as_atomic_monomials)
+            # if not self.nof_factors == other.nof_factors:
+            #     return False
+            # else:
+            #     sorted(self.factors_as_atomic_monomials) == sorted(other.factors_as_atomic_monomials)
+            #     return all((atom1 == atom2) for atom1, atom2 in zip(self.factors_as_atomic_monomials,
+            #                                                  other.factors_as_atomic_monomials))
         elif isinstance(other, AtomicMonomial):
             return (self.nof_factors == 1) and other.__eq__(self.factors_as_atomic_monomials[0])
         else:
