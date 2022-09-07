@@ -12,6 +12,7 @@ from functools import lru_cache, total_ordering  # , cached_property
 
 from typing import List, Tuple, Union, Dict
 from collections.abc import Iterable
+from collections import Counter
 # ListOrTuple = NewType("ListOrTuple", Union[List, Tuple])
 # MonomInputType = NewType("NumpyCompat", Union[np.ndarray, ListOrTuple[ListOrTuple[int]]])
 
@@ -177,21 +178,21 @@ class AtomicMonomialMeta(type):
 class AtomicMonomial(metaclass=AtomicMonomialMeta):
     __slots__ = ['as_ndarray',
                  'rectified_ndarray',
-                 'rectified_ndarray_as_tuples',
-                 'has_been_updated_by_to_represenative',
-                 'fake_setting_rectified_yet',
+                 # 'rectified_ndarray_as_tuples',
+                 'not_yet_updated_by_to_representative',
+                 'not_yet_fake_setting_rectified',
                  'n_ops',
                  'op_length',
-                 'as_tuples',
-                 'signature',
+                 # 'as_tuples',
+                 # 'signature',
                  'inflation_indices_are_irrelevant',
                  'knowable_q',
                  'do_conditional',
                  'physical_q',
-                 'knowability_status',
-                 'known_status',
-                 'known_value',
-                 'named_yet',
+                 # 'knowability_status',
+                 # 'known_status',
+                 # 'known_value',
+                 'not_yet_named',
                  'name',
                  'symbol',
                  'machine_name',
@@ -219,51 +220,36 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         self.inflation_indices_are_irrelevant = is_knowable(self.as_ndarray)
         self.knowable_q = self.inflation_indices_are_irrelevant and atomic_is_knowable(self.as_ndarray)
         self.do_conditional = self.inflation_indices_are_irrelevant and (not self.knowable_q)
-        if self.knowable_q:
-            self.knowability_status = 'Yes'
-        else:
-            self.knowability_status = 'No'
+        # if self.knowable_q:
+        #     self.knowability_status = 'Yes'
+        # else:
+        #     self.knowability_status = 'No'
         self.physical_q = is_physical(self.as_ndarray, sandwich_positivity=sandwich_positivity)
-        self.known_value = 1.
-        self.known_status = False
+        # self.known_value = 1.
+        # self.known_status = False
         if self.inflation_indices_are_irrelevant:
             self.rectified_ndarray = np.take(self.as_ndarray, [0, -2, -1], axis=1)
         else:
             self.rectified_ndarray = self.as_ndarray
-        self.as_tuples = to_tuple_of_tuples(self.rectified_ndarray)  # OK, but later defined in terms of as_ndarray
-        self.rectified_ndarray_as_tuples = self.as_tuples
-        self.signature = self.as_tuples
-        self.fake_setting_rectified_yet = False
-        self.has_been_updated_by_to_represenative = False
-        self.named_yet = False
+        # self.as_tuples = to_tuple_of_tuples(self.rectified_ndarray)  # OK, but later defined in terms of as_ndarray
+        # self.rectified_ndarray_as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
+        self.not_yet_fake_setting_rectified = True
+        self.not_yet_updated_by_to_representative = True
+        self.not_yet_named = True
 
-    def __str__(self):
-        # If a human readable name is available, we use it.
-        if self.named_yet:
-            return self.name
+    @property
+    def signature(self):
+        """
+        Signature of AtomicMonomial must match signature of CompoundMonomial when atomic.
+        CompoundMonomial uses tuple(sorted(list_of_atoms)), so we stick to that overall format.
+        """
+        if self.inflation_indices_are_irrelevant:
+            relevant_nd_array = np.take(self.as_ndarray, [0, -2, -1], axis=1)
         else:
-            return np.array2string(self.as_ndarray)
+            relevant_nd_array = self.as_ndarray
+        return to_tuple_of_tuples(np.expand_dims(relevant_nd_array, axis=0))
+        # return frozenset({(to_tuple_of_tuples(relevant_nd_array), 1)})
 
-    def __repr__(self):
-        return self.__str__()
-
-    def update_rectified_array_based_on_fake_setting_correction(self, fake_setting_correction_func):
-        if self.knowable_q and (not self.fake_setting_rectified_yet):
-            self.rectified_ndarray = fake_setting_correction_func(self.rectified_ndarray)
-            self.rectified_ndarray_as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
-            self.fake_setting_rectified_yet = True
-
-    def update_hash_via_to_representative_function(self, to_representative_function):
-        # If to_representative has been called already, don't bother canonicalizing again.
-        if not self.has_been_updated_by_to_represenative:
-            self.as_ndarray = to_representative_function(self.as_ndarray)
-            if self.inflation_indices_are_irrelevant:
-                self.as_tuples = to_tuple_of_tuples(np.take(self.as_ndarray, [0, -2, -1], axis=1))
-            else:
-                self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
-            self.as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
-            self.signature = self.as_tuples
-            self.has_been_updated_by_to_represenative = True
 
     def __hash__(self):
         # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
@@ -275,14 +261,46 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         elif isinstance(other, CompoundMonomial):
             return (other.nof_factors == 1) and self.__eq__(other.factors_as_atomic_monomials[0])
         else:
-            assert isinstance(other, self.__class__), f"Expected {self.__class__}, recieved {other} of {type(other)}{list(map(type, other))}."
+            assert isinstance(other,
+                              self.__class__), f"Expected {self.__class__}, recieved {other} of {type(other)}{list(map(type, other))}."
             return False
 
     def __lt__(self, other):
         return self.signature < other.signature
 
+    def __str__(self):
+        # If a human readable name is available, we use it.
+        if self.not_yet_named:
+            return np.array2string(self.as_ndarray)
+        else:
+            return self.name
+
+    def __repr__(self):
+        return self.__str__()
+
+    def update_rectified_array_based_on_fake_setting_correction(self, fake_setting_correction_func):
+        if self.knowable_q and self.not_yet_fake_setting_rectified:
+            self.rectified_ndarray = fake_setting_correction_func(self.rectified_ndarray)
+            # self.rectified_ndarray_as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
+            self.not_yet_fake_setting_rectified = False
+
+
+    def update_hash_via_to_representative_function(self, to_representative_function):
+        # If to_representative has been called already, don't bother canonicalizing again.
+        if self.not_yet_updated_by_to_representative:
+            self.as_ndarray = to_representative_function(self.as_ndarray)
+            # if self.inflation_indices_are_irrelevant:
+            #     self.as_tuples = to_tuple_of_tuples(np.take(self.as_ndarray, [0, -2, -1], axis=1))
+            # else:
+            #     self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
+            # self.as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
+            # self.signature = self.as_tuples
+            self.not_yet_updated_by_to_representative = False
+
+
+
     def update_name_and_symbol_given_observed_names(self, observable_names):
-        if not self.named_yet:
+        if self.not_yet_named:
             self.name = atomic_monomial_to_name(observable_names=observable_names,
                                                 atom=self.rectified_ndarray,
                                                 human_readable_over_machine_readable=True,
@@ -292,7 +310,7 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
                                                         human_readable_over_machine_readable=False)
             self.symbol = symbol_from_atomic_name(self.name)
             self.machine_symbol = symbol_from_atomic_name(self.machine_name)
-            self.named_yet = True
+            self.not_yet_named = False
 
     def as_CompoundMonomial(self):
         return CompoundMonomial([self])
@@ -301,7 +319,7 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         assert self.knowable_q, "Can't compute marginals of unknowable probabilities."
         if self.fake_setting_rectified_yet:
             warnings.warn(
-                "Warning: attempting to computer probabilities from raw operators, no setting rectification has been performed.")
+                "Warning: attempting to compute probabilities from raw operators, no setting rectification has been performed.")
         return compute_marginal(prob_array=prob_array,
                                 atom=self.rectified_ndarray)
 
@@ -360,11 +378,11 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     __slots__ = ['as_ndarray',
                  'n_ops',
                  'op_length',
-                 'as_tuples',
-                 'is_physical',
+                 # 'as_tuples',
+                 # 'is_physical',
                  '_factors',
                  'factors_as_atomic_monomials',
-                 'signature',
+                 # 'signature',
                  'is_atomic',
                  'nof_factors',
                  'atomic_knowability_status',
@@ -378,11 +396,11 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
                  'physical_q',
                  'idx',
                  'mask_matrix',
-                 'known_status',
-                 'known_value',
+                 # 'known_status',
+                 # 'known_value',
                  # 'unknown_part', # Deprecated by new 'unknown_signature'
                  # 'representative', # Deprecated by 'signature'
-                 'unknown_signature',
+                 # 'unknown_signature',
                  'inflation_indices_are_irrelevant',
                  # 'factors_with_irrelevant_copy_indices',
                  'factors_with_relevant_copy_indices',
@@ -411,11 +429,11 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         self.nof_factors = len(self.factors_as_atomic_monomials)
         self.is_atomic = (self.nof_factors <= 1)
         # self.signature = tuple(sorted(self.factors_as_atomic_monomials))
-        if self.nof_factors == 1:
-            self.signature = self.factors_as_atomic_monomials[0]  # So as to match atomic signature
-        else:
-            self.signature = tuple(sorted(self.factors_as_atomic_monomials))
-        self.unknown_signature = self.signature
+        # if self.nof_factors == 1:
+        #     self.signature = self.factors_as_atomic_monomials[0]  # So as to match atomic signature
+        # else:
+        #     self.signature = tuple(sorted(self.factors_as_atomic_monomials))
+        # self.unknown_signature = self.signature
 
         self.knowable_factors = tuple(factor for factor in self.factors_as_atomic_monomials if factor.knowable_q)
         self.unknowable_factors = tuple(factor for factor in self.factors_as_atomic_monomials if not factor.knowable_q)
@@ -445,6 +463,35 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     def __repr__(self):
         return self.__str__()
 
+    @property
+    def as_counter(self):
+        return Counter(self.factors_as_atomic_monomials)
+
+    def __len__(self):
+        return self.nof_factors
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.as_counter == other.as_counter
+        elif isinstance(other, AtomicMonomial):
+            return (self.nof_factors == 1) and other.__eq__(self.factors_as_atomic_monomials[0])
+        else:
+            assert isinstance(other, self.__class__), f"Expected {self.__class__}, recieved {other} of {type(other)}{list(map(type, other))}."
+            return False
+
+    @property
+    def signature(self):
+        # if self.nof_factors == 1:
+        #     return self.factors_as_atomic_monomials[0]  # So as to match atomic signature
+        # else:
+        return tuple(sorted(self.factors_as_atomic_monomials))
+        # return frozenset(self.as_counter.items())
+
+    def __hash__(self):
+        # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
+        return hash(self.signature)
+
+
     # Elie note to Emi: This should eventually not be neccessary, if we call the update outcome of the Monomial class.
     def update_atomic_constituents(self, to_representative_function, just_inflation_indices=False):
         if not just_inflation_indices:
@@ -454,10 +501,10 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
             for atomic_mon in self.factors_with_relevant_copy_indices:
                 atomic_mon.update_hash_via_to_representative_function(
                     to_representative_function)  # Automatically changes self.factors_as_atomic_monomials
-        if self.nof_factors == 1:
-            self.signature = self.factors_as_atomic_monomials[0]
-        else:
-            self.signature = tuple(sorted(self.factors_as_atomic_monomials))
+        # if self.nof_factors == 1:
+        #     self.signature = self.factors_as_atomic_monomials[0]
+        # else:
+        #     self.signature = tuple(sorted(self.factors_as_atomic_monomials))
 
     def update_rectified_arrays_based_on_fake_setting_correction(self, fake_setting_correction_func):
         for atomic_mon in self.knowable_factors:
@@ -472,29 +519,11 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     #     self.as_ndarray = to_representative_function(self.as_ndarray)
     #     self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
 
-    def __hash__(self):
-        # return hash(tuple(sorted([to_tuple_of_tuples(self.to_representative_function(factor)) for factor in self.factors])))
-        return hash(self.signature)
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            # TODO: Use collections.Counter instead of sorted list
-            return sorted(self.factors_as_atomic_monomials) == sorted(other.factors_as_atomic_monomials)
-            # if not self.nof_factors == other.nof_factors:
-            #     return False
-            # else:
-            #     sorted(self.factors_as_atomic_monomials) == sorted(other.factors_as_atomic_monomials)
-            #     return all((atom1 == atom2) for atom1, atom2 in zip(self.factors_as_atomic_monomials,
-            #                                                  other.factors_as_atomic_monomials))
-        elif isinstance(other, AtomicMonomial):
-            return (self.nof_factors == 1) and other.__eq__(self.factors_as_atomic_monomials[0])
-        else:
-            assert isinstance(other, self.__class__), f"Expected {self.__class__}, recieved {other} of {type(other)}{list(map(type, other))}."
-            return False
         # return self.signature == other.signature
 
-    def __lt__(self, other):
-        return self.signature < other.signature
+    # def __lt__(self, other):
+    #     return self.signature < other.signature
 
     # def factors_as_block(self, factors): #DEPRECATED NEED!
     #     if len(factors):
@@ -502,9 +531,9 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     #     else:
     #         return np.empty((0, self.op_length), dtype=np.uint8)
 
-    def evaluate_given_valuation_of_knowable_part(self, valuation_of_knowable_part):
+    def evaluate_given_valuation_of_knowable_part(self, valuation_of_knowable_part, use_lpi_constraints=True):
         actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
-        self.known_value = float(np.prod(np.compress(
+        known_value = float(np.prod(np.compress(
             actually_known_factors,
             valuation_of_knowable_part)))
         # nof_known_factors = np.count_nonzero(actually_known_factors)
@@ -518,39 +547,48 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         #     self.factors_as_block(knowable_factors_which_are_not_known),
         #     self.unknowable_factors_as_block))
         unknown_len = len(unknown_factors)
-        if unknown_len == 0:
-            self.known_status = 'Yes'
-        elif unknown_len == self.n_ops:
-            self.known_status = 'No'
+        if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
+            known_status = 'Yes'
+        elif unknown_len == self.n_ops or (not use_lpi_constraints):
+            known_status = 'No'
         else:
-            self.known_status = 'Semi'
-        return self.known_value, CompoundMonomial(unknown_factors)
+            known_status = 'Semi'
+        return known_value, CompoundMonomial(unknown_factors), known_status
         # if unknown_len == 1:
         #     self.unknown_signature = raw_unknown_signature[0] #treat atomic cases special
         # else:
         #     self.unknown_signature = raw_unknown_signature
 
     # TODO: Function is WORK IN PROGRESS! Should this be a dict?
-    def evaluate_given_atomic_monomials_dict(self, dict_of_known_atomic_monomials: Dict[AtomicMonomial, float]):
+    def evaluate_given_atomic_monomials_dict(self, dict_of_known_atomic_monomials: Dict[AtomicMonomial, float], use_lpi_constraints=True):
         "Yields both a numeric value and a CompoundMonomial corresponding to the unknown part."
-        valuation_of_knowable_part = [dict_of_known_atomic_monomials.get(atomic_mon, np.nan) for atomic_mon in
-                                      self.factors_as_atomic_monomials]
-        actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
-        self.known_value = float(np.prod(np.compress(
-            actually_known_factors,
-            valuation_of_knowable_part)))
-        unknown_factors = [factor for factor, known in
-                           zip(self.factors_as_atomic_monomials,
-                               actually_known_factors)
-                           if not known]
+        known_value = 1.
+        unknown_factors = Counter()
+        for factor, power in self.as_counter.items():
+            temp_value = dict_of_known_atomic_monomials.get(factor, np.nan)
+            if np.isnan(temp_value):
+                unknown_factors[factor] = power
+            else:
+                known_value *= (temp_value ** power)
+        #
+        # valuation_of_knowable_part = [dict_of_known_atomic_monomials.get(atomic_mon, np.nan) for atomic_mon in
+        #                               self.factors_as_atomic_monomials]
+        # actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
+        # known_value = float(np.prod(np.compress(
+        #     actually_known_factors,
+        #     valuation_of_knowable_part)))
+        # unknown_factors = [factor for factor, known in
+        #                    zip(self.factors_as_atomic_monomials,
+        #                        actually_known_factors)
+        #                    if not known]
         unknown_len = len(unknown_factors)
-        if unknown_len == 0:
-            self.known_status = 'Yes'
-        elif unknown_len == self.n_ops:
-            self.known_status = 'No'
+        if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
+            known_status = 'Yes'
+        elif unknown_len == self.n_ops or (not use_lpi_constraints):
+            known_status = 'No'
         else:
-            self.known_status = 'Semi'
-        return self.known_value, CompoundMonomial(unknown_factors)
+            known_status = 'Semi'
+        return known_value, CompoundMonomial(unknown_factors.elements()), known_status
 
     def update_name_and_symbol_given_observed_names(self, observable_names):
         for factor in self.factors_as_atomic_monomials:
@@ -564,7 +602,7 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
 
     @property
     def _names_of_factors(self):
-        if all(factor.named_yet for factor in self.factors_as_atomic_monomials):
+        if not any(factor.not_yet_named for factor in self.factors_as_atomic_monomials):
             return sorted(factor.name for factor in self.knowable_factors) + sorted(
                 factor.name for factor in self.unknowable_factors)
         else:
@@ -572,7 +610,7 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
 
     @property
     def _symbols_of_factors(self):
-        if all(factor.named_yet for factor in self.factors_as_atomic_monomials):
+        if not any(factor.not_yet_named for factor in self.factors_as_atomic_monomials):
             return sorted(factor.symbol for factor in self.knowable_factors) + sorted(
                 factor.symbol for factor in self.unknowable_factors)
         else:
@@ -610,23 +648,11 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     def compute_marginal(self, prob_array):
         assert self.knowable_q, "Can't compute marginals of unknowable probabilities."
         v = 1.
-        for factor in self.factors_as_atomic_monomials:
-            v *= compute_marginal(prob_array=prob_array,
-                                  atom=factor.rectified_ndarray)
+        for factor, power in self.as_counter.items():
+            v *= (compute_marginal(prob_array=prob_array,
+                                  atom=factor.rectified_ndarray) ** power)
         return v
 
 
 def Monomial(*args, **kwargs):
     return CompoundMonomial.from_Monomial(*args, **kwargs)
-
-# class MonomialMeta(type):
-#     def __init__(cls, name, bases, namespace):
-#         super().__init__(name, bases, namespace)
-#         cls.cache = dict()
-#
-#     def __call__(cls, list_of_atomic_monomials: List[AtomicMonomial]):
-#         quick_key = tuple(sorted(list_of_atomic_monomials))
-#         if quick_key not in cls.cache:
-#             # print('New Instance')
-#             cls.cache[quick_key] = super().__call__(list_of_atomic_monomials)
-#         return cls.cache[quick_key]

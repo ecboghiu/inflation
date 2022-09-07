@@ -887,21 +887,22 @@ class InflationSDP(object):
 
         atomic_known_moments = {k.knowable_factors[0]: v for k, v in self.known_moments.items() if (k.nof_factors == 1)}
         for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):
-            value, unknown_CompoundMonomial = mon.evaluate_given_atomic_monomials_dict(atomic_known_moments)
+            value, unknown_CompoundMonomial, known_status = mon.evaluate_given_atomic_monomials_dict(atomic_known_moments,
+                                                                                                     use_lpi_constraints=self.use_lpi_constraints)
             # assert isinstance(value, float), f'expected numeric value! {value}'
-            if mon.known_status == 'Yes':
+            if known_status == 'Yes':
                 self.known_moments[mon] = value
-            elif mon.known_status == 'Semi':
-                if self.use_lpi_constraints:
-                    if np.isclose(value, 0):
-                        self.known_moments[mon] = 0
-                    else:
-                        unknown_CompoundMonomial.update_atomic_constituents(
-                            to_representative_function=self.inflation_aware_to_ndarray_representative,
-                            just_inflation_indices=self.just_inflation_indices
-                        )
-                        self.semiknown_moments[mon] = (value, unknown_CompoundMonomial)
-                        # assert isinstance(self.semiknown_moments, dict)
+            elif known_status == 'Semi':
+                # if self.use_lpi_constraints:
+                #     if np.isclose(value, 0):
+                #         self.known_moments[mon] = 0
+                #     else:
+                #         unknown_CompoundMonomial.update_atomic_constituents(
+                #             to_representative_function=self.inflation_aware_to_ndarray_representative,
+                #             just_inflation_indices=self.just_inflation_indices
+                #         )
+                self.semiknown_moments[mon] = (value, unknown_CompoundMonomial)
+                # assert isinstance(self.semiknown_moments, dict)
 
             else:
                 pass
@@ -963,12 +964,12 @@ class InflationSDP(object):
         return
 
     def cleanup_after_set_values(self, use_lpi_constraints=False):
-        if use_lpi_constraints:
-            for mon, (value, unknown) in self.semiknown_moments.items():
-                # assert isinstance(value, float), f'expected numeric value! {value}'
-                if np.isclose(value, 0):
-                    del self.semiknown_moments[mon]
-                    self.known_moments[mon] = 0
+        # if use_lpi_constraints:
+        #     for mon, (value, unknown) in self.semiknown_moments.items():
+        #         # assert isinstance(value, float), f'expected numeric value! {value}'
+        #         if np.isclose(value, 0):
+        #             del self.semiknown_moments[mon]
+        #             self.known_moments[mon] = 0
 
         # Name dictionaries for compatibility purposes only
         self.known_moments_name_dict = {mon.name: v for mon, v in self.known_moments.items()}
