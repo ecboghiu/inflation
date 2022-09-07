@@ -339,6 +339,7 @@ class TestSDPOutput(unittest.TestCase):
         self.assertIn(known_value,
                         sdp.known_moments_name_dict.values(),
                          "Setting the distribution is failing")
+        # print(sdp.known_moments_name_dict)
         sdp.solve()
         self.assertEqual(sdp.status, 'infeasible',
                      "The NC SDP is not identifying incompatible distributions")
