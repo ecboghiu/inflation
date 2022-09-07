@@ -12,6 +12,8 @@ __version__ = '0.1'
 
 from .InflationProblem import InflationProblem
 from .quantum.InflationSDP import InflationSDP
+from ._about import about
+from ._version import __version__
 
 __all__ = ['InflationProblem',
            'InflationSDP']

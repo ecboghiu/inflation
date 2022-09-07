@@ -1,21 +1,29 @@
-import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
-# Utility function to read the README file.
-# Used for the long_description.  It's nice, because now 1) we have a top level
-# README file and 2) it's easier to type in the README file than to put a raw
-# string in below ...
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+with open("VERSION.txt", "r") as f:
+    __version__ = f.read().strip()
 
 setup(
     name = "causalinflation",
     version = "0.1",
-    author = "Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens",
-    author_email = "cristian.boghiu@icfo.eu, physics@alexpozas.com",
-    description = ("Implementations of the Inflation Technique for Causal Inference"),
-    license = "Creative Commons License",
+    install_requires = ['numpy', 'sympy', 'scipy'],
+    extras_require = {
+        "jit": ['numba'],
+        "solver": ['mosek'],
+        "docs": ['nbsphinx', 'm2r2', 'sphinx_rtd_theme']
+    },
+    author = "Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens",
+    author_email = "cristian.boghiu@icfo.eu, ewolfe@pitp.ca, physics@alexpozas.com",
+    description = "Implementations of the Inflation Technique for Causal Inference",
+    long_description = open('README.md').read(),
+    long_description_content_type = "text/markdown",
+    python_requires = '>=3.8',
+    packages = find_packages(exclude=['test', 'doc*', 'example*']),
+    license = "Creative Commons License", #TODO update
     url = "https://github.com/ecboghiu/inflation",
-    zip_safe=False, # To avoid problems with Numba, https://github.com/numba/numba/issues/4908
-    packages=['causalinflation', 'causalinflation.quantum'] #long_description=read('README.md')
+    project_urls = {'Documentation': 'https://ecboghiu.github.io/inflation/_build/html/index.html',  #TODO update this on realease
+                    'Source': 'https://github.com/ecboghiu/inflation',
+                    'Issue Tracker': 'https://github.com/ecboghiu/inflation/issues'},
+    zip_safe = False,  # To avoid problems with Numba, https://github.com/numba/numba/issues/4908 
+
 )
