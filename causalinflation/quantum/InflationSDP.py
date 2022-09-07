@@ -1,4 +1,8 @@
 # import copy
+# for i in set(globals().keys()):
+#     if not i.startswith('_'):
+#         exec('del ' + i)
+
 import gc
 import itertools
 import operator
@@ -32,6 +36,16 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               mon_is_zero,
                                               nb_mon_to_lexrepr,
                                               nb_commuting)
+
+import sys
+# def try_del(attribute: str, context=sys.modules[__name__]):
+#     try:
+#         delattr(context, attribute)
+#     except AttributeError:
+#         pass
+# for attr in {'AtomicMonomial', 'CompoundMonomial', 'AtomicMonomialMeta', 'CompoundMonomialMeta'}:
+#     try_del(attr)
+
 from causalinflation.quantum.monomial_class import (AtomicMonomial, CompoundMonomial, to_tuple_of_tuples)
 from causalinflation.quantum.monomial_class import Monomial as preMonomial
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
@@ -141,6 +155,8 @@ class InflationSDP(object):
         # TODO: This seems invariant? How we do alter the lexorder?
         self.just_inflation_indices = np.array_equal(self._lexorder,
                                                      self._default_lexorder)  # Use lighter version of to_rep
+        AtomicMonomial.reset_all()
+        CompoundMonomial.reset_all()
 
     def commutation_relationships(self):
         """This returns a user-friendly representation of the commutation relationships."""
@@ -264,31 +280,39 @@ class InflationSDP(object):
         unsym_monarray = to_canonical(mon, self._notcomm, self._lexorder)
 
         try:
-            symm_monarray = self.unsym_monarray_to_sym_monarray[to_tuple_of_tuples(unsym_monarray)]
+            sym_monarray = self.unsym_monarray_to_sym_monarray[to_tuple_of_tuples(unsym_monarray)]
         except KeyError:
-            warnings.warn(
-                f"Encountered a monomial that does not appear in the original moment matrix: {unsym_monarray}")
-            symm_monarray = to_representative(unsym_monarray,
+            # warnings.warn(
+            #     f"Encountered a monomial that does not appear in the original moment matrix: {unsym_monarray}")
+            sym_monarray = to_representative(unsym_monarray,
                                               self.inflation_levels,
                                               self._notcomm,
                                               self._lexorder,
                                               swaps_plus_commutations=swaps_plus_commutations,
                                               consider_conjugation_symmetries=consider_conjugation_symmetries,
                                               commuting=self.commuting)
-            self.unsym_monarray_to_sym_monarray[to_tuple_of_tuples(unsym_monarray)] = symm_monarray
-        self.unsym_monarray_to_sym_monarray[to_tuple_of_tuples(symm_monarray)] = symm_monarray
-        return symm_monarray
+            hashable_sym_monarray = to_tuple_of_tuples(sym_monarray)
+            if hashable_sym_monarray not in self.unsym_monarray_to_sym_monarray:
+                warnings.warn(
+                    f"Encountered a monomial that does not appear in the original moment matrix:\n {unsym_monarray}")
+            self.unsym_monarray_to_sym_monarray[hashable_sym_monarray] = sym_monarray
+        self.unsym_monarray_to_sym_monarray[to_tuple_of_tuples(sym_monarray)] = sym_monarray
+        return sym_monarray
 
     def inflation_aware_to_representative(self, *args, **kwargs) -> Tuple[Tuple]:
         return to_tuple_of_tuples(self.inflation_aware_to_ndarray_representative(*args, **kwargs))
 
     def sanitise_compoundmonomial(self, mon: CompoundMonomial) -> CompoundMonomial:
-        #Sanity check failing!!
-        for atom in mon.factors_as_atomic_monomials:
-            assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
-            assert (atom.inflation_indices_are_irrelevant or not atom.not_yet_updated_by_to_representative), "Hang on, all monomials should have been set to representative by construction..."
+        # Sanity check if need be.
+        # for atom in mon.factors_as_atomic_monomials:
+        #     assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
         mon.update_atomic_constituents(self.inflation_aware_to_ndarray_representative,
                                        just_inflation_indices=True)  # MOST IMPORTANT
+        # More sanity checking, if needed.
+        # for atom in mon.factors_as_atomic_monomials:
+        #     assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
+        #     assert (atom.inflation_indices_are_irrelevant or not atom.not_yet_updated_by_to_representative), f"Hang on, all monomials should have been set to representative by construction! {atom.as_ndarray} from {mon.as_ndarray}"
+
         mon.update_rectified_arrays_based_on_fake_setting_correction(
             self.rectify_fake_setting_atomic_factor)
         mon.update_name_and_symbol_given_observed_names(self.names)
@@ -298,10 +322,12 @@ class InflationSDP(object):
                  array2d: np.ndarray,
                  sandwich_positivity=True,
                  idx=-1) -> CompoundMonomial:
-        return self.sanitise_compoundmonomial(preMonomial(array2d,
+        obj = preMonomial(array2d,
                                                           atomic_is_knowable=self.atomic_knowable_q,
                                                           sandwich_positivity=sandwich_positivity,
-                                                          idx=idx))
+                                                          idx=idx)
+        assert isinstance(obj, CompoundMonomial), 'CompoundMonomial failed to be generated!'
+        return self.sanitise_compoundmonomial(obj)
 
     #
 
@@ -401,8 +427,8 @@ class InflationSDP(object):
         # for monarray in self.unsymidx_to_unsym_monarray_dict.values():
         #     assert np.asarray(monarray).shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {mon.as_ndarray}"
 
-        self.unsymmonarray_to_unsymidx_dict = {to_tuple_of_tuples(v): k for (k, v) in
-                                               self.unsymidx_to_unsym_monarray_dict.items()}
+        self.unsym_monarray_to_unsymidx_dict = {to_tuple_of_tuples(v): k for (k, v) in
+                                                self.unsymidx_to_unsym_monarray_dict.items()}
 
         # Calculate the inflation symmetries.
         self.inflation_symmetries = self._calculate_inflation_symmetries()
@@ -413,7 +439,7 @@ class InflationSDP(object):
                                                self.unsymidx_to_unsym_monarray_dict,
                                                self.inflation_symmetries)
         self.unsym_monarray_to_sym_monarray = {k: self.symidx_to_sym_monarray_dict[self.orbits[v]] for (k, v) in
-                                               self.unsymmonarray_to_unsymidx_dict.items()}
+                                               self.unsym_monarray_to_unsymidx_dict.items()}
 
         self.largest_moment_index = max(self.symidx_to_sym_monarray_dict.keys())
 
@@ -1876,7 +1902,7 @@ class InflationSDP(object):
                                                                         self._lexorder,
                                                                         verbose=self.verbose,
                                                                         commuting=self.commuting)
-        idx_to_canonical_mon_dict = {idx: mon for (mon, idx) in canonical_mon_to_idx_dict.items() if idx >= 2}
+        idx_to_canonical_mon_dict = {idx: np.asarray(mon, dtype=np.uint16) for (mon, idx) in canonical_mon_to_idx_dict.items() if idx >= 2}
 
         return problem_arr, idx_to_canonical_mon_dict
 

@@ -19,6 +19,8 @@ from collections import Counter
 import sympy
 
 
+
+
 # from itertools import chain
 # from operator import attrgetter
 
@@ -141,7 +143,9 @@ def symbol_from_atomic_name(atomic_name: str) -> sympy.core.symbol.Symbol:
 
 
 def name_from_atomic_names(atomic_names: List[str]) -> str:
+    # #
     if len(atomic_names):
+        # FANCY VERSION
         output = ''
         for i, (name, power) in enumerate(Counter(atomic_names).items()):
             if i > 0:
@@ -150,13 +154,10 @@ def name_from_atomic_names(atomic_names: List[str]) -> str:
             if power > 1:
                 output += '**' + str(power)
         return output
+        # # OLD VERSION:
+        # return '*'.join(atomic_names)
     else:
         return '1'
-
-
-
-    # #OLD VERSION:
-    # return '*'.join(atomic_names)
 
 
 def symbol_from_atomic_names(atomic_names: List[str]):
@@ -228,8 +229,8 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         Note that if knowable_q changes (such as given partial information) we can update this on the fly.
         """
         # self.to_representative = lambda mon: tuple(tuple(vec) for vec in to_representative(mon))
-
-        self.as_ndarray = np.asarray(array2d)
+        assert isinstance(array2d, np.ndarray), 'We only accept numpy arrays for AtomicMonomial initialization.'
+        self.as_ndarray = array2d
         # if len(self.as_ndarray):
         #     assert self.as_ndarray.ndim == 2, 'Expected 2 dimension numpy array.'
         # else:
@@ -254,7 +255,7 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         # self.as_tuples = to_tuple_of_tuples(self.rectified_ndarray)  # OK, but later defined in terms of as_ndarray
         # self.rectified_ndarray_as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
         self.not_yet_fake_setting_rectified = True
-        self.not_yet_updated_by_to_representative = self.inflation_indices_are_irrelevant
+        self.not_yet_updated_by_to_representative = True  # self.inflation_indices_are_irrelevant
         self.not_yet_named = True
 
 
@@ -324,16 +325,7 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
     def update_hash_via_to_representative_function(self, to_representative_function):
         # If to_representative has been called already, don't bother canonicalizing again.
         if self.not_yet_updated_by_to_representative:
-            # before = self.as_ndarray.copy()
-            # before_shape = before.shape
             self.as_ndarray = to_representative_function(self.as_ndarray)
-            # assert before_shape == self.as_ndarray.shape, f"Shape changed! {before} vs {self.as_ndarray}"
-            # if self.inflation_indices_are_irrelevant:
-            #     self.as_tuples = to_tuple_of_tuples(np.take(self.as_ndarray, [0, -2, -1], axis=1))
-            # else:
-            #     self.as_tuples = to_tuple_of_tuples(self.as_ndarray)
-            # self.as_tuples = to_tuple_of_tuples(self.rectified_ndarray)
-            # self.signature = self.as_tuples
             self.not_yet_updated_by_to_representative = False
 
 
@@ -362,6 +354,10 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         return compute_marginal(prob_array=prob_array,
                                 atom=self.rectified_ndarray)
 
+    @classmethod
+    def reset_all(cls):
+        cls.cache = dict()
+
 
 class CompoundMonomialMeta(type):
     def __init__(cls, name, bases, namespace):
@@ -376,8 +372,8 @@ class CompoundMonomialMeta(type):
         return cls.cache[quick_key]
 
 
+# class CompoundMonomial(metaclass=CompoundMonomialMeta):
 class CompoundMonomial(metaclass=CompoundMonomialMeta):
-
     # TODO: Add more constructors, for automatic monomial sanitization.
     @classmethod
     def from_Monomial(cls,
@@ -399,8 +395,8 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         assert op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
 
         _factors = factorize_monomial(as_ndarray, canonical_order=False)
-        for atom in _factors:
-            assert atom.shape[-1] == op_length, f"Factorization has screwed up the monomial storage! {atom} from {as_ndarray}"
+        # for atom in _factors:
+        #     assert atom.shape[-1] == op_length, f"Factorization has screwed up the monomial storage! {atom} from {as_ndarray}"
         obj = cls(list_of_atomic_monomials=[AtomicMonomial(factor, skip_tests=skip_tests, **kwargs) for factor in _factors if len(factor)], skip_tests=False)
         del _factors
         if idx>=0:
@@ -490,9 +486,9 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     def __str__(self):
         # If a human readable name is available, we use it.
         try:
-            return self.name
+            return 'CompMon['+self.name+']'
         except AttributeError:
-            return np.array2string(self.as_ndarray)
+            return 'CompMon['+np.array2string(self.as_ndarray)+']'
 
     def __repr__(self):
         return self.__str__()
@@ -688,6 +684,10 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
             v *= (compute_marginal(prob_array=prob_array,
                                   atom=factor.rectified_ndarray) ** power)
         return v
+
+    @classmethod
+    def reset_all(cls):
+        cls.cache = dict()
 
 
 def Monomial(*args, **kwargs):
