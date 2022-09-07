@@ -4,6 +4,7 @@ import numpy as np
 from causalinflation.quantum.general_tools import (flatten,
                                            apply_source_permutation_coord_input)
 from causalinflation import InflationProblem, InflationSDP
+import warnings
 
 class TestLPI(unittest.TestCase):
      def test_lpi_bounds(self):
@@ -133,6 +134,11 @@ class TestMonomialGeneration(unittest.TestCase):
 
 
 class TestSDPOutput(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
+        
     def GHZ(self, v):
         dist = np.zeros((2,2,2,1,1,1))
         for a in [0, 1]:
@@ -237,9 +243,9 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.n_unknowable, 13,
                          "The count of unknowable moments is wrong.")
 
-        sdp.set_distribution(self.GHZ(0.5 + 1e-3))
+        sdp.set_distribution(self.GHZ(0.5 + 1e-2))
         self.assertTrue(np.isclose(sdp.known_moments[9],
-                        (0.5+1e-3)/2 + (0.5-1e-3)/8),
+                        (0.5+1e-2)/2 + (0.5-1e-2)/8),
                         "Setting the distribution is failing.")
         sdp.solve()
         self.assertTrue(sdp.status in ['infeasible', 'unknown'],
@@ -248,9 +254,9 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(sdp.primal_objective <= 0,
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions.")
-        sdp.set_distribution(self.GHZ(0.5 - 1e-4))
+        sdp.set_distribution(self.GHZ(0.5 - 1e-2))
         self.assertEqual(sdp.known_moments[9],
-                         (0.5-1e-4)/2 + (0.5+1e-4)/8,
+                         (0.5-1e-2)/2 + (0.5+1e-2)/8,
                          "Re-setting the distribution is failing.")
         sdp.solve()
         self.assertEqual(sdp.status, 'feasible',
