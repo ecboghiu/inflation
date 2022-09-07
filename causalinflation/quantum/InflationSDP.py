@@ -886,7 +886,12 @@ class InflationSDP(object):
         #     self.__factor_reps_computed__ = True  # So they are not computed again
 
         atomic_known_moments = {k.knowable_factors[0]: v for k, v in self.known_moments.items() if (k.nof_factors == 1)}
-        for mon in filter(lambda x: x.nof_factors > 1, self.list_of_monomials):
+        if only_knowable_moments:
+            remaining_monomials_to_compute = [mon for mon in self.list_of_monomials if len(mon) > 1 and mon.knowable_q]
+        else:
+            remaining_monomials_to_compute = [mon for mon in self.list_of_monomials if len(mon) > 1]
+
+        for mon in remaining_monomials_to_compute:
             value, unknown_CompoundMonomial, known_status = mon.evaluate_given_atomic_monomials_dict(atomic_known_moments,
                                                                                                      use_lpi_constraints=self.use_lpi_constraints)
             # assert isinstance(value, float), f'expected numeric value! {value}'
@@ -907,6 +912,7 @@ class InflationSDP(object):
             else:
                 pass
         del atomic_known_moments
+        del remaining_monomials_to_compute
         gc.collect(generation=2)
         #
         #
