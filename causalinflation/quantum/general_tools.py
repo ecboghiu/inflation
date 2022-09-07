@@ -559,10 +559,11 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     """
 
     # monomial = np.array(monomial_in, dtype=np.int8).copy()
+    if not len(monomial_in):
+        return monomial_in
     monomial = np.array(monomial_in, dtype=np.uint16, copy=True)
     if sandwich_positivity:
         monomial = remove_sandwich(monomial)
-
     res = True
     parties = np.unique(monomial[:, 0])
     for party in parties:

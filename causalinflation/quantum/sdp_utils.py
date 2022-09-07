@@ -179,7 +179,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
     #     Fi[x] = coeffmat
 
     Fi = maskmatrices_name_dict.copy()
-    Fi = {k: scipy.sparse.lil_matrix(v, dtype=np.float) for k, v in Fi.items()}
+    Fi = {k: scipy.sparse.lil_matrix(v, dtype=float) for k, v in Fi.items()}
     variables = set(list(Fi.keys()))
     mat_dim = Fi[next(iter(Fi))].shape[0]
     F0 = scipy.sparse.lil_matrix((mat_dim, mat_dim))
