@@ -26,20 +26,3 @@ CasualInflation is free open-source software released under the `Creative Common
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   download
-   tutorial
-   examples
-   advanced
-   contribute
-   modules
-   changelog
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
