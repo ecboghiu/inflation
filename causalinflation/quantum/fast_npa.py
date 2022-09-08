@@ -45,7 +45,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     Returns
     -------
     bool
-        True if A is less than B.
+        Whether A is lexicographically smaller than B.
     """
     for i in range(A.shape[0]):
         if A[i] != B[i]:
@@ -134,7 +134,7 @@ def commuting(letter1: np.array, letter2: np.array) -> bool_:
     Returns
     -------
     bool
-        If they commute or not.
+        Whether the letters commute or not.
 
     Examples
     --------
@@ -179,7 +179,7 @@ def dot_mon(mon1: np.ndarray, mon2: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Output monomial ordered by parties.
+        The monomial ordered by parties.
 
     Examples
     --------
@@ -209,7 +209,7 @@ def dot_mon_commuting(mon1: np.ndarray, mon2: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Returns (mon1)^\dagger*mon2 with the assumption that
+        The dot product :math:`M_1^\dagger M_2` with the assumption that
         everything commutes with everything.
     """
     if mon1.size <= 1:
@@ -223,7 +223,7 @@ def dot_mon_commuting(mon1: np.ndarray, mon2: np.ndarray) -> np.ndarray:
 @jit(nopython=True, cache=cache)
 def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool:
     """Check if two monomials are equal. This is just a numba-ified version of
-    numpy.array_equal.
+    `numpy.array_equal`.
 
     Parameters
     ----------
@@ -234,15 +234,15 @@ def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool:
     Returns
     -------
     bool
-        True if the two monomials are equal, False otherwise.
+        Whether both monomials are equal
     """
     return np.array_equal(mon1, mon2)
 
 
 @jit(nopython=True, cache=cache)
 def mon_is_zero(mon: np.ndarray) -> bool_:
-    """Check if there is a product of two orthogonal projectors, returning True
-    if so.
+    """Check if there is a product of two orthogonal projectors, returning
+    ``True`` if so.
 
     Parameters
     ----------
@@ -252,7 +252,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     Returns
     -------
     bool
-        True if the monomial is zero, False otherwise.
+        Whether the monomial is zero.
     """
     prev_row = mon[0]
     for i in range(1, mon.shape[0]):
@@ -265,8 +265,8 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
 
 @jit(nopython=True, cache=cache)
 def mon_lessthan_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
-    """Compare two monomials and returns True if mon1 < mon2 in lexicographic
-    order.
+    """Compare two monomials and returns ``True`` if ``mon1 < mon2`` in
+    lexicographic order.
 
     Parameters
     ----------
@@ -278,7 +278,7 @@ def mon_lessthan_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
     Returns
     -------
     bool
-        True if mon1 < mon2 in lexicographic order.
+        Whether ``mon1 < mon2`` in lexicographic order.
     """
     return A_lessthan_B(mon1.flatten(), mon2.flatten())
 
@@ -301,7 +301,7 @@ def mon_lexsorted(mon: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Sorted monomial.
+        The sorted monomial.
     """
     return mon[np.lexsort(np.rot90(mon))]
 
@@ -319,7 +319,7 @@ def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Sorted monomial.
+        The sorted monomial.
 
     Examples
     --------
@@ -343,7 +343,7 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Reversed monomial.
+        The reversed monomial.
 
     Examples
     --------
@@ -410,20 +410,18 @@ def factorize_monomial(monomial: np.ndarray) -> np.ndarray:
     If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
     In each row, the columns encode the following information:
 
-    First column:       The party index, *starting from 1*.
-                        (1 for A, 2 for B, etc.)
-    Last two columns:   The input x, starting from zero and then the
-                        output a, starting from zero.
-    In between:         This encodes the support of the operator. There
-                        are as many columns as sources/quantum states.
-                        Column j represents source j-1 (-1 because the 1st
-                        col is the party). If the value is 0, then this
-                        operator does not measure this source. If the value
-                        is for e.g. 2, then this operator is acting on
-                        copy 2 of source j-1.
+    * First column: The party index, *starting from 1*. (1 for A, 2 for B, etc.)
+    * Last two columns: The input x, starting from zero and then the output a,
+      starting from zero.
+    * In between: This encodes the support of the operator. There are as many
+      columns as sources/quantum states. Column :math:`j` represents source
+      :math:`j-1` (-1 because the first column stores the party). If the value
+      is :math:`0`, then this operator does not measure this source. If the
+      value is for e.g. :math:`2`, it means that this operator is acting on copy
+      :math:`2` of source :math:`j-1`.
 
-    The output is a list of lists, where each list represents another
-    monomial s.t. their product is equal to the original monomial.
+    The output is a list of lists, where each list represents another monomial
+    such that their product is equal to the original monomial.
 
     Parameters
     ----------
@@ -523,7 +521,7 @@ def nb_apply_substitutions(mon_in: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Simplified input monomial.
+        The input monomial simplified after substitutions.
     """
     if mon_in.shape[0] == 1:
         return mon_in
@@ -548,7 +546,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Simplified monomial.
+        The simplified monomial after simplifying eigenpotencies.
     """
     to_keep = np.array([1]*mon.shape[0], dtype=bool_)
     prev_row = mon[0]
@@ -571,7 +569,7 @@ def to_canonical(mon: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Monomial in canonical form w.r.t some lexicographic
+        The monomial in canonical form with respect to some lexicographic
         ordering.
     """
     prev = mon
@@ -602,7 +600,7 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
     Returns
     -------
     str
-        String representation of the monomial.
+        The string representation of the monomial.
 
     Examples
     --------
@@ -626,16 +624,17 @@ def calculate_momentmatrix(cols: List,
                            commuting: bool=False,
                            verbose: int=0
                            ) -> Tuple[np.ndarray, Dict]:
-    """Calculate the moment matrix. The function takes as input the generating
-    set {mon_i}_i encoded as a list of monomials. Each monomial is a matrix
-    where each row is an operator and the columns specify the operator
+    r"""Calculate the moment matrix. The function takes as input the generating
+    set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
+    matrix where each row is an operator and the columns specify the operator
     labels/indices. The moment matrix is the inner product between all possible
     pairs of elements from the generating set. The program outputs the moment
-    matrix as a 2d array. Entry (i,j) of the moment matrix stores the index of
-    the monomial that is the result of the dot product mon_i^\dagger * mon_j
-    after applying the substitutions. The program returns the moment matrix and
-    the dictionary mapping each monomial in string representation to its integer
-    representation.
+    matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the
+    index of the monomial that represents the result of the expectation value
+    :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state
+    :math:`\rho` after applying the substitutions. The program returns the
+    moment matrix and the dictionary mapping each monomial in string
+    representation to its integer representation.
 
     Parameters
     ----------
@@ -652,9 +651,9 @@ def calculate_momentmatrix(cols: List,
     Returns
     -------
     Tuple[numpy.ndarray, Dict]
-        The moment matrix, where each entry (i,j) stores the integer
-        representation of a monomial. The Dict is a mapping from string
-        representation to integer representation.
+        The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores
+        the integer representation of a monomial. The Dict is a mapping from
+        string representation to integer representation.
     """
     # Choose dot_mon depending on commutation properties
     if commuting:

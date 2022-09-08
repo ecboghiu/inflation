@@ -15,7 +15,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                          var_upperbounds={}, var_inequalities=[],
                          var_equalities=[], solve_dual=True
                          ) -> Tuple[Dict, float, str]:
-    r"""Internal function to solve the SDP with the MOSEK Fusion API.
+    r"""Internal function to solve the SDP with the `MOSEK Fusion API
+    <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
 
     Now follows an extended description of how the SDP is encoded. In general,
     it is prefered to solve using the dual formulation, which is the default.
@@ -28,8 +29,8 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         \text{s.t.}\quad & F_0 + \sum F_i x_i \succeq 0
 
     :math:`F_0` is the constant entries of the moment matrix, and :math:`F_i` is
-    the matrix whose entry :math:`(n,m)`` stores the value of the coefficient of
-    the moment :math:`x_i` at position :math:`(n,m)`` in the moment matrix.
+    the matrix whose entry :math:`(n,m)` stores the value of the coefficient of
+    the moment :math:`x_i` at position :math:`(n,m)` in the moment matrix.
 
     The dual of the equation above is:
 
@@ -41,17 +42,19 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     Typically, all the probability information is stored in :math:`F_0`, and the
     coefficients :math:`F_i` do not depend on the probabilities. However, if we
-    use LPI constraints, then :math:`F_i` can depend on the probabilities. The
-    form of the SDP does not change, in any case.
+    use LPI constraints (see, e.g., `arXiv:2203.16543
+    <http://www.arxiv.org/abs/2203.16543/>`_), then :math:`F_i` can depend on
+    the probabilities. The form of the SDP does not change, in any case.
 
     If we have a constant objective function, then we have a feasibility
-    problem. It can be relaxed to:
+    problem. It can be rewritten into the following optimization problem:
 
     .. math::
         \text{max}\quad&\lambda\\
-        \text{s.t.}\quad& F_0 + \sum F_i x_i - \lambda \cdot 1 \succeq 0
+        \text{s.t.}\quad& F_0 + \sum F_i x_i - \lambda \cdot 1 \succeq 0,
 
-    with dual:
+    which achieves :math:`\lambda\geq 0` if the original problem is feasible and
+    :math:`\lambda<0` otherwise. The dual of this problem is:
 
     .. math::
         \text{min}\quad & \text{Tr}(Z\cdot F_0) \\
@@ -114,20 +117,21 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         Whether to treat feasibility problems, where the objective is,
         constant, as an optimisation problem. By default ``False``.
     solverparameters : dict, optional
-        Dictionary of parameters to pass to the MOSEK solver, see
-        https://docs.mosek.com/latest/pythonfusion/solver-parameters.html. By
-        default ``{}``.
+        Dictionary of parameters to pass to the MOSEK solver, see `MOSEK's
+        documentation
+        <https://docs.mosek.com/latest/pythonfusion/solver-parameters.html>`_.
+        By default ``{}``.
 
     Returns
     -------
-    Tuple[Dict,float,str]
+    Tuple[Dict, float, str]
         The first element of the tuple is a dictionary containing the
         optimisation information such as the 1) primal objective value,
         2) the moment matrix, 3) the dual values, 4) the certificate and
         a 5) dictionary of values for the monomials, in the following keys in
-        the same order: 1) 'sol', 2) 'G', 3) 'Z', 4) 'dual_certificate',
-        5) 'xi'. The second element is the objective value and the last is
-        the problem status.
+        the same order: 1) ``sol``, 2) ``G``, 3) ``Z``, 4) ``dual_certificate``,
+        5) ``xi``. The second element is the objective value and the last is the
+        problem status.
     """
     import mosek
     from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \

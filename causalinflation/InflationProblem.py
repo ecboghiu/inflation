@@ -7,9 +7,8 @@ import numpy as np
 from warnings import warn
 
 class InflationProblem(object):
-    """Class for enconding relevant details concerning the causal
-    compatibibility scenario, e.g., DAG structure, number of inputs
-    per party, etc.
+    """Class for enconding relevant details concerning the causal compatibility
+    scenario.
 
     Parameters
     ----------
@@ -24,7 +23,8 @@ class InflationProblem(object):
         Number of copies per source in the inflated graph. By default ``1`` for
         all sources.
     names : List[int], optional
-        Name of each party, default is alphabetical labels, e.g. ['A', 'B', ...]
+        Name of each party, default is alphabetical labels, e.g.,
+        ``['A', 'B', ...]``.
     verbose : int, optional
         How much information to print. By default ``0``.
     """
