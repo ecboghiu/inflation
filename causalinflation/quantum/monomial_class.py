@@ -240,7 +240,8 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
         # TODO: Note that irrelevance of inflation indices could be a different from knowable, since we can allow for noncommutation due to settings...
         self.inflation_indices_are_irrelevant = False # Hack to see if this helps. is_knowable(self.as_ndarray)
-        self.knowable_q = self.inflation_indices_are_irrelevant and atomic_is_knowable(self.as_ndarray)
+        # self.knowable_q = self.inflation_indices_are_irrelevant and atomic_is_knowable(self.as_ndarray)
+        self.knowable_q = atomic_is_knowable(self.as_ndarray)
         self.do_conditional = self.inflation_indices_are_irrelevant and (not self.knowable_q)
         if not skip_tests:
             self.physical_q = is_physical(self.as_ndarray, sandwich_positivity=sandwich_positivity)
