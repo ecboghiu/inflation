@@ -19,16 +19,14 @@ sys.path.insert(0, os.path.abspath('../examples/'))  # This way the examples
                                                      # can be included in the
                                                      # documentation
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'CausalInflation'
-copyright = '2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens'
-author = 'Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens'
+copyright = '2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens'
+author = 'Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
-
 
 # -- General configuration ---------------------------------------------------
 
