@@ -18,16 +18,16 @@ from typing import Dict, List, Tuple, Union
 def generate_operators(outs_per_input: List[int],
                                        name: str
                                 ) -> List[List[List[sympy.core.symbol.Symbol]]]:
-    """Generates the list of sympy.core.symbol.Symbol variables representing the
-    measurements for a given party. The variables are treated as non-commuting.
-    This code is adapted from ncpol2sdpa. See
-    https://github.com/peterwittek/ncpol2sdpa/
+    """Generates the list of ``sympy.core.symbol.Symbol`` variables representing
+    the measurements for a given party. The variables are treated as
+    non-commuting. This code is adapted from `ncpol2sdpa
+    <https://github.com/peterwittek/ncpol2sdpa/>`_.
 
     Parameters
     ----------
-    outs_per_input : List of int
+    outs_per_input : List[int]
         The number of outcomes of each measurement for a given party
-    name : Str
+    name : str
         The name to be associated to the party
 
     Returns
@@ -163,7 +163,7 @@ def apply_source_perm_monomial(monomial: np.ndarray,
     Returns
     -------
     numpy.ndarray
-        Input monomial with the specified source swapped.
+        The input monomial with the specified source swapped.
     """
     new_factors = monomial.copy()
     for i in range(len(monomial)):
@@ -204,7 +204,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     Returns
     -------
     List[numpy.ndarray]
-        List of operators with the specified source permuted.
+        The list of operators with the specified source permuted.
     """
     permuted_op_list = []
     for monomial in columns:
@@ -238,8 +238,8 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
     Returns
     -------
     numpy.ndarray
-        Same as monomials_as_numbers but with the
-        factorized monomials.
+        The same output as monomials_as_numbers but with the factorized
+        monomials.
     """
     monomials_factors = monomials_as_numbers.copy()
     for idx, [_, monomial] in enumerate(monomials_factors):
@@ -254,7 +254,7 @@ def is_knowable(monomial: np.ndarray, hypergraph_scenario: np.ndarray) -> bool:
 
     Parameters
     ----------
-    monomial : Union[List[List[int]], numpy.ndarray]
+    monomial : numpy.ndarray
         List of operators, denoted each by a list of indices
     hypergraph_scenario : numpy.ndarray
         Binary matrix representing the scenario.
@@ -262,7 +262,7 @@ def is_knowable(monomial: np.ndarray, hypergraph_scenario: np.ndarray) -> bool:
     Returns
     -------
     bool
-        bool stating whether the monomial is knowable or not
+        Whether the monomial is knowable or not.
     """
     if type(monomial) == list:
         monomial = np.array(monomial)
@@ -319,7 +319,7 @@ def is_physical(monomial_in: Union[List[List[int]], np.ndarray],
     Returns
     -------
     bool
-        Returns whether the monomial is positive or not.
+        Whether the monomial is positive or not.
     """
     monomial = np.array(monomial_in, dtype=np.int8).copy()
     if sandwich_positivity:
@@ -376,7 +376,7 @@ def label_knowable_and_unknowable(monomials_factors: np.ndarray,
 
 def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     """Removes sandwiching/pinching from a monomial. This is, it converts the
-    monomial U·A·U^* into A.
+    monomial represented by :math:`U A U^\dagger` into :math:`A`.
 
     Parameters
     ----------
@@ -386,7 +386,7 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Output monomial without one layer of sandwiching.
+        The monomial without one layer of sandwiching.
     """
     new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
     parties = np.unique(monomial[:, 0])
@@ -420,7 +420,7 @@ def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
     Returns
     -------
     List[sympy.core.symbol.Symbol]
-        List of all the symbolic factors, with the powers expanded.
+        The list of all the symbolic factors, with the powers expanded.
     """
     factors = monomial.as_ordered_factors()
     factors_expanded = []
@@ -520,8 +520,8 @@ def monomialset_name2num(monomials: np.ndarray, names: List[str]) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Same dimensions as input monomials, but each monomial is in
-        string format.
+        The list of input monomials, but with each monomial in matrix
+        representation.
     """
     monomials_numbers = monomials.copy()
     for i, line in enumerate(monomials):
@@ -545,8 +545,7 @@ def monomialset_num2name(monomials_factors: np.ndarray,
     Returns
     -------
     numpy.ndarray
-        Returns the input with the monomials replaced by their
-        string representation.
+        The input with the monomials replaced by their string representation.
     """
     monomials_factors_names = monomials_factors.copy()
     for idx, [_, monomial_factors] in enumerate(monomials_factors_names):
@@ -614,7 +613,7 @@ def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
     Returns
     -------
     List[List[int]]
-        Monomial in list of lists format (equivalent to 2d array format by
+        The monomial in list of lists format (equivalent to 2d array format by
         calling np.array() on the result).
     """
     parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
@@ -702,8 +701,7 @@ def to_representative(mon: np.ndarray,
     Returns
     -------
     numpy.ndarray
-        Input monomial in canonical form.
-
+        The canonical form of the input monomial.
     """
     mon_aux = to_representative_aux(mon)
 
@@ -768,12 +766,12 @@ def compute_numeric_value(mon_string: str,
                           p_array: np.ndarray,
                           parties_names: List[str]
                           ) -> float:
-    """Given a monomial and a probability distribution p_array called as
-    p_array[a,b,c,...,x,y,z,...], return the numerical value of the probability
-    associated to the monomial.
+    """Given a monomial and a probability distribution ``p_array`` called as
+    ``p_array[a,b,c,...,x,y,z,...]``, return the numerical value of the
+    probability associated to the monomial.
 
-    Note that this accepts marginals, for example, p(a|x), and then it
-    automatically computes all the summations over p[a,b,c,...,x,y,z,...].
+    Note that this accepts marginals, for example, :math:`p(a|x)``, and then it
+    automatically computes all the summations over ``p[a,b,c,...,x,y,z,...]``.
 
     Parameters
     ----------
@@ -827,8 +825,8 @@ def find_permutation(list1: List, list2: List) -> List[int]:
 
     Returns
     -------
-    List
-        Permutation the brings list2 to list1.
+    List[int]
+        The permutation the brings list2 to list1.
 
     Raises
     ------
