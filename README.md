@@ -1,15 +1,15 @@
 # CausalInflation
-CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatiblity between some observed data and a given causal relationship.
+CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatibility between some observed data and a given causal relationship.
 
-The first version of this package implements the inflation technique for quantum causal compatibility. For details, see [Physical Review X 11.2 (2021): 021043](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043). The inflation technique for classical causal compatibility will be implemented in a future update. 
+The first version of this package implements the inflation technique for quantum causal compatibility. For details, see [Physical Review X 11 (2), 021043 (2021)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043). The inflation technique for classical causal compatibility will be implemented in a future update.
 
 Examples of use of this package include:
 
 - Feasibility problems and extraction of certificates.
-- Optimization of Bell operators. 
-- Optimisation over classical distributions. 
-- Standard NPA.
-- Scenarios with partial information. 
+- Optimization of Bell operators.
+- Optimisation over classical distributions.
+- Standard [Navascues-Pironio-Acin hierarchy](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401).
+- Scenarios with partial information.
 
 See the documentation for more details.
 
@@ -31,7 +31,7 @@ You can also install the latest developed version with:
 
 or download the repository on your computer and run `python setup.py install` in the repository folder.
 
-Tests are written outside the Python module, therefore they are not installed together with the package. To test the installation, clone the repository and run, in a Unix terminal, 
+Tests are written outside the Python module, therefore they are not installed together with the package. To test the installation, clone the repository and run, in a Unix terminal,
 ```python -m unittest -v```
 
 inside the repository folder.
@@ -53,7 +53,7 @@ for a, b, c in itertools.product([0, 1], repeat=3):
 
 scenario = InflationProblem(dag={"rho_AB": ["A", "B"],
                                  "rho_BC": ["B", "C"],
-                                 "rho_AC": ["A", "C"]}, 
+                                 "rho_AC": ["A", "C"]},
                              outcomes_per_party=[2, 2, 2],
                              settings_per_party=[1, 1, 1],
                              inflation_level_per_source=[2, 2, 2])
@@ -79,8 +79,6 @@ CasualInflation is free open-source software released under [GNU GPL v. 3.0](htt
 
 ## Citing CausalInflation
 
-If you use CausalInflation in your work, please cite the following [paper](ARXIV LINK):
+If you use CausalInflation in your work, please cite [CausalInflation's paper](https://www.arxiv.org/abs/2209.xxxxx):
 
-- Emanuel-Cristian Boghiu and Alejandro Pozas-Kertjens, "CausalInflation: a Python package for classical and quantum causal compatibility", Nature ... 2022
-
-
+- Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "CausalInflation: a Python package for classical and quantum causal compatibility", arXiv:2209.xxxxx
