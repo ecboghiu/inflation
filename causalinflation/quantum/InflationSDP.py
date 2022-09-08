@@ -681,7 +681,7 @@ class InflationSDP(object):
                            if m.nof_factors == 1 and m.knowable_q} if (not prob_array is None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=True)
+                        only_knowable_moments=(not use_lpi_constraints)) #MAJOR BUGFIX?
         # if self.objective and not (prob_array is None):
         #     warnings.warn('Danger! User apparently set the objective before the distribution.')
         # self.distribution_has_been_set = True
@@ -798,9 +798,9 @@ class InflationSDP(object):
                                 (len(mon) == 1)}
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                              len(mon) > 1 and mon.knowable_q)  # as iterator, saves memory.
+                                              (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
         else:
-            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if len(mon) > 1)
+            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
             value, unknown_CompoundMonomial, known_status = mon.evaluate_given_atomic_monomials_dict(
                 atomic_known_moments,
@@ -809,7 +809,6 @@ class InflationSDP(object):
             if known_status == 'Yes':
                 self.known_moments[mon] = value
             elif known_status == 'Semi':
-                warnings.warn('Semiknown processing...')
                 if self.use_lpi_constraints:
                     self.semiknown_moments[mon] = (value, unknown_CompoundMonomial)
                 # assert isinstance(self.semiknown_moments, dict)

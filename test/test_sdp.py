@@ -418,6 +418,8 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation(cols) 
         sdp.set_distribution(self.GHZ(0.5), use_lpi_constraints=True)
         semiknown_coeffs = np.array([v[0] for k, v in sdp.semiknown_moments.items()])
-        
+        self.assertTrue(len(sdp.semiknown_moments) > 1,
+                        ("This example is explicitly chosen to check semiknowns."))
         self.assertTrue(np.all(semiknown_coeffs <= 1),
                     ("All known coefficients should be between zero and one."))
+        # print(list(sdp.semiknown_moments.items()))

@@ -2,6 +2,7 @@
 # from __future__ import absolute_import
 # from __future__ import with_statement
 # import warnings
+import warnings
 
 import numpy as np
 from causalinflation.quantum.general_tools import is_physical
@@ -199,9 +200,9 @@ class CompoundMonomial(object):
             known_status = 'No'
         else:
             known_status = 'Semi'
-        return known_value, CompoundMonomial(unknown_factors), known_status
+        return known_value, CompoundMonomial(tuple(sorted[unknown_factors])), known_status
 
-    # TODO: Function is WORK IN PROGRESS! Should this be a dict?
+
     def evaluate_given_atomic_monomials_dict(self, dict_of_known_atomic_monomials: Dict[InternalAtomicMonomial, float], use_lpi_constraints=True):
         "Yields both a numeric value and a CompoundMonomial corresponding to the unknown part."
         known_value = 1.
@@ -212,7 +213,8 @@ class CompoundMonomial(object):
                 unknown_factors_counter[factor] = power
             else:
                 known_value *= (temp_value ** power)
-        unknown_factors = list(unknown_factors_counter.elements())
+        # warnings.warn(self.name + str(self.unknowable_factors))
+        unknown_factors = tuple(sorted(unknown_factors_counter.elements()))
         # unknown_len = unknown_factors_counter.total() #Since it is a counter. Only available in Python 3.10+
         unknown_len = len(unknown_factors)
         if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
