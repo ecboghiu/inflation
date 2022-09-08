@@ -1,8 +1,11 @@
 import unittest
 import numpy as np
 import warnings
-from causalinflation.quantum.general_tools import remove_sandwich
-from causalinflation.quantum.monomial_class import Monomial
+from causalinflation.quantum.general_tools import remove_sandwich, is_physical
+class Monomial(object):
+    def __init__(self, array2d, **kwargs):
+        self.physical_q = is_physical(array2d, **kwargs)
+
 
 class QuantumInflationPhysicalMoments(unittest.TestCase):
     @classmethod
