@@ -163,7 +163,7 @@ class InflationSDP(object):
         # Elie comment: preppring for new Monomial and AtomicMonomial constructors.
         self.canonsym_ndarray_from_hash_cache = dict()
         self.atomic_monomial_from_hash_cache = dict()
-        self.compound_monomial_from_hash_cache = dict()
+        # self.compound_monomial_from_hash_cache = dict()
         self.compound_monomial_from_tuple_of_atoms_cache = dict()
 
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
@@ -193,30 +193,48 @@ class InflationSDP(object):
                 self.atomic_monomial_from_hash_cache[new_quick_key] = new_mon
                 return new_mon
 
-    @staticmethod
-    def _attach_idx_to_mon(mon: CompoundMonomial, idx=-1):
-        if idx >= 0:
-            mon.idx = idx
+    # @staticmethod
+    # def _attach_idx_to_mon(mon: CompoundMonomial, idx=-1):
+    #     if idx >= 0:
+    #         mon.idx = idx
+
+    def monomial_from_list_of_atomic(self, list_of_AtomicMonomials: List[InternalAtomicMonomial]):
+        tuple_of_atoms = tuple(sorted(factor for factor in list_of_AtomicMonomials if factor.n_ops > 0))
+        try:
+            mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
+        except KeyError:
+            mon = CompoundMonomial(tuple_of_atoms)
+            self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
+        return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
-        quick_key = self.from_2dndarray(array2d)
-        try:
-            mon = self.compound_monomial_from_hash_cache[quick_key]
-            self._attach_idx_to_mon(mon, idx)
-            return mon
-        except KeyError:  # Key not in compound_monomial_from_hash_cache
-            _factors = factorize_monomial(array2d, canonical_order=False)
-            tuple_of_atoms = tuple(sorted(self.AtomicMonomial(factor) for factor in _factors if len(factor)))
-            try:
-                mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
-                self._attach_idx_to_mon(mon, idx)
-                self.compound_monomial_from_hash_cache[quick_key] = mon
-            except KeyError:
-                mon = CompoundMonomial(tuple_of_atoms)
-                self._attach_idx_to_mon(mon, idx)
-                self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
-                self.compound_monomial_from_hash_cache[quick_key] = mon
-                return mon
+        _factors = factorize_monomial(array2d, canonical_order=False)
+        list_of_atoms = [self.AtomicMonomial(factor) for factor in _factors if len(factor)]
+        mon = self.monomial_from_list_of_atomic(list_of_atoms)
+        mon.attach_idx_to_mon(idx)
+        return mon
+
+        # quick_key = self.from_2dndarray(array2d)
+        # try:
+        #     mon = self.compound_monomial_from_hash_cache[quick_key]
+        #     mon.attach_idx_to_mon(idx)
+        #     # self._attach_idx_to_mon(mon, idx)
+        #     return mon
+        # except KeyError:  # Key not in compound_monomial_from_hash_cache
+        #     _factors = factorize_monomial(array2d, canonical_order=False)
+        #     tuple_of_atoms = tuple(sorted(self.AtomicMonomial(factor) for factor in _factors if len(factor)))
+        #     try:
+        #         mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
+        #         mon.attach_idx_to_mon(idx)
+        #         # self._attach_idx_to_mon(mon, idx)
+        #         self.compound_monomial_from_hash_cache[quick_key] = mon
+        #     except KeyError:
+        #         mon = CompoundMonomial(tuple_of_atoms)
+        #         mon.attach_idx_to_mon(idx)
+        #         # self._attach_idx_to_mon(mon, idx)
+        #         self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
+        #         self.compound_monomial_from_hash_cache[quick_key] = mon
+        #         return mon
 
     def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if self.split_node_model:
@@ -802,7 +820,7 @@ class InflationSDP(object):
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
-            value, unknown_CompoundMonomial, known_status = mon.evaluate_given_atomic_monomials_dict(
+            value, unknown_atomic_factors, known_status = mon.evaluate_given_atomic_monomials_dict(
                 atomic_known_moments,
                 use_lpi_constraints=self.use_lpi_constraints)
             # assert isinstance(value, float), f'expected numeric value! {value}'
@@ -810,7 +828,7 @@ class InflationSDP(object):
                 self.known_moments[mon] = value
             elif known_status == 'Semi':
                 if self.use_lpi_constraints:
-                    self.semiknown_moments[mon] = (value, unknown_CompoundMonomial)
+                    self.semiknown_moments[mon] = (value, self.monomial_from_list_of_atomic(unknown_atomic_factors))
                 # assert isinstance(self.semiknown_moments, dict)
 
             else:

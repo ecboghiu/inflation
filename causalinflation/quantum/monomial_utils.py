@@ -24,37 +24,35 @@ import sympy
 # from itertools import chain
 # from operator import attrgetter
 
-#TODO: Create more efficient inflation_indices_are_irrelevant test (not just is_knowable; that's overkill)
 #TODO: Create universal CompoundMonomial construction (takes as input 2darray, string, symbol, etc), remove _sanitize_monomial from InflationSDP class.
-#TODO: Create 'slow' AtomicMonomial, using to_representative immediately.
-#TODO: Can we make the metaclasses specific to each InflationSDP, so that we avoid buffer conflict. See 'closures'
-
-#Maybe we should serialize for hasing? Instead of tuples and back...https://stackoverflow.com/a/67665016
-def to_tuple_of_tuples(monomial: np.ndarray) -> tuple:
-    if isinstance(monomial, tuple):
-        return monomial
-    elif isinstance(monomial, np.ndarray):
-        if monomial.ndim >= 3:
-            return tuple(to_tuple_of_tuples(operator) for operator in monomial)
-        elif monomial.ndim == 2:
-            # NOTE: This is to speed up the function for the frequent case of
-            # 2d arrays. Adding this special clause speeds up by 5x the 2d case. 
-            # Note: Using "map" on my CPU takes is slightly faster than list
-            # comprehension, i.e., tuple(tuple(l) for l in monomial.tolist()).
-            return tuple(map(tuple, monomial.tolist()))
-        elif monomial.ndim == 1:
-            return tuple(monomial.tolist())
-        else:
-            return monomial.tolist()
-    elif isinstance(monomial, Iterable):
-        return to_tuple_of_tuples(np.array(monomial))
-    else:
-        return monomial
 
 
-@lru_cache(maxsize=None, typed=False)
-def compute_marginal_memoized(prob_array: Tuple, atom: Tuple[Tuple[int]]) -> float:
-    return compute_marginal(np.asarray(prob_array), np.asarray(atom))
+#Maybe we should serialize for hashing? Instead of tuples and back...https://stackoverflow.com/a/67665016
+# def to_tuple_of_tuples(monomial: np.ndarray) -> tuple:
+#     if isinstance(monomial, tuple):
+#         return monomial
+#     elif isinstance(monomial, np.ndarray):
+#         if monomial.ndim >= 3:
+#             return tuple(to_tuple_of_tuples(operator) for operator in monomial)
+#         elif monomial.ndim == 2:
+#             # NOTE: This is to speed up the function for the frequent case of
+#             # 2d arrays. Adding this special clause speeds up by 5x the 2d case.
+#             # Note: Using "map" on my CPU takes is slightly faster than list
+#             # comprehension, i.e., tuple(tuple(l) for l in monomial.tolist()).
+#             return tuple(map(tuple, monomial.tolist()))
+#         elif monomial.ndim == 1:
+#             return tuple(monomial.tolist())
+#         else:
+#             return monomial.tolist()
+#     elif isinstance(monomial, Iterable):
+#         return to_tuple_of_tuples(np.array(monomial))
+#     else:
+#         return monomial
+
+
+# @lru_cache(maxsize=None, typed=False)
+# def compute_marginal_memoized(prob_array: Tuple, atom: Tuple[Tuple[int]]) -> float:
+#     return compute_marginal(np.asarray(prob_array), np.asarray(atom))
 
 
 def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:

@@ -200,7 +200,7 @@ class CompoundMonomial(object):
             known_status = 'No'
         else:
             known_status = 'Semi'
-        return known_value, CompoundMonomial(tuple(sorted[unknown_factors])), known_status
+        return known_value, unknown_factors, known_status
 
 
     def evaluate_given_atomic_monomials_dict(self, dict_of_known_atomic_monomials: Dict[InternalAtomicMonomial, float], use_lpi_constraints=True):
@@ -214,7 +214,7 @@ class CompoundMonomial(object):
             else:
                 known_value *= (temp_value ** power)
         # warnings.warn(self.name + str(self.unknowable_factors))
-        unknown_factors = tuple(sorted(unknown_factors_counter.elements()))
+        unknown_factors = list(unknown_factors_counter.elements())
         # unknown_len = unknown_factors_counter.total() #Since it is a counter. Only available in Python 3.10+
         unknown_len = len(unknown_factors)
         if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
@@ -223,7 +223,7 @@ class CompoundMonomial(object):
             known_status = 'No'
         else:
             known_status = 'Semi'
-        return known_value, CompoundMonomial(unknown_factors), known_status
+        return known_value, unknown_factors, known_status
 
     @property
     def _names_of_factors(self):
@@ -263,3 +263,6 @@ class CompoundMonomial(object):
             #                                          for op in machine_readable_name.split('*')]))
             # return machine_readable_symbol
 
+    def attach_idx_to_mon(self, idx: int):
+        if idx >= 0:
+            self.idx = idx
