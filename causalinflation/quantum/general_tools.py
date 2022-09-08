@@ -526,7 +526,7 @@ def is_knowable(monomial_as_array: np.ndarray) -> bool:
 
 # @lru_cache(maxsize=None, typed=False)
 def is_physical(monomial_in: Iterable[Iterable[int]],
-                sandwich_positivity=False
+                sandwich_positivity=True
                 ) -> bool:
     """Determines whether a monomial is physical/positive. It is positive
     if it is a probability (i.e., >0) but we do not  know its exact value.
