@@ -45,9 +45,19 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store' , '../test*', 'test*',
-                    'ncpol*']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store' , '../test*', 'test*']
 
+# Specify the file where the table of contents is, so it appears only on the
+# sidebar. From
+# https://stackoverflow.com/questions/54348962/sphinx-toctree-in-sidebar-only
+
+master_doc = 'contents'
+
+# Make that the index page does not disappear from sidebar TOC. From
+# https://stackoverflow.com/questions/18969093/how-to-include-the-toctree-in-the-sidebar-of-each-page
+
+html_sidebars = { '**': ['globaltoc.html', 'relations.html',
+                         'sourcelink.html', 'searchbox.html'] }
 
 # -- Options for HTML output -------------------------------------------------
 
