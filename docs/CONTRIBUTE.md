@@ -8,9 +8,9 @@ If you want to contribute to the code, please fork the repository and submit a p
 
 ## Install in develop mode
 
-It is recommended to install the package in [develop mode](https://stackoverflow.com/questions/19048732/python-setup-py-develop-vs-install), which can be done with the following command in the terminal:
+It is recommended to install the package in [develop mode](https://stackoverflow.com/questions/19048732/python-setup-py-develop-vs-install), which can be done with the following command in the terminal after downloading the source code:
 ```
-python setup.py develop
+pip install -e .
 ```
 This way the package does not need to reinstalled after every modification.
 
@@ -26,11 +26,11 @@ If you are using a code editor, typically it includes a way to automatically fin
 - **Visual Studio Code**: Open universal search with `Ctrl+Shift+P` (universal search), search for `Configure Tests` and choose `unittest`. Then you can run all the tests in the `Test` tab in the Primary Side Bar.
 - **PyCharm**: You can either create a new project and pull from the repository, or, if you have already downloaded the repository, you can open it in PyCharm. Then, under `File > Settings > Tools > Python Integrated Tools`, choose `Unittest` for `Default test runner`. Context actions are then updated and you can run individual tests ("play" arrow next to the test function) or all of them.
 
-One suggestion is to write tests for a function in advance, and then write the function itself. This way you can easily see if your function is working as expected. Another suggestion is to you use breakpoints, which allow you to stop a program mid-way and inspect variable values, to debug your function. Most coding environments, such as [Visual Studio Code](https://code.visualstudio.com/docs/editor/debugging), support this feature.
+One suggestion is to write tests for a function in advance, and then write the function itself. This way you can easily see if your function is working as expected. Another suggestion is to use breakpoints, which allow you to stop a program mid-way and inspect variable values, to debug your function. Most coding environments, such as [Visual Studio Code](https://code.visualstudio.com/docs/editor/debugging), support this feature.
 
 ###### Special note about test debugging for Visual Studio Code users
 
-At the time of writing this (July 2022), there is a bug when trying to debug tests. It seems that the best [solution](https://github.com/microsoft/vscode-python/issues/10722) is to add the following to the `.vscode/launch.json` file:
+At the time of writing this (July 2022), there is a bug when trying to debug tests with breakpoints. It seems that the best [solution](https://github.com/microsoft/vscode-python/issues/10722) is to add the following to the `.vscode/launch.json` file:
 ```
 {
     "name": "Python: Test debug config",
@@ -43,7 +43,7 @@ At the time of writing this (July 2022), there is a bug when trying to debug tes
 
 ## Style guidelines
 
-CausalInflation code is developed according the standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions. 
+CausalInflation code is developed according standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions. 
 - In general, try to follow [PEP 8](https://peps.python.org/pep-0008/) (code) and [PEP 257](https://peps.python.org/pep-0257/) (docstrings) guidelines. 
 - Avoid going over 80 characters per line.
 - Write docstrings in [numpy style](https://numpydoc.readthedocs.io/en/latest/format.html), or else Sphinx automatic documentation generation will be buggy.
@@ -52,7 +52,7 @@ CausalInflation code is developed according the standard practices in Python dev
 
 # How to contribute to the documentation
 
-The documentation is built using Sphinx. The webpage is hosted with GitHub Pages. Currently, GitHup Pages is set to look for an `index.html` file in the `/docs` folder in the repository. Currently, this is not very clean, as small changes in the documentation lead to changing many HTML files, thus the commits are large. In the future, we will look into migrating the HTML build to the `gh-pages` branch of the repository, leading to a cleaner repository.
+The documentation is built using Sphinx. The webpage is hosted with GitHub Pages. Currently, GitHup Pages is set to look for an `index.html` file in the `/docs` folder in the repository. In the future, we will look into migrating the HTML build to the `gh-pages` branch of the repository, leading to a cleaner repository.
 
 Since the documentation has already been created, you do not need to generate a configuration file. 
 
@@ -72,7 +72,7 @@ The following are the extensions added to Sphinx to generate the documentation, 
   
 These extensions and other specifications are found in the `conf.py` file. They allow for two important quality of life improvements in maintaining the documentation, namely, the ability to have Mardown documents and Jupyter notebooks as sections of the documentation. Future plans are to migrate everything to MyST serialisation.
 
-**Note**: currently Sphinx expects all files to be placed under the source directors (`docs/`), so it seems difficult to include notebooks from the `examples/` folder into the documentation. The current workaround is to copy the notebooks to the `docs/` folder, however one needs to remember to update the other file when one of them is modified.
+**Note**: currently Sphinx expects all files to be placed under the source directors (`docs/`), so it seems difficult to include notebooks from other folders (such as `CONTRIBUTE.MD`) into the documentation. The current workaround is to copy the notebooks to the `docs/` folder, however one needs to remember to update the other file when one of them is modified.
 
 ###### Update the API documentation 
 
@@ -80,10 +80,9 @@ If you want the API documentation to reflect the latest changes in the code, you
 
 ```sphinx-apidoc -f -o . ../causalinflation``` 
 
-which will update the `.rst` files containing the module description. Note that after running this command, the title of the `modules.rst` will change back to `causalinflation`. Currently, the best solution seems to be to manually change it to `API Reference`.
+which will update the `.rst` files containing the module description. Note that after running this command, the title of the `modules.rst` will change back to `causalinflation`. Currently, the best solution seems to be to manually change it to `API Reference`. The structure of API reference page will also be overwritten, thus it is recommended to manually change it back to the original structure by comparing to a previous version of the file.
 
 ###### Build the HTML documentation 
-
 
 Once you have done all your modifications, you can build the documentation by running the following command in the terminal on the `docs/` directory:
 

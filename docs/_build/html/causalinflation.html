@@ -1,36 +1,78 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>InflationProblem Class &mdash; CausalInflation 0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+  <title>InflationProblem Class &mdash; CausalInflation 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
-    <script src="_static/js/theme.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Changelog" href="changelog.html" />
     <link rel="prev" title="API Reference" href="modules.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="index.html" class="icon icon-home"> CausalInflation
+          
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -38,13 +80,23 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p><span class="caption-text">Contents:</span></p>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html#Partial-information-support">Partial information support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
@@ -63,31 +115,73 @@
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">CausalInflation</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
+    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
           <li><a href="modules.html">API Reference</a> &raquo;</li>
+        
       <li>InflationProblem Class</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
             <a href="_sources/causalinflation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   
 <style>
 /* CSS overrides for sphinx_rtd_theme */
@@ -113,10 +207,10 @@
 }
 </style>
 <section id="inflationproblem-class">
-<h1>InflationProblem Class<a class="headerlink" href="#inflationproblem-class" title="Permalink to this headline">¶</a></h1>
+<h1>InflationProblem Class<a class="headerlink" href="#inflationproblem-class" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
-<dt id="causalinflation.InflationProblem">
-<em class="property">class </em><code class="sig-prename descclassname">causalinflation.</code><code class="sig-name descname">InflationProblem</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dag</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">outcomes_per_party</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">settings_per_party</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">inflation_level_per_source</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">names</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationProblem">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class for enconding relevant details concerning the causal
 compatibibility scenario, e.g., DAG structure, number of inputs
 per party, etc.</p>
@@ -138,10 +232,10 @@ all sources.</p></li>
 
 </section>
 <section id="inflationsdp-class">
-<h1>InflationSDP Class<a class="headerlink" href="#inflationsdp-class" title="Permalink to this headline">¶</a></h1>
+<h1>InflationSDP Class<a class="headerlink" href="#inflationsdp-class" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
-<dt id="causalinflation.InflationSDP">
-<em class="property">class </em><code class="sig-prename descclassname">causalinflation.</code><code class="sig-name descname">InflationSDP</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">InflationProblem</span><span class="p">:</span> <span class="n">causalinflation.InflationProblem.InflationProblem</span></em>, <em class="sig-param"><span class="n">commuting</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">InflationProblem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#causalinflation.InflationProblem" title="causalinflation.InflationProblem.InflationProblem"><span class="pre">InflationProblem</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class for generating and solving an SDP relaxation for quantum inflation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -162,8 +256,8 @@ problem) or non-commuting (quantum problem). By default <code class="docutils li
 </dd>
 </dl>
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.build_columns">
-<code class="sig-name descname">build_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">max_monomial_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">return_columns_numerical</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.build_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.build_columns" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.build_columns">
+<span class="sig-name descname"><span class="pre">build_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_specification</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_monomial_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_columns_numerical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.build_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.build_columns" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates the objects indexing the columns of the moment matrix from
 a specification.</p>
 <dl class="field-list simple">
@@ -183,8 +277,8 @@ output of <code class="docutils literal notranslate"><span class="pre">to_number
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_objective">
-<code class="sig-name descname">certificate_as_objective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.add.Add<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_objective" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_objective">
+<span class="sig-name descname"><span class="pre">certificate_as_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Add</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_objective" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give certificate as symbolic sum of operators that can be used
 as an objective function to optimse.</p>
 <dl class="field-list simple">
@@ -209,8 +303,8 @@ decimals specified. By default <code class="docutils literal notranslate"><span 
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_probs">
-<code class="sig-name descname">certificate_as_probs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.add.Add<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_probs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_probs" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_probs">
+<span class="sig-name descname"><span class="pre">certificate_as_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Add</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_probs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give certificate as symbolic sum of probabilities. The certificate
 of incompatibility is <cite>cert &gt;= 0</cite>.</p>
 <dl class="field-list simple">
@@ -236,8 +330,8 @@ marginals. The certificate of incompatibility is cert &gt;= 0.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.certificate_as_string">
-<code class="sig-name descname">certificate_as_string</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clean</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">chop_tol</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">round_decimals</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span> &#x2192; sympy.core.add.Add<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_string" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_string">
+<span class="sig-name descname"><span class="pre">certificate_as_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Add</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give the certificate as a string with the notation of the operators
 in the moment matrix.</p>
 <dl class="field-list simple">
@@ -263,15 +357,15 @@ the moment matrix. The certificate of infeasibility is cert &gt; 0.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.clear_known_values">
-<code class="sig-name descname">clear_known_values</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.clear_known_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.clear_known_values" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.clear_known_values">
+<span class="sig-name descname"><span class="pre">clear_known_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.clear_known_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.clear_known_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Clears the information about variables assigned to numerical
 quantities in the problem.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.generate_relaxation">
-<code class="sig-name descname">generate_relaxation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_specification</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><span class="p">, </span>List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'npa1'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.generate_relaxation">
+<span class="sig-name descname"><span class="pre">generate_relaxation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_specification</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'npa1'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates the SDP relaxation of the quantum inflation problem using
 the NPA hierarchy and applies the symmetries inferred from inflation.</p>
 <p>It takes as input the generating set of monomials {M_i}_i. The moment
@@ -326,8 +420,8 @@ have the identity <cite>sympy.S.One</cite> as the first element.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.set_distribution">
-<code class="sig-name descname">set_distribution</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">prob_array</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">use_lpi_constraints</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_distribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_distribution" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.set_distribution">
+<span class="sig-name descname"><span class="pre">set_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_distribution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set numerically the knowable moments and semiknowable moments
 according to the probability distribution specified.</p>
 <dl class="field-list simple">
@@ -347,8 +441,8 @@ default False.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.set_objective">
-<code class="sig-name descname">set_objective</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">objective</span><span class="p">:</span> <span class="n">sympy.core.symbol.Symbol</span></em>, <em class="sig-param"><span class="n">direction</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'max'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_objective" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.set_objective">
+<span class="sig-name descname"><span class="pre">set_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'max'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_objective" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set or change the objective function of the polynomial optimization
 problem.</p>
 <dl class="field-list simple">
@@ -362,8 +456,8 @@ problem.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.set_values">
-<code class="sig-name descname">set_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">values</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>Union<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">, </span>sympy.core.mul.Mul<span class="p">, </span>int<span class="p">, </span>str<span class="p">]</span><span class="p">, </span>float<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">use_lpi_constraints</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">only_specified_values</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_values" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.set_values">
+<span class="sig-name descname"><span class="pre">set_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Mul</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_specified_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Directly assign numerical values to variables in the moment matrix.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -385,8 +479,8 @@ default <code class="docutils literal notranslate"><span class="pre">False</span
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.solve">
-<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interpreter</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'MOSEKFusion'</span></em>, <em class="sig-param"><span class="n">feas_as_optim</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">dualise</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">solverparameters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.solve" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interpreter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'MOSEKFusion'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feas_as_optim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dualise</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solverparameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.solve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Call a solver on the SDP relaxation. Upon successful solution, it
 returns the primal and dual objective values along with the solution
 matrices.</p>
@@ -414,8 +508,8 @@ feasible, and negative otherwise. By default <code class="docutils literal notra
 </dd></dl>
 
 <dl class="py method">
-<dt id="causalinflation.InflationSDP.write_to_file">
-<code class="sig-name descname">write_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.write_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.InflationSDP.write_to_file" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.InflationSDP.write_to_file">
+<span class="sig-name descname"><span class="pre">write_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.write_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.write_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exports the problem to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -429,10 +523,10 @@ specified, it defaults to sparse SDPA format.</p>
 
 </section>
 <section id="interfaces-with-solvers">
-<h1>Interfaces with solvers<a class="headerlink" href="#interfaces-with-solvers" title="Permalink to this headline">¶</a></h1>
+<h1>Interfaces with solvers<a class="headerlink" href="#interfaces-with-solvers" title="Permalink to this heading">¶</a></h1>
 <dl class="py function">
-<dt id="causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION">
-<code class="sig-prename descclassname">causalinflation.quantum.sdp_utils.</code><code class="sig-name descname">solveSDP_MosekFUSION</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">positionsmatrix</span><span class="p">:</span> <span class="n">scipy.sparse.lil.lil_matrix</span></em>, <em class="sig-param"><span class="n">objective</span><span class="o">=</span><span class="default_value">{1: 0.0}</span></em>, <em class="sig-param"><span class="n">known_vars</span><span class="o">=</span><span class="default_value">{0: 0.0, 1: 1.0}</span></em>, <em class="sig-param"><span class="n">semiknown_vars</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">feas_as_optim</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">solverparameters</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">var_lowerbounds</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">var_upperbounds</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">var_inequalities</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">var_equalities</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">solve_dual</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Dict<span class="p">, </span>float<span class="p">, </span>str<span class="p">]</span><a class="reference internal" href="_modules/causalinflation/quantum/sdp_utils.html#solveSDP_MosekFUSION"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.sdp_utils.</span></span><span class="sig-name descname"><span class="pre">solveSDP_MosekFUSION</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">positionsmatrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">lil_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{1:</span> <span class="pre">0.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{0:</span> <span class="pre">0.0,</span> <span class="pre">1:</span> <span class="pre">1.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semiknown_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feas_as_optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solverparameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_lowerbounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_upperbounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_inequalities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_equalities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solve_dual</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/sdp_utils.html#solveSDP_MosekFUSION"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION" title="Permalink to this definition">¶</a></dt>
 <dd><p>Internal function to solve the SDP with the MOSEK Fusion API.</p>
 <p>Now follows an extended description of how the SDP is encoded. In general,
 it is prefered to solve using the dual formulation, which is the default.</p>
@@ -523,10 +617,10 @@ the problem status.</p>
 
 </section>
 <section id="functions-to-build-problem-elements">
-<h1>Functions to build problem elements<a class="headerlink" href="#functions-to-build-problem-elements" title="Permalink to this headline">¶</a></h1>
+<h1>Functions to build problem elements<a class="headerlink" href="#functions-to-build-problem-elements" title="Permalink to this heading">¶</a></h1>
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.generate_operators">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">generate_operators</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">outs_per_input</span><span class="p">:</span> <span class="n">List<span class="p">[</span>int<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>List<span class="p">[</span>List<span class="p">[</span>sympy.core.symbol.Symbol<span class="p">]</span><span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#generate_operators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.generate_operators" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.generate_operators">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">generate_operators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outs_per_input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#generate_operators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.generate_operators" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the list of sympy.core.symbol.Symbol variables representing the
 measurements for a given party. The variables are treated as non-commuting.
 This code is adapted from ncpol2sdpa. See
@@ -548,8 +642,8 @@ This code is adapted from ncpol2sdpa. See
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.fast_npa.calculate_momentmatrix">
-<code class="sig-prename descclassname">causalinflation.quantum.fast_npa.</code><code class="sig-name descname">calculate_momentmatrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cols</span><span class="p">:</span> <span class="n">List</span></em>, <em class="sig-param"><span class="n">names</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">commuting</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>numpy.ndarray<span class="p">, </span>Dict<span class="p">]</span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#calculate_momentmatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.calculate_momentmatrix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.calculate_momentmatrix">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">calculate_momentmatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#calculate_momentmatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.calculate_momentmatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the moment matrix. The function takes as input the generating
 set {mon_i}_i encoded as a list of monomials. Each monomial is a matrix
 where each row is an operator and the columns specify the operator
@@ -583,10 +677,10 @@ representation to integer representation.</p>
 
 </section>
 <section id="functions-to-operate-on-monomials">
-<h1>Functions to operate on monomials<a class="headerlink" href="#functions-to-operate-on-monomials" title="Permalink to this headline">¶</a></h1>
+<h1>Functions to operate on monomials<a class="headerlink" href="#functions-to-operate-on-monomials" title="Permalink to this heading">¶</a></h1>
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.apply_source_perm_monomial">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">apply_source_perm_monomial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">permutation</span><span class="p">:</span> <span class="n">List</span></em>, <em class="sig-param"><span class="n">commuting</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#apply_source_perm_monomial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.apply_source_perm_monomial" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.apply_source_perm_monomial">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">apply_source_perm_monomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#apply_source_perm_monomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.apply_source_perm_monomial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply a source swap to a monomial.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -607,8 +701,8 @@ representation to integer representation.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.fast_npa.apply_source_swap_monomial">
-<code class="sig-prename descclassname">causalinflation.quantum.fast_npa.</code><code class="sig-name descname">apply_source_swap_monomial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">copy1</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">copy2</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#apply_source_swap_monomial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.apply_source_swap_monomial" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.apply_source_swap_monomial">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">apply_source_swap_monomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#apply_source_swap_monomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.apply_source_swap_monomial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies a swap of two sources to a monomial.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -640,8 +734,8 @@ representation to integer representation.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.fast_npa.factorize_monomial">
-<code class="sig-prename descclassname">causalinflation.quantum.fast_npa.</code><code class="sig-name descname">factorize_monomial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#factorize_monomial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.factorize_monomial" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.factorize_monomial">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">factorize_monomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#factorize_monomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.factorize_monomial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Split a moment/expectation value into products of moments according to
 the support of the operators within the moment.</p>
 <p>The moment is encoded as a 2d array where each row is an operator.
@@ -694,10 +788,10 @@ monomial s.t. their product is equal to the original monomial.</p>
 </dd></dl>
 
 <section id="monomial-properties">
-<h2>Monomial properties<a class="headerlink" href="#monomial-properties" title="Permalink to this headline">¶</a></h2>
+<h2>Monomial properties<a class="headerlink" href="#monomial-properties" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.is_knowable">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">is_knowable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">hypergraph_scenario</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#is_knowable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.is_knowable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.is_knowable">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">is_knowable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypergraph_scenario</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#is_knowable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.is_knowable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine whether a given atomic monomial (which cannot be factorized
 into smaller disconnected components) admits an identification with a
 monomial of the original scenario.</p>
@@ -718,8 +812,8 @@ monomial of the original scenario.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.is_physical">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">is_physical</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial_in</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">sandwich_positivity</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#is_physical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.is_physical" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.is_physical">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">is_physical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandwich_positivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#is_physical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.is_physical" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines whether a monomial is physical, this is, if it always have a
 non-negative expectation value.</p>
 <p>This code also supports the detection of “sandwiches”, i.e., monomials
@@ -751,10 +845,10 @@ This simple example can be extended to various layers of sandwiching.</p>
 
 </section>
 <section id="transformations-of-representation">
-<h2>Transformations of representation<a class="headerlink" href="#transformations-of-representation" title="Permalink to this headline">¶</a></h2>
+<h2>Transformations of representation<a class="headerlink" href="#transformations-of-representation" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
-<dt id="causalinflation.quantum.fast_npa.to_canonical">
-<code class="sig-prename descclassname">causalinflation.quantum.fast_npa.</code><code class="sig-name descname">to_canonical</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mon</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_canonical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_canonical" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.to_canonical">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_canonical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_canonical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_canonical" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply substitutions to a monomial until it stops changing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -771,8 +865,8 @@ ordering.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.fast_npa.to_name">
-<code class="sig-prename descclassname">causalinflation.quantum.fast_npa.</code><code class="sig-name descname">to_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">names</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_name" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.to_name">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert the 2d array representation of a monomial to a string.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -796,8 +890,8 @@ ordering.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.to_numbers">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">to_numbers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">parties_names</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#to_numbers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.to_numbers" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.to_numbers">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">to_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parties_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#to_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.to_numbers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert monomial from string to matrix representation.</p>
 <p>Given a monomial input in string format, return the matrix representation
 where each row represents an operators and the columns are operator labels
@@ -820,8 +914,8 @@ calling np.array() on the result).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.to_representative">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">to_representative</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mon</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">inflevels</span><span class="p">:</span> <span class="n">numpy.array</span></em>, <em class="sig-param"><span class="n">commuting</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#to_representative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.to_representative" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.to_representative">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">to_representative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflevels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#to_representative"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.to_representative" title="Permalink to this definition">¶</a></dt>
 <dd><p>Take a monomial and applies inflation symmetries to bring it to a
 canonical form.</p>
 <p>Example: Assume the monomial is <span class="math notranslate nohighlight">\(\langle D^{350}_{00} D^{450}_{00}
@@ -857,10 +951,10 @@ F^{021}_{00} \rangle\)</span>.</p>
 
 </section>
 <section id="other-functions">
-<h2>Other functions<a class="headerlink" href="#other-functions" title="Permalink to this headline">¶</a></h2>
+<h2>Other functions<a class="headerlink" href="#other-functions" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.compute_numeric_value">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">compute_numeric_value</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mon_string</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">p_array</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">parties_names</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#compute_numeric_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.compute_numeric_value" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.compute_numeric_value">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">compute_numeric_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parties_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#compute_numeric_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.compute_numeric_value" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a monomial and a probability distribution p_array called as
 p_array[a,b,c,…,x,y,z,…], return the numerical value of the probability
 associated to the monomial.</p>
@@ -893,8 +987,8 @@ example above, the second party is marginalised.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="causalinflation.quantum.general_tools.remove_sandwich">
-<code class="sig-prename descclassname">causalinflation.quantum.general_tools.</code><code class="sig-name descname">remove_sandwich</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">monomial</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#remove_sandwich"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.remove_sandwich" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.general_tools.remove_sandwich">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">remove_sandwich</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#remove_sandwich"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.remove_sandwich" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes sandwiching/pinching from a monomial. This is, it converts the
 monomial U·A·U^* into A.</p>
 <dl class="field-list simple">
@@ -915,33 +1009,50 @@ monomial U·A·U^* into A.</p>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="modules.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="modules.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.</p>
-  </div>
+    <p>
+        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
