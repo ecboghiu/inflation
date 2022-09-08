@@ -485,8 +485,11 @@ def to_name(monomial_numbers: np.ndarray,
                          for letter in np.asarray(monomial_numbers).tolist()])
 
 
-def to_tuples(monomial: np.ndarray):
-    return tuple(tuple(vec) for vec in monomial.tolist())
+# def to_tuples(monomial: np.ndarray):
+#     return tuple(tuple(vec) for vec in monomial.tolist())
+
+def to_hashable(monomial: np.ndarray):
+    return monomial.tobytes()
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -728,7 +731,8 @@ def calculate_momentmatrix(cols: List,
                            notcomm,
                            lexorder,
                            verbose: int = 0,
-                           commuting=False
+                           commuting=False,
+                           dtype: np.dtype = np.uint16
                            ) -> Tuple[np.ndarray, Dict]:
     """Calculate the moment matrix.
 
@@ -790,23 +794,35 @@ def calculate_momentmatrix(cols: List,
                 momentmatrix[i, j] = 0
             else:
                 if not commuting:
-                    mon_v1 = to_canonical(mon_v1, notcomm, lexorder)
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder)
-                    mon_v1_as_tuples = to_tuples(mon_v1)
-                    mon_v2_as_tuples = to_tuples(mon_v2)
-                    mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0]  # Would be better to use np.lexsort
+                    mon_v1 = to_canonical(mon_v1, notcomm, lexorder).astype(dtype)
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder).astype(dtype)
+                    mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
+                    # mon_v1_as_tuples = to_tuples(mon_v1)
+                    # mon_v2_as_tuples = to_tuples(mon_v2)
+                    # mon_as_tuples = sorted([mon_v1_as_tuples, mon_v2_as_tuples])[0]  # Would be better to use np.lexsort
+
                 else:
-                    mon_as_tuples = to_tuples(remove_projector_squares(mon_v1))
-                if mon_as_tuples not in canonical_mon_to_idx_dict.keys():
-                    canonical_mon_to_idx_dict[mon_as_tuples] = varidx
-                    # from_idx_to_canonical_mon_dict[varidx] = np.array(mon_as_tuples)
+                    mon = remove_projector_squares(mon_v1).astype(dtype)
+                    # mon_as_tuples = to_tuples(mon)
+                    mon_hash = mon.tobytes()
+                try:
+                    known_varidx = canonical_mon_to_idx_dict[mon_hash]
+                    momentmatrix[i, j] = known_varidx
+                    momentmatrix[j, i] = known_varidx
+                except KeyError:
+                    canonical_mon_to_idx_dict[mon_hash] = varidx
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
-                else:
-                    known_varidx = canonical_mon_to_idx_dict[mon_as_tuples]
-                    momentmatrix[i, j] = known_varidx
-                    momentmatrix[j, i] = known_varidx
+                # if mon_as_tuples not in canonical_mon_to_idx_dict.keys():
+                #     canonical_mon_to_idx_dict[mon_as_tuples] = varidx
+                #     momentmatrix[i, j] = varidx
+                #     momentmatrix[j, i] = varidx
+                #     varidx += 1
+                # else:
+                #     known_varidx = canonical_mon_to_idx_dict[mon_as_tuples]
+                #     momentmatrix[i, j] = known_varidx
+                #     momentmatrix[j, i] = known_varidx
     return momentmatrix.todense(), canonical_mon_to_idx_dict
 
 
@@ -967,7 +983,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
 
     # We would like to have a canonical ordering of the factors.
     if canonical_order:
-        disconnected_components = tuple(sorted(disconnected_components, key=to_tuples))
+        disconnected_components = tuple(sorted(disconnected_components, key=to_hashable))
 
     # TODO: Why did we have this reordering code? Was it relevant for _build_cols_from_col_specs?
 

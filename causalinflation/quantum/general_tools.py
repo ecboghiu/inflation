@@ -416,7 +416,7 @@ def to_numbers(monomial: str,
     # fast
     '''
     # The following is compatible with numba and can be precompiled however...
-    # t's 1microsec slower than the native python version!!
+    # it's 1 microsec slower than the native python version!!
     # And it only work with single digit numbers, because int('2')
     # to get integer 2 is not supported by numba yet
     # https://github.com/numba/numba/issues/5723
@@ -450,16 +450,16 @@ def to_numbers(monomial: str,
     for part in monomial_parts:
         atoms = part.split('_')
         if atoms[0] not in parties_names_dict.keys():
-            print(monomial)
+            raise Exception(f"Party name {atoms[0]} not recognized.")
         indices = ((parties_names_dict[atoms[0]],)
                    + tuple(int(j) for j in atoms[1:-2])
                    + (int(atoms[-2]), int(atoms[-1])))
         monomial_parts_indices.append(indices)
 
-    return np.array(monomial_parts_indices, dtype=np.uint16)
+    return np.array(monomial_parts_indices, dtype=np.uint16) #Elie warning: Could the string '1' cause problems here??
 
 
-def from_numbers_to_flat_tuples(lista: List[List[int]]
+def from_numbers_to_flat_tuples(lista: List[np.ndarray]
                                 ) -> List[Tuple[int]]:
     """Flatten all monomials in the list represented as lists of lists to a
     flat tuple.
@@ -476,13 +476,14 @@ def from_numbers_to_flat_tuples(lista: List[List[int]]
     List[Tuple[int]]
         List of monomials encoded as flat tuples of integers.
     """
-    tuples = []
-    for element in lista:
-        if np.array_equal(element, np.array([[0]], dtype=np.uint16)):
-            tuples.append(tuple([0]))
-        else:
-            tuples.append(tuple(flatten(element.tolist())))
-    return tuples
+    # tuples = []
+    # for element in lista:
+    #     if np.array_equal(element, np.array([[0]], dtype=np.uint16)):
+    #         tuples.append(tuple([0]))
+    #     else:
+    #         tuples.append(tuple(flatten(element.tolist())))
+    # return tuples
+    return [tuple(element.ravel().tolist()) for element in lista]
 
 
 @lru_cache(maxsize=None, typed=False)

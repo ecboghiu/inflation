@@ -91,12 +91,13 @@ class TestGeneratingMonomials(unittest.TestCase):
                                                  inflation_level_per_source=[1]))
         _, columns = oneParty.build_columns([[], [0, 0]],
                                             return_columns_numerical=True)
-        truth   = [[[0]],
+        truth   = [[],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
         truth = [np.array(mon) for mon in truth]
         self.assertTrue(len(columns) == len(truth), "The number of columns is incorrect.")
-        areequal = np.all([np.array_equal(columns[i], truth[i]) for i in range(len(columns))])
+        # areequal = np.all([np.array_equal(columns[i], truth[i]) for i in range(len(columns))])
+        areequal = all(np.array_equiv(r[0].T, np.array(r[1]).T) for r in zip(columns, truth))
         self.assertTrue(areequal,
                          "The column generation is not capable of handling " +
                          "monomials that reduce to the identity")
