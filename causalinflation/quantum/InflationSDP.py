@@ -307,7 +307,7 @@ class InflationSDP(object):
         # for atom in mon.factors_as_atomic_monomials:
         #     assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
         mon.update_atomic_constituents(self.inflation_aware_to_ndarray_representative,
-                                       just_inflation_indices=True)  # MOST IMPORTANT
+                                       just_inflation_indices=False)  # MOST IMPORTANT
         # More sanity checking, if needed.
         # for atom in mon.factors_as_atomic_monomials:
         #     assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
@@ -321,12 +321,14 @@ class InflationSDP(object):
     def Monomial(self,
                  array2d: np.ndarray,
                  sandwich_positivity=True,
-                 idx=-1) -> CompoundMonomial:
+                 idx=-1,
+                 skip_tests=False) -> CompoundMonomial:
         obj = preMonomial(array2d,
-                                                          atomic_is_knowable=self.atomic_knowable_q,
-                                                          sandwich_positivity=sandwich_positivity,
-                                                          idx=idx)
-        assert isinstance(obj, CompoundMonomial), 'CompoundMonomial failed to be generated!'
+                          atomic_is_knowable=self.atomic_knowable_q,
+                          sandwich_positivity=sandwich_positivity,
+                          idx=idx,
+                          skip_tests=skip_tests)
+        # assert isinstance(obj, CompoundMonomial), 'CompoundMonomial failed to be generated!'
         return self.sanitise_compoundmonomial(obj)
 
     #
@@ -893,15 +895,14 @@ class InflationSDP(object):
         #     #     #                     for factor in mon.factors]
         #     self.__factor_reps_computed__ = True  # So they are not computed again
 
-        # atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if (len(mon) == 1)}
+        atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if (len(mon) == 1)}
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
                                               len(mon) > 1 and mon.knowable_q)  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if len(mon) > 1)
-
         for mon in remaining_monomials_to_compute:
-            value, unknown_CompoundMonomial, known_status = mon.evaluate_given_atomic_monomials_dict(self.known_moments,
+            value, unknown_CompoundMonomial, known_status = mon.evaluate_given_atomic_monomials_dict(atomic_known_moments,
                                                                                                      use_lpi_constraints=self.use_lpi_constraints)
             # assert isinstance(value, float), f'expected numeric value! {value}'
             if known_status == 'Yes':
@@ -920,8 +921,8 @@ class InflationSDP(object):
 
             else:
                 pass
-        # del atomic_known_moments
-        # del remaining_monomials_to_compute
+        del atomic_known_moments
+        del remaining_monomials_to_compute
         gc.collect(generation=2)
         #
         #
@@ -1142,7 +1143,7 @@ class InflationSDP(object):
             return 0  # TODO: Or ZeroMonomial once that is implemented?
         else:
             # canon = self.inflation_aware_to_ndarray_representative(canon)  # Not needed, I think.
-            reprr = self.Monomial(canon)
+            reprr = self.Monomial(canon, skip_tests=True)
             # reprr.update_atomic_constituents(to_representative_function=self.inflation_aware_to_ndarray_representative,
             #                                  just_inflation_indices=self.just_inflation_indices)
             # reprr.update_rectified_arrays_based_on_fake_setting_correction(
