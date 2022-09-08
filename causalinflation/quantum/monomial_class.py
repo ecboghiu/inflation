@@ -239,16 +239,15 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length >= 3, 'Expected at least 3 digits to specify party, outcome, settings.'
         # TODO: Note that irrelevance of inflation indices could be a different from knowable, since we can allow for noncommutation due to settings...
-        self.inflation_indices_are_irrelevant = is_knowable(self.as_ndarray)
+        self.inflation_indices_are_irrelevant = False # Hack to see if this helps. is_knowable(self.as_ndarray)
+        self.knowable_q = self.inflation_indices_are_irrelevant and atomic_is_knowable(self.as_ndarray)
+        self.do_conditional = self.inflation_indices_are_irrelevant and (not self.knowable_q)
         if not skip_tests:
-            self.knowable_q = self.inflation_indices_are_irrelevant and atomic_is_knowable(self.as_ndarray)
-            self.do_conditional = self.inflation_indices_are_irrelevant and (not self.knowable_q)
             self.physical_q = is_physical(self.as_ndarray, sandwich_positivity=sandwich_positivity)
         else:
-            self.knowable_q = False
             self.physical_q = False
 
-        if self.inflation_indices_are_irrelevant:
+        if self.knowable_q:  # self.inflation_indices_are_irrelevant:
             self.rectified_ndarray = np.take(self.as_ndarray, [0, -2, -1], axis=1).copy()
         else:
             self.rectified_ndarray = self.as_ndarray.copy()
@@ -283,9 +282,9 @@ class AtomicMonomial(metaclass=AtomicMonomialMeta):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             if (
-                    (self.not_yet_updated_by_to_representative and not self.inflation_indices_are_irrelevant)
+                    (self.not_yet_updated_by_to_representative) # and not self.inflation_indices_are_irrelevant)
                     or
-                    (other.not_yet_updated_by_to_representative and not other.inflation_indices_are_irrelevant)
+                    (other.not_yet_updated_by_to_representative) # and not other.inflation_indices_are_irrelevant)
             ):
                 warnings.warn("Warning! You are comparing atomic monomials that have not been set to canonical form.")
                 if self.not_yet_updated_by_to_representative:
@@ -425,8 +424,8 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
                  'knowable_factors_uncompressed',
                  'knowable_factors',
                  'unknowable_factors',
-                 'unknowable_factors_as_block',
-                 '_unknowable_block_len',
+                 'nof_knowable_factors',
+                 'nof_unknowable_factors',
                  'knowability_status',
                  'knowable_q',
                  'physical_q',
@@ -466,22 +465,21 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         self.is_atomic = (self.nof_factors <= 1)
         self.factors_with_relevant_copy_indices = tuple(
             factor for factor in self.factors_as_atomic_monomials if not factor.inflation_indices_are_irrelevant)
-
         if not skip_tests:
-            self.knowable_factors = tuple(factor for factor in self.factors_as_atomic_monomials if factor.knowable_q)
-            self.unknowable_factors = tuple(factor for factor in self.factors_as_atomic_monomials if not factor.knowable_q)
-
-            self.knowable_q = all(factor.knowable_q for factor in self.factors_as_atomic_monomials)
             self.physical_q = all(factor.physical_q for factor in self.factors_as_atomic_monomials)
-            self._unknowable_block_len = sum(factor.n_ops for factor in self.unknowable_factors)
-            self.n_ops = sum(factor.n_ops for factor in self.factors_as_atomic_monomials)
-
-            if self._unknowable_block_len == 0:
-                self.knowability_status = 'Yes'
-            elif self._unknowable_block_len == self.n_ops:
-                self.knowability_status = 'No'
-            else:
-                self.knowability_status = 'Semi'
+        self.knowable_q = all(factor.knowable_q for factor in self.factors_as_atomic_monomials)
+        self.knowable_factors = tuple(factor for factor in self.factors_as_atomic_monomials if factor.knowable_q)
+        self.unknowable_factors = tuple(factor for factor in self.factors_as_atomic_monomials if not factor.knowable_q)
+        self.nof_knowable_factors = len(self.knowable_factors)
+        self.nof_unknowable_factors = len(self.unknowable_factors)
+        # self._unknowable_block_len = sum(factor.n_ops for factor in self.unknowable_factors)
+        # self.n_ops = sum(factor.n_ops for factor in self.factors_as_atomic_monomials)
+        if self.nof_unknowable_factors == 0:
+            self.knowability_status = 'Yes'
+        elif self.nof_unknowable_factors == self.nof_factors:
+            self.knowability_status = 'No'
+        else:
+            self.knowability_status = 'Semi'
 
     def __str__(self):
         # If a human readable name is available, we use it.
@@ -572,14 +570,10 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
                                actually_known_factors)
                            if not known]
         unknown_factors.extend(self.unknowable_factors)
-        # raw_unknown_signature = tuple(sorted(knowable_factors_which_are_not_known.extend(self.unknowable_factors)))
-        # self.unknown_part = np.concatenate((
-        #     self.factors_as_block(knowable_factors_which_are_not_known),
-        #     self.unknowable_factors_as_block))
         unknown_len = len(unknown_factors)
         if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
             known_status = 'Yes'
-        elif unknown_len == self.n_ops or (not use_lpi_constraints):
+        elif unknown_len == self.nof_factors or (not use_lpi_constraints):
             known_status = 'No'
         else:
             known_status = 'Semi'
@@ -593,14 +587,13 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     def evaluate_given_atomic_monomials_dict(self, dict_of_known_atomic_monomials: Dict[AtomicMonomial, float], use_lpi_constraints=True):
         "Yields both a numeric value and a CompoundMonomial corresponding to the unknown part."
         known_value = 1.
-        unknown_factors = Counter()
+        unknown_factors_counter = Counter()
         for factor, power in self.as_counter.items():
             temp_value = dict_of_known_atomic_monomials.get(factor, np.nan)
             if np.isnan(temp_value):
-                unknown_factors[factor] = power
+                unknown_factors_counter[factor] = power
             else:
                 known_value *= (temp_value ** power)
-        #
         # valuation_of_knowable_part = [dict_of_known_atomic_monomials.get(atomic_mon, np.nan) for atomic_mon in
         #                               self.factors_as_atomic_monomials]
         # actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
@@ -611,14 +604,16 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         #                    zip(self.factors_as_atomic_monomials,
         #                        actually_known_factors)
         #                    if not known]
+        unknown_factors = list(unknown_factors_counter.elements())
+        # unknown_len = unknown_factors_counter.total() #Since it is a counter. Only available in Python 3.10+
         unknown_len = len(unknown_factors)
         if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
             known_status = 'Yes'
-        elif unknown_len == self.n_ops or (not use_lpi_constraints):
+        elif unknown_len == self.nof_factors or (not use_lpi_constraints):
             known_status = 'No'
         else:
             known_status = 'Semi'
-        return known_value, CompoundMonomial(unknown_factors.elements()), known_status
+        return known_value, CompoundMonomial(unknown_factors), known_status
 
     def update_name_and_symbol_given_observed_names(self, observable_names):
         for factor in self.factors_as_atomic_monomials:
@@ -633,9 +628,9 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
     @property
     def _names_of_factors(self):
         if not any(factor.not_yet_named for factor in self.factors_as_atomic_monomials):
-            return sorted(factor.name for factor in self.factors_as_atomic_monomials)
-            # return sorted(factor.name for factor in self.knowable_factors) + sorted(
-            #     factor.name for factor in self.unknowable_factors)
+            # return sorted(factor.name for factor in self.factors_as_atomic_monomials)
+            return sorted(factor.name for factor in self.knowable_factors) + sorted(
+                factor.name for factor in self.unknowable_factors)
         else:
             raise AttributeError
 
@@ -682,7 +677,7 @@ class CompoundMonomial(metaclass=CompoundMonomialMeta):
         v = 1.
         for factor, power in self.as_counter.items():
             v *= (compute_marginal(prob_array=prob_array,
-                                  atom=factor.rectified_ndarray) ** power)
+                                   atom=factor.rectified_ndarray) ** power)
         return v
 
     @classmethod
