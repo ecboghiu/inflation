@@ -75,7 +75,7 @@ Contributions are welcome and appreciated. If you want to contribute, you can re
 
 ## License
 
-CasualInflation is free open-source software released under the [Creative Commons License](https://github.com/ecboghiu/inflation/blob/main/LICENSE>).
+CasualInflation is free open-source software released under [GNU GPL v. 3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
 ## Citing CausalInflation
 

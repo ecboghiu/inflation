@@ -19,11 +19,10 @@ setup(
     long_description_content_type = "text/markdown",
     python_requires = '>=3.8',
     packages = find_packages(exclude=['test', 'doc*', 'example*']),
-    license = "Creative Commons License", #TODO update
+    license = "GNU GPL v. 3.0",
     url = "https://github.com/ecboghiu/inflation",
     project_urls = {'Documentation': 'https://ecboghiu.github.io/inflation/_build/html/index.html',  #TODO update this on realease
                     'Source': 'https://github.com/ecboghiu/inflation',
                     'Issue Tracker': 'https://github.com/ecboghiu/inflation/issues'},
     zip_safe = False,  # To avoid problems with Numba, https://github.com/numba/numba/issues/4908 
-
 )
