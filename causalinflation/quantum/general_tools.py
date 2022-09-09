@@ -1348,16 +1348,47 @@ def flatten(nested):
         return nested
 
 
-def generate_noncommuting_measurements(nro_per_input, name):
-    """Rewritten function from ncpol2sdpa but without using the
-    quantum operators from Sympy, but just general NC variables.
+# def generate_noncommuting_measurements(nro_per_input, name):
+#     """Rewritten function from ncpol2sdpa but without using the
+#     quantum operators from Sympy, but just general NC variables.
+#     """
+#     ops_per_input = []
+#     for x, nro in enumerate(nro_per_input):
+#         ops_per_output_per_input = []
+#         for o in range(nro):
+#             ops_per_output_per_input.append(
+#                 sympy.Symbol(name + '_' + str(x) + '_' + str(o), commutative=False)
+#             )
+#         ops_per_input.append(ops_per_output_per_input)
+#     return ops_per_input
+
+def generate_operators(outs_per_input: List[int],
+                                       name: str
+                                ) -> List[List[List[sympy.core.symbol.Symbol]]]:
+    """Generates the list of ``sympy.core.symbol.Symbol`` variables representing
+    the measurements for a given party. The variables are treated as
+    non-commuting. This code is adapted from `ncpol2sdpa
+    <https://github.com/peterwittek/ncpol2sdpa/>`_.
+
+    Parameters
+    ----------
+    outs_per_input : List[int]
+        The number of outcomes of each measurement for a given party
+    name : str
+        The name to be associated to the party
+
+    Returns
+    -------
+    list
+        The list of Sympy operators
     """
     ops_per_input = []
-    for x, nro in enumerate(nro_per_input):
+    for x, outs in enumerate(outs_per_input):
         ops_per_output_per_input = []
-        for o in range(nro):
+        for o in range(outs):
             ops_per_output_per_input.append(
-                sympy.Symbol(name + '_' + str(x) + '_' + str(o), commutative=False)
+                sympy.Symbol(name + '_' + str(x) + '_' + str(o),
+                             commutative=False)
             )
         ops_per_input.append(ops_per_output_per_input)
     return ops_per_input

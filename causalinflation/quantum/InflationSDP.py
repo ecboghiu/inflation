@@ -24,8 +24,7 @@ from causalinflation.quantum.general_tools import (to_representative,
                                                    is_knowable,
                                                    find_permutation,
                                                    apply_source_permutation_coord_input,
-                                                   from_numbers_to_flat_tuples,
-                                                   generate_noncommuting_measurements,
+                                                   generate_operators,
                                                    clean_coefficients,
                                                    factorize_monomial
                                                    )
@@ -120,7 +119,9 @@ class InflationSDP(object):
             self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
-        (self.measurements, self.substitutions, self.names) = self._generate_parties()
+        self._generate_parties()
+        if self.verbose > 1:
+            print(self.InflationProblem) #IS this printable yet?
 
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
@@ -409,75 +410,70 @@ class InflationSDP(object):
                                   List[List[int]],
                                   List[sp.core.symbol.Symbol]] = 'npa1'
                             ) -> None:
-        """Creates the SDP relaxation of the quantum inflation problem
-        using the NPA hierarchy and applies the symmetries inferred
-        from inflation.
+        r"""Creates the SDP relaxation of the quantum inflation problem using
+        the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
+        applies the symmetries inferred from inflation.
 
-        It takes as input the generating set of monomials {M_i}_i. The moment
-        matrix Gamma is defined by all the possible inner products between these
-        monomials:
+        It takes as input the generating set of monomials :math:`\{M_i\}_i`. The
+        moment matrix :math:`\Gamma` is defined by all the possible inner
+        products between these monomials:
 
         .. math::
-            \Gamma[i, j] := \operatorname{tr} (\rho * (M_i)^\dagger M_j).
 
-        The set {M_i} is specified by the parameter `column_specification`.
+            \Gamma[i, j] := \operatorname{tr} (\rho \cdot M_i^\dagger M_j).
+
+        The set :math:`\{M_i\}_i` is specified by the parameter
+        ``column_specification``.
 
         In the inflated graph there are many symmetries coming from invariance
         under swaps of the copied sources, which are used to remove variables
         in the moment matrix.
 
         Parameters
-
+        ----------
         column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
-            Describes the generating set of monomials {M_i}_i.
+            Describes the generating set of monomials :math:`\{M_i\}_i`.
 
-            (NOTATION) If we have 2 parties, we denote by {A, B} the set
-            of all measurement operators of these two parties. That is, {A, B}
-            represents {A_{InflIndices1}_x_a, B_{InflIndices2}_y_b} for all
-            possible indices {InflIndices1, InflIndices2, x, a, y, b}.
-            Similarly, the product {A*B} represents the product of the
-            operators of A and B for all possible indices. Note that with this
-            notation, A*A and A**2 represent different sets.
+            * `(str)` ``'npaN'``: where N is an integer. This represents level N
+              in the Navascues-Pironio-Acin hierarchy (`arXiv:quant-ph/0607119
+              <https://www.arxiv.org/abs/quant-ph/0607119>`_).
+              For example, level 3 with measurements :math:`\{A, B\}` will give
+              the set :math:`{1, A, B, AA, AB, BB, AAA, AAB, ABB, BBB\}` for
+              all inflation, input and output indices. This hierarchy is known
+              to converge to the quantum set for :math:`N\rightarrow\infty`.
 
-            * `(str) 'npaN'`: where N is an integer. This represents NPA level N.
-            This is built by taking the cartesian product of the flattened
-            set of measurement operators N times and removing duplicated
-            elements. For example, level 3 with measurements {A, B} will give
-            the set {1, A, B, A*A, A*B, B*B, A*A*A, A*A*B, A*B*C, A*B*B,
-            B*B*B}. This is known to converge to the quantum set Q for
-            N->\infty.
+            * `(str)` ``'localN'``: where N is an integer. Local level N
+              considers monomials that have at most N measurement operators per
+              party. For example, ``local1`` is a subset of ``npa2``; for two
+              parties, ``npa2`` is :math:`\{1, A, B, AA, AB, BB\}` while
+              ``local1`` is :math:`\{1, A, B, AB\}`.
 
-            * `(str) 'localN'`: where N is an integer. This gives a subset of NPA level N+1.
-            Local level N considers monomials that have at most
-            N measurement operators per party. For example, `local1` is a
-            subset of `npa2`; for 2 parties, `npa2` is {1, A, B, A*A, A*B, B*B}
-            while `local1` is {1, A, B, A*B}. Note that terms such as
-            A*A are missing as that is more than N=1 measurements per party.
-
-            * `(str) 'physicalN'`: The subset of local level N with only all commuting operators.
-            We only consider commutation coming from having different supports.
-            `N` cannot be greater than the smallest number of copies of a source
-            in the inflated graph. For example, in the bilocal scenario
-            A-source-B-source-C with 2 outputs and no inputs, `physical2` only
-            gives 5 possibilities for Bob: {1, B_1_1_0_0, B_2_2_0_0,
-            B_1_1_0_0*B_2_2_0_0,  B_1_2_0_0*B_2_1_0_0}. There are no other
-            products where all operators commute. The full set of physical
-            generating monomials is built by taking the cartesian product
-            between all possible physical monomials of each party.
+            * `(str)` ``'physicalN'``: The subset of local level N with only
+              operators that have non-negative expectation values with any
+              state. N cannot be greater than the smallest number of copies of a
+              source in the inflated graph. For example, in the scenario
+              A-source-B-source-C with 2 outputs and no inputs, ``physical2``
+              only gives 5 possibilities for B: :math:`\{1, B^{1,1}_{0|0},
+              B^{2,2}_{0|0}, B^{1,1}_{0|0}B^{2,2}_{0|0},
+              B^{1,2}_{0|0}B^{2,1}_{0|0}\}`. There are no other products where
+              all operators commute. The full set of physical generating
+              monomials is built by taking the cartesian product between all
+              possible physical monomials of each party.
 
             * `List[List[int]]`: This encodes a party block structure.
-            Each integer encodes a party. Within a party block, all missing
-            input, output and inflation  indices are taken into account.
-            For example, [[], [0], [1], [0, 1]] gives the set {1, A, B, A*B},
-            which is the same as 'local1'. The set [[], [0], [1], [2], [0, 0],
-            [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]] is the same as {1, A, B,
-            C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as 'npa2' for
-            3 parties. [[]] encodes the identity element.
+              Each integer encodes a party. Within a party block, all missing
+              input, output and inflation indices are taken into account. For
+              example, ``[[], [0], [1], [0, 1]]`` gives the set :math:`\{1, A,
+              B, AB\}`, which is the same as ``local1``. The set ``[[], [0],
+              [1], [2], [0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]`` is the
+              same as :math:`\{1, A, B, C, AA, AB, AC, BB, BC, CC\}`, which is
+              the same as ``npa2`` for three parties. ``[[]]`` encodes the
+              identity element.
 
-            * `List[sympy.core.symbol.Symbol]`: we can fully specify the generating set by
-            giving a list of symbolic operators built from the measurement
-            operators in `self.measurements`. This list needs to have the
-            identity `sympy.S.One` as the first element.
+            * `List[sympy.core.symbol.Symbol]`: one can also fully specify the
+              generating set by giving a list of symbolic operators built from
+              the measurement operators in `self.measurements`. This list needs
+              to have the identity ``sympy.S.One`` as the first element.
         """
         # self.use_lpi_constraints = False
 
@@ -487,7 +483,7 @@ class InflationSDP(object):
             self.build_columns(column_specification,
                                return_columns_numerical=True)
 
-        if self.verbose > 0:
+        if self.verbose > 1:
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
@@ -733,7 +729,7 @@ class InflationSDP(object):
                            if m.is_atomic and m.knowable_q} if (not prob_array is None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=(not use_lpi_constraints),
+                        only_knowable_moments=(not use_lpi_constraints), #TODO: Add (or infer) only semiknowable flag?
                         only_specified_values=assume_shared_randomness) #MAJOR BUGFIX?
         # if self.objective and not (prob_array is None):
         #     warnings.warn('Danger! User apparently set the objective before the distribution.')
@@ -842,22 +838,25 @@ class InflationSDP(object):
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
                                               (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
+            #TODO: If from set_dist but using lpi_constraints, iterate over nonatomic monomials where status is
+            #either 'Yes' or 'Semi' only.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
-            value, unknown_atomic_factors, known_status = mon.evaluate_given_atomic_monomials_dict(
-                atomic_known_moments,
-                use_lpi_constraints=self.use_lpi_constraints)
-            # assert isinstance(value, float), f'expected numeric value! {value}'
-            if known_status == 'Yes':
-                self.known_moments[mon] = value
-            elif known_status == 'Semi':
-                if self.use_lpi_constraints:
-                    self.semiknown_moments[mon] = (value, self.monomial_from_list_of_atomic(unknown_atomic_factors))
-                # assert isinstance(self.semiknown_moments, dict)
+            if mon not in self.known_moments.keys():
+                value, unknown_atomic_factors, known_status = mon.evaluate_given_atomic_monomials_dict(
+                    atomic_known_moments,
+                    use_lpi_constraints=self.use_lpi_constraints)
+                # assert isinstance(value, float), f'expected numeric value! {value}'
+                if known_status == 'Yes':
+                    self.known_moments[mon] = value
+                elif known_status == 'Semi':
+                    if self.use_lpi_constraints:
+                        self.semiknown_moments[mon] = (value, self.monomial_from_list_of_atomic(unknown_atomic_factors))
+                    # assert isinstance(self.semiknown_moments, dict)
 
-            else:
-                pass
+                else:
+                    pass
         del atomic_known_moments
         del remaining_monomials_to_compute
         gc.collect(generation=2)
@@ -1336,17 +1335,6 @@ class InflationSDP(object):
                         if var == sp.S.One:
                             expected_value = sp.S.One
                         else:
-                            # NOTE: I don't remember in which case the commented
-                            # out code was useful, but I want to keep it for now
-                            # if str(var)[-3:-1] == '**':
-                            #     base, exp = var.as_base_exp()
-                            #     if use_langlerangle:
-                            #         auxname = '\langle ' + ''.join(str(base).split('*')) + ' \\rangle'
-                            #     else:
-                            #         auxname = '<' + ''.join(str(base).split('*')) + '>'
-                            #     base = sp.Symbol(auxname, commutative=True)
-                            #     expected_value = base ** exp
-                            # else:
                             if use_langlerangle:
                                 auxname = '\langle ' + ' '.join(str(var).split('*')) + ' \\rangle'
                             else:
@@ -1595,16 +1583,6 @@ class InflationSDP(object):
                     to_print.append(''.join([self.names[i] for i in col]))
             print("Column structure:", '+'.join(to_print))
 
-        # if self.substitutions == {}:
-        #     if all([len(block) == len(np.unique(block)) for block in col_specs]):
-        #         warn("You have not input substitution rules to the " +
-        #              "generation of columns, but it is OK because you " +
-        #              "are using local level 1")
-        #     else:
-        #         raise Exception("You must input substitution rules for columns "
-        #                         + "to be generated properly")
-        # else:
-
         res = []
         allvars = set()
         for block in col_specs:
@@ -1626,11 +1604,10 @@ class InflationSDP(object):
                         canon = to_canonical(mon, self._notcomm, self._lexorder)
                     if not np.array_equal(canon, 0):
                         # If the block is [0, 0], and we have the monomial
-                        # A**2 which simplifies to A, then A would be included
-                        # in the block [0]. This is not a problem, but we use
-                        # the convention that [0, 0] means all monomials of
-                        # length 2 AFTER simplifications, so we omit monomials
-                        # of length 1.
+                        # A**2 which simplifies to A, then A could be included
+                        # in the block [0]. We use the convention that [0, 0]
+                        # means all monomials of length 2 AFTER simplifications,
+                        # so we omit monomials of length 1.
                         if canon.shape[0] == len(monomial_factors):
                             name = to_name(canon, self.names)
                             if name not in allvars:
@@ -1644,53 +1621,40 @@ class InflationSDP(object):
         return res
 
     def _generate_parties(self):
-        # TODO: change name to generate_measurements
-        """Generates all the party operators and substitution rules in an
-        quantum inflation setup on a network given by a hypergraph. It uses
-        information stored in the `InflationSDP` instance.
+        """Generates all the party operators in the quantum inflation.
 
         It stores in `self.measurements` a list of lists of measurement
         operators indexed as self.measurements[p][c][i][o] for party p,
         copies c, input i, output o.
-
-        It stores in `self.substitutions` a dictionary of substitution rules
-        containing commutation, orthogonality and square constraints. NOTE:
-        to use these substitutions in the moment matrix we need to use
-        ncpol2sdpa.
         """
-
-        hypergraph = self.hypergraph
         settings = self.setting_cardinalities
         outcomes = self.outcome_cardinalities
-        inflation_level_per_source = self.inflation_levels
-        commuting = self.commuting
 
-        assert len(settings) == len(
-            outcomes), 'There\'s a different number of settings and outcomes'
-        assert len(
-            settings) == hypergraph.shape[1], 'The hypergraph does not have as many columns as parties'
-
-        substitutions = {}
+        assert len(settings) == len(outcomes),                                 \
+            'There\'s a different number of settings and outcomes'
+        assert len(settings) == self.hypergraph.shape[1],                      \
+            'The hypergraph does not have as many columns as parties'
         measurements = []
-        parties = self.names
-        n_states = hypergraph.shape[0]
-        for pos, [party, ins, outs] in enumerate(zip(parties, settings, outcomes)):
+        parties  = self.names
+        n_states = self.hypergraph.shape[0]
+        for pos, [party, ins, outs] in enumerate(zip(parties,
+                                                     settings,
+                                                     outcomes)):
             party_meas = []
             # Generate all possible copy indices for a party
-            # party_states = sum(hypergraph[:, pos])
-            # all_inflation_indices = itertools.product(range(inflation_level), repeat=party_states)
             all_inflation_indices = itertools.product(
-                *[list(range(inflation_level_per_source[p_idx]))
-                  for p_idx in np.nonzero(hypergraph[:, pos])[0]])
-            # Include zeros in the positions corresponding to states not feeding the party
+                                *[list(range(self.inflation_levels[p_idx]))
+                            for p_idx in np.nonzero(self.hypergraph[:, pos])[0]]
+                                                      )
+            # Include zeros in the positions of states not feeding the party
             all_indices = []
             for inflation_indices in all_inflation_indices:
                 indices = []
                 i = 0
                 for idx in range(n_states):
-                    if hypergraph[idx, pos] == 0:
+                    if self.hypergraph[idx, pos] == 0:
                         indices.append('0')
-                    elif hypergraph[idx, pos] == 1:
+                    elif self.hypergraph[idx, pos] == 1:
                         # The +1 is just to begin at 1
                         indices.append(str(inflation_indices[i] + 1))
                         i += 1
@@ -1699,64 +1663,17 @@ class InflationSDP(object):
                 all_indices.append(indices)
 
             # Generate measurements for every combination of indices.
+            # The -1 in outs - 1 is because the use of Collins-Gisin notation
+            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
+            # understood to be written as the identity minus the rest.
             for indices in all_indices:
-                meas = generate_noncommuting_measurements([outs - 1 for _ in range(ins)],
-                                                          # outs -1 because of CG notation
-                                                          party + '_' + '_'.join(indices))
-
+                meas = generate_operators(
+                                                 [outs - 1 for _ in range(ins)],
+                                                 party + '_' + '_'.join(indices)
+                                                          )
                 party_meas.append(meas)
             measurements.append(party_meas)
-
-        substitutions = {}
-
-        if commuting:
-            flatmeas = flatten(measurements)
-            for i in range(len(flatmeas)):
-                for j in range(i, len(flatmeas)):
-                    m1 = flatmeas[i]
-                    m2 = flatmeas[j]
-                    if str(m1) > str(m2):
-                        substitutions[m1 * m2] = m2 * m1
-                    elif str(m1) < str(m2):
-                        substitutions[m2 * m1] = m1 * m2
-                    else:
-                        pass
-        else:
-            # Commutation of different parties
-            for i in range(len(parties)):
-                for j in range(len(parties)):
-                    if i > j:
-                        for op1 in flatten(measurements[i]):
-                            for op2 in flatten(measurements[j]):
-                                substitutions[op1 * op2] = op2 * op1
-            # Operators for a same party with non-overlapping copy indices commute
-            for party, inf_measurements in enumerate(measurements):
-                sources = hypergraph[:, party].astype(bool)
-                inflation_indices = [np.compress(sources,
-                                                 str(flatten(inf_copy)[0]).split('_')[1:-2]).astype(int)
-                                     for inf_copy in inf_measurements]
-                for ii, first_copy in enumerate(inf_measurements):
-                    for jj, second_copy in enumerate(inf_measurements):
-                        if (jj > ii) and (all(inflation_indices[ii] != inflation_indices[jj])):
-                            for op1, op2 in itertools.product(flatten(first_copy),
-                                                              flatten(second_copy)):
-                                substitutions[op2 * op1] = op1 * op2
-
-        for party in measurements:
-            # Idempotency
-            substitutions = {**substitutions,
-                             **{op ** 2: op for op in flatten(party)}}
-            # Orthogonality
-            for inf_copy in party:
-                for measurement in inf_copy:
-                    for out1 in measurement:
-                        for out2 in measurement:
-                            if out1 == out2:
-                                substitutions[out1 * out2] = out1
-                            else:
-                                substitutions[out1 * out2] = 0
-
-        return measurements, substitutions, parties
+        self.measurements = measurements
 
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
         """Generate the moment matrix.
