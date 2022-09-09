@@ -102,7 +102,7 @@ def atomic_monomial_to_name(observable_names: Tuple[str],
         if human_readable_over_machine_readable:
             if atom_as_array.shape[-1] == 3:  # this handles the KNOWN factors.
                 parties = np.take(observable_names,
-                                  atom_as_array[:, 0] - 1)  # Convention in numpy monomial format is first party = 1
+                                  atom_as_array[:, 0].astype(int) - 1)  # Convention in numpy monomial format is first party = 1
                 inputs = [str(input) for input in atom_as_array[:, -2].astype(int).tolist()]
                 outputs = [str(output) for output in atom_as_array[:, -1].astype(int).tolist()]
                 p_divider = '' if all(len(p) == 1 for p in parties) else ','

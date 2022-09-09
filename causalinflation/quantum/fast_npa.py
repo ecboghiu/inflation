@@ -445,9 +445,8 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 def mon_is_zero(mon: np.ndarray) -> bool_:
     """Function which checks if there is a product of two orthogonal projectors,
     and returns True if so."""
-
     for i in range(1, mon.shape[0]):
-        if mon[i, -1] != mon[i-1, -1] and nb_op_eq_op(mon[i,:-1], mon[i-1,:-1]):
+        if mon[i, -1] != mon[i-1, -1] and nb_op_eq_op(mon[i, :-1], mon[i-1, :-1]):
             return True
     return False
 

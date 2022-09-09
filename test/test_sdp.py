@@ -285,7 +285,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8 + 1,  # '1' is included here
+        self.assertEqual(sdp._n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong")
         self.assertEqual(sdp._n_unknowable, 2,
                          "The count of unknowable moments is wrong")
@@ -320,7 +320,7 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.One.name, '1', "The unit monomial is not being named correctly.")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8 + 1,  # '1' is included here
+        self.assertEqual(sdp._n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong")
         self.assertEqual(sdp._n_unknowable, 13,
                          "The count of unknowable moments is wrong")
@@ -371,7 +371,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8 + 1, # '1' is included here
+        self.assertEqual(sdp._n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong")
         self.assertEqual(sdp._n_unknowable, 11,
                          "The count of unknowable moments is wrong")
