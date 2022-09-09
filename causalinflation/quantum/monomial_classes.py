@@ -2,7 +2,6 @@
 # from __future__ import absolute_import
 # from __future__ import with_statement
 # import warnings
-import warnings
 
 import numpy as np
 from causalinflation.quantum.general_tools import is_physical
@@ -24,6 +23,8 @@ class InternalAtomicMonomial(object):
                  'inflation_indices_are_irrelevant',
                  'knowable_q',
                  'do_conditional',
+                 'is_zero',
+                 'is_one' #Should not be used.
                  # 'physical_q',
                  # 'name',
                  # 'symbol',
@@ -41,15 +42,18 @@ class InternalAtomicMonomial(object):
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
         # self.as_ndarray = self.sdp.to_representative_ndarray(array2d) #Perhaps we will not need, if constructor is safe!
         self.n_ops, self.op_length = self.as_ndarray.shape
-        assert self.op_length == self.sdp._nr_properties, "We "
-        self.knowable_q = self.sdp.atomic_knowable_q(self.as_ndarray)
+        assert self.op_length == self.sdp._nr_properties, "We insist on well-formed 2d arrays as input to AtomicMonomial."
+        self.is_zero = np.any(np.logical_not(self.as_ndarray[:, 0]))  # Party indexing starts at 1, so a zero in the zero slot indicates bad.
+        self.is_one = (self.n_ops == 0)
+        self.knowable_q = self.is_zero or self.is_one or self.sdp.atomic_knowable_q(self.as_ndarray)
         self.do_conditional = False # (not self.knowable_q) and is_knowable(self.as_ndarray)  # TODO: Improve ability to handle do conditionals.
         if self.knowable_q:  # self.inflation_indices_are_irrelevant:
-            self.rectified_ndarray = self.sdp.rectify_fake_setting_atomic_factor(np.take(self.as_ndarray, [0, -2, -1], axis=1))
+            self.rectified_ndarray = np.asarray(self.sdp.rectify_fake_setting_atomic_factor(np.take(self.as_ndarray, [0, -2, -1], axis=1)), dtype=int)
+
 
     @property
     def physical_q(self):
-        return is_physical(self.as_ndarray)
+        return self.knowable_q or is_physical(self.as_ndarray)
 
     @property
     def signature(self):
@@ -84,24 +88,43 @@ class InternalAtomicMonomial(object):
 
     @property
     def name(self):
-        if self.knowable_q: #TODO: or self.do_conditional, eventually
-            return atomic_monomial_to_name(observable_names=self.sdp.names,
-                                                atom=self.rectified_ndarray,
-                                                human_readable_over_machine_readable=True,
-                                                do_conditional=self.do_conditional)
+        if self.is_one:
+            return '1'
+        elif self.is_zero:
+            return '0'
+        elif self.knowable_q:
+            party_indices = self.rectified_ndarray[:, 0] - 1
+            parties = np.take(self.sdp.names, party_indices.tolist())  # Convention in numpy monomial format is first party = 1
+            inputs = [str(input) for input in self.rectified_ndarray[:, -2].tolist()]
+            outputs = [str(output) for output in self.rectified_ndarray[:, -1].tolist()]
+            p_divider = '' if all(len(p) == 1 for p in parties) else ','
+            # We will probably never have more than 1 digit cardinalities, but who knows...
+            i_divider = '' if all(len(i) == 1 for i in inputs) else ','
+            o_divider = '' if all(len(o) == 1 for o in outputs) else ','
+            if self.do_conditional:
+                return ('p_{' + p_divider.join(parties) + '}' +
+                        '(' + o_divider.join(outputs) + ' do: ' + i_divider.join(inputs) + ')')
+            else:
+                return ('p_{' + p_divider.join(parties) + '}' +
+                        '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')')
         else:
-            return atomic_monomial_to_name(observable_names=self.sdp.names,
-                                                atom=self.as_ndarray,
-                                                human_readable_over_machine_readable=True,
-                                                do_conditional=self.do_conditional)
+            operators_as_strings = []
+            for op in self.as_ndarray.tolist():  # this handles the UNKNOWN factors.
+                operators_as_strings.append('_'.join([self.sdp.names[op[0] - 1]]  # party idx
+                                                     + [str(i) for i in op[1:]]))
+            return 'P[' + ', '.join(operators_as_strings) + ']'
+
     @property
     def symbol(self):
         return symbol_from_atomic_name(self.name)
 
     def compute_marginal(self, prob_array):
         # assert self.knowable_q, "Can't compute marginals of unknowable probabilities."
-        return compute_marginal(prob_array=prob_array,
-                                atom=self.rectified_ndarray)
+        if self.is_zero:
+            return 0.
+        else:
+            return compute_marginal(prob_array=prob_array,
+                                    atom=self.rectified_ndarray)
 
 
 
@@ -241,8 +264,7 @@ class CompoundMonomial(object):
         assert self.knowable_q, "Can't compute marginals of unknowable probabilities."
         v = 1.
         for factor, power in self.as_counter.items():
-            v *= (compute_marginal(prob_array=prob_array,
-                                   atom=factor.rectified_ndarray) ** power)
+            v *= (factor.compute_marginal(prob_array) ** power)
         return v
 
     def to_symbol(self, objective_compatible=False):
