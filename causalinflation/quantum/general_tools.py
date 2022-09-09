@@ -111,7 +111,7 @@ def mul(lst: List) -> Any:
     return result
 
 
-# @jit(nopython=nopython)  # TODO
+
 def apply_source_perm_monomial(monomial: np.ndarray,
                                 source: int,
                                 permutation: np.ndarray,
@@ -138,9 +138,44 @@ def apply_source_perm_monomial(monomial: np.ndarray,
     np.ndarray
         Input monomial with the specified source swapped.
     """
+    permutation_plus = np.hstack(([0], permutation + 1))
+    return apply_source_permplus_monomial(
+        monomial,
+        source,
+        permutation_plus,
+        commuting,
+        lexorder
+    )
+
+@jit(nopython=nopython)
+def apply_source_permplus_monomial(monomial: np.ndarray,
+                                source: int,
+                                permutation_plus: np.ndarray,
+                                commuting: bool_,
+                                lexorder
+                                ) -> np.ndarray:
+    """This applies a source swap to a monomial.
+
+    We assume in the monomial that all operators COMMUTE with each other.
+
+    Parameters
+    ----------
+    monomial : np.ndarray
+        Input monomial in 2d array format.
+    source : int
+        The source that is being swapped.
+    permutation : List
+        The permutation of the copies of the specified source
+    commuting : bool
+        Whether all the involved operators commute or not.
+
+    Returns
+    -------
+    np.ndarray
+        Input monomial with the specified source swapped.
+    """
 
     new_factors = monomial.copy()
-    permutation_plus = np.hstack(([0], permutation+1))
     new_factors[:, 1+source] = np.take(permutation_plus, new_factors[:, 1+source])
     # for i in range(monomial.shape[0]):
     #     if new_factors[i][1 + source] > 0:
