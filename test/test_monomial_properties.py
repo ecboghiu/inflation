@@ -163,15 +163,15 @@ class TestToRepr(unittest.TestCase):
                          [3, 0, 1, 1, 0, 0],
                          [3, 0, 1, 2, 0, 0],
                          [3, 0, 2, 1, 0, 0],
-                         [3, 0, 2, 2, 0, 0]])
+                         [3, 0, 2, 2, 0, 0]], dtype=np.uint8)
     notcomm = notcomm_from_lexorder(lexorder)
 
     names = ('A', 'B', 'C')
     def test_commuting(self):
-        initial = 'A_3_1_0_0*A_2_1_0_0*A_3_1_0_0'
-        correct = 'A_1_1_0_0*A_2_1_0_0'
-        result  = to_name(to_representative(np.array(to_numbers(initial,
-                                                    self.names)),
+        initial = 'A_3_1_0_0_0*A_2_1_0_0_0*A_3_1_0_0_0'
+        correct = 'A_1_1_0_0_0*A_2_1_0_0_0'
+        initial_array = np.array(to_numbers(initial, self.names), dtype=np.uint8)
+        result = to_name(to_representative(initial_array,
                                             np.array([2, 1, 1]),
                                             self.notcomm,
                                             self.lexorder,
@@ -180,11 +180,11 @@ class TestToRepr(unittest.TestCase):
                          "Applying commutations for representative form fails.")
 
     def test_jump_sources(self):
-        initial = 'A_3_1_0_0*A_2_1_0_0*A_3_1_0_0'
-        correct = 'A_1_1_0_0*A_2_1_0_0*A_1_1_0_0'
+        initial = 'A_3_1_0_0_0*A_2_1_0_0_0*A_3_1_0_0_0'
+        correct = 'A_1_1_0_0_0*A_2_1_0_0_0*A_1_1_0_0_0'
         result  = to_name(to_representative(np.array(to_numbers(initial,
                                                     self.names)),
-                                            np.array([2, 2, 2]),
+                                            np.array([2, 1, 1]),
                                             self.notcomm,
                                             self.lexorder,
                                             False), self.names)

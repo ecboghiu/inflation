@@ -151,7 +151,8 @@ def nb_op_lexorder(op: np.array, lexorder: np.ndarray) -> int:
 def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
     """Convert a monomial to its lexicographic representation, as an
     array of integers representing the lex rank of each operator."""
-    lex = np.zeros(mon.shape[0], dtype=uint16_)
+    # lex = np.zeros(mon.shape[0], dtype=mon.dtype)
+    lex = np.zeros_like(mon[:, 0])
     for i in range(mon.shape[0]):
         lex[i] = nb_op_lexorder(mon[i], lexorder)
     return lex
