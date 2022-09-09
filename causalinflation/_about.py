@@ -35,15 +35,31 @@ Core Dependencies
 NumPy Version:\t{numpy_version}
 SciPy Version:\t{scipy_version}
 SymPY Version:\t{sympy_version}
-
-Optional Dependencies
----------------------
 Numba Version:\t{numba_version}
 Mosek Version:\t{mosek_version}
 
 Python Version:\t{platform.python_version()}
-Platform Info:\t{platform.system()} ({platform.machine()})"""
+Platform Info:\t{platform.system()} ({platform.machine()})
+"""
     print(about_str)
+
+def cite():
+    cite_str = """
+    @article{CausalInflation: a Python library for classical and quantum causal compatibility,
+  doi = {10.22331/q-2021-07-13-499},
+  url = {https://doi.org/10.22331/q-2021-07-13-499},
+  title = {Single-copy activation of {B}ell nonlocality via broadcasting of quantum states},
+  author = {Boghiu, Emanuel-Cristian and Wolfe, Elie and Pozas-Kerstjens, Alejandro},
+  journal = {{Quantum}},
+  issn = {1}
+  publisher = {{Verein zur F{\"{o}}rderung des Open Access Publizierens in den Quantenwissenschaften}},
+  volume = {1},
+  pages = {1},
+  month = jul,
+  year = {1}
+}
+    """
+    return cite_str
 
 if __name__ == "__main__":
     about()
