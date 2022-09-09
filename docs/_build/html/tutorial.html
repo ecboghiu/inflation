@@ -61,7 +61,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> CausalInflation
           
 
           
@@ -92,8 +92,9 @@
               
             
             
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Encoding-the-inflation-problem">Encoding the inflation problem</a><ul>
@@ -130,7 +131,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">CausalInflation</a>
+          <a href="contents.html">CausalInflation</a>
         
       </nav>
 
@@ -161,7 +162,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Tutorial</li>
     
@@ -469,14 +470,14 @@ div.rendered_html tbody tr:hover {
 <li><p>Export the relaxation to a file and/or solve the problem.</p></li>
 </ul>
 <p>We will now go through the steps above in more detail. This tutorial is available on the <a class="reference external" href="https://ecboghiu.github.io/inflation/">documentation webpage</a> and it can also be downloaded as a ready-to-run <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/examples/tutorial.ipynb">Jupyter Notebook</a> from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>. If already familiar with quantum inflation, the quickest way to get started is to run some examples from the
-<a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section, which can also be downloaded as a <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/examples/examples.ipynb">Jupyter Notebook</a>.</p>
+<a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section, which can also be downloaded as a <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/docs/examples.ipynb">Jupyter Notebook</a>.</p>
 <p>We start by importing everything that we will need:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
-<span class="kn">from</span> <span class="nn">examples_utils</span> <span class="kn">import</span> <span class="n">P_2PR_array</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 </pre></div>
 </div>
 </div>
@@ -485,25 +486,25 @@ div.rendered_html tbody tr:hover {
 <p>The first object of interest is <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform. Currently, only quantum inflation is implemented.</p>
 <section id="Basics-of-causal-diagrams">
 <h3>Basics of causal diagrams<a class="headerlink" href="#Basics-of-causal-diagrams" title="Permalink to this heading">¶</a></h3>
-<p>Causal relationships are encoded through a Bayesian Directed-Acyclic-Graph, or “DAG”, for short. The nodes of the graph represent random variables, which can be either observable (visible) or unobservable (hidden). Directed arrows encode causal influence between nodes. Arrows point from parent nodes to the nodes causally influences by the parent, called children nodes. The acyclicity property avoids the presence of causal loops.</p>
+<p>Causal relationships are encoded through a Bayesian Directed Acyclic Graph, or “DAG”, for short. The nodes of the graph represent random variables, which can be either observable (visible) or unobservable (hidden). Directed arrows encode causal influences between nodes. Arrows point from parent nodes to the nodes causally influenced by them, called children nodes. The acyclicity property avoids the presence of causal loops.</p>
 <p>For applications to physics, another class of random variables is often considered called “settings”. These correspond to observable variables on whose outcome we condition in order to obtain the observed data. For example, this might correspond to measuring one property of a system versus another in an experiment. Furthermore, in physics we also have sources generating quantum correlations. These are modeled through the presence of quantum unobservable variables, which represent quantum
 systems. Arrows going into a quantum node represent controlling the corresponding quantum system. Arrows going out of the quantum node represent the children of the quantum node generating statistics by measuring the quantum system.</p>
 </section>
 <section id="The-quantum-tripartite-line-and-an-inflation">
 <h3>The quantum tripartite line and an inflation<a class="headerlink" href="#The-quantum-tripartite-line-and-an-inflation" title="Permalink to this heading">¶</a></h3>
-<p>As an example, let us consider the quantum tripartite line, or <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119">“quantum bilocal scenario”</a>, which corresponds to correlations achievable by 3 space-like separated parties (A, B and C) measuring 2 quantum systems <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> that never interacted in the past. The subindex of the quantum states indicates which parties have access to and can measure that state. This is a simple scenario where
-<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">entanglement swapping</a> can be performed, which is at the heart of the <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">quantum teleportation protocol</a>. The corresponding DAG is:</p>
+<p>As an example, let us consider the quantum tripartite line, or <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119">“quantum bilocality scenario”</a>, which corresponds to the scenario where three space-like separated parties (A, B and C) measure two quantum systems <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> that never interacted in the past. The subindex of the quantum states indicates which parties have access to and can measure that state. This is a simple scenario where <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">entanglement
+swapping</a> can be performed, which is at the heart of the <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">quantum teleportation protocol</a>. The corresponding DAG is:</p>
 <center><p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_1.PNG" style="width: 400px;" /></p>
-</center><p>We have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two hidden quantum variables <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> of unbounded dimension denoting the particles and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>. We assume all observed variables have cardinality 2, i.e., <span class="math notranslate nohighlight">\(a,b,c,x,y,z \in \{0, 1\}\)</span>, where lower case denotes specific values the random variables (in upper case) can take. In this causal scenario, correlations are generated by
-measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span>. Notice that the probability distribution is not conditioned on <span class="math notranslate nohighlight">\(\rho_{AB}, \rho_{BC}\)</span> as they are hidden variables.</p>
+</center><p>We have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two hidden quantum variables <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> of unbounded dimension denoting the physical systems sent to the parties, and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>. We assume all observed variables have cardinality 2, i.e., <span class="math notranslate nohighlight">\(a,b,c,x,y,z \in \{0, 1\}\)</span>, where lower case denotes specific values that the random variables (in upper case) can take. In this causal scenario,
+correlations are generated by measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span>. Notice that the probability distribution is not conditioned on <span class="math notranslate nohighlight">\(\rho_{AB}, \rho_{BC}\)</span> as they are hidden variables.</p>
 </section>
 <section id="Quantum-causal-compatibility-and-an-inflation">
 <h3>Quantum causal compatibility and an inflation<a class="headerlink" href="#Quantum-causal-compatibility-and-an-inflation" title="Permalink to this heading">¶</a></h3>
 <p>One of the fundamental questions to ask is whether a given a probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the quantum sources <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The quantum inflation technique is one technique that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario
 where we take two copies of each source, as in the following figure:</p>
 <center><p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_inflated.PNG" style="width: 400px;" /></p>
-</center><p>Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">NPA hierarcy</a>. The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., <span class="math notranslate nohighlight">\(\rho_{AB}{=}\rho_{AB}^1{=}\rho_{AB}^2\)</span>. If after running the
-SDP, we get that it is infeasible, then we can conclude that the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11.2 (2021): 021043</a>.</p>
+</center><p>Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">NPA hierarchy</a>. The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., <span class="math notranslate nohighlight">\(\rho_{AB}{=}\rho_{AB}^1{=}\rho_{AB}^2\)</span>. If the SDP is
+infeasible, then we can conclude that the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Physical Review X 11 (2), 021043 (2021)</a>.</p>
 <section id="Creating-an-instance-of-InflationProblem">
 <h4>Creating an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code><a class="headerlink" href="#Creating-an-instance-of-InflationProblem" title="Permalink to this heading">¶</a></h4>
 <p>We encode information about the causal scenario as an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> as follows:</p>
@@ -511,10 +512,11 @@ SDP, we get that it is infeasible, then we can conclude that the distribution <s
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span> <span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span> <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;h1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v2&quot;</span><span class="p">],</span>
+                                <span class="s2">&quot;h2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="s2">&quot;v3&quot;</span><span class="p">]},</span>
+                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -524,7 +526,7 @@ SDP, we get that it is infeasible, then we can conclude that the distribution <s
 </section>
 <section id="Generating-the-SDP-relaxation">
 <h2>Generating the SDP relaxation<a class="headerlink" href="#Generating-the-SDP-relaxation" title="Permalink to this heading">¶</a></h2>
-<p>The next object of interest is <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>. It is an object that takes as input an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
+<p>Once the scenario is set up, the next step is generating the relaxation using <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>. It is an object that takes as input an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -533,7 +535,7 @@ SDP, we get that it is infeasible, then we can conclude that the distribution <s
 </pre></div>
 </div>
 </div>
-<p>The first main method, <code class="docutils literal notranslate"><span class="pre">InflationSDP.generate_relaxation()</span></code> generates the SDP relaxation of the chosen inflation of a given NPA level.</p>
+<p>The first main method, <code class="docutils literal notranslate"><span class="pre">InflationSDP.generate_relaxation()</span></code> generates the SDP relaxation of the chosen inflation.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -542,7 +544,7 @@ SDP, we get that it is infeasible, then we can conclude that the distribution <s
 </pre></div>
 </div>
 </div>
-<p>In the above example, we have chosen NPA hierarchy level 2. For the meaning of these levels, see <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013/meta">New Journal of Physics 10.7 (2008): 073013</a>. For other hierarchies that we support, see the documentation of <code class="docutils literal notranslate"><span class="pre">InflationSDP.generate_relaxation()</span></code> method, or the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section. The important thing to know is that the higher the hierarchy level, the
+<p>In the above example, we have chosen NPA hierarchy level 2. For the meaning of these levels, see <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013/meta">New Journal of Physics 10 (7), 073017 (2008)</a>. For other hierarchies that we support, see the documentation of <code class="docutils literal notranslate"><span class="pre">InflationSDP.generate_relaxation()</span></code> method, or the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section. The important thing to know is that the higher the hierarchy level, the
 tighter is the SDP relaxation at the cost of needing more computational resources.</p>
 </section>
 <section id="Running-a-feasibility-problem">
@@ -555,7 +557,12 @@ tighter is the SDP relaxation at the cost of needing more computational resource
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_2PR_array</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">P_2PR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)):</span>
+    <span class="n">P_2PR</span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">z</span><span class="p">))</span><span class="o">/</span><span class="mi">8</span>
+
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_2PR</span><span class="p">)</span>
 <span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
 <span class="n">InfSDP</span><span class="o">.</span><span class="n">status</span>
 </pre></div>
@@ -570,12 +577,12 @@ tighter is the SDP relaxation at the cost of needing more computational resource
 &#39;infeasible&#39;
 </pre></div></div>
 </div>
-<p>The problem status is reported as infeasible, therefore this serves as a proof that the W distribution is incompatible with the quantum triangle scenario.</p>
+<p>The problem status is reported as infeasible, therefore this serves as a proof that the 2PR distribution is incompatible with the quantum triangle scenario.</p>
 <p>We can also export the problem with <code class="docutils literal notranslate"><span class="pre">InflationSDP.write_to_file()</span></code> method and run it with another solver.</p>
 </section>
 <section id="Running-an-optimisation-problem">
 <h2>Running an optimisation problem<a class="headerlink" href="#Running-an-optimisation-problem" title="Permalink to this heading">¶</a></h2>
-<p>We can also run optimisiations of Bell operators over the calculated relaxation. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:</p>
+<p>CausalInflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:</p>
 <div class="math notranslate nohighlight">
 \[\text{Mermin} = \langle A_1 B_0 C_0 \rangle +  \langle A_0 B_1 C_0 \rangle +  \langle A_0 B_0 C_1 \rangle -  \langle A_1 B_1 C_1 \rangle\]</div>
 <p>over the tripartite line scenario:</p>
@@ -586,9 +593,11 @@ tighter is the SDP relaxation at the cost of needing more computational resource
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
 
 <span class="n">mmnts</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>
-<span class="n">A0</span><span class="p">,</span> <span class="n">B0</span><span class="p">,</span> <span class="n">C0</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span><span class="p">,</span> <span class="n">C1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">mmnts</span><span class="p">[</span><span class="n">party</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">setting</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">A0</span><span class="p">,</span> <span class="n">B0</span><span class="p">,</span> <span class="n">C0</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span><span class="p">,</span> <span class="n">C1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">mmnts</span><span class="p">[</span><span class="n">party</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">setting</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                          <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
 
-<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span> <span class="o">=</span> <span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span><span class="p">)</span>
+<span class="n">InfSDP</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">A1</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C0</span> <span class="o">+</span> <span class="n">A0</span><span class="o">*</span><span class="n">B0</span><span class="o">*</span><span class="n">C1</span> <span class="o">-</span> <span class="n">A1</span><span class="o">*</span><span class="n">B1</span><span class="o">*</span><span class="n">C1</span><span class="p">)</span>
 <span class="n">InfSDP</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
 
 <span class="n">InfSDP</span><span class="o">.</span><span class="n">objective_value</span>
@@ -601,7 +610,7 @@ tighter is the SDP relaxation at the cost of needing more computational resource
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-3.461579862849619
+3.4615797540545383
 </pre></div></div>
 </div>
 <p>We get that the value of the Mermin Bell operator cannot achieve a value greater than <span class="math notranslate nohighlight">\(\approx 3.4616\)</span> in the quantum tripartite line scenario. This is less than the algebraic value of <span class="math notranslate nohighlight">\(4\)</span> which is achievable both with classical, quantum and no signaling globally shared sources.</p>
@@ -623,7 +632,7 @@ tighter is the SDP relaxation at the cost of needing more computational resource
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.
+        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.
 
     </p>
   </div>
