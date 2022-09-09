@@ -114,7 +114,7 @@ def mul(lst: List) -> Any:
 # @jit(nopython=nopython)  # TODO
 def apply_source_perm_monomial(monomial: np.ndarray,
                                 source: int,
-                                permutation: Union[List, np.ndarray],
+                                permutation: np.ndarray,
                                 commuting: bool_,
                                 lexorder
                                 ) -> np.ndarray:
@@ -140,10 +140,12 @@ def apply_source_perm_monomial(monomial: np.ndarray,
     """
 
     new_factors = monomial.copy()
-    for i in range(monomial.shape[0]):
-        if new_factors[i][1 + source] > 0:
-            new_factors[i][1 + source] = permutation[
-                                            new_factors[i][1 + source] - 1] + 1
+    permutation_plus = np.hstack(([0], permutation+1))
+    new_factors[:, 1+source] = np.take(permutation_plus, new_factors[:, 1+source])
+    # for i in range(monomial.shape[0]):
+    #     if new_factors[i][1 + source] > 0:
+    #         new_factors[i][1 + source] = permutation[
+    #                                         new_factors[i][1 + source] - 1] + 1
     if commuting:
         return mon_lexsorted(new_factors, lexorder)
     else:
@@ -156,7 +158,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          commuting: bool,
                                          notcomm,
                                          lexorder
-                                         ) -> List[sympy.core.symbol.Symbol]:
+                                         ) -> List[np.ndarray]:
     """Applies a specific source permutation to the list of operators used to
     define the moment matrix. Outputs the permuted list of operators.
     The operators are enconded as lists of numbers denoting
@@ -184,7 +186,9 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     """
     permuted_op_list = []
     for monomial in columns:
-        if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
+        # if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
+        (row_count, col_count) = monomial.shape
+        if row_count == 0 or col_count ==1 : #ACCOMODATING LEGACY IDENTITY OPERATOR
             permuted_op_list.append(monomial)
         else:
             newmon = apply_source_perm_monomial(monomial, source,
@@ -1080,7 +1084,7 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                                       np.asarray(perms[source]),
                                                       commuting,
                                                       lexorder)
-            permuted = to_canonical(permuted, notcomm, lexorder)
+            permuted = to_canonical(permuted, notcomm, lexorder)  #ALREADY DONE by apply_source_perm_monomial ??
             if mon_lessthan_mon(permuted, final_monomial, lexorder):
                 final_monomial = permuted
         if np.array_equal(final_monomial, prev):
