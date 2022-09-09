@@ -44,7 +44,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Download and Installation" href="download.html" /> 
+    <link rel="next" title="Download and Installation" href="download.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="contents.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -58,7 +59,7 @@
           
 
           
-            <a href="#" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> CausalInflation
           
 
           
@@ -89,8 +90,15 @@
               
             
             
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#copyright-and-license">Copyright and License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-cite">How to cite</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
@@ -113,7 +121,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">CausalInflation</a>
+          <a href="contents.html">CausalInflation</a>
         
       </nav>
 
@@ -144,7 +152,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Introduction</li>
     
@@ -191,77 +199,41 @@
 </style>
 <section id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h1>
-<p>CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatiblity between some observed data and a given causal relationship.</p>
-<p>The first version of this package implements the inflation technique for quantum causal compatibility. For details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Wolfe, Elie, et al. “Quantum inflation: A general approach to quantum causal compatibility.” `Physical Review X 11.2 (2021): 021043.</a>). The inflation technique for classical causal compatibility will be implemented in a future update.</p>
+<p>CausalInflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatibility between some observed data and a given causal relationship.</p>
+<p>Version 0.1 of this package implements the inflation technique for quantum causal compatibility. For details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Wolfe et al. “Quantum inflation: A general approach to quantum causal compatibility.” Physical Review X 11 (2), 021043 (2021)</a>. The inflation technique for classical causal compatibility will be implemented in a future update.</p>
 <p>Examples of use of this package include:</p>
 <ul class="simple">
 <li><p>Feasibility problems and extraction of certificates.</p></li>
 <li><p>Optimization of Bell operators.</p></li>
-<li><p>Optimisation over classical distributions.</p></li>
-<li><p>Standard NPA.</p></li>
+<li><p>Optimization over classical distributions.</p></li>
+<li><p>Standard <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401">Navascues-Pironio-Acin hierarchy</a>.</p></li>
 <li><p>Scenarios with partial information.</p></li>
 </ul>
 <p>In the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/tutorial.html">Tutorial</a> and <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> all the above are explained in more detail.</p>
-</section>
 <section id="copyright-and-license">
-<h1>Copyright and License<a class="headerlink" href="#copyright-and-license" title="Permalink to this heading">¶</a></h1>
-<p>CasualInflation is free open-source software released under the <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/LICENSE">Creative Commons License</a>.</p>
+<h2>Copyright and License<a class="headerlink" href="#copyright-and-license" title="Permalink to this heading">¶</a></h2>
+<p>CasualInflation is free open-source software released under the <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/LICENSE">GNU General Public License</a>.</p>
+</section>
+<section id="how-to-cite">
+<h2>How to cite<a class="headerlink" href="#how-to-cite" title="Permalink to this heading">¶</a></h2>
+<p>If you use CausalInflation in your work, please cite <a class="reference external" href="https://www.arxiv.org/abs/2209.xxxxx">CausalInflation’s paper</a>:</p>
+<blockquote>
+<div><p>Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, “CausalInflation: a Python package for classical and quantum causal compatibility”, arXiv:2209.xxxxx</p>
+</div></blockquote>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span>@misc{2209.xxxxx,
+  doi = {10.48550/ARXIV.2209.xxxxx},
+  url = {https://arxiv.org/abs/2209.xxxxx},
+  author = {Boghiu, Emanuel-Cristian and Wolfe, Elie and Pozas-Kerstjens, Alejandro},
+  title = {{CausalInflation}: a {Python} package for classical and quantum causal compatibility},
+  publisher = {arXiv},
+  year = {2022},
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+</pre></div>
+</div>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="download.html#dependencies">Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="download.html#installation">Installation</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Encoding-the-inflation-problem">Encoding the inflation problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Generating-the-SDP-relaxation">Generating the SDP relaxation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Running-a-feasibility-problem">Running a feasibility problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Running-an-optimisation-problem">Running an optimisation problem</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Feasibility-problems-and-extraction-of-certificates">Feasibility problems and extraction of certificates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Optimization-of-Bell-operators">Optimization of Bell operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Optimisation-over-classical-distributions-and-feasibility-problems">Optimisation over classical distributions and feasibility problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Standard-NPA">Standard NPA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#SDP-hierarchy-of-“physical-moments”">SDP hierarchy of “physical moments”</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Linearized-polynomial-identification-(LPI)-constraints">Linearized polynomial identification (LPI) constraints</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Partial-information-support">Partial information support</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="advanced.html#Performance-considerations">Performance considerations</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contribute.html#how-to-contribute-to-the-code">How to contribute to the code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contribute.html#how-to-contribute-to-the-documentation">How to contribute to the documentation</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="causalinflation.html">InflationProblem Class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="causalinflation.html#inflationsdp-class">InflationSDP Class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="causalinflation.html#interfaces-with-solvers">Interfaces with solvers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="causalinflation.html#functions-to-build-problem-elements">Functions to build problem elements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="causalinflation.html#functions-to-operate-on-monomials">Functions to operate on monomials</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="changelog.html#id1">0.1.0 - 2022-07-31</a></li>
-</ul>
-</li>
-</ul>
 </div>
 </section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
 </section>
 
 
@@ -271,13 +243,14 @@
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="download.html" class="btn btn-neutral float-right" title="Download and Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="contents.html" class="btn btn-neutral float-left" title="&lt;no title&gt;" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.
+        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.
 
     </p>
   </div>

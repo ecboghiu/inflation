@@ -583,9 +583,11 @@ def string2prob(term: str, max_nr_of_parties: int) -> sympy.core.symbol.Symbol:
     outputs = factors[:, -1]
     name = 'p'
     # Add parties if we are marginalizing over a distribution
-    if len(parties) < max_nr_of_parties:
-        for p in parties:
-            name += p
+    #if len(parties) < max_nr_of_parties:
+    name += '_{'
+    for p in parties:
+        name += p
+    name += '}'
     name += '('
     for o in outputs:
         name += o

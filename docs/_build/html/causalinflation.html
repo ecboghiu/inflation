@@ -61,7 +61,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> CausalInflation
           
 
           
@@ -92,8 +92,9 @@
               
             
             
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
@@ -128,7 +129,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">CausalInflation</a>
+          <a href="contents.html">CausalInflation</a>
         
       </nav>
 
@@ -159,7 +160,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="modules.html">API Reference</a> &raquo;</li>
         
@@ -211,9 +212,8 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="causalinflation.InflationProblem">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class for enconding relevant details concerning the causal
-compatibibility scenario, e.g., DAG structure, number of inputs
-per party, etc.</p>
+<dd><p>Class for enconding relevant details concerning the causal compatibility
+scenario.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -223,7 +223,8 @@ parties. By default it is a single source connecting all parties.</p></li>
 <li><p><strong>settings_per_party</strong> (<em>list</em><em>, </em><em>optional</em>) – Measurement setting cardinalities. By default <code class="docutils literal notranslate"><span class="pre">1</span></code> for all parties.</p></li>
 <li><p><strong>inflation_level_per_source</strong> (<em>list</em><em>, </em><em>optional</em>) – Number of copies per source in the inflated graph. By default <code class="docutils literal notranslate"><span class="pre">1</span></code> for
 all sources.</p></li>
-<li><p><strong>names</strong> (<em>List</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Name of each party, default is alphabetical labels, e.g. [‘A’, ‘B’, …]</p></li>
+<li><p><strong>names</strong> (<em>List</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Name of each party, default is alphabetical labels, e.g.,
+<code class="docutils literal notranslate"><span class="pre">['A',</span> <span class="pre">'B',</span> <span class="pre">...]</span></code>.</p></li>
 <li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – How much information to print. By default <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
 </ul>
 </dd>
@@ -265,10 +266,11 @@ a specification.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>sympy.core.symbol.Symbol</em><em>]</em><em>]</em>) – See description in the <code class="docutils literal notranslate"><span class="pre">self.generate_relaxation()</span></code> method.</p></li>
 <li><p><strong>max_monomial_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of letters in a monomial in the generating set,
-By default <code class="docutils literal notranslate"><span class="pre">0</span></code> (no limit). Example: if we choose <code class="docutils literal notranslate"><span class="pre">'local1'</span></code> for
-three parties, it gives the set {1, A, B, C, A*B, A*C, B*C, A*B*C}.
-If we set <code class="docutils literal notranslate"><span class="pre">max_monomial_length=2</span></code>, the generating set is instead:
-{1, A, B, C, A*B, A*C, B*C}. By default <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+By default <code class="docutils literal notranslate"><span class="pre">0</span></code>. Example: if we choose <code class="docutils literal notranslate"><span class="pre">'local1'</span></code> for
+three parties, it gives the set <span class="math notranslate nohighlight">\(\{1, A, B, C, AB, AC, BC,
+ABC\}\)</span>. If we set <code class="docutils literal notranslate"><span class="pre">max_monomial_length=2</span></code>, the generating set is
+instead <span class="math notranslate nohighlight">\(\{1, A, B, C, AB, AC, BC\}\)</span>. By default <code class="docutils literal notranslate"><span class="pre">0</span></code> (no
+limit).</p></li>
 <li><p><strong>return_columns_numerical</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return the columns also in integer array form (like the
 output of <code class="docutils literal notranslate"><span class="pre">to_numbers</span></code>). By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
@@ -280,13 +282,14 @@ output of <code class="docutils literal notranslate"><span class="pre">to_number
 <dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_objective">
 <span class="sig-name descname"><span class="pre">certificate_as_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Add</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_objective" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give certificate as symbolic sum of operators that can be used
-as an objective function to optimse.</p>
+as an objective function to optimize. The certificate of incompatibility
+is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&gt;=</span> <span class="pre">0</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
-<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals specified
-by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
+specified by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>chop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Coefficients in the dual certificate smaller in absolute value are
 set to zero. By default <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.</p></li>
 <li><p><strong>round_decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – Coefficients that are not set to zero are rounded to the number of
@@ -294,7 +297,8 @@ decimals specified. By default <code class="docutils literal notranslate"><span 
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The certificate as an objective function.</p>
+<dd class="field-even"><p>The certificate as a symbolic expression. The certificate of
+incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&gt;=</span> <span class="pre">0</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>sympy.core.add.Add</p>
@@ -306,13 +310,13 @@ decimals specified. By default <code class="docutils literal notranslate"><span 
 <dt class="sig sig-object py" id="causalinflation.InflationSDP.certificate_as_probs">
 <span class="sig-name descname"><span class="pre">certificate_as_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Add</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.certificate_as_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.certificate_as_probs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give certificate as symbolic sum of probabilities. The certificate
-of incompatibility is <cite>cert &gt;= 0</cite>.</p>
+of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&gt;=</span> <span class="pre">0</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
-<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals specified
-by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
+specified by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>chop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Coefficients in the dual certificate smaller in absolute value are
 set to zero. By default <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.</p></li>
 <li><p><strong>round_decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – Coefficients that are not set to zero are rounded to the number of
@@ -321,7 +325,7 @@ decimals specified. By default <code class="docutils literal notranslate"><span 
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The expression of the certificate in terms or probabilities and
-marginals. The certificate of incompatibility is cert &gt;= 0.</p>
+marginals. The certificate of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&gt;=</span> <span class="pre">0</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>sympy.core.add.Add</p>
@@ -338,8 +342,8 @@ in the moment matrix.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
-<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals specified
-by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
+specified by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>chop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Coefficients in the dual certificate smaller in absolute value are
 set to zero. By default <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.</p></li>
 <li><p><strong>round_decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – Coefficients that are not set to zero are rounded to the number of
@@ -348,10 +352,10 @@ decimals specified. By default <code class="docutils literal notranslate"><span 
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The certificate in terms of symbols representing the monomials in
-the moment matrix. The certificate of infeasibility is cert &gt; 0.</p>
+the moment matrix. The certificate of infeasibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>sympy.core.add.Add</p>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
 </dd></dl>
@@ -367,52 +371,57 @@ quantities in the problem.</p>
 <dt class="sig sig-object py" id="causalinflation.InflationSDP.generate_relaxation">
 <span class="sig-name descname"><span class="pre">generate_relaxation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_specification</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'npa1'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.generate_relaxation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.generate_relaxation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates the SDP relaxation of the quantum inflation problem using
-the NPA hierarchy and applies the symmetries inferred from inflation.</p>
-<p>It takes as input the generating set of monomials {M_i}_i. The moment
-matrix Gamma is defined by all the possible inner products between these
-monomials:</p>
+the <a class="reference external" href="https://www.arxiv.org/abs/quant-ph/0607119">NPA hierarchy</a> and
+applies the symmetries inferred from inflation.</p>
+<p>It takes as input the generating set of monomials <span class="math notranslate nohighlight">\(\{M_i\}_i\)</span>. The
+moment matrix <span class="math notranslate nohighlight">\(\Gamma\)</span> is defined by all the possible inner
+products between these monomials:</p>
 <div class="math notranslate nohighlight">
 \[\Gamma[i, j] := \operatorname{tr} (\rho \cdot M_i^\dagger M_j).\]</div>
-<p>The set {M_i} is specified by the parameter <cite>column_specification</cite>.</p>
+<p>The set <span class="math notranslate nohighlight">\(\{M_i\}_i\)</span> is specified by the parameter
+<code class="docutils literal notranslate"><span class="pre">column_specification</span></code>.</p>
 <p>In the inflated graph there are many symmetries coming from invariance
 under swaps of the copied sources, which are used to remove variables
 in the moment matrix.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>sympy.core.symbol.Symbol</em><em>]</em><em>]</em>) – <p>Describes the generating set of monomials {M_i}_i.</p>
+<dd class="field-odd"><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>sympy.core.symbol.Symbol</em><em>]</em><em>]</em>) – <p>Describes the generating set of monomials <span class="math notranslate nohighlight">\(\{M_i\}_i\)</span>.</p>
 <ul class="simple">
-<li><p><cite>(str) ‘npaN’</cite>: where N is an integer. This represents level N in
-the Navascues-Pironio-Acin hierarchy [arXiv:quant-ph/0607119]. For
-example, level 3 with measurements {A, B} will give the set
-{1, A, B, A*A, A*B, B*B, A*A*A, A*A*B, A*B*C, A*B*B, B*B*B} for
+<li><p><cite>(str)</cite> <code class="docutils literal notranslate"><span class="pre">'npaN'</span></code>: where N is an integer. This represents level N
+in the Navascues-Pironio-Acin hierarchy (<a class="reference external" href="https://www.arxiv.org/abs/quant-ph/0607119">arXiv:quant-ph/0607119</a>).
+For example, level 3 with measurements <span class="math notranslate nohighlight">\(\{A, B\}\)</span> will give
+the set <span class="math notranslate nohighlight">\({1, A, B, AA, AB, BB, AAA, AAB, ABB, BBB\}\)</span> for
 all inflation, input and output indices. This hierarchy is known
 to converge to the quantum set for <span class="math notranslate nohighlight">\(N\rightarrow\infty\)</span>.</p></li>
-<li><p><cite>(str) ‘localN’</cite>: where N is an integer. Local level N considers
-monomials that have at most N measurement operators per party. For
-example, <cite>local1</cite> is a subset of <cite>npa2</cite>; for 2 parties, <cite>npa2</cite> is
-{1, A, B, A*A, A*B, B*B} while <cite>local1</cite> is {1, A, B, A*B}.</p></li>
-<li><p><cite>(str) ‘physicalN’</cite>: The subset of local level N with only
+<li><p><cite>(str)</cite> <code class="docutils literal notranslate"><span class="pre">'localN'</span></code>: where N is an integer. Local level N
+considers monomials that have at most N measurement operators per
+party. For example, <code class="docutils literal notranslate"><span class="pre">local1</span></code> is a subset of <code class="docutils literal notranslate"><span class="pre">npa2</span></code>; for two
+parties, <code class="docutils literal notranslate"><span class="pre">npa2</span></code> is <span class="math notranslate nohighlight">\(\{1, A, B, AA, AB, BB\}\)</span> while
+<code class="docutils literal notranslate"><span class="pre">local1</span></code> is <span class="math notranslate nohighlight">\(\{1, A, B, AB\}\)</span>.</p></li>
+<li><p><cite>(str)</cite> <code class="docutils literal notranslate"><span class="pre">'physicalN'</span></code>: The subset of local level N with only
 operators that have non-negative expectation values with any
-state. <cite>N</cite> cannot be greater than the smallest number of copies of
-a source in the inflated graph. For example, in the scenario
-A-source-B-source-C with 2 outputs and no inputs, <cite>physical2</cite> only
-gives 5 possibilities for B: {1, B_1_1_0_0, B_2_2_0_0,
-B_1_1_0_0*B_2_2_0_0,  B_1_2_0_0*B_2_1_0_0}. There are no other
-products where all operators commute. The full set of physical
-generating monomials is built by taking the cartesian product
-between all possible physical monomials of each party.</p></li>
+state. N cannot be greater than the smallest number of copies of a
+source in the inflated graph. For example, in the scenario
+A-source-B-source-C with 2 outputs and no inputs, <code class="docutils literal notranslate"><span class="pre">physical2</span></code>
+only gives 5 possibilities for B: <span class="math notranslate nohighlight">\(\{1, B^{1,1}_{0|0},
+B^{2,2}_{0|0}, B^{1,1}_{0|0}B^{2,2}_{0|0},
+B^{1,2}_{0|0}B^{2,1}_{0|0}\}\)</span>. There are no other products where
+all operators commute. The full set of physical generating
+monomials is built by taking the cartesian product between all
+possible physical monomials of each party.</p></li>
 <li><p><cite>List[List[int]]</cite>: This encodes a party block structure.
 Each integer encodes a party. Within a party block, all missing
-input, output and inflation  indices are taken into account.
-For example, [[], [0], [1], [0, 1]] gives the set {1, A, B, A*B},
-which is the same as ‘local1’. The set [[], [0], [1], [2], [0, 0],
-[0, 1], [0, 2], [1, 1], [1, 2], [2, 2]] is the same as {1, A, B,
-C, A*A, A*B, A*C, B*B, B*C, C*C} which is the same as ‘npa2’ for
-3 parties. [[]] encodes the identity element.</p></li>
-<li><p><cite>List[sympy.core.symbol.Symbol]</cite>: we can fully specify the
-generating set by giving a list of symbolic operators built from the
-measurement operators in <cite>self.measurements</cite>. This list needs to
-have the identity <cite>sympy.S.One</cite> as the first element.</p></li>
+input, output and inflation indices are taken into account. For
+example, <code class="docutils literal notranslate"><span class="pre">[[],</span> <span class="pre">[0],</span> <span class="pre">[1],</span> <span class="pre">[0,</span> <span class="pre">1]]</span></code> gives the set <span class="math notranslate nohighlight">\(\{1, A,
+B, AB\}\)</span>, which is the same as <code class="docutils literal notranslate"><span class="pre">local1</span></code>. The set <code class="docutils literal notranslate"><span class="pre">[[],</span> <span class="pre">[0],</span>
+<span class="pre">[1],</span> <span class="pre">[2],</span> <span class="pre">[0,</span> <span class="pre">0],</span> <span class="pre">[0,</span> <span class="pre">1],</span> <span class="pre">[0,</span> <span class="pre">2],</span> <span class="pre">[1,</span> <span class="pre">1],</span> <span class="pre">[1,</span> <span class="pre">2],</span> <span class="pre">[2,</span> <span class="pre">2]]</span></code> is the
+same as <span class="math notranslate nohighlight">\(\{1, A, B, C, AA, AB, AC, BB, BC, CC\}\)</span>, which is
+the same as <code class="docutils literal notranslate"><span class="pre">npa2</span></code> for three parties. <code class="docutils literal notranslate"><span class="pre">[[]]</span></code> encodes the
+identity element.</p></li>
+<li><p><cite>List[sympy.core.symbol.Symbol]</cite>: one can also fully specify the
+generating set by giving a list of symbolic operators built from
+the measurement operators in <cite>self.measurements</cite>. This list needs
+to have the identity <code class="docutils literal notranslate"><span class="pre">sympy.S.One</span></code> as the first element.</p></li>
 </ul>
 </p>
 </dd>
@@ -422,19 +431,20 @@ have the identity <cite>sympy.S.One</cite> as the first element.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="causalinflation.InflationSDP.set_distribution">
 <span class="sig-name descname"><span class="pre">set_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/InflationSDP.html#InflationSDP.set_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationSDP.set_distribution" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set numerically the knowable moments and semiknowable moments
-according to the probability distribution specified.</p>
+<dd><p>Set numerically all the knowable (and optionally semiknowable)
+moments according to the probability distribution
+specified.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>prob_array</strong> (<em>numpy.ndarray</em>) – Multidimensional array encoding the distribution, which is
-called as <code class="docutils literal notranslate"><span class="pre">prob_array[a,b,c,...,x,y,z,...]</span></code> where a, b, c, …
-are outputs and x, y, z, … are inputs.
-Note: even if the inputs have cardinality 1 they must be
+called as <code class="docutils literal notranslate"><span class="pre">prob_array[a,b,c,...,x,y,z,...]</span></code> where
+<span class="math notranslate nohighlight">\(a,b,c,\dots\)</span> are outputs and <span class="math notranslate nohighlight">\(x,y,z,\dots\)</span> are
+inputs. Note: even if the inputs have cardinality 1 they must be
 specified, and the corresponding axis dimensions are 1.</p></li>
 <li><p><strong>use_lpi_constraints</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specification whether linearized polynomial constraints (see,
-e.g., Eq. (D6) in arXiv:2203.16543) will be imposed or not. By
-default False.</p></li>
+e.g., Eq. (D6) in <a class="reference external" href="http://www.arxiv.org/abs/2203.16543/">arXiv:2203.16543</a>) will be imposed or not.
+By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -449,7 +459,8 @@ problem.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>objective</strong> (<em>sympy.core.symbol.Symbol</em>) – Describes the objective function.</p></li>
-<li><p><strong>direction</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the optimization (max/min). By default <code class="docutils literal notranslate"><span class="pre">'max'</span></code>.</p></li>
+<li><p><strong>direction</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the optimization (<code class="docutils literal notranslate"><span class="pre">'max'</span></code>/<code class="docutils literal notranslate"><span class="pre">'min'</span></code>). By default
+<code class="docutils literal notranslate"><span class="pre">'max'</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -467,9 +478,10 @@ the corresponding values. The variables can be specified either by
 their operator form, their string form, or directly referring to the
 variable index in the moment matrix. The value of each key is the
 numerical value to be assigned.</p></li>
-<li><p><strong>use_lpi_constraints</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specification whether linearized polynomial constraints (see, e.g.,
-Eq. (D6) in arXiv:2203.16543) will be imposed or not. By default
-<code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>use_lpi_constraints</strong> (<em>bool</em><em>, </em><em>optional</em>) – <p>Specification whether linearized polynomial constraints (see, e.g.,
+Eq. (D6) in <a class="reference external" href="http://www.arxiv.org/abs/2203.16543/">arXiv:2203.16543</a>) will be imposed or not. By
+default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</p></li>
 <li><p><strong>only_specified_values</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specification whether one wishes to fix only the variables provided,
 or also the variables containing products of the monomials fixed. By
 default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
@@ -527,7 +539,7 @@ specified, it defaults to sparse SDPA format.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION">
 <span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.sdp_utils.</span></span><span class="sig-name descname"><span class="pre">solveSDP_MosekFUSION</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">positionsmatrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">lil_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{1:</span> <span class="pre">0.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{0:</span> <span class="pre">0.0,</span> <span class="pre">1:</span> <span class="pre">1.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semiknown_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feas_as_optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solverparameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_lowerbounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_upperbounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_inequalities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_equalities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solve_dual</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/sdp_utils.html#solveSDP_MosekFUSION"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION" title="Permalink to this definition">¶</a></dt>
-<dd><p>Internal function to solve the SDP with the MOSEK Fusion API.</p>
+<dd><p>Internal function to solve the SDP with the <a class="reference external" href="https://docs.mosek.com/latest/pythonfusion/index.html">MOSEK Fusion API</a>.</p>
 <p>Now follows an extended description of how the SDP is encoded. In general,
 it is prefered to solve using the dual formulation, which is the default.</p>
 <p>The primal is written as follows:</p>
@@ -535,8 +547,8 @@ it is prefered to solve using the dual formulation, which is the default.</p>
 \[\begin{split}\text{max}\quad &amp; c_0 + c\cdot x\\
 \text{s.t.}\quad &amp; F_0 + \sum F_i x_i \succeq 0\end{split}\]</div>
 <p><span class="math notranslate nohighlight">\(F_0\)</span> is the constant entries of the moment matrix, and <span class="math notranslate nohighlight">\(F_i\)</span> is
-the matrix whose entry <span class="math notranslate nohighlight">\((n,m)`\)</span> stores the value of the coefficient of
-the moment <span class="math notranslate nohighlight">\(x_i\)</span> at position <span class="math notranslate nohighlight">\((n,m)`\)</span> in the moment matrix.</p>
+the matrix whose entry <span class="math notranslate nohighlight">\((n,m)\)</span> stores the value of the coefficient of
+the moment <span class="math notranslate nohighlight">\(x_i\)</span> at position <span class="math notranslate nohighlight">\((n,m)\)</span> in the moment matrix.</p>
 <p>The dual of the equation above is:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\text{min}\quad &amp; c_0+\text{Tr}(Z\cdot F_0)\\
@@ -544,14 +556,15 @@ the moment <span class="math notranslate nohighlight">\(x_i\)</span> at position
 &amp;Z \succeq 0.\end{split}\]</div>
 <p>Typically, all the probability information is stored in <span class="math notranslate nohighlight">\(F_0\)</span>, and the
 coefficients <span class="math notranslate nohighlight">\(F_i\)</span> do not depend on the probabilities. However, if we
-use LPI constraints, then <span class="math notranslate nohighlight">\(F_i\)</span> can depend on the probabilities. The
-form of the SDP does not change, in any case.</p>
+use LPI constraints (see, e.g., <a class="reference external" href="http://www.arxiv.org/abs/2203.16543/">arXiv:2203.16543</a>), then <span class="math notranslate nohighlight">\(F_i\)</span> can depend on
+the probabilities. The form of the SDP does not change, in any case.</p>
 <p>If we have a constant objective function, then we have a feasibility
-problem. It can be relaxed to:</p>
+problem. It can be rewritten into the following optimization problem:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\text{max}\quad&amp;\lambda\\
-\text{s.t.}\quad&amp; F_0 + \sum F_i x_i - \lambda \cdot 1 \succeq 0\end{split}\]</div>
-<p>with dual:</p>
+\text{s.t.}\quad&amp; F_0 + \sum F_i x_i - \lambda \cdot 1 \succeq 0,\end{split}\]</div>
+<p>which achieves <span class="math notranslate nohighlight">\(\lambda\geq 0\)</span> if the original problem is feasible and
+<span class="math notranslate nohighlight">\(\lambda&lt;0\)</span> otherwise. The dual of this problem is:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\text{min}\quad &amp; \text{Tr}(Z\cdot F_0) \\
 \text{s.t.}\quad &amp; \text{Tr}(Z\cdot F_i) = 0 \,\forall\, i,\\
@@ -595,9 +608,9 @@ default <code class="docutils literal notranslate"><span class="pre">True</span>
 <li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – How much information to display to the user. By default <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
 <li><p><strong>feas_as_optim</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to treat feasibility problems, where the objective is,
 constant, as an optimisation problem. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>solverparameters</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of parameters to pass to the MOSEK solver, see
-<a class="reference external" href="https://docs.mosek.com/latest/pythonfusion/solver-parameters.html">https://docs.mosek.com/latest/pythonfusion/solver-parameters.html</a>. By
-default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><strong>solverparameters</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of parameters to pass to the MOSEK solver, see <a class="reference external" href="https://docs.mosek.com/latest/pythonfusion/solver-parameters.html">MOSEK’s
+documentation</a>.
+By default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -605,12 +618,12 @@ default <code class="docutils literal notranslate"><span class="pre">{}</span></
 optimisation information such as the 1) primal objective value,
 2) the moment matrix, 3) the dual values, 4) the certificate and
 a 5) dictionary of values for the monomials, in the following keys in
-the same order: 1) ‘sol’, 2) ‘G’, 3) ‘Z’, 4) ‘dual_certificate’,
-5) ‘xi’. The second element is the objective value and the last is
-the problem status.</p>
+the same order: 1) <code class="docutils literal notranslate"><span class="pre">sol</span></code>, 2) <code class="docutils literal notranslate"><span class="pre">G</span></code>, 3) <code class="docutils literal notranslate"><span class="pre">Z</span></code>, 4) <code class="docutils literal notranslate"><span class="pre">dual_certificate</span></code>,
+5) <code class="docutils literal notranslate"><span class="pre">xi</span></code>. The second element is the objective value and the last is the
+problem status.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[Dict,float,str]</p>
+<dd class="field-odd"><p>Tuple[Dict, float, str]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -621,15 +634,14 @@ the problem status.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="causalinflation.quantum.general_tools.generate_operators">
 <span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">generate_operators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outs_per_input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#generate_operators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.generate_operators" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generates the list of sympy.core.symbol.Symbol variables representing the
-measurements for a given party. The variables are treated as non-commuting.
-This code is adapted from ncpol2sdpa. See
-<a class="reference external" href="https://github.com/peterwittek/ncpol2sdpa/">https://github.com/peterwittek/ncpol2sdpa/</a></p>
+<dd><p>Generates the list of <code class="docutils literal notranslate"><span class="pre">sympy.core.symbol.Symbol</span></code> variables representing
+the measurements for a given party. The variables are treated as
+non-commuting. This code is adapted from <a class="reference external" href="https://github.com/peterwittek/ncpol2sdpa/">ncpol2sdpa</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>outs_per_input</strong> (<em>List of int</em>) – The number of outcomes of each measurement for a given party</p></li>
-<li><p><strong>name</strong> (<em>Str</em>) – The name to be associated to the party</p></li>
+<li><p><strong>outs_per_input</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – The number of outcomes of each measurement for a given party</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – The name to be associated to the party</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -645,15 +657,16 @@ This code is adapted from ncpol2sdpa. See
 <dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.calculate_momentmatrix">
 <span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">calculate_momentmatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#calculate_momentmatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.calculate_momentmatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the moment matrix. The function takes as input the generating
-set {mon_i}_i encoded as a list of monomials. Each monomial is a matrix
-where each row is an operator and the columns specify the operator
+set <span class="math notranslate nohighlight">\(\{M_i\}_i\)</span> encoded as a list of monomials. Each monomial is a
+matrix where each row is an operator and the columns specify the operator
 labels/indices. The moment matrix is the inner product between all possible
 pairs of elements from the generating set. The program outputs the moment
-matrix as a 2d array. Entry (i,j) of the moment matrix stores the index of
-the monomial that is the result of the dot product mon_i^dagger * mon_j
-after applying the substitutions. The program returns the moment matrix and
-the dictionary mapping each monomial in string representation to its integer
-representation.</p>
+matrix as a 2d array. Entry <span class="math notranslate nohighlight">\((i,j)\)</span> of the moment matrix stores the
+index of the monomial that represents the result of the expectation value
+<span class="math notranslate nohighlight">\(\text{Tr}(\rho\cdot M_i^\dagger M_j)\)</span> for an unknown quantum state
+<span class="math notranslate nohighlight">\(\rho\)</span> after applying the substitutions. The program returns the
+moment matrix and the dictionary mapping each monomial in string
+representation to its integer representation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -665,9 +678,9 @@ representation.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The moment matrix, where each entry (i,j) stores the integer
-representation of a monomial. The Dict is a mapping from string
-representation to integer representation.</p>
+<dd class="field-even"><p>The moment matrix <span class="math notranslate nohighlight">\(\Gamma\)</span>, where each entry <span class="math notranslate nohighlight">\((i,j)\)</span> stores
+the integer representation of a monomial. The Dict is a mapping from
+string representation to integer representation.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple[numpy.ndarray, Dict]</p>
@@ -692,7 +705,7 @@ representation to integer representation.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Input monomial with the specified source swapped.</p>
+<dd class="field-even"><p>The input monomial with the specified source swapped.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
@@ -741,21 +754,19 @@ the support of the operators within the moment.</p>
 <p>The moment is encoded as a 2d array where each row is an operator.
 If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
 In each row, the columns encode the following information:</p>
-<dl class="simple">
-<dt>First column:       The party index, <em>starting from 1</em>.</dt><dd><p>(1 for A, 2 for B, etc.)</p>
-</dd>
-<dt>Last two columns:   The input x, starting from zero and then the</dt><dd><p>output a, starting from zero.</p>
-</dd>
-<dt>In between:         This encodes the support of the operator. There</dt><dd><p>are as many columns as sources/quantum states.
-Column j represents source j-1 (-1 because the 1st
-col is the party). If the value is 0, then this
-operator does not measure this source. If the value
-is for e.g. 2, then this operator is acting on
-copy 2 of source j-1.</p>
-</dd>
-</dl>
-<p>The output is a list of lists, where each list represents another
-monomial s.t. their product is equal to the original monomial.</p>
+<ul class="simple">
+<li><p>First column: The party index, <em>starting from 1</em>. (1 for A, 2 for B, etc.)</p></li>
+<li><p>Last two columns: The input x, starting from zero and then the output a,
+starting from zero.</p></li>
+<li><p>In between: This encodes the support of the operator. There are as many
+columns as sources/quantum states. Column <span class="math notranslate nohighlight">\(j\)</span> represents source
+<span class="math notranslate nohighlight">\(j-1\)</span> (-1 because the first column stores the party). If the value
+is <span class="math notranslate nohighlight">\(0\)</span>, then this operator does not measure this source. If the
+value is for e.g. <span class="math notranslate nohighlight">\(2\)</span>, it means that this operator is acting on copy
+<span class="math notranslate nohighlight">\(2\)</span> of source <span class="math notranslate nohighlight">\(j-1\)</span>.</p></li>
+</ul>
+<p>The output is a list of lists, where each list represents another monomial
+such that their product is equal to the original monomial.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Monomial encoded as a 2d array where each row is an operator.</p>
@@ -798,12 +809,12 @@ monomial of the original scenario.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>monomial</strong> (<em>Union</em><em>[</em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>numpy.ndarray</em><em>]</em>) – List of operators, denoted each by a list of indices</p></li>
+<li><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – List of operators, denoted each by a list of indices</p></li>
 <li><p><strong>hypergraph_scenario</strong> (<em>numpy.ndarray</em>) – Binary matrix representing the scenario.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool stating whether the monomial is knowable or not</p>
+<dd class="field-even"><p>Whether the monomial is knowable or not.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -835,7 +846,7 @@ This simple example can be extended to various layers of sandwiching.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Returns whether the monomial is positive or not.</p>
+<dd class="field-even"><p>Whether the monomial is positive or not.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -855,7 +866,7 @@ This simple example can be extended to various layers of sandwiching.</p>
 <dd class="field-odd"><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial as a 2d array.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Monomial in canonical form w.r.t some lexicographic
+<dd class="field-even"><p>The monomial in canonical form with respect to some lexicographic
 ordering.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -876,7 +887,7 @@ ordering.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>String representation of the monomial.</p>
+<dd class="field-even"><p>The string representation of the monomial.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
@@ -904,7 +915,7 @@ such as party, inflation copies and input and output cardinalities.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Monomial in list of lists format (equivalent to 2d array format by
+<dd class="field-even"><p>The monomial in list of lists format (equivalent to 2d array format by
 calling np.array() on the result).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -941,7 +952,7 @@ F^{021}_{00} \rangle\)</span>.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Input monomial in canonical form.</p>
+<dd class="field-even"><p>The canonical form of the input monomial.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
@@ -955,11 +966,11 @@ F^{021}_{00} \rangle\)</span>.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="causalinflation.quantum.general_tools.compute_numeric_value">
 <span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">compute_numeric_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parties_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#compute_numeric_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.compute_numeric_value" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given a monomial and a probability distribution p_array called as
-p_array[a,b,c,…,x,y,z,…], return the numerical value of the probability
-associated to the monomial.</p>
-<p>Note that this accepts marginals, for example, p(a|x), and then it
-automatically computes all the summations over p[a,b,c,…,x,y,z,…].</p>
+<dd><p>Given a monomial and a probability distribution <code class="docutils literal notranslate"><span class="pre">p_array</span></code> called as
+<code class="docutils literal notranslate"><span class="pre">p_array[a,b,c,...,x,y,z,...]</span></code>, return the numerical value of the
+probability associated to the monomial.</p>
+<p>Note that this accepts marginals, for example, <span class="math notranslate nohighlight">\(p(a|x)`\)</span>, and then it
+automatically computes all the summations over <code class="docutils literal notranslate"><span class="pre">p[a,b,c,...,x,y,z,...]</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -990,13 +1001,13 @@ example above, the second party is marginalised.</p>
 <dt class="sig sig-object py" id="causalinflation.quantum.general_tools.remove_sandwich">
 <span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.general_tools.</span></span><span class="sig-name descname"><span class="pre">remove_sandwich</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/general_tools.html#remove_sandwich"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.general_tools.remove_sandwich" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes sandwiching/pinching from a monomial. This is, it converts the
-monomial U·A·U^* into A.</p>
+monomial represented by <span class="math notranslate nohighlight">\(U A U^\dagger\)</span> into <span class="math notranslate nohighlight">\(A\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Output monomial without one layer of sandwiching.</p>
+<dd class="field-even"><p>The monomial without one layer of sandwiching.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
@@ -1021,7 +1032,7 @@ monomial U·A·U^* into A.</p>
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.
+        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.
 
     </p>
   </div>

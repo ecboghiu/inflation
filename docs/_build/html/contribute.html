@@ -59,7 +59,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> CausalInflation
           
 
           
@@ -90,23 +90,29 @@
               
             
             
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">How to contribute</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#style-guidelines">Style guidelines</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-contribute-to-the-code">How to contribute to the code</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#install-in-develop-mode">Install in develop mode</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#testing">Testing</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#special-note-about-test-debugging-for-visual-studio-code-users">Special note about test debugging for Visual Studio Code users</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#style-guidelines">Style guidelines</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#how-to-contribute-to-the-documentation">How to contribute to the documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-contribute-to-the-documentation">How to contribute to the documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sphinx-extensions">Sphinx extensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#update-the-api-documentation">Update the API documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-the-html-documentation">Build the HTML documentation</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Reference</a></li>
@@ -126,7 +132,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">CausalInflation</a>
+          <a href="contents.html">CausalInflation</a>
         
       </nav>
 
@@ -157,7 +163,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>How to contribute</li>
     
@@ -206,6 +212,16 @@
 <h1>How to contribute<a class="headerlink" href="#how-to-contribute" title="Permalink to this heading">¶</a></h1>
 <p>This is the contribution guide for CausalInflation, a Python package for implementations of the inflation technique for causal inference. Contributions are very welcome and appreciated!</p>
 <p>You can begin contributing by opening an issue on the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a> to report bugs, request features, etc. Now we will outline some guidelines for contributing to the code, and for contributing to the documentation.</p>
+<section id="style-guidelines">
+<h2>Style guidelines<a class="headerlink" href="#style-guidelines" title="Permalink to this heading">¶</a></h2>
+<p>CausalInflation code is developed according standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions.</p>
+<ul class="simple">
+<li><p>In general, try to follow <a class="reference external" href="https://peps.python.org/pep-0008/">PEP 8</a> (code) and <a class="reference external" href="https://peps.python.org/pep-0257/">PEP 257</a> (docstrings) guidelines.</p></li>
+<li><p>Avoid going over 80 characters per line.</p></li>
+<li><p>Write docstrings in <a class="reference external" href="https://numpydoc.readthedocs.io/en/latest/format.html">numpy style</a>, or else Sphinx automatic documentation generation will be buggy.</p></li>
+<li><p>Use annotations for <a class="reference external" href="https://docs.python.org/3/library/typing.html">type hints</a> in the objects’ signature.</p></li>
+</ul>
+</section>
 <section id="how-to-contribute-to-the-code">
 <h2>How to contribute to the code<a class="headerlink" href="#how-to-contribute-to-the-code" title="Permalink to this heading">¶</a></h2>
 <p>If you want to contribute to the code, please fork the repository and submit a pull request.</p>
@@ -228,12 +244,12 @@
 <ul class="simple">
 <li><p><strong>Spyder</strong>. Install the <a class="reference external" href="https://www.spyder-ide.org/blog/introducing-unittest-plugin/">unittest plugin</a>. Then create a new project in the <code class="docutils literal notranslate"><span class="pre">Projects</span></code> tab and choose as existing directory your local copy of the repository. Then in the <code class="docutils literal notranslate"><span class="pre">Run</span></code> tab there is the option of running tests.</p></li>
 <li><p><strong>Visual Studio Code</strong>: Open universal search with <code class="docutils literal notranslate"><span class="pre">Ctrl+Shift+P</span></code> (universal search), search for <code class="docutils literal notranslate"><span class="pre">Configure</span> <span class="pre">Tests</span></code> and choose <code class="docutils literal notranslate"><span class="pre">unittest</span></code>. Then you can run all the tests in the <code class="docutils literal notranslate"><span class="pre">Test</span></code> tab in the Primary Side Bar.</p></li>
-<li><p><strong>PyCharm</strong>: You can either create a new project and pull from the repository, or, if you have already downloaded the repository, you can open it in PyCharm. Then, under <code class="docutils literal notranslate"><span class="pre">File</span> <span class="pre">&gt;</span> <span class="pre">Settings</span> <span class="pre">&gt;</span> <span class="pre">Tools</span> <span class="pre">&gt;</span> <span class="pre">Python</span> <span class="pre">Integrated</span> <span class="pre">Tools</span></code>, choose <code class="docutils literal notranslate"><span class="pre">Unittest</span></code> for <code class="docutils literal notranslate"><span class="pre">Default</span> <span class="pre">test</span> <span class="pre">runner</span></code>. Context actions are then updated and you can run individual tests (“play” arrow next to the test function) or all of them.</p></li>
+<li><p><strong>PyCharm</strong>: You can either create a new project and pull from the repository, or, if you have already downloaded the repository, you can open it in PyCharm. Then, under <code class="docutils literal notranslate"><span class="pre">File</span> <span class="pre">&gt;</span> <span class="pre">Settings</span> <span class="pre">&gt;</span> <span class="pre">Tools</span> <span class="pre">&gt;</span> <span class="pre">Python</span> <span class="pre">Integrated</span> <span class="pre">Tools</span></code>, choose <code class="docutils literal notranslate"><span class="pre">Unittest</span></code> for <code class="docutils literal notranslate"><span class="pre">Default</span> <span class="pre">test</span> <span class="pre">runner</span></code>. Context actions are then updated and you can run individual tests (using the “play” arrow next to the test function) or all of them.</p></li>
 </ul>
 <p>One suggestion is to write tests for a function in advance, and then write the function itself. This way you can easily see if your function is working as expected. Another suggestion is to use breakpoints, which allow you to stop a program mid-way and inspect variable values, to debug your function. Most coding environments, such as <a class="reference external" href="https://code.visualstudio.com/docs/editor/debugging">Visual Studio Code</a>, support this feature.</p>
 <section id="special-note-about-test-debugging-for-visual-studio-code-users">
 <h4>Special note about test debugging for Visual Studio Code users<a class="headerlink" href="#special-note-about-test-debugging-for-visual-studio-code-users" title="Permalink to this heading">¶</a></h4>
-<p>At the time of writing this (July 2022), there is a bug when trying to debug tests with breakpoints. It seems that the best <a class="reference external" href="https://github.com/microsoft/vscode-python/issues/10722">solution</a> is to add the following to the <code class="docutils literal notranslate"><span class="pre">.vscode/launch.json</span></code> file:</p>
+<p>At the time of writing this (September 2022), there is a bug when trying to debug tests with breakpoints. It seems that the best <a class="reference external" href="https://github.com/microsoft/vscode-python/issues/10722">solution</a> is to add the following to the <code class="docutils literal notranslate"><span class="pre">.vscode/launch.json</span></code> file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Python: Test debug config&quot;</span><span class="p">,</span>
     <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;python&quot;</span><span class="p">,</span>
@@ -245,22 +261,14 @@
 </div>
 </section>
 </section>
-<section id="style-guidelines">
-<h3>Style guidelines<a class="headerlink" href="#style-guidelines" title="Permalink to this heading">¶</a></h3>
-<p>CausalInflation code is developed according standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions.</p>
-<ul class="simple">
-<li><p>In general, try to follow <a class="reference external" href="https://peps.python.org/pep-0008/">PEP 8</a> (code) and <a class="reference external" href="https://peps.python.org/pep-0257/">PEP 257</a> (docstrings) guidelines.</p></li>
-<li><p>Avoid going over 80 characters per line.</p></li>
-<li><p>Write docstrings in <a class="reference external" href="https://numpydoc.readthedocs.io/en/latest/format.html">numpy style</a>, or else Sphinx automatic documentation generation will be buggy.</p></li>
-<li><p>Use annotations for <a class="reference external" href="https://docs.python.org/3/library/typing.html">type hints</a> in the objects’ signature.</p></li>
-</ul>
-</section>
 </section>
 <section id="how-to-contribute-to-the-documentation">
 <h2>How to contribute to the documentation<a class="headerlink" href="#how-to-contribute-to-the-documentation" title="Permalink to this heading">¶</a></h2>
-<p>The documentation is built using Sphinx. The webpage is hosted with GitHub Pages. Currently, GitHup Pages is set to look for an <code class="docutils literal notranslate"><span class="pre">index.html</span></code> file in the <code class="docutils literal notranslate"><span class="pre">/docs</span></code> folder in the repository. In the future, we will look into migrating the HTML build to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch of the repository, leading to a cleaner repository.</p>
+<p>The documentation is built using <a class="reference external" href="https://www.sphinx-doc.org/en/master/">Sphinx</a>. The webpage is hosted with <a class="reference external" href="https://pages.github.com/">GitHub Pages</a>. Currently, GitHub Pages is set to look for an <code class="docutils literal notranslate"><span class="pre">index.html</span></code> file in the <code class="docutils literal notranslate"><span class="pre">/docs</span></code> folder in the repository. In the future, we will look into migrating the HTML build to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch of the repository, leading to a cleaner repository.</p>
 <p>Since the documentation has already been created, you do not need to generate a configuration file.</p>
-<p>The main file is <code class="docutils literal notranslate"><span class="pre">docs/index.rst</span></code>, which outlines the structure of the documentation. One can update <code class="docutils literal notranslate"><span class="pre">index.rst</span></code> to include additional files or to remove files. It needs to be written in the <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">reStructuredText</a> format.</p>
+<p>The main file is <code class="docutils literal notranslate"><span class="pre">docs/index.rst</span></code>, which outlines the structure of the documentation. One can update <code class="docutils literal notranslate"><span class="pre">index.rst</span></code> to include additional files or to remove them. It needs to be written in the <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">reStructuredText</a> format.</p>
+<section id="sphinx-extensions">
+<h3>Sphinx extensions<a class="headerlink" href="#sphinx-extensions" title="Permalink to this heading">¶</a></h3>
 <p>The following are the extensions added to Sphinx to generate the documentation, and you will need to have them installed if you want to locally build the documentation:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sphinx.ext.autodoc</span></code>: This extension is used to create <code class="docutils literal notranslate"><span class="pre">.rst</span></code> files from the class and method code docstrings.</p></li>
@@ -271,14 +279,25 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">sphinx.ext.autodoc.typehints</span></code>: to have typehints in the documentation.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">m2r2</span></code>: this allows for the conversion of Markdown files to reStructuredText files.</p></li>
 </ul>
-<p>These extensions and other specifications are found in the <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> file. They allow for two important quality of life improvements in maintaining the documentation, namely, the ability to have Mardown documents and Jupyter notebooks as sections of the documentation. Future plans are to migrate everything to MyST serialisation.</p>
+<p>These extensions and other specifications are found in the <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> file. They allow for two important quality of life improvements in maintaining the documentation, namely, the ability to have Markdown documents and Jupyter notebooks as sections of the documentation. Future plans are to migrate everything to MyST serialisation.</p>
 <p><strong>Note</strong>: currently Sphinx expects all files to be placed under the source directors (<code class="docutils literal notranslate"><span class="pre">docs/</span></code>), so it seems difficult to include notebooks from other folders (such as <code class="docutils literal notranslate"><span class="pre">CONTRIBUTE.MD</span></code>) into the documentation. The current workaround is to copy the notebooks to the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> folder, however one needs to remember to update the other file when one of them is modified.</p>
+</section>
+<section id="update-the-api-documentation">
+<h3>Update the API documentation<a class="headerlink" href="#update-the-api-documentation" title="Permalink to this heading">¶</a></h3>
 <p>If you want the API documentation to reflect the latest changes in the code, you can run the following command in the terminal in the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory:</p>
-<p><code class="docutils literal notranslate"><span class="pre">sphinx-apidoc</span> <span class="pre">-f</span> <span class="pre">-o</span> <span class="pre">.</span> <span class="pre">../causalinflation</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphinx</span><span class="o">-</span><span class="n">apidoc</span> <span class="o">-</span><span class="n">f</span> <span class="o">-</span><span class="n">o</span> <span class="o">.</span> <span class="o">../</span><span class="n">causalinflation</span>
+</pre></div>
+</div>
 <p>which will update the <code class="docutils literal notranslate"><span class="pre">.rst</span></code> files containing the module description. Note that after running this command, the title of the <code class="docutils literal notranslate"><span class="pre">modules.rst</span></code> will change back to <code class="docutils literal notranslate"><span class="pre">causalinflation</span></code>. Currently, the best solution seems to be to manually change it to <code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">Reference</span></code>. The structure of API reference page will also be overwritten, thus it is recommended to manually change it back to the original structure by comparing to a previous version of the file.</p>
+</section>
+<section id="build-the-html-documentation">
+<h3>Build the HTML documentation<a class="headerlink" href="#build-the-html-documentation" title="Permalink to this heading">¶</a></h3>
 <p>Once you have done all your modifications, you can build the documentation by running the following command in the terminal on the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory:</p>
-<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code></p>
-<p>One can also build the documentation in other formats, such as PDF, using <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pdf</span></code>. To push to the webside your changes to the documentation, you can do so through a pull request.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+<p>One can also build the documentation in other formats, such as PDF, using <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pdf</span></code>. To push to the website your changes to the documentation, you can do so through a pull request.</p>
+</section>
 </section>
 </section>
 
@@ -296,7 +315,7 @@
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Alejandro Pozas-Kerstjens.
+        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.
 
     </p>
   </div>
