@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse import dok_matrix  # , coo_matrix, coo
 
-from causalinflation.quantum.types import List, Dict, Tuple
+from causalinflation.quantum.types import List, Dict, Tuple, Union
 #import causalinflation
 
 # Had to insert this because of circular imports
@@ -452,7 +452,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
 
 #@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_name(monomial_numbers: np.ndarray,
-            parties_names: np.ndarray
+            parties_names: Union[np.ndarray, Tuple[str, ...]]
             ) -> str:
     """Converts the 2d array representation of a monoial to a string.
 
@@ -540,6 +540,14 @@ def nb_commuting(letter1: np.array,
     # they commute regardless of the value of the output
     return True if np.all(inf1-inf2) else False
 
+def notcomm_from_lexorder(lexorder: np.ndarray)  -> np.ndarray:
+    notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
+    for i in range(lexorder.shape[0]):
+        for j in range(i + 1, lexorder.shape[0]):
+            notcomm[i, j] = int(not nb_commuting(lexorder[i],
+                                                 lexorder[j]))
+    notcomm = notcomm + notcomm.T
+    return notcomm
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def A_lessthan_B(A: np.array, B: np.array) -> bool_:

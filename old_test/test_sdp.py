@@ -285,9 +285,9 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
+        self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknowable, 2,
+        self.assertEqual(sdp.n_unknowable, 2,
                          "The count of unknowable moments is wrong")
         meas = sdp.measurements
         A0 = 2*meas[0][0][0][0] - 1
@@ -320,9 +320,9 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.One.name, '1', "The unit monomial is not being named correctly.")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
+        self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknowable, 13,
+        self.assertEqual(sdp.n_unknowable, 13,
                          "The count of unknowable moments is wrong")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
@@ -371,9 +371,9 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct")
-        self.assertEqual(sdp._n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
+        self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong")
-        self.assertEqual(sdp._n_unknowable, 11,
+        self.assertEqual(sdp.n_unknowable, 11,
                          "The count of unknowable moments is wrong")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
@@ -403,7 +403,7 @@ class TestSDPOutput(unittest.TestCase):
                                     inflation_level_per_source=[3, 3, 3],
                                     order=('A', 'B', 'C')),
                             commuting=False)
-        cols = [np.array([[0]]),
+        cols = [np.array([]),
                 np.array([[1, 1, 0, 1, 0, 0]]),
                 np.array([[2, 2, 1, 0, 0, 0],
                           [2, 3, 1, 0, 0, 0]]),

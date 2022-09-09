@@ -35,7 +35,8 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                                               mon_lexsorted,
                                               mon_is_zero,
                                               nb_mon_to_lexrepr,
-                                              nb_commuting)
+                                              nb_commuting,
+                                              notcomm_from_lexorder)
 
 # import sys
 # def try_del(attribute: str, context=sys.modules[__name__]):
@@ -151,16 +152,7 @@ class InflationSDP(object):
         # commutations to be sparse, so self._default_commgraph[i, j] = 0
         # implies commutation, and self._default_commgraph[i, j] = 1 is
         # non-commutation.
-        self._default_notcomm = np.zeros((self._lexorder.shape[0],
-                                          self._lexorder.shape[0]), dtype=int)
-        for i in range(self._lexorder.shape[0]):
-            for j in range(i, self._lexorder.shape[0]):
-                if i == j:
-                    self._default_notcomm[i, j] = 0
-                else:
-                    self._default_notcomm[i, j] = int(not nb_commuting(self._lexorder[i],
-                                                                       self._lexorder[j]))
-                    self._default_notcomm[j, i] = self._default_notcomm[i, j]
+        self._default_notcomm = notcomm_from_lexorder(self._lexorder)
         self._notcomm = self._default_notcomm.copy()  # ? Ideas for a better name?
 
         # Question from Elie: This seems invariant? How we do alter the lexorder?
@@ -574,9 +566,9 @@ class InflationSDP(object):
         Used only for internal diagnostics.
         """
         _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
-        self._n_knowable = _counter['Yes']
-        self._n_something_knowable = _counter['Semi']
-        self._n_unknowable = _counter['No']
+        self.n_knowable = _counter['Yes']
+        self.n_something_knowable = _counter['Semi']
+        self.n_unknowable = _counter['No']
 
         if self.commuting:
             self.possibly_physical_monomials = self.list_of_monomials
@@ -1034,7 +1026,6 @@ class InflationSDP(object):
                 # else:
                 #     self._processed_objective[v2] = c1 * k
                 del self._processed_objective[v1]
-        self.objective = self._processed_objective
         # For compatibility purposes
         self._objective_as_name_dict = {k.name: v for (k, v) in self.objective.items()}
 
@@ -1069,8 +1060,9 @@ class InflationSDP(object):
             try:
                 return self.compound_monomial_from_name_dict[mon]
             except KeyError:
-                raise Exception(f"sanitise_monomial: {mon} in string format " +
-                                "is not found in any monomial encountered yet.")
+                return self._sanitise_monomial(to_numbers(monomial=mon, parties_names=self.names))
+                # raise Exception(f"sanitise_monomial: {mon} in string format " +
+                #                 "is not found in any monomial encountered yet.")
         elif isinstance(mon, numbers.Real):  # If they are number type
             try:
                 if np.isclose(float(mon), 1):
@@ -1544,7 +1536,8 @@ class InflationSDP(object):
                        for lexrepr in sortd]
 
         columns_symbolical = [to_symbol(col, self.names) for col in columns]
-
+        columns = [np.array(col, dtype=self.np_dtype).reshape((-1, self._nr_properties)) for col in columns]
+        # columns = [self.from_2dndarray(op) for op in columns]
         if return_columns_numerical:
             return columns_symbolical, columns
         else:
@@ -1586,7 +1579,8 @@ class InflationSDP(object):
         res = []
         allvars = set()
         for block in col_specs:
-            if block == []:
+            # block_shape = block.shape
+            if len(block) == 0:
                 res.append(self.identity_operator)
                 allvars.add('1')
             else:
@@ -1679,8 +1673,9 @@ class InflationSDP(object):
         """Generate the moment matrix.
         """
 
-        _cols = [np.array(col, dtype=self.np_dtype)
-                 for col in self.generating_monomials]
+        # _cols = [np.array(col, dtype=self.np_dtype).reshape((-1, self._nr_properties))
+        #          for col in self.generating_monomials]
+        _cols = self.generating_monomials
         problem_arr, canonical_mon_to_idx_dict = calculate_momentmatrix(_cols,
                                                                         self._notcomm,
                                                                         self._lexorder,

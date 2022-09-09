@@ -189,7 +189,7 @@ def apply_source_permplus_monomial(monomial: np.ndarray,
 
 def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
-                                         permutation: np.ndarray,
+                                         permutation: Union[np.ndarray, Tuple[int]],
                                          commuting: bool,
                                          notcomm,
                                          lexorder

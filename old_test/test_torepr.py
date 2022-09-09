@@ -10,27 +10,22 @@ class TestToRepr(unittest.TestCase):
         warnings.simplefilter("ignore", category=DeprecationWarning)
 
     def test_to_representative(self):
-        from causalinflation.quantum.fast_npa import nb_commuting
+        from causalinflation.quantum.fast_npa import notcomm_from_lexorder
         lexorder = np.array([[1, 1, 1, 0, 0, 0],
-                            [1, 1, 2, 0, 0, 0],
-                            [1, 2, 1, 0, 0, 0],
-                            [1, 2, 2, 0, 0, 0],
-                            [1, 3, 1, 0, 0, 0],
-                            [1, 3, 2, 0, 0, 0],
-                            [2, 1, 0, 1, 0, 0],
-                            [2, 1, 0, 2, 0, 0],
-                            [2, 2, 0, 1, 0, 0],
-                            [2, 2, 0, 2, 0, 0],
-                            [3, 0, 1, 1, 0, 0],
-                            [3, 0, 1, 2, 0, 0],
-                            [3, 0, 2, 1, 0, 0],
-                            [3, 0, 2, 2, 0, 0]])
-        notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=int)
-        for i in range(lexorder.shape[0]):
-            for j in range(i+1, lexorder.shape[0]):
-                notcomm[i, j] = int(not nb_commuting(lexorder[i],
-                                                        lexorder[j]))
-        notcomm = notcomm + notcomm.T
+                             [1, 1, 2, 0, 0, 0],
+                             [1, 2, 1, 0, 0, 0],
+                             [1, 2, 2, 0, 0, 0],
+                             [1, 3, 1, 0, 0, 0],
+                             [1, 3, 2, 0, 0, 0],
+                             [2, 1, 0, 1, 0, 0],
+                             [2, 1, 0, 2, 0, 0],
+                             [2, 2, 0, 1, 0, 0],
+                             [2, 2, 0, 2, 0, 0],
+                             [3, 0, 1, 1, 0, 0],
+                             [3, 0, 1, 2, 0, 0],
+                             [3, 0, 2, 1, 0, 0],
+                             [3, 0, 2, 2, 0, 0]])
+        notcomm = notcomm_from_lexorder(lexorder)
 
         
         names = ['A', 'B']
