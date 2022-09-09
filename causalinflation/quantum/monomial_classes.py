@@ -14,10 +14,6 @@ from causalinflation.quantum.monomial_utils import (
     compute_marginal, atomic_monomial_to_name,
     symbol_from_atomic_name, name_from_atomic_names, symbol_from_atomic_symbols)
 
-
-#TODO: Create more efficient inflation_indices_are_irrelevant test (not just is_knowable; that's overkill)
-#TODO: Create universal CompoundMonomial construction (takes as input 2darray, string, symbol, etc), remove _sanitize_monomial from InflationSDP class.
-
 @total_ordering
 class InternalAtomicMonomial(object):
     __slots__ = ['sdp',

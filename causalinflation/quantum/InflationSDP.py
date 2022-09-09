@@ -57,6 +57,7 @@ from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat,
 from causalinflation.quantum.types import List, Dict, Tuple, Union, Any
 # from typing import List, Dict, Union, Tuple, Any
 import warnings
+import numbers #To sanity check user giving numeric input
 
 # Force warnings.warn() to omit the source code line in the message
 # Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -131,6 +132,10 @@ class InflationSDP(object):
         self.np_dtype = np.uint8  # Elie: THIS CAN BE CHANGED, but honestly, we are never exceeding 255.
         self.identity_operator = np.empty((0, self._nr_properties), dtype=self.np_dtype)
 
+        # Emi: I think it makes sense to have this,
+        # as we reference this in other places, and it's a pain
+        # to redefine it
+
         # Define default lexicographic order through np.lexsort
         # The lexicographic order is encoded as a matrix with rows as 
         # operators and the row index gives the order
@@ -165,6 +170,8 @@ class InflationSDP(object):
         self.atomic_monomial_from_hash_cache = dict()
         # self.compound_monomial_from_hash_cache = dict()
         self.compound_monomial_from_tuple_of_atoms_cache = dict()
+        self.compound_monomial_from_name_dict = dict()
+        self.One = self.Monomial(self.identity_operator, idx=1)
 
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
         quick_key = self.from_2dndarray(array2d)
@@ -205,6 +212,7 @@ class InflationSDP(object):
         except KeyError:
             mon = CompoundMonomial(tuple_of_atoms)
             self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
+            self.compound_monomial_from_name_dict[mon.name] = mon
         return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
@@ -213,28 +221,6 @@ class InflationSDP(object):
         mon = self.monomial_from_list_of_atomic(list_of_atoms)
         mon.attach_idx_to_mon(idx)
         return mon
-
-        # quick_key = self.from_2dndarray(array2d)
-        # try:
-        #     mon = self.compound_monomial_from_hash_cache[quick_key]
-        #     mon.attach_idx_to_mon(idx)
-        #     # self._attach_idx_to_mon(mon, idx)
-        #     return mon
-        # except KeyError:  # Key not in compound_monomial_from_hash_cache
-        #     _factors = factorize_monomial(array2d, canonical_order=False)
-        #     tuple_of_atoms = tuple(sorted(self.AtomicMonomial(factor) for factor in _factors if len(factor)))
-        #     try:
-        #         mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
-        #         mon.attach_idx_to_mon(idx)
-        #         # self._attach_idx_to_mon(mon, idx)
-        #         self.compound_monomial_from_hash_cache[quick_key] = mon
-        #     except KeyError:
-        #         mon = CompoundMonomial(tuple_of_atoms)
-        #         mon.attach_idx_to_mon(idx)
-        #         # self._attach_idx_to_mon(mon, idx)
-        #         self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
-        #         self.compound_monomial_from_hash_cache[quick_key] = mon
-        #         return mon
 
     def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if self.split_node_model:
@@ -525,12 +511,7 @@ class InflationSDP(object):
         # ZeroMon.mask_matrix =
         # sample_monomial = np.asarray(self.symidx_to_canonical_mon_dict[2], dtype=self.np_dtype)
         #
-        self.One = self.Monomial(np.empty((0, self._nr_properties), dtype=self.np_dtype), idx=1)
-        # Emi: I think it makes sense to have this,
-        # as we reference this in other places, and it's a pain
-        # to redefine it
-        self.just_inflation_indices = np.array_equal(self._lexorder,
-                                                     self._default_lexorder)  # Use lighter version of to_rep
+
         self.list_of_monomials = [self.One] + [self.Monomial(v, idx=k)
                                                for (k, v) in self.symidx_to_sym_monarray_dict.items()]
         for mon in self.list_of_monomials:
@@ -1007,58 +988,52 @@ class InflationSDP(object):
             # For compatibility purposes
             self._objective_as_name_dict = {k.name: v for (k, v) in self._processed_objective.items()}
 
-    def _sanitise_monomial(self, mon: Any) -> Union[CompoundMonomial, int]:
+    def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
         """Bring a monomial into the form used internally.
             NEW: InternalCompoundMonomial are only constructed if in representative form.
             Therefore, if we encounter one, we are good!
         """
         if isinstance(mon, CompoundMonomial):
             return mon
-        elif type(mon) in [sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul,
-                         sp.Symbol]:  # Elie comment: should not be sp.Symbol
-            # This assumes the monomial is in "machine readable symbolic" form
+        elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
+                         # sp.Symbol)):  # Elie comment: should not be sp.Symbol
+            # This assumes the monomial is in "machine readable symbolic" form, no longer available!!
             array = np.concatenate([to_numbers(op, self.names)
                                     for op in flatten_symbolic_powers(mon)])
-            assert array.ndim == 2, "Cannot allow 3d or 1d arrays as monomial representations."
-            assert array.shape[-1] == self._nr_properties, "Something is wrong with the to_numbers usage."
-        elif type(mon) in [tuple, list]:
-            array = np.array(mon, dtype=self.np_dtype)
+            # assert array.ndim == 2, "Cannot allow 3d or 1d arrays as monomial representations."
+            # assert array.shape[-1] == self._nr_properties, "Something is wrong with the to_numbers usage."
+            return self._sanitise_monomial(array)
+        elif isinstance(mon, (tuple, list, np.ndarray)):
+            array = np.asarray(mon, dtype=self.np_dtype)
             assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
             assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
-        elif type(mon) == str:
+            canon = to_canonical(array, self._notcomm, self._lexorder)
+            if np.array_equal(canon, 0):
+                return 0  # TODO: Or ZeroMonomial once that is implemented?
+            else:
+                return self.Monomial(canon)
+        elif isinstance(mon, str):
             # If it is a string, I assume it is the name of one of the 
             # monomials in self.list_of_monomials
-            if hasattr(self, 'list_of_monomials'):
-                for m in self.list_of_monomials:
-                    if m.name == mon:
-                        return m
+            try:
+                return self.compound_monomial_from_name_dict[mon]
+            except KeyError:
                 raise Exception(f"sanitise_monomial: {mon} in string format " +
-                                "is not found in `list_of_monomials`.")
-            else:
-                raise Exception(f"sanitise_monomial: string format as input " +
-                                "is not supported before the generation of " +
-                                "`list_of_monomials`.")
-        else:  # If they are number type
+                                "is not found in any monomial encountered yet.")
+        elif isinstance(mon, numbers.Real):  # If they are number type
             try:
                 if np.isclose(float(mon), 1):
                     return self.One
+                elif np.isclose(float(mon), 0):
+                    return 0
                 else:
-                    raise Exception(f"Constant monomial {mon} can only be the identity monomial.")
+                    raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
             except:
+                pass
                 # This can happen if calling float() gives an error
-                raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
-        canon = to_canonical(array, self._notcomm, self._lexorder)
-        if np.array_equal(canon, 0):
-            return 0  # TODO: Or ZeroMonomial once that is implemented?
         else:
-            # canon = self.inflation_aware_to_ndarray_representative(canon)  # Not needed, I think.
-            reprr = self.Monomial(canon)
-            # reprr.update_atomic_constituents(to_representative_function=self.inflation_aware_to_ndarray_representative,
-            #                                  just_inflation_indices=self.just_inflation_indices)
-            # reprr.update_rectified_arrays_based_on_fake_setting_correction(
-            #     self.InflationProblem.rectify_fake_setting_atomic_factor)
-            # reprr.update_name_and_symbol_given_observed_names(self.names)
-            return reprr
+            raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
+
 
     # TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
     def solve(self, interpreter: str = 'MOSEKFusion',
