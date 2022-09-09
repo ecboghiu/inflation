@@ -1786,12 +1786,8 @@ class InflationSDP(object):
         n_sources = self.nr_sources
 
         inflation_symmetries = []  # [list(range(len(self.generating_monomials)))]
-
-        # # TODO do this function without relying on symbolic substitutions!! (Should be easy.)
-        # flatmeas  = np.array(flatten(self.measurements))
-        # measnames = np.array([str(meas) for meas in flatmeas])
-
-        list_original = from_numbers_to_flat_tuples(self.generating_monomials)
+        # list_original = from_numbers_to_flat_tuples(self.generating_monomials)
+        list_original = [self.from_2dndarray(op) for op in self.generating_monomials]
         for source, permutation in tqdm(sorted(
                 [(source, permutation) for source in list(range(n_sources))
                  for permutation in itertools.permutations(range(inflevel[source]))]
@@ -1810,19 +1806,20 @@ class InflationSDP(object):
             # measnames,
             # self.names)
             # Bring columns to the canonical form using commutations of
-            # connected components
-            for idx in range(len(permuted_cols_ind)):
-                if len(permuted_cols_ind[idx].shape) > 1:
-                    permuted_cols_ind[idx] = to_canonical(permuted_cols_ind[idx],
-                                                          self._notcomm,
-                                                          self._lexorder)
+            # connected components. NOTE FROM ELIE: ALREADY HANDLED BY apply_source_permutation_coord_input
+            # for idx in range(len(permuted_cols_ind)):
+            #     if len(permuted_cols_ind[idx].shape) > 1:
+            #         permuted_cols_ind[idx] = to_canonical(permuted_cols_ind[idx],
+            #                                               self._notcomm,
+            #                                               self._lexorder)
                     # permuted_cols_ind[idx] = np.vstack(
                     #              sorted(np.concatenate(factorize_monomial(
                     #                                       permuted_cols_ind[idx]
                     #                                                       )),
                     #                     key=lambda x: x[0])
                     #                                    )
-            list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
+            # list_permuted = from_numbers_to_flat_tuples(permuted_cols_ind)
+            list_permuted = [self.from_2dndarray(op) for op in permuted_cols_ind]
             try:
                 total_perm = find_permutation(list_permuted, list_original)
                 inflation_symmetries.append(total_perm)
