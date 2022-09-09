@@ -707,7 +707,8 @@ class InflationSDP(object):
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
-                         use_lpi_constraints: bool = False) -> None:
+                         use_lpi_constraints: bool = False,
+                         assume_shared_randomness: bool = False) -> None:
         """Set numerically the knowable moments and semiknowable moments according
         to the probability distribution specified. If p is None, or the user
         doesn't pass any argument to set_distribution, then this is understood
@@ -722,13 +723,18 @@ class InflationSDP(object):
             use_lpi_constraints (bool): Specification whether linearized
                 polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
                 will be imposed or not.
+
+            assume_shared_randomness (bool): Specification whether higher order monomials
+                may be calculated. If universal shared randomness is present, only atomic
+                monomials may be evaluated from the distribution.
         """
         # Reset is performed by set_values
         knowable_values = {m: m.compute_marginal(prob_array) for m in self.list_of_monomials
-                           if m.nof_factors == 1 and m.knowable_q} if (not prob_array is None) else dict()
+                           if m.is_atomic and m.knowable_q} if (not prob_array is None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=(not use_lpi_constraints)) #MAJOR BUGFIX?
+                        only_knowable_moments=(not use_lpi_constraints),
+                        only_specified_values=assume_shared_randomness) #MAJOR BUGFIX?
         # if self.objective and not (prob_array is None):
         #     warnings.warn('Danger! User apparently set the objective before the distribution.')
         # self.distribution_has_been_set = True
