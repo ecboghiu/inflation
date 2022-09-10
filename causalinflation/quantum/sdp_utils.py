@@ -135,23 +135,19 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
     """
     import mosek
     from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
-                             OptimizeError, SolutionError, \
-                             AccSolutionStatus, ProblemStatus
-
-    # Temporary fix for compatiblity with the rest
-    CONSTANT_KEY = 1
-    try:
-        del known_vars[0]
-    except KeyError:
-        pass
+        OptimizeError, SolutionError, \
+        AccSolutionStatus, ProblemStatus
 
     if verbose > 1:
         from time import time
         t0 = time()
         print('Starting pre-processing for the SDP solver.')
 
-    positionsmatrix = positionsmatrix.astype(np.uint16)
-    mat_dim         = positionsmatrix.shape[0]
+    CONSTANT_KEY = '1'  # If we hash monomials differently, we might
+    # need to change the hash of the constant/offset term
+    # from the number 1 to something else.
+    # The rest of the code should be insensitive to
+    # the hash except this line (ideally).
 
     # If the user didn't add the constant term.
     for equality in var_equalities:
@@ -161,14 +157,29 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         if CONSTANT_KEY not in inequality:
             inequality[CONSTANT_KEY] = 0
 
-    variables = set(positionsmatrix.flatten())
+    # variables = set(positionsmatrix.flatten())
+    # positionsmatrix = positionsmatrix.astype(np.uint16)
+    # mat_dim = positionsmatrix.shape[0]
+    # F0 = scipy.sparse.lil_matrix((mat_dim,mat_dim))
+    # Fi = {}
+    # for x in variables:
+    #     coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
+    #     coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
+    #     Fi[x] = coeffmat
 
-    F0 = scipy.sparse.lil_matrix((mat_dim,mat_dim))
-    Fi = {}
-    for x in variables:
-        coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
-        coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
-        Fi[x] = coeffmat
+    Fi = maskmatrices_name_dict.copy()
+    Fi = {k: scipy.sparse.lil_matrix(v, dtype=float) for k, v in Fi.items()}
+    variables = set(list(Fi.keys()))
+    mat_dim = Fi[next(iter(Fi))].shape[0]
+    F0 = scipy.sparse.lil_matrix((mat_dim, mat_dim))
+
+    # For positive variables, override the lower bound to be 0 if it is smaller
+    for x in positive_vars:
+        try:
+            if var_lowerbounds[x] < 0:
+                var_lowerbounds[x] = 0
+        except KeyError:
+            var_lowerbounds[x] = 0
 
     # Remove variables that are fixed by known_vars from the list of
     # variables, and also remove the corresponding entries for its upper
@@ -178,47 +189,55 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
         variables.remove(x)
         # We do not delete Fi[x] because we need them later for the certificate.
 
-        # Update the bounds for known variables.
+        # Now update the bounds for known variables.
         if x in var_lowerbounds:
             if var_lowerbounds[x] >= xval:
                 # We warn the user when these are incompatible, but the
                 # program will continue.
+                # TODO Should we remove this check? It is unlikely that
+                # the bounds will be incompatible with fixed values, if the
+                # user uses our program correctly.
                 UserWarning(
-                    "Lower bound {} for variable {}".format(var_lowerbounds[x],
-                                                            x) +
+                    "Lower bound {} for variable {}".format(var_lowerbounds[x], x) +
                     " is incompatible with the known value {}.".format(xval) +
                     " The lower bound will be ignored.")
             del var_lowerbounds[x]
         if x in var_upperbounds:
             if var_upperbounds[x] <= xval:
-                    UserWarning(
-                    "Upper bound {} for variable {}".format(var_upperbounds[x],
-                                                            x) +
+                UserWarning(
+                    "Upper bound {} for variable {}".format(var_upperbounds[x], x) +
                     " is incompatible with the known value {}.".format(xval) +
                     " The upper bound will be ignored.")
             del var_upperbounds[x]
         for equality in var_equalities:
-            if (x != CONSTANT_KEY) and (x in equality):
+            if x != CONSTANT_KEY and x in equality:
                 equality[CONSTANT_KEY] += equality[x] * xval
                 del equality[x]
         for inequality in var_inequalities:
-            if (x != CONSTANT_KEY) and (x in inequality):
+            if x != CONSTANT_KEY and x in inequality:
                 inequality[CONSTANT_KEY] += inequality[x] * xval
                 del inequality[x]
 
     # If some variable is semiknown, then this is the same as a constraint
     # of the form x_i = a_i * x_j. Imposing this constraint is equivalent
-    # to adding to the coeffmat of x_j the expression a_i * (coeffmat of x_i),
+    # to adding to the coeffmat of x_j  the expression a_i * (coeffmat of x_i),
     # and removing the coeffmat of x_i. Note: this also accounts for the case
     # where x_j is not found anywhere else in the moment matrix.
     for x, (c, x2) in semiknown_vars.items():
         Fi[x2] += c * Fi[x]
         variables.remove(x)
-        del Fi[x]
 
-        if (x in var_lowerbounds) and (x2 in var_lowerbounds):
+        del Fi[x]  # We can safely delete Fi[x].
+
+        # TODO Is worthile to consider the compatibility of lower and upper
+        # bounds of variables involved in LPI constraints? I would say no.
+        # For our usecase, it should not happen that we have one upper bound
+        # for one variable and lower bound for the other variable such that
+        # the constraint can never be satisfied, but as a general NPO package,
+        # this might happen.
+        if x in var_lowerbounds and x2 in var_lowerbounds:
             del var_lowerbounds[x]
-        if (x in var_upperbounds) and (x2 in var_upperbounds):
+        if x in var_upperbounds and x2 in var_upperbounds:
             del var_upperbounds[x]
         for equality in var_equalities:
             if x in equality:
@@ -239,6 +258,10 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
+    # Comment: it appears that storing sparse matrices as dictionaries of
+    # indicies (dok format) is the best way to build matrices incrementally
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.dok_matrix.html
+
     b = scipy.sparse.dok_matrix((len(var_inequalities), 1))
     for i, inequality in enumerate(var_inequalities):
         b[i, 0] = inequality[CONSTANT_KEY]
@@ -259,21 +282,31 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             if x != CONSTANT_KEY:
                 C[i, var2index[x]] = c
 
-
     # Before converting to MOSEK format, it is useful to keep indices of where
     # F0, Fi are nonzero, as it seems to be more difficult to extract later.
-    ij_F0_nonzero =      [(i,j) for (i,j) in zip(*F0.nonzero())    if j >= i]
-    ij_Fi_nonzero = {x : [(i,j) for (i,j) in zip(*Fi[x].nonzero()) if j >= i]
-                                                            for x in variables}
+    ij_F0_nonzero = [(i, j) for (i, j) in zip(*F0.nonzero()) if j >= i]
+    ij_Fi_nonzero = {x: [(i, j) for (i, j) in zip(*Fi[x].nonzero()) if j >= i]
+                     for x in variables}
 
     # Convert to MOSEK format.
     b = Matrix.sparse(*b.shape, *b.nonzero(), b[b.nonzero()].A[0])
+    # A = Matrix.sparse(*A.shape, *A.nonzero(), A[A.nonzero()].A[0])
     d = Matrix.sparse(*d.shape, *d.nonzero(), d[d.nonzero()].A[0])
+    # C = Matrix.sparse(*C.shape, *C.nonzero(), C[C.nonzero()].A[0])
     F0 = Matrix.sparse(*F0.shape, *F0.nonzero(), F0[F0.nonzero()].A[0])
     for x in variables:
         F = Fi[x]
         Fi[x] = Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].A[0])
 
+    # Find if the objective is constant.
+    # We can safely assume that with the known_constraints, all known variables
+    # in the objective have already been removed, and added to
+    # objective[CONSTANT_KEY]. However, just to be certain, we will
+    # do this step also here.
+    for x, val in known_vars.items():
+        if x in objective and x != CONSTANT_KEY:
+            objective[CONSTANT_KEY] += val * objective[x]
+            del objective[x]
     constant_objective = False
     if list(objective.keys()) == [CONSTANT_KEY]:
         constant_objective = True
@@ -378,9 +411,9 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 try:
                     # x_i - lb_i >= 0
                     lb_constraints.append(M.constraint(
-                                        Expr.sub(x_mosek.index(var2index[x]),
-                                                 float(val)),
-                                        Domain.greaterThan(0)))
+                        Expr.sub(x_mosek.index(var2index[x]),
+                                 float(val)),
+                        Domain.greaterThan(0)))
                 except KeyError:
                     pass
         if var_upperbounds:
@@ -389,23 +422,20 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
                 try:
                     # ub_i - x_i >= 0
                     ub_constraints.append(M.constraint(
-                                        Expr.sub(float(val),
-                                                 x_mosek.index(var2index[x])),
-                                        Domain.greaterThan(0)))
+                        Expr.sub(float(val),
+                                 x_mosek.index(var2index[x])),
+                        Domain.greaterThan(0)))
                 except KeyError:
                     pass
 
         if var_inequalities:
             A_mosek = Matrix.sparse(*A.shape, *A.nonzero(), A[A.nonzero()].A[0])
-            ineq_constraint = M.constraint(Expr.add(Expr.mul(A_mosek,
-                                                             x_mosek),
+            ineq_constraint = M.constraint(Expr.add(Expr.mul(A_mosek, x_mosek),
                                                     b),
                                            Domain.greaterThan(0))
         if var_equalities:
             C_mosek = Matrix.sparse(*C.shape, *C.nonzero(), C[C.nonzero()].A[0])
-            eq_constraint = M.constraint(Expr.add(Expr.mul(C_mosek,
-                                                           x_mosek),
-                                                  d),
+            eq_constraint = M.constraint(Expr.add(Expr.mul(C_mosek, x_mosek), d),
                                          Domain.equalsTo(0))
 
         G = M.variable("G", Domain.inPSDCone(mat_dim))
@@ -459,7 +489,7 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
     # Solving and readout
     xmat, ymat, primal, dual = None, None, None, None
-    xmat = np.zeros((mat_dim,mat_dim))
+    xmat = np.zeros((mat_dim, mat_dim))
     try:
         if verbose > 0:
             M.setLogHandler(sys.stdout)
@@ -474,12 +504,12 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
 
         if solve_dual:
             ymat = Z.level().reshape([mat_dim, mat_dim])
-            xmat = F0.getDataAsArray().reshape((mat_dim,mat_dim))
+            xmat = F0.getDataAsArray().reshape((mat_dim, mat_dim))
             x_values = {}
             for i, x in enumerate(variables):
                 x_values[x] = -ci_constraints[i].dual()[0]
                 xmat = xmat + (x_values[x] *
-                              Fi[x].getDataAsArray().reshape((mat_dim,mat_dim)))
+                             Fi[x].getDataAsArray().reshape((mat_dim, mat_dim)))
         else:
             ymat = G.dual().reshape([mat_dim, mat_dim])
             xmat = G.level().reshape([mat_dim, mat_dim])
@@ -498,10 +528,11 @@ def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
             status_str = 'unknown'
             # The solutions status is unknown. The termination code
             # indicates why the optimizer terminated prematurely.
-            print("The solution status is unknown.")
-            symname, desc = mosek.Env.getcodedesc(
+            if verbose > 0:
+                print("The solution status is unknown.")
+                symname, desc = mosek.Env.getcodedesc(
                     mosek.rescode(int(M.getSolverIntInfo("optimizeResponse"))))
-            print("   Termination code: {0} {1}".format(symname, desc))
+                print("   Termination code: {0} {1}".format(symname, desc))
         else:
             status_str = 'other'
             print("Another unexpected problem, status {0}".format(status) +

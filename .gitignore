@@ -170,7 +170,7 @@ problemarr*
 *.json
 result_matlab_svetlichny.txt
 examples/debug.py
-docs/dev_examples.ipynb
-docs/Fs_GOOD.pickle
-inflation.code-workspace
-examples/bell.py
+examples/triangle_W.py
+
+#Visual Studio IDE
+.vs/
