@@ -11,13 +11,15 @@ import sympy
 # import warnings
 from functools import lru_cache
 
-from causalinflation.quantum.fast_npa import (factorize_monomial,
-                                              mon_lessthan_mon,
-                                              mon_lexsorted,
-                                              to_canonical,
-                                              to_name,
-                                              mon_equal_mon,
-                                              reverse_mon)
+from .fast_npa import (apply_source_swap_monomial,
+                       factorize_monomial,
+                       mon_lessthan_mon,
+                       mon_lexsorted,
+                       nb_unique,
+                       to_canonical,
+                       to_name,
+                       mon_equal_mon,
+                       reverse_mon)
 # from causalinflation.quantum.typing import ArrayMonomial, StringMonomial, IntMonomial
 
 
@@ -491,11 +493,6 @@ def to_numbers(monomial: str,
     return np.array(monomial_parts_indices, dtype=np.uint16) #Elie warning: Could the string '1' cause problems here??
 
 
-def from_numbers_to_flat_tuples(lista: List[np.ndarray]
-                                ) -> List[Tuple[int]]:
-    """Flatten all monomials in the list represented as lists of lists to a
-    flat tuple.
-
 def factorize_monomials(monomials_as_numbers: np.ndarray,
                         verbose: int = 0
                         ) -> np.ndarray:
@@ -524,6 +521,11 @@ def factorize_monomials(monomials_as_numbers: np.ndarray,
     return monomials_factors
 
 
+@lru_cache(maxsize=None, typed=False)
+def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
+    return is_knowable(np.asarray(atomic_monomial))
+
+
 def is_knowable(monomial: np.ndarray) -> bool:
     """Determine whether a given atomic monomial (which cannot be factorized
     into smaller disconnected components) admits an identification with a
@@ -531,7 +533,7 @@ def is_knowable(monomial: np.ndarray) -> bool:
 
     Parameters
     ----------
-    monomial_as_array : Union[List[List[int]], np.ndarray]
+    monomial : np.ndarray
         List of operators, denoted each by a list of indices
 
     Returns
@@ -539,23 +541,16 @@ def is_knowable(monomial: np.ndarray) -> bool:
     bool
         Whether the monomial is knowable or not.
     """
-
-    # After inflation and factorization, a monomial is known if it just
-    # contains at most one operator per party, and in the case of having
-    # one operator per node in the network, if the corresponding graph is
-    # the same as the scenario hypergraph.
-
-    # monomial_as_array = np.asarray(monomial)
-    assert monomial_as_array.ndim == 2, "You must enter a list of monomials. Hence,"\
+    assert monomial.ndim == 2, "You must enter a list of monomials. Hence,"\
                         + " the number of dimensions of monomial must be 2"
-    parties = monomial_as_array[:, 0].astype(int)
+    parties = monomial[:, 0].astype(int)
     # If there is more than one monomial of a party, it is not knowable
     if len(set(parties)) != len(parties):
         return False
     else:
        # We see if, for each source, there is at most one copy used
         return all([len(set(source[np.nonzero(source)])) <= 1
-                    for source in monomial_as_array[:, 1:-2].T])
+                    for source in monomial[:, 1:-2].T])
 
 
 # @lru_cache(maxsize=None, typed=False)
