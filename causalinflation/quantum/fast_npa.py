@@ -44,6 +44,7 @@ try:
     from numba import jit
     from numba.types import bool_, void
     from numba.types import uint16 as uint16_
+    from numba.types import int16 as int16_
     from numba.types import int64 as int64_
     # from numba import types
     from numba.typed import Dict as nb_Dict
@@ -52,6 +53,7 @@ except ImportError:
         return lambda f: f
     bool_   = bool
     uint16_ = np.uint16
+    int16_  = np.int16
     int64_  = np.int
     nb_Dict = dict
     void    = None
@@ -365,9 +367,27 @@ def commuting(letter1: np.array, letter2: np.array, lexorder: np.array) -> bool_
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.array) -> np.ndarray:
-        """Sort by parties the monomial, i.e., sort by the first column in
-        the 2d representation of the monomial.
-        """
+    """Sort by parties the monomial, i.e., sort by the first column in
+    the 2d representation of the monomial.
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Input monomial as 2d array.
+
+    lexorder : numpy.ndarray
+
+
+    Returns
+    -------
+    numpy.ndarray
+        The sorted monomial.
+
+    Examples
+    --------
+    >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
+    np.array([[1,...],[3,...],[4,...]])
+    """
     PARTY_ORDER, _ = nb_unique(lexorder[:, 0])
     mon_sorted = np.zeros_like(mon)
     i_old = 0
@@ -526,38 +546,6 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     return False
 
 
-@jit(nopython=True, cache=cache)
-def mon_sorted_by_parties(mon: np.ndarray) -> np.ndarray:
-    """Sort the monomial by parties, i.e., sort by the first column in
-    the 2d representation of the monomial.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial as 2d array.
-
-    Returns
-    -------
-    numpy.ndarray
-        The sorted monomial.
-
-    Examples
-    --------
-    >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
-    np.array([[1,...],[3,...],[4,...]])
-    """
-
-    if len(monomial_numbers) == 0:
-        return '1'
-    else:
-        return '*'.join(['_'.join([parties_names[letter[0] - 1]] +
-                                  [str(i) for i in letter[1:]])
-                         for letter in np.asarray(monomial_numbers).tolist()])
-
-
-# def to_tuples(monomial: np.ndarray):
-#     return tuple(tuple(vec) for vec in monomial.tolist())
-
 def to_hashable(monomial: np.ndarray):
     return monomial.tobytes()
 
@@ -591,7 +579,16 @@ def nb_commuting(letter1: np.array,
     >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
     """
-    return mon[np.arange(mon.shape[0])[::-1]]
+    if letter1[0] != letter2[0]:
+        return True
+    if np.array_equal(letter1[1:-1], letter2[1:-1]):
+        return True
+
+    inf1, inf2 = letter1[1:-2], letter2[1:-2]
+    inf1, inf2 = inf1[np.nonzero(inf1)], inf2[np.nonzero(inf2)]
+    # If at least one in inf1-inf2 is 0, then there is one source in common
+    # therefore they don't commute.
+    return True if np.all(inf1-inf2) else False
 
 def notcomm_from_lexorder(lexorder: np.ndarray)  -> np.ndarray:
     notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
@@ -891,6 +888,52 @@ def calculate_momentmatrix(cols: List,
                     momentmatrix[j, i] = varidx
                     varidx += 1
     return momentmatrix.todense(), canonical_mon_to_idx_dict
+
+
+################################################################################
+# OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
+################################################################################
+@jit(nopython=True)
+def apply_source_swap_monomial(monomial: np.ndarray,
+                               source: int,
+                               copy1: int,
+                               copy2: int
+                               ) -> np.ndarray:
+    """Applies a swap of two sources to a monomial.
+    Parameters
+    ----------
+    monomial : numpy.ndarray
+        2d array representation of a monomial.
+    source : int
+         Integer in values [0, ..., nr_sources]
+    copy1 : int
+        Represents the copy of the source that swaps with copy2
+    copy2 : int
+        Represents the copy of the source that swaps with copy1
+    Returns
+    -------
+    numpy.ndarray
+         The new monomial with swapped sources.
+    Examples
+    --------
+    >>> monomial = np.array([[1, 2, 3, 0, 0, 0]])
+    >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
+                                             [2, 1, 3, 0, 0, 0]]),
+                                             1,  # source
+                                             2,  # copy1
+                                             3)  # copy2
+    array([[1, 0, 3, 1, 0, 0],
+           [2, 1, 2, 0, 0, 0]])
+    """
+    new_factors = monomial.copy()
+    for i in range(new_factors.shape[0]):
+        copy = new_factors[i, 1 + source]
+        if copy > 0:
+            if copy == copy1:
+                new_factors[i, 1 + source] = copy2
+            elif copy == copy2:
+                new_factors[i, 1 + source] = copy1
+    return new_factors
 
 
 def factorize_monomial(raw_monomial: np.ndarray,

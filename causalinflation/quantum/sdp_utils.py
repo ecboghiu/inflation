@@ -8,9 +8,10 @@ import sys
 from typing import Dict, Tuple
 from warnings import warn
 
-def solveSDP_MosekFUSION(positionsmatrix: scipy.sparse.lil_matrix,
+def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
                          objective={1: 0.}, known_vars={0: 0., 1: 1.},
-                         semiknown_vars={}, verbose=0, feas_as_optim=False,
+                         semiknown_vars={}, positive_vars=[],
+                         verbose=0, feas_as_optim=False,
                          solverparameters={}, var_lowerbounds={},
                          var_upperbounds={}, var_inequalities=[],
                          var_equalities=[], solve_dual=True

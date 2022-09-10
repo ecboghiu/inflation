@@ -685,20 +685,24 @@ class InflationSDP(object):
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
                          assume_shared_randomness: bool = False) -> None:
-        """Set numerically the knowable moments and semiknowable moments according
-        to the probability distribution specified. If p is None, or the user
-        doesn't pass any argument to set_distribution, then this is understood
-        as a request to delete information about past distributions.
-        Args:
-            prob_array (np.ndarray): Multidimensional array encoding the
-                distribution, which is called as prob_array[a,b,c,...,x,y,z,...]
-                where a,b,c,... are outputs and x,y,z,... are inputs.
-                Note: even if the inputs have cardinality 1, they must be specified,
-                and the corresponding axis dimensions are 1.
+        """Set numerically all the knowable (and optionally semiknowable)
+        moments according to the probability distribution
+        specified.
 
-            use_lpi_constraints (bool): Specification whether linearized
-                polynomial constraints (see, e.g., Eq. (D6) in arXiv:2203.16543)
-                will be imposed or not.
+        Parameters
+        ----------
+            prob_array : numpy.ndarray
+                Multidimensional array encoding the distribution, which is
+                called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+                :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+                inputs. Note: even if the inputs have cardinality 1 they must be
+                specified, and the corresponding axis dimensions are 1.
+
+            use_lpi_constraints : bool, optional
+                Specification whether linearized polynomial constraints (see,
+                e.g., Eq. (D6) in `arXiv:2203.16543
+                <http://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
+                By default ``False``.
 
             assume_shared_randomness (bool): Specification whether higher order monomials
                 may be calculated. If universal shared randomness is present, only atomic
@@ -1606,8 +1610,8 @@ class InflationSDP(object):
                        if lexrepr != [] else self.identity_operator #Note: This branch uses the new convention for identity operator.
                        for lexrepr in sortd]
 
-        columns_symbolical = [to_symbol(col, self.names) for col in columns]
         columns = [np.array(col, dtype=self.np_dtype).reshape((-1, self._nr_properties)) for col in columns]
+        columns_symbolical = [to_symbol(col, self.names) for col in columns]
         # columns = [self.from_2dndarray(op) for op in columns]
         if return_columns_numerical:
             return columns_symbolical, columns
