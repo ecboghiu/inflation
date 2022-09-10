@@ -6,7 +6,7 @@ with open("VERSION.txt", "r") as f:
 setup(
     name = "causalinflation",
     version = "0.1",
-    install_requires = ['numpy', 'sympy', 'scipy'],
+    install_requires = ['numpy', 'sympy', 'scipy', 'methodtools'],
     extras_require = {
         "jit": ['numba'],
         "solver": ['mosek'],
@@ -24,5 +24,5 @@ setup(
     project_urls = {'Documentation': 'https://ecboghiu.github.io/inflation/_build/html/index.html',  #TODO update this on realease
                     'Source': 'https://github.com/ecboghiu/inflation',
                     'Issue Tracker': 'https://github.com/ecboghiu/inflation/issues'},
-    zip_safe = False,  # To avoid problems with Numba, https://github.com/numba/numba/issues/4908 
+    zip_safe = False,  # To avoid problems with Numba, https://github.com/numba/numba/issues/4908
 )
