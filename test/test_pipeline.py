@@ -16,7 +16,7 @@ class TestLPI(unittest.TestCase):
                                      settings_per_party=[1, 1, 1],
                                      inflation_level_per_source=[3, 3, 3]),
                              commuting=False)
-         cols = [np.array([0]),
+         cols = [np.array([]),
                  np.array([[1, 1, 0, 1, 0, 0]]),
                  np.array([[2, 2, 1, 0, 0, 0],
                            [2, 3, 1, 0, 0, 0]]),
@@ -119,15 +119,17 @@ class TestMonomialGeneration(unittest.TestCase):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         _, columns = oneParty.build_columns([[], [0, 0]],
                                             return_columns_numerical=True)
-        truth   = [[0],
+        truth   = [[],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
         truth = [np.array(mon) for mon in truth]
         self.assertTrue(len(columns) == len(truth),
                         "Generating columns with identities is not producing " +
                         "the correct number of columns.")
-        areequal = np.all([np.array_equal(col, tru)
-                          for col, tru in zip(columns, truth)])
+        areequal = all(np.array_equiv(r[0].T, np.array(r[1]).T) for r in zip(columns, truth))
+        self.assertTrue(areequal,
+                         "The column generation is not capable of handling " +
+                         "monomials that reduce to the identity")
         self.assertTrue(areequal,
                         "The column generation is not capable of handling " +
                         "monomials that reduce to the identity.")
@@ -138,7 +140,7 @@ class TestSDPOutput(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
-        
+
     def GHZ(self, v):
         dist = np.zeros((2,2,2,1,1,1))
         for a in [0, 1]:
@@ -158,7 +160,7 @@ class TestSDPOutput(unittest.TestCase):
                                      inflation_level_per_source=[2, 1, 1])
 
     def test_CHSH(self):
-        bellScenario = InflationProblem({"lambda": ["a", "b"]},
+        bellScenario = InflationProblem({"Lambda": ["A", "B"]},
                                          outcomes_per_party=[2, 2],
                                          settings_per_party=[2, 2],
                                          inflation_level_per_source=[1])
@@ -166,7 +168,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct.")
-        self.assertEqual(sdp.n_knowable, 8,
+        self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong.")
         self.assertEqual(sdp.n_unknowable, 2,
                          "The count of unknowable moments is wrong.")
@@ -177,7 +179,7 @@ class TestSDPOutput(unittest.TestCase):
         B1 = 2*meas[1][0][1][0] - 1
 
         sdp.set_objective(A0*(B0+B1)+A1*(B0-B1), 'max')
-        self.assertEqual(len(sdp._objective_as_dict), 7,
+        self.assertEqual(len(sdp.objective), 7,
                          "The parsing of the objective function is failing")
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 2*np.sqrt(2)),
@@ -211,7 +213,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct.")
-        self.assertEqual(sdp.n_knowable, 8,
+        self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong.")
         self.assertEqual(sdp.n_unknowable, 11,
                          "The count of unknowable moments is wrong.")
@@ -238,7 +240,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('local1')
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct.")
-        self.assertEqual(sdp.n_knowable, 8,
+        self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
                          "The count of knowable moments is wrong.")
         self.assertEqual(sdp.n_unknowable, 13,
                          "The count of unknowable moments is wrong.")
@@ -301,13 +303,15 @@ class TestSymmetries(unittest.TestCase):
                                                  inflation_level_per_source=[2]
                                                  ),
                                 commuting=True)
+        lexorder = scenario._lexorder
+        notcomm = scenario._notcomm
         scenario._generate_parties()
         col_structure = [[], [0, 0]]
 
         _, ordered_cols_num = scenario.build_columns(col_structure,
                                                   return_columns_numerical=True)
 
-        expected = [[0],
+        expected = [[],
                     [[1, 2, 0, 0], [1, 2, 1, 0]],
                     [[1, 1, 0, 0], [1, 2, 0, 0]],
                     [[1, 1, 1, 0], [1, 2, 0, 0]],
@@ -318,7 +322,10 @@ class TestSymmetries(unittest.TestCase):
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
                                                              (1, 0),
-                                                             False)
+                                                             False,
+                                                             notcomm,
+                                                             lexorder
+                                                             )
         self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
                          "The commuting relations of different copies are not "
                          + "being applied properly after inflation symmetries.")

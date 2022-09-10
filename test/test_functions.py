@@ -6,6 +6,9 @@ from causalinflation.quantum.general_tools import remove_sandwich
 
 class TestFunctions(unittest.TestCase):
     def test_ordering(self):
+        lexorder =  np.array([[1, 1, 1, 0, 0, 0],
+                              [1, 2, 1, 0, 0, 0],
+                              [2, 1, 1, 0, 0, 0]])
         # A_1_1_0_0_0*A_1_1_0_0_0*B_1_1_0_0_0
         mon1 = np.array([[1, 1, 1, 0, 0, 0],
                          [1, 1, 1, 0, 0, 0],
@@ -14,10 +17,10 @@ class TestFunctions(unittest.TestCase):
         mon2 = np.array([[1, 1, 1, 0, 0, 0],
                          [1, 2, 1, 0, 0, 0],
                          [2, 1, 1, 0, 0, 0]])
-        result = mon_lessthan_mon(mon1, mon2)
+        result = mon_lessthan_mon(mon1, mon2, lexorder)
         correct = True
         self.assertEqual(result, correct,
-                         "mon_lessthan_mon is not finding the proper ordering.")
+                         "mon_lessthan_mon is not finding proper ordering")
 
     def test_sandwich(self):
         # <(A_0111*A_0121*A_0111)*(A_332*A_0342*A_332)*(B_0011*B_0012)>
