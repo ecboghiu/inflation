@@ -1379,21 +1379,35 @@ class InflationSDP(object):
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        vars_to_factors = dict(self.semiknowable_atoms)
-        vars_to_names   = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
-        cert = dual[1]
-        for var, coeff in dual.items():
-            if var > 1:
-                try:
-                    factors = 1
-                    for factor in vars_to_factors[var]:
-                        prob = string2prob(vars_to_names[factor],
-                                           self.nr_parties)
-                        factors *= prob
-                    cert += coeff * factors
-                except KeyError:
-                    cert += coeff * sp.Symbol(vars_to_names[var])
-        return cert
+        mons_as_symbols = [self.name_dict_of_monomials[name].symbol for name in dual.keys()]
+        polynomial = sp.S.Zero
+        for mon_as_symbol, coeff in zip(mons_as_symbols, dual):
+            polynomial += coeff * mon_as_symbol
+        return polynomial
+        #
+        # cert = dict(zip(mons_as_symbols, dual))
+        #
+        # polynomial = 0
+        # for mon, coeff in cert.items():
+        #     polynomial += coeff * mon.to_symbol()
+        #
+        # return sp.expand(polynomial)
+        #
+        # vars_to_factors = dict(self.semiknowable_atoms)
+        # vars_to_names   = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
+        # cert = dual[1]
+        # for var, coeff in dual.items():
+        #     if var > 1:
+        #         try:
+        #             factors = 1
+        #             for factor in vars_to_factors[var]:
+        #                 prob = string2prob(vars_to_names[factor],
+        #                                    self.nr_parties)
+        #                 factors *= prob
+        #             cert += coeff * factors
+        #         except KeyError:
+        #             cert += coeff * sp.Symbol(vars_to_names[var])
+        # return cert
 
     def certificate_as_string(self,
                               clean: bool=False,
@@ -1435,14 +1449,14 @@ class InflationSDP(object):
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        vars_to_names = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
-        cert = str(dual[1])
-        for var, coeff in dual.items():
-            if var > 1:
-                cert += "+" if coeff > 0 else "-"
-                cert += f"{abs(coeff)}*{vars_to_names[var]}"
-        cert += " >= 0"
-        return cert
+        rest_of_dual = dual.copy()
+        cert_as_string = rest_of_dual.pop('1')
+        for mon_name, coeff in rest_of_dual.items():
+                cert_as_string += "+" if coeff > 0 else "-"
+                cert_as_string += f"{abs(coeff)}*{mon_name}"
+        cert_as_string += " >= 0"
+        return cert_as_string
+
 
 
     ########################################################################
