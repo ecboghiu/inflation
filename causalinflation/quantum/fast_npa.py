@@ -244,7 +244,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
 
 
 @jit(nopython=True)
-def nb_first_index(array: np.ndarray, item: float) -> int:
+def nb_first_index(array: np.ndarray, item: np.uint8) -> int:
     """Find the first index of an item in an array.
 
     Parameters
@@ -265,7 +265,7 @@ def nb_first_index(array: np.ndarray, item: float) -> int:
     >>> nb_first_index(array, 5)
     4
     """
-    for idx, val in enumerate(array):
+    for idx, val in enumerate(np.asarray(array, dtype=int64_)):
         if abs(val - item) < 1e-10:
             return idx
 
