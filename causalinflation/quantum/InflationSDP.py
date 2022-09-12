@@ -237,7 +237,8 @@ class InflationSDP(object):
         quick_key = self.from_2dndarray(unsym_monarray)
         try:
             sym_monarray = self.canonsym_ndarray_from_hash_cache[quick_key]
-            warnings.warn("This 'to_representative' function should only be called as a last resort.")
+            if self.verbose > 0:
+                warnings.warn("This 'to_representative' function should only be called as a last resort.")
         except KeyError:
             # warnings.warn(
             #     f"Encountered a monomial that does not appear in the original moment matrix: {unsym_monarray}")
@@ -250,8 +251,9 @@ class InflationSDP(object):
                                              commuting=self.commuting)
             new_quick_key = self.from_2dndarray(sym_monarray)
             if new_quick_key not in self.canonsym_ndarray_from_hash_cache:
-                warnings.warn(
-                    f"Encountered a monomial that does not appear in the original moment matrix:\n {unsym_monarray}")
+                if self.verbose > 0:
+                    warnings.warn(
+                        f"Encountered a monomial that does not appear in the original moment matrix:\n {sym_monarray}")
             self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
         self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
         return sym_monarray
