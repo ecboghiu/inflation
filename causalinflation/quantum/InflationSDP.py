@@ -35,7 +35,6 @@ from .fast_npa import (calculate_momentmatrix,
                        mon_lexsorted,
                        mon_is_zero,
                        nb_mon_to_lexrepr,
-                       nb_commuting,
                        notcomm_from_lexorder)
 
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
@@ -1197,9 +1196,10 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
         if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions")
+            if self.verbose > 0:
+                warnings.warn("Beware that, because the problem contains linearized " +
+                     "polynomial constraints, the certificate is not guaranteed " +
+                     "to apply to other distributions")
 
         vars_to_factors = dict(self.semiknowable_atoms)
         vars_to_names   = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
@@ -1303,9 +1303,10 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
         if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions")
+            if self.verbose >0:
+                warnings.warn("Beware that, because the problem contains linearized " +
+                     "polynomial constraints, the certificate is not guaranteed " +
+                     "to apply to other distributions")
 
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
@@ -1319,7 +1320,7 @@ class InflationSDP(object):
                 m2 = self.generating_monomials[j] if j > 0 else np.array([[0]])
 
                 # Create the monomial
-                monom  = dot_mon(m1, m2)
+                monom  = dot_mon(m1, m2) #TODO: dot_mon not imported. If it is, it needs a third argument!
                 if self.commuting:
                     canonical = remove_projector_squares(mon_lexsorted(monom))
                     if mon_is_zero(canonical):
@@ -1426,9 +1427,10 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
         if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions")
+            if self.verbose > 0:
+                warnings.warn("Beware that, because the problem contains linearized " +
+                     "polynomial constraints, the certificate is not guaranteed " +
+                     "to apply to other distributions")
 
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
@@ -1724,7 +1726,7 @@ class InflationSDP(object):
                     else:
                         previous = val
                 except KeyError:
-                    warn("Your generating set might not have enough " +
+                    warnings.warn("Your generating set might not have enough " +
                          "elements to fully impose inflation symmetries.")
             orbits[key] = val
 
