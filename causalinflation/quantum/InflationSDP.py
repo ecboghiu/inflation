@@ -1652,10 +1652,11 @@ class InflationSDP(object):
         """Clears the information about variables assigned to numerical
         quantities in the problem.
         """
-        self.known_moments     = {0: 0., 1: 1.}
-        self.semiknown_moments = {}
-        if self.objective != 0:
-            self.set_objective(self.objective)
+        self.set_values(None)
+        # self.known_moments     = {0: 0., 1: 1.}
+        # self.semiknown_moments = {}
+        # if self.objective != 0:
+        #     self.set_objective(self.objective)
 
     def write_to_file(self, filename: str):
         """Exports the problem to a file.
@@ -1691,67 +1692,6 @@ class InflationSDP(object):
     ########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX              #
     ########################################################################
-    def _apply_inflation_symmetries(self,
-                                    momentmatrix: np.ndarray,
-                                    monomials_list: np.ndarray,
-                                    inflation_symmetries: List[List[int]]
-                                    ) -> Tuple[np.ndarray,
-                                               Dict[int, int],
-                                               np.ndarray]:
-        """Applies the inflation symmetries to the moment matrix.
-
-        Parameters
-        ----------
-        momentmatrix : numpy.ndarray
-            The moment matrix.
-        monomials_list : numpy.ndarray
-            The list of monomials as List[Tuple[int, ArrayMonomial]]
-        inflation_symmetries : List[List[int]]
-
-        Returns
-        -------
-        Tuple[numpy.ndarray, Dict[int, int], numpy.ndarray]
-            The symmetrized moment matrix, the orbits as a dictionary
-            and the symmetrized monomials list.
-        """
-        symmetric_mm      = momentmatrix.copy()
-        indices_to_delete = []
-        # the +2 is to include 0:0 and 1:1
-        orbits = {i: i for i in range(2+len(monomials_list))}
-        for permutation in tqdm(inflation_symmetries,
-                                disable=not self.verbose,
-                                desc="Applying symmetries          "):
-            for i, ip in enumerate(permutation):
-                for j, jp in enumerate(permutation):
-                    if symmetric_mm[i, j] < symmetric_mm[ip, jp]:
-                        indices_to_delete.append(int(symmetric_mm[ip, jp]))
-                        orbits[symmetric_mm[ip, jp]] = symmetric_mm[i, j]
-                        symmetric_mm[ip, jp]         = symmetric_mm[i, j]
-
-        # Make the orbits go until the representative
-        for key, val in orbits.items():
-            previous = 0
-            changed = True
-            while changed:
-                try:
-                    val = orbits[val]
-                    if val == previous:
-                        changed = False
-                    else:
-                        previous = val
-                except KeyError:
-                    warnings.warn("Your generating set might not have enough " +
-                         "elements to fully impose inflation symmetries.")
-            orbits[key] = val
-
-        # Remove from monomials_list all those that have disappeared. The -2 is
-        # because we are encoding 0 and 1 in two variables that we do not use
-        remaining_variables = (set(range(len(monomials_list))) -
-                               set(np.array(indices_to_delete)-2))
-        remaining_monomials = monomials_list[sorted(list(remaining_variables))]
-
-        return symmetric_mm.astype(int), orbits, remaining_monomials
-
     def _build_cols_from_specs(self, col_specs: List[List[int]]) -> None:
         """Build the generating set for the moment matrix taking as input a
         block specified only the number of parties.
@@ -1957,9 +1897,6 @@ class InflationSDP(object):
         operators indexed as self.measurements[p][c][i][o] for party p,
         copies c, input i, output o.
         """
-        settings = self.setting_cardinalities
-        outcomes = self.outcome_cardinalities
-
         unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
         absent_indices = np.arange(np.min(unique_values))
         symmetric_arr = momentmatrix.copy()
@@ -1971,14 +1908,10 @@ class InflationSDP(object):
                 for i, ip in enumerate(permutation):
                     for j, jp in enumerate(permutation):
                         if symmetric_arr[i, j] < symmetric_arr[ip, jp]:
-                            # indices_to_delete.append(int(symmetric_arr[ip, jp]))
-                            # orbits[symmetric_arr[ip, jp]] = symmetric_arr[i, j]
                             symmetric_arr[ip, jp] = symmetric_arr[i, j]
             else:
                 np.minimum(symmetric_arr, symmetric_arr[permutation].T[permutation].T, out=symmetric_arr)
         orbits = np.concatenate((absent_indices, symmetric_arr.flat[where_it_matters_flat].flat))
-
-        # print("orbits before adjustment", orbits)
 
         # Make the orbits go until the representative
         for key, val in enumerate(orbits):
@@ -1995,7 +1928,6 @@ class InflationSDP(object):
                     warnings.warn("Your generating set might not have enough" +
                                   "elements to fully impose inflation symmetries.")
             orbits[key] = val
-        # print("orbits after adjustment", orbits)
 
         old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
                                                                                   return_index=True,
@@ -2007,8 +1939,6 @@ class InflationSDP(object):
         symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in
                                         enumerate(
                                             old_representative_indices) if old_idx >= 2}
-
-        # return symmetric_arr, orbits, symidx_to_canonical_mon_dict
         return symmetric_arr, unsym_idx_to_sym_idx, symidx_to_canonical_mon_dict
 
     ########################################################################
