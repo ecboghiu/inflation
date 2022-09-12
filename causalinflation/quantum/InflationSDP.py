@@ -1031,6 +1031,7 @@ class InflationSDP(object):
                 del self._processed_objective[v1]
         # For compatibility purposes
         self._objective_as_name_dict = {k.name: v for (k, v) in self.objective.items()}
+        gc.collect(generation=2) #To reduce memory leaks. Runs after set_values or set_objective.
 
     def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
         """Bring a monomial into the form used internally.
@@ -1143,10 +1144,13 @@ class InflationSDP(object):
         self.solution_object, lambdaval, self.status = \
             solveSDP_MosekFUSION(**solveSDP_arguments)
 
+
         # Process the solution
         if self.status == 'feasible':
             self.primal_objective = lambdaval
             self.objective_value = lambdaval * (1 if self.maximize else -1)
+
+        gc.collect(generation=2)  # To reduce memory leaks, garbage collect after every solve call.
 
     ########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #
