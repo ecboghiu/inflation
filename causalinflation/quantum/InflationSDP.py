@@ -574,6 +574,10 @@ class InflationSDP(object):
 
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
+        self.moment_upperbounds = dict()
+        self.moment_lowerbounds = {m: 0 for m in self.possibly_physical_monomials}
+        self.moment_upperbounds_name_dict = dict()
+        self.moment_lowerbounds_name_dict = {m.name: 0 for m in self.possibly_physical_monomials}
 
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
@@ -610,8 +614,8 @@ class InflationSDP(object):
         #     mon.known_status = 'Yes'
         # mon.known_value = 1.
         # mon.unknown_part = mon.as_ndarray
-        for attribute in {'known_moments', 'semiknown_moments', 'moment_upperbounds',
-                          'known_moments_name_dict', 'semiknown_moments_name_dict', 'moment_upperbounds_name_dict'}:
+        for attribute in {'known_moments', 'semiknown_moments', '_processed_moment_lowerbounds',
+                          'known_moments_name_dict', 'semiknown_moments_name_dict', '_processed_moment_lowerbounds_name_dict'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
@@ -619,14 +623,12 @@ class InflationSDP(object):
         gc.collect(2)
         self.known_moments = dict()
         self.semiknown_moments = dict()
-        self.moment_upperbounds = dict()
-        self.moment_lowerbounds = dict()
+        self._processed_moment_lowerbounds = dict()
         # TODO: REMOVE ALL REFERENCES TO NAME DICTS
         # self.known_moments_name_dict = {'1': 1.}
         self.known_moments_name_dict = dict()
         self.semiknown_moments_name_dict = dict()
-        self.moment_upperbounds_name_dict = dict()
-        self.moment_lowerbounds_name_dict = dict()
+        self._processed_moment_lowerbounds_name_dict = dict()
         # self.known_moments_idx_dict = {1: 1.}
         # self.semiknown_moments_idx_dict  = dict()
         # self.moment_upperbounds_idx_dict = dict()
@@ -634,15 +636,15 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
             self.known_moments_name_dict[self.Zero.name] = 0.
-        self.reset_physical_lowerbounds()
+        # self.reset_physical_lowerbounds()
 
-    def reset_physical_lowerbounds(self):
-        for attribute in {'physical_monomials', 'moment_lowerbounds'
-                          'physical_monomial_names', 'moment_lowerbounds_name_dict'}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
+    # def reset_physical_lowerbounds(self):
+    #     for attribute in {'physical_monomials', 'moment_lowerbounds'
+    #                       'physical_monomial_names', 'moment_lowerbounds_name_dict'}:
+    #         try:
+    #             delattr(self, attribute)
+    #         except AttributeError:
+    #             pass
         # self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
         # self.moment_lowerbounds = {mon: 0. for mon in self.physical_monomials}
         # # BELOW TO BE DEPRECATED
@@ -652,15 +654,21 @@ class InflationSDP(object):
         # # self.moment_lowerbounds_idx_dict = {idx: 0. for idx in self.physical_monomial_idxs}
 
     def update_physical_lowerbounds(self):
-        self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
-        nontrivial_lower_bounds = self.moment_lowerbounds.copy()
-        for mon, value in self.moment_lowerbounds:
-            if np.isclose(value, 0):
-                self.physical_monomials[mon] = 0.
-                del nontrivial_lower_bounds[mon]
-        self.moment_lowerbounds = nontrivial_lower_bounds
-        self.moment_lowerbounds_name_dict = {mon.name: value for mon, value in self.moment_lowerbounds.items()}
-        self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
+        for mon in set(self.moment_lowerbounds.keys()).difference(self.known_moments.keys()):
+            self._processed_moment_lowerbounds[mon] = self.moment_lowerbounds[mon]
+            self._processed_moment_lowerbounds_name_dict = {mon.name: value for mon, value in self._processed_moment_lowerbounds.items()}
+
+        # self._processed_moment_lowerbounds = dict()
+        #
+        # self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
+        # nontrivial_lower_bounds = self.moment_lowerbounds.copy()
+        # for mon, value in self.moment_lowerbounds:
+        #     if np.isclose(value, 0):
+        #         self.physical_monomials[mon] = 0.
+        #         del nontrivial_lower_bounds[mon]
+        # self.moment_lowerbounds = nontrivial_lower_bounds
+        # self.moment_lowerbounds_name_dict = {mon.name: value for mon, value in self.moment_lowerbounds.items()}
+        # self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
 
 
 
@@ -1119,11 +1127,11 @@ class InflationSDP(object):
                               "objective": self._objective_as_name_dict,
                               "known_vars": self.known_moments_name_dict,
                               "semiknown_vars": self.semiknown_moments_name_dict,
-                              "positive_vars": self.physical_monomial_names, #Should not be needed.
+                              # "positive_vars": self.physical_monomial_names, #Should not be needed.
                               "feas_as_optim": feas_as_optim,
                               "verbose": self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds": self.moment_lowerbounds_name_dict,
+                              "var_lowerbounds": self._processed_moment_lowerbounds_name_dict,
                               "var_upperbounds": self.moment_upperbounds_name_dict,
                               "var_equalities": self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
