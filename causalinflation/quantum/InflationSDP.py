@@ -4,17 +4,26 @@ instance (see arXiv:1909.10519).
 
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
-import itertools
 import gc
-# import operator
+import itertools
+import numbers  # To sanity check user giving numeric input
+# from typing import List, Dict, Union, Tuple, Any
+import warnings
+from collections import Counter  # , defaultdict, namedtuple
 
 import numpy as np
 import sympy as sp
-from collections import Counter  # , defaultdict, namedtuple
-
-# from numpy import ndarray
 
 from causalinflation import InflationProblem
+from causalinflation.quantum.types import List, Dict, Tuple, Union, Any
+from .fast_npa import (calculate_momentmatrix,
+                       to_canonical,
+                       to_name,
+                       remove_projector_squares,
+                       mon_lexsorted,
+                       mon_is_zero,
+                       nb_mon_to_lexrepr,
+                       notcomm_from_lexorder)
 from .general_tools import (to_representative,
                             to_numbers,
                             to_symbol,
@@ -28,23 +37,12 @@ from .general_tools import (to_representative,
                             clean_coefficients,
                             factorize_monomial
                             )
-from .fast_npa import (calculate_momentmatrix,
-                       to_canonical,
-                       to_name,
-                       remove_projector_squares,
-                       mon_lexsorted,
-                       mon_is_zero,
-                       nb_mon_to_lexrepr,
-                       notcomm_from_lexorder)
-
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv, write_to_mat, write_to_sdpa)
 
-from causalinflation.quantum.types import List, Dict, Tuple, Union, Any
-# from typing import List, Dict, Union, Tuple, Any
-import warnings
-import numbers #To sanity check user giving numeric input
+# import operator
+# from numpy import ndarray
 
 # Force warnings.warn() to omit the source code line in the message
 # Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -108,7 +106,7 @@ class InflationSDP(object):
 
         self._generate_parties()
         if self.verbose > 1:
-            print(self.InflationProblem) #IS this printable yet?
+            print(self.InflationProblem)  # IS this printable yet?
 
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
@@ -260,16 +258,15 @@ class InflationSDP(object):
     # def inflation_aware_to_representative(self, *args, **kwargs) -> Tuple[Tuple]:
     #     return to_tuple_of_tuples(self.inflation_aware_to_ndarray_representative(*args, **kwargs))
     #
-    # def sanitise_compoundmonomial(self, mon: CompoundMonomial) -> CompoundMonomial:
-    #     # Sanity check if need be.
-    #     # for atom in mon.factors_as_atomic_monomials:
-    #     #     assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
-    #     mon.update_atomic_constituents(self.inflation_aware_to_ndarray_representative,
-    #                                    just_inflation_indices=False)  # MOST IMPORTANT
-    #     # More sanity checking, if needed.
-    #     # for atom in mon.factors_as_atomic_monomials:
-    #     #     assert atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
-    #     #     assert (atom.inflation_indices_are_irrelevant or not atom.not_yet_updated_by_to_representative), f"Hang on, all monomials should have been set to representative by construction! {atom.as_ndarray} from {mon.as_ndarray}"
+    # def sanitise_compoundmonomial(self, mon: CompoundMonomial) -> CompoundMonomial: # Sanity check if need be. #
+    # for atom in mon.factors_as_atomic_monomials: #     assert atom.as_ndarray.shape[-1] == self._nr_properties,
+    # f"Somehow we have screwed up the monomial storage! {atom.as_ndarray} from {mon.as_ndarray}"
+    # mon.update_atomic_constituents(self.inflation_aware_to_ndarray_representative, just_inflation_indices=False)  #
+    # MOST IMPORTANT # More sanity checking, if needed. # for atom in mon.factors_as_atomic_monomials: #     assert
+    # atom.as_ndarray.shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {
+    # atom.as_ndarray} from {mon.as_ndarray}" #     assert (atom.inflation_indices_are_irrelevant or not
+    # atom.not_yet_updated_by_to_representative), f"Hang on, all monomials should have been set to representative by
+    # construction! {atom.as_ndarray} from {mon.as_ndarray}"
     #
     #     mon.update_rectified_arrays_based_on_fake_setting_correction(
     #         self.rectify_fake_setting_atomic_factor)
@@ -473,11 +470,11 @@ class InflationSDP(object):
             print("Number of variables before symmetrization:",
                   len(self.unsymidx_to_unsym_monarray_dict))
 
-        # for monarray in self.unsymidx_to_unsym_monarray_dict.values():
-        #     assert np.asarray(monarray).shape[-1] == self._nr_properties, f"Somehow we have screwed up the monomial storage! {mon.as_ndarray}"
+        # for monarray in self.unsymidx_to_unsym_monarray_dict.values(): assert np.asarray(monarray).shape[-1] ==
+        # self._nr_properties, f"Somehow we have screwed up the monomial storage! {mon.as_ndarray}"
 
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                        self.unsymidx_to_unsym_monarray_dict.items()}
+                                    self.unsymidx_to_unsym_monarray_dict.items()}
 
         # Calculate the inflation symmetries.
         self.inflation_symmetries = self._calculate_inflation_symmetries()
@@ -508,16 +505,15 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_one:
             self.list_of_monomials.append(self.One)
         self.list_of_monomials.extend([self.Monomial(v, idx=k)
-                                               for (k, v) in self.symidx_to_sym_monarray_dict.items()])
+                                       for (k, v) in self.symidx_to_sym_monarray_dict.items()])
         # [self.Zero, self.One] + [self.Monomial(v, idx=k)
         #                                        for (k, v) in self.symidx_to_sym_monarray_dict.items()]
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
 
-        # #COMMENT ELIE TO EMI: Since we are using an inflation-aware Monomial constructor, all this processing is taken care of!
-        # self.set_of_atomic_monomials = set()
-        # for mon in self.list_of_monomials:
-        #     self.set_of_atomic_monomials.update(mon.factors_as_atomic_monomials)
+        # #COMMENT ELIE TO EMI: Since we are using an inflation-aware Monomial constructor, all this processing is
+        # taken care of! self.set_of_atomic_monomials = set() for mon in self.list_of_monomials:
+        # self.set_of_atomic_monomials.update(mon.factors_as_atomic_monomials)
 
         # # set(itertools.chain.from_iterable((mon.factors_as_atomic_monomials for mon in self.list_of_monomials)))
         # if not self.just_inflation_indices:
@@ -616,7 +612,8 @@ class InflationSDP(object):
         # mon.known_value = 1.
         # mon.unknown_part = mon.as_ndarray
         for attribute in {'known_moments', 'semiknown_moments', '_processed_moment_lowerbounds',
-                          'known_moments_name_dict', 'semiknown_moments_name_dict', '_processed_moment_lowerbounds_name_dict'}:
+                          'known_moments_name_dict', 'semiknown_moments_name_dict',
+                          '_processed_moment_lowerbounds_name_dict'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
@@ -646,18 +643,19 @@ class InflationSDP(object):
     #             delattr(self, attribute)
     #         except AttributeError:
     #             pass
-        # self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
-        # self.moment_lowerbounds = {mon: 0. for mon in self.physical_monomials}
-        # # BELOW TO BE DEPRECATED
-        # self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
-        # self.moment_lowerbounds_name_dict = {name: 0 for name in self.physical_monomial_names}
-        # # self.physical_monomial_idxs = set(mon.idx for mon in self.physical_monomials)
-        # # self.moment_lowerbounds_idx_dict = {idx: 0. for idx in self.physical_monomial_idxs}
+    # self.physical_monomials = set(self.possibly_physical_monomials).difference(self.known_moments.keys())
+    # self.moment_lowerbounds = {mon: 0. for mon in self.physical_monomials}
+    # # BELOW TO BE DEPRECATED
+    # self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
+    # self.moment_lowerbounds_name_dict = {name: 0 for name in self.physical_monomial_names}
+    # # self.physical_monomial_idxs = set(mon.idx for mon in self.physical_monomials)
+    # # self.moment_lowerbounds_idx_dict = {idx: 0. for idx in self.physical_monomial_idxs}
 
     def update_physical_lowerbounds(self):
         for mon in set(self.moment_lowerbounds.keys()).difference(self.known_moments.keys()):
             self._processed_moment_lowerbounds[mon] = self.moment_lowerbounds[mon]
-            self._processed_moment_lowerbounds_name_dict = {mon.name: value for mon, value in self._processed_moment_lowerbounds.items()}
+            self._processed_moment_lowerbounds_name_dict = {mon.name: value for mon, value in
+                                                            self._processed_moment_lowerbounds.items()}
 
         # self._processed_moment_lowerbounds = dict()
         #
@@ -670,8 +668,6 @@ class InflationSDP(object):
         # self.moment_lowerbounds = nontrivial_lower_bounds
         # self.moment_lowerbounds_name_dict = {mon.name: value for mon, value in self.moment_lowerbounds.items()}
         # self.physical_monomial_names = set(mon.name for mon in self.physical_monomials)
-
-
 
         # for mon in self.physical_monomials.difference(self.moment_lowerbounds.keys()):
         #     self.moment_lowerbounds[mon] = 0.
@@ -688,7 +684,6 @@ class InflationSDP(object):
         #     self.moment_lowerbounds_idx_dict[idx] = 0.
         # for idx in self.physical_monomial_idxs.intersection(self.moment_lowerbounds_idx_dict.keys()):
         #     self.moment_lowerbounds_idx_dict[idx] = max(0., self.moment_lowerbounds_idx_dict[idx])
-
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -719,11 +714,11 @@ class InflationSDP(object):
         """
         # Reset is performed by set_values
         knowable_values = {m: m.compute_marginal(prob_array) for m in self.list_of_monomials
-                           if m.is_atomic and m.knowable_q} if (not prob_array is None) else dict()
+                           if m.is_atomic and m.knowable_q} if (prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=(not use_lpi_constraints), #TODO: Add (or infer) only semiknowable flag?
-                        only_specified_values=assume_shared_randomness) #MAJOR BUGFIX?
+                        only_knowable_moments=(not use_lpi_constraints),  # TODO: Add (or infer) only semiknowable flag?
+                        only_specified_values=assume_shared_randomness)  # MAJOR BUGFIX?
         # if self.objective and not (prob_array is None):
         #     warnings.warn('Danger! User apparently set the objective before the distribution.')
         # self.distribution_has_been_set = True
@@ -783,9 +778,8 @@ class InflationSDP(object):
                           "linearized polynomial constraints will constrain the " +
                           "optimization to distributions with fixed marginals.")
 
-        # Sanitise the values dictionary
-        # Elie to Emi comment: DO NOT RESET, just ADD values.
-        # Elie to Emi comment: We need to KEEP the fact that these are equal to zero until AT LEAST after we work out the semiknowns.
+        # Sanitise the values dictionary Elie to Emi comment: DO NOT RESET, just ADD values. Elie to Emi comment: We
+        # need to KEEP the fact that these are equal to zero until AT LEAST after we work out the semiknowns.
         for (k, v) in values.items():
             if not np.isnan(v):
                 self.known_moments[self._sanitise_monomial(k)] = v
@@ -809,7 +803,6 @@ class InflationSDP(object):
                                     "If you want to manually be able to set values for " +
                                     "non-atomic monomials, set only_specified_values to True.")
 
-
         if only_specified_values:
             # If only_specified_values=True, then ONLY the Monomials that
             # are keys in the values dictionary are fixed. Any other monomial
@@ -831,8 +824,8 @@ class InflationSDP(object):
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
                                               (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
-            #TODO: If from set_dist but using lpi_constraints, iterate over nonatomic monomials where status is
-            #either 'Yes' or 'Semi' only.
+            # TODO: If from set_dist but using lpi_constraints, iterate over nonatomic monomials where status is
+            # either 'Yes' or 'Semi' only.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
@@ -905,10 +898,10 @@ class InflationSDP(object):
         #                         unknown.update_name_and_symbol_given_observed_names(self.names)
         #                         self.semiknown_moments[mon] = (known, unknown)
 
-        self.cleanup_after_set_values(use_lpi_constraints=self.use_lpi_constraints)
+        self.cleanup_after_set_values()
         return
 
-    def cleanup_after_set_values(self, use_lpi_constraints=False):
+    def cleanup_after_set_values(self):
         # if use_lpi_constraints:
         #     for mon, (value, unknown) in self.semiknown_moments.items():
         #         # assert isinstance(value, float), f'expected numeric value! {value}'
@@ -987,8 +980,8 @@ class InflationSDP(object):
             symmetrized_objective = {self.One: 0}  # Used for updated with known monomials.
             # symmetrized_objective = dict()
             for mon, coeff in objective.as_coefficients_dict().items():
-                Mon = self._sanitise_monomial(mon)
-                symmetrized_objective[Mon] = symmetrized_objective.get(Mon, 0) + (sign * coeff)
+                mon = self._sanitise_monomial(mon)
+                symmetrized_objective[mon] = symmetrized_objective.get(mon, 0) + (sign * coeff)
                 # if Mon in symmetrized_objective:
                 #     symmetrized_objective[Mon] += sign * coeff
                 # else:
@@ -1021,9 +1014,9 @@ class InflationSDP(object):
         for v1 in semiknown_keys_to_process:
             c1 = self._processed_objective[v1]
             for (k, v2) in self.semiknown_moments[v1]:
-            # obj = ... + c1*v1 + c2*v2,
-            # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
-            # therefore we need to add to the coefficient of v2 the term c1*k
+                # obj = ... + c1*v1 + c2*v2,
+                # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
+                # therefore we need to add to the coefficient of v2 the term c1*k
                 self._processed_objective[v2] = self._processed_objective.get(v2, 0) + c1 * k
                 # if v2 in self._processed_objective:
                 #     self._processed_objective[v2] += c1 * k
@@ -1032,7 +1025,7 @@ class InflationSDP(object):
                 del self._processed_objective[v1]
         # For compatibility purposes
         self._objective_as_name_dict = {k.name: v for (k, v) in self.objective.items()}
-        gc.collect(generation=2) #To reduce memory leaks. Runs after set_values or set_objective.
+        gc.collect(generation=2)  # To reduce memory leaks. Runs after set_values or set_objective.
 
     def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
         """Bring a monomial into the form used internally.
@@ -1042,7 +1035,7 @@ class InflationSDP(object):
         if isinstance(mon, CompoundMonomial):
             return mon
         elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
-                         # sp.Symbol)):  # Elie comment: should not be sp.Symbol
+            # sp.Symbol)):  # Elie comment: should not be sp.Symbol
             # This assumes the monomial is in "machine readable symbolic" form, no longer available!!
             array = np.concatenate([to_numbers(op, self.names)
                                     for op in flatten_symbolic_powers(mon)])
@@ -1078,10 +1071,9 @@ class InflationSDP(object):
                 raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
             # except:
             #     pass
-                # This can happen if calling float() gives an error
+            # This can happen if calling float() gives an error
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
-
 
     # TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
     def solve(self, interpreter: str = 'MOSEKFusion',
@@ -1145,7 +1137,6 @@ class InflationSDP(object):
         self.solution_object, lambdaval, self.status = \
             solveSDP_MosekFUSION(**solveSDP_arguments)
 
-
         # Process the solution
         if self.status == 'feasible':
             self.primal_objective = lambdaval
@@ -1157,10 +1148,10 @@ class InflationSDP(object):
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #
     ########################################################################
     def certificate_as_correlators(self,
-                                   clean: bool=False,
-                                   chop_tol: float=1e-10,
-                                   round_decimals: int=3,
-                                   use_langlerangle: bool=False
+                                   clean: bool = False,
+                                   chop_tol: float = 1e-10,
+                                   round_decimals: int = 3,
+                                   use_langlerangle: bool = False
                                    ) -> sp.core.add.Add:
         """Give certificate as symbolic sum of correlators. The certificate
         of incompatibility is ``cert >= 0``. Only valid for scenarios with
@@ -1198,11 +1189,11 @@ class InflationSDP(object):
         if len(self.semiknown_moments) > 0:
             if self.verbose > 0:
                 warnings.warn("Beware that, because the problem contains linearized " +
-                     "polynomial constraints, the certificate is not guaranteed " +
-                     "to apply to other distributions")
+                              "polynomial constraints, the certificate is not guaranteed " +
+                              "to apply to other distributions")
 
-        vars_to_factors = dict(self.semiknowable_atoms)
-        vars_to_names   = {**{0: 0., 1: 1.}, **dict(self.monomials_list)}
+        vars_to_factors = dict(self.semiknowable_atoms) #TODO: Fix, this attribute does not exist.
+        vars_to_names = {**{0: 0., 1: 1.}, **dict(self.monomials_list)} #TODO: Fix, this attribute does not exist.
 
         polynomial = dual[1]
         for var, coeff in dual.items():
@@ -1225,8 +1216,8 @@ class InflationSDP(object):
 
                     # Merge them into a single variable and add '< >' notation
                     total = 0
-                    for var, coeff1 in (sp.S.One*aux_prod
-                                        ).as_coefficients_dict().items():
+                    for var, coeff1 in (sp.S.One * aux_prod  # TODO: Fix, 'var' is already referenced in OUTER loop!.
+                    ).as_coefficients_dict().items():
                         if var == sp.S.One:
                             expected_value = sp.S.One
                         else:
@@ -1256,13 +1247,13 @@ class InflationSDP(object):
                     # difference between coefficients that is larger than the
                     # number of rounding decimals, we set those numbers to 0
                     n_renorm = n / renorm
-                    if abs(n/renorm) > 10**-round_decimals:
+                    if abs(n_renorm) > 10 ** -round_decimals:
                         # Identify numbers that are integers given the rounding
                         # precision
-                        if abs(round(n/renorm)-n/renorm) < 10**-round_decimals:
-                            float_subs[n] = round(n/renorm)
+                        if abs(round(n_renorm) - n_renorm) < 10 ** -round_decimals:
+                            float_subs[n] = round(n_renorm)
                         else:
-                            float_subs[n] = round(n/renorm, round_decimals)
+                            float_subs[n] = round(n_renorm, round_decimals)
                     else:
                         float_subs[n] = 0
                 else:
@@ -1271,9 +1262,9 @@ class InflationSDP(object):
             polynomial = polynomial.subs(float_subs)
         return polynomial
 
-    def certificate_as_objective(self, clean: bool=False,
-                                 chop_tol: float=1e-10,
-                                 round_decimals: int=3) -> sp.core.add.Add:
+    def certificate_as_objective(self, clean: bool = False,
+                                 chop_tol: float = 1e-10,
+                                 round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of operators that can be used
         as an objective function to optimize. The certificate of incompatibility
         is ``cert >= 0``.
@@ -1303,10 +1294,10 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first")
         if len(self.semiknown_moments) > 0:
-            if self.verbose >0:
+            if self.verbose > 0:
                 warnings.warn("Beware that, because the problem contains linearized " +
-                     "polynomial constraints, the certificate is not guaranteed " +
-                     "to apply to other distributions")
+                              "polynomial constraints, the certificate is not guaranteed " +
+                              "to apply to other distributions")
 
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
@@ -1315,12 +1306,12 @@ class InflationSDP(object):
         for var, coeff in dual.items():
             if var > 1:
                 # Find position of the first appearance of the variable
-                i, j = np.array(np.where(self.momentmatrix == var))[:,0]
+                i, j = np.array(np.where(self.momentmatrix == var))[:, 0]
                 m1 = self.generating_monomials[i] if i > 0 else np.array([[0]])
                 m2 = self.generating_monomials[j] if j > 0 else np.array([[0]])
 
                 # Create the monomial
-                monom  = dot_mon(m1, m2) #TODO: dot_mon not imported. If it is, it needs a third argument!
+                monom = dot_mon(m1, m2)  # TODO: dot_mon not imported. If it is, it needs a third argument!
                 if self.commuting:
                     canonical = remove_projector_squares(mon_lexsorted(monom))
                     if mon_is_zero(canonical):
@@ -1330,20 +1321,20 @@ class InflationSDP(object):
                 # Generate symbolic representation
                 symb = 1
                 for element in canonical:
-                    party  = element[0] - 1                # Name indices from 0
-                    inf    = np.array(element[1:-2]) - 1   # Name indices from 0
-                    input  = element[-2]
+                    party = element[0] - 1  # Name indices from 0
+                    inf = np.array(element[1:-2]) - 1  # Name indices from 0
+                    input = element[-2]
                     output = element[-1]
-                    inf[inf < 0] = 0             # Negative indices are not used
-                    inf_idx = self.inflation_levels@inf
-                    symb   *= self.measurements[party][inf_idx][input][output]
-                cert += coeff*symb
+                    inf[inf < 0] = 0  # Negative indices are not used
+                    inf_idx = self.inflation_levels @ inf
+                    symb *= self.measurements[party][inf_idx][input][output]
+                cert += coeff * symb
         return cert
 
     def certificate_as_probs(self,
-                             clean: bool=False,
-                             chop_tol: float=1e-10,
-                             round_decimals: int=3) -> sp.core.add.Add:
+                             clean: bool = False,
+                             chop_tol: float = 1e-10,
+                             round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert >= 0``.
 
@@ -1410,9 +1401,9 @@ class InflationSDP(object):
         # return cert
 
     def certificate_as_string(self,
-                              clean: bool=False,
-                              chop_tol: float=1e-10,
-                              round_decimals: int=3) -> sp.core.add.Add:
+                              clean: bool = False,
+                              chop_tol: float = 1e-10,
+                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give the certificate as a string with the notation of the operators
         in the moment matrix.
 
@@ -1443,8 +1434,8 @@ class InflationSDP(object):
         if len(self.semiknown_moments) > 0:
             if self.verbose > 0:
                 warnings.warn("Beware that, because the problem contains linearized " +
-                     "polynomial constraints, the certificate is not guaranteed " +
-                     "to apply to other distributions")
+                              "polynomial constraints, the certificate is not guaranteed " +
+                              "to apply to other distributions")
 
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
@@ -1452,12 +1443,10 @@ class InflationSDP(object):
         rest_of_dual = dual.copy()
         cert_as_string = rest_of_dual.pop('1')
         for mon_name, coeff in rest_of_dual.items():
-                cert_as_string += "+" if coeff > 0 else "-"
-                cert_as_string += f"{abs(coeff)}*{mon_name}"
+            cert_as_string += "+" if coeff > 0 else "-"
+            cert_as_string += f"{abs(coeff)}*{mon_name}"
         cert_as_string += " >= 0"
         return cert_as_string
-
-
 
     ########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                   #
@@ -1521,35 +1510,34 @@ class InflationSDP(object):
                 npa_level = int(column_specification[3:])
                 col_specs = [[]]
                 # Determine maximum length
-                if (max_monomial_length>0) and (max_monomial_length<npa_level):
+                if (max_monomial_length > 0) and (max_monomial_length < npa_level):
                     max_length = max_monomial_length
                 else:
                     max_length = npa_level
-                for length in range(1, max_length+1):
+                for length in range(1, max_length + 1):
                     for number_tuple in itertools.product(
-                                                *[range(self.nr_parties)]*length
-                                                          ):
+                            *[range(self.nr_parties)] * length
+                    ):
                         a = np.array(number_tuple)
                         # Add only if tuple is in increasing order
                         if np.all(a[:-1] <= a[1:]):
                             col_specs += [a.tolist()]
                 columns = self._build_cols_from_specs(col_specs)
 
-
             elif 'local' in column_specification.lower():
-                local_level  = int(column_specification[5:])
+                local_level = int(column_specification[5:])
                 local_length = local_level * self.nr_parties
                 # Determine maximum length
                 if ((max_monomial_length > 0)
-                    and (max_monomial_length < local_length)):
+                        and (max_monomial_length < local_length)):
                     max_length = max_monomial_length
                 else:
                     max_length = local_length
 
                 party_frequencies = []
                 for pfreq in itertools.product(
-                                         *[range(local_level+1)]*self.nr_parties
-                                               ):
+                        *[range(local_level + 1)] * self.nr_parties
+                ):
                     if sum(pfreq) <= max_length:
                         party_frequencies.append(list(reversed(pfreq)))
                 party_frequencies = sorted(party_frequencies, key=sum)
@@ -1575,7 +1563,7 @@ class InflationSDP(object):
                         physmon_lens = [inf_level] * self.nr_sources
                     else:
                         physmon_lens = [int(inf_level)
-                                      for inf_level in column_specification[8:]]
+                                        for inf_level in column_specification[8:]]
                     max_total_mon_length = sum(physmon_lens)
                 except:
                     # If no numbers come after, we use all physical operators
@@ -1586,8 +1574,8 @@ class InflationSDP(object):
                     max_total_mon_length = max_monomial_length
 
                 party_frequencies = []
-                for pfreq in itertools.product(*[range(physmon_lens[party]+1)
-                                            for party in range(self.nr_parties)]
+                for pfreq in itertools.product(*[range(physmon_lens[party] + 1)
+                                                 for party in range(self.nr_parties)]
                                                ):
                     if sum(pfreq) <= max_total_mon_length:
                         party_frequencies.append(list(reversed(pfreq)))
@@ -1605,21 +1593,21 @@ class InflationSDP(object):
                             # lists of physical monomials of length 1, 2 and 0
                             if freq > 0:
                                 physmons = phys_mon_1_party_of_given_len(
-                                                     self.hypergraph,
-                                                     self.inflation_levels,
-                                                     party, freq,
-                                                     self.setting_cardinalities,
-                                                     self.outcome_cardinalities,
-                                                     self.names,
-                                                     self._lexorder)
+                                    self.hypergraph,
+                                    self.inflation_levels,
+                                    party, freq,
+                                    self.setting_cardinalities,
+                                    self.outcome_cardinalities,
+                                    self.names,
+                                    self._lexorder)
                                 physmons_per_party_per_length.append(physmons)
 
                         for mon_tuple in itertools.product(
-                                                *physmons_per_party_per_length):
+                                *physmons_per_party_per_length):
                             physical_monomials.append(
                                 to_canonical(np.concatenate(mon_tuple),
-                                            self._notcomm,
-                                            self._lexorder))
+                                             self._notcomm,
+                                             self._lexorder))
 
                 columns = physical_monomials
             else:
@@ -1633,11 +1621,12 @@ class InflationSDP(object):
         if not np.array_equal(self._lexorder, self._default_lexorder):
             res_lexrepr = [nb_mon_to_lexrepr(m, self._lexorder).tolist()
                            # if m.tolist() != [[0]] else []
-                           if (len(m) or m.shape[-1]==1) else []  # New use of identity operator
+                           if (len(m) or m.shape[-1] == 1) else []  # New use of identity operator
                            for m in columns]
             sortd = sorted(res_lexrepr, key=lambda x: (len(x), x))
             columns = [self._lexorder[lexrepr]
-                       if lexrepr != [] else self.identity_operator #Note: This branch uses the new convention for identity operator.
+                       if lexrepr != [] else self.identity_operator
+                       # Note: This branch uses the new convention for identity operator.
                        for lexrepr in sortd]
 
         columns = [np.array(col, dtype=self.np_dtype).reshape((-1, self._nr_properties)) for col in columns]
@@ -1671,7 +1660,7 @@ class InflationSDP(object):
         parts = filename.split('.')
         if len(parts) >= 2:
             extension = parts[-1]
-            label = filename[:-len(extension)-1]
+            # label = filename[:-len(extension) - 1]
         else:
             extension = 'dat-s'
             filename += '.dat-s'
@@ -1753,7 +1742,8 @@ class InflationSDP(object):
                             if name not in allvars:
                                 allvars.add(name)
                                 if name == '1':
-                                    # TODO: Convention in this branch is to never use to_name or to_numbers. Hashing should be done via from_2dndarray.
+                                    # TODO: Convention in this branch is to never use to_name or to_numbers. Hashing
+                                    #  should be done via from_2dndarray.
                                     res.append(self.identity_operator)
                                 else:
                                     res.append(canon)
@@ -1770,12 +1760,12 @@ class InflationSDP(object):
         settings = self.setting_cardinalities
         outcomes = self.outcome_cardinalities
 
-        assert len(settings) == len(outcomes),                                 \
+        assert len(settings) == len(outcomes), \
             'There\'s a different number of settings and outcomes'
-        assert len(settings) == self.hypergraph.shape[1],                      \
+        assert len(settings) == self.hypergraph.shape[1], \
             'The hypergraph does not have as many columns as parties'
         measurements = []
-        parties  = self.names
+        parties = self.names
         n_states = self.hypergraph.shape[0]
         for pos, [party, ins, outs] in enumerate(zip(parties,
                                                      settings,
@@ -1783,9 +1773,9 @@ class InflationSDP(object):
             party_meas = []
             # Generate all possible copy indices for a party
             all_inflation_indices = itertools.product(
-                                *[list(range(self.inflation_levels[p_idx]))
-                            for p_idx in np.nonzero(self.hypergraph[:, pos])[0]]
-                                                      )
+                *[list(range(self.inflation_levels[p_idx]))
+                  for p_idx in np.nonzero(self.hypergraph[:, pos])[0]]
+            )
             # Include zeros in the positions of states not feeding the party
             all_indices = []
             for inflation_indices in all_inflation_indices:
@@ -1808,9 +1798,9 @@ class InflationSDP(object):
             # understood to be written as the identity minus the rest.
             for indices in all_indices:
                 meas = generate_operators(
-                                                 [outs - 1 for _ in range(ins)],
-                                                 party + '_' + '_'.join(indices)
-                                                          )
+                    [outs - 1 for _ in range(ins)],
+                    party + '_' + '_'.join(indices)
+                )
                 party_meas.append(meas)
             measurements.append(party_meas)
         self.measurements = measurements
@@ -1959,7 +1949,6 @@ class InflationSDP(object):
 
 
 if __name__ == "__main__":
-
     cutInflation = InflationProblem({"lambda": ["a", "b"],
                                      "mu": ["b", "c"],
                                      "sigma": ["a", "c"]},
