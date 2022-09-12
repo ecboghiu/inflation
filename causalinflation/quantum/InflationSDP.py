@@ -1059,15 +1059,15 @@ class InflationSDP(object):
                 # raise Exception(f"sanitise_monomial: {mon} in string format " +
                 #                 "is not found in any monomial encountered yet.")
         elif isinstance(mon, numbers.Real):  # If they are number type
-            try:
-                if np.isclose(float(mon), 1):
-                    return self.One
-                elif np.isclose(float(mon), 0):
-                    return self.Zero
-                else:
-                    raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
-            except:
-                pass
+            # try:
+            if np.isclose(float(mon), 1):
+                return self.One
+            elif np.isclose(float(mon), 0):
+                return self.Zero
+            else:
+                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
+            # except:
+            #     pass
                 # This can happen if calling float() gives an error
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")

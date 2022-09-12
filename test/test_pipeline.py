@@ -189,7 +189,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
                         'A_1_1_0': bias,           # Variable for p(a=0|x=1)
                         meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
-                        5: bias                    # Variable for p(b=0|y=1)
+                        'B_1_1_0': bias            # Variable for p(b=0|y=1)
                         })
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
@@ -201,7 +201,7 @@ class TestSDPOutput(unittest.TestCase):
         sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
                         'A_1_1_0': bias,           # Variable for p(a=0|x=1)
                         meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
-                        5: bias                    # Variable for p(b=0|y=1)
+                        'B_1_1_0': bias            # Variable for p(b=0|y=1)
                         })
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),

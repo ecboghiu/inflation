@@ -797,7 +797,9 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
     >>> to_name([[1 1,0,3], [4,1,2,6], [2,3,3,4]], ['a','bb','x','Z'])
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
-    if mon_equal_mon(monomial, np.array([0])):
+    # if mon_equal_mon(monomial, np.array([0])):
+    #     return '1'
+    if len(monomial) == 0:# or monomial.shape[-1] == 1:
         return '1'
 
     # It is faster to convert to list of lists than to loop through numpy arrays
