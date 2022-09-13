@@ -5,13 +5,10 @@ numba.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
 import numpy as np
-from scipy.sparse import dok_matrix  # , coo_matrix, coo
+from scipy.sparse import dok_matrix
 
-from causalinflation.quantum.types import List, Dict, Tuple, Union
-#import causalinflation
+from causalinflation.quantum.types import List, Dict, Tuple
 
-# Had to insert this because of circular imports
-# from collections import defaultdict, deque
 
 ##########################################
 # Problems with cached functions with numba, while developing I recommend
@@ -46,7 +43,6 @@ try:
     from numba.types import uint16 as uint16_
     from numba.types import int16 as int16_
     from numba.types import int64 as int64_
-    # from numba import types
     from numba.typed import Dict as nb_Dict
 except ImportError:
     def jit(*args, **kwargs):
@@ -77,13 +73,10 @@ def nb_op_eq_op(op1: np.ndarray, op2: np.ndarray) -> bool_:
     NOTE: There is no check for shape consistency. As this is
     an internal function, it is assumed it is used correctly.
     """
-    # if mon1.shape[0] != mon2.shape[0]: # TODO
-    #     return False
     for i in range(op1.shape[0]):
         if op1[i] != op2[i]:
             return False
     return True
-    #return np.array_equal(mon1, mon1)  # Slower when compiled with numba
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_linsearch(arr: np.ndarray, value) -> int:
@@ -137,12 +130,6 @@ def nb_op_lexorder(op: np.array, lexorder: np.ndarray) -> int:
     """Map each operator to a unique integer for hashing and lexicographic
     ordering comparison purposes.
     """
-    # # summ = op[0]
-    # # prod = 1
-    # # for i in range(1, op.shape[0]):
-    # #     prod *= NB_RADIX
-    # #     summ += op[i]*prod
-    # # return summ
     # Performance note: instead of having a matrix where the first column
     # stores the lexicographic order, we can have a matrix where the rows are
     # ordered in the custom lexico-graphical order and then we simply return
@@ -163,17 +150,6 @@ def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
         lex[i] = nb_op_lexorder(mon[i], lexorder)
     return lex
 
-
-# # Elie: This function does not work, nor is it used anywhere, so I'm commenting it out.
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-# def nb_lexrepr_to_mon(lexrepr: np.ndarray, lexorder: np.ndarray) -> np.array:
-#     """Convert a monomial to its lexicographic representation, as an
-#     array of integers representing the lex rank of each operator."""
-#     mon = np.zeros(mon.shape, dtype=uint16_)
-#     for i in range(lexrepr.shape[0]):
-#         mon[i] = nb_op_lexorder(mon[i], lexorder)
-#     return lexorder[lexrepr]
-
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_sort_lexorder(op_lexorder: np.array) -> np.array:
     """Find the permutation that brings the operator to its lexicographic
@@ -182,15 +158,6 @@ def nb_sort_lexorder(op_lexorder: np.array) -> np.array:
     for i in range(op_lexorder.shape[0]):
         perm[op_lexorder[i]] = i
     return perm
-
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-# def nb_find_perm(perm, ref_perm):
-#     """Find the permutation that brings one list to the other. This is useful
-#     for sorting by parties."""
-#     res = np.zeros(perm.shape[0], dtype=uint16_)
-#     for i in range(perm.shape[0]):
-#         res[i] = nb_linsearch(perm, ref_perm[i])
-#     return res
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
@@ -427,7 +394,6 @@ def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
     if mon1.shape != mon2.shape:
         return False
     else:
-        #return np.array_equal(mon1, mon2)  # slower
         for i in range(mon1.shape[0]):
             if not nb_op_eq_op(mon1[i], mon2[i]):
                 return False
@@ -471,16 +437,7 @@ def dot_mon(mon1: np.ndarray,
     return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)),
                                  lexorder)
 
-# @guvectorize(["void(int8[:, :], int8[:, :], int8[:, :])",
-#               "void(int32[:, :], int32[:, :], int32[:, :])",
-#               "void(int64[:, :], int64[:, :], int64[:, :])"],
-#              '(n, m), (n, m) -> (n, m)',
-#              nopython=True, cache=False)
-# def dot_mon(mon1: np.ndarray,
-#             mon2: np.ndarray,
-#             res: np.ndarray
-#             ):
-#     res = _dot_mon(mon1, mon2)
+
 
 
 # @jit(nopython=nopython, cache=cache, forceobj=not nopython) Cannot handle lexsort.
@@ -733,7 +690,6 @@ def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
         mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
         mon = lexorder[mon]
         mon = remove_projector_squares(mon)
-
         return mon
 
 
@@ -747,23 +703,11 @@ def nb_to_canonical_lexinput(mon_lexorder: np.array, notcomm: np.ndarray
     # in the correct order.
 
     sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
-    # comm_paths_toleft = np.zeros((mon_lexorder.shape[0], mon_lexorder.shape[0]), dtype=int)
-
-    # idx = nb_linsearch(sub_notcomm[0], 1)
-    # if idx == 1: # If the first operator cannot be moved at all
-    #     m1 = np.array([mon_lexorder[0]])
-    #     m2 = to_canonical(mon_lexorder[1:], notcomm)
-    #     print(1, m1, m2)
-    #     return np.concatenate((m1, m2))
-    # else:
     minimo = mon_lexorder[0]
     minimo_idx = 0
     for op in range(1, mon_lexorder.shape[0]):
-        #print(sub_notcomm[op][:op])
-        #idx = nb_linsearch(sub_notcomm[op][:op], np.ones(1, dtype=np.int32)[0])
         where = np.where(sub_notcomm[op, :op] == 1)[0]
         if where.size < 1: # TODO make nb_linsearch work, its faster
-        #if idx < 0: # means no collider was found
             if mon_lexorder[op] < minimo:
                 minimo_idx = op
                 minimo = mon_lexorder[op]
@@ -797,8 +741,6 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
     >>> to_name([[1 1,0,3], [4,1,2,6], [2,3,3,4]], ['a','bb','x','Z'])
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
-    # if mon_equal_mon(monomial, np.array([0])):
-    #     return '1'
     if len(monomial) == 0:# or monomial.shape[-1] == 1:
         return '1'
 
@@ -849,11 +791,6 @@ def calculate_momentmatrix(cols: List,
         the integer representation of a monomial. The Dict is a mapping from
         string representation to integer representation.
     """
-    # Choose dot_mon depending on commutation properties
-    if commuting:
-        dot_fn = dot_mon_commuting
-    else:
-        dot_fn = dot_mon
     nrcols = len(cols)
     canonical_mon_to_idx_dict = dict()
     momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
@@ -875,10 +812,8 @@ def calculate_momentmatrix(cols: List,
                     mon_v1 = to_canonical(mon_v1, notcomm, lexorder).astype(dtype)
                     mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder).astype(dtype)
                     mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
-
                 else:
                     mon = remove_projector_squares(mon_v1).astype(dtype)
-                    # mon_as_tuples = to_tuples(mon)
                     mon_hash = mon.tobytes()
                 try:
                     known_varidx = canonical_mon_to_idx_dict[mon_hash]
@@ -1078,25 +1013,12 @@ if __name__ == '__main__':
                                  ) -> np.array:
         if mon_lexorder.shape[0] <= 1:
             return mon_lexorder
-
         # Take only the rows and columns of notcomm that appear in the monomial,
         # in the correct order.
-
         sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
-        # comm_paths_toleft = np.zeros((mon_lexorder.shape[0], mon_lexorder.shape[0]), dtype=int)
-
-        # idx = nb_linsearch(sub_notcomm[0], 1)
-        # if idx == 1: # If the first operator cannot be moved at all
-        #     m1 = np.array([mon_lexorder[0]])
-        #     m2 = to_canonical(mon_lexorder[1:], notcomm)
-        #     print(1, m1, m2)
-        #     return np.concatenate((m1, m2))
-        # else:
         minimo = mon_lexorder[0]
         minimo_idx = 0
         for op in range(1, mon_lexorder.shape[0]):
-            #print(sub_notcomm[op][:op])
-            #idx = nb_linsearch(sub_notcomm[op][:op], np.ones(1, dtype=np.int32)[0])
             where = np.where(sub_notcomm[op, :op] == 1)[0]
             if where.size < 1: # TODO make nb_linsearch work, its faster
             #if idx < 0: # means no collider was found
