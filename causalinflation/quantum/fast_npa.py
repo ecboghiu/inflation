@@ -449,7 +449,7 @@ def dot_mon(mon1: np.ndarray,
                                  lexorder)
 
 
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython) Cannot handle lexsort.
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)  # JIT enabled, leverages numba-compatible homebrew lexsort.
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray,
                       lexorder: np.ndarray,
