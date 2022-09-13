@@ -319,9 +319,11 @@ class TestSymmetries(unittest.TestCase):
                     [[1, 1, 1, 0], [1, 2, 1, 0]],
                     [[1, 1, 0, 0], [1, 1, 1, 0]]]
 
+        raw_perm = np.array((1, 0))
+        perm_plus = np.hstack(([0], raw_perm + 1)).astype(int)
         permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
                                                              0,
-                                                             (1, 0),
+                                                             perm_plus,
                                                              False,
                                                              notcomm,
                                                              lexorder

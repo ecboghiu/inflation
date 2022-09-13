@@ -102,24 +102,27 @@ def mul(lst: List) -> Any:
     return result
 
 
-def apply_source_perm_monomial(monomial: np.ndarray,
-                               source: int,
-                               permutation: np.ndarray,
-                               commuting: bool_,
-                               lexorder
-                               ) -> np.ndarray:
+@jit(nopython=nopython)
+def apply_source_permplus_monomial(monomial: np.ndarray,
+                                   source: int,
+                                   permutation_plus: np.ndarray,
+                                   commuting: bool_,
+                                   lexorder
+                                   ) -> np.ndarray:
     """This applies a source swap to a monomial.
 
     We assume in the monomial that all operators COMMUTE with each other.
 
     Parameters
     ----------
-    monomial : np.ndarray
+    monomial : numpy.ndarray
         Input monomial in 2d array format.
     source : int
         The source that is being swapped.
-    permutation : List
-        The permutation of the copies of the specified source
+    permutation_plus : numpy.ndarray
+        The permutation of the copies of the specified source.
+        The format for the permutation here is to use indexing starting at one, so the permutation must be
+        padded with a leading zero.
     commuting : bool
         Whether all the involved operators commute or not.
 
@@ -128,23 +131,6 @@ def apply_source_perm_monomial(monomial: np.ndarray,
     np.ndarray
         Input monomial with the specified source swapped.
     """
-    permutation_plus = np.hstack(([0], permutation + 1))
-    return apply_source_permplus_monomial(
-        monomial,
-        source,
-        permutation_plus,
-        commuting,
-        lexorder
-    )
-
-
-@jit(nopython=nopython)
-def apply_source_permplus_monomial(monomial: np.ndarray,
-                                   source: int,
-                                   permutation_plus: np.ndarray,
-                                   commuting: bool_,
-                                   lexorder
-                                   ) -> np.ndarray:
     new_factors = monomial.copy()
     new_factors[:, 1 + source] = np.take(permutation_plus, new_factors[:, 1 + source])
     if commuting:
@@ -175,6 +161,8 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
         Source that is being swapped.
     permutation : List[int]
         Permutation of the copies of the specified source.
+        The format for the permutation here is to use indexing starting at one, so the permutation must be
+        padded with a leading zero.
     commuting : bool
         Whether the operators commute or not.
 
@@ -191,51 +179,14 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
         if row_count == 0 or col_count == 1:
             permuted_op_list.append(monomial)
         else:
-            newmon = apply_source_perm_monomial(monomial, source,
+            newmon = apply_source_permplus_monomial(monomial, source,
                                                 np.asarray(permutation),
                                                 commuting, lexorder)
             canonical = to_canonical(newmon, notcomm, lexorder)
             permuted_op_list.append(canonical)
-
     return permuted_op_list
 
 
-@jit(nopython=nopython)
-def apply_source_permutation_monomial(monomial: np.ndarray,
-                                      source: int,
-                                      permutation: np.ndarray
-                                      ) -> np.ndarray:
-    """Applies a source permutation to a single monomial.
-
-    SPEED NOTE: if you want to apply a simple source swap as opposed
-    to an arbitrary permutation, use apply_source_swap_monomial instead,
-    as it is 25x faster.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        Input monomial in 2d array format.
-    source : int
-        Source that is being swapped.
-    permutation : np.ndarray
-        Permutation of the copies of the specified source.
-
-    Returns
-    -------
-    np.ndarray
-        Monomial with the specified source permuted.
-    """
-
-    new_factors = monomial.copy()
-    for i in range(len(new_factors)):
-        if new_factors[i, 1 + source] > 0:
-            # Python starts counting at 0
-            new_factors[i, 1 + source] = permutation[
-                                             new_factors[i, 1 + source] - 1] + 1
-        else:
-            continue
-
-    return new_factors
 
 
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
@@ -300,15 +251,26 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
     template_new_mons_aux = [to_name(initial_monomial, names)]
-    all_perms_per_source = [permutations(range(inflevels[source]))
+    all_perms_per_source = [np.array(list(permutations(range(inflevels[source]))), dtype=int)
                             for source in range(nr_sources)]
     # Note that we are not applying only the symmetry generators, but all
     # possible symmetries
-    for perms in product(*all_perms_per_source):
+    all_permutationsplut_per_source = []
+    for array_of_perms in all_perms_per_source:
+        permutations_plus = array_of_perms + 1
+        padding = np.zeros((len(permutations_plus), 1), dtype=int)
+        permutations_plus = np.hstack((padding, permutations_plus))
+        all_permutationsplut_per_source.append(permutations_plus)
+    del all_perms_per_source
+    for perms_plus in product(*all_permutationsplut_per_source):
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
-            permuted = apply_source_perm_monomial(
-                permuted, source, np.array(perms[source]), True, lexorder)
+            permuted = apply_source_permplus_monomial(
+                monomial=permuted,
+                source=source,
+                permutation=perms_plus[source],
+                commuting=True,
+                lexorder=lexorder)
         permuted_name = to_name(permuted, names)
         if permuted_name not in template_new_mons_aux:
             template_new_mons_aux.append(permuted_name)
@@ -718,20 +680,29 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
     # TODO 2: to make it compatible with numba, avoid using itertools!
     # (i.e., product, permutations)
     nr_sources = inflevels.shape[0]
-    all_perms_per_source = [permutations(range(inflevels[source]))
+    all_perms_per_source = [np.array(list(permutations(range(inflevels[source]))), dtype=int)
                             for source in range(nr_sources)]
-
+    # Note that we are not applying only the symmetry generators, but all
+    # possible symmetries
+    all_permutationsplut_per_source = []
+    for array_of_perms in all_perms_per_source:
+        permutations_plus = array_of_perms + 1
+        padding = np.zeros((len(permutations_plus), 1), dtype=int)
+        permutations_plus = np.hstack((padding, permutations_plus))
+        all_permutationsplut_per_source.append(permutations_plus)
+    del all_perms_per_source
     final_monomial = mon_aux.copy()
     prev = mon_aux
     while True:
-        for perms in product(*all_perms_per_source):
+        for perms_plus in product(*all_permutationsplut_per_source):
             permuted = final_monomial.copy()
             for source in range(nr_sources):
-                permuted = apply_source_perm_monomial(permuted,
-                                                      source,
-                                                      np.asarray(perms[source]),
-                                                      commuting,
-                                                      lexorder)
+                permuted = apply_source_permplus_monomial(
+                    monomial=permuted,
+                    source=source,
+                    permutation_plus=perms_plus[source],
+                    commuting=commuting,
+                    lexorder=lexorder)
             permuted = to_canonical(permuted, notcomm, lexorder)
             if mon_lessthan_mon(permuted, final_monomial, lexorder):
                 final_monomial = permuted
