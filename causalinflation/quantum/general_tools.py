@@ -8,7 +8,6 @@ import itertools
 
 import numpy as np
 import sympy
-# import warnings
 from functools import lru_cache
 
 from .fast_npa import (apply_source_swap_monomial,
@@ -20,26 +19,11 @@ from .fast_npa import (apply_source_swap_monomial,
                        to_name,
                        mon_equal_mon,
                        reverse_mon)
-# from causalinflation.quantum.typing import ArrayMonomial, StringMonomial, IntMonomial
-
-
-# from collections import defaultdict, deque
 from itertools import permutations, product
-# ncpol2sdpa >= 1.12.3 is required for quantum problems to work
-# from ncpol2sdpa import flatten, generate_operators, generate_variables
-# from ncpol2sdpa.nc_utils import apply_substitutions
-
-#from typing import Dict, List, Tuple, Union, Any, Iterable #, NewType, TypeVar
-from causalinflation.quantum.types import List, Dict, Tuple, Union, Any, Iterable
-
-#Adding for hopefully-efficient moment matrix symmetrization
-from sympy.combinatorics import Permutation
-from sympy.combinatorics.perm_groups import PermutationGroup
-
+from causalinflation.quantum.types import List, Tuple, Union, Any, Iterable
 
 
 try:
-    # import numba
     from numba import jit
     from numba import int64 as int64_
     from numba.types import bool_
@@ -58,7 +42,6 @@ except ImportError:
 nopython = False
 cache = False
 
-# TODO build a proper typing system, maybe use classes?
 
 def find_permutation(list1: List,
                      list2: List
@@ -118,7 +101,6 @@ def mul(lst: List) -> Any:
     return result
 
 
-
 def apply_source_perm_monomial(monomial: np.ndarray,
                                 source: int,
                                 permutation: np.ndarray,
@@ -161,29 +143,9 @@ def apply_source_permplus_monomial(monomial: np.ndarray,
                                 commuting: bool_,
                                 lexorder
                                 ) -> np.ndarray:
-    """This applies a source swap to a monomial.
-
-    We assume in the monomial that all operators COMMUTE with each other.
-
-    Parameters
-    ----------
-    outs_per_input : List[int]
-        The number of outcomes of each measurement for a given party
-    name : str
-        The name to be associated to the party
-
-    Returns
-    -------
-    list
-        The list of Sympy operators
-    """
 
     new_factors = monomial.copy()
     new_factors[:, 1+source] = np.take(permutation_plus, new_factors[:, 1+source])
-    # for i in range(monomial.shape[0]):
-    #     if new_factors[i][1 + source] > 0:
-    #         new_factors[i][1 + source] = permutation[
-    #                                         new_factors[i][1 + source] - 1] + 1
     if commuting:
         return mon_lexsorted(new_factors, lexorder)
     else:
@@ -224,9 +186,8 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     """
     permuted_op_list = []
     for monomial in columns:
-        # if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
         (row_count, col_count) = monomial.shape
-        if row_count == 0 or col_count ==1 : #ACCOMODATING LEGACY IDENTITY OPERATOR
+        if row_count == 0 or col_count == 1:
             permuted_op_list.append(monomial)
         else:
             newmon = apply_source_perm_monomial(monomial, source,
@@ -385,7 +346,6 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     List[sympy.core.symbol.Symbol]
         List of all the symbolic factors, with the powers expanded.
     """
-
     # this is for treating cases like A**2, where we want factors = [A, A]
     # and this behaviour doesn't work with .as_ordered_factors()
     factors = monomial.as_ordered_factors()
@@ -553,7 +513,6 @@ def is_knowable(monomial: np.ndarray) -> bool:
                     for source in monomial[:, 1:-2].T])
 
 
-# @lru_cache(maxsize=None, typed=False)
 def is_physical(monomial_in: Iterable[Iterable[int]],
                 sandwich_positivity=True
                 ) -> bool:
@@ -584,8 +543,6 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     bool
         Whether the monomial is positive or not.
     """
-
-    # monomial = np.array(monomial_in, dtype=np.int8).copy()
     if not len(monomial_in):
         return monomial_in
     monomial = np.array(monomial_in, dtype=np.uint16, copy=True)
@@ -601,11 +558,6 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
                 res *= False
                 break
     return res
-
-# @lru_cache(maxsize=None, typed=False)
-# def atomic_is_physical_memoized(atomic_monomial_in: Tuple[Tuple[int]], **kwargs) -> bool:
-#     return atomic_is_physical(np.asarray(atomic_monomial_in), **kwargs)
-#
 
 
 def label_knowable_and_unknowable(monomials_factors: np.ndarray,
@@ -706,158 +658,10 @@ def as_ordered_factors_for_powers(monomial: sympy.core.symbol.Symbol
     return factors
 
 
-def cols_num2sym(ordered_cols_coord: List[List[List[int]]],
-                  names: str,
-                  n_sources: int,
-                  measurements: List[List[List[sympy.core.symbol.Symbol]]]
-                  ) -> List[sympy.core.symbol.Symbol]:
-    """Go from the output of build_columns to a list of symbolic operators
-
-    Parameters
-    ----------
-    ordered_cols_coord : List[List[List[int]]]
-        Generating set as a list of monomials represented as an array.
-    names : str
-        Names of each party.
-    n_sources : int
-        Number of sources.
-    measurements : List[List[List[sympy.core.symbol.Symbol]]]
-        List of symbolic operators representing the measurements. The list is
-        nested such that the first index corresponds to the party, the
-        second index to the measurement, and the third index to the outcome.
-
-    Returns
-    -------
-    List[sympy.core.symbol.Symbol]
-        The generating set but with symbolic monomials.
-    """
-    sym_variables_to_be_given = copy.deepcopy(variables_to_be_given)
-    for idx, [_, term] in enumerate(variables_to_be_given):
-        factors  = term.split('*')
-        # nr_terms = len(factors)
-        factors  = np.array([list(factor.split('_')) for factor in factors])
-        parties  = factors[:, 0]
-        inputs   = factors[:, -2]
-        outputs  = factors[:, -1]
-        name = 'p'
-        # Add specification of parties if a marginal probability
-        if len(parties) < max_nr_of_parties:
-            name += ''.join(parties)
-        name += '('
-        name += ''.join(outputs)
-        name += '|'
-        name += ''.join(inputs)
-        name += ')'
-        sym_variables_to_be_given[idx][1] = sympy.symbols(name)
-
-    return sym_variables_to_be_given
 
 
-def substitute_sym_with_value(syminput: sympy.core.symbol.Symbol,
-                              settings_per_party: Tuple[int],
-                              outcomes_per_party: Tuple[int],
-                              p_vector: np.ndarray
-                              ) -> float:
-    """Function which, given a symbolic probability in the form
-    p(abc...|xyz...) and a probability distribution p called as
-    p[a,b,c,...,x,y,z,...], returns the numerical value of the
-    probability.
 
-    Note that this accepts marginals, for example, p(a|x), and
-    then it automatically computes all the summations over
-    p[a,b,c,...,x,y,z,...].
 
-    Parameters
-    ----------
-    syminput : sympy.core.symbol.Symbol
-        Symbolic probability.
-    settings_per_party : Tuple[int]
-        Setting cardinalities per party.
-    outcomes_per_party : Tuple[int]
-        Outcome cardinalities per party.
-    p_vector : np.ndarray
-        The probability distribution of dims
-        (outcomes_per_party,settings_per_party).
-
-    Returns
-    -------
-    float
-        The value of the symbolic probability (which can be a marginal)
-
-    Examples
-    --------
-    >>> p = sympy.symbols('pA(0|1)')
-    >>> substitute_sym_with_value(p, (2,2), (2,2), p_vector)
-    parray[0,:,1,0].sum()
-
-    Note that we take the first setting (=0) for marginalised parties, in the
-    example above, the second party is marginalised.
-    """
-
-    # Extract the parties
-    nrparties = len(settings_per_party)
-    name = syminput.name
-    charelement = name[0]  # should be 'p'
-    assert charelement == 'p', ("The names of the symbolic variables" +
-                                                        " are not correct.")
-    parties = []  # Parties over which to NOT marginalize.
-    idx = 1
-    if name[1] == '(':
-        parties = [chr(ord('A') + i) for i in range(nrparties)]
-    else:
-        while name[idx] != '(':
-            parties.append(name[idx])
-            idx += 1
-    assert parties == sorted(parties), ("The symbolic variables should " +
-                                    "have the parties in the correct order.")
-    idx += 1
-    outcomes = []
-    while name[idx] != '|':
-        outcomes.append(int(name[idx]))
-        idx += 1
-    idx += 1
-    inputs = []
-    while name[idx] != ')':
-        inputs.append(int(name[idx]))
-        idx += 1
-
-    # Assume parties are in order 'A'->0, 'B'->1, 'C'->2, etc.
-    parties_idx = [ord(p) - ord('A') for p in parties]
-    if parties_idx:  # if not empty
-        aux = list(range(nrparties))
-        for p in parties_idx:
-            aux.remove(p)
-        over_which_to_marginalize = aux
-    else:
-        over_which_to_marginalize = []
-
-    # Because of no signaling, when marginalising over a party,
-    # its input does not affect the marginal. However, when
-    # going from the marginal to the full distribution, we
-    # must choose an input for the marginalised party. By default
-    # we choose input 0.
-    # eg pA(a|x)->pA(a|x,y=0,z=0)
-    settings_aux = [[0] for _ in range(nrparties)]
-    i_idx = 0
-    for p in parties_idx:
-        settings_aux[p] = [inputs[i_idx]]
-        i_idx += 1
-    # For the outcomes, we define a list of lists where the outcomes
-    # that are not marginalized over have a fixed value; for the
-    # others we give all possible values.
-    # example: pAC(0,1|1,2) --> [[0],[0,1,2],[1]]
-    # we have [0,1,2] because Bob is being marginalized over, so we put
-    # all outcome values, but we only put 0 and 1 for Alice and Charlie.
-    # This construction allows to easily use itertools.product to do
-    # the marginalisation on parray over the marginalised parties.
-    outcomes_aux = []
-    for p in range(nrparties):
-        if p in parties_idx:
-            # i use .index in case the parties are disordered
-            outcomes_aux.append([outcomes[parties_idx.index(p)]])
-        else:
-            tuples.append(tuple(flatten(element.tolist())))
-    return tuples
 
 
 def monomialset_name2num(monomials: np.ndarray, names: List[str]) -> np.ndarray:
@@ -909,47 +713,47 @@ def monomialset_num2name(monomials_factors: np.ndarray,
     return monomials_factors_names
 
 
-def string2prob(term: str, max_nr_of_parties: int) -> sympy.core.symbol.Symbol:
-    """Converts a string to a symbolic probability with the correct indices.
-    For example 'A_0_1_0*B_0_2_3' is converted to pAB(03|12).
-
-    Parameters
-    ----------
-    term : _type_
-        Input monomial as a string.
-    max_nr_of_parties : _type_
-        The number of terms in the monomial.
-
-    Returns
-    -------
-    sympy.core.symbol.Symbol
-        The symbolic probability, e.g., p(00|01).
-    """
-    if term == '1':
-        return 1
-    elif term == '0':
-        return 0
-    factors = term.split('*')
-    factors = [list(factor.split('_')) for factor in factors]
-    factors = np.array(factors)
-    parties = factors[:, 0]
-    inputs  = factors[:, -2]
-    outputs = factors[:, -1]
-    name = 'p'
-    # Add parties if we are marginalizing over a distribution
-    #if len(parties) < max_nr_of_parties:
-    name += '_{'
-    for p in parties:
-        name += p
-    name += '}'
-    name += '('
-    for o in outputs:
-        name += o
-    name += '|'
-    for i in inputs:
-        name += i
-    name += ')'
-    return sympy.symbols(name, commuting=True)
+# def string2prob(term: str, max_nr_of_parties: int) -> sympy.core.symbol.Symbol:
+#     """Converts a string to a symbolic probability with the correct indices.
+#     For example 'A_0_1_0*B_0_2_3' is converted to pAB(03|12).
+#
+#     Parameters
+#     ----------
+#     term : _type_
+#         Input monomial as a string.
+#     max_nr_of_parties : _type_
+#         The number of terms in the monomial.
+#
+#     Returns
+#     -------
+#     sympy.core.symbol.Symbol
+#         The symbolic probability, e.g., p(00|01).
+#     """
+#     if term == '1':
+#         return 1
+#     elif term == '0':
+#         return 0
+#     factors = term.split('*')
+#     factors = [list(factor.split('_')) for factor in factors]
+#     factors = np.array(factors)
+#     parties = factors[:, 0]
+#     inputs  = factors[:, -2]
+#     outputs = factors[:, -1]
+#     name = 'p'
+#     # Add parties if we are marginalizing over a distribution
+#     #if len(parties) < max_nr_of_parties:
+#     name += '_{'
+#     for p in parties:
+#         name += p
+#     name += '}'
+#     name += '('
+#     for o in outputs:
+#         name += o
+#     name += '|'
+#     for i in inputs:
+#         name += i
+#     name += ')'
+#     return sympy.symbols(name, commuting=True)
 
 
 def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
@@ -1053,7 +857,7 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                                       np.asarray(perms[source]),
                                                       commuting,
                                                       lexorder)
-            permuted = to_canonical(permuted, notcomm, lexorder)  #ALREADY DONE by apply_source_perm_monomial ??
+            permuted = to_canonical(permuted, notcomm, lexorder)
             if mon_lessthan_mon(permuted, final_monomial, lexorder):
                 final_monomial = permuted
         if np.array_equal(final_monomial, prev):
@@ -1138,35 +942,7 @@ def to_representative(mon: np.ndarray,
     return final_monomial
 
 
-def substitute_sym_with_numbers(symbolic_variables_to_be_given: List[List[sympy.core.symbol.Symbol]],
-                                settings_per_party: Tuple[int],
-                                outcomes_per_party: Tuple[int],
-                                p_vector: np.ndarray
-                                ) -> List[List[float]]:
-    """Substitute all symbolic variables of the form 'p(ab..|xy..)' with
-    the corresponding value or marginal computed from p_vector.
 
-    input_list       = np.zeros(n_parties, dtype=int)
-    input_list[dont_marginalize] = inputs
-    inputs_outputs   = outputs + input_list.tolist()
-    return marginal_dist[tuple(inputs_outputs)]
-
-
-    Returns
-    -------
-    List[Tuple[int, float]]
-        A nested list of type [..., [int, float], ...] where every
-        symbolic probability in the input is substituted with its numerical
-        value.
-    """
-    variables_values = copy.deepcopy(symbolic_variables_to_be_given)
-    for i in range(len(variables_values)):
-        variables_values[i][1] = float(substitute_sym_with_value(
-                                           symbolic_variables_to_be_given[i][1],
-                                                             settings_per_party,
-                                                             outcomes_per_party,
-                                                             p_vector))
-    return variables_values
 
 
 def clean_coefficients(coefficients: np.ndarray,
@@ -1201,11 +977,7 @@ def clean_coefficients(coefficients: np.ndarray,
     return coeffs
 
 
-def dimino_sympy(group_generators):
-    gens = [Permutation(list(gen)) for gen in group_generators]
-    group = PermutationGroup(gens)
-    group_elements = list(group.generate_dimino(af=True))
-    return group_elements
+
 
 
 def compute_numeric_value(mon_string: str,
@@ -1267,23 +1039,9 @@ def flatten(nested):
     else:
         while isinstance(nested[0], Iterable):
             nested = list(itertools.chain.from_iterable(nested))
-            # nested = [item for sublist in nested for item in sublist]
         return nested
 
 
-# def generate_noncommuting_measurements(nro_per_input, name):
-#     """Rewritten function from ncpol2sdpa but without using the
-#     quantum operators from Sympy, but just general NC variables.
-#     """
-#     ops_per_input = []
-#     for x, nro in enumerate(nro_per_input):
-#         ops_per_output_per_input = []
-#         for o in range(nro):
-#             ops_per_output_per_input.append(
-#                 sympy.Symbol(name + '_' + str(x) + '_' + str(o), commutative=False)
-#             )
-#         ops_per_input.append(ops_per_output_per_input)
-#     return ops_per_input
 
 def generate_operators(outs_per_input: List[int],
                                        name: str
