@@ -13,7 +13,7 @@ class TestFactorization(unittest.TestCase):
                              [3, 1, 4, 0, 0, 0],
                              [3, 6, 6, 0, 0, 0],
                              [3, 4, 5, 0, 0, 0]])
-        factorised = factorize_monomial(monomial)
+        factorised = factorize_monomial(monomial, canonical_order=True)
         correct    = np.array([np.array([[1, 0, 1, 1, 0, 0]]),
                                np.array([[1, 0, 3, 3, 0, 0]]),
                                np.array([[2, 1, 0, 2, 0, 0],
