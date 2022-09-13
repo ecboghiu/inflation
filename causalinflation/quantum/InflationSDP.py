@@ -1373,10 +1373,11 @@ class InflationSDP(object):
         ),
                 disable=not self.verbose,
                 desc="Calculating symmetries       "):
+            permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
             permuted_cols_ind = \
                 apply_source_permutation_coord_input(self.generating_monomials,
                                                      source,
-                                                     permutation,
+                                                     permutation_plus,
                                                      self.commuting,
                                                      self._notcomm,
                                                      self._lexorder)
