@@ -91,31 +91,41 @@ def write_to_mat(problem, filename):
     :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
-    # MATLAB does not like 0s, so we shift all by 1
-    final_positions_matrix = problem.momentmatrix + 1
-    nr_unknown_moments = int(np.max(final_positions_matrix))
-    semiknown_moments = np.array(problem.semiknown_moments_idx_dict)
-    if semiknown_moments != []:
-        semiknown_moments[:, 0] += 1
-        semiknown_moments[:, 2] += 1
-        nr_unknown_moments = int(max([np.max(semiknown_moments),
-                                      np.max(final_positions_matrix)]))
-    objective = np.array(list(problem._objective_as_dict.items())).astype(float)
-    if problem.physical_monomial_idxs.size > 0:
-        positive_variables = problem.physical_monomial_idxs[:, 0]
-    else:
-        positive_variables = []
+    # MATLAB does not like 0s, so we shift all by 1 if the variable 0 exists
+    offset = 1 if problem.momentmatrix_has_a_zero else 0
+    final_positions_matrix = problem.momentmatrix + offset
+    known_moments = [[mon.idx + offset, val]
+                     for mon, val in problem.known_moments.items()]
+    semiknown_initial = []
+    semiknown_factors = []
+    semiknown_final   = []
+    for semiknown in problem.semiknown_moments.items():
+        semiknown_initial.append(semiknown[0].idx + offset)
+        semiknown_factors.append(semiknown[1][0])
+        semiknown_final.append(semiknown[1][1].idx + offset)
+    semiknown_moments = np.vstack([semiknown_initial,
+                                   semiknown_factors,
+                                   semiknown_final]).T
+    objective   = [[mon.idx + offset, float(coeff)]
+                   for mon, coeff in problem.objective.items()
+                   if abs(coeff) > 1e-8]
+    lowerbounds = [[mon.idx + offset, bnd]
+                   for mon, bnd in problem.moment_lowerbounds.items()]
+    upperbounds = [[mon.idx + offset, bnd]
+                   for mon, bnd in problem.moment_upperbounds.items()]
+    names       = [[mon.idx + offset, mon.name]
+                   for mon in problem.list_of_monomials]
 
     savemat(filename,
-    mdict={'G': final_positions_matrix,
-           'known_moments': problem.known_moments_idx_dict,
-           'nr_unknown_moments': nr_unknown_moments,
-           'propto':             semiknown_moments,
-           'obj':                objective,
-           'monomials_string':   monomials_list,
-           "positive_vars":      physical_monomials
-           }
-    )
+            mdict={"Gamma":           final_positions_matrix,
+                   "known_moments":   known_moments,
+                   "semiknown":       semiknown_moments,
+                   "obj":             objective,
+                   "monomials_names": np.asarray(names, dtype=object),
+                   "lowerbounds":     lowerbounds,
+                   "upperbounds":     upperbounds
+                  }
+            )
 
 def write_to_sdpa(problem, filename):
     """Export the problem to a file in .dat-s format. See specifications at
