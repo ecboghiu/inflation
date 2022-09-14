@@ -101,8 +101,6 @@ class InflationSDP(object):
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         self._generate_parties()
-        if self.verbose > 1:
-            print(self.InflationProblem)  # IS this printable yet?
 
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
