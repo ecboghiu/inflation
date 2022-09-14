@@ -3,4 +3,3 @@ numba~=0.55.1
 sympy~=1.10.1
 # setuptools~=58.0.4
 scipy~=1.7.3
-methodtools~=0.4.5

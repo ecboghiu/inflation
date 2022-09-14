@@ -15,7 +15,7 @@ import sympy as sp
 
 from causalinflation import InflationProblem
 from typing import List, Dict, Tuple, Union, Any
-from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
+from .fast_npa import (calculate_momentmatrix,
                        to_canonical,
                        to_name,
                        remove_projector_squares,
@@ -23,7 +23,7 @@ from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                        mon_is_zero,
                        nb_mon_to_lexrepr,
                        notcomm_from_lexorder)
-from causalinflation.quantum.general_tools import (to_representative,
+from .general_tools import (to_representative,
                             to_numbers,
                             to_symbol,
                             flatten,
@@ -36,9 +36,9 @@ from causalinflation.quantum.general_tools import (to_representative,
                             clean_coefficients,
                             factorize_monomial
                             )
-from causalinflation.quantum.monomial_classes import InternalAtomicMonomial, CompoundMonomial
-from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
-from causalinflation.quantum.writer_utils import (write_to_csv, write_to_mat, write_to_sdpa)
+from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
+from .sdp_utils import solveSDP_MosekFUSION
+from .writer_utils import (write_to_csv, write_to_mat, write_to_sdpa)
 
 # Force warnings.warn() to omit the source code line in the message
 # Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -1477,20 +1477,3 @@ class InflationSDP(object):
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
 
-if __name__ == "__main__":
-    cutInflation = InflationProblem({"lambda": ["a", "b"],
-                                     "mu": ["b", "c"],
-                                     "sigma": ["a", "c"]},
-                                    order=['a', 'b', 'c'],
-                                    outcomes_per_party=[2, 2, 2],
-                                    settings_per_party=[1, 1, 1],
-                                    inflation_level_per_source=[2, 1, 1])
-    sdp = InflationSDP(cutInflation)
-    sdp.generate_relaxation('local1')
-
-
-    sdp = InflationSDP(InflationProblem({"Lambda": ["A", "B"]},
-                                        outcomes_per_party=[3, 2],
-                                        settings_per_party=[2, 2],
-                                        inflation_level_per_source=[2]))
-    sdp.generate_relaxation('npa2')

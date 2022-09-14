@@ -6,7 +6,7 @@ with open("VERSION.txt", "r") as f:
 setup(
     name = "causalinflation",
     version = "0.1",
-    install_requires = ['numpy', 'sympy', 'scipy', 'methodtools'],
+    install_requires = ['numpy', 'sympy', 'scipy'],
     extras_require = {
         "jit": ['numba'],
         "solver": ['mosek'],
