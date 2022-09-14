@@ -454,10 +454,9 @@ class InflationSDP(object):
         (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
         if self.momentmatrix_has_a_zero:
             self.list_of_monomials.append(self.Zero)
-        if self.momentmatrix_has_a_one:
-            self.list_of_monomials.append(self.One)
+        #The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
         self.list_of_monomials.extend([self.Monomial(v, idx=k)
-                                       for (k, v) in self.symidx_to_sym_monarray_dict.items()])
+                                       for (k, v) in self.symidx_to_sym_monarray_dict.items() if k>0])
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
         """
@@ -1347,7 +1346,7 @@ class InflationSDP(object):
                                                                         commuting=self.commuting,
                                                                         dtype=self.np_dtype)
         idx_to_canonical_mon_dict = {idx: self.to_2dndarray(mon_as_bytes) for (mon_as_bytes, idx) in
-                                     canonical_mon_to_idx_dict.items() if idx >= 2}
+                                     canonical_mon_to_idx_dict.items()}
 
         return problem_arr, idx_to_canonical_mon_dict
 
@@ -1422,15 +1421,17 @@ class InflationSDP(object):
         for permutation in tqdm(inflation_symmetries,
                                 disable=not self.verbose,
                                 desc="Applying symmetries          "):
-            if conserve_memory:
-                for i, ip in enumerate(permutation):
-                    for j, jp in enumerate(permutation):
-                        if symmetric_arr[i, j] < symmetric_arr[ip, jp]:
-                            symmetric_arr[ip, jp] = symmetric_arr[i, j]
-            else:
-                np.minimum(symmetric_arr, symmetric_arr[permutation].T[permutation].T, out=symmetric_arr)
+            if not np.array_equal(permutation, np.arange(len(momentmatrix))):
+                if conserve_memory:
+                    for i, ip in enumerate(permutation):
+                        for j, jp in enumerate(permutation):
+                            new_val = symmetric_arr[i, j]
+                            if new_val < symmetric_arr[ip, jp]:
+                                symmetric_arr[ip, jp] = new_val
+                                symmetric_arr[jp, ip] = new_val
+                else:
+                    np.minimum(symmetric_arr, symmetric_arr[permutation].T[permutation].T, out=symmetric_arr)
         orbits = np.concatenate((absent_indices, symmetric_arr.flat[where_it_matters_flat].flat))
-
         # Make the orbits go until the representative
         for key, val in enumerate(orbits):
             previous = 0
@@ -1456,7 +1457,7 @@ class InflationSDP(object):
         symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
         symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in
                                         enumerate(
-                                            old_representative_indices) if old_idx >= 2}
+                                            old_representative_indices) if old_idx >= 1}
         return symmetric_arr, unsym_idx_to_sym_idx, symidx_to_canonical_mon_dict
 
     ########################################################################
@@ -1486,3 +1487,10 @@ if __name__ == "__main__":
                                     inflation_level_per_source=[2, 1, 1])
     sdp = InflationSDP(cutInflation)
     sdp.generate_relaxation('local1')
+
+
+    sdp = InflationSDP(InflationProblem({"Lambda": ["A", "B"]},
+                                        outcomes_per_party=[3, 2],
+                                        settings_per_party=[2, 2],
+                                        inflation_level_per_source=[2]))
+    sdp.generate_relaxation('npa2')
