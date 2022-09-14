@@ -7,14 +7,6 @@ import numpy as np
 from itertools import chain
 from warnings import warn
 import methodtools
-# from typing import Tuple, List, Union, NewType
-from causalinflation.quantum.types import Tuple, Union, NewType
-
-ArrayMonomial = NewType("ArrayMonomial", Union[Tuple[Tuple[int]], np.ndarray])
-
-
-# from copy import deepcopy
-# from types import MappingProxyType
 
 
 class InflationProblem(object):
@@ -33,7 +25,7 @@ class InflationProblem(object):
     inflation_level_per_source : list, optional
         Number of copies per source in the inflated graph. By default ``1`` for
         all sources.
-    names : List[int], optional
+    order : List[int], optional
         Name of each party, default is alphabetical labels, e.g.,
         ``['A', 'B', ...]``.
     verbose : int, optional
@@ -159,7 +151,7 @@ class InflationProblem(object):
                 " inflation copies per source.")
 
     @methodtools.lru_cache(maxsize=None, typed=False)
-    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: ArrayMonomial) -> bool:
+    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: np.ndarray) -> bool:
         """
         We assume that the numpy vector-per-operator notation has:
         party_index in slot 0
@@ -189,7 +181,7 @@ class InflationProblem(object):
         else:
             return True
 
-    def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: ArrayMonomial) -> ArrayMonomial:
+    def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: np.ndarray) -> np.ndarray:
         # Parties start at #1 in initial numpy vector notation, we reset that.
         new_mon = np.array(monomial_as_2d_numpy_array, copy=False)  # Danger.
         for o in new_mon:

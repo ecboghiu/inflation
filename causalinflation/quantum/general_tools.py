@@ -11,7 +11,7 @@ from itertools import permutations, product
 import numpy as np
 import sympy
 
-from causalinflation.quantum.types import List, Tuple, Union, Any, Iterable
+from typing import List, Tuple, Union, Any, Iterable
 from .fast_npa import (apply_source_swap_monomial,
                        factorize_monomial,
                        mon_lessthan_mon,
