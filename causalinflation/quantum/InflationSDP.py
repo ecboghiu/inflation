@@ -556,8 +556,9 @@ class InflationSDP(object):
                            if m.is_atomic and m.knowable_q} if (prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=(not use_lpi_constraints),  # TODO: Add (or infer) only semiknowable flag?
-                        only_specified_values=assume_shared_randomness)  # MAJOR BUGFIX?
+                        only_knowable_moments=(not use_lpi_constraints),
+                        only_specified_values=assume_shared_randomness,
+                        consider_only_semiknowable=True)  # MAJOR BUGFIX?
 
 
     def set_values(self, values: Union[
@@ -566,6 +567,7 @@ class InflationSDP(object):
                    normalised: bool = True,
                    only_knowable_moments: bool = True,
                    only_specified_values: bool = False,
+                   consider_only_semiknowable: bool = False,
                    ) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
@@ -658,8 +660,9 @@ class InflationSDP(object):
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
                                               (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
-            # TODO: If from set_dist but using lpi_constraints, iterate over nonatomic monomials where status is
-            # either 'Yes' or 'Semi' only.
+        elif consider_only_semiknowable:
+            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                              (not mon.is_atomic) and mon.knowability_status in ['Yes', 'Semi'])  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
