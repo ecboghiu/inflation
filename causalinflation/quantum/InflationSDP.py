@@ -741,7 +741,7 @@ class InflationSDP(object):
             return
 
         if hasattr(self, 'use_lpi_constraints'):
-            if self.use_lpi_constraints:
+            if self.use_lpi_constraints and self.verbose > 0:
                 warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
                               "aware that imposing linearized polynomial constraints will " +
                               "constrain the optimization to distributions with fixed " +
@@ -1199,7 +1199,7 @@ class InflationSDP(object):
 
         # Write file according to the extension
         if self.verbose > 0:
-            print('Writing the SDP program to ', filename)
+            print('Writing the SDP program to', filename)
         if extension == 'dat-s':
             write_to_sdpa(self, filename)
         elif extension == 'csv':
