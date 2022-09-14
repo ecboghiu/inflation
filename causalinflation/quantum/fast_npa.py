@@ -505,8 +505,12 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_is_zero(mon: np.ndarray) -> bool_:
-    """Function which checks if there is a product of two orthogonal projectors,
+    """Function which checks if
+    1) there is a product of two orthogonal projectors,
+    2) or the monomial is equal to the canonical zero monomial
     and returns True if so."""
+    if len(mon) > 1 and not np.any(mon.ravel()):
+        return True
     for i in range(1, mon.shape[0]):
         if mon[i, -1] != mon[i - 1, -1] and nb_op_eq_op(mon[i, :-1], mon[i - 1, :-1]):
             return True
@@ -657,7 +661,11 @@ def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
         mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
         mon = lexorder[mon]
         mon = remove_projector_squares(mon)
-        return mon
+        if mon_is_zero(mon):
+            return 0*mon[:1]
+        else:
+            return mon
+        # return mon
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -770,7 +778,7 @@ def calculate_momentmatrix(cols: List,
         for j in range(i, nrcols):
             mon1, mon2 = cols[i], cols[j]
             if not commuting:
-                mon_v1 = dot_mon(mon1, mon2, lexorder)
+                mon_v1 = to_canonical(dot_mon(mon1, mon2, lexorder), notcomm, lexorder).astype(dtype)
             else:
                 mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
             if mon_is_zero(mon_v1):
@@ -778,7 +786,6 @@ def calculate_momentmatrix(cols: List,
                 momentmatrix[i, j] = 0
             else:
                 if not commuting:
-                    mon_v1 = to_canonical(mon_v1, notcomm, lexorder).astype(dtype)
                     mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder).astype(dtype)
                     mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
                 else:
