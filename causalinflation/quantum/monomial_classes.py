@@ -80,17 +80,17 @@ class InternalAtomicMonomial(object):
             i_divider = '' if all(len(i) == 1 for i in inputs) else ','
             o_divider = '' if all(len(o) == 1 for o in outputs) else ','
             if self.do_conditional:
-                return ('p_{' + p_divider.join(parties) + '}' +
+                return ('p' + p_divider.join(parties) +
                         '(' + o_divider.join(outputs) + ' do: ' + i_divider.join(inputs) + ')')
             else:
-                return ('p_{' + p_divider.join(parties) + '}' +
+                return ('p' + p_divider.join(parties) +
                         '(' + o_divider.join(outputs) + '|' + i_divider.join(inputs) + ')')
         else:
             operators_as_strings = []
             for op in self.as_ndarray.tolist():  # this handles the UNKNOWN factors.
                 operators_as_strings.append('_'.join([self.sdp.names[op[0] - 1]]  # party idx
                                                      + [str(i) for i in op[1:]]))
-            return 'P[' + ', '.join(operators_as_strings) + ']'
+            return 'OpSeq[' + ', '.join(operators_as_strings) + ']'
 
     @property
     def symbol(self):
