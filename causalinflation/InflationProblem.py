@@ -92,7 +92,6 @@ class InflationProblem(object):
             self.dag = dag
 
         nodes_with_children = list(dag.keys())
-        # NEW PROPERTY ADDED BY ELIE
         self.split_node_model = not set(nodes_with_children).isdisjoint(self.names)
         names_to_integers_dict = {party: position for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties), dtype=np.uint8)
@@ -102,7 +101,6 @@ class InflationProblem(object):
                 for child in dag[parent]:
                     jj = names_to_integers_dict[child]
                     adjacency_matrix[ii, jj] = 1
-        # NEW PROPERTY ADDED BY ELIE
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
         settings_per_party_as_lists = [[s] for s in self.private_settings_per_party]
         for (party_index, party_parents_indices) in enumerate(self.parents_per_party):
@@ -157,8 +155,6 @@ class InflationProblem(object):
         """
         # Parties start at #1 in our numpy vector notation, so we drop by one.
         parties_in_play = np.asarray(monomial_as_2d_numpy_array)[:, 0] - 1
-        # assert len(parties_in_play) == len(
-        #     set(parties_in_play)), 'The same party appears to be referenced more than once.'
         parents_referenced = set()
         for p in parties_in_play:
             parents_referenced.update(self.parents_per_party[p])
@@ -180,14 +176,11 @@ class InflationProblem(object):
 
     def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: np.ndarray) -> np.ndarray:
         # Parties start at #1 in initial numpy vector notation, we reset that.
-        new_mon = np.array(monomial_as_2d_numpy_array, copy=False)  # Danger.
+        new_mon = np.array(monomial_as_2d_numpy_array, copy=False)
         for o in new_mon:
             party_index = o[0] - 1
             effective_setting_as_integer = o[-2]
             o_private_settings = self.extract_parent_values_from_effective_setting[
                 party_index][effective_setting_as_integer][0]
             o[-2] = o_private_settings
-            # o[0] = party_index #DO NOT LOWER PARTY INDEX AS PART OF SETTING RECTIFICATION
         return new_mon
-
-

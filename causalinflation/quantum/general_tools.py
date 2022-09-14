@@ -309,7 +309,7 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     List[sympy.core.symbol.Symbol]
         List of all the symbolic factors, with the powers expanded.
     """
-    # this is for treating cases like A**2, where we want factors = [A, A]
+    # This is for treating cases like A**2, where we want factors = [A, A]
     # and this behaviour doesn't work with .as_ordered_factors()
     factors = monomial.as_ordered_factors()
     factors_expanded = []
@@ -366,35 +366,6 @@ def to_numbers(monomial: str,
         Monomial in tuple of tuples format (equivalent to 2d array format by
         calling np.array() on the result).
     """
-
-    # the following commented code is compatible with numba, but it is slower
-    # than native...
-    # TODO see if possible to write a numba function that does strings
-    # fast
-    '''
-    # The following is compatible with numba and can be precompiled however...
-    # it's 1 microsec slower than the native python version!!
-    # And it only work with single digit numbers, because int('2')
-    # to get integer 2 is not supported by numba yet
-    # https://github.com/numba/numba/issues/5723
-    # That's very surprising!
-    # native python version is is around 5 micro seconds for small inputs
-
-    monomial_parts = monomial.split('*')
-    monomial_parts_indices = np.zeros(shape=(len(monomial_parts),
-                            len(monomial_parts[0].split('_'))),dtype=np.int8)
-    monomial_parts_indices[1] = 2
-    for i, part in enumerate(monomial_parts):
-        atoms = part.split('_')
-
-        monomial_parts_indices[i, 0] = ord(atoms[0]) - ord('A')
-
-        for i2, j in enumerate(atoms[1:-2]):
-            monomial_parts_indices[i, i2] = ord(j) - ord('0')
-        monomial_parts_indices[i, -2] = ord(atoms[-2])-ord('0')
-        monomial_parts_indices[i, -1] = ord(atoms[-1])-ord('0')
-    '''
-
     parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
 
     if isinstance(monomial, str):
@@ -413,7 +384,7 @@ def to_numbers(monomial: str,
                    + (int(atoms[-2]), int(atoms[-1])))
         monomial_parts_indices.append(indices)
 
-    return np.array(monomial_parts_indices, dtype=np.uint16)  # Elie warning: Could the string '1' cause problems here??
+    return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
 def factorize_monomials(monomials_as_numbers: np.ndarray,
@@ -630,7 +601,6 @@ def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
     return monomial_parts_indices
 
 
-# @jit(nopython=nopython)  # make to_canonical compatible with numba
 def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
                                           notcomm: np.ndarray,
                                           lexorder: np.ndarray) -> np.ndarray:
@@ -649,9 +619,8 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
         An equivalent monomial closer to its representative form.
     """
     monomial_component = to_canonical(
-        np.asarray(monomial_component), notcomm, lexorder)  # Make sure all commutation rules are applied
+        np.asarray(monomial_component), notcomm, lexorder)
     new_mon = monomial_component.copy()
-    # -2 we ignore the first and the last two columns
     for source in range(monomial_component.shape[1] - 3):
         source_inf_copy_nrs = monomial_component[:, 1 + source]
         # This returns the unique values unsorted
@@ -665,20 +634,11 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
     return new_mon
 
 
-# @jit(nopython=nopython)  # remove the use of itertools
 def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                   inflevels: np.ndarray,
                                   notcomm: np.ndarray,
                                   lexorder: np.ndarray,
                                   commuting: bool) -> np.ndarray:
-    # Now we must take into account that the application of symmetries plus
-    # applying commutation rules can give us an even smaller monomial
-    # (lexicographically). To deal with this, we will apply *all* possible
-    # source swaps and then apply commutation rules, and if the resulting
-    # monomial is smaller, we accept it.
-    # TODO: This is horribly inefficient if we have lots of symmetries
-    # TODO 2: to make it compatible with numba, avoid using itertools!
-    # (i.e., product, permutations)
     nr_sources = inflevels.shape[0]
     all_perms_per_source = [np.array(list(permutations(range(inflevels[source]))), dtype=int)
                             for source in range(nr_sources)]
@@ -713,7 +673,6 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
     return final_monomial
 
 
-# @jit(nopython=nopython)
 def to_representative(mon: np.ndarray,
                       inflevels: np.ndarray,
                       notcomm: np.ndarray,
@@ -760,9 +719,7 @@ def to_representative(mon: np.ndarray,
         return mon
 
     # We apply source swaps until we reach a stable point in terms of
-    # lexiographic ordering. We do this by lowering the copy indices making
-    # them as low as possible from left to right. This might not be a global
-    # optimum.
+    # lexiographic ordering.
     final_monomial = to_repr_lower_copy_indices_with_swaps(mon, notcomm, lexorder)
 
     # Before we didn't consider that applying a source swap that decreases the
