@@ -6,8 +6,6 @@ arXiv:1609.00672 and arXiv:1707.06476 for the original description of inflation.
 import numpy as np
 from itertools import chain
 from warnings import warn
-import methodtools
-
 
 class InflationProblem(object):
     """Class for enconding relevant details concerning the causal compatibility
@@ -150,7 +148,6 @@ class InflationProblem(object):
                 str(self.inflation_level_per_source) +
                 " inflation copies per source.")
 
-    @methodtools.lru_cache(maxsize=None, typed=False)
     def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: np.ndarray) -> bool:
         """
         We assume that the numpy vector-per-operator notation has:
@@ -194,16 +191,3 @@ class InflationProblem(object):
         return new_mon
 
 
-if __name__ == "__main__":
-    prob = InflationProblem(dag={'U_AB': ['A', 'B'],
-                                 'U_AC': ['A', 'C'],
-                                 'U_AD': ['A', 'D'],
-                                 'C': ['D'],
-                                 'A': ['B', 'C', 'D']},
-                            outcomes_per_party=(2, 2, 2, 2),
-                            settings_per_party=(3, 3, 3, 3),
-                            inflation_level_per_source=(1, 1, 1),
-                            order=('A', 'B', 'C', 'D'),
-                            verbose=2)
-    print(len(prob.extract_parent_values_from_effective_setting))
-    print(prob.extract_parent_values_from_effective_setting[3])
