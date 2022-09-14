@@ -12,7 +12,7 @@ import os
 import numpy as np
 from scipy.sparse import dok_matrix
 
-from causalinflation.quantum.types import List, Dict, Tuple
+from typing import List, Dict, Tuple
 
 
 def kill_files(folder):

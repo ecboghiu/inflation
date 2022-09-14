@@ -14,7 +14,7 @@ import numpy as np
 import sympy as sp
 
 from causalinflation import InflationProblem
-from causalinflation.quantum.types import List, Dict, Tuple, Union, Any
+from typing import List, Dict, Tuple, Union, Any
 from causalinflation.quantum.fast_npa import (calculate_momentmatrix,
                        to_canonical,
                        to_name,
