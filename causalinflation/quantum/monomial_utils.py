@@ -55,7 +55,6 @@ def symbol_from_atomic_name(atomic_name: str) -> sympy.core.symbol.Symbol:
 
 
 def name_from_atomic_names(atomic_names: List[str]) -> str:
-    # #
     if len(atomic_names):
         output = ''
         for i, (name, power) in enumerate(Counter(atomic_names).items()):
@@ -67,15 +66,6 @@ def name_from_atomic_names(atomic_names: List[str]) -> str:
         return output
     else:
         return '1'
-
-
-# def symbol_from_atomic_names(atomic_names: List[str]):
-#     prod = sympy.S.One
-#     for op_name in atomic_names:
-#         if op_name != '1':
-#             prod *= sympy.Symbol(op_name,
-#                                  commutative=True)
-#     return prod
 
 
 def symbol_from_atomic_symbols(atomic_symbols: List[sympy.core.symbol.Symbol]) -> sympy.core.symbol.Symbol:

@@ -6,7 +6,7 @@ instance (see arXiv:1909.10519).
 """
 import gc
 import itertools
-import numbers  # To sanity check user giving numeric input
+import numbers
 import warnings
 from collections import Counter
 
@@ -47,7 +47,7 @@ warnings.formatwarning = lambda message, category, filename, lineno, line=None: 
     formatwarning_orig(message, category, filename, lineno, line='')
 
 
-from scipy.sparse import coo_matrix  # , dok_matrix
+from scipy.sparse import coo_matrix
 
 try:
     from numba import types
@@ -117,7 +117,6 @@ class InflationSDP(object):
         self.identity_operator = np.empty((0, self._nr_properties), dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties), dtype=self.np_dtype)
 
-
         # Define default lexicographic order through np.lexsort
         # The lexicographic order is encoded as a matrix with rows as
         # operators and the row index gives the order
@@ -131,7 +130,7 @@ class InflationSDP(object):
         # implies commutation, and self._default_commgraph[i, j] = 1 is
         # non-commutation.
         self._default_notcomm = notcomm_from_lexorder(self._lexorder)
-        self._notcomm = self._default_notcomm.copy()  # ? Ideas for a better name?
+        self._notcomm = self._default_notcomm.copy()
 
         self.canonsym_ndarray_from_hash_cache = dict()
         self.atomic_monomial_from_hash_cache = dict()
@@ -378,7 +377,7 @@ class InflationSDP(object):
         (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
         if self.momentmatrix_has_a_zero:
             self.list_of_monomials.append(self.Zero)
-        #The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
+        #The zero monomial is not stored during calculate_momentmatrix, so we manually add it here.
         self.list_of_monomials.extend([self.Monomial(v, idx=k)
                                        for (k, v) in self.symidx_to_sym_monarray_dict.items() if k>0])
         for mon in self.list_of_monomials:
@@ -401,7 +400,6 @@ class InflationSDP(object):
         self.monomial_names = list(self.name_dict_of_monomials.keys())
 
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
-        # self.maskmatrices_idx_dict = {mon.idx: mon.mask_matrix for mon in self.list_of_monomials} #Uncomment to assist with export?
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
@@ -480,8 +478,8 @@ class InflationSDP(object):
                            if m.is_atomic and m.knowable_q} if (prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=(not use_lpi_constraints),  # TODO: Add (or infer) only semiknowable flag?
-                        only_specified_values=assume_shared_randomness)  # MAJOR BUGFIX?
+                        only_knowable_moments=(not use_lpi_constraints),
+                        only_specified_values=assume_shared_randomness)
 
 
     def set_values(self, values: Union[
@@ -527,8 +525,6 @@ class InflationSDP(object):
         if normalised and self.momentmatrix_has_a_one:
             self.known_moments[self.One] = 1
         if (values is None) or (len(values) == 0):
-            # From a user perspective set_values(None) should be
-            # equivalent to reset_distribution().
             self.cleanup_after_set_values()
             return
 
@@ -581,9 +577,7 @@ class InflationSDP(object):
                                 (len(mon) == 1)}
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                              (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
-            # TODO: If from set_dist but using lpi_constraints, iterate over nonatomic monomials where status is
-            # either 'Yes' or 'Semi' only.
+                                              (not mon.is_atomic) and mon.knowable_q)
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
@@ -624,8 +618,6 @@ class InflationSDP(object):
                 del self.known_moments_name_dict[name]
             self.semiknown_moments_name_dict = dict()
 
-            # TODO: ADD EQUALITY CONSTRAINTS FOR SUPPORTS PROBLEM!
-
         # Create lowerbounds list for physical but unknown moments
         self.update_physical_lowerbounds()
         self._update_objective()
@@ -658,8 +650,6 @@ class InflationSDP(object):
             self.maximize = False
 
         self.reset_objective()
-        # From a user perspective set_objective(None) should be
-        # equivalent to reset_objective()
         if objective is None:
             return
 
@@ -695,14 +685,12 @@ class InflationSDP(object):
             self._processed_objective[self.One] += self._processed_objective[m] * value
             del self._processed_objective[m]
         semiknown_keys_to_process = set(self.semiknown_moments.keys()).intersection(self._processed_objective.keys())
-        # for v1, (k, v2) in self.semiknown_moments.items():
-        #     if v1 in self._processed_objective:
         for v1 in semiknown_keys_to_process:
             c1 = self._processed_objective[v1]
             for (k, v2) in self.semiknown_moments[v1]:
                 # obj = ... + c1*v1 + c2*v2,
                 # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
-                # therefore we need to add to the coefficient of v2 the term c1*k
+                # therefore we add to the coefficient of v2 the term c1*k
                 self._processed_objective[v2] = self._processed_objective.get(v2, 0) + c1 * k
                 del self._processed_objective[v1]
         # For compatibility purposes
@@ -746,7 +734,6 @@ class InflationSDP(object):
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
 
-    # TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
     def solve(self, interpreter: str = 'MOSEKFusion',
               feas_as_optim: bool = False,
               dualise: bool = True,
@@ -785,7 +772,6 @@ class InflationSDP(object):
                           + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-        # TODO for performance: Remove all zero-valued variables FROM ALL solve arguments, as this is just a waste.
         solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
                               "objective": self._objective_as_name_dict,
                               "known_vars": self.known_moments_name_dict,
@@ -1079,7 +1065,6 @@ class InflationSDP(object):
             raise Exception('I have not understood the format of the '
                             + 'column specification')
 
-        # Sort by custom lex order?
         if not np.array_equal(self._lexorder, self._default_lexorder):
             res_lexrepr = [nb_mon_to_lexrepr(m, self._lexorder).tolist()
                            if (len(m) or m.shape[-1] == 1) else []
@@ -1196,8 +1181,6 @@ class InflationSDP(object):
                             if name not in allvars:
                                 allvars.add(name)
                                 if name == '1':
-                                    # TODO: Convention in this branch is to never use to_name or to_numbers. Hashing
-                                    #  should be done via from_2dndarray.
                                     res.append(self.identity_operator)
                                 else:
                                     res.append(canon)
@@ -1399,5 +1382,3 @@ class InflationSDP(object):
         import pickle
         with open(filename, 'w') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-
-

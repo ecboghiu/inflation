@@ -144,29 +144,13 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
         t0 = time()
         print('Starting pre-processing for the SDP solver.')
 
-    CONSTANT_KEY = '1'  # If we hash monomials differently, we might
-    # need to change the hash of the constant/offset term
-    # from the number 1 to something else.
-    # The rest of the code should be insensitive to
-    # the hash except this line (ideally).
-
-    # If the user didn't add the constant term.
+    CONSTANT_KEY = '1'
     for equality in var_equalities:
         if CONSTANT_KEY not in equality:
             equality[CONSTANT_KEY] = 0
     for inequality in var_inequalities:
         if CONSTANT_KEY not in inequality:
             inequality[CONSTANT_KEY] = 0
-
-    # variables = set(positionsmatrix.flatten())
-    # positionsmatrix = positionsmatrix.astype(np.uint16)
-    # mat_dim = positionsmatrix.shape[0]
-    # F0 = scipy.sparse.lil_matrix((mat_dim,mat_dim))
-    # Fi = {}
-    # for x in variables:
-    #     coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
-    #     coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
-    #     Fi[x] = coeffmat
 
     Fi = maskmatrices_name_dict.copy()
     Fi = {k: scipy.sparse.lil_matrix(v, dtype=float) for k, v in Fi.items()}
@@ -189,15 +173,11 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
         F0 += xval * Fi[x]
         variables.remove(x)
         # We do not delete Fi[x] because we need them later for the certificate.
-
         # Now update the bounds for known variables.
         if x in var_lowerbounds:
             if var_lowerbounds[x] >= xval:
                 # We warn the user when these are incompatible, but the
                 # program will continue.
-                # TODO Should we remove this check? It is unlikely that
-                # the bounds will be incompatible with fixed values, if the
-                # user uses our program correctly.
                 UserWarning(
                     "Lower bound {} for variable {}".format(var_lowerbounds[x], x) +
                     " is incompatible with the known value {}.".format(xval) +
@@ -228,14 +208,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
         Fi[x2] += c * Fi[x]
         variables.remove(x)
 
-        del Fi[x]  # We can safely delete Fi[x].
-
-        # TODO Is worthile to consider the compatibility of lower and upper
-        # bounds of variables involved in LPI constraints? I would say no.
-        # For our usecase, it should not happen that we have one upper bound
-        # for one variable and lower bound for the other variable such that
-        # the constraint can never be satisfied, but as a general NPO package,
-        # this might happen.
+        del Fi[x]
         if x in var_lowerbounds and x2 in var_lowerbounds:
             del var_lowerbounds[x]
         if x in var_upperbounds and x2 in var_upperbounds:
@@ -259,10 +232,6 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
-    # Comment: it appears that storing sparse matrices as dictionaries of
-    # indicies (dok format) is the best way to build matrices incrementally
-    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.dok_matrix.html
-
     b = scipy.sparse.dok_matrix((len(var_inequalities), 1))
     for i, inequality in enumerate(var_inequalities):
         b[i, 0] = inequality[CONSTANT_KEY]

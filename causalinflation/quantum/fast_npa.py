@@ -4,9 +4,6 @@ matrices. The functions in this file can be accelerated by JIT compilation in
 numba.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
-##########################################
-# Problems with cached functions with numba, while developing I recommend
-# cleaning the cache, later we can remove this
 import os
 
 import numpy as np
@@ -114,8 +111,6 @@ def nb_unique(arr: np.ndarray
     >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
     (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
     """
-
-    # One can use return_index=True with np.unique but I find this incompatible with numba so I do it by hand
     uniquevals = np.unique(arr)
     nr_uniquevals = uniquevals.shape[0]
 
@@ -137,12 +132,6 @@ def nb_op_lexorder(op: np.ndarray, lexorder: np.ndarray) -> int:
     """Map each operator to a unique integer for hashing and lexicographic
     ordering comparison purposes.
     """
-    # Performance note: instead of having a matrix where the first column
-    # stores the lexicographic order, we can have a matrix where the rows are
-    # ordered in the custom lexico-graphical order and then we simply return
-    # the row index where the row is equal to the input. Strangely enough,
-    # that is 40% slower with Numba! It is a headscratcher why returning
-    # i instead of lexorder[i, 0] is slower...
     for i in range(lexorder.shape[0]):
         if nb_op_eq_op(lexorder[i, :], op):
             return i
@@ -152,7 +141,6 @@ def nb_op_lexorder(op: np.ndarray, lexorder: np.ndarray) -> int:
 def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
     """Convert a monomial to its lexicographic representation, as an
     array of integers representing the lex rank of each operator."""
-    # lex = np.zeros(mon.shape[0], dtype=mon.dtype)
     lex = np.zeros_like(mon[:, 0])
     for i in range(mon.shape[0]):
         lex[i] = nb_op_lexorder(mon[i], lexorder)
@@ -173,7 +161,7 @@ def nb_sort_lexorder(op_lexorder: np.array) -> np.array:
 def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
     """Sorts a monomial lexicographically."""
     mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
-    return mon[np.argsort(mon_lexrepr, kind='quicksort')]  # TODO Slow?, find a better way
+    return mon[np.argsort(mon_lexrepr, kind='quicksort')]
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -449,7 +437,7 @@ def dot_mon(mon1: np.ndarray,
                                  lexorder)
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)  # JIT enabled, leverages numba-compatible homebrew lexsort.
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray,
                       lexorder: np.ndarray,
@@ -603,7 +591,6 @@ def mon_lessthan_mon(mon1: np.ndarray,
     mon1_lexrank = nb_mon_to_lexrepr(mon1, lexorder)
     mon2_lexrank = nb_mon_to_lexrepr(mon2, lexorder)
 
-    # return A_lessthan_B(mon1.ravel(), mon2.ravel())
     return A_lessthan_B(mon1_lexrank, mon2_lexrank)
 
 
@@ -638,7 +625,6 @@ def nb_apply_substitutions(mon_in: np.ndarray, notcomm: np.ndarray, lexorder: np
     return mon
 
 
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
                  ) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
@@ -665,7 +651,6 @@ def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
             return 0*mon[:1]
         else:
             return mon
-        # return mon
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -676,13 +661,12 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray, notcomm: np.ndarray
 
     # Take only the rows and columns of notcomm that appear in the monomial,
     # in the correct order.
-
-    sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]  # TODO take this outside
+    sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]
     minimo = mon_lexorder[0]
     minimo_idx = 0
     for op in range(1, mon_lexorder.shape[0]):
         where = np.where(sub_notcomm[op, :op] == 1)[0]
-        if where.size < 1:  # TODO make nb_linsearch work, its faster
+        if where.size < 1:
             if mon_lexorder[op] < minimo:
                 minimo_idx = op
                 minimo = mon_lexorder[op]
@@ -716,7 +700,7 @@ def to_name(monomial: np.ndarray, names: List[str]) -> str:
     >>> to_name([[1 1,0,3], [4,1,2,6], [2,3,3,4]], ['a','bb','x','Z'])
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
-    if len(monomial) == 0:  # or monomial.shape[-1] == 1:
+    if len(monomial) == 0:
         return '1'
 
     # It is faster to convert to list of lists than to loop through numpy arrays
@@ -947,5 +931,3 @@ def factorize_monomial(raw_monomial: np.ndarray,
         disconnected_components = tuple(sorted(disconnected_components, key=to_hashable))
 
     return disconnected_components
-
-
