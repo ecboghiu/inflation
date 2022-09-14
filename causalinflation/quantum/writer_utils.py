@@ -135,102 +135,123 @@ def write_to_sdpa(problem, filename):
     :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
-    # Compute actual number of variables
+    # Compute actual number of variables: all in the moment matrix, minus those
+    # with known values, minus those that participate in LPI constraints, plus
+    # those where the unknown part of the LPI constraint is not in the original
+    # moment matrix
     potential_nvars = problem.momentmatrix.max() - 1
-    known_vars = 0 if len(problem.known_moments_idx_dict) == 0 else len(problem.known_moments_idx_dict) - 2
-    semiknown_vars = 0 if len(problem.semiknown_moments_idx_dict) == 0 else len(problem.semiknown_moments_idx_dict)
-    nvars = potential_nvars - known_vars - semiknown_vars
-
-    # Replacer for semiknowns
-    if len(problem.semiknown_moments_idx_dict) > 0:
-        semiknown_list = np.zeros((problem.semiknown_moments_idx_dict.shape[0], 2),
-                                  dtype=object)
-        for ii, semiknown in enumerate(problem.semiknown_moments_idx_dict):
-            semiknown_list[ii,0] = int(semiknown[0])
-            semiknown_list[ii,1] = semiknown[1:]
-        semiknown_dict = dict(semiknown_list)
+    if len(problem.known_moments) == 1:
+        known_vars = 0
     else:
-        semiknown_dict = {}
-    lines = []
+        known_vars = (len(problem.known_moments)
+                      - problem.momentmatrix_has_a_zero
+                      - problem.momentmatrix_has_a_one)
+    semiknown_vars = len(problem.semiknown_moments)
+    new_vars       = sum([mon[1][1].idx > problem.momentmatrix.max()
+                          for mon in problem.semiknown_moments.items()])
+    nvars = potential_nvars - known_vars - semiknown_vars + new_vars
+
+    known_moments_indices = {mon.idx: coeff
+                             for mon, coeff in problem.known_moments.items()}
+    semiknown_dict = {mon.idx: (subs[0], subs[1].idx)
+                      for mon, subs in problem.semiknown_moments.items()}
+    lines        = []
     new_var_dict = {}
-    new_var = 1
+    new_var      = 1
+    block        = 1
+    blockstruct  = [str(problem.momentmatrix.shape[0])]
     for ii, row in enumerate(problem.momentmatrix):
         for jj, var in enumerate(row):
             if jj >= ii:
                 if var == 0:
                     pass
                 elif var == 1:
-                    lines.append(f"0\t1\t{ii+1}\t{jj+1}\t-1.0\n")
-                elif var <= problem._n_known + 1:
+                    lines.append(f"0\t{block}\t{ii+1}\t{jj+1}\t-1.0\n")
+                elif var in known_moments_indices.keys():
+                    coeff = known_moments_indices[var]
+                    lines.append(f"0\t{block}\t{ii+1}\t{jj+1}\t-{abs(coeff)}\n")
+                elif var in semiknown_dict.keys():
+                    coeff, subs = semiknown_dict[var]
                     try:
-                        coeff = problem.known_moments_idx_dict[var]
-                        lines.append(f"0\t1\t{ii+1}\t{jj+1}\t-{abs(coeff)}\n")
-                    except IndexError:
-                        try:
-                            var = new_var_dict[int(var)]
-                            lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
-                        except KeyError:
-                            new_var_dict[int(var)] = new_var
-                            lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
-                            new_var += 1
-                elif var <= problem._n_something_known + 1:
-                    try:
-                        coeff, subs = problem.semiknown_moments[var]
+                        var = new_var_dict[subs]
+                        lines.append(
+                                   f"{var}\t{block}\t{ii+1}\t{jj+1}\t{coeff}\n")
                     except KeyError:
-                        # There is no LPI constraint associated, so we treat it
-                        # as a regular unknown variable
-                        try:
-                            var = new_var_dict[int(var)]
-                            lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
-                        except KeyError:
-                            new_var_dict[int(var)] = new_var
-                            lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
-                            new_var += 1
-                    else:
-                        try:
-                            subs = new_var_dict[int(subs)]
-                            lines.append(
-                                f"{subs}\t1\t{ii+1}\t{jj+1}\t{coeff}\n"
-                                         )
-                        except KeyError:
-                            # The substituted variable is not yet in the
-                            # variable list, so we add it
-                            new_var_dict[int(subs)] = new_var
-                            lines.append(
-                                f"{new_var}\t1\t{ii+1}\t{jj+1}\t{coeff}\n"
-                                         )
-                            new_var += 1
+                        new_var_dict[subs] = new_var
+                        lines.append(
+                               f"{new_var}\t{block}\t{ii+1}\t{jj+1}\t{coeff}\n")
+                        new_var += 1
                 else:
                     try:
-                        var = new_var_dict[int(var)]
-                        lines.append(f"{var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
+                        var = new_var_dict[var]
+                        lines.append(f"{var}\t{block}\t{ii+1}\t{jj+1}\t1.0\n")
                     except KeyError:
                         new_var_dict[int(var)] = new_var
-                        lines.append(f"{new_var}\t1\t{ii+1}\t{jj+1}\t1.0\n")
+                        lines.append(
+                                   f"{new_var}\t{block}\t{ii+1}\t{jj+1}\t1.0\n")
                         new_var += 1
 
     # Prepare objective
     objective = np.zeros(nvars)
-    for variable, coeff in problem._objective_as_dict.items():
-        if variable == 1:
+    for variable, coeff in problem.objective.items():
+        if variable == problem.One:
             if abs(coeff) > 1e-8:
                 warn(f"Export removed the constant {coeff} from the objective")
         else:
-            objective[new_var_dict[variable] - 1] = coeff
-    objective = str(objective.tolist()).replace('[', '').replace(']', '')
-    objective_constant = problem._objective_as_dict[1]
+            objective[new_var_dict[variable.idx] - 1] = coeff
+    objective = str(objective.tolist()).replace("[", "").replace("]", "")
+    objective_constant = problem.objective[problem.One]
 
-    file_ = open(filename, 'w')
-    file_.write('"file ' + filename + ' generated by causalinflation"\n')
+    # Prepare upper bounds
+    if len(problem.moment_upperbounds) > 0:
+        block += 1
+        ii     = 1
+        block_size = len([mon for mon in problem.moment_upperbounds.keys()
+                              if ((mon != problem.One)
+                            and (mon not in problem.known_moments.keys())
+                            and (mon not in problem.semiknown_moments.keys()))])
+        blockstruct.append(str(-block_size))
+    for var, ub in problem.moment_upperbounds.items():
+        if ((var != problem.One)
+            and (var not in problem.known_moments.keys())
+            and (var not in problem.semiknown_moments.keys())):
+            var = new_var_dict[var.idx]
+            lines.append(f"{var}\t{block}\t{ii}\t{ii}\t-1.0\n")
+            if abs(ub) > 1e-8:
+                lines.append(f"0\t{block}\t{ii}\t{ii}\t-{ub}\n")
+            ii += 1
+
+    # Prepare lower bounds
+    if len(problem.moment_lowerbounds) > 0:
+        block += 1
+        ii     = 1
+        block_size = len([mon for mon in problem.moment_lowerbounds.keys()
+                              if ((mon != problem.One)
+                            and (mon not in problem.known_moments.keys())
+                            and (mon not in problem.semiknown_moments.keys()))])
+        blockstruct.append(str(-block_size))
+    for var, lb in problem.moment_lowerbounds.items():
+        if ((var != problem.One)
+            and (var not in problem.known_moments.keys())
+            and (var not in problem.semiknown_moments.keys())):
+            var = new_var_dict[var.idx]
+            lines.append(f"{var}\t{block}\t{ii}\t{ii}\t1.0\n")
+            if abs(lb) > 1e-8:
+                lines.append(f"0\t{block}\t{ii}\t{ii}\t{lb}\n")
+            ii += 1
+
+    file_ = open(filename, "w")
+    file_.write("\"file " + filename + " generated by causalinflation\"\n")
     if abs(objective_constant) > 1e-8:
-        file_.write('"the objective contains a constant term of value '
-                    + str(objective_constant) + ' that is not included in the '
-                    + 'program below"\n')
-    file_.write(f'{nvars} = number of vars\n')
-    file_.write('1 = number of blocks\n')
-    file_.write(f'({problem.momentmatrix.shape[0]}) = BlockStructure\n')
-    file_.write('{' + objective + '}\n')
-    for line in sorted(lines, key=lambda x: int(x.split('\t')[0])):
+        file_.write("\"the objective contains a constant term of value "
+                    + str(objective_constant) + " that is not included in the "
+                    + "program below\"\n")
+    file_.write(f"{nvars} = number of vars\n")
+    file_.write(f"{block} = number of blocks\n")
+    file_.write("(" + ",".join(blockstruct) + ") = BlockStructure\n")
+    file_.write("{" + objective + "}\n")
+    for line in sorted(lines, key=lambda x: (int(x.split("\t")[1]),
+                                             int(x.split("\t")[0]))):
         file_.write(line)
     file_.close()
 
