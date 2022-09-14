@@ -4,6 +4,7 @@ various formats.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
 import numpy as np
+from copy import deepcopy
 from scipy.io import savemat
 from warnings import warn
 from typing import Callable, Dict, List, Tuple, Union
@@ -18,12 +19,22 @@ def convert_to_human_readable(problem):
     :returns: tuple of the objective function in a string and a matrix of
               strings as the symbolic representation of the moment matrix
     """
+    matrix = deepcopy(problem.momentmatrix).astype(object)
     ### Process moment matrix
     # Replacer for constants
-    constant_dict = dict(enumerate(problem.known_moments_idx_dict))
+    constant_dict = {moment.idx: str(value)
+                     for moment, value in problem.known_moments.items()}
     constant_replacer = np.vectorize(lambda x: constant_dict.get(x, x))
+    # Replacer for semiknowns
+    semiknown_dict = dict()
+    for key, val in problem.semiknown_moments.items():
+        val_str = val[1].name.replace(", ", ";")
+        semiknown_dict[key.idx] = f"{val[0]}*{val_str}"
+    semiknown_replacer = np.vectorize(lambda x: semiknown_dict.get(x, str(x)))
     # Replacer for remaining symbols
-    monomial_dict = dict(problem.monomials_list)
+    monomial_dict = dict()
+    for mon in problem.list_of_monomials:
+        monomial_dict[mon.idx] = mon.name.replace(", ", ";")
     def replace_known(monom):
         try:
             replacement = monomial_dict.get(float(monom), monom)
@@ -31,35 +42,27 @@ def convert_to_human_readable(problem):
             replacement = monom
         return replacement
     known_replacer = np.vectorize(replace_known)
-    # Replacer for semiknowns
-    semiknown_list = np.zeros((problem.semiknown_moments_idx_dict.shape[0], 2),
-                              dtype=object)
-    for ii, semiknown in enumerate(problem.semiknown_moments_idx_dict):
-        semiknown_list[ii,0] = int(semiknown[0])
-        semiknown_list[ii,1] = f"{semiknown[1]}*{monomial_dict[int(semiknown[2])]}"
-    semiknown_dict = dict(semiknown_list)
-    semiknown_replacer = np.vectorize(lambda x: semiknown_dict.get(x, str(x)))
-    matrix = constant_replacer(problem.momentmatrix)
+    matrix = constant_replacer(matrix)
     matrix = semiknown_replacer(matrix)
     matrix = np.triu(known_replacer(matrix).astype(object))
 
     ### Process objective
     is_first = True
     try:
-        independent_term = float(problem._objective_as_dict[1])
+        independent_term = float(problem.objective[problem.One])
         if abs(independent_term) > 1e-8:
             objective = str(independent_term)
+            is_first = False
         else:
             objective = ''
-        is_first = False
     except KeyError:
         objective = ''
-    for variable, coeff in problem._objective_as_dict.items():
-        if variable > 1:
-            if (coeff > 0) or (not is_first):
-                objective += f"+{float(coeff)}*{monomial_dict[variable]}"
+    for variable, coeff in problem.objective.items():
+        if variable != problem.One:
+            if (coeff < 0) or is_first:
+                objective += f"{float(coeff)}*{variable.name}"
             else:
-                objective += f"{float(coeff)}*{monomial_dict[variable]}"
+                objective += f"+{float(coeff)}*{variable.name}"
                 is_first = False
 
     return objective, matrix
@@ -73,12 +76,11 @@ def write_to_csv(problem, filename):
     :type filename: str
     """
     objective, matrix = convert_to_human_readable(problem)
-    f = open(filename, 'w')
+    f = open(filename, "w")
     f.write("Objective: " + objective + "\n")
     for matrix_line in matrix:
-        f.write(str(list(matrix_line)).replace('[', '').replace(']', '')
-                .replace('\'', ''))
-        f.write('\n')
+        f.write(str(list(matrix_line))[1:-1].replace(" ", "").replace("\'", ""))
+        f.write("\n")
     f.close()
 
 
