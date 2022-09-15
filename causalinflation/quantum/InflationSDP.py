@@ -930,14 +930,12 @@ class InflationSDP(object):
             Warning("Beware that, because the problem contains linearized " +
                     "polynomial constraints, the certificate is not guaranteed " +
                     "to apply to other distributions")
-
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        mons_as_symbols = [self.name_dict_of_monomials[name].symbol for name in dual.keys()]
         polynomial = sp.S.Zero
-        for mon_as_symbol, coeff in zip(mons_as_symbols, dual):
-            polynomial += coeff * mon_as_symbol
+        for mon, coeff in dual.items():
+            polynomial += coeff * self.name_dict_of_monomials[mon].symbol
         return polynomial
 
 
@@ -1478,5 +1476,3 @@ class InflationSDP(object):
         import pickle
         with open(filename, 'w') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-
-
