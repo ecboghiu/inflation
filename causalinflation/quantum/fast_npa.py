@@ -293,52 +293,6 @@ def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 ################################################################################
 # ABSTRACT OPERATIONS ON MONOMIALS                                             #
 ################################################################################
-@jit(nopython=True, cache=cache)
-def commuting(letter1: np.array, letter2: np.array, lexorder: np.array) -> bool_:
-    """Determine if two letters/operators commute. Currently this only takes
-    into account commutations coming of inflation
-
-    Parameters
-    ----------
-    letter1 : numpy.ndarray
-        Tuple of integers representing an operator.
-    letter2 : numpy.ndarray
-        Tuple of integers representing an operator.
-
-    lexorder : numpy.ndarray
-        Specifies the order of the parties in the lexicographic order.
-        Warning: Parties must be indexed starting from 1, and not 0.
-
-    Returns
-    -------
-    bool
-        Whether the letters commute or not.
-
-    Examples
-    --------
-    A^11_00 commutes with A^22_00
-    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
-    True
-
-    A^11_00 does not commute with A^12_00 since they overlap on source 1.
-    >>> commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
-    False
-    """
-    if letter1[0] != letter2[0]:
-        return True
-    if np.array_equal(letter1[1:-1], letter2[1:-1]):
-        return True
-
-    inf1, inf2 = letter1[1:-2], letter2[1:-2]
-    inf1, inf2 = inf1[np.nonzero(inf1)], inf2[np.nonzero(inf2)]
-
-    # If at least one in inf1-inf2 is 0, then there is one source in common
-    # and therefore the letters don't commute.
-    # If all are 0, then this case is covered in the first conditional,
-    # they commute regardless of the value of the output
-    return True if np.all(inf1 - inf2) else False
-
-
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
     """Sort by parties the monomial, i.e., sort by the first column in
@@ -547,19 +501,16 @@ def nb_commuting(letter1: np.array,
     >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
     """
-    if letter1[0] != letter2[0]:  # Different parties.
+    if letter1[0] != letter2[0]:  # Different parties
         return True
-    elif np.array_equal(letter1[1:-1], letter2[1:-1]):  # sources, and settings.
+    elif np.array_equal(letter1[1:-1], letter2[1:-1]): # Same sources & settings
         return True
     else:
-        inf1, inf2 = letter1[1:-2], letter2[1:-2]  # just the sources
+        inf1, inf2 = letter1[1:-2], letter2[1:-2]  # Compare just the sources
         inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
-        # Unless ALL the values in inf1-inf2 are different, there is one source in common
-        # therefore they don't commute.
-        if np.all(inf1 - inf2):
-            return True
-        else:
-            return False
+        # If at least one in inf1-inf2 is 0, then there is one source in common
+        # and therefore the letters don't commute.
+        return np.all(inf1 - inf2)
 
 
 def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
