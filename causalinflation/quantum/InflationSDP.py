@@ -6,7 +6,6 @@ instance (see arXiv:1909.10519).
 """
 import gc
 import itertools
-import numbers  # To sanity check user giving numeric input
 import warnings
 from collections import Counter
 
@@ -14,6 +13,8 @@ import numpy as np
 import sympy as sp
 
 from causalinflation import InflationProblem
+from numbers import Real
+from scipy.sparse import coo_matrix
 from typing import List, Dict, Tuple, Union, Any
 from .fast_npa import (calculate_momentmatrix,
                        to_canonical,
@@ -38,23 +39,17 @@ from .general_tools import (to_representative,
                             )
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
-from .writer_utils import (write_to_csv, write_to_mat, write_to_sdpa)
+from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 
 # Force warnings.warn() to omit the source code line in the message
 # Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
 formatwarning_orig = warnings.formatwarning
 warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
     formatwarning_orig(message, category, filename, lineno, line='')
-
-
-from scipy.sparse import coo_matrix  # , dok_matrix
-
 try:
-    from numba import types
-    from numba.typed import Dict as nb_Dict
     from tqdm import tqdm
 except ImportError:
-    from causalinflation.utils import blank_tqdm as tqdm
+    from ..utils import blank_tqdm as tqdm
 
 
 class InflationSDP(object):
@@ -813,7 +808,7 @@ class InflationSDP(object):
                 return self.compound_monomial_from_name_dict[mon]
             except KeyError:
                 return self._sanitise_monomial(to_numbers(monomial=mon, parties_names=self.names))
-        elif isinstance(mon, numbers.Real):  # If they are number type
+        elif isinstance(mon, Real):  # If they are number type
             if np.isclose(float(mon), 1):
                 return self.One
             elif np.isclose(float(mon), 0):
