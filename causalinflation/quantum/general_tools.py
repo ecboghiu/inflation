@@ -181,8 +181,6 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
     return permuted_op_list
 
 
-
-
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   inflevels: np.ndarray,
                                   party: int,
@@ -335,78 +333,6 @@ def to_symbol(monomial: np.ndarray, names: Tuple[str]) -> sympy.core.symbol.Symb
     for s in symbols:
         prod *= s
     return prod
-
-
-def to_numbers(monomial: str,
-               parties_names: Tuple[str]
-               ) -> np.ndarray:
-    """Monomial from string to matrix representation.
-
-    Given a monomial input in string format, return the matrix representation
-    where each row represents an operators and the columns are operator labels
-    such as party, inflation copies and input and output cardinalities.
-
-    Parameters
-    ----------
-    monomial : str
-        Monomial in string format.
-    parties_names : Tuple[str]
-        Tuple of party names.
-
-    Returns
-    -------
-    Tuple[Tuple[int]]
-        Monomial in tuple of tuples format (equivalent to 2d array format by
-        calling np.array() on the result).
-    """
-
-    # the following commented code is compatible with numba, but it is slower
-    # than native...
-    # TODO see if possible to write a numba function that does strings
-    # fast
-    '''
-    # The following is compatible with numba and can be precompiled however...
-    # it's 1 microsec slower than the native python version!!
-    # And it only work with single digit numbers, because int('2')
-    # to get integer 2 is not supported by numba yet
-    # https://github.com/numba/numba/issues/5723
-    # That's very surprising!
-    # native python version is is around 5 micro seconds for small inputs
-
-    monomial_parts = monomial.split('*')
-    monomial_parts_indices = np.zeros(shape=(len(monomial_parts),
-                            len(monomial_parts[0].split('_'))),dtype=np.int8)
-    monomial_parts_indices[1] = 2
-    for i, part in enumerate(monomial_parts):
-        atoms = part.split('_')
-
-        monomial_parts_indices[i, 0] = ord(atoms[0]) - ord('A')
-
-        for i2, j in enumerate(atoms[1:-2]):
-            monomial_parts_indices[i, i2] = ord(j) - ord('0')
-        monomial_parts_indices[i, -2] = ord(atoms[-2])-ord('0')
-        monomial_parts_indices[i, -1] = ord(atoms[-1])-ord('0')
-    '''
-
-    parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
-
-    if isinstance(monomial, str):
-        monomial_parts = monomial.split('*')
-    else:
-        factors = flatten_symbolic_powers(monomial)
-        monomial_parts = [str(factor) for factor in factors]
-
-    monomial_parts_indices = []
-    for part in monomial_parts:
-        atoms = part.split('_')
-        if atoms[0] not in parties_names_dict.keys():
-            raise Exception(f"Party name {atoms[0]} not recognized.")
-        indices = ((parties_names_dict[atoms[0]],)
-                   + tuple(int(j) for j in atoms[1:-2])
-                   + (int(atoms[-2]), int(atoms[-1])))
-        monomial_parts_indices.append(indices)
-
-    return np.array(monomial_parts_indices, dtype=np.uint16)  # Elie warning: Could the string '1' cause problems here??
 
 
 def factorize_monomials(monomials_as_numbers: np.ndarray,
