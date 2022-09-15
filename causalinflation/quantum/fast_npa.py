@@ -4,34 +4,10 @@ matrices. The functions in this file can be accelerated by JIT compilation in
 numba.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
-import os
-
 import numpy as np
 from scipy.sparse import dok_matrix
 
 from typing import List, Dict, Tuple
-
-
-def kill_files(folder):
-    for the_file in os.listdir(folder):
-        file_path = os.path.join(folder, the_file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-        except Exception:
-            print("failed on filepath: %s" % file_path)
-
-
-def kill_numba_cache():
-    root_folder = os.path.realpath(__file__ + "/../../")
-
-    for root, dirnames, filenames in os.walk(root_folder):
-        for dirname in dirnames:
-            if dirname == "__pycache__":
-                try:
-                    kill_files(root + "/" + dirname)
-                except Exception:
-                    print("failed on %s", root)
 
 
 try:
