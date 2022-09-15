@@ -11,7 +11,7 @@ from itertools import permutations, product
 import numpy as np
 import sympy
 
-from typing import List, Tuple, Union, Any, Iterable
+from typing import Any, Dict, Iterable, List, Tuple, Union
 from .fast_npa import (apply_source_swap_monomial,
                        factorize_monomial,
                        mon_lessthan_mon,
@@ -745,36 +745,39 @@ def to_representative(mon: np.ndarray,
     return final_monomial
 
 
-def clean_coefficients(coefficients: np.ndarray,
+def clean_coefficients(cert_dict: Dict[str, float],
                        chop_tol: float = 1e-10,
                        round_decimals: int = 3) -> np.ndarray:
     """Clean the list of coefficients in a certificate.
 
     Parameters
     ----------
-    coefficients : np.ndarray
-      The list of coefficients.
+    cert_dict : Dict[str, float]
+      A dictionary containing as keys the monomials associated to the elements
+      of the certificate and as values the corresponding coefficients.
     chop_tol : float, optional
       Coefficients in the dual certificate smaller in absolute value are
-      set to zero. Defaults to 1e-10.
+      set to zero. Defaults to ``1e-10``.
     round_decimals : int, optional
       Coefficients that are not set to zero are rounded to the number
-      of decimals specified. Defaults to 3.
+      of decimals specified. Defaults to ``3``.
 
     Returns
     -------
     np.ndarray
       The cleaned-up coefficients.
     """
-    coeffs = copy.deepcopy(coefficients)
-    # Set to zero very small coefficients
-    coeffs[np.abs(coeffs) <= chop_tol] = 0
+    processed_cert = copy.deepcopy(cert_dict)
+    vars   = np.asarray(list(processed_cert.keys()))
+    coeffs = np.asarray(list(processed_cert.values()))
     # Take the biggest one and make it 1
     normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
     coeffs /= normalising_factor
+    # Set to zero very small coefficients
+    coeffs[np.abs(coeffs) <= chop_tol] = 0
     # Round
     coeffs = np.round(coeffs, decimals=round_decimals)
-    return coeffs
+    return dict(zip(vars, coeffs))
 
 
 def flatten(nested):

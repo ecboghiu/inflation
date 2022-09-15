@@ -14,10 +14,17 @@ import pickle
 def convert_to_human_readable(problem):
     """Convert the SDP relaxation to a human-readable format.
 
-    :param problem: The SDP relaxation to write.
-    :type problem: :class:`causalinflation.InflationSDP`
-    :returns: tuple of the objective function in a string and a matrix of
-              strings as the symbolic representation of the moment matrix
+    Parameters
+    ----------
+    problem : :class:`causalinflation.InflationSDP`
+        The SDP relaxation to write.
+
+    Returns
+    -------
+    Tuple[str, numpy.ndarray, List]
+        The first element is the objective function in a string, the second is
+        a matrix of strings as the symbolic representation of the moment matrix,
+        and the third is a list of variable upper and lower bounds.
     """
     matrix = deepcopy(problem.momentmatrix).astype(object)
     ### Process moment matrix
@@ -65,7 +72,22 @@ def convert_to_human_readable(problem):
                 objective += f"+{float(coeff)}*{variable.name}"
                 is_first = False
 
-    return objective, matrix
+    ### Process bounds
+    bounded_vars = sorted(list(set(problem.moment_upperbounds.keys()).union(
+                               set(problem.moment_lowerbounds.keys()))),
+                          key=lambda x: x.name)
+    bounds = np.zeros((len(bounded_vars), 3), dtype=object)
+    for idx, var in enumerate(bounded_vars):
+        bounds[idx, 0] = var
+        try:
+            bounds[idx, 1] = problem.moment_lowerbounds[var]
+        except KeyError:
+            bounds[idx, 1] = None
+        try:
+            bounds[idx, 2] = problem.moment_upperbounds[var]
+        except KeyError:
+            bounds[idx, 2] = None
+    return objective, matrix, bounds.tolist()
 
 
 def write_to_csv(problem, filename):
@@ -75,11 +97,16 @@ def write_to_csv(problem, filename):
     :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
-    objective, matrix = convert_to_human_readable(problem)
+    objective, matrix, bounds = convert_to_human_readable(problem)
     f = open(filename, "w")
     f.write("Objective: " + objective + "\n")
     for matrix_line in matrix:
         f.write(str(list(matrix_line))[1:-1].replace(" ", "").replace("\'", ""))
+        f.write("\n")
+    f.write("Bounds:\n")
+    f.write("Variable,lower,upper\n")
+    for bound_line in bounds:
+        f.write(str(bound_line)[1:-1].replace(" ", ""))
         f.write("\n")
     f.close()
 
