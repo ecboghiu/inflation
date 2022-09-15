@@ -720,8 +720,6 @@ class InflationSDP(object):
         assert direction in ['max', 'min'], ('The direction parameter should be'
                                              + ' set to either "max" or "min"')
 
-        if self.verbose > 0:
-            print("Setting objective")
         if direction == 'max':
             sign = 1
             self.maximize = True
