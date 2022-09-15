@@ -3,15 +3,14 @@ This file contains helper functions to manipulate monomials and generate moment
 matrices.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
-import copy
-import itertools
+from copy import deepcopy
 from functools import lru_cache
-from itertools import permutations, product
+from itertools import chain, permutations, product
+from typing import Any, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import sympy
 
-from typing import Any, Dict, Iterable, List, Tuple, Union
 from .fast_npa import (apply_source_swap_monomial,
                        factorize_monomial,
                        mon_lessthan_mon,
@@ -24,21 +23,16 @@ from .fast_npa import (apply_source_swap_monomial,
 
 try:
     from numba import jit
-    from numba import int64 as int64_
     from numba.types import bool_
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-
-
-    int64_ = np.int64
     bool_ = bool
 
 try:
     from tqdm import tqdm
 except ImportError:
-    def tqdm(*args, **kwargs):
-        return args[0]
+    from ..utils import blank_tqdm as tqdm
 
 nopython = False
 cache = False
@@ -285,8 +279,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         for output_slice in product(*[range(outputs_per_party[party] - 1)
                                       for _ in range(max_monomial_length)]):
             for new_mon_idx in range(len(template_new_monomials)):
-                new_monomial = copy.deepcopy(
-                    template_new_monomials[new_mon_idx])
+                new_monomial = deepcopy(template_new_monomials[new_mon_idx])
                 for mon_idx in range(max_monomial_length):
                     new_monomial[mon_idx, -2] = input_slice[mon_idx]
                     new_monomial[mon_idx, -1] = output_slice[mon_idx]
@@ -810,7 +803,7 @@ def clean_coefficients(cert_dict: Dict[str, float],
     np.ndarray
       The cleaned-up coefficients.
     """
-    processed_cert = copy.deepcopy(cert_dict)
+    processed_cert = deepcopy(cert_dict)
     vars   = np.asarray(list(processed_cert.keys()))
     coeffs = np.asarray(list(processed_cert.values()))
     # Take the biggest one and make it 1
@@ -831,7 +824,7 @@ def flatten(nested):
         return nested.ravel().tolist()
     else:
         while isinstance(nested[0], Iterable):
-            nested = list(itertools.chain.from_iterable(nested))
+            nested = list(chain.from_iterable(nested))
         return nested
 
 

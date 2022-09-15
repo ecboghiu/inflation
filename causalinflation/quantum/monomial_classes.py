@@ -1,11 +1,13 @@
 import numpy as np
-from causalinflation.quantum.general_tools import is_physical
+from .general_tools import is_physical
 from functools import total_ordering
 from typing import Tuple, Dict
 from collections import Counter
 
-from causalinflation.quantum.monomial_utils import (
-    compute_marginal, symbol_from_atomic_name, name_from_atomic_names, symbol_from_atomic_symbols)
+from .monomial_utils import (compute_marginal,
+                             name_from_atomic_names,
+                             symbol_from_atomic_name,
+                             symbol_from_atomic_symbols)
 
 @total_ordering
 class InternalAtomicMonomial(object):

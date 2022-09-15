@@ -7,11 +7,10 @@ numba.
 ##########################################
 # Problems with cached functions with numba, while developing I recommend
 # cleaning the cache, later we can remove this
+import numpy as np
 import os
 
-import numpy as np
 from scipy.sparse import dok_matrix
-
 from typing import List, Dict, Tuple
 
 
@@ -48,8 +47,6 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-
-
     bool_ = bool
     uint16_ = np.uint16
     int16_ = np.int16
@@ -947,5 +944,3 @@ def factorize_monomial(raw_monomial: np.ndarray,
         disconnected_components = tuple(sorted(disconnected_components, key=to_hashable))
 
     return disconnected_components
-
-
