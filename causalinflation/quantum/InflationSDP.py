@@ -405,9 +405,7 @@ class InflationSDP(object):
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
-        self.moment_lowerbounds = {m: 0 for m in self.possibly_physical_monomials}
-        self.moment_upperbounds_name_dict = dict()
-        self.moment_lowerbounds_name_dict = {m.name: 0 for m in self.possibly_physical_monomials}
+        self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
 
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
@@ -479,7 +477,8 @@ class InflationSDP(object):
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_knowable_moments=(not use_lpi_constraints),
-                        only_specified_values=assume_shared_randomness)
+                        only_specified_values=assume_shared_randomness,
+                        consider_only_semiknowable=True)
 
 
     def set_values(self, values: Union[
@@ -488,6 +487,7 @@ class InflationSDP(object):
                    normalised: bool = True,
                    only_knowable_moments: bool = True,
                    only_specified_values: bool = False,
+                   consider_only_semiknowable: bool = False,
                    ) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
@@ -577,7 +577,10 @@ class InflationSDP(object):
                                 (len(mon) == 1)}
         if only_knowable_moments:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                              (not mon.is_atomic) and mon.knowable_q)
+                                              (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
+        elif consider_only_semiknowable:
+            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                              (not mon.is_atomic) and mon.knowability_status in ['Yes', 'Semi'])  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
@@ -772,6 +775,12 @@ class InflationSDP(object):
                           + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
+        moment_upperbounds = {m.name: val
+                              for m, val in self.moment_upperbounds.items()}
+        moment_lowerbounds = {**{m.name: val for m, val
+                                 in self._processed_moment_lowerbounds.items()},
+                              **{m.name: val
+                                 for m, val in self.moment_lowerbounds.items()}}
         solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
                               "objective": self._objective_as_name_dict,
                               "known_vars": self.known_moments_name_dict,
@@ -779,8 +788,8 @@ class InflationSDP(object):
                               "feas_as_optim": feas_as_optim,
                               "verbose": self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds": self._processed_moment_lowerbounds_name_dict,
-                              "var_upperbounds": self.moment_upperbounds_name_dict,
+                              "var_lowerbounds": moment_lowerbounds,
+                              "var_upperbounds": moment_upperbounds,
                               "var_equalities": self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual": dualise}
@@ -837,14 +846,12 @@ class InflationSDP(object):
             Warning("Beware that, because the problem contains linearized " +
                     "polynomial constraints, the certificate is not guaranteed " +
                     "to apply to other distributions")
-
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        mons_as_symbols = [self.name_dict_of_monomials[name].symbol for name in dual.keys()]
         polynomial = sp.S.Zero
-        for mon_as_symbol, coeff in zip(mons_as_symbols, dual):
-            polynomial += coeff * mon_as_symbol
+        for mon, coeff in dual.items():
+            polynomial += coeff * self.name_dict_of_monomials[mon].symbol
         return polynomial
 
 
