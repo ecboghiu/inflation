@@ -512,9 +512,9 @@ def nb_commuting(letter1: np.array,
         # and therefore the letters don't commute.
         return np.all(inf1 - inf2)
 
-
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
-    notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
+    notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool_)
     for i in range(lexorder.shape[0]):
         for j in range(i + 1, lexorder.shape[0]):
             notcomm[i, j] = int(not nb_commuting(lexorder[i],
@@ -681,7 +681,7 @@ def calculate_momentmatrix(cols: List,
                            lexorder,
                            verbose: int = 0,
                            commuting=False,
-                           dtype: np.dtype = np.uint16
+                           dtype: np.dtype = uint16_
                            ) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
