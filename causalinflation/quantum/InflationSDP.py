@@ -483,9 +483,7 @@ class InflationSDP(object):
         self.moment_linear_equalities = []
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
-        self.moment_lowerbounds = {m: 0 for m in self.possibly_physical_monomials}
-        self.moment_upperbounds_name_dict = dict()
-        self.moment_lowerbounds_name_dict = {m.name: 0 for m in self.possibly_physical_monomials}
+        self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
 
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
@@ -865,6 +863,12 @@ class InflationSDP(object):
             feas_as_optim = False
 
         # TODO for performance: Remove all zero-valued variables FROM ALL solve arguments, as this is just a waste.
+        moment_upperbounds = {m.name: val
+                              for m, val in self.moment_upperbounds.items()}
+        moment_lowerbounds = {**{m.name: val for m, val
+                                 in self._processed_moment_lowerbounds.items()},
+                              **{m.name: val
+                                 for m, val in self.moment_lowerbounds.items()}}
         solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
                               "objective": self._objective_as_name_dict,
                               "known_vars": self.known_moments_name_dict,
@@ -872,8 +876,8 @@ class InflationSDP(object):
                               "feas_as_optim": feas_as_optim,
                               "verbose": self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds": self._processed_moment_lowerbounds_name_dict,
-                              "var_upperbounds": self.moment_upperbounds_name_dict,
+                              "var_lowerbounds": moment_lowerbounds,
+                              "var_upperbounds": moment_upperbounds,
                               "var_equalities": self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual": dualise}
