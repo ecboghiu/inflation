@@ -977,7 +977,7 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         rest_of_dual = dual.copy()
-        cert_as_string = rest_of_dual.pop('1')
+        cert_as_string = str(rest_of_dual.pop('1'))
         for mon_name, coeff in rest_of_dual.items():
             cert_as_string += "+" if coeff > 0 else "-"
             cert_as_string += f"{abs(coeff)}*{mon_name}"
