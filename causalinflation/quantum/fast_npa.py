@@ -26,7 +26,7 @@ except ImportError:
     int64_ = np.int
     nb_Dict = dict
     void = None
-    
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -183,7 +183,7 @@ def mon_equal_mon(mon1: np.ndarray,
             if not nb_intarray_eq(mon1[i], mon2[i]):
                 return False
         return True
-    
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lessthan_mon(mon1: np.ndarray,
@@ -210,8 +210,8 @@ def mon_lessthan_mon(mon1: np.ndarray,
     mon2_lexrank = nb_mon_to_lexrepr(mon2, lexorder)
 
     return nb_A_lessthan_B(mon1_lexrank, mon2_lexrank)
-    
-    
+
+
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """Return the reversed monomial.
@@ -236,7 +236,7 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
 def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     """Simplify the monomial by removing operator powers. This is because we
     assume projectors, P**2=P. This corresponds to removing duplicates of rows
-    which are adjacent. 
+    which are adjacent.
 
     Parameters
     ----------
@@ -269,13 +269,14 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
 
     Returns
     -------
-    bool_
-        _description_
+    bool
+        Whether the monomial evaluates to zero.
     """
     if len(mon) > 1 and not np.any(mon.ravel()):
         return True
     for i in range(1, mon.shape[0]):
-        if mon[i, -1] != mon[i - 1, -1] and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1]):
+        if ((mon[i, -1] != mon[i - 1, -1])
+            and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1])):
             return True
     return False
 
@@ -284,7 +285,7 @@ def nb_op_lexorder(operator: np.ndarray,
                    lexorder: np.ndarray) -> int:
     """Map each operator to a unique integer for hashing and lexicographic
     ordering comparison purposes.
-    
+
     Warning: if `operator` is not found in `lexorder`, the function will
     not return any value.
 
@@ -304,7 +305,7 @@ def nb_op_lexorder(operator: np.ndarray,
     for i in range(lexorder.shape[0]):
         if nb_intarray_eq(lexorder[i, :], operator):
             return i
-        
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_mon_to_lexrepr(mon: np.ndarray,
@@ -378,12 +379,12 @@ def mon_sorted_by_parties(mon: np.ndarray,
     >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
     np.array([[1,...],[3,...],[4,...]])
     """
-    PARTY_ORDER, _ = nb_unique(lexorder[:, 0])
+    party_order, _ = nb_unique(lexorder[:, 0])
     mon_sorted = np.zeros_like(mon)
     i_old = 0
     i_new = 0
-    for i in range(PARTY_ORDER.shape[0]):
-        pblock = mon[mon[:, 0] == PARTY_ORDER[i]]
+    for i in range(party_order.shape[0]):
+        pblock = mon[mon[:, 0] == party_order[i]]
         i_new += pblock.shape[0]
         mon_sorted[i_old:i_new] = pblock
         i_old = i_new
@@ -499,7 +500,8 @@ def to_name(monomial: np.ndarray,
 
     # It is faster to convert to list of lists than to loop through numpy arrays
     monomial = monomial.tolist()
-    return '*'.join(['_'.join([names[letter[0] - 1]] + [str(i) for i in letter[1:]])
+    return '*'.join(['_'.join([names[letter[0] - 1]]
+                              + [str(i) for i in letter[1:]])
                      for letter in monomial])
 
 
@@ -515,9 +517,9 @@ def nb_commuting(operator1: np.array,
     Parameters
     ----------
     operator1 : np.array
-        Operator as an array of integers. 
+        Operator as an array of integers.
     operator2 : np.array
-        Operator as an array of integers. 
+        Operator as an array of integers.
 
     Returns
     -------
@@ -534,15 +536,15 @@ def nb_commuting(operator1: np.array,
     >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
     """
-    if operator1[0] != operator2[0]:  # Different parties.
+    if operator1[0] != operator2[0]:  # Different parties
         return True
-    elif np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources, and settings.
+    elif np.array_equal(operator1[1:-1], operator2[1:-1]): # sources & settings
         return True
     else:
         inf1, inf2 = operator1[1:-2], operator2[1:-2]  # just the sources
         inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
-        # Unless ALL the values in inf1-inf2 are different, there is one source in common
-        # therefore they don't commute.
+        # Unless ALL the values in inf1-inf2 are different, there is one source
+        # in common and therefore they don't commute.
         if np.all(inf1 - inf2):
             return True
         else:
@@ -578,25 +580,25 @@ def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_to_canonical_lexinput(mon_lexorder: np.array,
                              notcomm: np.ndarray) -> np.array:
-    """Brings a monomial to canonical form with respect to commutations..
+    """Brings a monomial to canonical form with respect to commutations.
 
-    This function works recursively. Assume 
+    This function works recursively. Assume
     `mon_lexorder=np.array([op0, op1, op2, op3, op4])`
     where the operators are encoded as integers representing their lexicographic
     ordering.
-    
-    First it checks whether there is any operator `opX` with a "commuting path" from
-    that operator to `op0`. A commuting path from `opX` is a sequence of
-    operators from `op0` to `opX` such that all of them commute. Consider 
+
+    First it checks whether there is any operator `opX` with a "commuting path"
+    from that operator to `op0`. A commuting path from `opX` is a sequence of
+    operators from `op0` to `opX` such that all of them commute. Consider
     the set of all operators that have a commuting path to `op0`. We take the
     smallest operator in this set in lexicographic ordering and place it in
-    the first position, and displace `op0` to the second position. If `op0` cannot
-    be displaced, we do not move it. Then we call `nb_to_canonical_lexinput` on
-    the remaining 4 operators.  If the smallest operator is `op3` in the above
-    example, then we return:
-    
+    the first position, and displace `op0` to the second position. If `op0`
+    cannot be displaced, we do not move it. Then we call
+    `nb_to_canonical_lexinput` on the remaining 4 operators. If the smallest
+    operator is `op3` in the above example, then we return:
+
     `[op0, op1, op2, op3, op4]` -> `[op3, nb_to_canonical_lexinput([op0, op1, op2, op4])]`
-    
+
     This procedure is done recursively until it stops.
 
     Parameters
@@ -630,7 +632,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.array,
                 minimum = mon_lexorder[op]
     if minimum <= mon_lexorder[0]:
         m1 = np.array([mon_lexorder[minimum_idx]])
-        m2 = np.concatenate((mon_lexorder[:minimum_idx], mon_lexorder[minimum_idx + 1:]))
+        m2 = np.concatenate((mon_lexorder[:minimum_idx],
+                             mon_lexorder[minimum_idx + 1:]))
         return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
     else:
         m1 = np.array([mon_lexorder[0]])
@@ -665,6 +668,7 @@ def to_canonical(mon: np.ndarray,
             return 0*mon[:1]
         else:
             return mon
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def apply_source_swap_monomial(monomial: np.ndarray,
@@ -741,7 +745,8 @@ def factorize_monomial(raw_monomial: np.ndarray,
     Returns
     -------
     Tuple[np.ndarray]
-        A tuple of ndarrays, where each array represents an atomic monomial factor.
+        A tuple of ndarrays, where each array represents an atomic monomial
+        factor.
 
     Examples
     --------
@@ -785,10 +790,12 @@ def factorize_monomial(raw_monomial: np.ndarray,
                 nonzero_sources = np.nonzero(
                     inflation_indices[component[jdx]])[0]
                 for source in nonzero_sources:
-                    overlapping = inflation_indices[:, source] == inflation_indices[component[jdx], source]
+                    overlapping = (inflation_indices[:, source]
+                                   == inflation_indices[component[jdx], source])
                     # Add the components that overlap to the lookup list
-                    component += components_indices[overlapping &
-                                                    (components_indices[:, 1] == 0)][:, 0].tolist()
+                    component += components_indices[
+                                     overlapping & (components_indices[:, 1]==0)
+                                                    ][:, 0].tolist()
                     # Specify that the components that overlap have been used
                     components_indices[overlapping, 1] = 1
                 jdx += 1
@@ -801,8 +808,8 @@ def factorize_monomial(raw_monomial: np.ndarray,
 
     # We would like to have a canonical ordering of the factors.
     if canonical_order:
-        disconnected_components = tuple(sorted(disconnected_components, key=to_hashable))
-
+        disconnected_components = tuple(sorted(disconnected_components,
+                                               key=to_hashable))
     return disconnected_components
 
 
@@ -858,7 +865,9 @@ def calculate_momentmatrix(cols: List,
         for j in range(i, nrcols):
             mon1, mon2 = cols[i], cols[j]
             if not commuting:
-                mon_v1 = to_canonical(dot_mon(mon1, mon2, lexorder), notcomm, lexorder).astype(dtype)
+                mon_v1 = to_canonical(dot_mon(mon1, mon2, lexorder),
+                                      notcomm,
+                                      lexorder).astype(dtype)
             else:
                 mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
             if mon_is_zero(mon_v1):
@@ -866,7 +875,9 @@ def calculate_momentmatrix(cols: List,
                 momentmatrix[i, j] = 0
             else:
                 if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder).astype(dtype)
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder),
+                                          notcomm,
+                                          lexorder).astype(dtype)
                     mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
                 else:
                     mon = remove_projector_squares(mon_v1).astype(dtype)
