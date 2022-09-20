@@ -492,7 +492,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     xmat, ymat, primal, dual = None, None, None, None
     xmat = np.zeros((mat_dim, mat_dim))
     try:
-        if verbose > 0:
+        if verbose > 1:
             M.setLogHandler(sys.stdout)
 
         if solverparameters:
