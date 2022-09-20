@@ -133,7 +133,7 @@ def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
 ################################################################################
 # FUNCTIONS WITH ARRAY OPERATIONS                                              #
 ################################################################################
-@jit(nopython=True, cache=cache)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     """Compare two letters/measurement operators lexicographically.
 
@@ -155,7 +155,7 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
     return True
 
 
-@jit(nopython=True)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_first_index(array: np.ndarray, item: np.uint8) -> int:
     """Find the first index of an item in an array.
 
@@ -192,7 +192,7 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     return np.flipud(mon)
 
 
-@jit(nopython=True)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Find the unique elements in an array without sorting and in order of
     appearance.
@@ -637,7 +637,7 @@ def calculate_momentmatrix(cols: List,
 ################################################################################
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
 ################################################################################
-@jit(nopython=True)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def apply_source_swap_monomial(monomial: np.ndarray,
                                source: int,
                                copy1: int,
