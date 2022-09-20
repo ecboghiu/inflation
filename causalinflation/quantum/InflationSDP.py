@@ -116,7 +116,6 @@ class InflationSDP(object):
         self.identity_operator = np.empty((0, self._nr_properties), dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties), dtype=self.np_dtype)
 
-
         # Define default lexicographic order through np.lexsort
         # The lexicographic order is encoded as a matrix with rows as
         # operators and the row index gives the order
@@ -964,7 +963,7 @@ class InflationSDP(object):
 
 
     def certificate_as_string(self,
-                              clean: bool = False,
+                              clean: bool = True,
                               chop_tol: float = 1e-10,
                               round_decimals: int = 3) -> str:
         """Give the certificate as a string with the notation of the operators
@@ -975,7 +974,7 @@ class InflationSDP(object):
         clean : bool, optional
             If ``True``, eliminate all coefficients that are smaller than
             ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``False``.
+            specified by ``round_decimals``. By default ``True``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
             set to zero. By default ``1e-8``.
@@ -1004,10 +1003,16 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         rest_of_dual = dual.copy()
-        cert_as_string = np.array2string(np.array(rest_of_dual.pop('1')), precision=round_decimals, floatmode='fixed')
+        if clean:
+            cert_as_string = np.array2string(np.array(rest_of_dual.pop('1')), precision=round_decimals, floatmode='fixed')
+        else:
+            cert_as_string = str(rest_of_dual.pop('1'))
         for mon_name, coeff in rest_of_dual.items():
             cert_as_string += "+" if coeff > 0 else "-"
-            cert_as_string += f"{np.array2string(np.abs(np.array(coeff)), precision=round_decimals, floatmode='fixed')}*{mon_name}"
+            if clean:
+                cert_as_string += f"{np.array2string(np.abs(np.array(coeff)), precision=round_decimals, floatmode='fixed')}*{mon_name}"
+            else:
+                cert_as_string += f"{abs(coeff)}*{mon_name}"
         cert_as_string += " >= 0"
         return cert_as_string
 
