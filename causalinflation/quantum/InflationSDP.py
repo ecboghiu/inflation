@@ -7,7 +7,7 @@ instance (see arXiv:1909.10519).
 import gc
 import itertools
 import warnings
-from collections import Counter
+from collections import Counter, deque
 
 import numpy as np
 import sympy as sp
@@ -92,11 +92,16 @@ class InflationSDP(object):
         if self.supports_problem:
             self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + 1
         else:
-            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
+            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party # + self.InflationProblem.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         self._generate_parties()
-
+        if self.verbose > 0:
+            print(self.measurements)
+            for i, measures in enumerate(self.measurements):
+                counter = itertools.count()
+                deque(zip(itertools.chain.from_iterable(itertools.chain.from_iterable(measures)), counter), maxlen=0)
+                print(f"Party {self.names[i]} has {next(counter)} distinct single-operator measurements.")
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
         self.is_knowable_q_split_node_check = self.InflationProblem.is_knowable_q_split_node_check
@@ -419,14 +424,14 @@ class InflationSDP(object):
             self.build_columns(column_specification,
                                return_columns_numerical=True)
 
-        if self.verbose > 1:
+        if self.verbose > 0:
             print("Number of columns:", len(self.generating_monomials))
 
         # Calculate the moment matrix without the inflation symmetries.
         self.unsymmetrized_mm_idxs, self.unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
-        if self.verbose > 1:
+        if self.verbose > 0:
             print("Number of variables before symmetrization:",
-                  len(self.unsymidx_to_unsym_monarray_dict))
+                  len(self.unsymidx_to_unsym_monarray_dict) + (1 if 0 in self.unsymmetrized_mm_idxs.flat else 0))
 
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
                                     self.unsymidx_to_unsym_monarray_dict.items()}
@@ -454,6 +459,9 @@ class InflationSDP(object):
                                        for (k, v) in self.symidx_to_sym_monarray_dict.items() if k>0])
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
+        if self.verbose > 0:
+            print("Number of variables after symmetrization:",
+                  len(self.list_of_monomials))
         """
         Used only for internal diagnostics.
         """
