@@ -359,34 +359,6 @@ def to_numbers(monomial: str,
     return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
-def factorize_monomials(monomials_as_numbers: np.ndarray,
-                        verbose: int = 0
-                        ) -> np.ndarray:
-    """Applies factorize_momonial to each monomial in the input list
-    of monomials.
-
-    Parameters
-    ----------
-    monomials_as_numbers : numpy.ndarray
-        An ndarray of type object where each row has the integer
-        representation of a monomial in the 1st column and in the 2nd
-        column a monomial in matrix form (each row is an operator
-        and each column has the operator indices).
-    verbose : int, optional
-        Whether to print progress bar. By default ``0``.
-
-    Returns
-    -------
-    numpy.ndarray
-        The same output as monomials_as_numbers but with the factorized
-        monomials.
-    """
-    monomials_factors = monomials_as_numbers.copy()
-    for idx, [_, monomial] in enumerate(monomials_factors):
-        monomials_factors[idx][1] = factorize_monomial(monomial)
-    return monomials_factors
-
-
 @lru_cache(maxsize=None, typed=False)
 def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
     return is_knowable(np.asarray(atomic_monomial))
