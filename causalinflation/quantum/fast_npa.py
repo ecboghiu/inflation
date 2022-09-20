@@ -472,37 +472,6 @@ def mon_lessthan_mon(mon1: np.ndarray,
     return A_lessthan_B(mon1_lexrank, mon2_lexrank)
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_apply_substitutions(mon_in: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
-    """Apply substitutions to a monomial.
-
-    Currently it only supports commutations arising from operators having
-    completely different support. It goes in a loop applying the substitutions
-    until it reaches a fixed point, if it finds two letters that commute and
-    are not in lexicographic ordering. This function does a single loop from
-    the first row to the last applying all substitutions along the way and
-    then it returns.
-
-    Parameters
-    ----------
-    mon_in : numpy.ndarray
-        Input monomial as a 2d array.
-
-    Returns
-    -------
-    numpy.ndarray
-        The input monomial simplified after substitutions.
-    """
-    if mon_in.shape[0] == 1:
-        return mon_in
-    mon = mon_in.copy()
-    for i in range(1, mon.shape[0]):
-        if not A_lessthan_B(mon[i - 1], mon[i]):
-            if nb_commuting(mon[i - 1], mon[i]):
-                mon[i - 1, :], mon[i, :] = mon[i, :].copy(), mon[i - 1, :].copy()
-    return mon
-
-
 def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
                  ) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
