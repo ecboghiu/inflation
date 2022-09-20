@@ -22,7 +22,6 @@ except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
 
-
     bool_ = bool
     uint16_ = np.uint16
     int16_ = np.int16
@@ -43,21 +42,26 @@ if not nopython:
     nb_Dict = dict
 
 
+################################################################################
+# FUNCTIONS WITH ARRAY OPERATIONS                                              #
+################################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_op_eq_op(op1: np.ndarray, op2: np.ndarray) -> bool_:
-    """Check if two operators are equal.
+def nb_intarray_eq(intarray1: np.ndarray,
+                   intarray2: np.ndarray) -> bool_:
+    """Checks if two arrays of integers are equal.
 
     NOTE: There is no check for shape consistency. As this is
-    an internal function, it is assumed it is used correctly.
+    an internal function, it is assumed to be used carefully.
     """
-    for i in range(op1.shape[0]):
-        if op1[i] != op2[i]:
+    for i in range(intarray1.shape[0]):
+        if intarray1[i] != intarray2[i]:
             return False
     return True
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_linsearch(arr: np.ndarray, value) -> int:
+def nb_linsearch(arr: np.ndarray,
+                 value) -> int:
     """Return the index of the first element in arr that is equal to value
     or -1 if the element is not found."""
     for index in range(arr.shape[0]):
@@ -67,8 +71,7 @@ def nb_linsearch(arr: np.ndarray, value) -> int:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_unique(arr: np.ndarray
-              ) -> Tuple[np.ndarray, np.ndarray]:
+def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Find the unique elements in an array without sorting
     and in order of appearance.
 
@@ -104,17 +107,19 @@ def nb_unique(arr: np.ndarray
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_op_lexorder(op: np.ndarray, lexorder: np.ndarray) -> int:
+def nb_op_lexorder(op: np.ndarray,
+                   lexorder: np.ndarray) -> int:
     """Map each operator to a unique integer for hashing and lexicographic
     ordering comparison purposes.
     """
     for i in range(lexorder.shape[0]):
-        if nb_op_eq_op(lexorder[i, :], op):
+        if nb_intarray_eq(lexorder[i, :], op):
             return i
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
+def nb_mon_to_lexrepr(mon: np.ndarray,
+                      lexorder: np.ndarray) -> np.array:
     """Convert a monomial to its lexicographic representation, as an
     array of integers representing the lex rank of each operator."""
     lex = np.zeros_like(mon[:, 0])
@@ -124,17 +129,15 @@ def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
+def mon_lexsorted(mon: np.ndarray,
+                  lexorder: np.ndarray) -> np.ndarray:
     """Sorts a monomial lexicographically."""
     mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
     return mon[np.argsort(mon_lexrepr, kind='quicksort')]
 
-
-################################################################################
-# FUNCTIONS WITH ARRAY OPERATIONS                                              #
-################################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def A_lessthan_B(A: np.array, B: np.array) -> bool_:
+def A_lessthan_B(A: np.array,
+                 B: np.array) -> bool_:
     """Compare two letters/measurement operators lexicographically.
 
     Parameters
@@ -156,7 +159,8 @@ def A_lessthan_B(A: np.array, B: np.array) -> bool_:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_first_index(array: np.ndarray, item: np.uint8) -> int:
+def nb_first_index(array: np.ndarray,
+                   item: np.uint8) -> int:
     """Find the first index of an item in an array.
 
     Parameters
@@ -232,7 +236,8 @@ def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 # ABSTRACT OPERATIONS ON MONOMIALS                                             #
 ################################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
+def mon_sorted_by_parties(mon: np.ndarray,
+                          lexorder: np.ndarray) -> np.ndarray:
     """Sort by parties the monomial, i.e., sort by the first column in
     the 2d representation of the monomial.
 
@@ -267,12 +272,13 @@ def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
+def mon_equal_mon(mon1: np.ndarray,
+                  mon2: np.ndarray) -> bool_:
     if mon1.shape != mon2.shape:
         return False
     else:
         for i in range(mon1.shape[0]):
-            if not nb_op_eq_op(mon1[i], mon2[i]):
+            if not nb_intarray_eq(mon1[i], mon2[i]):
                 return False
         return True
 
@@ -280,8 +286,7 @@ def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
             mon2: np.ndarray,
-            lexorder: np.array
-            ) -> np.ndarray:
+            lexorder: np.array) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
 
     For hermitian operators this is the same as reversed(mon1)*mon2.
@@ -318,8 +323,7 @@ def dot_mon(mon1: np.ndarray,
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon_commuting(mon1: np.ndarray,
                       mon2: np.ndarray,
-                      lexorder: np.ndarray,
-                      ) -> np.ndarray:
+                      lexorder: np.ndarray) -> np.ndarray:
     """A faster implementation of `dot_mon` that assumes that all
     operators commute. This implies we order everything lexicographically.
 
@@ -364,7 +368,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
 
     to_keep = np.ones(mon.shape[0], dtype=bool_)
     for i in range(1, mon.shape[0]):
-        if nb_op_eq_op(mon[i], mon[i - 1]):
+        if nb_intarray_eq(mon[i], mon[i - 1]):
             to_keep[i] = False
     return mon[to_keep]
 
@@ -378,7 +382,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     if len(mon) > 1 and not np.any(mon.ravel()):
         return True
     for i in range(1, mon.shape[0]):
-        if mon[i, -1] != mon[i - 1, -1] and nb_op_eq_op(mon[i, :-1], mon[i - 1, :-1]):
+        if mon[i, -1] != mon[i - 1, -1] and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1]):
             return True
     return False
 
@@ -389,8 +393,7 @@ def to_hashable(monomial: np.ndarray):
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_commuting(letter1: np.array,
-                 letter2: np.array
-                 ) -> bool_:
+                 letter2: np.array) -> bool_:
     """Determine if two letters/operators commute.
     Currently this only takes into accounts commutation coming from inflation and settings.
 
@@ -447,8 +450,7 @@ def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lessthan_mon(mon1: np.ndarray,
                      mon2: np.ndarray,
-                     lexorder: np.ndarray,
-                     ) -> bool_:
+                     lexorder: np.ndarray) -> bool_:
     """Compares two monomials and returns True if mon1 < mon2 in lexicographic
     order.
 
@@ -472,8 +474,9 @@ def mon_lessthan_mon(mon1: np.ndarray,
     return A_lessthan_B(mon1_lexrank, mon2_lexrank)
 
 
-def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
-                 ) -> np.ndarray:
+def to_canonical(mon: np.ndarray,
+                 notcomm: np.ndarray,
+                 lexorder: np.ndarray) -> np.ndarray:
     """Apply substitutions to a monomial until it stops changing.
 
     Parameters
@@ -501,8 +504,8 @@ def to_canonical(mon: np.ndarray, notcomm: np.ndarray, lexorder: np.ndarray
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_to_canonical_lexinput(mon_lexorder: np.ndarray, notcomm: np.ndarray
-                             ) -> np.ndarray:
+def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
+                             notcomm: np.ndarray) -> np.ndarray:
     if mon_lexorder.shape[0] <= 1:
         return mon_lexorder
 
@@ -527,7 +530,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray, notcomm: np.ndarray
         return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
 
 
-def to_name(monomial: np.ndarray, names: List[str]) -> str:
+def to_name(monomial: np.ndarray,
+            names: List[str]) -> str:
     """Convert the 2d array representation of a monomial to a string.
 
     Parameters
@@ -564,8 +568,7 @@ def calculate_momentmatrix(cols: List,
                            lexorder,
                            verbose: int = 0,
                            commuting=False,
-                           dtype: np.dtype = np.uint16
-                           ) -> Tuple[np.ndarray, Dict]:
+                           dtype: np.dtype = np.uint16) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
@@ -641,8 +644,7 @@ def calculate_momentmatrix(cols: List,
 def apply_source_swap_monomial(monomial: np.ndarray,
                                source: int,
                                copy1: int,
-                               copy2: int
-                               ) -> np.ndarray:
+                               copy2: int) -> np.ndarray:
     """Applies a swap of two sources to a monomial.
     Parameters
     ----------
@@ -681,8 +683,7 @@ def apply_source_swap_monomial(monomial: np.ndarray,
 
 
 def factorize_monomial(raw_monomial: np.ndarray,
-                       canonical_order=False
-                       ) -> Tuple[np.ndarray]:
+                       canonical_order=False) -> Tuple[np.ndarray]:
     """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
 
