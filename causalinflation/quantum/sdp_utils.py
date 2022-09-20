@@ -3,12 +3,12 @@ This file contains the functions to send the problems to SDP solvers.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
 import numpy as np
-import scipy.sparse
 import sys
-from typing import Dict, Tuple
-from warnings import warn
 
-def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
+from scipy.sparse import lil_matrix, dok_matrix
+from typing import Dict, Tuple
+
+def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                          objective={1: 0.}, known_vars={0: 0., 1: 1.},
                          semiknown_vars={}, positive_vars=[],
                          verbose=0, feas_as_optim=False,
@@ -153,10 +153,10 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
             inequality[CONSTANT_KEY] = 0
 
     Fi = maskmatrices_name_dict.copy()
-    Fi = {k: scipy.sparse.lil_matrix(v, dtype=float) for k, v in Fi.items()}
+    Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
     variables = set(list(Fi.keys()))
-    mat_dim = Fi[next(iter(Fi))].shape[0]
-    F0 = scipy.sparse.lil_matrix((mat_dim, mat_dim))
+    mat_dim   = Fi[next(iter(Fi))].shape[0]
+    F0        = lil_matrix((mat_dim, mat_dim))
 
     # For positive variables, override the lower bound to be 0 if it is smaller
     for x in positive_vars:
@@ -232,21 +232,21 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
-    b = scipy.sparse.dok_matrix((len(var_inequalities), 1))
+    b = dok_matrix((len(var_inequalities), 1))
     for i, inequality in enumerate(var_inequalities):
         b[i, 0] = inequality[CONSTANT_KEY]
 
-    A = scipy.sparse.dok_matrix((len(var_inequalities), len(variables)))
+    A = dok_matrix((len(var_inequalities), len(variables)))
     for i, inequality in enumerate(var_inequalities):
         for x, c in inequality.items():
             if x != CONSTANT_KEY:
                 A[i, var2index[x]] = c
 
-    d = scipy.sparse.dok_matrix((len(var_equalities), 1))
+    d = dok_matrix((len(var_equalities), 1))
     for i, equality in enumerate(var_equalities):
         d[i, 0] = equality[CONSTANT_KEY]
 
-    C = scipy.sparse.dok_matrix((len(var_equalities), len(variables)))
+    C = dok_matrix((len(var_equalities), len(variables)))
     for i, equality in enumerate(var_equalities):
         for x, c in equality.items():
             if x != CONSTANT_KEY:
@@ -293,7 +293,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
         print('Pre-processing took', time() - t0, "seconds.")
         t0 = time()
     if verbose > 0:
-        print("Building the model")
+        print("Building the model...")
 
     M = Model('InflationSDP')
 
@@ -455,13 +455,13 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: scipy.sparse.lil_matrix,
         print('Model saved to InflationSDPModel.ptf.')
         t0 = time()
     if verbose > 0:
-        print("Solving the model")
+        print("Solving the model...")
 
     # Solving and readout
     xmat, ymat, primal, dual = None, None, None, None
     xmat = np.zeros((mat_dim, mat_dim))
     try:
-        if verbose > 0:
+        if verbose > 1:
             M.setLogHandler(sys.stdout)
 
         if solverparameters:
