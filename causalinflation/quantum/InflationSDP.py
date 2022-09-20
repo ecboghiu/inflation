@@ -427,7 +427,6 @@ class InflationSDP(object):
             self.build_columns(column_specification,
                                return_columns_numerical=True)
 
-        print(self.generating_monomials)
         self.column_level_equalities = []
         for i, monomial in enumerate(self.generating_monomials):
             for k, operator in enumerate(iter(monomial)):
@@ -523,8 +522,10 @@ class InflationSDP(object):
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
 
+        self.reset_bounds()  # TODO: set_bounds(None, 'upper'), set_bounds(None, 'lower')
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
+
 
 
     def reset_objective(self):
@@ -535,33 +536,41 @@ class InflationSDP(object):
                 pass
         self.objective = {self.One: 0.}
         self._objective_as_name_dict = {'1': 0.}
+        gc.collect(2)
 
     def reset_values(self):
-        for attribute in {'known_moments', 'semiknown_moments', '_processed_moment_lowerbounds',
-                          'known_moments_name_dict', 'semiknown_moments_name_dict',
-                          '_processed_moment_lowerbounds_name_dict'}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
-        gc.collect(2)
         self.known_moments = dict()
         self.semiknown_moments = dict()
-        self._processed_moment_lowerbounds = dict()
+
         self.known_moments_name_dict = dict()
         self.semiknown_moments_name_dict = dict()
-        self._processed_moment_lowerbounds_name_dict = dict()
+
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
             self.known_moments_name_dict[self.Zero.name] = 0.
             self.known_moments[self.One] = 1.
             self.known_moments_name_dict[self.One.name] = 1.
+        gc.collect(2)
+
+    def reset_bounds(self):
+        self._processed_moment_upperbounds = dict()
+        self._processed_moment_upperbounds_name_dict = dict()
+        self._processed_moment_lowerbounds = dict()
+        self._processed_moment_lowerbounds_name_dict = dict()
+        gc.collect(2)
+
 
     def update_physical_lowerbounds(self):
-        for mon in set(self.moment_lowerbounds.keys()).difference(self.known_moments.keys()):
-            self._processed_moment_lowerbounds[mon] = self.moment_lowerbounds[mon]
-            self._processed_moment_lowerbounds_name_dict = {mon.name: value for mon, value in
-                                                            self._processed_moment_lowerbounds.items()}
+        for mon in self.moment_lowerbounds.keys():
+            if mon not in self.known_moments.keys():
+                self._processed_moment_lowerbounds[mon] = self.moment_lowerbounds[mon]
+                self._processed_moment_lowerbounds_name_dict = {mon.name: value for mon, value in
+                                                                self._processed_moment_lowerbounds.items()}
+            else:
+                try:
+                    del self._processed_moment_lowerbounds[mon]
+                except KeyError:
+                    pass
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -914,12 +923,12 @@ class InflationSDP(object):
             feas_as_optim = False
 
         # TODO for performance: Remove all zero-valued variables FROM ALL solve arguments, as this is just a waste.
-        moment_upperbounds = {m.name: val
-                              for m, val in self.moment_upperbounds.items()}
-        moment_lowerbounds = {**{m.name: val for m, val
-                                 in self._processed_moment_lowerbounds.items()},
-                              **{m.name: val
-                                 for m, val in self.moment_lowerbounds.items()}}
+        # moment_upperbounds = {m.name: val
+        #                       for m, val in self.moment_upperbounds.items()}
+        # moment_lowerbounds = {**{m.name: val for m, val
+        #                          in self._processed_moment_lowerbounds.items()},
+        #                       **{m.name: val
+        #                          for m, val in self.moment_lowerbounds.items()}}
         solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
                               "objective": self._objective_as_name_dict,
                               "known_vars": self.known_moments_name_dict,
@@ -927,8 +936,8 @@ class InflationSDP(object):
                               "feas_as_optim": feas_as_optim,
                               "verbose": self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds": moment_lowerbounds,
-                              "var_upperbounds": moment_upperbounds,
+                              "var_lowerbounds": self._processed_moment_lowerbounds_name_dict,
+                              "var_upperbounds": self._processed_moment_upperbounds_name_dict,
                               "var_equalities": self.moment_linear_equalities,
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual": dualise}
