@@ -89,10 +89,11 @@ class InflationSDP(object):
         self.nr_sources = self.InflationProblem.nr_sources
         self.hypergraph = self.InflationProblem.hypergraph
         self.inflation_levels = self.InflationProblem.inflation_level_per_source
+        self.has_children = self.InflationProblem.has_children
         if self.supports_problem:
             self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + 1
         else:
-            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.InflationProblem.has_children
+            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         self._generate_parties()
@@ -342,6 +343,10 @@ class InflationSDP(object):
 
     #
 
+    def operator_max_outcome_q(self, operator: np.ndarray) -> bool:
+        party = operator[0] - 1
+        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party]-2
+
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
     ########################################################################
@@ -421,6 +426,38 @@ class InflationSDP(object):
         self.generating_monomials_sym, self.generating_monomials = \
             self.build_columns(column_specification,
                                return_columns_numerical=True)
+
+        print(self.generating_monomials)
+        self.column_level_equalities = []
+        for i, monomial in enumerate(self.generating_monomials):
+            for k, operator in enumerate(iter(monomial)):
+                if self.operator_max_outcome_q(operator):
+                    # print(f"Attempting to find a column level equality for col {k}, namely {operator}...")
+                    operator_as_2d = np.expand_dims(operator, axis=0)
+                    prefix = monomial[:k]
+                    suffix = monomial[(k+1):]
+                    variant_locations = [i]
+                    true_cardinality = self.outcome_cardinalities[operator[0]-1]-1
+                    for outcome in range(true_cardinality-1):
+                        variant_operator = operator_as_2d.copy()
+                        variant_operator[0, -1] = outcome
+                        variant_monomial = np.vstack((prefix, variant_operator, suffix))
+                        for j, monomial in enumerate(self.generating_monomials):
+                            if np.array_equal(monomial, variant_monomial):
+                                variant_locations.append(j)
+                                break
+                    if len(variant_locations) == true_cardinality:
+                        missing_op_location = -1
+                        missing_op_monomial = np.vstack((prefix, suffix))
+                        for j, monomial in enumerate(self.generating_monomials):
+                            if np.array_equal(monomial, missing_op_monomial):
+                                missing_op_location = j
+                                break
+                        if missing_op_location >= 0:
+                            self.column_level_equalities.append((missing_op_location, tuple(variant_locations)))
+        if self.verbose > 0 and len(self.column_level_equalities):
+            print("Column level equalities:", self.column_level_equalities)
+
 
         if self.verbose > 0:
             print("Number of columns:", len(self.generating_monomials))
@@ -695,15 +732,10 @@ class InflationSDP(object):
             # Convert positive known values into lower bounds.
             nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
             for mon in nonzero_known_monomials:
-                self.moment_lowerbounds[mon] = 1.
+                self._processed_moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
             self.semiknown_moments = dict()
             # Name dictionaries for compatibility purposes only, block in code for easy commenting out.
-            nonzero_known_monomial_names = [name for name, value in self.known_moments_name_dict.items() if
-                                            not np.isclose(value, 0)]
-            for name in nonzero_known_monomial_names:
-                self.moment_lowerbounds_name_dict[name] = 1.
-                del self.known_moments_name_dict[name]
             self.semiknown_moments_name_dict = dict()
 
             # TODO: ADD EQUALITY CONSTRAINTS FOR SUPPORTS PROBLEM!
@@ -1368,8 +1400,7 @@ class InflationSDP(object):
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
         """Generate the moment matrix.
         """
-        _cols = self.generating_monomials
-        problem_arr, canonical_mon_to_idx_dict = calculate_momentmatrix(_cols,
+        problem_arr, canonical_mon_to_idx_dict = calculate_momentmatrix(self.generating_monomials,
                                                                         self._notcomm,
                                                                         self._lexorder,
                                                                         verbose=self.verbose,
