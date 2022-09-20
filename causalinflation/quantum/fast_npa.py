@@ -131,12 +131,6 @@ def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_op_lessthan_op(op1: np.array, op2: np.array, lexorder: np.ndarray) -> bool_:
-    """Compares the lexicographic rank of two operators."""
-    return nb_op_lexorder(op1, lexorder) < nb_op_lexorder(op2, lexorder)
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_op1_commuteswith_op2(op1: np.array, op2: np.array,
                             commutation_mat: np.ndarray,
                             lexorder: np.ndarray
