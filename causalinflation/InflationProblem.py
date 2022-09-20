@@ -43,14 +43,14 @@ class InflationProblem(object):
 
         if not outcomes_per_party:
             raise ValueError("Please provide outcomes per party.")
-        self.outcomes_per_party = outcomes_per_party
+        self.outcomes_per_party = np.array(outcomes_per_party, dtype=int)
         self.nr_parties = len(self.outcomes_per_party)
         if not settings_per_party:
             if self.verbose > 0:
                 print("No settings per party provided, assuming all parties have one setting.")
-            self.private_settings_per_party = [1] * self.nr_parties
+            self.private_settings_per_party = np.ones(self.nr_parties, dtype=int)  # [1] * self.nr_parties,
         else:
-            self.private_settings_per_party = settings_per_party
+            self.private_settings_per_party = np.asarray(settings_per_party, dtype=int)
             assert len(
                 self.private_settings_per_party) == self.nr_parties, "Different numbers of cardinalities specified for inputs versus outputs."
 
@@ -92,6 +92,7 @@ class InflationProblem(object):
             self.dag = dag
 
         nodes_with_children = list(dag.keys())
+        self.has_children = np.zeros(self.nr_parties, dtype=int)
         # NEW PROPERTY ADDED BY ELIE
         self.split_node_model = not set(nodes_with_children).isdisjoint(self.names)
         names_to_integers_dict = {party: position for position, party in enumerate(self.names)}
@@ -99,6 +100,7 @@ class InflationProblem(object):
         for parent in nodes_with_children:
             if parent in self.names:
                 ii = names_to_integers_dict[parent]
+                self.has_children[ii] = 1
                 for child in dag[parent]:
                     jj = names_to_integers_dict[child]
                     adjacency_matrix[ii, jj] = 1
@@ -107,7 +109,7 @@ class InflationProblem(object):
         settings_per_party_as_lists = [[s] for s in self.private_settings_per_party]
         for (party_index, party_parents_indices) in enumerate(self.parents_per_party):
             settings_per_party_as_lists[party_index].extend(np.take(self.outcomes_per_party, party_parents_indices))
-        self.settings_per_party = [np.prod(multisetting) for multisetting in settings_per_party_as_lists]
+        self.settings_per_party = np.asarray([np.prod(multisetting) for multisetting in settings_per_party_as_lists], dtype=int)
 
         extract_parent_values_from_effective_setting = []
         for i in range(self.nr_parties):
