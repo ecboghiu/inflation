@@ -52,6 +52,18 @@ def nb_intarray_eq(intarray1: np.ndarray,
 
     NOTE: There is no check for shape consistency. As this is
     an internal function, it is assumed to be used carefully.
+
+    Parameters
+    ----------
+    intarray1 : np.ndarray
+        Array of integers.
+    intarray2 : np.ndarray
+        Array of integers.
+
+    Returns
+    -------
+    bool_
+        Whether the arrays are equal.
     """
     for i in range(intarray1.shape[0]):
         if intarray1[i] != intarray2[i]:
@@ -60,12 +72,26 @@ def nb_intarray_eq(intarray1: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_linsearch(arr: np.ndarray,
-                 value) -> int:
+def nb_linsearch(intarray: np.ndarray,
+                 value: int) -> int:
     """Return the index of the first element in arr that is equal to value
-    or -1 if the element is not found."""
-    for index in range(arr.shape[0]):
-        if arr[index] == value:
+    or -1 if the element is not found.
+
+    Parameters
+    ----------
+    intarray : np.ndarray
+        Array of integers.
+    value : int
+        Value to be found.
+
+    Returns
+    -------
+    int
+        The position of the value if it is found, else -1.
+    """
+
+    for index in range(intarray.shape[0]):
+        if intarray[index] == value:
             return index
     return -1
 
@@ -196,40 +222,40 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     return np.flipud(mon)
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Find the unique elements in an array without sorting and in order of
-    appearance.
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+#     """Find the unique elements in an array without sorting and in order of
+#     appearance.
 
-    Parameters
-    ----------
-    arr : numpy.ndarray
-        The array to search.
+#     Parameters
+#     ----------
+#     arr : numpy.ndarray
+#         The array to search.
 
-    Returns
-    -------
-    Tuple[numpy.ndarray, numpy.ndarray]
-        The unique values unsorted and their indices.
+#     Returns
+#     -------
+#     Tuple[numpy.ndarray, numpy.ndarray]
+#         The unique values unsorted and their indices.
 
-    Examples
-    --------
-    >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
-    (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
-    """
-    uniquevals = np.unique(arr)
-    nr_uniquevals = uniquevals.shape[0]
+#     Examples
+#     --------
+#     >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
+#     (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
+#     """
+#     uniquevals = np.unique(arr)
+#     nr_uniquevals = uniquevals.shape[0]
 
-    indices = np.zeros(nr_uniquevals).astype(int16_)
-    for i in range(nr_uniquevals):
-        indices[i] = nb_first_index(arr, uniquevals[i])
-    indices.sort()
+#     indices = np.zeros(nr_uniquevals).astype(int16_)
+#     for i in range(nr_uniquevals):
+#         indices[i] = nb_first_index(arr, uniquevals[i])
+#     indices.sort()
 
-    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int16_)
-    for i in range(nr_uniquevals):
-        # Undo the sorting done by np.unique()
-        uniquevals_unsorted[i] = arr[indices[i]]
+#     uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int16_)
+#     for i in range(nr_uniquevals):
+#         # Undo the sorting done by np.unique()
+#         uniquevals_unsorted[i] = arr[indices[i]]
 
-    return uniquevals_unsorted, indices
+#     return uniquevals_unsorted, indices
 
 
 ################################################################################
