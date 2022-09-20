@@ -708,6 +708,16 @@ class InflationSDP(object):
         # Create lowerbounds list for physical but unknown moments
         self.update_physical_lowerbounds()
         self._update_objective()
+        num_nontrivial_known = len(self.known_moments)
+        if self.momentmatrix_has_a_zero:
+            num_nontrivial_known -= 1
+        if self.momentmatrix_has_a_one:
+            num_nontrivial_known -= 1
+        if self.verbose > 0 and num_nontrivial_known > 0:
+            print(f"Number of variables with fixed numeric value: {len(self.known_moments)}")
+        num_semiknown = len(self.semiknown_moments)
+        if self.verbose > 2 and num_semiknown > 0:
+            print(f"Number of semiknown variables: {num_semiknown}")
         return
 
     def set_objective(self,
