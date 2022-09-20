@@ -74,34 +74,6 @@ def find_permutation(list1: List,
         return [original_dict[x] for x in list2]
 
 
-def mul(lst: List) -> Any:
-    """Multiply all elements of a list.
-
-    Parameters
-    ----------
-    lst : List
-        Input list with elements that have a supported '*' multiplication.
-
-    Returns
-    -------
-    Any
-        Product of all elements.
-
-    Example
-    -------
-    >>> mul([2, 'A_1', 'B_2'])
-    2*A_1*B_2
-    """
-
-    if type(lst[0]) == str:
-        result = '*'.join(lst)
-    else:
-        result = 1
-        for element in lst:
-            result *= element
-    return result
-
-
 @jit(nopython=nopython)
 def apply_source_permplus_monomial(monomial: np.ndarray,
                                    source: int,
@@ -387,39 +359,6 @@ def to_numbers(monomial: str,
     return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
-def factorize_monomials(monomials_as_numbers: np.ndarray,
-                        verbose: int = 0
-                        ) -> np.ndarray:
-    """Applies factorize_momonial to each monomial in the input list
-    of monomials.
-
-    Parameters
-    ----------
-    monomials_as_numbers : numpy.ndarray
-        An ndarray of type object where each row has the integer
-        representation of a monomial in the 1st column and in the 2nd
-        column a monomial in matrix form (each row is an operator
-        and each column has the operator indices).
-    verbose : int, optional
-        Whether to print progress bar. By default ``0``.
-
-    Returns
-    -------
-    numpy.ndarray
-        The same output as monomials_as_numbers but with the factorized
-        monomials.
-    """
-    monomials_factors = monomials_as_numbers.copy()
-    for idx, [_, monomial] in enumerate(monomials_factors):
-        monomials_factors[idx][1] = factorize_monomial(monomial)
-    return monomials_factors
-
-
-@lru_cache(maxsize=None, typed=False)
-def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
-    return is_knowable(np.asarray(atomic_monomial))
-
-
 def is_knowable(monomial: np.ndarray) -> bool:
     """Determine whether a given atomic monomial (which cannot be factorized
     into smaller disconnected components) admits an identification with a
@@ -492,43 +431,6 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
                 res *= False
                 break
     return res
-
-
-def label_knowable_and_unknowable(monomials_factors: np.ndarray,
-                                  hypergraph: np.ndarray
-                                  ) -> np.ndarray:
-    """Given the list of monomials factorised, label each monomial as knowable,
-    semiknowable or unknowable.
-
-    Parameters
-    ----------
-    monomials_factors_input : numpy.ndarray
-        Ndarray of factorised monomials. Each row encodes the integer
-        representation and the factors of the monomial.
-    hypergraph : numpy.ndarray
-        The hypergraph of the network.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array of the same size as the input, with the labels of each monomial.
-    """
-    factors_are_knowable = np.empty_like(monomials_factors)
-    factors_are_knowable[:, 0] = monomials_factors[:, 0]
-    monomial_is_knowable = np.empty_like(monomials_factors)
-    monomial_is_knowable[:, 0] = monomials_factors[:, 0]
-    for idx, [_, factors] in enumerate(monomials_factors):
-        factors_known_list = [is_knowable(
-            factor, hypergraph) for factor in factors]
-        factors_are_knowable[idx][1] = factors_known_list
-        if all(factors_known_list):
-            knowable = 'Yes'
-        elif any(factors_known_list):
-            knowable = 'Semi'
-        else:
-            knowable = 'No'
-        monomial_is_knowable[idx][1] = knowable
-    return monomial_is_knowable, factors_are_knowable
 
 
 def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
