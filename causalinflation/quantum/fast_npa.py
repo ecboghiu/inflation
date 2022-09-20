@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 from scipy.sparse import dok_matrix
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 
 def kill_files(folder):
@@ -681,7 +681,7 @@ def calculate_momentmatrix(cols: List,
                            lexorder,
                            verbose: int = 0,
                            commuting=False,
-                           dtype: np.dtype = uint16_
+                           dtype: Union[object, type] = uint16_
                            ) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
