@@ -556,13 +556,14 @@ class InflationSDP(object):
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
 
-        self.reset_bounds()  # TODO: set_bounds(None, 'upper'), set_bounds(None, 'lower')
+        self.set_lowerbounds(None)
+        self.set_upperbounds(None)
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
 
     def reset_objective(self):
         for attribute in {'objective', '_objective_as_name_dict', '_processed_objective',
-                          'objective_value', 'primal_objective'}:
+                          'objective_value', 'primal_objective', 'maximize'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
@@ -587,24 +588,40 @@ class InflationSDP(object):
         gc.collect(2)
 
     def reset_bounds(self):
+        self.reset_lowerbounds()
+        self.reset_upperbounds()
+        gc.collect(2)
+    def reset_lowerbounds(self):
+        self.status = 'not yet solved'
+        self._processed_moment_lowerbounds = dict()
+        self._processed_moment_lowerbounds_name_dict = dict()
+
+    def reset_upperbounds(self):
         self.status = 'not yet solved'
         self._processed_moment_upperbounds = dict()
         self._processed_moment_upperbounds_name_dict = dict()
-        self._processed_moment_lowerbounds = dict()
-        self._processed_moment_lowerbounds_name_dict = dict()
-        gc.collect(2)
 
-    def update_physical_lowerbounds(self):
-        for mon in self.moment_lowerbounds.keys():
-            if mon not in self.known_moments.keys():
-                self._processed_moment_lowerbounds[mon] = self.moment_lowerbounds[mon]
-                self._processed_moment_lowerbounds_name_dict = {mon.name: value for mon, value in
-                                                                self._processed_moment_lowerbounds.items()}
-            else:
-                try:
-                    del self._processed_moment_lowerbounds[mon]
-                except KeyError:
-                    pass
+    def update_lowerbounds(self):
+        for mon, lb in self.moment_lowerbounds.items():
+            self._processed_moment_lowerbounds[mon] = max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
+        for mon, value in self.known_moments.items():
+            try:
+                lb = self._processed_moment_lowerbounds[mon]
+                assert lb <= value, f"Value {value} assigned for monomial {mon} contradicts the assigned lower bound of {lb}!"
+                del self._processed_moment_lowerbounds[mon]
+            except KeyError:
+                pass
+        self._processed_moment_lowerbounds_name_dict = {mon.name: lb for mon, lb in self._processed_moment_lowerbounds.items()}
+
+    def update_upperbounds(self):
+        for mon, value in self.known_moments.items():
+            try:
+                ub = self._processed_moment_upperbounds[mon]
+                assert ub >= value, f"Value {value} assigned for monomial {mon} contradicts the assigned upper bound of {ub}!"
+                del self._processed_moment_upperbounds[mon]
+            except KeyError:
+                pass
+        self._processed_moment_upperbounds_name_dict = {mon.name: up for mon, up in self._processed_moment_upperbounds.items()}
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -784,7 +801,8 @@ class InflationSDP(object):
             # TODO: ADD EQUALITY CONSTRAINTS FOR SUPPORTS PROBLEM!
 
         # Create lowerbounds list for physical but unknown moments
-        self.update_physical_lowerbounds()
+        self.update_lowerbounds()
+        self.update_upperbounds()
         self._update_objective()
         num_nontrivial_known = len(self.known_moments)
         if self.momentmatrix_has_a_zero:
@@ -799,7 +817,7 @@ class InflationSDP(object):
         return
 
     def set_objective(self,
-                      objective: Union[sp.core.symbol.Symbol, None],
+                      objective: Union[sp.core.symbol.Symbol, dict, None],
                       direction: str = 'max') -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
@@ -815,38 +833,83 @@ class InflationSDP(object):
         assert direction in ['max', 'min'], ('The direction parameter should be'
                                              + ' set to either "max" or "min"')
 
+        self.reset_objective()
         if direction == 'max':
-            sign = 1
             self.maximize = True
         else:
-            sign = -1
             self.maximize = False
-
-        self.reset_objective()
         # From a user perspective set_objective(None) should be
         # equivalent to reset_objective()
         if objective is None:
             return
-
-        if hasattr(self, 'use_lpi_constraints'):
-            if self.use_lpi_constraints and self.verbose > 0:
-                warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
-                              "aware that imposing linearized polynomial constraints will " +
-                              "constrain the optimization to distributions with fixed " +
-                              "marginals.")
-
-        if (sp.S.One * objective).free_symbols:
-            objective = sp.expand(objective)
-            symmetrized_objective = {self.One: 0}
-            for mon, coeff in objective.as_coefficients_dict().items():
-                mon = self._sanitise_monomial(mon)
-                symmetrized_objective[mon] = symmetrized_objective.get(mon, 0) + (sign * coeff)
+        elif isinstance(objective, sp.core.expr.Expr):
+            if objective.free_symbols:
+                objective_as_raw_dict = sp.expand(objective).as_coefficients_dict()
+            else:
+                objective_as_raw_dict = {self.One: objective.evalf()}
+            return self.set_objective(objective_as_raw_dict, direction=direction)
         else:
-            symmetrized_objective = {self.One: sign * float(objective)}
+            if hasattr(self, 'use_lpi_constraints'):
+                if self.use_lpi_constraints and self.verbose > 0:
+                    warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
+                                  "aware that imposing linearized polynomial constraints will " +
+                                  "constrain the optimization to distributions with fixed " +
+                                  "marginals.")
+            sign = (1 if self.maximize else -1)
+            objective_as_dict = {self.One: 0}
+            for mon, coeff in objective.items():
+                mon = self._sanitise_monomial(mon)
+                objective_as_dict[mon] = objective_as_dict.get(mon, 0) + (sign * coeff)
+            self.objective = objective_as_dict
+            self._update_objective()
+            return
 
-        self.objective = symmetrized_objective
+    def set_upperbounds(self, upperbound_dict: Union[dict, None]) -> None:
+        """
+        Documentation needed.
+        """
+        self.reset_upperbounds()
+        if upperbound_dict is None:
+            return
+        sanitized_upperbound_dict = dict()
+        for mon, upperbound in upperbound_dict.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_upperbound_dict.keys():
+                sanitized_upperbound_dict[mon] = upperbound
+            else:
+                old_bound = sanitized_upperbound_dict[mon]
+                assert np.isclose(old_bound, upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
+        self._processed_moment_upperbounds = sanitized_upperbound_dict
+        self.update_upperbounds()
+    def set_lowerbounds(self, lowerbound_dict: Union[dict, None]) -> None:
+        """
+        Documentation needed.
+        """
+        self.reset_lowerbounds()
+        if lowerbound_dict is None:
+            return
+        sanitized_lowerbound_dict = dict()
+        for mon, lowerbound in lowerbound_dict.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_lowerbound_dict.keys():
+                sanitized_lowerbound_dict[mon] = lowerbound
+            else:
+                old_bound = sanitized_lowerbound_dict[mon]
+                assert np.isclose(old_bound, lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
+        self._processed_moment_lowerbounds = sanitized_lowerbound_dict
+        self.update_lowerbounds()
 
-        self._update_objective()
+    def set_bounds(self, bounds_dict: Union[dict, None], bound_type: str = 'up') -> None:
+        assert bound_type in ['up', 'lo'], ('The bound_type parameter should be'
+                                             + ' set to either "up" or "lo"')
+        if bound_type == 'up':
+            self.set_upperbounds(bounds_dict)
+        else:
+            self.set_lowerbounds(bounds_dict)
+
+
+
+
 
     def _update_objective(self):
         """Process the objective with the information from known_moments
@@ -998,7 +1061,7 @@ class InflationSDP(object):
     def certificate_as_probs(self,
                              clean: bool = False,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.symbol.Symbol:
+                             round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert >= 0``.
 
