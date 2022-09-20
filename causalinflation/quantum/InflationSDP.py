@@ -8,14 +8,14 @@ import gc
 import itertools
 import warnings
 from collections import Counter, deque
+from numbers import Real
+from typing import List, Dict, Tuple, Union, Any
 
 import numpy as np
 import sympy as sp
+from scipy.sparse import coo_matrix
 
 from causalinflation import InflationProblem
-from numbers import Real
-from scipy.sparse import coo_matrix
-from typing import List, Dict, Tuple, Union, Any
 from .fast_npa import (calculate_momentmatrix,
                        to_canonical,
                        to_name,
@@ -112,8 +112,8 @@ class InflationSDP(object):
         self.np_dtype = np.find_common_type([
             np.min_scalar_type(np.max(self.setting_cardinalities)),
             np.min_scalar_type(np.max(self.outcome_cardinalities)),
-            np.min_scalar_type(self.nr_parties+1),
-            np.min_scalar_type(np.max(self.inflation_levels)+1)], [])
+            np.min_scalar_type(self.nr_parties + 1),
+            np.min_scalar_type(np.max(self.inflation_levels) + 1)], [])
         self.identity_operator = np.empty((0, self._nr_properties), dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties), dtype=self.np_dtype)
 
@@ -345,7 +345,38 @@ class InflationSDP(object):
 
     def operator_max_outcome_q(self, operator: np.ndarray) -> bool:
         party = operator[0] - 1
-        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party]-2
+        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
+
+    def identify_column_level_equalities(self):
+        self.column_level_equalities = []
+        for i, monomial in enumerate(self.generating_monomials):
+            for k, operator in enumerate(iter(monomial)):
+                if self.operator_max_outcome_q(operator):
+                    # print(f"Attempting to find a column level equality for col {k}, namely {operator}...")
+                    operator_as_2d = np.expand_dims(operator, axis=0)
+                    prefix = monomial[:k]
+                    suffix = monomial[(k + 1):]
+                    variant_locations = [i]
+                    true_cardinality = self.outcome_cardinalities[operator[0] - 1] - 1
+                    for outcome in range(true_cardinality - 1):
+                        variant_operator = operator_as_2d.copy()
+                        variant_operator[0, -1] = outcome
+                        variant_monomial = np.vstack((prefix, variant_operator, suffix))
+                        for j, monomial in enumerate(self.generating_monomials):
+                            if np.array_equal(monomial, variant_monomial):
+                                variant_locations.append(j)
+                                break
+                    if len(variant_locations) == true_cardinality:
+                        missing_op_location = -1
+                        missing_op_monomial = np.vstack((prefix, suffix))
+                        for j, monomial in enumerate(self.generating_monomials):
+                            if np.array_equal(monomial, missing_op_monomial):
+                                missing_op_location = j
+                                break
+                        if missing_op_location >= 0:
+                            self.column_level_equalities.append((missing_op_location, tuple(variant_locations)))
+        if self.verbose > 0 and len(self.column_level_equalities):
+            print("Column level equalities:", self.column_level_equalities)
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -426,40 +457,11 @@ class InflationSDP(object):
         self.generating_monomials_sym, self.generating_monomials = \
             self.build_columns(column_specification,
                                return_columns_numerical=True)
-
-        self.column_level_equalities = []
-        for i, monomial in enumerate(self.generating_monomials):
-            for k, operator in enumerate(iter(monomial)):
-                if self.operator_max_outcome_q(operator):
-                    # print(f"Attempting to find a column level equality for col {k}, namely {operator}...")
-                    operator_as_2d = np.expand_dims(operator, axis=0)
-                    prefix = monomial[:k]
-                    suffix = monomial[(k+1):]
-                    variant_locations = [i]
-                    true_cardinality = self.outcome_cardinalities[operator[0]-1]-1
-                    for outcome in range(true_cardinality-1):
-                        variant_operator = operator_as_2d.copy()
-                        variant_operator[0, -1] = outcome
-                        variant_monomial = np.vstack((prefix, variant_operator, suffix))
-                        for j, monomial in enumerate(self.generating_monomials):
-                            if np.array_equal(monomial, variant_monomial):
-                                variant_locations.append(j)
-                                break
-                    if len(variant_locations) == true_cardinality:
-                        missing_op_location = -1
-                        missing_op_monomial = np.vstack((prefix, suffix))
-                        for j, monomial in enumerate(self.generating_monomials):
-                            if np.array_equal(monomial, missing_op_monomial):
-                                missing_op_location = j
-                                break
-                        if missing_op_location >= 0:
-                            self.column_level_equalities.append((missing_op_location, tuple(variant_locations)))
-        if self.verbose > 0 and len(self.column_level_equalities):
-            print("Column level equalities:", self.column_level_equalities)
-
+        self.nof_columns = len(self.generating_monomials)
+        self.identify_column_level_equalities()
 
         if self.verbose > 0:
-            print("Number of columns:", len(self.generating_monomials))
+            print("Number of columns:", self.nof_columns)
 
         # Calculate the moment matrix without the inflation symmetries.
         self.unsymmetrized_mm_idxs, self.unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
@@ -481,16 +483,20 @@ class InflationSDP(object):
         for (k, v) in _unsymidx_from_hash_dict.items():
             self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
         del _unsymidx_from_hash_dict
-
+        (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
         self.largest_moment_index = max(self.symidx_to_sym_monarray_dict.keys())
 
-        self.list_of_monomials = []
-        (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
+        self.compound_monomial_from_idx_dict = dict()
         if self.momentmatrix_has_a_zero:
-            self.list_of_monomials.append(self.Zero)
-        #The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
-        self.list_of_monomials.extend([self.Monomial(v, idx=k)
-                                       for (k, v) in self.symidx_to_sym_monarray_dict.items() if k>0])
+            self.compound_monomial_from_idx_dict[0] = self.Zero
+        for (k, v) in self.symidx_to_sym_monarray_dict.items():
+            self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
+        self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
+
+        # self.list_of_monomials = []
+        # # The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
+        # self.list_of_monomials.extend([self.Monomial(v, idx=k)
+        #                                for (k, v) in self.symidx_to_sym_monarray_dict.items() if k > 0])
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
         if self.verbose > 0:
@@ -518,6 +524,34 @@ class InflationSDP(object):
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
+        seen_already = set()
+        for column_level_equality in self.column_level_equalities:
+            for row in range(self.nof_columns):
+                signature = (row, column_level_equality[-1][-1])
+                if signature not in seen_already:
+                    seen_already.add(signature)
+                    temp_dict = dict()
+                    (normalization_col, summation_cols) = column_level_equality
+                    norm_monomial = self.compound_monomial_from_idx_dict[self.momentmatrix[row, normalization_col]]
+                    # target_n_ops =norm_monomial.n_ops + 1
+                    temp_dict[norm_monomial.name] = 1
+                    # debug = [norm_monomial.name]
+                    # debug_other = []
+                    trivial_count = 0
+                    for col in summation_cols:
+                        mon = self.compound_monomial_from_idx_dict[self.momentmatrix[row, col]]
+                        # debug_other.append(mon.name)
+                        if not mon.is_zero:
+                            temp_dict[mon.name] = -1
+                        else:
+                            trivial_count += 1
+                    # debug.append(debug_other)
+                    # if (len(temp_dict) == len(summation_cols) + 1) or (len(temp_dict) < len(summation_cols)):
+                    if trivial_count != 1:
+                        self.moment_linear_equalities.append(temp_dict)
+                    # elif '0' not in debug_other:
+                    #     warnings.warn(f"Weird linear equality at {(row, (normalization_col, summation_cols))}: {tuple(debug)}.")
+
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
@@ -526,10 +560,9 @@ class InflationSDP(object):
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
 
-
-
     def reset_objective(self):
-        for attribute in {'objective', '_objective_as_name_dict', 'objective_value', '_processed_objective'}:
+        for attribute in {'objective', '_objective_as_name_dict', '_processed_objective',
+                          'objective_value', 'primal_objective'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
@@ -539,6 +572,7 @@ class InflationSDP(object):
         gc.collect(2)
 
     def reset_values(self):
+        self.status = 'not yet solved'
         self.known_moments = dict()
         self.semiknown_moments = dict()
 
@@ -553,12 +587,12 @@ class InflationSDP(object):
         gc.collect(2)
 
     def reset_bounds(self):
+        self.status = 'not yet solved'
         self._processed_moment_upperbounds = dict()
         self._processed_moment_upperbounds_name_dict = dict()
         self._processed_moment_lowerbounds = dict()
         self._processed_moment_lowerbounds_name_dict = dict()
         gc.collect(2)
-
 
     def update_physical_lowerbounds(self):
         for mon in self.moment_lowerbounds.keys():
@@ -606,7 +640,6 @@ class InflationSDP(object):
                         only_knowable_moments=(not use_lpi_constraints),
                         only_specified_values=assume_shared_randomness,
                         consider_only_semiknowable=True)  # MAJOR BUGFIX?
-
 
     def set_values(self, values: Union[
         Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
@@ -711,7 +744,8 @@ class InflationSDP(object):
                                               (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
         elif consider_only_semiknowable:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                              (not mon.is_atomic) and mon.knowability_status in ['Yes', 'Semi'])  # as iterator, saves memory.
+                                              (not mon.is_atomic) and mon.knowability_status in ['Yes',
+                                                                                                 'Semi'])  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
@@ -952,7 +986,9 @@ class InflationSDP(object):
         if self.status == 'feasible':
             self.primal_objective = lambdaval
             self.objective_value = lambdaval * (1 if self.maximize else -1)
-
+        else:
+            self.primal_objective = 'Could not find a value, as the optimization problem was found to be infeasible.'
+            self.objective_value = self.primal_objective
         gc.collect(generation=2)
 
     ########################################################################
@@ -1002,7 +1038,6 @@ class InflationSDP(object):
             polynomial += coeff * self.name_dict_of_monomials[mon].symbol
         return polynomial
 
-
     def certificate_as_string(self,
                               clean: bool = True,
                               chop_tol: float = 1e-10,
@@ -1045,7 +1080,8 @@ class InflationSDP(object):
 
         rest_of_dual = dual.copy()
         if clean:
-            cert_as_string = np.array2string(np.array(rest_of_dual.pop('1')), precision=round_decimals, floatmode='fixed')
+            cert_as_string = np.array2string(np.array(rest_of_dual.pop('1')), precision=round_decimals,
+                                             floatmode='fixed')
         else:
             cert_as_string = str(rest_of_dual.pop('1'))
         for mon_name, coeff in rest_of_dual.items():
@@ -1248,7 +1284,6 @@ class InflationSDP(object):
         quantities in the problem.
         """
         self.set_values(None)
-
 
     def write_to_file(self, filename: str):
         """Exports the problem to a file.

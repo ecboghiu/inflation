@@ -107,19 +107,21 @@ class InternalAtomicMonomial(object):
 
 
 class CompoundMonomial(object):
-    __slots__ = [# 'as_ndarray',
-                 'factors_as_atomic_monomials',
-                 'is_atomic',
-                 'nof_factors',
-                 'knowable_factors',
-                 'unknowable_factors',
-                 'nof_knowable_factors',
-                 'nof_unknowable_factors',
-                 'knowability_status',
-                 'knowable_q',
-                 'idx',
-                 'mask_matrix'
-                 ]
+    __slots__ = [  # 'as_ndarray',
+        'factors_as_atomic_monomials',
+        'is_atomic',
+        'is_zero',
+        'is_one',
+        'nof_factors',
+        'knowable_factors',
+        'unknowable_factors',
+        'nof_knowable_factors',
+        'nof_unknowable_factors',
+        'knowability_status',
+        'knowable_q',
+        'idx',
+        'mask_matrix'
+    ]
 
     def __init__(self, tuple_of_atomic_monomials: Tuple[InternalAtomicMonomial]):
         """
@@ -141,6 +143,12 @@ class CompoundMonomial(object):
             self.knowability_status = 'No'
         else:
             self.knowability_status = 'Semi'
+        self.is_zero = any(factor.is_zero for factor in self.factors_as_atomic_monomials)
+        self.is_one = all(factor.is_one for factor in self.factors_as_atomic_monomials) or (self.nof_factors == 0)
+
+    @property
+    def n_ops(self):
+        return sum(factor.n_ops for factor in self.factors_as_atomic_monomials)
 
     @property
     def physical_q(self):
