@@ -74,22 +74,27 @@ def nb_intarray_eq(intarray1: np.ndarray,
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_linsearch(intarray: np.ndarray,
                  value: int) -> int:
-    """Return the index of the first element in arr that is equal to value
-    or -1 if the element is not found.
+    """Return the first index of an item in an array or -1 if the element is
+    not found.
 
     Parameters
     ----------
     intarray : np.ndarray
-        Array of integers.
+        The array to search.
     value : int
-        Value to be found.
+        The item to find.
 
     Returns
     -------
     int
         The position of the value if it is found, else -1.
-    """
 
+    Examples
+    --------
+    >>> array = np.array([1, 2, 3, 4, 5, 6])
+    >>> nb_linsearch(array, 5)
+    4
+    """
     for index in range(intarray.shape[0]):
         if intarray[index] == value:
             return index
@@ -185,34 +190,6 @@ def A_lessthan_B(A: np.array,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_first_index(array: np.ndarray,
-                   item: np.uint8) -> int:
-    """Find the first index of an item in an array.
-
-    Parameters
-    ----------
-    array : numpy.ndarray
-         The array to search.
-    item : float
-        The item to find.
-
-    Returns
-    -------
-    int
-        The index where the first item is found.
-
-    Examples
-    --------
-    >>> array = np.array([1, 2, 3, 4, 5, 6])
-    >>> nb_first_index(array, 5)
-    4
-    """
-    for idx, val in enumerate(np.asarray(array, dtype=int64_)):
-        if abs(val - item) < 1e-10:
-            return idx
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """Output the monomial reversed, which means reverse the row of the 2d
     matrix representing the monomial. This represents the complex conjugate
@@ -220,43 +197,6 @@ def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """
 
     return np.flipud(mon)
-
-
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-# def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-#     """Find the unique elements in an array without sorting and in order of
-#     appearance.
-
-#     Parameters
-#     ----------
-#     arr : numpy.ndarray
-#         The array to search.
-
-#     Returns
-#     -------
-#     Tuple[numpy.ndarray, numpy.ndarray]
-#         The unique values unsorted and their indices.
-
-#     Examples
-#     --------
-#     >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
-#     (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
-#     """
-#     uniquevals = np.unique(arr)
-#     nr_uniquevals = uniquevals.shape[0]
-
-#     indices = np.zeros(nr_uniquevals).astype(int16_)
-#     for i in range(nr_uniquevals):
-#         indices[i] = nb_first_index(arr, uniquevals[i])
-#     indices.sort()
-
-#     uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int16_)
-#     for i in range(nr_uniquevals):
-#         # Undo the sorting done by np.unique()
-#         uniquevals_unsorted[i] = arr[indices[i]]
-
-#     return uniquevals_unsorted, indices
-
 
 ################################################################################
 # ABSTRACT OPERATIONS ON MONOMIALS                                             #
