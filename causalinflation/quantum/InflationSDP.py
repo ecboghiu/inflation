@@ -92,7 +92,7 @@ class InflationSDP(object):
         if self.supports_problem:
             self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + 1
         else:
-            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party # + self.InflationProblem.has_children
+            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.InflationProblem.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         self._generate_parties()
