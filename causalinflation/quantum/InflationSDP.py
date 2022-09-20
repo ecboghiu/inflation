@@ -518,6 +518,8 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
             self.known_moments_name_dict[self.Zero.name] = 0.
+            self.known_moments[self.One] = 1.
+            self.known_moments_name_dict[self.One.name] = 1.
 
     def update_physical_lowerbounds(self):
         for mon in set(self.moment_lowerbounds.keys()).difference(self.known_moments.keys()):
@@ -603,7 +605,9 @@ class InflationSDP(object):
 
         self.reset_values()
         if normalised and self.momentmatrix_has_a_one:
-            self.known_moments[self.One] = 1
+            self.known_moments[self.One] = 1.
+        if (not normalised) and self.momentmatrix_has_a_one:
+            del self.known_moments[self.One]
         if (values is None) or (len(values) == 0):
             # From a user perspective set_values(None) should be
             # equivalent to reset_distribution().
@@ -804,8 +808,14 @@ class InflationSDP(object):
         if isinstance(mon, CompoundMonomial):
             return mon
         elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
+            symbol_to_string_list = flatten_symbolic_powers(mon)
+            if len(symbol_to_string_list) == 1:
+                try:
+                    return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
+                except KeyError:
+                    pass
             array = np.concatenate([to_numbers(op, self.names)
-                                    for op in flatten_symbolic_powers(mon)])
+                                    for op in symbol_to_string_list])
             return self._sanitise_monomial(array)
         elif isinstance(mon, (tuple, list, np.ndarray)):
             array = np.asarray(mon, dtype=self.np_dtype)
