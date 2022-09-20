@@ -124,16 +124,6 @@ def nb_mon_to_lexrepr(mon: np.ndarray, lexorder: np.ndarray) -> np.array:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_sort_lexorder(op_lexorder: np.array) -> np.array:
-    """Find the permutation that brings the operator to its lexicographic
-    ordering. E.g.: [3, 1, 2, 0] -perm-> [0, 1, 2, 3] """
-    perm = np.zeros(op_lexorder.shape[0], dtype=uint16_)
-    for i in range(op_lexorder.shape[0]):
-        perm[op_lexorder[i]] = i
-    return perm
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
     """Sorts a monomial lexicographically."""
     mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
