@@ -130,19 +130,6 @@ def mon_lexsorted(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
     return mon[np.argsort(mon_lexrepr, kind='quicksort')]
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_op1_commuteswith_op2(op1: np.array, op2: np.array,
-                            commutation_mat: np.ndarray,
-                            lexorder: np.ndarray
-                            ) -> bool_:
-    """Compares the lexicographic rank of two operators. commutation_mat
-    is a matrix whose (i, j) entry is 1 if the i-th operator commutes with
-    the j-th. i, j are the lexicographic ranks of the operators.
-    """
-    return commutation_mat[nb_op_lexorder(op1, lexorder),
-                           nb_op_lexorder(op2, lexorder)]
-
-
 ################################################################################
 # FUNCTIONS WITH ARRAY OPERATIONS                                              #
 ################################################################################
