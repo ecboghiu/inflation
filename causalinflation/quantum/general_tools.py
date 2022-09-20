@@ -359,11 +359,6 @@ def to_numbers(monomial: str,
     return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
-@lru_cache(maxsize=None, typed=False)
-def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
-    return is_knowable(np.asarray(atomic_monomial))
-
-
 def is_knowable(monomial: np.ndarray) -> bool:
     """Determine whether a given atomic monomial (which cannot be factorized
     into smaller disconnected components) admits an identification with a
