@@ -267,29 +267,6 @@ def mon_sorted_by_parties(mon: np.ndarray, lexorder: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_times_mon(mon1: np.ndarray,
-                  mon2: np.ndarray
-                  ) -> np.ndarray:
-    """Return the product of two monomials, which is a concatenation.
-    Warning: it does not simplify the resulting monomial!
-
-    Parameters
-    ----------
-    mon1 : np.ndarray
-        First monomial as a numpy array.
-    mon2 : np.ndarray
-        Second monomial as a numpy array.
-
-    Returns
-    -------
-    np.ndarray
-        Product of the two monomials.
-    """
-
-    return np.concatenate((mon1, mon2))
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_equal_mon(mon1: np.ndarray, mon2: np.ndarray) -> bool_:
     if mon1.shape != mon2.shape:
         return False
