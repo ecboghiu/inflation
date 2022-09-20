@@ -74,34 +74,6 @@ def find_permutation(list1: List,
         return [original_dict[x] for x in list2]
 
 
-def mul(lst: List) -> Any:
-    """Multiply all elements of a list.
-
-    Parameters
-    ----------
-    lst : List
-        Input list with elements that have a supported '*' multiplication.
-
-    Returns
-    -------
-    Any
-        Product of all elements.
-
-    Example
-    -------
-    >>> mul([2, 'A_1', 'B_2'])
-    2*A_1*B_2
-    """
-
-    if type(lst[0]) == str:
-        result = '*'.join(lst)
-    else:
-        result = 1
-        for element in lst:
-            result *= element
-    return result
-
-
 @jit(nopython=nopython)
 def apply_source_permplus_monomial(monomial: np.ndarray,
                                    source: int,
