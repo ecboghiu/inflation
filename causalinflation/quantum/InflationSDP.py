@@ -97,7 +97,6 @@ class InflationSDP(object):
 
         self._generate_parties()
         if self.verbose > 0:
-            print(self.measurements)
             for i, measures in enumerate(self.measurements):
                 counter = itertools.count()
                 deque(zip(itertools.chain.from_iterable(itertools.chain.from_iterable(measures)), counter), maxlen=0)
@@ -1379,7 +1378,7 @@ class InflationSDP(object):
                  for permutation in itertools.permutations(range(inflevel[source]))]
         ),
                 disable=not self.verbose,
-                desc="Calculating symmetries       "):
+                desc="Calculating symmetries...    "):
             permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
             permuted_cols_ind = \
                 apply_source_permutation_coord_input(self.generating_monomials,
@@ -1426,7 +1425,7 @@ class InflationSDP(object):
 
         for permutation in tqdm(inflation_symmetries,
                                 disable=not self.verbose,
-                                desc="Applying symmetries          "):
+                                desc="Applying symmetries...       "):
             if not np.array_equal(permutation, np.arange(len(momentmatrix))):
                 if conserve_memory:
                     for i, ip in enumerate(permutation):

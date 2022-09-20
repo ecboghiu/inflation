@@ -324,7 +324,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         print('Pre-processing took', time() - t0, "seconds.")
         t0 = time()
     if verbose > 0:
-        print("Building the model")
+        print("Building the model...")
 
     M = Model('InflationSDP')
 
@@ -486,7 +486,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         print('Model saved to InflationSDPModel.ptf.')
         t0 = time()
     if verbose > 0:
-        print("Solving the model")
+        print("Solving the model...")
 
     # Solving and readout
     xmat, ymat, primal, dual = None, None, None, None
