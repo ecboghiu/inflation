@@ -535,18 +535,18 @@ def nb_commuting(operator1: np.array,
     >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
     False
     """
-    if letter1[0] != letter2[0]:  # Different parties
+    if operator1[0] != operator2[0]:  # Different parties
         return True
-    elif np.array_equal(letter1[1:-1], letter2[1:-1]): # Same sources & settings
+    elif np.array_equal(operator1[1:-1], operator2[1:-1]): #= sources & settings
         return True
     else:
-        inf1, inf2 = letter1[1:-2], letter2[1:-2]  # Compare just the sources
+        inf1, inf2 = operator1[1:-2], operator2[1:-2]  #Compare just the sources
         inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
         # If at least one in inf1-inf2 is 0, then there is one source in common
         # and therefore the letters don't commute.
         return np.all(inf1 - inf2)
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+
 def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
     """Helper function that builds a matrix encoding which operators commute
     according to the function `nb_commuting`.
