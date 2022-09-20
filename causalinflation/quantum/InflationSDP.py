@@ -562,7 +562,7 @@ class InflationSDP(object):
 
     def reset_objective(self):
         for attribute in {'objective', '_objective_as_name_dict', '_processed_objective',
-                          'objective_value', 'primal_objective'}:
+                          'objective_value', 'primal_objective', 'maximize'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
@@ -799,7 +799,7 @@ class InflationSDP(object):
         return
 
     def set_objective(self,
-                      objective: Union[sp.core.symbol.Symbol, None],
+                      objective: Union[sp.core.symbol.Symbol, dict, None],
                       direction: str = 'max') -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
@@ -815,38 +815,54 @@ class InflationSDP(object):
         assert direction in ['max', 'min'], ('The direction parameter should be'
                                              + ' set to either "max" or "min"')
 
+        self.reset_objective()
         if direction == 'max':
-            sign = 1
             self.maximize = True
         else:
-            sign = -1
             self.maximize = False
-
-        self.reset_objective()
         # From a user perspective set_objective(None) should be
         # equivalent to reset_objective()
         if objective is None:
             return
-
-        if hasattr(self, 'use_lpi_constraints'):
-            if self.use_lpi_constraints and self.verbose > 0:
-                warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
-                              "aware that imposing linearized polynomial constraints will " +
-                              "constrain the optimization to distributions with fixed " +
-                              "marginals.")
-
-        if (sp.S.One * objective).free_symbols:
-            objective = sp.expand(objective)
-            symmetrized_objective = {self.One: 0}
-            for mon, coeff in objective.as_coefficients_dict().items():
-                mon = self._sanitise_monomial(mon)
-                symmetrized_objective[mon] = symmetrized_objective.get(mon, 0) + (sign * coeff)
+        elif isinstance(objective, sp.core.expr.Expr):
+            # print(f"Type of objective: {type(objective)}")
+            sign = (1 if self.maximize else -1)
+            if objective.free_symbols:
+                # objective = sp.expand(objective)
+                objective_as_dict = {self.One: 0}
+                for mon, coeff in sp.expand(objective).as_coefficients_dict().items():
+                    mon = self._sanitise_monomial(mon)
+                    objective_as_dict[mon] = objective_as_dict.get(mon, 0) + (sign * coeff)
+            else:
+                objective_as_dict = {self.One: sign * objective.evalf()}
+            return self.set_objective(objective_as_dict, direction=direction)
         else:
-            symmetrized_objective = {self.One: sign * float(objective)}
+            if hasattr(self, 'use_lpi_constraints'):
+                if self.use_lpi_constraints and self.verbose > 0:
+                    warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
+                                  "aware that imposing linearized polynomial constraints will " +
+                                  "constrain the optimization to distributions with fixed " +
+                                  "marginals.")
 
-        self.objective = symmetrized_objective
-
-        self._update_objective()
+            self.objective = objective
+            self._update_objective()
+            return
+        #
+        #
+        #
+        #
+        # if (sp.S.One * objective).free_symbols:
+        #     # objective = sp.expand(objective)
+        #     symmetrized_objective = {self.One: 0}
+        #     for mon, coeff in sp.expand(objective).as_coefficients_dict().items():
+        #         mon = self._sanitise_monomial(mon)
+        #         symmetrized_objective[mon] = symmetrized_objective.get(mon, 0) + (sign * coeff)
+        # else:
+        #     symmetrized_objective = {self.One: sign * float(objective)}
+        #
+        # self.objective = symmetrized_objective
+        #
+        # self._update_objective()
 
     def _update_objective(self):
         """Process the objective with the information from known_moments
@@ -998,7 +1014,7 @@ class InflationSDP(object):
     def certificate_as_probs(self,
                              clean: bool = False,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.symbol.Symbol:
+                             round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert >= 0``.
 
