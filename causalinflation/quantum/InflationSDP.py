@@ -912,7 +912,7 @@ class InflationSDP(object):
     def certificate_as_probs(self,
                              clean: bool = False,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
+                             round_decimals: int = 3) -> sp.core.symbol.Symbol:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert >= 0``.
 
@@ -956,7 +956,7 @@ class InflationSDP(object):
     def certificate_as_string(self,
                               clean: bool = False,
                               chop_tol: float = 1e-10,
-                              round_decimals: int = 3) -> sp.core.add.Add:
+                              round_decimals: int = 3) -> str:
         """Give the certificate as a string with the notation of the operators
         in the moment matrix.
 
@@ -994,10 +994,10 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         rest_of_dual = dual.copy()
-        cert_as_string = str(rest_of_dual.pop('1'))
+        cert_as_string = np.array2string(np.array(rest_of_dual.pop('1')), precision=round_decimals, floatmode='fixed')
         for mon_name, coeff in rest_of_dual.items():
             cert_as_string += "+" if coeff > 0 else "-"
-            cert_as_string += f"{abs(coeff)}*{mon_name}"
+            cert_as_string += f"{np.array2string(np.abs(np.array(coeff)), precision=round_decimals, floatmode='fixed')}*{mon_name}"
         cert_as_string += " >= 0"
         return cert_as_string
 
