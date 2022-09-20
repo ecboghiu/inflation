@@ -9,7 +9,6 @@ from scipy.sparse import dok_matrix
 
 from typing import List, Dict, Tuple
 
-
 try:
     import numba
     from numba import jit
@@ -21,13 +20,13 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-
     bool_ = bool
     uint16_ = np.uint16
     int16_ = np.int16
     int64_ = np.int
     nb_Dict = dict
     void = None
+    
 try:
     from tqdm import tqdm
 except ImportError:
@@ -91,8 +90,7 @@ def nb_linsearch(intarray: np.ndarray,
 
     Examples
     --------
-    >>> array = np.array([1, 2, 3, 4, 5, 6])
-    >>> nb_linsearch(array, 5)
+    >>> nb_linsearch(np.array([1, 2, 3, 4, 5, 6]), 5)
     4
     """
     for index in range(intarray.shape[0]):
@@ -138,45 +136,14 @@ def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_op_lexorder(op: np.ndarray,
-                   lexorder: np.ndarray) -> int:
-    """Map each operator to a unique integer for hashing and lexicographic
-    ordering comparison purposes.
-    """
-    for i in range(lexorder.shape[0]):
-        if nb_intarray_eq(lexorder[i, :], op):
-            return i
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_mon_to_lexrepr(mon: np.ndarray,
-                      lexorder: np.ndarray) -> np.array:
-    """Convert a monomial to its lexicographic representation, as an
-    array of integers representing the lex rank of each operator."""
-    lex = np.zeros_like(mon[:, 0])
-    for i in range(mon.shape[0]):
-        lex[i] = nb_op_lexorder(mon[i], lexorder)
-    return lex
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_lexsorted(mon: np.ndarray,
-                  lexorder: np.ndarray) -> np.ndarray:
-    """Sorts a monomial lexicographically."""
-    mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
-    return mon[np.argsort(mon_lexrepr, kind='quicksort')]
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def A_lessthan_B(A: np.array,
-                 B: np.array) -> bool_:
-    """Compare two letters/measurement operators lexicographically.
+def nb_A_lessthan_B(A: np.array,
+                    B: np.array) -> bool_:
+    """Compare two arrays lexicographically using the in-built '<' and '!='.
 
     Parameters
     ----------
     A : np.array
-        Measurement operator encoded as a 1D array.
     B : np.array
-        Measurement operator encoded as a 1D array.
 
     Returns
     -------
@@ -189,18 +156,204 @@ def A_lessthan_B(A: np.array,
     return True
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def reverse_mon(mon: np.ndarray) -> np.ndarray:
-    """Output the monomial reversed, which means reverse the row of the 2d
-    matrix representing the monomial. This represents the complex conjugate
-    of the monomial, but we assume they are Hermitian.
-    """
-
-    return np.flipud(mon)
-
 ################################################################################
 # ABSTRACT OPERATIONS ON MONOMIALS                                             #
 ################################################################################
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_equal_mon(mon1: np.ndarray,
+                  mon2: np.ndarray) -> bool_:
+    """Checks if two monomials are equal.
+
+    Parameters
+    ----------
+    mon1 : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+    mon2 : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+
+    Returns
+    -------
+    bool_
+        Returns True if the monomials are equal, False otherwise.
+    """
+    if mon1.shape != mon2.shape:
+        return False
+    else:
+        for i in range(mon1.shape[0]):
+            if not nb_intarray_eq(mon1[i], mon2[i]):
+                return False
+        return True
+    
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_lessthan_mon(mon1: np.ndarray,
+                     mon2: np.ndarray,
+                     lexorder: np.ndarray) -> bool_:
+    """Compares two monomials and returns True if mon1 < mon2 in lexicographic
+    order.
+
+    Parameters
+    ----------
+    mon1 : numpy.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+    mon2 : numpy.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+    lexorder : numpy.ndarray
+        The 2d array encoding the default lexicographical order.
+
+    Returns
+    -------
+    bool
+        Whether mon1 < mon2.
+    """
+    mon1_lexrank = nb_mon_to_lexrepr(mon1, lexorder)
+    mon2_lexrank = nb_mon_to_lexrepr(mon2, lexorder)
+
+    return nb_A_lessthan_B(mon1_lexrank, mon2_lexrank)
+    
+    
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def reverse_mon(mon: np.ndarray) -> np.ndarray:
+    """Return the reversed monomial.
+
+    This represents the Hermitian conjugate of the monomial, assuming that
+    each operator is Hermitian.
+
+    Parameters
+    ----------
+    mon : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+
+    Returns
+    -------
+    np.ndarray
+        Reversed monomial.
+    """
+    return np.flipud(mon)
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
+    """Simplify the monomial by removing operator powers. This is because we
+    assume projectors, P**2=P. This corresponds to removing duplicates of rows
+    which are adjacent. 
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+
+    Returns
+    -------
+    bool
+        Monomial with powers of operators removed.
+    """
+    to_keep = np.ones(mon.shape[0], dtype=bool_)
+    for i in range(1, mon.shape[0]):
+        if nb_intarray_eq(mon[i], mon[i - 1]):
+            to_keep[i] = False
+    return mon[to_keep]
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_is_zero(mon: np.ndarray) -> bool_:
+    """Function which checks if
+    1) there is a product of two orthogonal projectors,
+    2) or the monomial is equal to the canonical zero monomial
+    and returns True if so.
+
+    Parameters
+    ----------
+    mon : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+
+    Returns
+    -------
+    bool_
+        _description_
+    """
+    if len(mon) > 1 and not np.any(mon.ravel()):
+        return True
+    for i in range(1, mon.shape[0]):
+        if mon[i, -1] != mon[i - 1, -1] and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1]):
+            return True
+    return False
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_op_lexorder(operator: np.ndarray,
+                   lexorder: np.ndarray) -> int:
+    """Map each operator to a unique integer for hashing and lexicographic
+    ordering comparison purposes.
+    
+    Warning: if `operator` is not found in `lexorder`, the function will
+    not return any value.
+
+    Parameters
+    ----------
+    operator : np.ndarray
+        Array of integers representing the operator.
+    lexorder : np.ndarray
+        Matrix with rows as operators where the index of the row gives
+        the lexicographic ordering.
+
+    Returns
+    -------
+    int
+        The index of the operator in the lexorder matrix.
+    """
+    for i in range(lexorder.shape[0]):
+        if nb_intarray_eq(lexorder[i, :], operator):
+            return i
+        
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_mon_to_lexrepr(mon: np.ndarray,
+                      lexorder: np.ndarray) -> np.array:
+    """Convert a monomial to its lexicographic representation, as an
+    array of integers representing the lex rank of each operator.
+
+    Parameters
+    ----------
+    mon : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+    lexorder : np.ndarray
+        Matrix with rows as operators where the index of the row gives
+        the lexicographic order of the operator.
+
+    Returns
+    -------
+    np.array
+        Monomial as array of integers, where each integer is the hash
+        of the corresponding operator.
+    """
+    lex = np.zeros_like(mon[:, 0])
+    for i in range(mon.shape[0]):
+        lex[i] = nb_op_lexorder(mon[i], lexorder)
+    return lex
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def mon_lexsorted(mon: np.ndarray,
+                  lexorder: np.ndarray) -> np.ndarray:
+    """Sorts a monomial lexicographically.
+
+    Parameters
+    ----------
+    mon : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+    lexorder : np.ndarray
+        Matrix with rows as operators where the index of the row gives
+        the lexicographic order of the operator.
+
+    Returns
+    -------
+    np.ndarray
+        Sorted monomial.
+    """
+    mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
+    return mon[np.argsort(mon_lexrepr, kind='quicksort')]
+
+
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_sorted_by_parties(mon: np.ndarray,
                           lexorder: np.ndarray) -> np.ndarray:
@@ -210,10 +363,10 @@ def mon_sorted_by_parties(mon: np.ndarray,
     Parameters
     ----------
     mon : numpy.ndarray
-        Input monomial as 2d array.
-
-    lexorder : numpy.ndarray
-
+        Monomial as a matrix with rows as integer arrays representing operators.
+    lexorder : np.ndarray
+        Matrix with rows as operators where the index of the row gives
+        the lexicographic order of the operator.
 
     Returns
     -------
@@ -238,18 +391,6 @@ def mon_sorted_by_parties(mon: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_equal_mon(mon1: np.ndarray,
-                  mon2: np.ndarray) -> bool_:
-    if mon1.shape != mon2.shape:
-        return False
-    else:
-        for i in range(mon1.shape[0]):
-            if not nb_intarray_eq(mon1[i], mon2[i]):
-                return False
-        return True
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
             mon2: np.ndarray,
             lexorder: np.array) -> np.ndarray:
@@ -262,9 +403,9 @@ def dot_mon(mon1: np.ndarray,
     Parameters
     ----------
     mon1 : numpy.ndarray
-        Monomial as a numpy array.
+        Monomial as a matrix with rows as integer arrays representing operators.
     mon2 : numpy.ndarray
-        Monomial as a numpy array.
+        Monomial as a matrix with rows as integer arrays representing operators.
 
     Returns
     -------
@@ -296,9 +437,9 @@ def dot_mon_commuting(mon1: np.ndarray,
     Parameters
     ----------
     mon1 : numpy.ndarray
-        Monomial as a numpy array.
+        Monomial as a matrix with rows as integer arrays representing operators.
     mon2 : numpy.ndarray
-        Monomial as a numpy array.
+        Monomial as a matrix with rows as integer arrays representing operators.
 
     Returns
     -------
@@ -315,185 +456,21 @@ def dot_mon_commuting(mon1: np.ndarray,
 
     return mon_lexsorted(np.concatenate((mon1, mon2)), lexorder)
 
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
-    """Simplify the monomial by removing the squares. This is because we
-    assume projectors, P^2=P.
+def to_hashable(monomial: np.ndarray) -> bytes:
+    """Hashes a monomial by converting it to Python bytes containing the
+    raw data bytes in the array
 
     Parameters
     ----------
-    mon : numpy.ndarray
-        Input monomial as 2d array.
+    monomial : np.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
 
     Returns
     -------
-    bool
-        Whether the monomial is zero.
+    bytes
+        Monomial as bytes.
     """
-
-    to_keep = np.ones(mon.shape[0], dtype=bool_)
-    for i in range(1, mon.shape[0]):
-        if nb_intarray_eq(mon[i], mon[i - 1]):
-            to_keep[i] = False
-    return mon[to_keep]
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_is_zero(mon: np.ndarray) -> bool_:
-    """Function which checks if
-    1) there is a product of two orthogonal projectors,
-    2) or the monomial is equal to the canonical zero monomial
-    and returns True if so."""
-    if len(mon) > 1 and not np.any(mon.ravel()):
-        return True
-    for i in range(1, mon.shape[0]):
-        if mon[i, -1] != mon[i - 1, -1] and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1]):
-            return True
-    return False
-
-
-def to_hashable(monomial: np.ndarray):
     return monomial.tobytes()
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_commuting(letter1: np.array,
-                 letter2: np.array) -> bool_:
-    """Determine if two letters/operators commute.
-    Currently this only takes into accounts commutation coming from inflation and settings.
-
-    Parameters
-    ----------
-    letter1 : numpy.ndarray
-        First input operator as 1d array.
-    letter2 : numpy.ndarray
-        Second input operator as 1d array.
-
-    Returns
-    -------
-    bool
-        True if they commute, False if they do not.
-
-    Examples
-    --------
-    A^11_00 commutes with A^22_00
-    >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
-    True
-
-    A^11_00 does not commute with A^12_00 because they overlap on source 1.
-    >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
-    False
-    """
-    if letter1[0] != letter2[0]:  # Different parties.
-        return True
-    elif np.array_equal(letter1[1:-1], letter2[1:-1]):  # sources, and settings.
-        return True
-    else:
-        inf1, inf2 = letter1[1:-2], letter2[1:-2]  # just the sources
-        inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
-        # Unless ALL the values in inf1-inf2 are different, there is one source in common
-        # therefore they don't commute.
-        if np.all(inf1 - inf2):
-            return True
-        else:
-            return False
-
-
-def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
-    notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
-    for i in range(lexorder.shape[0]):
-        for j in range(i + 1, lexorder.shape[0]):
-            notcomm[i, j] = int(not nb_commuting(lexorder[i],
-                                                 lexorder[j]))
-    notcomm = notcomm + notcomm.T
-    return notcomm
-
-
-################################################################################
-# OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
-################################################################################
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_lessthan_mon(mon1: np.ndarray,
-                     mon2: np.ndarray,
-                     lexorder: np.ndarray) -> bool_:
-    """Compares two monomials and returns True if mon1 < mon2 in lexicographic
-    order.
-
-    Parameters
-    ----------
-    mon1 : numpy.ndarray
-        Monomial encoded as a 2d array where each row is an operator.
-    mon2 : numpy.ndarray
-        Monomial encoded as a 2d array where each row is an operator.
-    lexorder : numpy.ndarray
-        The 2d array encoding the default lexicographical order.
-
-    Returns
-    -------
-    bool
-        Whether mon1 < mon2.
-    """
-    mon1_lexrank = nb_mon_to_lexrepr(mon1, lexorder)
-    mon2_lexrank = nb_mon_to_lexrepr(mon2, lexorder)
-
-    return A_lessthan_B(mon1_lexrank, mon2_lexrank)
-
-
-def to_canonical(mon: np.ndarray,
-                 notcomm: np.ndarray,
-                 lexorder: np.ndarray) -> np.ndarray:
-    """Apply substitutions to a monomial until it stops changing.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial as a 2d array.
-
-    Returns
-    -------
-    numpy.ndarray
-        The monomial in canonical form with respect to some lexicographic
-        ordering.
-    """
-    if mon.shape[0] <= 1:
-        return mon
-    else:
-        mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
-        mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
-        mon = lexorder[mon]
-        mon = remove_projector_squares(mon)
-        if mon_is_zero(mon):
-            return 0*mon[:1]
-        else:
-            return mon
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
-                             notcomm: np.ndarray) -> np.ndarray:
-    if mon_lexorder.shape[0] <= 1:
-        return mon_lexorder
-
-    # Take only the rows and columns of notcomm that appear in the monomial,
-    # in the correct order.
-    sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]
-    minimo = mon_lexorder[0]
-    minimo_idx = 0
-    for op in range(1, mon_lexorder.shape[0]):
-        where = np.where(sub_notcomm[op, :op] == 1)[0]
-        if where.size < 1:
-            if mon_lexorder[op] < minimo:
-                minimo_idx = op
-                minimo = mon_lexorder[op]
-    if minimo <= mon_lexorder[0]:
-        m1 = np.array([mon_lexorder[minimo_idx]])
-        m2 = np.concatenate((mon_lexorder[:minimo_idx], mon_lexorder[minimo_idx + 1:]))
-        return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
-    else:
-        m1 = np.array([mon_lexorder[0]])
-        m2 = mon_lexorder[1:]
-        return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
 
 
 def to_name(monomial: np.ndarray,
@@ -503,7 +480,7 @@ def to_name(monomial: np.ndarray,
     Parameters
     ----------
     monomial : numpy.ndarray
-        Monomial in matrix format.
+        Monomial as a matrix with rows as integer arrays representing operators.
     names : List[str]
         List of party names.
 
@@ -527,85 +504,168 @@ def to_name(monomial: np.ndarray,
 
 
 ################################################################################
-# OPERATIONS ON MOMENT MATRICES                                                #
+# OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
 ################################################################################
-def calculate_momentmatrix(cols: List,
-                           notcomm,
-                           lexorder,
-                           verbose: int = 0,
-                           commuting=False,
-                           dtype: np.dtype = np.uint16) -> Tuple[np.ndarray, Dict]:
-    r"""Calculate the moment matrix. The function takes as input the generating
-    set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
-    matrix where each row is an operator and the columns specify the operator
-    labels/indices. The moment matrix is the inner product between all possible
-    pairs of elements from the generating set. The program outputs the moment
-    matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the
-    index of the monomial that represents the result of the expectation value
-    :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state
-    :math:`\rho` after applying the substitutions. The program returns the
-    moment matrix and the dictionary mapping each monomial in string
-    representation to its integer representation.
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_commuting(operator1: np.array,
+                 operator2: np.array) -> bool_:
+    """Determine if two operators commute. Currently this only takes
+    into account commutation coming from inflation and settings.
 
     Parameters
     ----------
-    cols : List
-        List of numpy.ndarray representing the generating set.
-    names : numpy.ndarray
-        The string names of each party.
-    commuting: bool, optional
-        Whether the variables in the problem commute or not. By default
-        ``False``.
-    verbose : int, optional
-        How much information to print. By default ``0``.
-    dtype: np.dtype, optional
-        The dtype for constructing monomials when represented as numpy arrays.
+    operator1 : np.array
+        Operator as an array of integers. 
+    operator2 : np.array
+        Operator as an array of integers. 
 
     Returns
     -------
-    Tuple[numpy.ndarray, Dict]
-        The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores
-        the integer representation of a monomial. The Dict is a mapping from
-        string representation to integer representation.
+    bool
+        True if they commute, False if they do not.
+
+    Examples
+    --------
+    A^11_00 commutes with A^22_00
+    >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))
+    True
+
+    A^11_00 does not commute with A^12_00 because they overlap on source 1.
+    >>> nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))
+    False
     """
-    nrcols = len(cols)
-    canonical_mon_to_idx_dict = dict()
-    momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
-    varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i in tqdm(range(nrcols),
-                  disable=not verbose,
-                  desc="Calculating moment matrix    "):
-        for j in range(i, nrcols):
-            mon1, mon2 = cols[i], cols[j]
-            if not commuting:
-                mon_v1 = to_canonical(dot_mon(mon1, mon2, lexorder), notcomm, lexorder).astype(dtype)
-            else:
-                mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
-            if mon_is_zero(mon_v1):
-                # If sparse, we don't need this, but for readibility...
-                momentmatrix[i, j] = 0
-            else:
-                if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder).astype(dtype)
-                    mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
-                else:
-                    mon = remove_projector_squares(mon_v1).astype(dtype)
-                    mon_hash = mon.tobytes()
-                try:
-                    known_varidx = canonical_mon_to_idx_dict[mon_hash]
-                    momentmatrix[i, j] = known_varidx
-                    momentmatrix[j, i] = known_varidx
-                except KeyError:
-                    canonical_mon_to_idx_dict[mon_hash] = varidx
-                    momentmatrix[i, j] = varidx
-                    momentmatrix[j, i] = varidx
-                    varidx += 1
-    return momentmatrix.todense(), canonical_mon_to_idx_dict
+    if operator1[0] != operator2[0]:  # Different parties.
+        return True
+    elif np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources, and settings.
+        return True
+    else:
+        inf1, inf2 = operator1[1:-2], operator2[1:-2]  # just the sources
+        inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
+        # Unless ALL the values in inf1-inf2 are different, there is one source in common
+        # therefore they don't commute.
+        if np.all(inf1 - inf2):
+            return True
+        else:
+            return False
 
 
-################################################################################
-# OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
-################################################################################
+def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
+    """Helper function that builds a matrix encoding which operators commute
+    according to the function `nb_commuting`.
+
+    Parameters
+    ----------
+    lexorder : np.ndarray
+        Matrix with rows as operators where the index of the row gives
+        the lexicographic order of the operator.
+
+    Returns
+    -------
+    np.ndarray
+        Matrix whose (i,j) entry has value 1 if the operators with lexicographic
+        ordering i and j respectively do not commute, and value 0 if they
+        commute.
+    """
+    notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
+    for i in range(lexorder.shape[0]):
+        for j in range(i + 1, lexorder.shape[0]):
+            notcomm[i, j] = int(not nb_commuting(lexorder[i],
+                                                 lexorder[j]))
+    notcomm = notcomm + notcomm.T
+    return notcomm
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_to_canonical_lexinput(mon_lexorder: np.array,
+                             notcomm: np.ndarray) -> np.array:
+    """Brings a monomial to canonical form with respect to commutations..
+
+    This function works recursively. Assume 
+    `mon_lexorder=np.array([op0, op1, op2, op3, op4])`
+    where the operators are encoded as integers representing their lexicographic
+    ordering.
+    
+    First it checks whether there is any operator `opX` with a "commuting path" from
+    that operator to `op0`. A commuting path from `opX` is a sequence of
+    operators from `op0` to `opX` such that all of them commute. Consider 
+    the set of all operators that have a commuting path to `op0`. We take the
+    smallest operator in this set in lexicographic ordering and place it in
+    the first position, and displace `op0` to the second position. If `op0` cannot
+    be displaced, we do not move it. Then we call `nb_to_canonical_lexinput` on
+    the remaining 4 operators.  If the smallest operator is `op3` in the above
+    example, then we return:
+    
+    `[op0, op1, op2, op3, op4]` -> `[op3, nb_to_canonical_lexinput([op0, op1, op2, op4])]`
+    
+    This procedure is done recursively until it stops.
+
+    Parameters
+    ----------
+    mon_lexorder : np.ndarray
+        Monomial as an array of integers, where each integer represents
+        the lexicographic order of an operator.
+    notcomm : np.ndarray
+        Matrix whose (i,j) entry has value 1 if the operators with lexicographic
+        ordering i and j respectively do not commute, and value 0 if they
+        commute.
+
+    Returns
+    -------
+    np.ndarray
+        Monomial in canonical form with respect to commutations.
+    """
+    if mon_lexorder.shape[0] <= 1:
+        return mon_lexorder
+
+    # Take only the rows and columns of notcomm that appear in the monomial,
+    # in the correct order.
+    sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]
+    minimum = mon_lexorder[0]
+    minimum_idx = 0
+    for op in range(1, mon_lexorder.shape[0]):
+        where = np.where(sub_notcomm[op, :op] == 1)[0]
+        if where.size < 1:
+            if mon_lexorder[op] < minimum:
+                minimum_idx = op
+                minimum = mon_lexorder[op]
+    if minimum <= mon_lexorder[0]:
+        m1 = np.array([mon_lexorder[minimum_idx]])
+        m2 = np.concatenate((mon_lexorder[:minimum_idx], mon_lexorder[minimum_idx + 1:]))
+        return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
+    else:
+        m1 = np.array([mon_lexorder[0]])
+        m2 = mon_lexorder[1:]
+        return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
+
+
+def to_canonical(mon: np.ndarray,
+                 notcomm: np.ndarray,
+                 lexorder: np.ndarray) -> np.ndarray:
+    """Brings a monomial to canonical form with respect to commutations..
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+
+    Returns
+    -------
+    numpy.ndarray
+        The monomial in canonical form with respect to some commutation
+        relationships.
+    """
+    if mon.shape[0] <= 1:
+        return mon
+    else:
+        mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
+        mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
+        mon = lexorder[mon]
+        mon = remove_projector_squares(mon)
+        if mon_is_zero(mon):
+            return 0*mon[:1]
+        else:
+            return mon
+
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def apply_source_swap_monomial(monomial: np.ndarray,
                                source: int,
@@ -615,9 +675,9 @@ def apply_source_swap_monomial(monomial: np.ndarray,
     Parameters
     ----------
     monomial : numpy.ndarray
-        2d array representation of a monomial.
+        Monomial as a matrix with rows as integer arrays representing operators.
     source : int
-         Integer in values [0, ..., nr_sources]
+        Integer in values [0, ..., nr_sources]
     copy1 : int
         Represents the copy of the source that swaps with copy2
     copy2 : int
@@ -628,7 +688,6 @@ def apply_source_swap_monomial(monomial: np.ndarray,
          The new monomial with swapped sources.
     Examples
     --------
-    >>> monomial = np.array([[1, 2, 3, 0, 0, 0]])
     >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
                                              [2, 1, 3, 0, 0, 0]]),
                                              1,  # source
@@ -675,7 +734,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
     Parameters
     ----------
     raw_monomial : np.ndarray
-        Monomial encoded as a 2d array where each row is an operator.
+        Monomial as a matrix with rows as integer arrays representing operators.
     canonical_order: bool, optional
         Whether to return the different factors in a canonical order.
 
@@ -745,3 +804,80 @@ def factorize_monomial(raw_monomial: np.ndarray,
         disconnected_components = tuple(sorted(disconnected_components, key=to_hashable))
 
     return disconnected_components
+
+
+################################################################################
+# OPERATIONS ON MOMENT MATRICES                                                #
+################################################################################
+def calculate_momentmatrix(cols: List,
+                           notcomm: np.ndarray,
+                           lexorder: np.ndarray,
+                           verbose: int=0,
+                           commuting: bool=False,
+                           dtype: np.dtype = np.uint16) -> Tuple[np.ndarray, Dict]:
+    r"""Calculate the moment matrix. The function takes as input the generating
+    set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
+    matrix where each row is an operator and the columns specify the operator
+    labels/indices. The moment matrix is the inner product between all possible
+    pairs of elements from the generating set. The program outputs the moment
+    matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the
+    index of the monomial that represents the result of the expectation value
+    :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state
+    :math:`\rho` after applying the substitutions. The program returns the
+    moment matrix and the dictionary mapping each monomial in string
+    representation to its integer representation.
+
+    Parameters
+    ----------
+    cols : List
+        List of numpy.ndarray representing the generating set.
+    names : numpy.ndarray
+        The string names of each party.
+    commuting: bool, optional
+        Whether the variables in the problem commute or not. By default
+        ``False``.
+    verbose : int, optional
+        How much information to print. By default ``0``.
+    dtype: np.dtype, optional
+        The dtype for constructing monomials when represented as numpy arrays.
+
+    Returns
+    -------
+    Tuple[numpy.ndarray, Dict]
+        The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores
+        the integer representation of a monomial. The Dict is a mapping from
+        string representation to integer representation.
+    """
+    nrcols = len(cols)
+    canonical_mon_to_idx_dict = dict()
+    momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
+    varidx = 1  # We start from 1 because 0 is reserved for 0
+    for i in tqdm(range(nrcols),
+                  disable=not verbose,
+                  desc="Calculating moment matrix    "):
+        for j in range(i, nrcols):
+            mon1, mon2 = cols[i], cols[j]
+            if not commuting:
+                mon_v1 = to_canonical(dot_mon(mon1, mon2, lexorder), notcomm, lexorder).astype(dtype)
+            else:
+                mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
+            if mon_is_zero(mon_v1):
+                # If sparse, we don't need this, but for readibility...
+                momentmatrix[i, j] = 0
+            else:
+                if not commuting:
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder), notcomm, lexorder).astype(dtype)
+                    mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
+                else:
+                    mon = remove_projector_squares(mon_v1).astype(dtype)
+                    mon_hash = mon.tobytes()
+                try:
+                    known_varidx = canonical_mon_to_idx_dict[mon_hash]
+                    momentmatrix[i, j] = known_varidx
+                    momentmatrix[j, i] = known_varidx
+                except KeyError:
+                    canonical_mon_to_idx_dict[mon_hash] = varidx
+                    momentmatrix[i, j] = varidx
+                    momentmatrix[j, i] = varidx
+                    varidx += 1
+    return momentmatrix.todense(), canonical_mon_to_idx_dict
