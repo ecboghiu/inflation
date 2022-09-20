@@ -966,10 +966,10 @@ class InflationSDP(object):
         for mon_name, coeff in rest_of_dual.items():
             cert_as_string += "+" if coeff > 0 else "-"
             if clean:
-                cert_as_string += f"{np.array2string(np.abs(np.array(coeff)),
-                                                     precision=round_decimals,
-                                                     floatmode='fixed')
-                                     }*{mon_name}"
+                coeff = np.array2string(abs(coeff),
+                                        precision=round_decimals,
+                                        floatmode='fixed')
+                cert_as_string += f"{coeff}*{mon_name}"
             else:
                 cert_as_string += f"{abs(coeff)}*{mon_name}"
         cert_as_string += " >= 0"
