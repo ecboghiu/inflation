@@ -152,6 +152,7 @@ emi_arena
 test/test_data
 test/arena.py
 test/monomials.txt
+arena.py
 monomials.txt
 debug_monomials.txt
 solv_alex.m
