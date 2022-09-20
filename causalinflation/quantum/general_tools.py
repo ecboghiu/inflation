@@ -433,43 +433,6 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     return res
 
 
-def label_knowable_and_unknowable(monomials_factors: np.ndarray,
-                                  hypergraph: np.ndarray
-                                  ) -> np.ndarray:
-    """Given the list of monomials factorised, label each monomial as knowable,
-    semiknowable or unknowable.
-
-    Parameters
-    ----------
-    monomials_factors_input : numpy.ndarray
-        Ndarray of factorised monomials. Each row encodes the integer
-        representation and the factors of the monomial.
-    hypergraph : numpy.ndarray
-        The hypergraph of the network.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array of the same size as the input, with the labels of each monomial.
-    """
-    factors_are_knowable = np.empty_like(monomials_factors)
-    factors_are_knowable[:, 0] = monomials_factors[:, 0]
-    monomial_is_knowable = np.empty_like(monomials_factors)
-    monomial_is_knowable[:, 0] = monomials_factors[:, 0]
-    for idx, [_, factors] in enumerate(monomials_factors):
-        factors_known_list = [is_knowable(
-            factor, hypergraph) for factor in factors]
-        factors_are_knowable[idx][1] = factors_known_list
-        if all(factors_known_list):
-            knowable = 'Yes'
-        elif any(factors_known_list):
-            knowable = 'Semi'
-        else:
-            knowable = 'No'
-        monomial_is_knowable[idx][1] = knowable
-    return monomial_is_knowable, factors_are_knowable
-
-
 def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     """Removes sandwiching/pinching from a monomial. This is, it converts the
     monomial represented by :math:`U A U^\dagger` into :math:`A`.
