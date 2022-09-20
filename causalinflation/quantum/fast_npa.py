@@ -460,7 +460,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     1) there is a product of two orthogonal projectors,
     2) or the monomial is equal to the canonical zero monomial
     and returns True if so."""
-    if len(mon) > 1 and not np.any(mon.ravel()):
+    if len(mon) > 0 and not np.any(mon.ravel()):
         return True
     for i in range(1, mon.shape[0]):
         if mon[i, -1] != mon[i - 1, -1] and nb_op_eq_op(mon[i, :-1], mon[i - 1, :-1]):
@@ -748,7 +748,7 @@ def calculate_momentmatrix(cols: List,
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
-    return momentmatrix.todense(), canonical_mon_to_idx_dict
+    return momentmatrix.toarray(), canonical_mon_to_idx_dict
 
 
 ################################################################################
