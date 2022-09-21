@@ -15,7 +15,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                          solverparameters={}, var_lowerbounds={},
                          var_upperbounds={}, var_inequalities=[],
                          var_equalities=[], solve_dual=True,
-                         process_constraints=False
+                         process_constraints=True
                          ) -> Tuple[Dict, float, str]:
     r"""Internal function to solve the SDP with the `MOSEK Fusion API
     <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
