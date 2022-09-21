@@ -200,10 +200,17 @@ class InflationProblem(object):
 
     def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: np.ndarray) -> bool:
         """
-        We assume that the numpy vector-per-operator notation has:
-        party_index in slot 0
-        outcome_index in slot -1
-        effective_setting_index in slot -2
+        Checks if a monomial (sequence of operators as 2d numpy array) corresponds to a knowable probability.
+        The function assumes that the candidate monomial already passed the preliminary knowable test from
+        causalinflation.quantum.general_tools.py.
+        If the scenario is a network, this function will always return True.
+
+        Parameters
+        ----------
+            monomial_as_2d_numpy_array : numpy.ndarray
+                An internal representation of a monomial as a 2d numpy array.
+                Each row in the array corresponds to an operator. Our notation is such that the
+                party_index is in slot 0, the outcome_index is in slot -1, and the effective_setting_index in slot -2
         """
         # Parties start at #1 in our numpy vector notation, so we drop by one.
         parties_in_play = np.asarray(monomial_as_2d_numpy_array)[:, 0] - 1
@@ -227,6 +234,21 @@ class InflationProblem(object):
             return True
 
     def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: np.ndarray) -> np.ndarray:
+        """
+        When constructing the monomials in a non-network scenario, we rely on an internal representation of operators
+         where the integer denoting 'setting' actually encodes the values of all the parents of the variable in question.
+        The function resets this 'effective_setting' integer to the true 'private_setting' integer.
+        It is useful to relate knowable monomials to their meaning as conditional events in the non-network scenario.
+        If the scenario is network, this function doesn't actually change anything.
+
+        Parameters
+        ----------
+            monomial_as_2d_numpy_array : numpy.ndarray
+                An internal representation of a monomial as a 2d numpy array.
+                Each row in the array corresponds to an operator. Our notation is such that the
+                party_index is in slot 0, the outcome_index is in slot -1, and the effective_setting_index in slot -2
+        """
+
         # Parties start at #1 in initial numpy vector notation, we reset that.
         new_mon = np.array(monomial_as_2d_numpy_array, copy=False)
         for o in new_mon:
