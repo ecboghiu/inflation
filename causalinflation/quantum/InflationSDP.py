@@ -104,8 +104,8 @@ class InflationSDP(object):
                 print(f"Party {self.names[i]} has {next(counter)} distinct single-operator measurements.")
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
-        self.is_knowable_q_split_node_check = self.InflationProblem.is_knowable_q_split_node_check
-        self.rectify_fake_setting_atomic_factor = self.InflationProblem.rectify_fake_setting_atomic_factor
+        self._is_knowable_q_split_node_check = self.InflationProblem._is_knowable_q_split_node_check
+        self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2
@@ -198,7 +198,7 @@ class InflationSDP(object):
     def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if self.split_node_model:
             minimal_monomial = tuple(tuple(vec) for vec in np.take(atomic_monarray, [0, -2, -1], axis=1))
-            return self.is_knowable_q_split_node_check(minimal_monomial)
+            return self._is_knowable_q_split_node_check(minimal_monomial)
         else:
             return True
 
