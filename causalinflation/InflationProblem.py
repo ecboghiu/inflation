@@ -20,9 +20,10 @@ class InflationProblem(object):
 
     Parameters
     ----------
-    dag : list, optional
-        Dictionary where each key is a hyperedge connecting different
-        parties. By default it is a single source connecting all parties.
+    dag : Dict[str, List[str]], optional
+        Dictionary where each key is a parent node, and the corresponding value
+        is a list of the corresponding children nodes. By default it is a single
+        source connecting all the parties.
     outcomes_per_party : List[int], optional
         Measurement outcome cardinalities. By default ``2`` for all parties.
     settings_per_party : List[int], optional
@@ -41,7 +42,6 @@ class InflationProblem(object):
         * 1: monitor level: track program process and see warnings,
         * 2: debug level: show properties of objects created.
     """
-
     def __init__(self,
                  dag=None,
                  outcomes_per_party=tuple(),
@@ -198,22 +198,30 @@ class InflationProblem(object):
                 str(self.inflation_level_per_source) +
                 " inflation copies per source.")
 
-    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: np.ndarray) -> bool:
-        """
-        Checks if a monomial (sequence of operators as 2d numpy array) corresponds to a knowable probability.
-        The function assumes that the candidate monomial already passed the preliminary knowable test from
+    def _is_knowable_q_split_node_check(self, monomial: np.ndarray) -> bool:
+        """Checks if a monomial (written as a sequence of operators in 2d array
+        form) corresponds to a knowable probability. The function assumes that
+        the candidate monomial already passed the preliminary knowable test from
         causalinflation.quantum.general_tools.py.
-        If the scenario is a network, this function will always return True.
+        If the scenario is a network, this function always returns ``True``.
 
         Parameters
         ----------
-            monomial_as_2d_numpy_array : numpy.ndarray
+            monomial : numpy.ndarray
                 An internal representation of a monomial as a 2d numpy array.
-                Each row in the array corresponds to an operator. Our notation is such that the
-                party_index is in slot 0, the outcome_index is in slot -1, and the effective_setting_index in slot -2
+                Each row in the array corresponds to an operator. For each row,
+                the zeroth element represents the party, the last element
+                represents the outcome, the second-to-last element represents
+                the setting, and the remaining elements represent inflation
+                copies.
+
+        Returns
+        -------
+        bool
+            Whether the monomial can be assigned a knowable probability.
         """
         # Parties start at #1 in our numpy vector notation, so we drop by one.
-        parties_in_play = np.asarray(monomial_as_2d_numpy_array)[:, 0] - 1
+        parties_in_play = np.asarray(monomial)[:, 0] - 1
         parents_referenced = set()
         for p in parties_in_play:
             parents_referenced.update(self.parents_per_party[p])
@@ -221,40 +229,54 @@ class InflationProblem(object):
             # Case of not an ancestrally closed set.
             return False
         # Parties start at #1 in our numpy vector notation.
-        outcomes_by_party = {(o[0] - 1): o[-1] for o in monomial_as_2d_numpy_array}
-        for o in monomial_as_2d_numpy_array:
+        outcomes_by_party = {(o[0] - 1): o[-1] for o in monomial}
+        for o in monomial:
             party_index = o[0] - 1
             effective_setting_as_integer = o[-2]
-            o_nonprivate_settings = self.extract_parent_values_from_effective_setting[
-                                        party_index][effective_setting_as_integer][1:]
+            o_nonprivate_settings = \
+                self.extract_parent_values_from_effective_setting[
+                                  party_index][effective_setting_as_integer][1:]
             for i, p_o in enumerate(self.parents_per_party[party_index]):
                 if not o_nonprivate_settings[i] == outcomes_by_party[p_o]:
                     return False
         else:
             return True
 
-    def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: np.ndarray) -> np.ndarray:
-        """
-        When constructing the monomials in a non-network scenario, we rely on an internal representation of operators
-         where the integer denoting 'setting' actually encodes the values of all the parents of the variable in question.
-        The function resets this 'effective_setting' integer to the true 'private_setting' integer.
-        It is useful to relate knowable monomials to their meaning as conditional events in the non-network scenario.
-        If the scenario is network, this function doesn't actually change anything.
+    def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
+        """When constructing the monomials in a non-network scenario, we rely on
+        an internal representation of operators where the integer denoting the
+        setting actually is an 'effective setting' that encodes, in addition to
+        the 'private setting' that each party is free to choose, the values of
+        all the parents of the variable in question, which also effectively act
+        as settings. This function resets this 'effective setting' integer to
+        the true 'private setting' integer. It is useful to relate knowable
+        monomials to their meaning as conditional events in non-network
+        scenarios. If the scenario is a network, this function doesn't change
+        anything.
 
         Parameters
         ----------
-            monomial_as_2d_numpy_array : numpy.ndarray
+            monomial : numpy.ndarray
                 An internal representation of a monomial as a 2d numpy array.
-                Each row in the array corresponds to an operator. Our notation is such that the
-                party_index is in slot 0, the outcome_index is in slot -1, and the effective_setting_index in slot -2
-        """
+                Each row in the array corresponds to an operator. For each row,
+                the zeroth element represents the party, the last element
+                represents the outcome, the second-to-last element represents
+                the setting, and the remaining elements represent inflation
+                copies.
 
+        Returns
+        -------
+        numpy.ndarray
+            The monomial with the index of the setting representing only the
+            private setting.
+        """
         # Parties start at #1 in initial numpy vector notation, we reset that.
-        new_mon = np.array(monomial_as_2d_numpy_array, copy=False)
+        new_mon = np.array(monomial, copy=False)
         for o in new_mon:
             party_index = o[0] - 1
             effective_setting_as_integer = o[-2]
-            o_private_settings = self.extract_parent_values_from_effective_setting[
-                party_index][effective_setting_as_integer][0]
+            o_private_settings = \
+                self.extract_parent_values_from_effective_setting[
+                                   party_index][effective_setting_as_integer][0]
             o[-2] = o_private_settings
         return new_mon
