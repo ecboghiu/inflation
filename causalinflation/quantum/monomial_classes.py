@@ -108,6 +108,8 @@ class InternalAtomicMonomial(object):
 class CompoundMonomial(object):
     __slots__ = ['factors_as_atomic_monomials',
                  'is_atomic',
+                 'is_zero',
+                 'is_one',
                  'nof_factors',
                  'knowable_factors',
                  'unknowable_factors',
