@@ -14,7 +14,8 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                          verbose=0, feas_as_optim=False,
                          solverparameters={}, var_lowerbounds={},
                          var_upperbounds={}, var_inequalities=[],
-                         var_equalities=[], solve_dual=True
+                         var_equalities=[], solve_dual=True,
+                         process_constraints=False
                          ) -> Tuple[Dict, float, str]:
     r"""Internal function to solve the SDP with the `MOSEK Fusion API
     <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
@@ -150,14 +151,6 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     # The rest of the code should be insensitive to
     # the hash except this line (ideally).
 
-    # If the user didn't add the constant term.
-    for equality in var_equalities:
-        if CONSTANT_KEY not in equality:
-            equality[CONSTANT_KEY] = 0
-    for inequality in var_inequalities:
-        if CONSTANT_KEY not in inequality:
-            inequality[CONSTANT_KEY] = 0
-
     # variables = set(positionsmatrix.flatten())
     # positionsmatrix = positionsmatrix.astype(np.uint16)
     # mat_dim = positionsmatrix.shape[0]
@@ -167,6 +160,16 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     #     coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
     #     coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
     #     Fi[x] = coeffmat
+    
+    # We should not have the Zero monomial here
+    try:
+        del maskmatrices_name_dict['0']
+    except KeyError:
+        pass
+    try:
+        del known_vars['0']
+    except KeyError:
+        pass
 
     Fi = maskmatrices_name_dict.copy()
     Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
@@ -174,13 +177,23 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     mat_dim   = Fi[next(iter(Fi))].shape[0]
     F0        = lil_matrix((mat_dim, mat_dim))
 
-    # For positive variables, override the lower bound to be 0 if it is smaller
-    for x in positive_vars:
-        try:
-            if var_lowerbounds[x] < 0:
+    # Sanity check
+    if verbose > 1:
+        for eq in var_equalities:
+            for var in eq:
+                assert var in variables, f"Variable {var} in equality {eq} not in variables."
+        for ineq in var_inequalities:
+            for var in ineq:
+                assert var in variables, f"Variable {var} in equality {eq} not in variables."
+
+    if process_constraints:
+        # For positive variables, override the lower bound to be 0 if it is smaller
+        for x in positive_vars:
+            try:
+                if var_lowerbounds[x] < 0:
+                    var_lowerbounds[x] = 0
+            except KeyError:
                 var_lowerbounds[x] = 0
-        except KeyError:
-            var_lowerbounds[x] = 0
 
     # Remove variables that are fixed by known_vars from the list of
     # variables, and also remove the corresponding entries for its upper
@@ -219,41 +232,47 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                 inequality[CONSTANT_KEY] += inequality[x] * xval
                 del inequality[x]
 
-    # If some variable is semiknown, then this is the same as a constraint
-    # of the form x_i = a_i * x_j. Imposing this constraint is equivalent
-    # to adding to the coeffmat of x_j  the expression a_i * (coeffmat of x_i),
-    # and removing the coeffmat of x_i. Note: this also accounts for the case
-    # where x_j is not found anywhere else in the moment matrix.
-    for x, (c, x2) in semiknown_vars.items():
-        Fi[x2] += c * Fi[x]
-        variables.remove(x)
+    if process_constraints:
+        # If some variable is semiknown, then this is the same as a constraint
+        # of the form x_i = a_i * x_j. Imposing this constraint is equivalent
+        # to adding to the coeffmat of x_j  the expression a_i * (coeffmat of x_i),
+        # and removing the coeffmat of x_i. Note: this also accounts for the case
+        # where x_j is not found anywhere else in the moment matrix.
+        for x, (c, x2) in semiknown_vars.items():
+            Fi[x2] += c * Fi[x]
+            variables.remove(x)
 
-        del Fi[x]  # We can safely delete Fi[x].
+            del Fi[x]  # We can safely delete Fi[x].
 
-        # TODO Is worthile to consider the compatibility of lower and upper
-        # bounds of variables involved in LPI constraints? I would say no.
-        # For our usecase, it should not happen that we have one upper bound
-        # for one variable and lower bound for the other variable such that
-        # the constraint can never be satisfied, but as a general NPO package,
-        # this might happen.
-        if x in var_lowerbounds and x2 in var_lowerbounds:
-            del var_lowerbounds[x]
-        if x in var_upperbounds and x2 in var_upperbounds:
-            del var_upperbounds[x]
-        for equality in var_equalities:
-            if x in equality:
-                try:
-                    equality[x2] += c * equality[x]
-                except KeyError:
-                    equality[x2] = c * equality[x]
-                del equality[x]
-        for inequality in var_inequalities:
-            if x in inequality:
-                try:
-                    inequality[x2] += c * inequality[x]
-                except KeyError:
-                    inequality[x2] = c * inequality[x]
-                del inequality[x]
+            # TODO Is worthile to consider the compatibility of lower and upper
+            # bounds of variables involved in LPI constraints? I would say no.
+            # For our usecase, it should not happen that we have one upper bound
+            # for one variable and lower bound for the other variable such that
+            # the constraint can never be satisfied, but as a general NPO package,
+            # this might happen.
+            if x in var_lowerbounds and x2 in var_lowerbounds:
+                del var_lowerbounds[x]
+            if x in var_upperbounds and x2 in var_upperbounds:
+                del var_upperbounds[x]
+            for equality in var_equalities:
+                if x in equality:
+                    try:
+                        equality[x2] += c * equality[x]
+                    except KeyError:
+                        equality[x2] = c * equality[x]
+                    del equality[x]
+            for inequality in var_inequalities:
+                if x in inequality:
+                    try:
+                        inequality[x2] += c * inequality[x]
+                    except KeyError:
+                        inequality[x2] = c * inequality[x]
+                    del inequality[x]
+    else:
+        # If we do not process the semi-known constraints, we add them as 
+        # equality constraints.
+        for x, (c, x2) in semiknown_vars.items():
+            var_equalities.append({x: 1, x2: -c})
 
     var2index = {x: i for i, x in enumerate(variables)}
 
@@ -265,7 +284,8 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     b = dok_matrix((len(var_inequalities), 1))
     for i, inequality in enumerate(var_inequalities):
-        b[i, 0] = inequality[CONSTANT_KEY]
+        if CONSTANT_KEY in inequality:
+            b[i, 0] = inequality[CONSTANT_KEY]
 
     A = dok_matrix((len(var_inequalities), len(variables)))
     for i, inequality in enumerate(var_inequalities):
@@ -275,7 +295,8 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     d = dok_matrix((len(var_equalities), 1))
     for i, equality in enumerate(var_equalities):
-        d[i, 0] = equality[CONSTANT_KEY]
+        if CONSTANT_KEY in equality:
+            d[i, 0] = equality[CONSTANT_KEY]
 
     C = dok_matrix((len(var_equalities), len(variables)))
     for i, equality in enumerate(var_equalities):
@@ -330,32 +351,32 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     if solve_dual:
         # Define variables
-        Z = M.variable(Domain.inPSDCone(mat_dim))
+        Z = M.variable('Z', Domain.inPSDCone(mat_dim))
         if var_lowerbounds:
-            L = M.variable(len(var_lowerbounds), Domain.greaterThan(0))
+            L = M.variable('L', len(var_lowerbounds), Domain.greaterThan(0))
         if var_upperbounds:
-            U = M.variable(len(var_upperbounds), Domain.greaterThan(0))
+            U = M.variable('U', len(var_upperbounds), Domain.greaterThan(0))
         if var_inequalities:
-            I = M.variable(len(var_inequalities), Domain.greaterThan(0))
+            I = M.variable('I', len(var_inequalities), Domain.greaterThan(0))
             # It seems MOSEK Fusion API does not allow to pick index i
             # of an expression (A^T I)_i, so this does it manually row by row.
             A = A.tocsr()
             AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
             for i in range(len(variables)):
-                slice = A[:, i]
-                slice_moseksparse = Matrix.sparse(*slice.shape,
-                                                  *slice.nonzero(),
-                                                  slice[slice.nonzero()].A[0])
+                slice_ = A[:, i]
+                slice_moseksparse = Matrix.sparse(*slice_.shape,
+                                                  *slice_.nonzero(),
+                                                  slice_[slice_.nonzero()].A[0])
                 AtI.append(Expr.dot(slice_moseksparse, I))
         if var_equalities:
-            E = M.variable(len(var_equalities), Domain.unbounded())
+            E = M.variable('E', len(var_equalities), Domain.unbounded())
             C = C.tocsr()
             CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
             for i in range(len(variables)):
-                slice = C[:, i]
-                slice_moseksparse = Matrix.sparse(*slice.shape,
-                                                  *slice.nonzero(),
-                                                  slice[slice.nonzero()].A[0])
+                slice_ = C[:, i]
+                slice_moseksparse = Matrix.sparse(*slice_.shape,
+                                                  *slice_.nonzero(),
+                                                  slice_[slice_.nonzero()].A[0])
                 CtI.append(Expr.dot(slice_moseksparse, E))
 
         # Define and set objective function
@@ -389,21 +410,21 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
             if var_inequalities:
                 lhs = Expr.add(lhs, AtI[i])
             if var_equalities:
-                lhs = Expr.sub(lhs, CtI[i])
+                lhs = Expr.add(lhs, CtI[i])
 
             # Tr Z Fi + ci - Ui + Li + \sum_j I_j A_ji + \sum_j E_j A_ji = 0
-            ci_constraints.append(M.constraint(lhs, Domain.equalsTo(0)))
+            ci_constraints.append(M.constraint(f'c{i}', lhs, Domain.equalsTo(0)))
 
         if feas_as_optim:
             # When solving a feasibility problem as max t st M + t*1 >= 0, we
             # have an extra Fi = 1, so we add the corresponding constraint,
             # Tr Z = 1.
-            ci_constraints.append(M.constraint(Expr.dot(Z, Matrix.eye(mat_dim)),
+            ci_constraints.append(M.constraint('trZ=1', Expr.dot(Z, Matrix.eye(mat_dim)),
                                                Domain.equalsTo(1)))
     else:
         # Set up the problem in primal formulation
         # Define variables
-        x_mosek = M.variable(len(variables), Domain.unbounded())
+        x_mosek = M.variable('x', len(variables), Domain.unbounded())
 
         # Add upper and lower bounds
         if var_lowerbounds:
@@ -431,17 +452,17 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
         if var_inequalities:
             A_mosek = Matrix.sparse(*A.shape, *A.nonzero(), A[A.nonzero()].A[0])
-            ineq_constraint = M.constraint(Expr.add(Expr.mul(A_mosek, x_mosek),
+            ineq_constraint = M.constraint('Ineq', Expr.add(Expr.mul(A_mosek, x_mosek),
                                                     b),
                                            Domain.greaterThan(0))
         if var_equalities:
             C_mosek = Matrix.sparse(*C.shape, *C.nonzero(), C[C.nonzero()].A[0])
-            eq_constraint = M.constraint(Expr.add(Expr.mul(C_mosek, x_mosek), d),
+            eq_constraint = M.constraint('Eq', Expr.add(Expr.mul(C_mosek, x_mosek), d),
                                          Domain.equalsTo(0))
 
         G = M.variable("G", Domain.inPSDCone(mat_dim))
         if constant_objective and feas_as_optim:
-            lam = M.variable(1, Domain.unbounded())
+            lam = M.variable('lam', 1, Domain.unbounded())
 
         # Add constraints
         constraints = np.empty((mat_dim, mat_dim), dtype=object)
@@ -584,28 +605,33 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
             Evalues = E.level() if solve_dual else -eq_constraint.dual()
             certificate[CONSTANT_KEY] += Evalues @ d.getDataAsArray()
 
-        # If feasible, make sure the bounds are satisfied.
-        if status_str == 'feasible':
-            NEGATIVE_TOL = -1e-8 # How tolerant we are with negative values
-            try:
-                for x, lb in var_lowerbounds.items():
-                    assert x_values[x] - lb >= NEGATIVE_TOL,                   \
-                           "Lower bound violated."
-                for x, ub in var_upperbounds.items():
-                    assert ub - x_values[x] >= NEGATIVE_TOL,                   \
-                           "Upper bound violated."
-                if var_inequalities:
-                    assert np.all(A @ np.array(list(x_values.values())) +
-                                  b.getDataAsArray() >= NEGATIVE_TOL),         \
-                            "Inequalities not satisfied."
-                if var_equalities:
-                    assert np.allclose(C @ np.array(list(x_values.values())) +
-                                       d.getDataAsArray(), 0),                 \
-                           "Equalities not satisfied by the solution."
-            except AssertionError as e:
-                print("Error: The solution does not satisfy some constraints." +
-                      "{}".format(e))
-                return None, None, None
+        # For debugging purposes
+        if status_str == 'feasible' and verbose > 1:
+            TOL = 1e-8  # Constraint tolerance
+            for x, lb in var_lowerbounds.items():
+                if x_values[x] - lb <= -TOL:
+                    print(f'Warning: Lower bound violated for {x} by {x_values[x] - lb}')
+            for x, ub in var_upperbounds.items():
+                if ub - x_values[x] <= -TOL:
+                    print(f'Warning: Upper bound violated for {x} by {ub - x_values[x]}')
+            if var_inequalities:
+                x = (A.todense() @ np.array(list(x_values.values())) + \
+                                b.getDataAsArray()).A[0]
+                if np.any(x < -TOL):
+                    print(f'Warning: Inequality constraints not satisfied to {TOL} precision.')
+                    print(f'Inequality constraints and their deviation from 0:')
+                    print([(ineq, x[i]) for i, (violated, ineq) 
+                           in enumerate(zip(x < -TOL, var_inequalities))
+                           if violated])
+            if var_equalities:
+                x = (C.todense() @ np.array(list(x_values.values())) + \
+                                    d.getDataAsArray()).A[0]
+                if np.any(np.abs(x) > TOL):
+                    print(f'Warning: Equality constraints not satisfied to {TOL} precision.')
+                    print(f'Equality constraints and their deviation from 0:')
+                    print([(eq, x[i]) for i, (violated, eq) 
+                           in enumerate(zip(np.abs(x) > TOL, var_equalities))
+                           if violated])
 
         vars_of_interest = {'sol': primal, 'G': xmat, 'Z': ymat,
                             'dual_certificate': certificate,

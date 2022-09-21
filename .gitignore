@@ -150,6 +150,9 @@ emi_arena/
 ncpol2sdpa
 emi_arena
 test/test_data
+*ptf
+*task.gz
+mosekconsole.py
 test/arena.py
 test/monomials.txt
 arena.py
