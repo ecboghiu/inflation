@@ -6,7 +6,7 @@ numba.
 """
 import numpy as np
 from scipy.sparse import dok_matrix
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 try:
     import numba
