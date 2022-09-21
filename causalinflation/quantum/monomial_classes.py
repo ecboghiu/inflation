@@ -36,7 +36,7 @@ class InternalAtomicMonomial(object):
         self.knowable_q = self.is_zero or self.is_one or self.sdp.atomic_knowable_q(self.as_ndarray)
         self.do_conditional = False
         if self.knowable_q:
-            self.rectified_ndarray = np.asarray(self.sdp.rectify_fake_setting_atomic_factor(np.take(self.as_ndarray, [0, -2, -1], axis=1)), dtype=int)
+            self.rectified_ndarray = np.asarray(self.sdp.rectify_fake_setting(np.take(self.as_ndarray, [0, -2, -1], axis=1)), dtype=int)
 
 
     @property
