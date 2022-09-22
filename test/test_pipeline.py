@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
 
-from causalinflation.quantum.general_tools import (flatten,
-                                           apply_source_permutation_coord_input)
+from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
 from causalinflation import InflationProblem, InflationSDP
 import warnings
 

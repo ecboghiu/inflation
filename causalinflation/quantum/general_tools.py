@@ -4,9 +4,8 @@ matrices.
 @authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
 """
 from copy import deepcopy
-from functools import lru_cache
 from itertools import chain, permutations, product
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import sympy
