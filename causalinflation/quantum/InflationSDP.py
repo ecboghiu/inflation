@@ -8,9 +8,9 @@ import gc
 import itertools
 import warnings
 from collections import Counter, deque
+from copy import deepcopy
 from numbers import Real
 from typing import List, Dict, Tuple, Union, Any
-from copy import deepcopy
 
 import numpy as np
 import sympy as sp
@@ -275,7 +275,6 @@ class InflationSDP(object):
                                           commutative=False)] = i
         return lexicographic_order
 
-
     def operator_max_outcome_q(self, operator: np.ndarray) -> bool:
         party = operator[0] - 1
         return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
@@ -344,7 +343,6 @@ class InflationSDP(object):
                     #     warnings.warn(f"Weird linear equality at {(row, (normalization_col, summation_cols))}: {tuple(debug)}.")
         self.moment_linear_equalities = moment_linear_equalities
         del seen_already, moment_linear_equalities
-
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -532,6 +530,7 @@ class InflationSDP(object):
         self.reset_lowerbounds()
         self.reset_upperbounds()
         gc.collect(2)
+
     def reset_lowerbounds(self):
         self.status = 'not yet solved'
         self._processed_moment_lowerbounds = dict()
@@ -552,7 +551,8 @@ class InflationSDP(object):
                 del self._processed_moment_lowerbounds[mon]
             except KeyError:
                 pass
-        self._processed_moment_lowerbounds_name_dict = {mon.name: lb for mon, lb in self._processed_moment_lowerbounds.items()}
+        self._processed_moment_lowerbounds_name_dict = {mon.name: lb for mon, lb in
+                                                        self._processed_moment_lowerbounds.items()}
 
     def update_upperbounds(self):
         for mon, value in self.known_moments.items():
@@ -562,7 +562,8 @@ class InflationSDP(object):
                 del self._processed_moment_upperbounds[mon]
             except KeyError:
                 pass
-        self._processed_moment_upperbounds_name_dict = {mon.name: up for mon, up in self._processed_moment_upperbounds.items()}
+        self._processed_moment_upperbounds_name_dict = {mon.name: up for mon, up in
+                                                        self._processed_moment_upperbounds.items()}
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -671,11 +672,9 @@ class InflationSDP(object):
         if only_knowable_moments:
             for k in self.known_moments:
                 if not k.knowable_q:
-                    raise Exception("set_values: The monomial " + str(k) + " is not an " +
-                                    "atomic monomial, but composed of several factors. " +
-                                    "Please provide values only for atomic monomials. " +
-                                    "If you want to manually be able to set values for " +
-                                    "non-atomic monomials, set only_specified_values to True.")
+                    raise Exception("set_values: You are trying to set the value of " + str(k) +
+                                    "which is not fully knowable in standard scenarios. " +
+                                    "Set set_only_knowable_moments to False for this feature.")
 
         if only_specified_values:
             # If only_specified_values=True, then ONLY the Monomials that
@@ -803,7 +802,8 @@ class InflationSDP(object):
             if self.supports_problem:
                 check_for_uniform_sign = np.array(list(self.objective.values()))
                 assert (np.array_equal(check_for_uniform_sign, np.abs(check_for_uniform_sign))
-                        or np.array_equal(check_for_uniform_sign, -np.abs(check_for_uniform_sign))), "Cannot evaluate mixed-coefficient objectives for a supports problem."
+                        or np.array_equal(check_for_uniform_sign, -np.abs(
+                            check_for_uniform_sign))), "Cannot evaluate mixed-coefficient objectives for a supports problem."
             self._update_objective()
             return
 
@@ -821,9 +821,11 @@ class InflationSDP(object):
                 sanitized_upperbound_dict[mon] = upperbound
             else:
                 old_bound = sanitized_upperbound_dict[mon]
-                assert np.isclose(old_bound, upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
+                assert np.isclose(old_bound,
+                                  upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
         self._processed_moment_upperbounds = sanitized_upperbound_dict
         self.update_upperbounds()
+
     def set_lowerbounds(self, lowerbound_dict: Union[dict, None]) -> None:
         """
         Documentation needed.
@@ -838,21 +840,18 @@ class InflationSDP(object):
                 sanitized_lowerbound_dict[mon] = lowerbound
             else:
                 old_bound = sanitized_lowerbound_dict[mon]
-                assert np.isclose(old_bound, lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
+                assert np.isclose(old_bound,
+                                  lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
         self._processed_moment_lowerbounds = sanitized_lowerbound_dict
         self.update_lowerbounds()
 
     def set_bounds(self, bounds_dict: Union[dict, None], bound_type: str = 'up') -> None:
         assert bound_type in ['up', 'lo'], ('The bound_type parameter should be'
-                                             + ' set to either "up" or "lo"')
+                                            + ' set to either "up" or "lo"')
         if bound_type == 'up':
             self.set_upperbounds(bounds_dict)
         else:
             self.set_lowerbounds(bounds_dict)
-
-
-
-
 
     def _update_objective(self):
         """Process the objective with the information from known_moments
@@ -1478,7 +1477,7 @@ class InflationSDP(object):
             ),
                     disable=not self.verbose,
                     desc="Calculating symmetries...    "):
-                #We do NOT need to calculate the "symmetry" induced by the identity permutation.
+                # We do NOT need to calculate the "symmetry" induced by the identity permutation.
                 if not permutation == tuple(range(self.inflation_levels[source])):
                     permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
                     permuted_cols_ind = \
@@ -1523,7 +1522,7 @@ class InflationSDP(object):
         """
 
         if not len(inflation_symmetries):
-            return momentmatrix, np.arange(momentmatrix.max()+1), unsymidx_to_canonical_mon_dict
+            return momentmatrix, np.arange(momentmatrix.max() + 1), unsymidx_to_canonical_mon_dict
         else:
             unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
             absent_indices = np.arange(np.min(unique_values))
