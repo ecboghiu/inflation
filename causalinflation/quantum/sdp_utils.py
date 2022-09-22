@@ -145,23 +145,11 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         t0 = perf_counter()
         print('Starting pre-processing for the SDP solver.')
 
-    CONSTANT_KEY = '1'  # If we hash monomials differently, we might
-    # need to change the hash of the constant/offset term
-    # from the number 1 to something else.
-    # The rest of the code should be insensitive to
-    # the hash except this line (ideally).
 
-    # variables = set(positionsmatrix.flatten())
-    # positionsmatrix = positionsmatrix.astype(np.uint16)
-    # mat_dim = positionsmatrix.shape[0]
-    # F0 = scipy.sparse.lil_matrix((mat_dim,mat_dim))
-    # Fi = {}
-    # for x in variables:
-    #     coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
-    #     coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
-    #     Fi[x] = coeffmat
+    CONSTANT_KEY = '1'  
     known_vars_without_zero = known_vars.copy()
     Fi = maskmatrices_name_dict.copy()
+    
     # We should not have the Zero monomial here
     try:
         del Fi['0']
@@ -203,15 +191,11 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         F0 += xval * Fi[x]
         variables.remove(x)
         # We do not delete Fi[x] because we need them later for the certificate.
-
         # Now update the bounds for known variables.
         if x in var_lowerbounds:
             if var_lowerbounds[x] >= xval:
                 # We warn the user when these are incompatible, but the
                 # program will continue.
-                # TODO Should we remove this check? It is unlikely that
-                # the bounds will be incompatible with fixed values, if the
-                # user uses our program correctly.
                 UserWarning(
                     "Lower bound {} for variable {}".format(var_lowerbounds[x], x) +
                     " is incompatible with the known value {}.".format(xval) +

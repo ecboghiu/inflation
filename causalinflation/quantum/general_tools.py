@@ -527,20 +527,11 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
     return new_mon
 
 
-# @jit(nopython=nopython)  # remove the use of itertools
 def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
                                   inflevels: np.ndarray,
                                   notcomm: np.ndarray,
                                   lexorder: np.ndarray,
                                   commuting: bool) -> np.ndarray:
-    # Now we must take into account that the application of symmetries plus
-    # applying commutation rules can give us an even smaller monomial
-    # (lexicographically). To deal with this, we will apply *all* possible
-    # source swaps and then apply commutation rules, and if the resulting
-    # monomial is smaller, we accept it.
-    # TODO: This is horribly inefficient if we have lots of symmetries
-    # TODO 2: to make it compatible with numba, avoid using itertools!
-    # (i.e., product, permutations)
     nr_sources = inflevels.shape[0]
     all_perms_per_source = [np.array(list(permutations(range(inflevels[source]))), dtype=int)
                             for source in range(nr_sources)]
@@ -575,7 +566,6 @@ def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
     return final_monomial
 
 
-# @jit(nopython=nopython)
 def to_representative(mon: np.ndarray,
                       inflevels: np.ndarray,
                       notcomm: np.ndarray,

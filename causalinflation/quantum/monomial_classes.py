@@ -23,7 +23,6 @@ class InternalAtomicMonomial(object):
                  'is_one'
                  ]
 
-    #TODO: Initialize using tuple_of_tuples, for better to_representative efficiency.
     def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
         """
         This uses methods from the InflationSDP instance, and so must be constructed with that passed as first argument.
@@ -35,7 +34,7 @@ class InternalAtomicMonomial(object):
         self.is_zero = np.any(np.logical_not(self.as_ndarray[:, 0]))  # Party indexing starts at 1, so a zero in the zero slot indicates bad.
         self.is_one = (self.n_ops == 0)
         self.knowable_q = self.is_zero or self.is_one or self.sdp.atomic_knowable_q(self.as_ndarray)
-        self.do_conditional = False # (not self.knowable_q) and is_knowable(self.as_ndarray)  # TODO: Improve ability to handle do conditionals.
+        self.do_conditional = False
         if self.knowable_q:
             self.rectified_ndarray = np.asarray(self.sdp.rectify_fake_setting(np.take(self.as_ndarray, [0, -2, -1], axis=1)), dtype=int)
 
@@ -107,21 +106,20 @@ class InternalAtomicMonomial(object):
 
 
 class CompoundMonomial(object):
-    __slots__ = [  # 'as_ndarray',
-        'factors_as_atomic_monomials',
-        'is_atomic',
-        'is_zero',
-        'is_one',
-        'nof_factors',
-        'knowable_factors',
-        'unknowable_factors',
-        'nof_knowable_factors',
-        'nof_unknowable_factors',
-        'knowability_status',
-        'knowable_q',
-        'idx',
-        'mask_matrix'
-    ]
+    __slots__ = ['factors_as_atomic_monomials',
+                 'is_atomic',
+                 'is_zero',
+                 'is_one',
+                 'nof_factors',
+                 'knowable_factors',
+                 'unknowable_factors',
+                 'nof_knowable_factors',
+                 'nof_unknowable_factors',
+                 'knowability_status',
+                 'knowable_q',
+                 'idx',
+                 'mask_matrix'
+                 ]
 
     def __init__(self, tuple_of_atomic_monomials: Tuple[InternalAtomicMonomial]):
         """

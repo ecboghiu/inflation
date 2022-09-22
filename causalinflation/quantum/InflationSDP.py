@@ -266,82 +266,6 @@ class InflationSDP(object):
                                           commutative=False)] = i
         return lexicographic_order
 
-    # TODO Low priority future feature, currently not important, but don't delete
-    # # def set_custom_lexicographic_order(self,
-    # #                                    custom_lexorder: Dict[sp.Symbol, int],
-    # #                                    ) -> None:
-    # #     if custom_lexorder is not None:
-    # #         assert isinstance(custom_lexorder, dict), \
-    # #                 "custom_lexicographic_order must be a dictionary"
-
-    # #         ### First process the values
-    # #         # If the user gives lex ranks such as 1, 5, 3, 7, sort them, and
-    # #         # reindex them from 0 to the number of them: 1, 5, 3, 7 -> 0, 2, 1, 3.
-    # #         # This way, the lex rank also is useful for indexing a matrix.
-    # #         v = sorted(list(custom_lexorder.values()))
-    # #         assert len(np.unique(np.array(v))) == len(v), "Lex ranks must be unique"
-    # #         v_old_to_new = {v: i for i, v in enumerate(v)}
-    # #         custom_lexorder = dict(zip(custom_lexorder.keys(),
-    # #                                 [v_old_to_new[v]
-    # #                                 for v in custom_lexorder.values()]))
-    # #         ### Now process the keys
-    # #         lexorder = np.zeros((self._nr_operators, self._nr_properties),
-    # #                             dtype=self.np_dtype)
-    # #         for key, value in custom_lexorder.items():
-    # #             if type(key) in [sp.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
-    # #                 array = to_numbers(str(key), self.names)
-    # #             elif type(key) == Monomial:
-    # #                 array = Monomial.as_ndarray.astype(self.np_dtype)
-    # #             else:
-    # #                 raise Exception(f"_nb_process_lexorder: Key type {type(key)} not allowed.")
-    # #             assert len(array) == 1, "Cannot assign lex rank to a product of operators."
-    # #             lexorder[value, :] = array[0]
-    # #         self._lexorder = lexorder
-
-    # #         ### Now some consistency checks
-    # #         # 1. Check that the lex order is a permutation of the default lex order
-    # #         assert set(to_tuple_of_tuples(self._lexorder)) \
-    # #                 == set(to_tuple_of_tuples(self._default_lexorder)), \
-    # #                 "Custom lexicographic order does not contain the correct operators."
-
-    # #         # 2. Check if ops for the same party are together forming a
-    # #         # continuous block
-    # #         custom_sorted_parties = self._lexorder[:, 0]
-    # #         past_i = set([custom_sorted_parties[0]])
-    # #         i_old = custom_sorted_parties[0]
-    # #         for i in custom_sorted_parties[1:]:
-    # #             if i != i_old:
-    # #                 if i not in past_i:
-    # #                     past_i.add(i)
-    # #                 else:
-    # #                     warnings.warn("WARNING: Custom lexicographic order is does not " +
-    # #                                   "order parties in continuous blocks. " +
-    # #                                   "This affects functionality such as identifying zero monomials " +
-    # #                                   "due to products of orthogonal operators corresponding to " +
-    # #                                   "different outputs. It is strongly recommended to " +
-    # #                                   "order parties in continuous blocks where operators with all " +
-    # #                                   "else equal except the outputs are grouped together.")
-    # #                     break
-    # #             i_old = i
-
-    # #         # 3. Check if the order of the contiguous blocks of parties is
-    # #         # consistent with the names argument
-    # #         custom_parties, _ = nb_unique(custom_sorted_parties)
-    # #         custom_party_names = [self.names[i - 1] for i in custom_parties]
-    # #         if custom_party_names != self.names:
-    # #             if self.verbose > 0:
-    # #                 warnings.warn("Custom lexicographic order orders 'names' " +
-    # #                                f"as {custom_party_names} whereas the previous value " +
-    # #                                f"was {self.names}. This affects functionality such as " +
-    # #                                "setting values and distributions.")
-    # #             # self.names = custom_party_names
-    # #             # self._PARTY_ORDER = custom_parties
-
-    # #     else:
-    # #         self._lexorder =  self._default_lexorder
-    # #         # self._PARTY_ORDER = 1 + np.array(list(range(self.nr_parties)))
-
-    #
 
     def operator_max_outcome_q(self, operator: np.ndarray) -> bool:
         party = operator[0] - 1
@@ -552,7 +476,6 @@ class InflationSDP(object):
         self.monomial_names = list(self.name_dict_of_monomials.keys())
 
         self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
-        # self.maskmatrices_idx_dict = {mon.idx: mon.mask_matrix for mon in self.list_of_monomials} #Uncomment to assist with export?
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
@@ -661,7 +584,7 @@ class InflationSDP(object):
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_knowable_moments=(not use_lpi_constraints),
                         only_specified_values=assume_shared_randomness,
-                        consider_only_semiknowable=True)  # MAJOR BUGFIX?
+                        consider_only_semiknowable=True)
 
     def set_values(self, values: Union[
         Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
@@ -709,8 +632,6 @@ class InflationSDP(object):
         if (not normalised) and self.momentmatrix_has_a_one:
             del self.known_moments[self.One]
         if (values is None) or (len(values) == 0):
-            # From a user perspective set_values(None) should be
-            # equivalent to reset_distribution().
             self.cleanup_after_set_values()
             return
 
@@ -802,8 +723,6 @@ class InflationSDP(object):
             self.semiknown_moments = dict()
             # Name dictionaries for compatibility purposes only, block in code for easy commenting out.
             self.semiknown_moments_name_dict = dict()
-
-            # TODO: ADD EQUALITY CONSTRAINTS FOR SUPPORTS PROBLEM!
 
         # Create lowerbounds list for physical but unknown moments
         self.update_lowerbounds()
@@ -989,7 +908,6 @@ class InflationSDP(object):
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
 
-    # TODO: I'd like to add the ability to handle 4 classes of problem: SAT, CERT, OPT, SUPP
     def solve(self, interpreter: str = 'MOSEKFusion',
               feas_as_optim: bool = False,
               dualise: bool = True,
@@ -1028,13 +946,12 @@ class InflationSDP(object):
                           + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-        # TODO for performance: Remove all zero-valued variables FROM ALL solve arguments, as this is just a waste.
-        # moment_upperbounds = {m.name: val
-        #                       for m, val in self.moment_upperbounds.items()}
-        # moment_lowerbounds = {**{m.name: val for m, val
-        #                          in self._processed_moment_lowerbounds.items()},
-        #                       **{m.name: val
-        #                          for m, val in self.moment_lowerbounds.items()}}
+        moment_upperbounds = {m.name: val
+                              for m, val in self.moment_upperbounds.items()}
+        moment_lowerbounds = {**{m.name: val for m, val
+                                 in self._processed_moment_lowerbounds.items()},
+                              **{m.name: val
+                                 for m, val in self.moment_lowerbounds.items()}}
         solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
                               "objective": self._objective_as_name_dict,
                               "known_vars": self.known_moments_name_dict,
@@ -1333,7 +1250,6 @@ class InflationSDP(object):
             raise Exception('I have not understood the format of the '
                             + 'column specification')
 
-        # Sort by custom lex order?
         if not np.array_equal(self._lexorder, self._default_lexorder):
             res_lexrepr = [nb_mon_to_lexrepr(m, self._lexorder).tolist()
                            if (len(m) or m.shape[-1] == 1) else []
