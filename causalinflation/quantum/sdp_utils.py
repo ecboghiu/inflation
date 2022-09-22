@@ -160,18 +160,19 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     #     coeffmat = scipy.sparse.lil_matrix((mat_dim,mat_dim))
     #     coeffmat[scipy.sparse.find(positionsmatrix == x)[:2]] = 1
     #     Fi[x] = coeffmat
-    
+    known_vars_without_zero = known_vars.copy()
+    Fi = maskmatrices_name_dict.copy()
     # We should not have the Zero monomial here
     try:
-        del maskmatrices_name_dict['0']
+        del Fi['0']
     except KeyError:
         pass
     try:
-        del known_vars['0']
+        del known_vars_without_zero['0']
     except KeyError:
         pass
 
-    Fi = maskmatrices_name_dict.copy()
+
     Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
     variables = set(list(Fi.keys()))
     mat_dim   = Fi[next(iter(Fi))].shape[0]
@@ -198,7 +199,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     # Remove variables that are fixed by known_vars from the list of
     # variables, and also remove the corresponding entries for its upper
     # and lower bounds.
-    for x, xval in known_vars.items():
+    for x, xval in known_vars_without_zero.items():
         F0 += xval * Fi[x]
         variables.remove(x)
         # We do not delete Fi[x] because we need them later for the certificate.
@@ -325,7 +326,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     # in the objective have already been removed, and added to
     # objective[CONSTANT_KEY]. However, just to be certain, we will
     # do this step also here.
-    for x, val in known_vars.items():
+    for x, val in known_vars_without_zero.items():
         if x in objective and x != CONSTANT_KEY:
             objective[CONSTANT_KEY] += val * objective[x]
             del objective[x]
@@ -577,7 +578,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
             # For feasibility as optimization we don't need the offset c0
             certificate[CONSTANT_KEY] = 0
         # + Tr Z F0 = \sum_i x_{known i} * F_{known i}
-        for x in known_vars:
+        for x in known_vars_without_zero:
             support = Fi[x].nonzero()
             certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
         # - L · lb

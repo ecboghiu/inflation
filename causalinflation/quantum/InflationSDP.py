@@ -378,6 +378,38 @@ class InflationSDP(object):
         if self.verbose > 0 and len(self.column_level_equalities):
             print("Column level equalities:", self.column_level_equalities)
 
+    def construct_monomial_level_equalities_from_column_level_equalities(self):
+        moment_linear_equalities = []
+        seen_already = set()
+        for column_level_equality in self.column_level_equalities:
+            for row in range(self.nof_columns):
+                signature = (row, column_level_equality[-1][-1])
+                if signature not in seen_already:
+                    seen_already.add(signature)
+                    temp_dict = dict()
+                    (normalization_col, summation_cols) = column_level_equality
+                    norm_monomial = self.compound_monomial_from_idx_dict[self.momentmatrix[row, normalization_col]]
+                    # target_n_ops =norm_monomial.n_ops + 1
+                    temp_dict[norm_monomial.name] = 1
+                    # debug = [norm_monomial.name]
+                    # debug_other = []
+                    trivial_count = 0
+                    for col in summation_cols:
+                        mon = self.compound_monomial_from_idx_dict[self.momentmatrix[row, col]]
+                        # debug_other.append(mon.name)
+                        if not mon.is_zero:
+                            temp_dict[mon.name] = -1
+                        else:
+                            trivial_count += 1
+                    # debug.append(debug_other)
+                    # if (len(temp_dict) == len(summation_cols) + 1) or (len(temp_dict) < len(summation_cols)):
+                    if trivial_count != 1:
+                        moment_linear_equalities.append(temp_dict)
+                    # elif '0' not in debug_other:
+                    #     warnings.warn(f"Weird linear equality at {(row, (normalization_col, summation_cols))}: {tuple(debug)}.")
+        self.moment_linear_equalities = moment_linear_equalities
+        del seen_already, moment_linear_equalities, signature, temp_dict, trivial_count
+
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
     ########################################################################
@@ -524,34 +556,7 @@ class InflationSDP(object):
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
-        seen_already = set()
-        for column_level_equality in self.column_level_equalities:
-            for row in range(self.nof_columns):
-                signature = (row, column_level_equality[-1][-1])
-                if signature not in seen_already:
-                    seen_already.add(signature)
-                    temp_dict = dict()
-                    (normalization_col, summation_cols) = column_level_equality
-                    norm_monomial = self.compound_monomial_from_idx_dict[self.momentmatrix[row, normalization_col]]
-                    # target_n_ops =norm_monomial.n_ops + 1
-                    temp_dict[norm_monomial.name] = 1
-                    # debug = [norm_monomial.name]
-                    # debug_other = []
-                    trivial_count = 0
-                    for col in summation_cols:
-                        mon = self.compound_monomial_from_idx_dict[self.momentmatrix[row, col]]
-                        # debug_other.append(mon.name)
-                        if not mon.is_zero:
-                            temp_dict[mon.name] = -1
-                        else:
-                            trivial_count += 1
-                    # debug.append(debug_other)
-                    # if (len(temp_dict) == len(summation_cols) + 1) or (len(temp_dict) < len(summation_cols)):
-                    if trivial_count != 1:
-                        self.moment_linear_equalities.append(temp_dict)
-                    # elif '0' not in debug_other:
-                    #     warnings.warn(f"Weird linear equality at {(row, (normalization_col, summation_cols))}: {tuple(debug)}.")
-
+        # self.construct_monomial_level_equalities_from_column_level_equalities()
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
@@ -1039,8 +1044,8 @@ class InflationSDP(object):
                               "var_inequalities": self.moment_linear_inequalities,
                               "solve_dual": dualise}
 
-        assert set(self.maskmatrices_name_dict).issuperset(
-            set(self.known_moments_name_dict)), 'Error: Assigning known values outside of moment matrix.'
+        assert set(self.maskmatrices_name_dict.keys()).issuperset(
+            set(self.known_moments_name_dict.keys())), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments_name_dict.keys()).difference(self.maskmatrices_name_dict.keys())}'
 
         self.solution_object, lambdaval, self.status = \
             solveSDP_MosekFUSION(**solveSDP_arguments)
@@ -1143,14 +1148,13 @@ class InflationSDP(object):
 
         rest_of_dual = dual.copy()
         if clean:
-            cert_as_string = np.array2string(np.array(rest_of_dual.pop('1')), precision=round_decimals,
-                                             floatmode='fixed')
+            cert_as_string = '{0:.{prec}f}'.format(rest_of_dual.pop('1'), prec=round_decimals)
         else:
             cert_as_string = str(rest_of_dual.pop('1'))
         for mon_name, coeff in rest_of_dual.items():
             cert_as_string += "+" if coeff > 0 else "-"
             if clean:
-                cert_as_string += f"{np.array2string(np.abs(np.array(coeff)), precision=round_decimals, floatmode='fixed')}*{mon_name}"
+                cert_as_string += '{0:.{prec}f}*{1}'.format(coeff, mon_name, prec=round_decimals)
             else:
                 cert_as_string += f"{abs(coeff)}*{mon_name}"
         cert_as_string += " >= 0"
