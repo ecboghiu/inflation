@@ -4,4 +4,12 @@ API Reference
 .. toctree::
    :maxdepth: 4
 
-   causalinflation
+   inflationproblem
+
+   inflationsdp
+
+   solvers
+
+   build
+
+   operations
