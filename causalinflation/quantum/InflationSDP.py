@@ -10,6 +10,7 @@ import warnings
 from collections import Counter, deque
 from numbers import Real
 from typing import List, Dict, Tuple, Union, Any
+from copy import deepcopy
 
 import numpy as np
 import sympy as sp
@@ -90,11 +91,11 @@ class InflationSDP(object):
         self.hypergraph = np.asarray(self.InflationProblem.hypergraph)
         self.inflation_levels = np.asarray(self.InflationProblem.inflation_level_per_source)
         self._symmetrization_required = np.any(self.inflation_levels - 1)
-        self.has_children = self.InflationProblem.has_children
         if self.supports_problem:
-            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + 1
+            self.has_children = np.ones(self.nr_parties, dtype=int)
         else:
-            self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
+            self.has_children = self.InflationProblem.has_children
+        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         self._generate_parties()
@@ -338,10 +339,12 @@ class InflationSDP(object):
                     # if (len(temp_dict) == len(summation_cols) + 1) or (len(temp_dict) < len(summation_cols)):
                     if trivial_count != 1:
                         moment_linear_equalities.append(temp_dict)
+                    del signature, trivial_count, temp_dict
                     # elif '0' not in debug_other:
                     #     warnings.warn(f"Weird linear equality at {(row, (normalization_col, summation_cols))}: {tuple(debug)}.")
         self.moment_linear_equalities = moment_linear_equalities
-        del seen_already, moment_linear_equalities, signature, temp_dict, trivial_count
+        del seen_already, moment_linear_equalities
+
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -489,7 +492,7 @@ class InflationSDP(object):
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
-        # self.construct_monomial_level_equalities_from_column_level_equalities()
+        self.construct_monomial_level_equalities_from_column_level_equalities()
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
@@ -963,16 +966,16 @@ class InflationSDP(object):
                               **{m.name: val
                                  for m, val in self.moment_lowerbounds.items()}}
         solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
-                              "objective": self._objective_as_name_dict,
-                              "known_vars": self.known_moments_name_dict,
-                              "semiknown_vars": self.semiknown_moments_name_dict,
+                              "objective": deepcopy(self._objective_as_name_dict),
+                              "known_vars": deepcopy(self.known_moments_name_dict),
+                              "semiknown_vars": deepcopy(self.semiknown_moments_name_dict),
                               "feas_as_optim": feas_as_optim,
                               "verbose": self.verbose,
                               "solverparameters": solverparameters,
-                              "var_lowerbounds": self._processed_moment_lowerbounds_name_dict,
-                              "var_upperbounds": self._processed_moment_upperbounds_name_dict,
-                              "var_equalities": self.moment_linear_equalities,
-                              "var_inequalities": self.moment_linear_inequalities,
+                              "var_lowerbounds": deepcopy(self._processed_moment_lowerbounds_name_dict),
+                              "var_upperbounds": deepcopy(self._processed_moment_upperbounds_name_dict),
+                              "var_equalities": deepcopy(self.moment_linear_equalities),
+                              "var_inequalities": deepcopy(self.moment_linear_inequalities),
                               "solve_dual": dualise}
 
         assert set(self.maskmatrices_name_dict.keys()).issuperset(
