@@ -4,9 +4,10 @@ matrices. The functions in this file can be accelerated by JIT compilation in
 numba.
 @authors: Alejandro Pozas-Kerstjens, Elie Wolfe and Emanuel-Cristian Boghiu
 """
+from typing import List, Dict, Tuple
+
 import numpy as np
 from scipy.sparse import dok_matrix
-from typing import List, Dict, Tuple, Union
 
 try:
     import numba
