@@ -857,7 +857,7 @@ def calculate_momentmatrix(cols: List,
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i in tqdm(range(nrcols),
                   disable=not verbose,
-                  desc="Calculating moment matrix    "):
+                  desc="Calculating moment matrix... "):
         for j in range(i, nrcols):
             mon1, mon2 = cols[i], cols[j]
             if not commuting:
