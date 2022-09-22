@@ -8,6 +8,7 @@ import sys
 from scipy.sparse import lil_matrix, dok_matrix
 from typing import Dict, Tuple
 
+
 def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                          objective={1: 0.}, known_vars={0: 0., 1: 1.},
                          semiknown_vars={}, positive_vars=[],
@@ -146,7 +147,6 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         t0 = perf_counter()
         print('Starting pre-processing for the SDP solver.')
 
-
     CONSTANT_KEY = '1'  
     known_vars_without_zero = known_vars.copy()
     Fi = maskmatrices_name_dict.copy()
@@ -160,7 +160,6 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         del known_vars_without_zero['0']
     except KeyError:
         pass
-
 
     Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
     variables = set(list(Fi.keys()))
@@ -230,7 +229,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
             del Fi[x]  # We can safely delete Fi[x].
 
-            # TODO Is worthile to consider the compatibility of lower and upper
+            # TODO Is worthwhile to consider the compatibility of lower and upper
             # bounds of variables involved in LPI constraints? I would say no.
             # For our usecase, it should not happen that we have one upper bound
             # for one variable and lower bound for the other variable such that
@@ -452,7 +451,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
             for j in range(i, mat_dim):
                 constraints[i, j] = G.index(i, j)
         for i, j in ij_F0_nonzero:
-            constraints[i ,j] = Expr.sub(constraints[i, j], F0.get(i, j))
+            constraints[i, j] = Expr.sub(constraints[i, j], F0.get(i, j))
         for i, xi in enumerate(variables):
             for i_, j_ in ij_Fi_nonzero[xi]:
                 constraints[i_, j_] = Expr.sub(constraints[i_, j_],
@@ -493,7 +492,6 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     # Solving and readout
     xmat, ymat, primal, dual = None, None, None, None
-    xmat = np.zeros((mat_dim, mat_dim))
     try:
         if verbose > 1:
             M.setLogHandler(sys.stdout)
@@ -599,7 +597,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                     if ub - x_values[x] <= -TOL:
                         print(f'Warning: Upper bound violated for {x} by {ub - x_values[x]}')
             if var_inequalities:
-                x = (A.todense() @ np.array(list(x_values.values())) + \
+                x = (A.todense() @ np.array(list(x_values.values())) +
                                 b.getDataAsArray()).A[0]
                 if np.any(x < -TOL):
                     print(f'Warning: Inequality constraints not satisfied to {TOL} precision.')
@@ -608,7 +606,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
                            in enumerate(zip(x < -TOL, var_inequalities))
                            if violated])
             if var_equalities:
-                x = (C.todense() @ np.array(list(x_values.values())) + \
+                x = (C.todense() @ np.array(list(x_values.values())) +
                                     d.getDataAsArray()).A[0]
                 if np.any(np.abs(x) > TOL):
                     print(f'Warning: Equality constraints not satisfied to {TOL} precision.')
