@@ -9,8 +9,8 @@ import causalinflation
 
 
 def about() -> None:
-    """Displays information about Mitiq, core/optional packages, and Python
-    version/platform information.
+    """Displays information about CausalInflation, core/optional packages, and
+    Python version/platform information.
     """
     try:
         from numba import __version__ as numba_version

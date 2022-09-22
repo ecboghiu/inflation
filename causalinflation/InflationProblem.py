@@ -1,7 +1,7 @@
 """
 The module creates the inflation scenario associated to a causal structure. See
 arXiv:1609.00672 and arXiv:1707.06476 for the original description of inflation.
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu and Elie Wolfe
 """
 import numpy as np
 from itertools import chain
@@ -150,7 +150,7 @@ class InflationProblem(object):
                 str(self.inflation_level_per_source) +
                 " inflation copies per source.")
 
-    def is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: np.ndarray) -> bool:
+    def _is_knowable_q_split_node_check(self, monomial_as_2d_numpy_array: np.ndarray) -> bool:
         """
         Checks if a monomial (sequence of operators as 2d numpy array) corresponds to a knowable probability.
         The function assumes that the candidate monomial already passed the preliminary knowable test from
@@ -187,7 +187,7 @@ class InflationProblem(object):
         else:
             return True
 
-    def rectify_fake_setting_atomic_factor(self, monomial_as_2d_numpy_array: np.ndarray) -> np.ndarray:
+    def rectify_fake_setting(self, monomial_as_2d_numpy_array: np.ndarray) -> np.ndarray:
         """
         When constructing the monomials in a non-network scenario, we rely on an internal representation of operators
          where the integer denoting 'setting' actually encodes the values of all the parents of the variable in question.
