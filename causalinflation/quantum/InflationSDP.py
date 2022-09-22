@@ -44,7 +44,7 @@ from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 # Force warnings.warn() to omit the source code line in the message
 # Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
 formatwarning_orig = warnings.formatwarning
-warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
+warnings.formatwarning = lambda message, category, filename, lineno, line=None:\
     formatwarning_orig(message, category, filename, lineno, line='')
 try:
     from tqdm import tqdm
@@ -63,6 +63,11 @@ class InflationSDP(object):
     commuting : bool, optional
         Whether variables in the problem are going to be commuting (classical
         problem) or non-commuting (quantum problem). By default ``False``.
+    supports_problem : bool, optional
+        Whether the problem to be addressed only requires distribution supports
+        (in the spirit of `Hardy's proof of Bell's theorem
+        <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.1665>`_).
+        By default ``False``.
     verbose : int, optional
         Optional parameter for level of verbose:
 
@@ -70,7 +75,6 @@ class InflationSDP(object):
             * 1: monitor level: track program process and show warnings,
             * 2: debug level: show properties of objects created.
     """
-
     def __init__(self, inflationproblem: InflationProblem,
                  commuting: bool = False,
                  supports_problem: bool = False,
@@ -339,7 +343,7 @@ class InflationSDP(object):
               in the Navascues-Pironio-Acin hierarchy (`arXiv:quant-ph/0607119
               <https://www.arxiv.org/abs/quant-ph/0607119>`_).
               For example, level 3 with measurements :math:`\{A, B\}` will give
-              the set :math:`{1, A, B, AA, AB, BB, AAA, AAB, ABB, BBB\}` for
+              the set :math:`\{1, A, B, AA, AB, BB, AAA, AAB, ABB, BBB\}` for
               all inflation, input and output indices. This hierarchy is known
               to converge to the quantum set for :math:`N\rightarrow\infty`.
 
@@ -373,6 +377,9 @@ class InflationSDP(object):
 
             * `List[sympy.core.symbol.Symbol]`: one can also fully specify the
               generating set by giving a list of symbolic operators built from
+              the measurement operators in ``InflationSDP.measurements``. This
+              list needs to have the identity ``sympy.S.One`` as the first
+              element.
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.
@@ -547,10 +554,9 @@ class InflationSDP(object):
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
-                         assume_shared_randomness: bool = False) -> None:
+                         shared_randomness: bool = False) -> None:
         """Set numerically all the knowable (and optionally semiknowable)
-        moments according to the probability distribution
-        specified.
+        moments according to the probability distribution specified.
 
         Parameters
         ----------
@@ -563,20 +569,20 @@ class InflationSDP(object):
 
             use_lpi_constraints : bool, optional
                 Specification whether linearized polynomial constraints (see,
-                e.g., Eq. (D6) in `arXiv:2203.16543
-                <http://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
+                e.g., Eq. (D6) in `arXiv:2203.16543`_) will be imposed or not.
                 By default ``False``.
 
-            assume_shared_randomness (bool): Specification whether higher order monomials
-                may be calculated. If universal shared randomness is present, only atomic
-                monomials may be evaluated from the distribution.
+            shared_randomness : bool, optional
+                Specification whether higher order monomials are calculated.
+                If ``True`` (universal shared randomness is present), only
+                atomic monomials are assigned values from the distribution.
         """
         knowable_values = {m: m.compute_marginal(prob_array) for m in self.list_of_monomials
                            if m.is_atomic and m.knowable_q} if (prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_knowable_moments=(not use_lpi_constraints),
-                        only_specified_values=assume_shared_randomness,
+                        only_specified_values=shared_randomness,
                         consider_only_semiknowable=True)
 
     def set_values(self, values: Union[
@@ -597,26 +603,32 @@ class InflationSDP(object):
         ----------
         values : Dict[Union[sympy.core.symbol.Symbol, str, Monomial], float]
             The description of the variables to be assigned numerical values and
-            the corresponding values. The keys can be either of the Monomial class,
-            symbols or strings (which should be the name of some Monomial).
+            the corresponding values. The keys can be either of the `Monomial`
+            class, symbols or strings (which should be the name of some
+            monomial). If ``None``, it resets all the assigned values.
 
-        use_lpi_constraints : bool
+        use_lpi_constraints : bool, optional
             Specification whether linearized polynomial constraints (see, e.g.,
-            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+            Eq. (D6) in
+            `arXiv:2203.16543 <https://www.arxiv.org/abs/2203.16543>`_) are
+            imposed or not. By default ``False``.
 
-        only_specified_values : bool
-            Specifies whether one wishes to fix only the variables provided (True),
-            or also the variables containing products of the monomials fixed (False).
-            If only_specified_values is True, unknowable variables can also be fixed.
+        normalised: bool, optional
+            Specifies whether the unit monomial ``1`` is given value ``1.0``
+            even if ``1`` is not included in the values dictionary (``True``,
+            this is the default), or if it is left as a free variable
+            (``False``, this is useful for supports problems and other).
 
-        only_knowable_moments : bool
+        only_knowable_moments : bool, optional
             Default true. Set false to allow the user to also specify values of
             monomials that are not a priori knowable.
 
-        normalised: bool
-            Specifies whether the unit monomial '1' is given value 1.0 even if
-            '1' is not included in the values dictionary (default, True), or if
-            is left as a free variable (False).
+        only_specified_values : bool, optional
+            Specifies whether one wishes to fix only the variables provided
+            (``True``), or also the variables containing products of the
+            monomials fixed, like non-atomic knowable moments (``False``). If
+            ``only_specified_values`` is ``True``, unknowable variables can also
+            be fixed.
         """
 
         self.reset_values()
@@ -899,7 +911,7 @@ class InflationSDP(object):
               feas_as_optim: bool = False,
               dualise: bool = True,
               solverparameters=None):
-        """Call a solver on the SDP relaxation. Upon successful solution, it
+        r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
 
@@ -972,21 +984,21 @@ class InflationSDP(object):
     ########################################################################
 
     def certificate_as_probs(self,
-                             clean: bool = False,
+                             clean: bool = True,
                              chop_tol: float = 1e-10,
                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
-        of incompatibility is ``cert >= 0``.
+        of incompatibility is ``cert > 0``.
 
         Parameters
         ----------
         clean : bool, optional
             If ``True``, eliminate all coefficients that are smaller than
             ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``False``.
+            specified by ``round_decimals``. By default ``True``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-8``.
+            set to zero. By default ``1e-10``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
             decimals specified. By default ``3``.
@@ -995,7 +1007,7 @@ class InflationSDP(object):
         -------
         sympy.core.add.Add
             The expression of the certificate in terms or probabilities and
-            marginals. The certificate of incompatibility is ``cert >= 0``.
+            marginals. The certificate of incompatibility is ``cert > 0``.
         """
         try:
             dual = self.solution_object['dual_certificate']
@@ -1029,7 +1041,7 @@ class InflationSDP(object):
             specified by ``round_decimals``. By default ``True``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-8``.
+            set to zero. By default ``1e-10``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
             decimals specified. By default ``3``.
