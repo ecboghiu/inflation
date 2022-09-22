@@ -10,7 +10,7 @@ setup(
     extras_require = {
         "jit": ['numba'],
         "solver": ['mosek'],
-        "docs": ['nbsphinx', 'm2r2', 'sphinx_rtd_theme']
+        "docs": ['nbsphinx', 'm2r2', 'sphinx_rtd_theme', 'sphinx_copybutton']
     },
     author = "Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens",
     author_email = "cristian.boghiu@icfo.eu, ewolfe@pitp.ca, physics@alexpozas.com",
