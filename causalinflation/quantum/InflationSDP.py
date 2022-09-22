@@ -850,8 +850,9 @@ class InflationSDP(object):
         elif isinstance(objective, sp.core.expr.Expr):
             if objective.free_symbols:
                 objective_as_raw_dict = sp.expand(objective).as_coefficients_dict()
+                objective_as_raw_dict = {k: float(v) for k, v in objective_as_raw_dict.items()}
             else:
-                objective_as_raw_dict = {self.One: objective.evalf()}
+                objective_as_raw_dict = {self.One: float(objective)}
             return self.set_objective(objective_as_raw_dict, direction=direction)
         else:
             if hasattr(self, 'use_lpi_constraints'):
@@ -863,9 +864,14 @@ class InflationSDP(object):
             sign = (1 if self.maximize else -1)
             objective_as_dict = {self.One: 0}
             for mon, coeff in objective.items():
-                mon = self._sanitise_monomial(mon)
-                objective_as_dict[mon] = objective_as_dict.get(mon, 0) + (sign * coeff)
+                if not np.isclose(coeff, 0):
+                    mon = self._sanitise_monomial(mon)
+                    objective_as_dict[mon] = objective_as_dict.get(mon, 0) + (sign * coeff)
             self.objective = objective_as_dict
+            if self.supports_problem:
+                check_for_uniform_sign = np.array(list(self.objective.values()))
+                assert (np.array_equal(check_for_uniform_sign, np.abs(check_for_uniform_sign))
+                        or np.array_equal(check_for_uniform_sign, -np.abs(check_for_uniform_sign))), "Cannot evaluate mixed-coefficient objectives for a supports problem."
             self._update_objective()
             return
 
