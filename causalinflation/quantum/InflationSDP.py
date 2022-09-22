@@ -2,7 +2,7 @@
 The module generates the semidefinite program associated to a quantum inflation
 instance (see arXiv:1909.10519).
 
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu and Elie Wolfe
 """
 import gc
 import itertools
@@ -104,8 +104,8 @@ class InflationSDP(object):
                 print(f"Party {self.names[i]} has {next(counter)} distinct single-operator measurements.")
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
-        self.is_knowable_q_split_node_check = self.InflationProblem.is_knowable_q_split_node_check
-        self.rectify_fake_setting_atomic_factor = self.InflationProblem.rectify_fake_setting_atomic_factor
+        self._is_knowable_q_split_node_check = self.InflationProblem._is_knowable_q_split_node_check
+        self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2
@@ -130,7 +130,7 @@ class InflationSDP(object):
         # implies commutation, and self._default_commgraph[i, j] = 1 is
         # non-commutation.
         self._default_notcomm = notcomm_from_lexorder(self._lexorder)
-        self._notcomm = self._default_notcomm.copy()  # ? Ideas for a better name?
+        self._notcomm = self._default_notcomm.copy()
 
         self.canonsym_ndarray_from_hash_cache = dict()
         self.atomic_monomial_from_hash_cache = dict()
@@ -198,7 +198,7 @@ class InflationSDP(object):
     def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if self.split_node_model:
             minimal_monomial = tuple(tuple(vec) for vec in np.take(atomic_monarray, [0, -2, -1], axis=1))
-            return self.is_knowable_q_split_node_check(minimal_monomial)
+            return self._is_knowable_q_split_node_check(minimal_monomial)
         else:
             return True
 
@@ -934,14 +934,12 @@ class InflationSDP(object):
             self._processed_objective[self.One] += self._processed_objective[m] * value
             del self._processed_objective[m]
         semiknown_keys_to_process = set(self.semiknown_moments.keys()).intersection(self._processed_objective.keys())
-        # for v1, (k, v2) in self.semiknown_moments.items():
-        #     if v1 in self._processed_objective:
         for v1 in semiknown_keys_to_process:
             c1 = self._processed_objective[v1]
             for (k, v2) in self.semiknown_moments[v1]:
                 # obj = ... + c1*v1 + c2*v2,
                 # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
-                # therefore we need to add to the coefficient of v2 the term c1*k
+                # therefore we add to the coefficient of v2 the term c1*k
                 self._processed_objective[v2] = self._processed_objective.get(v2, 0) + c1 * k
                 del self._processed_objective[v1]
         # For compatibility purposes
@@ -1451,8 +1449,6 @@ class InflationSDP(object):
                             if name not in allvars:
                                 allvars.add(name)
                                 if name == '1':
-                                    # TODO: Convention in this branch is to never use to_name or to_numbers. Hashing
-                                    #  should be done via from_2dndarray.
                                     res.append(self.identity_operator)
                                 else:
                                     res.append(canon)

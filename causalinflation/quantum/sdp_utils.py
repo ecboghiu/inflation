@@ -1,6 +1,6 @@
 """
 This file contains the functions to send the problems to SDP solvers.
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu and Elie Wolfe
 """
 import numpy as np
 import sys
@@ -141,8 +141,8 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         AccSolutionStatus, ProblemStatus
 
     if verbose > 1:
-        from time import time
-        t0 = time()
+        from time import perf_counter
+        t0 = perf_counter()
         print('Starting pre-processing for the SDP solver.')
 
     CONSTANT_KEY = '1'  # If we hash monomials differently, we might
@@ -279,10 +279,6 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
-    # Comment: it appears that storing sparse matrices as dictionaries of
-    # indicies (dok format) is the best way to build matrices incrementally
-    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.dok_matrix.html
-
     b = dok_matrix((len(var_inequalities), 1))
     for i, inequality in enumerate(var_inequalities):
         if CONSTANT_KEY in inequality:
@@ -343,8 +339,8 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         upperbounded_var2idx = {x: i for i, x in enumerate(var_upperbounds)}
 
     if verbose > 1:
-        print('Pre-processing took', time() - t0, "seconds.")
-        t0 = time()
+        print('Pre-processing took', format(perf_counter() - t0, ".4f"), "seconds.")
+        t0 = perf_counter()
     if verbose > 0:
         print("Building the model...")
 
@@ -503,10 +499,10 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         M.objective(ObjectiveSense.Maximize, mosek_obj)
 
     if verbose > 1:
-        print('Model built in', time() - t0, 'seconds.')
+        print('Model built in', format(perf_counter() - t0, ".4f"), 'seconds.')
         M.writeTask('InflationSDPModel.ptf')
         print('Model saved to InflationSDPModel.ptf.')
-        t0 = time()
+        t0 = perf_counter()
     if verbose > 0:
         print("Solving the model...")
 
@@ -610,11 +606,13 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
         if status_str == 'feasible' and verbose > 1:
             TOL = 1e-8  # Constraint tolerance
             for x, lb in var_lowerbounds.items():
-                if x_values[x] - lb <= -TOL:
-                    print(f'Warning: Lower bound violated for {x} by {x_values[x] - lb}')
+                if x in x_values:
+                    if x_values[x] - lb <= -TOL:
+                        print(f'Warning: Lower bound violated for {x} by {x_values[x] - lb}')
             for x, ub in var_upperbounds.items():
-                if ub - x_values[x] <= -TOL:
-                    print(f'Warning: Upper bound violated for {x} by {ub - x_values[x]}')
+                if x in x_values:
+                    if ub - x_values[x] <= -TOL:
+                        print(f'Warning: Upper bound violated for {x} by {ub - x_values[x]}')
             if var_inequalities:
                 x = (A.todense() @ np.array(list(x_values.values())) + \
                                 b.getDataAsArray()).A[0]

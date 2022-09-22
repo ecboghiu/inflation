@@ -68,34 +68,6 @@ def find_permutation(list1: List,
         return [original_dict[x] for x in list2]
 
 
-def mul(lst: List) -> Any:
-    """Multiply all elements of a list.
-
-    Parameters
-    ----------
-    lst : List
-        Input list with elements that have a supported '*' multiplication.
-
-    Returns
-    -------
-    Any
-        Product of all elements.
-
-    Example
-    -------
-    >>> mul([2, 'A_1', 'B_2'])
-    2*A_1*B_2
-    """
-
-    if type(lst[0]) == str:
-        result = '*'.join(lst)
-    else:
-        result = 1
-        for element in lst:
-            result *= element
-    return result
-
-
 @jit(nopython=nopython)
 def apply_source_permplus_monomial(monomial: np.ndarray,
                                    source: int,
@@ -300,7 +272,7 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     List[sympy.core.symbol.Symbol]
         List of all the symbolic factors, with the powers expanded.
     """
-    # this is for treating cases like A**2, where we want factors = [A, A]
+    # This is for treating cases like A**2, where we want factors = [A, A]
     # and this behaviour doesn't work with .as_ordered_factors()
     factors = monomial.as_ordered_factors()
     factors_expanded = []
@@ -335,37 +307,47 @@ def to_symbol(monomial: np.ndarray, names: Tuple[str]) -> sympy.core.symbol.Symb
     return prod
 
 
-def factorize_monomials(monomials_as_numbers: np.ndarray,
-                        verbose: int = 0
-                        ) -> np.ndarray:
-    """Applies factorize_momonial to each monomial in the input list
-    of monomials.
+def to_numbers(monomial: str,
+               parties_names: Tuple[str]
+               ) -> np.ndarray:
+    """Monomial from string to matrix representation.
+
+    Given a monomial input in string format, return the matrix representation
+    where each row represents an operators and the columns are operator labels
+    such as party, inflation copies and input and output cardinalities.
 
     Parameters
     ----------
-    monomials_as_numbers : numpy.ndarray
-        An ndarray of type object where each row has the integer
-        representation of a monomial in the 1st column and in the 2nd
-        column a monomial in matrix form (each row is an operator
-        and each column has the operator indices).
-    verbose : int, optional
-        Whether to print progress bar. By default ``0``.
+    monomial : str
+        Monomial in string format.
+    parties_names : Tuple[str]
+        Tuple of party names.
 
     Returns
     -------
-    numpy.ndarray
-        The same output as monomials_as_numbers but with the factorized
-        monomials.
+    Tuple[Tuple[int]]
+        Monomial in tuple of tuples format (equivalent to 2d array format by
+        calling np.array() on the result).
     """
-    monomials_factors = monomials_as_numbers.copy()
-    for idx, [_, monomial] in enumerate(monomials_factors):
-        monomials_factors[idx][1] = factorize_monomial(monomial)
-    return monomials_factors
+    parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
 
+    if isinstance(monomial, str):
+        monomial_parts = monomial.split('*')
+    else:
+        factors = flatten_symbolic_powers(monomial)
+        monomial_parts = [str(factor) for factor in factors]
 
-@lru_cache(maxsize=None, typed=False)
-def atomic_is_knowable_memoized(atomic_monomial: Tuple[Tuple[int]]) -> bool:
-    return is_knowable(np.asarray(atomic_monomial))
+    monomial_parts_indices = []
+    for part in monomial_parts:
+        atoms = part.split('_')
+        if atoms[0] not in parties_names_dict.keys():
+            raise Exception(f"Party name {atoms[0]} not recognized.")
+        indices = ((parties_names_dict[atoms[0]],)
+                   + tuple(int(j) for j in atoms[1:-2])
+                   + (int(atoms[-2]), int(atoms[-1])))
+        monomial_parts_indices.append(indices)
+
+    return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
 def is_knowable(monomial: np.ndarray) -> bool:
@@ -442,43 +424,6 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     return res
 
 
-def label_knowable_and_unknowable(monomials_factors: np.ndarray,
-                                  hypergraph: np.ndarray
-                                  ) -> np.ndarray:
-    """Given the list of monomials factorised, label each monomial as knowable,
-    semiknowable or unknowable.
-
-    Parameters
-    ----------
-    monomials_factors_input : numpy.ndarray
-        Ndarray of factorised monomials. Each row encodes the integer
-        representation and the factors of the monomial.
-    hypergraph : numpy.ndarray
-        The hypergraph of the network.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array of the same size as the input, with the labels of each monomial.
-    """
-    factors_are_knowable = np.empty_like(monomials_factors)
-    factors_are_knowable[:, 0] = monomials_factors[:, 0]
-    monomial_is_knowable = np.empty_like(monomials_factors)
-    monomial_is_knowable[:, 0] = monomials_factors[:, 0]
-    for idx, [_, factors] in enumerate(monomials_factors):
-        factors_known_list = [is_knowable(
-            factor, hypergraph) for factor in factors]
-        factors_are_knowable[idx][1] = factors_known_list
-        if all(factors_known_list):
-            knowable = 'Yes'
-        elif any(factors_known_list):
-            knowable = 'Semi'
-        else:
-            knowable = 'No'
-        monomial_is_knowable[idx][1] = knowable
-    return monomial_is_knowable, factors_are_knowable
-
-
 def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     """Removes sandwiching/pinching from a monomial. This is, it converts the
     monomial represented by :math:`U A U^\dagger` into :math:`A`.
@@ -549,7 +494,6 @@ def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
     return monomial_parts_indices
 
 
-# @jit(nopython=nopython)  # make to_canonical compatible with numba
 def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
                                           notcomm: np.ndarray,
                                           lexorder: np.ndarray) -> np.ndarray:
@@ -568,9 +512,8 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
         An equivalent monomial closer to its representative form.
     """
     monomial_component = to_canonical(
-        np.asarray(monomial_component), notcomm, lexorder)  # Make sure all commutation rules are applied
+        np.asarray(monomial_component), notcomm, lexorder)
     new_mon = monomial_component.copy()
-    # -2 we ignore the first and the last two columns
     for source in range(monomial_component.shape[1] - 3):
         source_inf_copy_nrs = monomial_component[:, 1 + source]
         # This returns the unique values unsorted
@@ -679,9 +622,7 @@ def to_representative(mon: np.ndarray,
         return mon
 
     # We apply source swaps until we reach a stable point in terms of
-    # lexiographic ordering. We do this by lowering the copy indices making
-    # them as low as possible from left to right. This might not be a global
-    # optimum.
+    # lexiographic ordering.
     final_monomial = to_repr_lower_copy_indices_with_swaps(mon, notcomm, lexorder)
 
     # Before we didn't consider that applying a source swap that decreases the
