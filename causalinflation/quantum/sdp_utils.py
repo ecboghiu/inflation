@@ -210,11 +210,11 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
             del var_upperbounds[x]
         for equality in var_equalities:
             if x != CONSTANT_KEY and x in equality:
-                equality[CONSTANT_KEY] += equality[x] * xval
+                equality[CONSTANT_KEY] = equality.get(CONSTANT_KEY, 0.) + equality[x] * xval
                 del equality[x]
         for inequality in var_inequalities:
             if x != CONSTANT_KEY and x in inequality:
-                inequality[CONSTANT_KEY] += inequality[x] * xval
+                inequality[CONSTANT_KEY] = inequality.get(CONSTANT_KEY, 0.) + inequality[x] * xval
                 del inequality[x]
 
     if process_constraints:
