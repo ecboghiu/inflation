@@ -55,7 +55,6 @@ def symbol_from_atomic_name(atomic_name: str) -> sympy.core.symbol.Symbol:
 
 
 def name_from_atomic_names(atomic_names: List[str]) -> str:
-    # #
     if len(atomic_names):
         output = ''
         for i, (name, power) in enumerate(Counter(atomic_names).items()):
