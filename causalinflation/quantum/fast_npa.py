@@ -672,20 +672,23 @@ def apply_source_swap_monomial(monomial: np.ndarray,
                                copy1: int,
                                copy2: int) -> np.ndarray:
     """Applies a swap of two sources to a monomial.
+
     Parameters
     ----------
     monomial : numpy.ndarray
         Monomial as a matrix with rows as integer arrays representing operators.
     source : int
-        Integer in values [0, ..., nr_sources]
+        Integer in values ``[0, ..., nr_sources]``
     copy1 : int
         Represents the copy of the source that swaps with copy2
     copy2 : int
         Represents the copy of the source that swaps with copy1
+
     Returns
     -------
     numpy.ndarray
          The new monomial with swapped sources.
+
     Examples
     --------
     >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
@@ -709,27 +712,26 @@ def apply_source_swap_monomial(monomial: np.ndarray,
 
 def factorize_monomial(raw_monomial: np.ndarray,
                        canonical_order=False) -> Tuple[np.ndarray]:
-    """This function splits a moment/expectation value into products of
+    r"""This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
 
-    The moment is encoded as a 2d array where each row is an operator.
-    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
-    In each row, the columns encode the following information:
+    The moment is encoded as a 2d array where each row is an operator. If
+    :math:`\text{monomial}=ABCB` then row 1 is :math:`A`, row 2 is :math:`B`,
+    row 3 is :math:`C` and row 4 is :math:`B`. In each row, the columns encode
+    the following information:
 
-    First column:       The party index, *starting from 1*.
-                        (1 for A, 2 for B, etc.)
-    Last two columns:   The input x, starting from zero and then the
-                        output a, starting from zero.
-    In between:         This encodes the support of the operator. There
-                        are as many columns as sources/quantum states.
-                        Column j represents source j-1 (-1 because the 1st
-                        col is the party). If the value is 0, then this
-                        operator does not measure this source. If the value
-                        is for e.g. 2, then this operator is acting on
-                        copy 2 of source j-1.
+    * First column: The party index, *starting from 1*. (i.e., 1 for :math:`A`,
+      2 for :math:`B`, etc.)
+    * Second-to-last column: The setting choice, starting from zero.
+    * Last column: The output, starting from zero.
+    * In between: This encodes the support of the operator. There are as many
+      columns as sources/quantum states. Column ``j`` represents source
+      ``j-1`` (``-1`` because the first column is the party). If the value is
+      ``0``, then this operator does not measure this source. If the value is,
+      e.g., ``2``, then this operator is acting on copy ``2`` of source ``j-1``.
 
-    The output is a tuple of ndarrays where each array represents another
-    monomial s.t. their product is equal to the original monomial.
+    The output is a tuple of ndarrays where each array represents a monomial
+    with support disjoint to the remaining ones.
 
     Parameters
     ----------
@@ -761,7 +763,6 @@ def factorize_monomial(raw_monomial: np.ndarray,
      array([[3, 3, 5, 0, 0, 0],
             [3, 4, 5, 0, 0, 0]]),
      array([[3, 6, 6, 0, 0, 0]])]
-
     """
     if len(raw_monomial) == 0:
         return [raw_monomial]
