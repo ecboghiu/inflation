@@ -105,10 +105,10 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
     var_upperbounds : dict, optional
         Dictionary of upper bounds for monomials. By default ``{}``.
     var_inequalities : list, optional
-        List of inequalities enconded as dictionaries of coefficients. By
+        List of inequalities encoded as dictionaries of coefficients. By
         default ``[]``.
     var_equalities : list, optional
-        List of equalities enconded as dictionaries of coefficients. By default
+        List of equalities encoded as dictionaries of coefficients. By default
         ``[]``.
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation. By

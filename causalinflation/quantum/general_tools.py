@@ -114,7 +114,7 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          ) -> List[np.ndarray]:
     """Applies a specific source permutation to the list of operators used to
     define the moment matrix. Outputs the permuted list of operators.
-    The operators are enconded as lists of numbers denoting
+    The operators are encoded as lists of numbers denoting
     [party, source_1_copy, source_2_copy, ..., input, output]
     A product of operators is a list of such lists transformed into a
     np.ndarray.
