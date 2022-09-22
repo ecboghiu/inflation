@@ -90,8 +90,9 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     Parameters
     ----------
-    positionsmatrix : scipy.sparse.lil_matrix
-        Matrix of positions of the monomials in the moment matrix.
+    maskmatrices_name_dict : dict
+        A dictionary with keys as monomials and values as scipy sparse arrays
+        indicating the locations of the monomial in the moment matrix.
     objective : dict, optional
         Dictionary with keys as monomials and as values the monomial's
         coefficient in the objective function. By default ``{1: 0.}``
