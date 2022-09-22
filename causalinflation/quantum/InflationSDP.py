@@ -67,7 +67,7 @@ class InflationSDP(object):
         Optional parameter for level of verbose:
 
             * 0: quiet (default),
-            * 1: monitor level: track program process,
+            * 1: monitor level: track program process and show warnings,
             * 2: debug level: show properties of objects created.
     """
 
@@ -373,8 +373,6 @@ class InflationSDP(object):
 
             * `List[sympy.core.symbol.Symbol]`: one can also fully specify the
               generating set by giving a list of symbolic operators built from
-              the measurement operators in `self.measurements`. This list needs
-              to have the identity ``sympy.S.One`` as the first element.
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.

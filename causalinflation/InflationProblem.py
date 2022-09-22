@@ -39,7 +39,7 @@ class InflationProblem(object):
         Optional parameter for level of verbose:
 
         * 0: quiet (default),
-        * 1: monitor level: track program process and see warnings,
+        * 1: monitor level: track program process and show warnings,
         * 2: debug level: show properties of objects created.
     """
     def __init__(self,
