@@ -87,8 +87,9 @@ class InflationSDP(object):
 
         self.nr_parties = len(self.names)
         self.nr_sources = self.InflationProblem.nr_sources
-        self.hypergraph = self.InflationProblem.hypergraph
-        self.inflation_levels = self.InflationProblem.inflation_level_per_source
+        self.hypergraph = np.asarray(self.InflationProblem.hypergraph)
+        self.inflation_levels = np.asarray(self.InflationProblem.inflation_level_per_source)
+        self._symmetrization_required = np.any(self.inflation_levels - 1)
         self.has_children = self.InflationProblem.has_children
         if self.supports_problem:
             self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + 1
@@ -98,10 +99,17 @@ class InflationSDP(object):
 
         self._generate_parties()
         if self.verbose > 0:
+            print("Number of single operator measurements considered per party:", end="")
+            prefix = " "
             for i, measures in enumerate(self.measurements):
                 counter = itertools.count()
                 deque(zip(itertools.chain.from_iterable(itertools.chain.from_iterable(measures)), counter), maxlen=0)
-                print(f"Party {self.names[i]} has {next(counter)} distinct single-operator measurements.")
+                print(prefix + f"{self.names[i]}={next(counter)}", end="")
+                prefix = ", "
+                # measures_per_party_dict[self.names[i]] = next(counter)
+                # print(f"Party {self.names[i]} has {next(counter)} distinct single-operator measurements.")
+            # print(f"Number of possible single operator measurements per party under consideration: {measures_per_party_dict}")
+            print()
         self.maximize = True  # Direction of the optimization
         self.split_node_model = self.InflationProblem.split_node_model
         self._is_knowable_q_split_node_check = self.InflationProblem._is_knowable_q_split_node_check
@@ -299,8 +307,9 @@ class InflationSDP(object):
                                 break
                         if missing_op_location >= 0:
                             self.column_level_equalities.append((missing_op_location, tuple(variant_locations)))
-        if self.verbose > 0 and len(self.column_level_equalities):
-            print("Column level equalities:", self.column_level_equalities)
+        num_of_column_level_equalities = len(self.column_level_equalities)
+        if self.verbose > 1 and num_of_column_level_equalities:
+            print("Number of column level equalities:", num_of_column_level_equalities)
 
     def construct_monomial_level_equalities_from_column_level_equalities(self):
         moment_linear_equalities = []
@@ -422,7 +431,8 @@ class InflationSDP(object):
         # Calculate the moment matrix without the inflation symmetries.
         self.unsymmetrized_mm_idxs, self.unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
         if self.verbose > 0:
-            print("Number of variables before symmetrization:",
+            extra_message = (" before symmetrization" if self._symmetrization_required else "")
+            print("Number of variables" + extra_message + ":",
                   len(self.unsymidx_to_unsym_monarray_dict) + (1 if 0 in self.unsymmetrized_mm_idxs.flat else 0))
 
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
@@ -455,7 +465,7 @@ class InflationSDP(object):
         #                                for (k, v) in self.symidx_to_sym_monarray_dict.items() if k > 0])
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
-        if self.verbose > 0:
+        if self.verbose > 0 and self._symmetrization_required:
             print("Number of variables after symmetrization:",
                   len(self.list_of_monomials))
         """
@@ -1453,35 +1463,39 @@ class InflationSDP(object):
             the inflation symmetries.
         """
 
-        inflevel = self.inflation_levels
-        n_sources = self.nr_sources
-
-        inflation_symmetries = []
-        list_original = [self.from_2dndarray(op) for op in self.generating_monomials]
-        for source, permutation in tqdm(sorted(
-                [(source, permutation) for source in list(range(n_sources))
-                 for permutation in itertools.permutations(range(inflevel[source]))]
-        ),
-                disable=not self.verbose,
-                desc="Calculating symmetries...    "):
-            permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
-            permuted_cols_ind = \
-                apply_source_permutation_coord_input(self.generating_monomials,
-                                                     source,
-                                                     permutation_plus,
-                                                     self.commuting,
-                                                     self._notcomm,
-                                                     self._lexorder)
-            list_permuted = [self.from_2dndarray(op) for op in permuted_cols_ind]
-            try:
-                total_perm = find_permutation(list_permuted, list_original)
-                inflation_symmetries.append(total_perm)
-            except:
-                if self.verbose > 0:
-                    warnings.warn("The generating set is not closed under source swaps." +
-                                  "Some symmetries will not be implemented.")
-
-        return np.unique(inflation_symmetries, axis=0)
+        symmetry_inducing_sources = [source for source, inf_level in enumerate(self.inflation_levels) if inf_level > 1]
+        # inflevel = self.inflation_levels
+        # n_sources = self.nr_sources
+        if len(symmetry_inducing_sources):
+            inflation_symmetries = []
+            list_original = [self.from_2dndarray(op) for op in self.generating_monomials]
+            for source, permutation in tqdm(sorted(
+                    [(source, permutation) for source in symmetry_inducing_sources
+                     for permutation in itertools.permutations(range(self.inflation_levels[source]))]
+            ),
+                    disable=not self.verbose,
+                    desc="Calculating symmetries...    "):
+                #We do NOT need to calculate the "symmetry" induced by the identity permutation.
+                if not permutation == tuple(range(self.inflation_levels[source])):
+                    permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
+                    permuted_cols_ind = \
+                        apply_source_permutation_coord_input(self.generating_monomials,
+                                                             source,
+                                                             permutation_plus,
+                                                             self.commuting,
+                                                             self._notcomm,
+                                                             self._lexorder)
+                    list_permuted = [self.from_2dndarray(op) for op in permuted_cols_ind]
+                    try:
+                        total_perm = find_permutation(list_permuted, list_original)
+                        inflation_symmetries.append(total_perm)
+                    except:
+                        if self.verbose > 0:
+                            warnings.warn("The generating set is not closed under source swaps." +
+                                          "Some symmetries will not be implemented.")
+            return np.unique(inflation_symmetries, axis=0)
+        else:
+            return np.empty((0, len(self.generating_monomials)), dtype=int)
 
     def _apply_inflation_symmetries(self,
                                     momentmatrix: np.ndarray,
@@ -1504,51 +1518,55 @@ class InflationSDP(object):
         operators indexed as self.measurements[p][c][i][o] for party p,
         copies c, input i, output o.
         """
-        unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
-        absent_indices = np.arange(np.min(unique_values))
-        symmetric_arr = momentmatrix.copy()
 
-        for permutation in tqdm(inflation_symmetries,
-                                disable=not self.verbose,
-                                desc="Applying symmetries...       "):
-            if not np.array_equal(permutation, np.arange(len(momentmatrix))):
-                if conserve_memory:
-                    for i, ip in enumerate(permutation):
-                        for j, jp in enumerate(permutation):
-                            new_val = symmetric_arr[i, j]
-                            if new_val < symmetric_arr[ip, jp]:
-                                symmetric_arr[ip, jp] = new_val
-                                symmetric_arr[jp, ip] = new_val
-                else:
-                    np.minimum(symmetric_arr, symmetric_arr[permutation].T[permutation].T, out=symmetric_arr)
-        orbits = np.concatenate((absent_indices, symmetric_arr.flat[where_it_matters_flat].flat))
-        # Make the orbits go until the representative
-        for key, val in enumerate(orbits):
-            previous = 0
-            changed = True
-            while changed:
-                try:
-                    val = orbits[val]
-                    if val == previous:
-                        changed = False
+        if not len(inflation_symmetries):
+            return momentmatrix, np.arange(momentmatrix.max()+1), unsymidx_to_canonical_mon_dict
+        else:
+            unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
+            absent_indices = np.arange(np.min(unique_values))
+            symmetric_arr = momentmatrix.copy()
+
+            for permutation in tqdm(inflation_symmetries,
+                                    disable=not self.verbose,
+                                    desc="Applying symmetries...       "):
+                if not np.array_equal(permutation, np.arange(len(momentmatrix))):
+                    if conserve_memory:
+                        for i, ip in enumerate(permutation):
+                            for j, jp in enumerate(permutation):
+                                new_val = symmetric_arr[i, j]
+                                if new_val < symmetric_arr[ip, jp]:
+                                    symmetric_arr[ip, jp] = new_val
+                                    symmetric_arr[jp, ip] = new_val
                     else:
-                        previous = val
-                except KeyError:
-                    warnings.warn("Your generating set might not have enough" +
-                                  "elements to fully impose inflation symmetries.")
-            orbits[key] = val
+                        np.minimum(symmetric_arr, symmetric_arr[permutation].T[permutation].T, out=symmetric_arr)
+            orbits = np.concatenate((absent_indices, symmetric_arr.flat[where_it_matters_flat].flat))
+            # Make the orbits go until the representative
+            for key, val in enumerate(orbits):
+                previous = 0
+                changed = True
+                while changed:
+                    try:
+                        val = orbits[val]
+                        if val == previous:
+                            changed = False
+                        else:
+                            previous = val
+                    except KeyError:
+                        warnings.warn("Your generating set might not have enough" +
+                                      "elements to fully impose inflation symmetries.")
+                orbits[key] = val
 
-        old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
-                                                                                  return_index=True,
-                                                                                  return_inverse=True)
-        assert np.array_equal(old_representative_indices, new_indices
-                              ), 'Something unexpected happened when calculating orbits.'
+            old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
+                                                                                      return_index=True,
+                                                                                      return_inverse=True)
+            assert np.array_equal(old_representative_indices, new_indices
+                                  ), 'Something unexpected happened when calculating orbits.'
 
-        symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
-        symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in
-                                        enumerate(
-                                            old_representative_indices) if old_idx >= 1}
-        return symmetric_arr, unsym_idx_to_sym_idx, symidx_to_canonical_mon_dict
+            symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
+            symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in
+                                            enumerate(
+                                                old_representative_indices) if old_idx >= 1}
+            return symmetric_arr, unsym_idx_to_sym_idx, symidx_to_canonical_mon_dict
 
     ########################################################################
     # OTHER ROUTINES                                                       #
