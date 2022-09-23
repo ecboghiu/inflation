@@ -421,26 +421,29 @@ class InflationSDP(object):
             print("Number of columns:", self.nof_columns)
 
         # Calculate the moment matrix without the inflation symmetries.
-        self.unsymmetrized_mm_idxs, self.unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
+        unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
         if self.verbose > 0:
             extra_message = (" before symmetrization" if self._symmetrization_required else "")
             print("Number of variables" + extra_message + ":",
-                  len(self.unsymidx_to_unsym_monarray_dict) + (1 if 0 in self.unsymmetrized_mm_idxs.flat else 0))
+                  len(unsymidx_to_unsym_monarray_dict) + (1 if 0 in unsymmetrized_mm_idxs.flat else 0))
 
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                    self.unsymidx_to_unsym_monarray_dict.items()}
+                                    unsymidx_to_unsym_monarray_dict.items()}
 
         # Calculate the inflation symmetries.
         self.inflation_symmetries = self._calculate_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix.
         self.momentmatrix, self.orbits, self.symidx_to_sym_monarray_dict \
-            = self._apply_inflation_symmetries(self.unsymmetrized_mm_idxs,
-                                               self.unsymidx_to_unsym_monarray_dict,
+            = self._apply_inflation_symmetries(unsymmetrized_mm_idxs,
+                                               unsymidx_to_unsym_monarray_dict,
                                                self.inflation_symmetries)
+        del unsymmetrized_mm_idxs
         for (k, v) in _unsymidx_from_hash_dict.items():
             self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
         del _unsymidx_from_hash_dict
+        #This is a good time to reclaim memory, as unsymmetrized_mm_idxs can be GBs.
+        gc.collect(generation=2)
         (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
         self.largest_moment_index = max(self.symidx_to_sym_monarray_dict.keys())
 
