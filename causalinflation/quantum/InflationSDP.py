@@ -112,8 +112,8 @@ class InflationSDP(object):
             # print(f"Number of possible single operator measurements per party under consideration: {measures_per_party_dict}")
             print()
         self.maximize = True  # Direction of the optimization
-        self.split_node_model = self.InflationProblem.split_node_model
-        self._is_knowable_q_split_node_check = self.InflationProblem._is_knowable_q_split_node_check
+        self.not_network_model = self.InflationProblem.non_network_scenario
+        self._is_knowable_q_for_non_network_models = self.InflationProblem._is_knowable_q_for_non_networks_models
         self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
 
         self._nr_operators = len(flatten(self.measurements))
@@ -205,9 +205,9 @@ class InflationSDP(object):
         return mon
 
     def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        if self.split_node_model:
+        if self.not_network_model:
             minimal_monomial = tuple(tuple(vec) for vec in np.take(atomic_monarray, [0, -2, -1], axis=1))
-            return self._is_knowable_q_split_node_check(minimal_monomial)
+            return self._is_knowable_q_for_non_network_models(minimal_monomial)
         else:
             return True
 
