@@ -522,8 +522,8 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
             self.known_moments_name_dict[self.Zero.name] = 0.
-            self.known_moments[self.One] = 1.
-            self.known_moments_name_dict[self.One.name] = 1.
+        self.known_moments[self.One] = 1.
+        self.known_moments_name_dict[self.One.name] = 1.
         gc.collect(2)
 
     def reset_bounds(self):
@@ -602,7 +602,6 @@ class InflationSDP(object):
     def set_values(self, values: Union[
         Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
                    use_lpi_constraints: bool = False,
-                   normalised: bool = True,
                    only_knowable_moments: bool = False,
                    only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the moment matrix.
@@ -630,19 +629,11 @@ class InflationSDP(object):
         only_knowable_moments : bool
             Default False. Set True to prevent the user from accidentally specifying values of
             monomials that are not a priori knowable.
-
-        normalised: bool
-            Specifies whether the unit monomial '1' is given value 1.0 even if
-            '1' is not included in the values dictionary (default, True), or if
-            is left as a free variable (False).
         """
 
         self.reset_values()
 
-        if normalised and self.momentmatrix_has_a_one:
-            self.known_moments[self.One] = 1.
-        if (not normalised) and self.momentmatrix_has_a_one:
-            del self.known_moments[self.One]
+
         if (values is None) or (len(values) == 0):
             self.cleanup_after_set_values()
             return
