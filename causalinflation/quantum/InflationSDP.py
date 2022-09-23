@@ -97,7 +97,7 @@ class InflationSDP(object):
         self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
-        self._generate_parties()
+        self.measurements = self._generate_parties()
         if self.verbose > 0:
             print("Number of single operator measurements considered per party:", end="")
             prefix = " "
@@ -280,9 +280,9 @@ class InflationSDP(object):
         party = operator[0] - 1
         return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
 
-    def identify_column_level_equalities(self):
-        self.column_level_equalities = []
-        for i, monomial in enumerate(self.generating_monomials):
+    def _identify_column_level_equalities(self, generating_monomials):
+        column_level_equalities = []
+        for i, monomial in enumerate(iter(generating_monomials)):
             for k, operator in enumerate(iter(monomial)):
                 if self.operator_max_outcome_q(operator):
                     operator_as_2d = np.expand_dims(operator, axis=0)
@@ -294,7 +294,7 @@ class InflationSDP(object):
                         variant_operator = operator_as_2d.copy()
                         variant_operator[0, -1] = outcome
                         variant_monomial = np.vstack((prefix, variant_operator, suffix))
-                        for j, monomial in enumerate(self.generating_monomials):
+                        for j, monomial in enumerate(iter(generating_monomials)):
                             if np.array_equal(monomial, variant_monomial):
                                 variant_locations.append(j)
                                 break
@@ -306,35 +306,43 @@ class InflationSDP(object):
                                 missing_op_location = j
                                 break
                         if missing_op_location >= 0:
-                            self.column_level_equalities.append((missing_op_location, tuple(variant_locations)))
-        num_of_column_level_equalities = len(self.column_level_equalities)
+                            column_level_equalities.append((missing_op_location, tuple(variant_locations)))
+        num_of_column_level_equalities = len(column_level_equalities)
         if self.verbose > 1 and num_of_column_level_equalities:
             print("Number of column level equalities:", num_of_column_level_equalities)
+        return column_level_equalities
 
-    def construct_monomial_level_equalities_from_column_level_equalities(self):
-        moment_linear_equalities = []
+    @staticmethod
+    def construct_idx_level_equalities_from_column_level_equalities(column_level_equalities,
+                                                                    momentmatrix):
+        idx_linear_equalities = []
         seen_already = set()
-        for column_level_equality in self.column_level_equalities:
-            for row in range(self.nof_columns):
-                signature = (row, column_level_equality[-1][-1])
+        for column_level_equality in column_level_equalities:
+            for i, row in enumerate(iter(momentmatrix)):
+                signature = (i, column_level_equality[-1][-1])
                 if signature not in seen_already:
                     seen_already.add(signature)
                     temp_dict = dict()
                     (normalization_col, summation_cols) = column_level_equality
-                    norm_monomial = self.compound_monomial_from_idx_dict[self.momentmatrix[row, normalization_col]]
-                    temp_dict[norm_monomial] = 1
+                    norm_idx = row[normalization_col]
+                    temp_dict[norm_idx] = 1
                     trivial_count = 0
                     for col in summation_cols:
-                        mon = self.compound_monomial_from_idx_dict[self.momentmatrix[row, col]]
-                        if not mon.is_zero:
-                            temp_dict[mon] = -1
+                        idx = row[col]
+                        if idx > 0:  # Nonzero monomial
+                            temp_dict[idx] = -1
                         else:
                             trivial_count += 1
                     if trivial_count != 1:
-                        moment_linear_equalities.append(temp_dict)
+                        idx_linear_equalities.append(temp_dict)
                     del signature, trivial_count, temp_dict
-        self.moment_linear_equalities = moment_linear_equalities
-        del seen_already, moment_linear_equalities
+        del seen_already
+        return idx_linear_equalities
+
+    # def construct_monomial_level_equalities_from_idx_level_equalities(self,
+    #                                                                   idx_level_equalities):
+    #     return [{self.compound_monomial_from_idx_dict[i]: v for i, v in eq.items}
+    #             for eq in idx_level_equalities]
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -412,11 +420,10 @@ class InflationSDP(object):
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.
-        self.generating_monomials_sym, self.generating_monomials = \
-            self.build_columns(column_specification,
-                               return_columns_numerical=True)
+        self.generating_monomials_sym, self.generating_monomials = self.build_columns(column_specification,
+                                                                                      return_columns_numerical=True)
         self.nof_columns = len(self.generating_monomials)
-        self.identify_column_level_equalities()
+        self.column_level_equalities = self._identify_column_level_equalities(self.generating_monomials)
 
         if self.verbose > 0:
             print("Number of columns:", self.nof_columns)
@@ -438,12 +445,14 @@ class InflationSDP(object):
         self.momentmatrix, self.orbits, self.symidx_to_sym_monarray_dict \
             = self._apply_inflation_symmetries(unsymmetrized_mm_idxs,
                                                unsymidx_to_unsym_monarray_dict,
-                                               self.inflation_symmetries)
+                                               self.inflation_symmetries,
+                                               conserve_memory=False,
+                                               verbose=self.verbose)
         del unsymmetrized_mm_idxs
         for (k, v) in _unsymidx_from_hash_dict.items():
             self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
         del _unsymidx_from_hash_dict
-        #This is a good time to reclaim memory, as unsymmetrized_mm_idxs can be GBs.
+        # This is a good time to reclaim memory, as unsymmetrized_mm_idxs can be GBs.
         gc.collect(generation=2)
         (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
         self.largest_moment_index = max(self.symidx_to_sym_monarray_dict.keys())
@@ -480,7 +489,12 @@ class InflationSDP(object):
         self.monomial_names = list(self.name_dict_of_monomials.keys())
 
         self.moment_linear_equalities = []
-        self.construct_monomial_level_equalities_from_column_level_equalities()
+        idx_level_equalities = self.construct_idx_level_equalities_from_column_level_equalities(
+            column_level_equalities=self.column_level_equalities,
+            momentmatrix=self.momentmatrix)
+        self.moment_linear_equalities = [{self.compound_monomial_from_idx_dict[i]: v for i, v in eq.items()}
+                                         for eq in idx_level_equalities]
+
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.possibly_physical_monomials}
@@ -609,7 +623,6 @@ class InflationSDP(object):
 
         self.reset_values()
 
-
         if (values is None) or (len(values) == 0):
             self.cleanup_after_set_values()
             return
@@ -678,7 +691,6 @@ class InflationSDP(object):
                 self._processed_moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
             self.semiknown_moments = dict()
-
 
         # Create lowerbounds list for physical but unknown moments
         self.update_lowerbounds()
@@ -867,7 +879,8 @@ class InflationSDP(object):
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
 
-        assert set(self.known_moments.keys()).issubset(self.list_of_monomials), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}'
+        assert set(self.known_moments.keys()).issubset(
+            self.list_of_monomials), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}'
 
         return {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
                 "objective": {m.name: v for m, v in self._processed_objective.items()},
@@ -878,9 +891,6 @@ class InflationSDP(object):
                 "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
                 "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
                 }
-
-
-
 
     def solve(self, interpreter: str = 'MOSEKFusion',
               feas_as_optim: bool = False,
@@ -1057,7 +1067,7 @@ class InflationSDP(object):
                       column_specification: Union[str, List[List[int]],
                                                   List[sp.core.symbol.Symbol]],
                       max_monomial_length: int = 0,
-                      return_columns_numerical: bool = False) -> None:
+                      return_columns_numerical: bool = False):
         """Creates the objects indexing the columns of the moment matrix from
         a specification.
 
@@ -1393,20 +1403,20 @@ class InflationSDP(object):
                 )
                 party_meas.append(meas)
             measurements.append(party_meas)
-        self.measurements = measurements
+        return measurements
 
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
         """Generate the moment matrix.
         """
-        problem_arr, canonical_mon_to_idx_dict = calculate_momentmatrix(self.generating_monomials,
+        problem_arr, canonical_mon_as_bytes_to_idx_dict = calculate_momentmatrix(self.generating_monomials,
                                                                         self._notcomm,
                                                                         self._lexorder,
                                                                         verbose=self.verbose,
                                                                         commuting=self.commuting,
                                                                         dtype=self.np_dtype)
         idx_to_canonical_mon_dict = {idx: self.to_2dndarray(mon_as_bytes) for (mon_as_bytes, idx) in
-                                     canonical_mon_to_idx_dict.items()}
-
+                                     canonical_mon_as_bytes_to_idx_dict.items()}
+        del canonical_mon_as_bytes_to_idx_dict
         return problem_arr, idx_to_canonical_mon_dict
 
     def _calculate_inflation_symmetries(self) -> np.ndarray:
@@ -1456,11 +1466,12 @@ class InflationSDP(object):
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
 
-    def _apply_inflation_symmetries(self,
-                                    momentmatrix: np.ndarray,
+    @staticmethod
+    def _apply_inflation_symmetries(momentmatrix: np.ndarray,
                                     unsymidx_to_canonical_mon_dict: Dict,
                                     inflation_symmetries: np.ndarray,
-                                    conserve_memory=False
+                                    conserve_memory=False,
+                                    verbose=0
                                     ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """Applies the inflation symmetries to the moment matrix.
 
@@ -1486,7 +1497,7 @@ class InflationSDP(object):
             symmetric_arr = momentmatrix.copy()
 
             for permutation in tqdm(inflation_symmetries,
-                                    disable=not self.verbose,
+                                    disable=not verbose,
                                     desc="Applying symmetries...       "):
                 if not np.array_equal(permutation, np.arange(len(momentmatrix))):
                     if conserve_memory:

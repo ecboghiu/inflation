@@ -5,7 +5,6 @@ numba.
 @authors: Alejandro Pozas-Kerstjens, Elie Wolfe and Emanuel-Cristian Boghiu
 """
 from typing import List, Dict, Tuple
-
 import numpy as np
 from scipy.sparse import dok_matrix
 
@@ -888,4 +887,4 @@ def calculate_momentmatrix(cols: List,
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
-    return momentmatrix.todense(), canonical_mon_to_idx_dict
+    return momentmatrix.toarray(), canonical_mon_to_idx_dict
