@@ -9,13 +9,19 @@ from scipy.sparse import lil_matrix, dok_matrix
 from typing import Dict, Tuple
 
 
-def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
-                         objective={1: 0.}, known_vars={0: 0., 1: 1.},
-                         semiknown_vars={}, positive_vars=[],
-                         verbose=0, feas_as_optim=False,
-                         solverparameters={}, var_lowerbounds={},
-                         var_upperbounds={}, var_inequalities=[],
-                         var_equalities=[], solve_dual=True,
+def solveSDP_MosekFUSION(mask_matrices: {},
+                         objective={'1': 0.},
+                         known_vars={'0': 0., '1': 1.},
+                         semiknown_vars={},
+                         positive_vars=[],
+                         verbose=0,
+                         feas_as_optim=False,
+                         solverparameters={},
+                         var_lowerbounds={},
+                         var_upperbounds={},
+                         var_inequalities=[],
+                         var_equalities=[],
+                         solve_dual=True,
                          process_constraints=True
                          ) -> Tuple[Dict, float, str]:
     r"""Internal function to solve the SDP with the `MOSEK Fusion API
@@ -149,7 +155,7 @@ def solveSDP_MosekFUSION(maskmatrices_name_dict: lil_matrix,
 
     CONSTANT_KEY = '1'  
     known_vars_without_zero = known_vars.copy()
-    Fi = maskmatrices_name_dict.copy()
+    Fi = mask_matrices.copy()
     
     # We should not have the Zero monomial here
     try:

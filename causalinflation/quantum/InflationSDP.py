@@ -8,7 +8,6 @@ import gc
 import itertools
 import warnings
 from collections import Counter, deque
-from copy import deepcopy
 from numbers import Real
 from typing import List, Dict, Tuple, Union, Any
 
@@ -147,6 +146,8 @@ class InflationSDP(object):
         self.compound_monomial_from_name_dict = dict()
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One = self.Monomial(self.identity_operator, idx=1)
+
+        self._relaxation_has_been_generated = False
 
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
         quick_key = self.from_2dndarray(array2d)
@@ -321,12 +322,12 @@ class InflationSDP(object):
                     temp_dict = dict()
                     (normalization_col, summation_cols) = column_level_equality
                     norm_monomial = self.compound_monomial_from_idx_dict[self.momentmatrix[row, normalization_col]]
-                    temp_dict[norm_monomial.name] = 1
+                    temp_dict[norm_monomial] = 1
                     trivial_count = 0
                     for col in summation_cols:
                         mon = self.compound_monomial_from_idx_dict[self.momentmatrix[row, col]]
                         if not mon.is_zero:
-                            temp_dict[mon.name] = -1
+                            temp_dict[mon] = -1
                         else:
                             trivial_count += 1
                     if trivial_count != 1:
@@ -463,7 +464,6 @@ class InflationSDP(object):
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
-        self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
 
         _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
         self.n_knowable = _counter['Yes']
@@ -490,30 +490,25 @@ class InflationSDP(object):
         self.set_objective(None)  # Equivalent to reset_objective
         self.set_values(None)  # Equivalent to reset_values
 
+        self._relaxation_has_been_generated = True
+
     def reset_objective(self):
-        for attribute in {'objective', '_objective_as_name_dict', '_processed_objective',
+        for attribute in {'objective', '_processed_objective',
                           'objective_value', 'primal_objective', 'maximize'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
                 pass
         self.objective = {self.One: 0.}
-        self._objective_as_name_dict = {'1': 0.}
         gc.collect(2)
 
     def reset_values(self):
         self.status = 'not yet solved'
         self.known_moments = dict()
         self.semiknown_moments = dict()
-
-        self.known_moments_name_dict = dict()
-        self.semiknown_moments_name_dict = dict()
-
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
-            self.known_moments_name_dict[self.Zero.name] = 0.
         self.known_moments[self.One] = 1.
-        self.known_moments_name_dict[self.One.name] = 1.
         gc.collect(2)
 
     def reset_bounds(self):
@@ -524,12 +519,10 @@ class InflationSDP(object):
     def reset_lowerbounds(self):
         self.status = 'not yet solved'
         self._processed_moment_lowerbounds = dict()
-        self._processed_moment_lowerbounds_name_dict = dict()
 
     def reset_upperbounds(self):
         self.status = 'not yet solved'
         self._processed_moment_upperbounds = dict()
-        self._processed_moment_upperbounds_name_dict = dict()
 
     def update_lowerbounds(self):
         for mon, lb in self.moment_lowerbounds.items():
@@ -541,8 +534,6 @@ class InflationSDP(object):
                 del self._processed_moment_lowerbounds[mon]
             except KeyError:
                 pass
-        self._processed_moment_lowerbounds_name_dict = {mon.name: lb for mon, lb in
-                                                        self._processed_moment_lowerbounds.items()}
 
     def update_upperbounds(self):
         for mon, value in self.known_moments.items():
@@ -552,8 +543,6 @@ class InflationSDP(object):
                 del self._processed_moment_upperbounds[mon]
             except KeyError:
                 pass
-        self._processed_moment_upperbounds_name_dict = {mon.name: up for mon, up in
-                                                        self._processed_moment_upperbounds.items()}
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -682,11 +671,6 @@ class InflationSDP(object):
         return
 
     def cleanup_after_set_values(self):
-        # Name dictionaries for compatibility purposes only
-        self.known_moments_name_dict = {mon.name: v for mon, v in self.known_moments.items()}
-        self.semiknown_moments_name_dict = {mon.name: (value, unknown.name) for mon, (value, unknown) in
-                                            self.semiknown_moments.items()}
-
         if self.supports_problem:
             # Convert positive known values into lower bounds.
             nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
@@ -694,8 +678,7 @@ class InflationSDP(object):
                 self._processed_moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
             self.semiknown_moments = dict()
-            # Name dictionaries for compatibility purposes only, block in code for easy commenting out.
-            self.semiknown_moments_name_dict = dict()
+
 
         # Create lowerbounds list for physical but unknown moments
         self.update_lowerbounds()
@@ -834,8 +817,6 @@ class InflationSDP(object):
                 # therefore we add to the coefficient of v2 the term c1*k
                 self._processed_objective[v2] = self._processed_objective.get(v2, 0) + c1 * k
                 del self._processed_objective[v1]
-        # For compatibility purposes
-        self._objective_as_name_dict = {k.name: v for (k, v) in self.objective.items()}
         gc.collect(generation=2)  # To reduce memory leaks. Runs after set_values or set_objective.
 
     def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
@@ -881,10 +862,32 @@ class InflationSDP(object):
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
 
+    def prepare_solver_arguments(self):
+        if self.momentmatrix is None:
+            raise Exception("Relaxation is not generated yet. " +
+                            "Call 'InflationSDP.get_relaxation()' first")
+
+        assert set(self.known_moments.keys()).issubset(self.list_of_monomials), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}'
+
+        return {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
+                "objective": {m.name: v for m, v in self._processed_objective.items()},
+                "known_vars": {m.name: v for m, v in self.known_moments.items()},
+                "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
+                "var_lowerbounds": {m.name: v for m, v in self._processed_moment_lowerbounds.items()},
+                "var_upperbounds": {m.name: v for m, v in self._processed_moment_upperbounds.items()},
+                "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
+                "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
+                }
+
+
+
+
     def solve(self, interpreter: str = 'MOSEKFusion',
               feas_as_optim: bool = False,
               dualise: bool = True,
-              solverparameters=None):
+              solverparameters=None,
+              verbose=0,
+              core_solver_arguments={}):
         """Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
@@ -909,37 +912,30 @@ class InflationSDP(object):
             Optimize the dual problem (recommended). By default ``True``.
         solverparameters : dict, optional
             Extra parameters to be sent to the solver. By default ``None``.
+        verbose : int, optional
+            Allows the user to increase the verbosity beyond the InflationSDP.verbose level.
+        core_solver_arguments : dict, optional
+            By default, solve will use the dictionary of SDP keyword arguments given by prepare_solver_arguments().
+            However, a user may manually modify the arguments by passing in their own versions of those keyword arguments here.
         """
-        if self.momentmatrix is None:
+        if not self._relaxation_has_been_generated:
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
-        if feas_as_optim and len(self._objective_as_name_dict) > 1:
+        if feas_as_optim and len(self._processed_objective) > 1:
             warnings.warn("You have a non-trivial objective, but set to solve a " +
                           "feasibility problem as optimization. Setting "
                           + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-        moment_upperbounds = {m.name: val
-                              for m, val in self.moment_upperbounds.items()}
-        moment_lowerbounds = {**{m.name: val for m, val
-                                 in self._processed_moment_lowerbounds.items()},
-                              **{m.name: val
-                                 for m, val in self.moment_lowerbounds.items()}}
-        solveSDP_arguments = {"maskmatrices_name_dict": self.maskmatrices_name_dict,
-                              "objective": deepcopy(self._objective_as_name_dict),
-                              "known_vars": deepcopy(self.known_moments_name_dict),
-                              "semiknown_vars": deepcopy(self.semiknown_moments_name_dict),
+        # When a keyword appears in both prepare_solver_arguments and core_solver_arguments,
+        # we use the value manually specified in core_solver_arguments.
+        arguments_to_pass_forward = self.prepare_solver_arguments()
+        arguments_to_pass_forward.update(core_solver_arguments)
+        solveSDP_arguments = {**arguments_to_pass_forward,
                               "feas_as_optim": feas_as_optim,
-                              "verbose": self.verbose,
+                              "verbose": max(verbose, self.verbose),
                               "solverparameters": solverparameters,
-                              "var_lowerbounds": deepcopy(self._processed_moment_lowerbounds_name_dict),
-                              "var_upperbounds": deepcopy(self._processed_moment_upperbounds_name_dict),
-                              "var_equalities": deepcopy(self.moment_linear_equalities),
-                              "var_inequalities": deepcopy(self.moment_linear_inequalities),
                               "solve_dual": dualise}
-
-        assert set(self.maskmatrices_name_dict.keys()).issuperset(
-            set(self.known_moments_name_dict.keys())), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments_name_dict.keys()).difference(self.maskmatrices_name_dict.keys())}'
 
         self.solution_object, lambdaval, self.status = \
             solveSDP_MosekFUSION(**solveSDP_arguments)
