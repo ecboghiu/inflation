@@ -587,13 +587,14 @@ class InflationSDP(object):
                            if m.is_atomic and m.knowable_q} if (prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_knowable_moments=(not use_lpi_constraints),
                         only_specified_values=assume_shared_randomness)
+
+    def check_that_known_moments_are_all_knowable(self):
+        return all(mon.knowable_q for mon in self.known_moments.keys())
 
     def set_values(self, values: Union[
         Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
                    use_lpi_constraints: bool = False,
-                   only_knowable_moments: bool = False,
                    only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
@@ -615,11 +616,7 @@ class InflationSDP(object):
         only_specified_values : bool
             Specifies whether one wishes to fix only the variables provided (True),
             or also the variables containing products of the monomials fixed (False).
-            Regardless of this flag, unknowable variables can also be fixed.
-
-        only_knowable_moments : bool
-            Default False. Set True to prevent the user from accidentally specifying values of
-            monomials that are not a priori knowable.
+            Regardless of this flag, unknowable variables can also be fixed
         """
 
         self.reset_values()
@@ -639,14 +636,6 @@ class InflationSDP(object):
         for (k, v) in values.items():
             if not np.isnan(v):
                 self.known_moments[self._sanitise_monomial(k)] = v
-
-        # Check that the keys are consistent with the flags set
-        if only_knowable_moments:
-            for k in self.known_moments:
-                if not k.knowable_q:
-                    raise Exception("set_values: You are trying to set the value of " + str(k) +
-                                    "which is not fully knowable in standard scenarios. " +
-                                    "Set set_only_knowable_moments to False for this feature.")
 
         if only_specified_values:
             # If only_specified_values=True, then ONLY the Monomials that
