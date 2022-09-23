@@ -597,17 +597,14 @@ class InflationSDP(object):
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_knowable_moments=(not use_lpi_constraints),
-                        only_specified_values=assume_shared_randomness,
-                        consider_only_semiknowable=True)
+                        only_specified_values=assume_shared_randomness)
 
     def set_values(self, values: Union[
         Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
                    use_lpi_constraints: bool = False,
                    normalised: bool = True,
-                   only_knowable_moments: bool = True,
-                   only_specified_values: bool = False,
-                   consider_only_semiknowable: bool = False,
-                   ) -> None:
+                   only_knowable_moments: bool = False,
+                   only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
         numerical values assigned (either in their operator form, in string
@@ -661,14 +658,6 @@ class InflationSDP(object):
                 self.known_moments[self._sanitise_monomial(k)] = v
 
         # Check that the keys are consistent with the flags set
-        if not only_specified_values:
-            for k in self.known_moments:
-                if not k.is_atomic:
-                    raise Exception("set_values: The monomial " + str(k) + " is not an " +
-                                    "atomic monomial, but composed of several factors. " +
-                                    "Please provide values only for atomic monomials. " +
-                                    "If you want to manually be able to set values for " +
-                                    "non-atomic monomials, set only_specified_values to True.")
         if only_knowable_moments:
             for k in self.known_moments:
                 if not k.knowable_q:
@@ -694,13 +683,15 @@ class InflationSDP(object):
 
         atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
                                 (len(mon) == 1)}
-        if only_knowable_moments:
-            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                              (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
-        elif consider_only_semiknowable:
-            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                              (not mon.is_atomic) and mon.knowability_status in ['Yes',
-                                                                                                 'Semi'])  # as iterator, saves memory.
+        all_specified_atoms_are_knowable = all(atomic_mon.knowable_q for atomic_mon in atomic_known_moments)
+        if all_specified_atoms_are_knowable:
+            if not self.use_lpi_constraints:
+                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                                  (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
+            else:
+                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                                  (not mon.is_atomic) and mon.knowability_status in ['Yes',
+                                                                                                     'Semi'])  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         for mon in remaining_monomials_to_compute:
@@ -716,7 +707,6 @@ class InflationSDP(object):
                 else:
                     pass
         del atomic_known_moments
-        del remaining_monomials_to_compute
         self.cleanup_after_set_values()
         return
 
