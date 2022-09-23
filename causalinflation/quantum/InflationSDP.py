@@ -284,7 +284,6 @@ class InflationSDP(object):
         for i, monomial in enumerate(self.generating_monomials):
             for k, operator in enumerate(iter(monomial)):
                 if self.operator_max_outcome_q(operator):
-                    # print(f"Attempting to find a column level equality for col {k}, namely {operator}...")
                     operator_as_2d = np.expand_dims(operator, axis=0)
                     prefix = monomial[:k]
                     suffix = monomial[(k + 1):]
@@ -322,25 +321,17 @@ class InflationSDP(object):
                     temp_dict = dict()
                     (normalization_col, summation_cols) = column_level_equality
                     norm_monomial = self.compound_monomial_from_idx_dict[self.momentmatrix[row, normalization_col]]
-                    # target_n_ops =norm_monomial.n_ops + 1
                     temp_dict[norm_monomial.name] = 1
-                    # debug = [norm_monomial.name]
-                    # debug_other = []
                     trivial_count = 0
                     for col in summation_cols:
                         mon = self.compound_monomial_from_idx_dict[self.momentmatrix[row, col]]
-                        # debug_other.append(mon.name)
                         if not mon.is_zero:
                             temp_dict[mon.name] = -1
                         else:
                             trivial_count += 1
-                    # debug.append(debug_other)
-                    # if (len(temp_dict) == len(summation_cols) + 1) or (len(temp_dict) < len(summation_cols)):
                     if trivial_count != 1:
                         moment_linear_equalities.append(temp_dict)
                     del signature, trivial_count, temp_dict
-                    # elif '0' not in debug_other:
-                    #     warnings.warn(f"Weird linear equality at {(row, (normalization_col, summation_cols))}: {tuple(debug)}.")
         self.moment_linear_equalities = moment_linear_equalities
         del seen_already, moment_linear_equalities
 
