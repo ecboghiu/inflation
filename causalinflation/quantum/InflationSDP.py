@@ -445,24 +445,23 @@ class InflationSDP(object):
         self.largest_moment_index = max(self.symidx_to_sym_monarray_dict.keys())
 
         self.compound_monomial_from_idx_dict = dict()
+        # The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
         if self.momentmatrix_has_a_zero:
             self.compound_monomial_from_idx_dict[0] = self.Zero
         for (k, v) in self.symidx_to_sym_monarray_dict.items():
             self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
 
-        # self.list_of_monomials = []
-        # # The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
-        # self.list_of_monomials.extend([self.Monomial(v, idx=k)
-        #                                for (k, v) in self.symidx_to_sym_monarray_dict.items() if k > 0])
-        for mon in self.list_of_monomials:
-            mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
         if self.verbose > 0 and self._symmetrization_required:
             print("Number of variables after symmetrization:",
                   len(self.list_of_monomials))
-        """
-        Used only for internal diagnostics.
-        """
+
+        # Get mask matrices associated with each monomial
+        for mon in self.list_of_monomials:
+            mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
+        self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
+        self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
+
         _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
         self.n_knowable = _counter['Yes']
         self.n_something_knowable = _counter['Semi']
@@ -476,9 +475,6 @@ class InflationSDP(object):
         # This is useful for the certificates
         self.name_dict_of_monomials = {mon.name: mon for mon in self.list_of_monomials}
         self.monomial_names = list(self.name_dict_of_monomials.keys())
-
-        self.maskmatrices_name_dict = {mon.name: mon.mask_matrix for mon in self.list_of_monomials}
-        self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         self.moment_linear_equalities = []
         self.construct_monomial_level_equalities_from_column_level_equalities()
