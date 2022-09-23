@@ -124,7 +124,7 @@ class InflationProblem(object):
         # Unpacking of visible nodes with children
         nodes_with_children = list(self.dag.keys())
         self.has_children   = np.zeros(self.nr_parties, dtype=int)
-        self.split_node_model = (not
+        self.non_network_scenario = (not
                                 set(nodes_with_children).isdisjoint(self.names))
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
@@ -148,6 +148,10 @@ class InflationProblem(object):
                                     for multisetting in settings_per_party_lst],
                                              dtype=int)
 
+        # Build the correspondence between effective single-integer settings and
+        # the underlying true tuple of setting values of all parents. Each correspondence
+        # is a dictionary mapping integers to tuples of integers. We create one such
+        # dictionary for each party.
         extract_parent_values_from_effective_setting = []
         for i in range(self.nr_parties):
             extract_parent_values_from_effective_setting.append(dict(zip(
@@ -199,7 +203,7 @@ class InflationProblem(object):
                 " inflation copies per source.")
 
 
-    def _is_knowable_q_split_node_check(self, monomial: np.ndarray) -> bool:
+    def _is_knowable_q_for_non_networks_models(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
         the candidate monomial already passed the preliminary knowable test from
