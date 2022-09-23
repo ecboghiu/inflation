@@ -625,10 +625,10 @@ class InflationSDP(object):
         only_specified_values : bool
             Specifies whether one wishes to fix only the variables provided (True),
             or also the variables containing products of the monomials fixed (False).
-            If only_specified_values is True, unknowable variables can also be fixed.
+            Regardless of this flag, unknowable variables can also be fixed.
 
         only_knowable_moments : bool
-            Default true. Set false to allow the user to also specify values of
+            Default False. Set True to prevent the user from accidentally specifying values of
             monomials that are not a priori knowable.
 
         normalised: bool
@@ -638,6 +638,7 @@ class InflationSDP(object):
         """
 
         self.reset_values()
+
         if normalised and self.momentmatrix_has_a_one:
             self.known_moments[self.One] = 1.
         if (not normalised) and self.momentmatrix_has_a_one:
