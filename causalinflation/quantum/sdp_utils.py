@@ -555,22 +555,19 @@ def solveSDP_MosekFUSION(mask_matrices= {},
         return None, None, None
 
     if status_str in ['feasible', 'infeasible']:
-
         certificate = {}
-        if constant_objective and feas_as_optim:
-            # For feasibility as optimization we don't need the offset c0
-            certificate[CONST_KEY] = 0
-            
-        # + Tr Z F0(P(a...|x...)) = \sum_i x_{known i} * F_{known i}
+        
+        # c0(P(a...|x...))
+        if not feas_as_optim:
+            for x in objective:
+                if x in known_vars:
+                    certificate[x] += objective[x]
+
+        # + Tr Z F0(P(a...|x...)) = \sum_i x_{known i}(P(a...|x...))*F_{known i}
         for x in known_vars:
             support = Fi[x].nonzero()
             certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
-            
-        # c0
-        for x in objective:
-            if x in known_vars:
-                certificate[x] += objective[x]
-            
+                
         # - L · lb
         if var_lowerbounds:
             Lvalues = L.level() if solve_dual else [-c.dual() for c in lb_constraints]
