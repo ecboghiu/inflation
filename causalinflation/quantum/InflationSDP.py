@@ -209,7 +209,7 @@ class InflationSDP(object):
     def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if self.not_network_model:
             minimal_monomial = tuple(tuple(vec) for vec in np.take(atomic_monarray, [0, -2, -1], axis=1))
-            return self._is_knowable_q_for_non_network_models(minimal_monomial)
+            return self._is_knowable_q_non_networks(minimal_monomial)
         else:
             return True
 
