@@ -8,11 +8,11 @@ from itertools import chain
 from warnings import warn
 
 # Force warnings.warn() to omit the source code line in the message
-# Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
+# https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
 import warnings
 formatwarning_orig = warnings.formatwarning
 warnings.formatwarning = lambda message, category, filename, lineno, line=None:\
-    formatwarning_orig(message, category, filename, lineno, line='')
+    formatwarning_orig(message, category, filename, lineno, line="")
 
 class InflationProblem(object):
     """Class for enconding relevant details concerning the causal compatibility
@@ -137,6 +137,7 @@ class InflationProblem(object):
                 for child in dag[parent]:
                     jj = names_to_integers[child]
                     adjacency_matrix[ii, jj] = 1
+        # Compute number of settings for the unpacked variables
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
         settings_per_party_lst = [[s] for s in self.private_settings_per_party]
         for party_idx, party_parents_idxs in enumerate(self.parents_per_party):
@@ -148,10 +149,8 @@ class InflationProblem(object):
                                     for multisetting in settings_per_party_lst],
                                              dtype=int)
 
-        # Build the correspondence between effective single-integer settings and
-        # the underlying true tuple of setting values of all parents. Each correspondence
-        # is a dictionary mapping integers to tuples of integers. We create one such
-        # dictionary for each party.
+        # Build the correspondence between effective settings and the true tuple
+        # of setting values of all parents.
         extract_parent_values_from_effective_setting = []
         for i in range(self.nr_parties):
             extract_parent_values_from_effective_setting.append(dict(zip(
@@ -203,7 +202,7 @@ class InflationProblem(object):
                 " inflation copies per source.")
 
 
-    def _is_knowable_q_for_non_networks_models(self, monomial: np.ndarray) -> bool:
+    def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
         the candidate monomial already passed the preliminary knowable test from
@@ -260,7 +259,6 @@ class InflationProblem(object):
         monomials to their meaning as conditional events in non-network
         scenarios. If the scenario is a network, this function doesn't change
         anything.
-
 
         Parameters
         ----------

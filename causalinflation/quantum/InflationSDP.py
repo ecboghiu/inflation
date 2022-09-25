@@ -42,10 +42,10 @@ from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 
 # Force warnings.warn() to omit the source code line in the message
-# Source: https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
+# https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
 formatwarning_orig = warnings.formatwarning
-warnings.formatwarning = lambda message, category, filename, lineno, line=None: \
-    formatwarning_orig(message, category, filename, lineno, line='')
+warnings.formatwarning = lambda message, category, filename, lineno, line=None:\
+    formatwarning_orig(message, category, filename, lineno, line="")
 try:
     from tqdm import tqdm
 except ImportError:
@@ -112,7 +112,8 @@ class InflationSDP(object):
             print()
         self.maximize = True  # Direction of the optimization
         self.not_network_model = self.InflationProblem.non_network_scenario
-        self._is_knowable_q_for_non_network_models = self.InflationProblem._is_knowable_q_for_non_networks_models
+        self._is_knowable_q_non_networks = \
+            self.InflationProblem._is_knowable_q_non_networks
         self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
 
         self._nr_operators = len(flatten(self.measurements))
