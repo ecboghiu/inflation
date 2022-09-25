@@ -555,14 +555,14 @@ def solveSDP_MosekFUSION(mask_matrices= {},
         return None, None, None
 
     if status_str in ['feasible', 'infeasible']:
-        certificate = {}
+        certificate = {x: 0 for x in known_vars}
         
         # c0(P(a...|x...))
         if not feas_as_optim:
             for x in objective:
                 if x in known_vars:
                     certificate[x] += objective[x]
-
+        
         # + Tr Z F0(P(a...|x...)) = \sum_i x_{known i}(P(a...|x...))*F_{known i}
         for x in known_vars:
             support = Fi[x].nonzero()
@@ -598,6 +598,10 @@ def solveSDP_MosekFUSION(mask_matrices= {},
                     if x in known_vars:
                         certificate[x] += Evalues[i] * coeff
 
+        # Clean entires with coefficient zero
+        for x in list(certificate.keys()):
+            if np.isclose(certificate[x], 0):
+                del certificate[x]
 
         # For debugging purposes
         if status_str == 'feasible' and verbose > 1:
