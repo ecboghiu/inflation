@@ -887,10 +887,6 @@ class InflationSDP(object):
                 "objective": {m.name: v for m, v in self._processed_objective.items()},
                 "known_vars": {m.name: v for m, v in self.known_moments.items()},
                 "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
-                # "var_lowerbounds": {m.name: v for m, v in self._processed_moment_lowerbounds.items()},
-                # "var_upperbounds": {m.name: v for m, v in self._processed_moment_upperbounds.items()},
-                "var_lowerbounds": {},
-                "var_upperbounds": {},
                 "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
                 "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
                                     + [{m.name       : 1, self.One.name: -v} for m, v in self._processed_moment_lowerbounds.items()]
