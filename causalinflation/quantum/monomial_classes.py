@@ -91,7 +91,7 @@ class InternalAtomicMonomial(object):
             for op in self.as_ndarray.tolist():  # this handles the UNKNOWN factors.
                 operators_as_strings.append('_'.join([self.sdp.names[op[0] - 1]]  # party idx
                                                      + [str(i) for i in op[1:]]))
-            return '<' + '*'.join(operators_as_strings) + '>'
+            return '<' + ' '.join(operators_as_strings) + '>'
 
     @property
     def symbol(self):
