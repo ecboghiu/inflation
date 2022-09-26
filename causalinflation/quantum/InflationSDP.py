@@ -464,6 +464,30 @@ class InflationSDP(object):
             self.compound_monomial_from_idx_dict[0] = self.Zero
         for (k, v) in self.symidx_to_sym_monarray_dict.items():
             self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
+        
+        # Creating compound monomials can reveal further equivalent monomials
+        # Invert the dictionary to find the new equivalent monomials, 
+        # update the orbits and then pass the orbits through the moment matrix
+        # again.
+        new_orbits_fromcompound = {}
+        compound_to_symidx = {v.name: [] for v in self.compound_monomial_from_idx_dict.values()}
+        for key, value in self.compound_monomial_from_idx_dict.items():
+            compound_to_symidx.setdefault(value.name, list()).append(key)
+        for key, value in compound_to_symidx.items():
+            if len(value) > 1:
+                representative = min(value)
+                self.compound_monomial_from_idx_dict[representative].idx = representative
+                new_orbits_fromcompound[representative] = representative
+                for i, val in enumerate(value):
+                    if i > 0:
+                        del self.compound_monomial_from_idx_dict[val]
+                    new_orbits_fromcompound[val] = representative
+        for i in range(len(self.momentmatrix)):
+            for j in range(i, len(self.momentmatrix)):
+                if self.momentmatrix[i, j] in new_orbits_fromcompound:
+                    self.momentmatrix[i, j] = new_orbits_fromcompound[self.momentmatrix[i, j]]
+                    self.momentmatrix[j, i] = self.momentmatrix[i, j]
+        
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
 
         if self.verbose > 0 and self._symmetrization_required:
