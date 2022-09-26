@@ -1028,6 +1028,8 @@ class InflationSDP(object):
 
         polynomial = sp.S.Zero
         for mon, coeff in dual.items():
+            if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
+                coeff = int(coeff)
             polynomial += coeff * self.name_dict_of_monomials[mon].symbol
         return polynomial
 
