@@ -62,7 +62,7 @@ def name_from_atomic_names(atomic_names: List[str]) -> str:
                 output += '*'
             output += name
             if power > 1:
-                output += '**' + str(power)
+                output += '^' + str(power)
         return output
     else:
         return '1'
