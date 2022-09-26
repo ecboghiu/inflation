@@ -231,7 +231,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
             permuted = apply_source_permplus_monomial(
                 monomial=permuted,
                 source=source,
-                permutation=perms_plus[source],
+                permutation_plus=perms_plus[source],
                 commuting=True,
                 lexorder=lexorder)
         permuted_name = to_name(permuted, names)
