@@ -6,20 +6,20 @@ import numpy as np
 import sys
 
 from scipy.sparse import lil_matrix, dok_matrix
-from typing import Dict, Tuple
+from typing import List, Dict, Tuple
 
 
-def solveSDP_MosekFUSION(mask_matrices= {},
-                         objective={'1': 0.},
-                         known_vars={'0': 0., '1': 1.},
-                         semiknown_vars={},
-                         verbose=0,
-                         feas_as_optim=False,
-                         solverparameters={},
-                         var_inequalities=[],
-                         var_equalities=[],
-                         solve_dual=True,
-                         process_constraints=True
+def solveSDP_MosekFUSION(mask_matrices: Dict=None,
+                         objective: Dict=None,
+                         known_vars: Dict=None,
+                         semiknown_vars: Dict=None,
+                         var_inequalities: List[Dict]=None,
+                         var_equalities: List[Dict]=None,
+                         solve_dual: bool=True,
+                         feas_as_optim: bool=False,
+                         verbose: int=0,
+                         solverparameters: Dict={},
+                         process_constraints: bool=True
                          ) -> Tuple[Dict, float, str]:
     r"""Internal function to solve the SDP with the `MOSEK Fusion API
     <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
@@ -99,18 +99,16 @@ def solveSDP_MosekFUSION(mask_matrices= {},
         indicating the locations of the monomial in the moment matrix.
     objective : dict, optional
         Dictionary with keys as monomials and as values the monomial's
-        coefficient in the objective function. By default ``{1: 0.}``
+        coefficient in the objective function.
     known_vars : dict, optional
-        Dictionary of values for monomials (keys). By default ``{0: 0., 1: 1.}``
+        Dictionary of values for monomials (keys).
     semiknown_vars : dict, optional
         Dictionary encoding proportionality constraints between
-        different monomials. By default ``{}``.
+        different monomials.
     var_inequalities : list, optional
-        List of inequalities encoded as dictionaries of coefficients. By
-        default ``[]``.
+        List of inequalities encoded as dictionaries of coefficients.
     var_equalities : list, optional
-        List of equalities encoded as dictionaries of coefficients. By default
-        ``[]``.
+        List of equalities encoded as dictionaries of coefficients.
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation. By
         default ``True``.
@@ -119,11 +117,15 @@ def solveSDP_MosekFUSION(mask_matrices= {},
     feas_as_optim : bool, optional
         Whether to treat feasibility problems, where the objective is,
         constant, as an optimisation problem. By default ``False``.
+    process_constraints: bool, optional
+        Whether to remove the simple equalities constraints contained
+        in the `semiknown_vars` arguments by eliminating variables (True)
+        or pass them to the solver as equality constraints (False). By
+        default ``True``. 
     solverparameters : dict, optional
         Dictionary of parameters to pass to the MOSEK solver, see `MOSEK's
         documentation
         <https://docs.mosek.com/latest/pythonfusion/solver-parameters.html>`_.
-        By default ``{}``.
 
     Returns
     -------
