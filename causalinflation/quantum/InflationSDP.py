@@ -7,7 +7,7 @@ instance (see arXiv:1909.10519).
 import gc
 import itertools
 import warnings
-from collections import Counter, deque
+from collections import Counter, deque, defaultdict
 from numbers import Real
 from typing import List, Dict, Tuple, Union, Any
 
@@ -352,7 +352,8 @@ class InflationSDP(object):
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = 'npa1'
+                                  List[sp.core.symbol.Symbol]] = 'npa1',
+                            suppress_implicit_equalities = False
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -469,24 +470,17 @@ class InflationSDP(object):
         # Invert the dictionary to find the new equivalent monomials,
         # update the orbits and then pass the orbits through the moment matrix
         # again.
-        new_orbits_fromcompound = {}
-        compound_to_symidx = {v.name: [] for v in self.compound_monomial_from_idx_dict.values()}
-        for key, value in self.compound_monomial_from_idx_dict.items():
-            compound_to_symidx.setdefault(value.name, list()).append(key)
-        for key, value in compound_to_symidx.items():
-            if len(value) > 1:
-                representative = min(value)
-                self.compound_monomial_from_idx_dict[representative].idx = representative
-                new_orbits_fromcompound[representative] = representative
-                for i, val in enumerate(value):
-                    if i > 0:
-                        del self.compound_monomial_from_idx_dict[val]
-                    new_orbits_fromcompound[val] = representative
-        for i in range(len(self.momentmatrix)):
-            for j in range(i, len(self.momentmatrix)):
-                if self.momentmatrix[i, j] in new_orbits_fromcompound:
-                    self.momentmatrix[i, j] = new_orbits_fromcompound[self.momentmatrix[i, j]]
-                    self.momentmatrix[j, i] = self.momentmatrix[i, j]
+        compound_to_symidx = defaultdict(list)
+        for idx, mon in self.compound_monomial_from_idx_dict.items():
+            compound_to_symidx[mon].append(idx)
+        for indices_for_one_monomial in compound_to_symidx.values():
+            if len(indices_for_one_monomial) > 1:
+                sorted_indices = sorted(indices_for_one_monomial)
+                representative = sorted_indices.pop(0)
+                for non_representative_idx in sorted_indices:
+                    del self.compound_monomial_from_idx_dict[non_representative_idx]
+                    #Using logical indexing to rectify the moment matrix.
+                    self.momentmatrix[self.momentmatrix == non_representative_idx] = representative
 
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
 
@@ -514,11 +508,15 @@ class InflationSDP(object):
         self.monomial_names = list(self.name_dict_of_monomials.keys())
 
         self.moment_linear_equalities = []
-        idx_level_equalities = self.construct_idx_level_equalities_from_column_level_equalities(
-            column_level_equalities=self.column_level_equalities,
-            momentmatrix=self.momentmatrix)
-        self.moment_linear_equalities = [{self.compound_monomial_from_idx_dict[i]: v for i, v in eq.items()}
-                                         for eq in idx_level_equalities]
+        if suppress_implicit_equalities:
+            self.moment_linear_equalities = []
+        else:
+            self.idx_level_equalities = self.construct_idx_level_equalities_from_column_level_equalities(
+                column_level_equalities=self.column_level_equalities,
+                momentmatrix=self.momentmatrix)
+            self.moment_linear_equalities = [{self.compound_monomial_from_idx_dict[i]: v for i, v in eq.items()}
+                                             for eq in self.idx_level_equalities]
+            # del idx_level_equalities
 
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
