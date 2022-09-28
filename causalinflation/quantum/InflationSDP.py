@@ -14,6 +14,7 @@ from typing import List, Dict, Tuple, Union, Any
 import numpy as np
 import sympy as sp
 from scipy.sparse import coo_matrix
+from functools import reduce
 
 from causalinflation import InflationProblem
 from .fast_npa import (calculate_momentmatrix,
@@ -234,11 +235,12 @@ class InflationSDP(object):
         tuple_of_atoms = tuple(sorted(list_of_atoms))
         try:
             mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
+            return mon
         except KeyError:
             mon = CompoundMonomial(tuple_of_atoms)
             self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
             self.compound_monomial_from_name_dict[mon.name] = mon
-        return mon
+            return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
         _factors = factorize_monomial(array2d, canonical_order=False)
@@ -1443,7 +1445,7 @@ class InflationSDP(object):
         del canonical_mon_as_bytes_to_idx_dict
         return problem_arr, idx_to_canonical_mon_dict
 
-    def _calculate_inflation_symmetries(self) -> np.ndarray:
+    def _calculate_inflation_symmetries(self, generators_only=True) -> np.ndarray:
         """Calculates all the symmetries and applies them to the set of
         operators used to define the moment matrix. The new set of operators
         is a permutation of the old. The function outputs a list of all
@@ -1461,32 +1463,38 @@ class InflationSDP(object):
         # n_sources = self.nr_sources
         if len(symmetry_inducing_sources):
             inflation_symmetries = []
+            identity_permutation_of_columns = np.arange(self.nof_columns, dtype=int)
             list_original = [self.from_2dndarray(op) for op in self.generating_monomials]
-            for source, permutation in tqdm(sorted(
-                    [(source, permutation) for source in symmetry_inducing_sources
-                     for permutation in itertools.permutations(range(self.inflation_levels[source]))]
-            ),
-                    disable=not self.verbose,
-                    desc="Calculating symmetries...    "):
-                # We do NOT need to calculate the "symmetry" induced by the identity permutation.
-                if not permutation == tuple(range(self.inflation_levels[source])):
-                    permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
-                    permuted_cols_ind = \
-                        apply_source_permutation_coord_input(self.generating_monomials,
-                                                             source,
-                                                             permutation_plus,
-                                                             self.commuting,
-                                                             self._notcomm,
-                                                             self._lexorder)
-                    list_permuted = [self.from_2dndarray(op) for op in permuted_cols_ind]
-                    try:
-                        total_perm = find_permutation(list_permuted, list_original)
-                        inflation_symmetries.append(total_perm)
-                    except:
-                        if self.verbose > 0:
-                            warnings.warn("The generating set is not closed under source swaps." +
-                                          "Some symmetries will not be implemented.")
-            return np.unique(inflation_symmetries, axis=0)
+            for source in tqdm(symmetry_inducing_sources,
+                               disable=not self.verbose,
+                               desc="Calculating symmetries...    "):
+                inflation_symmetries_from_this_source = [identity_permutation_of_columns]
+                for permutation in itertools.permutations(range(self.inflation_levels[source])):
+                    # We do NOT need to calculate the "symmetry" induced by the identity permutation.
+                    if not permutation == tuple(range(self.inflation_levels[source])):
+                        permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
+                        permuted_cols_ind = \
+                            apply_source_permutation_coord_input(self.generating_monomials,
+                                                                 source,
+                                                                 permutation_plus,
+                                                                 self.commuting,
+                                                                 self._notcomm,
+                                                                 self._lexorder)
+                        list_permuted = [self.from_2dndarray(op) for op in permuted_cols_ind]
+                        try:
+                            total_perm = find_permutation(list_permuted, list_original)
+                            inflation_symmetries_from_this_source.append(np.asarray(total_perm, dtype=int))
+                        except:
+                            if self.verbose > 0:
+                                warnings.warn("The generating set is not closed under source swaps." +
+                                              "Some symmetries will not be implemented.")
+                inflation_symmetries.append(inflation_symmetries_from_this_source)
+            if generators_only:
+                inflation_symmetries_flat = list(itertools.chain.from_iterable((perms[1:] for perms in inflation_symmetries)))
+                return np.unique(inflation_symmetries_flat, axis=0)
+            else:
+                inflation_symmetries_flat = [reduce(np.take, perms) for perms in itertools.product(*inflation_symmetries)]
+                return np.unique(inflation_symmetries_flat[1:], axis=0)
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
 
