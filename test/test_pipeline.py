@@ -5,36 +5,6 @@ from causalinflation.quantum.general_tools import apply_source_permutation_coord
 from causalinflation import InflationProblem, InflationSDP
 import warnings
 
-class TestLPI(unittest.TestCase):
-     def test_lpi_bounds(self):
-         sdp = InflationSDP(
-                   InflationProblem({"h1": ["a", "b"],
-                                     "h2": ["b", "c"],
-                                     "h3": ["a", "c"]},
-                                     outcomes_per_party=[2, 2, 2],
-                                     settings_per_party=[1, 1, 1],
-                                     inflation_level_per_source=[3, 3, 3]),
-                             commuting=False)
-         cols = [np.array([]),
-                 np.array([[1, 1, 0, 1, 0, 0]]),
-                 np.array([[2, 2, 1, 0, 0, 0],
-                           [2, 3, 1, 0, 0, 0]]),
-                 np.array([[3, 0, 2, 2, 0, 0],
-                           [3, 0, 3, 2, 0, 0]]),
-                 np.array([[1, 1, 0, 1, 0, 0],
-                           [2, 2, 1, 0, 0, 0],
-                           [2, 3, 1, 0, 0, 0],
-                           [3, 0, 2, 2, 0, 0],
-                           [3, 0, 3, 2, 0, 0]])]
-         sdp.generate_relaxation(cols)
-         sdp.set_distribution(np.ones((2,2,2,1,1,1))/8,
-                              use_lpi_constraints=True)
-
-         self.assertTrue(np.all([abs(val[0]) <= 1.
-                                 for val in sdp.semiknown_moments.values()]),
-                     ("Semiknown moments need to be of the form " +
-                     "mon_index1 = (number<=1) * mon_index2, this is failing."))
-
 
 class TestMonomialGeneration(unittest.TestCase):
     bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
@@ -292,6 +262,35 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(np.isclose(sdp.objective_value, 0.0640776),
                         "Optimization of a simple SDP with LPI-like " +
                         "constraints is not obtaining the correct known value.")
+        
+    def test_lpi_bounds(self):
+         sdp = InflationSDP(
+                   InflationProblem({"h1": ["a", "b"],
+                                     "h2": ["b", "c"],
+                                     "h3": ["a", "c"]},
+                                     outcomes_per_party=[2, 2, 2],
+                                     settings_per_party=[1, 1, 1],
+                                     inflation_level_per_source=[3, 3, 3]),
+                             commuting=False)
+         cols = [np.array([]),
+                 np.array([[1, 1, 0, 1, 0, 0]]),
+                 np.array([[2, 2, 1, 0, 0, 0],
+                           [2, 3, 1, 0, 0, 0]]),
+                 np.array([[3, 0, 2, 2, 0, 0],
+                           [3, 0, 3, 2, 0, 0]]),
+                 np.array([[1, 1, 0, 1, 0, 0],
+                           [2, 2, 1, 0, 0, 0],
+                           [2, 3, 1, 0, 0, 0],
+                           [3, 0, 2, 2, 0, 0],
+                           [3, 0, 3, 2, 0, 0]])]
+         sdp.generate_relaxation(cols)
+         sdp.set_distribution(np.ones((2,2,2,1,1,1))/8,
+                              use_lpi_constraints=True)
+
+         self.assertTrue(np.all([abs(val[0]) <= 1.
+                                 for val in sdp.semiknown_moments.values()]),
+                     ("Semiknown moments need to be of the form " +
+                     "mon_index1 = (number<=1) * mon_index2, this is failing."))
 
 
 class TestSymmetries(unittest.TestCase):
