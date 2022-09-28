@@ -464,9 +464,9 @@ class InflationSDP(object):
             self.compound_monomial_from_idx_dict[0] = self.Zero
         for (k, v) in self.symidx_to_sym_monarray_dict.items():
             self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
-        
+
         # Creating compound monomials can reveal further equivalent monomials
-        # Invert the dictionary to find the new equivalent monomials, 
+        # Invert the dictionary to find the new equivalent monomials,
         # update the orbits and then pass the orbits through the moment matrix
         # again.
         new_orbits_fromcompound = {}
@@ -487,7 +487,7 @@ class InflationSDP(object):
                 if self.momentmatrix[i, j] in new_orbits_fromcompound:
                     self.momentmatrix[i, j] = new_orbits_fromcompound[self.momentmatrix[i, j]]
                     self.momentmatrix[j, i] = self.momentmatrix[i, j]
-        
+
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
 
         if self.verbose > 0 and self._symmetrization_required:
@@ -507,7 +507,7 @@ class InflationSDP(object):
         if self.commuting:
             self.possibly_physical_monomials = self.list_of_monomials
         else:
-            self.possibly_physical_monomials = [mon for mon in self.list_of_monomials if mon.physical_q]
+            self.possibly_physical_monomials = [mon for mon in self.list_of_monomials if mon.is_physical]
 
         # This is useful for the certificates
         self.name_dict_of_monomials = {mon.name: mon for mon in self.list_of_monomials}

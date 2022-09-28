@@ -1,9 +1,10 @@
 import numpy as np
-from .general_tools import is_physical
+
+from collections import Counter
 from functools import total_ordering
 from typing import Tuple, Dict
-from collections import Counter
 
+from .general_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atomic_names,
                              symbol_from_atomic_name,
@@ -11,16 +12,16 @@ from .monomial_utils import (compute_marginal,
 
 @total_ordering
 class InternalAtomicMonomial(object):
-    __slots__ = ['sdp',
-                 'as_ndarray',
-                 'rectified_ndarray',
+    __slots__ = ['as_ndarray',
+                 'do_conditional',
+                 'inflation_indices_are_irrelevant',
+                 'is_one',
+                 'is_zero',
+                 'knowable_q',
                  'n_ops',
                  'op_length',
-                 'inflation_indices_are_irrelevant',
-                 'knowable_q',
-                 'do_conditional',
-                 'is_zero',
-                 'is_one'
+                 'rectified_ndarray',
+                 'sdp'
                  ]
 
     def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
@@ -38,32 +39,35 @@ class InternalAtomicMonomial(object):
         if self.knowable_q:
             self.rectified_ndarray = np.asarray(self.sdp.rectify_fake_setting(np.take(self.as_ndarray, [0, -2, -1], axis=1)), dtype=int)
 
+    def __eq__(self, other):
+        """Whether the Monomial is equal to the ``other`` Monomial."""
+        return self.__hash__() == other.__hash__
+
+    def __hash__(self):
+        """Return the hash of the Monomial."""
+        return hash(self.signature)
+
+    def __lt__(self, other):
+        """Whether the Monomial is lexicographically smaller than the ``other``
+        Monomial.
+        """
+        return self.signature < other.signature
+
+    def __repr__(self):
+        """Return the name of the Monomial"""
+        return self.__str__()
+
+    def __str__(self):
+        """Return the name of the Monomial"""
+        return self.name
 
     @property
-    def physical_q(self):
+    def is_physical(self):
         return self.knowable_q or is_physical(self.as_ndarray)
 
     @property
     def signature(self):
         return self.sdp.from_2dndarray(self.as_ndarray)
-
-
-    def __hash__(self):
-        return hash(self.signature)
-
-    def __eq__(self, other):
-        return self.__hash__() == other.__hash__
-
-
-    def __lt__(self, other):
-        return self.signature < other.signature
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.__str__()
-
 
     @property
     def name(self):
@@ -149,8 +153,8 @@ class CompoundMonomial(object):
         return sum(factor.n_ops for factor in self.factors_as_atomic_monomials)
 
     @property
-    def physical_q(self):
-        return all(factor.physical_q for factor in self.factors_as_atomic_monomials)
+    def is_physical(self):
+        return all(factor.is_physical for factor in self.factors_as_atomic_monomials)
 
     def __str__(self):
         return self.name
