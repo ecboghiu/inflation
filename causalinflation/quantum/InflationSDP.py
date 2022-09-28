@@ -1356,12 +1356,7 @@ class InflationSDP(object):
                 for monomial_factors in itertools.product(*meas_ops):
                     mon = np.array([to_numbers(op, self.names)[0]
                                     for op in monomial_factors], dtype=self.np_dtype)
-                    if self.commuting:
-                        canon = remove_projector_squares(mon_lexsorted(mon, self._lexorder))
-                        if mon_is_zero(canon):
-                            canon = 0
-                    else:
-                        canon = to_canonical(mon, self._notcomm, self._lexorder)
+                    canon = self.to_canonical_memoized(mon)
                     if not np.array_equal(canon, 0):
                         # If the block is [0, 0], and we have the monomial
                         # A**2 which simplifies to A, then A could be included
