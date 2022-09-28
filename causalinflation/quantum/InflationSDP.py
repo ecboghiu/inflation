@@ -885,11 +885,8 @@ class InflationSDP(object):
             array = np.asarray(mon, dtype=self.np_dtype)
             assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
             assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
-            canon = to_canonical(array, self._notcomm, self._lexorder)
-            if mon_is_zero(canon):
-                return self.Zero
-            else:
-                return self.Monomial(canon)
+            canon = self.to_canonical_memoized(array)
+            return self.Monomial(canon) # Automatically adjusts for zero or identity.
         elif isinstance(mon, str):
             # If it is a string, I assume it is the name of one of the
             # monomials in self.list_of_monomials
