@@ -151,8 +151,15 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
     Fi = mask_matrices
     Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
     mat_dim   = Fi[next(iter(Fi))].shape[0]  # We assume all are the same size
-    variables = set(list(Fi.keys()))
-    
+
+    variables = set()
+    variables.update(Fi.keys())
+    variables.update(objective.keys())
+    for eq in var_equalities:
+        variables.update(eq.keys())
+    for ineq in var_inequalities:
+        variables.update(ineq.keys())
+
     CONST_KEY = 'CONST_KEY'  
     
     assert CONST_KEY not in Fi, f"{CONST_KEY} is a reserved key."
