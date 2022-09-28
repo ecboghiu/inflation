@@ -7,7 +7,7 @@ instance (see arXiv:1909.10519).
 import gc
 import itertools
 import warnings
-from collections import Counter, deque, defaultdict
+from collections import Counter, deque
 from numbers import Real
 from typing import List, Dict, Tuple, Union, Any
 
