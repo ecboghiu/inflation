@@ -94,6 +94,8 @@ class InflationSDP(object):
         self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
+        might_have_a_zero = np.any(self.outcome_cardinalities > 1)
+
         self.measurements = self._generate_parties()
         if self.verbose > 0:
             print("Number of single operator measurements considered per party:", end="")
@@ -128,6 +130,8 @@ class InflationSDP(object):
         # operators and the row index gives the order
         arr = np.array([to_numbers(op, self.names)[0]
                         for op in flatten(self.measurements)], dtype=self.np_dtype)
+        if might_have_a_zero:
+            arr = np.concatenate((self.zero_operator, arr)) # To avoid problems with zero.
         self._default_lexorder = arr[np.lexsort(np.rot90(arr))]
         self._lexorder = self._default_lexorder.copy()
 
