@@ -7,7 +7,7 @@ from collections import Counter
 from .monomial_utils import (compute_marginal,
                              name_from_atomic_names,
                              symbol_from_atomic_name,
-                             symbol_from_atomic_symbols)
+                             symbol_prod)
 
 @total_ordering
 class InternalAtomicMonomial(object):
@@ -235,7 +235,7 @@ class CompoundMonomial(object):
 
     @property
     def symbol(self):
-        return symbol_from_atomic_symbols(self._symbols_of_factors)
+        return symbol_prod(self._symbols_of_factors)
 
     def compute_marginal(self, prob_array):
         assert self.knowable_q, "Can't compute marginals of unknowable probabilities."
