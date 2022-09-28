@@ -271,7 +271,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
     bool
         Whether the monomial evaluates to zero.
     """
-    if len(mon) > 1 and not np.any(mon.ravel()):
+    if len(mon) >= 1 and not np.any(mon.ravel()):
         return True
     for i in range(1, mon.shape[0]):
         if ((mon[i, -1] != mon[i - 1, -1])
