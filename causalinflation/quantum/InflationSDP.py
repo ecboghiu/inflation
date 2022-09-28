@@ -141,6 +141,7 @@ class InflationSDP(object):
         self._default_notcomm = notcomm_from_lexorder(self._lexorder)
         self._notcomm = self._default_notcomm.copy()
 
+        self.canon_ndarray_from_hash_cache = dict()
         self.canonsym_ndarray_from_hash_cache = dict()
         self.atomic_monomial_from_hash_cache = dict()
         self.compound_monomial_from_tuple_of_atoms_cache = dict()
@@ -150,35 +151,74 @@ class InflationSDP(object):
 
         self._relaxation_has_been_generated = False
 
+    def from_2dndarray(self, array2d: np.ndarray):
+        return np.asarray(array2d, dtype=self.np_dtype).tobytes()
+
+    def to_2dndarray(self, bytestream):
+        return np.frombuffer(bytestream, dtype=self.np_dtype).reshape((-1, self._nr_properties))
+
+    def to_canonical_memoized(self, array2d: np.ndarray):
+        quick_key = self.from_2dndarray(array2d)
+        if quick_key in self.canon_ndarray_from_hash_cache:
+            return self.canon_ndarray_from_hash_cache[quick_key]
+        elif len(array2d) == 0 or np.array_equiv(array2d, 0):
+            self.canon_ndarray_from_hash_cache[quick_key] = array2d
+            return array2d
+        else:
+            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder, commuting=self.commuting)
+            new_quick_key = self.from_2dndarray(new_array2d)
+            self.canon_ndarray_from_hash_cache[quick_key] = new_array2d
+            self.canon_ndarray_from_hash_cache[new_quick_key] = new_array2d
+            return new_array2d
+
+    def inflation_aware_to_ndarray_representative(self, mon: np.ndarray,
+                                                  swaps_plus_commutations=True,
+                                                  consider_conjugation_symmetries=False) -> np.ndarray:
+        unsym_monarray = self.to_canonical_memoized(mon)
+        quick_key = self.from_2dndarray(unsym_monarray)
+        if quick_key in self.canonsym_ndarray_from_hash_cache:
+            # if self.verbose > 0:
+            #     warnings.warn("This 'to_representative' function should only be called as a last resort.")
+            return self.canonsym_ndarray_from_hash_cache[quick_key]
+        elif len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
+            self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
+            return unsym_monarray
+        else:
+            sym_monarray = to_representative(unsym_monarray,
+                                             self.inflation_levels,
+                                             self._notcomm,
+                                             self._lexorder,
+                                             swaps_plus_commutations=swaps_plus_commutations,
+                                             consider_conjugation_symmetries=consider_conjugation_symmetries,
+                                             commuting=self.commuting)
+            # print(sym_monarray)
+            self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
+            new_quick_key = self.from_2dndarray(sym_monarray)
+            if new_quick_key not in self.canonsym_ndarray_from_hash_cache:
+                self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
+                # if self.verbose > 0:
+                #     warnings.warn(
+                #         f"Encountered a monomial that does not appear in the original moment matrix:\n {sym_monarray}")
+            return sym_monarray
+
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
         quick_key = self.from_2dndarray(array2d)
-        try:
+        if quick_key in self.atomic_monomial_from_hash_cache:
             return self.atomic_monomial_from_hash_cache[quick_key]
-        except KeyError:  # Key not in atomic_monomial cache
-            try:
-                new_array2d = self.canonsym_ndarray_from_hash_cache[quick_key]
-                new_quick_key = self.from_2dndarray(new_array2d)
-                try:  # Key is in universal cache
-                    new_mon = self.atomic_monomial_from_hash_cache[new_quick_key]
-                    self.atomic_monomial_from_hash_cache[quick_key] = new_mon
-                    return new_mon
-                except KeyError:  # Key is in universal cache, but not yet in the atomic cache
-                    new_mon = InternalAtomicMonomial(inflation_sdp_instance=self, array2d=new_array2d)
-                    self.atomic_monomial_from_hash_cache[quick_key] = new_mon
-                    self.atomic_monomial_from_hash_cache[new_quick_key] = new_mon
-                    return new_mon
-            except KeyError:  # Key not in atomic_monomial cache NOR in universal_cache
-                if len(array2d) == 0 or np.array_equiv(array2d, 0):
-                    new_array2d = array2d
-                else:
-                    new_array2d = self.inflation_aware_to_ndarray_representative(array2d)
-                new_quick_key = self.from_2dndarray(new_array2d)
-                new_mon = InternalAtomicMonomial(inflation_sdp_instance=self, array2d=new_array2d)
-                self.canonsym_ndarray_from_hash_cache[quick_key] = new_array2d
-                self.canonsym_ndarray_from_hash_cache[new_quick_key] = new_array2d
-                self.atomic_monomial_from_hash_cache[quick_key] = new_mon
-                self.atomic_monomial_from_hash_cache[new_quick_key] = new_mon
-                return new_mon
+        else:
+            #It is important NOT to consider conjugation symmetries for a single factor!
+            new_array2d = self.inflation_aware_to_ndarray_representative(array2d,
+                                                                         consider_conjugation_symmetries=False)
+            new_quick_key = self.from_2dndarray(new_array2d)
+            if new_quick_key in self.atomic_monomial_from_hash_cache:
+                mon = self.atomic_monomial_from_hash_cache[new_quick_key]
+                self.atomic_monomial_from_hash_cache[quick_key] = mon
+                return mon
+            else:
+                mon = InternalAtomicMonomial(inflation_sdp_instance=self, array2d=new_array2d)
+                self.atomic_monomial_from_hash_cache[quick_key] = mon
+                self.atomic_monomial_from_hash_cache[new_quick_key] = mon
+                return mon
 
     def monomial_from_list_of_atomic(self, list_of_AtomicMonomials: List[InternalAtomicMonomial]):
         list_of_atoms = []
@@ -220,37 +260,6 @@ class InflationSDP(object):
         else:
             return self.inflation_aware_knowable_q(atomic_monarray)
 
-    def inflation_aware_to_ndarray_representative(self, mon: np.ndarray,
-                                                  swaps_plus_commutations=True,
-                                                  consider_conjugation_symmetries=True) -> np.ndarray:
-        unsym_monarray = to_canonical(mon, self._notcomm, self._lexorder)
-        quick_key = self.from_2dndarray(unsym_monarray)
-        try:
-            sym_monarray = self.canonsym_ndarray_from_hash_cache[quick_key]
-            if self.verbose > 0:
-                warnings.warn("This 'to_representative' function should only be called as a last resort.")
-        except KeyError:
-            sym_monarray = to_representative(unsym_monarray,
-                                             self.inflation_levels,
-                                             self._notcomm,
-                                             self._lexorder,
-                                             swaps_plus_commutations=swaps_plus_commutations,
-                                             consider_conjugation_symmetries=consider_conjugation_symmetries,
-                                             commuting=self.commuting)
-            new_quick_key = self.from_2dndarray(sym_monarray)
-            if new_quick_key not in self.canonsym_ndarray_from_hash_cache:
-                if self.verbose > 0:
-                    warnings.warn(
-                        f"Encountered a monomial that does not appear in the original moment matrix:\n {sym_monarray}")
-            self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
-        self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
-        return sym_monarray
-
-    def from_2dndarray(self, array2d: np.ndarray):
-        return np.asarray(array2d, dtype=self.np_dtype).tobytes()
-
-    def to_2dndarray(self, bytestream):
-        return np.frombuffer(bytestream, dtype=self.np_dtype).reshape((-1, self._nr_properties))
 
     def commutation_relationships(self):
         """This returns a user-friendly representation of the commutation relationships."""
