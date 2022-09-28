@@ -176,8 +176,6 @@ class InflationSDP(object):
         unsym_monarray = self.to_canonical_memoized(mon)
         quick_key = self.from_2dndarray(unsym_monarray)
         if quick_key in self.canonsym_ndarray_from_hash_cache:
-            # if self.verbose > 0:
-            #     warnings.warn("This 'to_representative' function should only be called as a last resort.")
             return self.canonsym_ndarray_from_hash_cache[quick_key]
         elif len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
             self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
@@ -345,10 +343,6 @@ class InflationSDP(object):
         del seen_already
         return idx_linear_equalities
 
-    # def construct_monomial_level_equalities_from_idx_level_equalities(self,
-    #                                                                   idx_level_equalities):
-    #     return [{self.compound_monomial_from_idx_dict[i]: v for i, v in eq.items}
-    #             for eq in idx_level_equalities]
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
