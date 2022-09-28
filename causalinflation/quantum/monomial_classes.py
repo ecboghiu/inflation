@@ -9,6 +9,7 @@ from .monomial_utils import (compute_marginal,
                              name_from_atomic_names,
                              symbol_from_atomic_name,
                              symbol_prod)
+from .fast_npa import mon_is_zero
 
 @total_ordering
 class InternalAtomicMonomial(object):
@@ -32,7 +33,7 @@ class InternalAtomicMonomial(object):
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length == self.sdp._nr_properties, "We insist on well-formed 2d arrays as input to AtomicMonomial."
-        self.is_zero = np.any(np.logical_not(self.as_ndarray[:, 0]))  # Party indexing starts at 1, so a zero in the zero slot indicates bad.
+        self.is_zero = mon_is_zero(self.as_ndarray) # compare to mon_is_zero in fast_npa.py
         self.is_one = (self.n_ops == 0)
         self.knowable_q = self.is_zero or self.is_one or self.sdp.atomic_knowable_q(self.as_ndarray)
         self.do_conditional = False
