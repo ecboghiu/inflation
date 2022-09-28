@@ -565,11 +565,11 @@ def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
         commute.
     """
     notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
-    for i in range(lexorder.shape[0]):
-        for j in range(i + 1, lexorder.shape[0]):
-            notcomm[i, j] = int(not nb_commuting(lexorder[i],
-                                                 lexorder[j]))
-    notcomm = notcomm + notcomm.T
+    if not commuting:
+        for i in range(lexorder.shape[0]):
+            for j in range(i + 1, lexorder.shape[0]):
+                notcomm[i, j] = not nb_commuting(lexorder[i], lexorder[j])
+        notcomm = notcomm + notcomm.T
     return notcomm
 
 
@@ -639,7 +639,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.array,
 
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
-                 lexorder: np.ndarray) -> np.ndarray:
+                 lexorder: np.ndarray,
+                 commuting=False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations..
 
     Parameters
@@ -656,9 +657,12 @@ def to_canonical(mon: np.ndarray,
     if mon.shape[0] <= 1:
         return mon
     else:
-        mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
-        mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
-        mon = lexorder[mon]
+        if commuting:
+            mon = mon_lexsorted(mon, lexorder)
+        else:
+            mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
+            mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
+            mon = lexorder[mon]
         mon = remove_projector_squares(mon)
         if mon_is_zero(mon):
             return 0*mon[:1]
