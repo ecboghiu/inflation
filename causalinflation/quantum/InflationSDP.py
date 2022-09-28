@@ -465,22 +465,6 @@ class InflationSDP(object):
         for (k, v) in self.symidx_to_sym_monarray_dict.items():
             self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
 
-        # Creating compound monomials can reveal further equivalent monomials
-        # Invert the dictionary to find the new equivalent monomials,
-        # update the orbits and then pass the orbits through the moment matrix
-        # again.
-        compound_to_symidx = defaultdict(list)
-        for idx, mon in self.compound_monomial_from_idx_dict.items():
-            compound_to_symidx[mon].append(idx)
-        for indices_for_one_monomial in compound_to_symidx.values():
-            if len(indices_for_one_monomial) > 1:
-                sorted_indices = sorted(indices_for_one_monomial)
-                representative = sorted_indices.pop(0)
-                for non_representative_idx in sorted_indices:
-                    del self.compound_monomial_from_idx_dict[non_representative_idx]
-                    #Using logical indexing to rectify the moment matrix.
-                    self.momentmatrix[self.momentmatrix == non_representative_idx] = representative
-
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
         knowable_atoms = set()
         for m in self.list_of_monomials:
