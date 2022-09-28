@@ -547,7 +547,7 @@ def nb_commuting(operator1: np.array,
         return np.all(inf1 - inf2)
 
 
-def notcomm_from_lexorder(lexorder: np.ndarray) -> np.ndarray:
+def notcomm_from_lexorder(lexorder: np.ndarray, commuting=False) -> np.ndarray:
     """Helper function that builds a matrix encoding which operators commute
     according to the function `nb_commuting`.
 
