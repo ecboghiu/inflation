@@ -715,7 +715,12 @@ class InflationSDP(object):
                     self.known_moments[mon] = value
                 elif known_status == 'Semi':
                     if self.use_lpi_constraints:
-                        self.semiknown_moments[mon] = (value, self.monomial_from_list_of_atomic(unknown_atomic_factors))
+                        monomial_corresponding_to_unknown_part = self.monomial_from_list_of_atomic(unknown_atomic_factors)
+                        self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
+                        if self.verbose > 0:
+                            if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
+                                warnings.warn(
+                                    f"Encountered a monomial that does not appear in the original moment matrix:\n {monomial_corresponding_to_unknown_part.name}")
                 else:
                     pass
         del atomic_known_moments
