@@ -42,7 +42,7 @@ class InternalAtomicMonomial(object):
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
-        return self.__hash__() == other.__hash__
+        return self.__hash__() == other.__hash__()
 
     def __hash__(self):
         """Return the hash of the Monomial."""
