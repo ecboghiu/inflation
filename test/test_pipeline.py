@@ -128,12 +128,13 @@ class TestSDPOutput(unittest.TestCase):
                                      settings_per_party=[1, 1, 1],
                                      inflation_level_per_source=[2, 1, 1])
 
-    def test_CHSH(self):
-        bellScenario = InflationProblem({"Lambda": ["A", "B"]},
+    bellScenario = InflationProblem({"Lambda": ["A", "B"]},
                                          outcomes_per_party=[2, 2],
                                          settings_per_party=[2, 2],
                                          inflation_level_per_source=[1])
-        sdp = InflationSDP(bellScenario)
+
+    def test_CHSH(self):
+        sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation('npa1')
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct.")
