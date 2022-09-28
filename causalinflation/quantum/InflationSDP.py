@@ -1249,10 +1249,7 @@ class InflationSDP(object):
                         for mon_tuple in itertools.product(
                                 *physmons_per_party_per_length):
                             physical_monomials.append(
-                                to_canonical(np.concatenate(mon_tuple),
-                                             self._notcomm,
-                                             self._lexorder))
-
+                                self.to_canonical_memoized(np.concatenate(mon_tuple)))
                 columns = physical_monomials
             else:
                 raise Exception('I have not understood the format of the '
