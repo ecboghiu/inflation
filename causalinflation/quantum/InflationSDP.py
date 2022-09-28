@@ -106,9 +106,6 @@ class InflationSDP(object):
                 deque(zip(itertools.chain.from_iterable(itertools.chain.from_iterable(measures)), counter), maxlen=0)
                 print(prefix + f"{self.names[i]}={next(counter)}", end="")
                 prefix = ", "
-                # measures_per_party_dict[self.names[i]] = next(counter)
-                # print(f"Party {self.names[i]} has {next(counter)} distinct single-operator measurements.")
-            # print(f"Number of possible single operator measurements per party under consideration: {measures_per_party_dict}")
             print()
         self.maximize = True  # Direction of the optimization
         self.not_network_model = self.InflationProblem.non_network_scenario
@@ -193,14 +190,10 @@ class InflationSDP(object):
                                              swaps_plus_commutations=swaps_plus_commutations,
                                              consider_conjugation_symmetries=consider_conjugation_symmetries,
                                              commuting=self.commuting)
-            # print(sym_monarray)
             self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
             new_quick_key = self.from_2dndarray(sym_monarray)
             if new_quick_key not in self.canonsym_ndarray_from_hash_cache:
                 self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
-                # if self.verbose > 0:
-                #     warnings.warn(
-                #         f"Encountered a monomial that does not appear in the original moment matrix:\n {sym_monarray}")
             return sym_monarray
 
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
