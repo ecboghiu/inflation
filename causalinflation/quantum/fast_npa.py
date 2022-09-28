@@ -135,14 +135,14 @@ def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_A_lessthan_B(A: np.array,
-                    B: np.array) -> bool_:
+def nb_A_lessthan_B(A: np.ndarray,
+                    B: np.ndarray) -> bool_:
     """Compare two arrays lexicographically using the in-built '<' and '!='.
 
     Parameters
     ----------
-    A : np.array
-    B : np.array
+    A : numpy.ndarray
+    B : numpy.ndarray
 
     Returns
     -------
@@ -393,7 +393,7 @@ def mon_sorted_by_parties(mon: np.ndarray,
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
             mon2: np.ndarray,
-            lexorder: np.array) -> np.ndarray:
+            lexorder: np.ndarray) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
 
     For hermitian operators this is the same as reversed(mon1)*mon2.
@@ -508,16 +508,16 @@ def to_name(monomial: np.ndarray,
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
 ################################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_commuting(operator1: np.array,
-                 operator2: np.array) -> bool_:
-    """Determine if two operators commute. Currently this only takes
+def nb_commuting(operator1: np.ndarray,
+                 operator2: np.ndarray) -> bool_:
+    """Determine if two operators commute. Currently, this only takes
     into account commutation coming from inflation and settings.
 
     Parameters
     ----------
-    operator1 : np.array
+    operator1 : numpy.ndarray
         Operator as an array of integers.
-    operator2 : np.array
+    operator2 : numpy.ndarray
         Operator as an array of integers.
 
     Returns
@@ -574,8 +574,8 @@ def notcomm_from_lexorder(lexorder: np.ndarray, commuting=False) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_to_canonical_lexinput(mon_lexorder: np.array,
-                             notcomm: np.ndarray) -> np.array:
+def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
+                             notcomm: np.ndarray) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations.
 
     This function works recursively. Assume
