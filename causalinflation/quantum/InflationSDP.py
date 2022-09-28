@@ -495,6 +495,11 @@ class InflationSDP(object):
                     self.momentmatrix[self.momentmatrix == non_representative_idx] = representative
 
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
+        knowable_atoms = set()
+        for m in self.list_of_monomials:
+            knowable_atoms.update(m.knowable_factors)
+        self.knowable_atoms = [self.monomial_from_list_of_atomic([atom]) for atom in knowable_atoms]
+        del knowable_atoms
 
         if self.verbose > 0 and self._symmetrization_required:
             print("Number of variables after symmetrization:",
@@ -620,8 +625,7 @@ class InflationSDP(object):
                 may be calculated. If universal shared randomness is present, only atomic
                 monomials may be evaluated from the distribution.
         """
-        knowable_values = {m: m.compute_marginal(prob_array) for m in self.list_of_monomials
-                           if m.is_atomic and m.knowable_q} if (prob_array is not None) else dict()
+        knowable_values = {atom: atom.compute_marginal(prob_array) for atom in self.knowable_atoms} if (prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_specified_values=assume_shared_randomness)
