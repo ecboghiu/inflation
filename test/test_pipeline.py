@@ -133,6 +133,29 @@ class TestSDPOutput(unittest.TestCase):
                                          settings_per_party=[2, 2],
                                          inflation_level_per_source=[1])
 
+    def test_bounds(self):
+        from sympy import Symbol
+        ub = 0.8
+        lb = 0.2
+        trivial = InflationProblem({"a": ["b"]}, outcomes_per_party=[2])
+        sdp     = InflationSDP(trivial)
+        sdp.generate_relaxation("npa1")
+        operator = np.asarray(sdp.measurements).flatten()[0]
+        sdp.set_objective(operator, "max")
+        sdp.set_bounds({operator: ub}, "up")
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, ub),
+                        "Setting upper bounds to monomials is failing. The " +
+                        f"result obtained for [max x s.t. x <= {ub}] is " +
+                        f"{sdp.objective_value}.")
+        sdp.set_objective(operator, "min")
+        sdp.set_bounds({operator: lb}, "lo")
+        sdp.solve()
+        self.assertTrue(np.isclose(sdp.objective_value, lb),
+                        "Setting upper bounds to monomials is failing. The " +
+                        f"result obtained for [min x s.t. x >= {lb}] is " +
+                        f"{sdp.objective_value}.")
+
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation('npa1')
