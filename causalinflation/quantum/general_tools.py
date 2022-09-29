@@ -715,7 +715,7 @@ def clean_coefficients(cert_dict: Dict[str, float],
       The cleaned-up coefficients.
     """
     processed_cert = deepcopy(cert_dict)
-    vars   = np.asarray(list(processed_cert.keys()))
+    vars   = processed_cert.keys()
     coeffs = np.asarray(list(processed_cert.values()))
     # Take the biggest one and make it 1
     normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
@@ -724,7 +724,7 @@ def clean_coefficients(cert_dict: Dict[str, float],
     coeffs[np.abs(coeffs) <= chop_tol] = 0
     # Round
     coeffs = np.round(coeffs, decimals=round_decimals)
-    return dict(zip(vars, coeffs))
+    return dict(zip(vars, coeffs.flat))
 
 
 def flatten(nested):
