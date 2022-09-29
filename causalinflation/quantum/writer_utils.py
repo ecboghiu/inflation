@@ -155,6 +155,10 @@ def write_to_mat(problem, filename):
                    for mon, bnd in problem.moment_upperbounds.items()]
     names       = [[mon.idx + offset, mon.name]
                    for mon in problem.list_of_monomials]
+    equalities = []
+    for eq_dict in problem.moment_linear_equalities:
+        equality = [[mon.idx + offset, coeff] for mon, coeff in eq_dict.items()]
+        equalities.append(equality)
 
     savemat(filename,
             mdict={"Gamma":           final_positions_matrix,
@@ -163,7 +167,8 @@ def write_to_mat(problem, filename):
                    "obj":             objective,
                    "monomials_names": np.asarray(names, dtype=object),
                    "lowerbounds":     lowerbounds,
-                   "upperbounds":     upperbounds
+                   "upperbounds":     upperbounds,
+                   "equalities":      equalities
                   }
             )
 
