@@ -466,6 +466,7 @@ class InflationSDP(object):
             self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
 
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
+        assert all(v==1 for v in Counter(self.list_of_monomials).values()), "Critical error: multiple indices are being associated to the same monomial."
         knowable_atoms = set()
         for m in self.list_of_monomials:
             knowable_atoms.update(m.knowable_factors)
