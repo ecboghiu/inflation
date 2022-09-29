@@ -1047,11 +1047,11 @@ class InflationSDP(object):
             dual = self.solution_object['dual_certificate']
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve()' first")
+                            "a problem. Call 'InflationSDP.solve()' first.")
         if len(self.semiknown_moments) > 0:
             Warning("Beware that, because the problem contains linearized " +
                     "polynomial constraints, the certificate is not guaranteed " +
-                    "to apply to other distributions")
+                    "to apply to other distributions.")
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
@@ -1092,12 +1092,12 @@ class InflationSDP(object):
             dual = self.solution_object['dual_certificate']
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve()' first")
+                            "a problem. Call 'InflationSDP.solve()' first.")
         if len(self.semiknown_moments) > 0:
             if self.verbose > 0:
                 warnings.warn("Beware that, because the problem contains linearized " +
                               "polynomial constraints, the certificate is not guaranteed " +
-                              "to apply to other distributions")
+                              "to apply to other distributions.")
 
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
