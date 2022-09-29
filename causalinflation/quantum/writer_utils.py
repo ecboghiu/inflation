@@ -1,7 +1,7 @@
 """
-This file contains helper functions to write and export the problems into
-various formats.
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+This file contains helper functions to write and export the problems to varrious
+formats.
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
 from copy import deepcopy
@@ -20,10 +20,11 @@ def convert_to_human_readable(problem):
 
     Returns
     -------
-    Tuple[str, numpy.ndarray, List]
+    Tuple[str, numpy.ndarray, List, List]
         The first element is the objective function in a string, the second is
         a matrix of strings as the symbolic representation of the moment matrix,
-        and the third is a list of variable upper and lower bounds.
+        the third is a list of variable upper and lower bounds, and the fourth
+        is a list of equality constraints of the form ``line = 0``.
     """
     matrix = deepcopy(problem.momentmatrix).astype(object)
     ### Process moment matrix
@@ -88,6 +89,22 @@ def convert_to_human_readable(problem):
             bounds[idx, 2] = None
     return objective, matrix, bounds.tolist()
 
+    ### Process equalities
+    equalities = []
+    for eq_dict in problem.moment_linear_equalities:
+        equality = ""
+        for monom, coeff in eq_dict.items():
+            equality += "+" if coeff > 0 else "-"
+            if monom == problem.One:
+                equality += str(abs(coeff))
+            else:
+                if np.isclose(abs(coeff), 1):
+                    equality += monom.name
+                else:
+                    equality += f"{abs(coeff)}*{monom.name}"
+        equalities.append(equality[1:] if equality[0] == "+" else equality)
+    return objective, matrix, bounds.tolist(), equalities
+
 
 def write_to_csv(problem, filename):
     """Export the problem in a human-readable form in a CSV table.
@@ -96,7 +113,7 @@ def write_to_csv(problem, filename):
     :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
-    objective, matrix, bounds = convert_to_human_readable(problem)
+    objective, matrix, bounds, equalities = convert_to_human_readable(problem)
     f = open(filename, "w")
     f.write("Objective: " + objective + "\n")
     for matrix_line in matrix:
@@ -106,6 +123,10 @@ def write_to_csv(problem, filename):
     f.write("Variable,lower,upper\n")
     for bound_line in bounds:
         f.write(str(bound_line)[1:-1].replace(" ", ""))
+        f.write("\n")
+    f.write("\nEqualities (format: line = 0):\n")
+    for equality in equalities:
+        f.write(equality)
         f.write("\n")
     f.close()
 
