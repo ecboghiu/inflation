@@ -655,7 +655,7 @@ class InflationSDP(object):
             # is left free.
             if self.use_lpi_constraints and self.verbose >= 1:
                 warnings.warn(
-                    "set_values: Both only_specified_values=True and use_lpi_constraints=True has been detected. "
+                    "set_values: Both only_specified_values=True and use_lpi_constraints=True has been detected. " +
                     "With only_specified_values=True, only moments that match exactly " +
                     "those provided in the values dictionary will be set. Values for moments " +
                     "that are products of others moments will not be inferred automatically, " +
