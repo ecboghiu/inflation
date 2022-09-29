@@ -664,8 +664,29 @@ class InflationSDP(object):
             self.cleanup_after_set_values()
             return
 
+        # Check for if there are any multi-factors monomials with unspecified-value factors.
+        if self.verbose >= 1:
+            problematic_multifactor_specified = []
+            for mon in self.known_moments.keys():
+                if not mon.is_atomic:
+                    for atom in mon.factors_as_atomic_monomials:
+                        if atom not in self.known_moments:
+                            problematic_multifactor_specified.append(mon)
+                            break
+            if len(problematic_multifactor_specified):
+                warnings.warn(
+                    "At least one multi-factor monomial has been specified without providing a numerical value for" +
+                    "each of its atomic factors:" +
+                    f"{problematic_multifactor_specified}"
+                )
+
+
         atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
                                 (len(mon) == 1)}
+        monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
+        for mon in monomials_not_present_in_moment_matrix:
+            del self.known_moments[mon]
+
         all_specified_atoms_are_knowable = all(atomic_mon.knowable_q for atomic_mon in atomic_known_moments)
         if all_specified_atoms_are_knowable:
             if not self.use_lpi_constraints:
