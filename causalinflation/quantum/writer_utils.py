@@ -70,7 +70,7 @@ def convert_to_human_readable(problem):
                 objective += f"{float(coeff)}*{variable.name}"
             else:
                 objective += f"+{float(coeff)}*{variable.name}"
-                is_first = False
+            is_first = False
 
     ### Process bounds
     bounded_vars = sorted(list(set(problem.moment_upperbounds.keys()).union(
