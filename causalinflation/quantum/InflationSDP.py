@@ -1050,7 +1050,7 @@ class InflationSDP(object):
             raise Exception("For extracting a certificate you need to solve " +
                             "a problem. Call 'InflationSDP.solve()' first.")
         if len(self.semiknown_moments) > 0:
-            Warning("Beware that, because the problem contains linearized " +
+            warn("Beware that, because the problem contains linearized " +
                     "polynomial constraints, the certificate is not guaranteed " +
                     "to apply to other distributions.")
         if clean and not np.allclose(list(dual.values()), 0.):
