@@ -894,15 +894,28 @@ class InflationSDP(object):
         assert set(self.known_moments.keys()).issubset(
             self.list_of_monomials), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}'
 
-        return {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
-                "objective": {m.name: v for m, v in self._processed_objective.items()},
-                "known_vars": {m.name: v for m, v in self.known_moments.items()},
-                "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
-                "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
-                "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
-                                    + [{m.name       : 1, self.One.name: -v} for m, v in self._processed_moment_lowerbounds.items() if m != self.One]
-                                    + [{self.One.name: v, m.name       : -1} for m, v in self._processed_moment_upperbounds.items() if m != self.One]
-                }
+        default_return = {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
+                    "objective": {m.name: v for m, v in self._processed_objective.items()},
+                    "known_vars": {m.name: v for m, v in self.known_moments.items()},
+                    "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
+                    "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
+                    "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
+                    }
+        # Special handling when self.One appears in _processed_moment_lowerbounds or _processed_moment_upperbounds
+        if self.One in self.known_moments:
+            for m, v in self._processed_moment_lowerbounds.items():
+                default_return["var_inequalities"].append({m.name: 1, self.One.name: -v})
+            for m, v in self._processed_moment_upperbounds.items():
+                default_return["var_inequalities"].append({self.One.name: v, m.name: -1})
+        else:
+            default_return["known_vars"]['Fake_1'] = 1.
+            default_return["mask_matrices"]['Fake_1'] = coo_matrix((self.nof_columns, self.nof_columns)).tocsr()
+            for m, v in self._processed_moment_lowerbounds.items():
+                default_return["var_inequalities"].append({m.name: 1, 'Fake_1': -v})
+            for m, v in self._processed_moment_upperbounds.items():
+                default_return["var_inequalities"].append({'Fake_1': v, m.name: -1})
+        return default_return
+
 
     def solve(self, interpreter: str = 'MOSEKFusion',
               feas_as_optim: bool = False,
