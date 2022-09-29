@@ -39,12 +39,6 @@ from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 
-# Force warnings.warn() to omit the source code line in the message
-# https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
-import warnings
-formatwarning_orig = warnings.formatwarning
-warnings.formatwarning = lambda message, category, filename, lineno, line=None:\
-    formatwarning_orig(message, category, filename, lineno, line="")
 try:
     from tqdm import tqdm
 except ImportError:
