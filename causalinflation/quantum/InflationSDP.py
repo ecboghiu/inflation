@@ -682,7 +682,7 @@ class InflationSDP(object):
                 warnings.warn(
                     "At least one multi-factor monomial has been specified without providing a numerical value for" +
                     "each of its atomic factors:" +
-                    f"{problematic_multifactor_specified}"
+                    f"\n\t{problematic_multifactor_specified}"
                 )
 
 
@@ -703,6 +703,7 @@ class InflationSDP(object):
                                                                                                      'Semi'])  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
+        suprising_semiknown_portions = set()
         for mon in remaining_monomials_to_compute:
             if mon not in self.known_moments.keys():
                 value, unknown_atomic_factors, known_status = mon.evaluate_given_atomic_monomials_dict(
@@ -716,11 +717,13 @@ class InflationSDP(object):
                         self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
                         if self.verbose > 0:
                             if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
-                                warnings.warn(
-                                    f"Encountered a monomial that does not appear in the original moment matrix:\n {monomial_corresponding_to_unknown_part.name}")
+                                suprising_semiknown_portions.add(monomial_corresponding_to_unknown_part)
                 else:
                     pass
-        del atomic_known_moments
+        if len(suprising_semiknown_portions) >= 1:
+            warnings.warn(
+                f"Encountered at least one monomial that does not appear in the original moment matrix:\n\t{suprising_semiknown_portions}")
+        del atomic_known_moments, suprising_semiknown_portions
         self.cleanup_after_set_values()
         return
 
