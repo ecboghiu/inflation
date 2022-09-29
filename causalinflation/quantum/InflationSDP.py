@@ -148,7 +148,7 @@ class InflationSDP(object):
         self.compound_monomial_from_name_dict = dict()
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One = self.Monomial(self.identity_operator, idx=1)
-
+        self.Fake_1_name = 'Fake 1'
         self._relaxation_has_been_generated = False
 
     def from_2dndarray(self, array2d: np.ndarray):
@@ -497,9 +497,9 @@ class InflationSDP(object):
         else:
             self.possibly_physical_monomials = [mon for mon in self.list_of_monomials if mon.is_physical]
 
-        # This is useful for the certificates
-        self.name_dict_of_monomials = {mon.name: mon for mon in self.list_of_monomials}
-        self.monomial_names = list(self.name_dict_of_monomials.keys())
+        # This is useful for certificates_as_probs
+        self.names_to_symbols_dict = {mon.name: mon.symbol for mon in self.list_of_monomials}
+        self.names_to_symbols_dict[self.Fake_1_name] = sp.S.One
 
         self.moment_linear_equalities = []
         if suppress_implicit_equalities:
@@ -938,12 +938,12 @@ class InflationSDP(object):
             for m, v in self._processed_moment_upperbounds.items():
                 default_return["var_inequalities"].append({self.One.name: v, m.name: -1})
         else:
-            default_return["known_vars"]['Fake_1'] = 1.
-            default_return["mask_matrices"]['Fake_1'] = coo_matrix((self.nof_columns, self.nof_columns)).tocsr()
+            default_return["known_vars"][self.Fake_1_name] = 1.
+            default_return["mask_matrices"][self.Fake_1_name] = coo_matrix((self.nof_columns, self.nof_columns)).tocsr()
             for m, v in self._processed_moment_lowerbounds.items():
-                default_return["var_inequalities"].append({m.name: 1, 'Fake_1': -v})
+                default_return["var_inequalities"].append({m.name: 1, self.Fake_1_name: -v})
             for m, v in self._processed_moment_upperbounds.items():
-                default_return["var_inequalities"].append({'Fake_1': v, m.name: -1})
+                default_return["var_inequalities"].append({self.Fake_1_name: v, m.name: -1})
         return default_return
 
 
@@ -1057,10 +1057,10 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         polynomial = sp.S.Zero
-        for mon, coeff in dual.items():
+        for mon_name, coeff in dual.items():
             if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
                 coeff = int(coeff)
-            polynomial += coeff * self.name_dict_of_monomials[mon].symbol
+            polynomial += coeff * self.names_to_symbols_dict[mon_name]
         return polynomial
 
     def certificate_as_string(self,
@@ -1104,12 +1104,18 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         rest_of_dual = dual.copy()
-        if '1' in rest_of_dual:
+        if self.One.name in rest_of_dual:
+            constant_value = rest_of_dual.pop(self.One.name)
+        elif self.Fake_1_name in rest_of_dual:
+            constant_value = rest_of_dual.pop(self.Fake_1_name)
+        else:
+            constant_value = 0
+        if constant_value:
             if clean:
-                cert = '{0:.{prec}f}'.format(rest_of_dual.pop('1'),
+                cert = '{0:.{prec}f}'.format(constant_value,
                                              prec=round_decimals)
             else:
-                cert = str(rest_of_dual.pop('1'))
+                cert = str(constant_value)
         else:
             cert = ''
         for mon_name, coeff in rest_of_dual.items():
