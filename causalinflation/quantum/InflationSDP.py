@@ -64,6 +64,8 @@ class InflationSDP(object):
             * 2: debug level: show properties of objects created.
     """
 
+    constant_term_name = 'constant_term'
+
     def __init__(self, inflationproblem: InflationProblem,
                  commuting: bool = False,
                  supports_problem: bool = False,
@@ -142,7 +144,6 @@ class InflationSDP(object):
         self.compound_monomial_from_name_dict = dict()
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One = self.Monomial(self.identity_operator, idx=1)
-        self.Fake_1_name = 'Fake 1'
         self._relaxation_has_been_generated = False
 
     def from_2dndarray(self, array2d: np.ndarray):
@@ -492,7 +493,7 @@ class InflationSDP(object):
 
         # This is useful for certificates_as_probs
         self.names_to_symbols_dict = {mon.name: mon.symbol for mon in self.list_of_monomials}
-        self.names_to_symbols_dict[self.Fake_1_name] = sp.S.One
+        self.names_to_symbols_dict[self.constant_term_name] = sp.S.One
 
         self.moment_linear_equalities = []
         if suppress_implicit_equalities:
@@ -927,19 +928,20 @@ class InflationSDP(object):
                           "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in
                                                self.moment_linear_inequalities]
                           }
-        # Special handling when self.One appears in _processed_moment_lowerbounds or _processed_moment_upperbounds
-        if self.One in self.known_moments:
-            for m, v in self._processed_moment_lowerbounds.items():
-                default_return["var_inequalities"].append({m.name: 1, self.One.name: -v})
-            for m, v in self._processed_moment_upperbounds.items():
-                default_return["var_inequalities"].append({self.One.name: v, m.name: -1})
-        else:
-            default_return["known_vars"][self.Fake_1_name] = 1.
-            default_return["mask_matrices"][self.Fake_1_name] = coo_matrix((self.nof_columns, self.nof_columns)).tocsr()
-            for m, v in self._processed_moment_lowerbounds.items():
-                default_return["var_inequalities"].append({m.name: 1, self.Fake_1_name: -v})
-            for m, v in self._processed_moment_upperbounds.items():
-                default_return["var_inequalities"].append({self.Fake_1_name: v, m.name: -1})
+        # One handling path regardless of where self.One appears.
+        default_return["known_vars"][self.constant_term_name] = 1.
+        for m, v in self._processed_moment_lowerbounds.items():
+            temp_dict = {m.name: 1}
+            if not np.isclose(v, 0):
+                temp_dict[self.constant_term_name] = -v
+            default_return["var_inequalities"].append(temp_dict)
+        for m, v in self._processed_moment_upperbounds.items():
+            temp_dict = {m.name: -1}
+            if not np.isclose(v, 0):
+                temp_dict[self.constant_term_name] = v
+            default_return["var_inequalities"].append(temp_dict)
+        default_return["mask_matrices"][self.constant_term_name] = coo_matrix(
+            (self.nof_columns, self.nof_columns)).tocsr()
         return default_return
 
     def solve(self, interpreter: str = 'MOSEKFusion',
@@ -1099,12 +1101,8 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         rest_of_dual = dual.copy()
-        if self.One.name in rest_of_dual:
-            constant_value = rest_of_dual.pop(self.One.name)
-        elif self.Fake_1_name in rest_of_dual:
-            constant_value = rest_of_dual.pop(self.Fake_1_name)
-        else:
-            constant_value = 0
+        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
+        constant_value += rest_of_dual.pop(self.One.name, 0)
         if constant_value:
             if clean:
                 cert = '{0:.{prec}f}'.format(constant_value,
