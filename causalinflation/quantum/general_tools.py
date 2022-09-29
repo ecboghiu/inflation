@@ -694,7 +694,7 @@ def to_representative(mon: np.ndarray,
 
 def clean_coefficients(cert_dict: Dict[str, float],
                        chop_tol: float = 1e-10,
-                       round_decimals: int = 3) -> np.ndarray:
+                       round_decimals: int = 3) -> Dict:
     """Clean the list of coefficients in a certificate.
 
     Parameters

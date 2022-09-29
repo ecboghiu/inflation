@@ -1347,7 +1347,7 @@ class InflationSDP(object):
     ########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX              #
     ########################################################################
-    def _build_cols_from_specs(self, col_specs: List[List[int]]) -> None:
+    def _build_cols_from_specs(self, col_specs: List[List[int]]) -> List:
         """Build the generating set for the moment matrix taking as input a
         block specified only the number of parties.
 
@@ -1542,11 +1542,10 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        momentmatrix : np.ndarray
+        momentmatrix : numpy.ndarray
             The moment matrix.
-        unsymidx_to_canonical_mon_dict : Dict
-            A dictionary of indices in the moment matrix to their association monomials as 2d numpy arrays.
-        inflation_symmetries : List[List[int]]
+        inflation_symmetries : numpy.ndarray
+            The generators of the inflation symmetries, acting on the columns and row of the moment matrix.
 
 
         It stores in `self.measurements` a list of lists of measurement
@@ -1555,7 +1554,7 @@ class InflationSDP(object):
         """
 
         if not len(inflation_symmetries):
-            default_array = np.arange(momentmatrix.max() + 1)
+            default_array = np.arange(momentmatrix.max(initial=0) + 1)
             return momentmatrix, default_array, default_array
         else:
             unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
