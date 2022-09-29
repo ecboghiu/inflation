@@ -280,15 +280,18 @@ class InflationSDP(object):
                                           commutative=False)] = i
         return lexicographic_order
 
-    def operator_max_outcome_q(self, operator: np.ndarray) -> bool:
+    def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
+        """Determines if an operator references the highest possible outcome of a given measurement."""
         party = operator[0] - 1
         return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
 
     def _identify_column_level_equalities(self, generating_monomials):
+        """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
+        An equality is a dictionary with keys being which column and values being coefficients."""
         column_level_equalities = []
         for i, monomial in enumerate(iter(generating_monomials)):
             for k, operator in enumerate(iter(monomial)):
-                if self.operator_max_outcome_q(operator):
+                if self._operator_max_outcome_q(operator):
                     operator_as_2d = np.expand_dims(operator, axis=0)
                     prefix = monomial[:k]
                     suffix = monomial[(k + 1):]
@@ -319,6 +322,8 @@ class InflationSDP(object):
     @staticmethod
     def construct_idx_level_equalities_from_column_level_equalities(column_level_equalities,
                                                                     momentmatrix):
+        """Given a list of column level equalities (a list of dictionaries with integer keys)
+        and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices."""
         idx_linear_equalities = []
         seen_already = set()
         for column_level_equality in column_level_equalities:
