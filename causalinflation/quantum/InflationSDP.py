@@ -900,8 +900,8 @@ class InflationSDP(object):
                 "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
                 "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
                 "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
-                                    + [{m.name       : 1, self.One.name: -v} for m, v in self._processed_moment_lowerbounds.items()]
-                                    + [{self.One.name: v, m.name       : -1} for m, v in self._processed_moment_upperbounds.items()]
+                                    + [{m.name       : 1, self.One.name: -v} for m, v in self._processed_moment_lowerbounds.items() if m != self.One]
+                                    + [{self.One.name: v, m.name       : -1} for m, v in self._processed_moment_upperbounds.items() if m != self.One]
                 }
 
     def solve(self, interpreter: str = 'MOSEKFusion',
@@ -1061,18 +1061,25 @@ class InflationSDP(object):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
         rest_of_dual = dual.copy()
-        if clean:
-            cert_as_string = '{0:.{prec}f}'.format(rest_of_dual.pop('1'), prec=round_decimals)
-        else:
-            cert_as_string = str(rest_of_dual.pop('1'))
-        for mon_name, coeff in rest_of_dual.items():
-            cert_as_string += "+" if coeff > 0 else "-"
+        if '1' in rest_of_dual:
             if clean:
-                cert_as_string += '{0:.{prec}f}*{1}'.format(coeff, mon_name, prec=round_decimals)
+                cert_as_string = '{0:.{prec}f}'.format(rest_of_dual.pop('1'), prec=round_decimals)
             else:
-                cert_as_string += f"{abs(coeff)}*{mon_name}"
+                cert_as_string = str(rest_of_dual.pop('1'))
+        else:
+            cert_as_string = ''
+        for mon_name, coeff in rest_of_dual.items():
+            if mon_name != '0':
+                cert_as_string += "+" if coeff > 0 else "-"
+                if clean:
+                    cert_as_string += '{0:.{prec}f}*{1}'.format(coeff, mon_name, prec=round_decimals)
+                else:
+                    cert_as_string += f"{abs(coeff)}*{mon_name}"
         cert_as_string += " >= 0"
-        return cert_as_string
+        if cert_as_string[0] == '+':
+            return cert_as_string[1:]
+        else:
+            return cert_as_string
 
     ########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                   #
