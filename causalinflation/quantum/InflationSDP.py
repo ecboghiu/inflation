@@ -1077,7 +1077,7 @@ class InflationSDP(object):
             specified by ``round_decimals``. By default ``True``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-8``.
+            set to zero. By default ``1e-10``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
             decimals specified. By default ``3``.
@@ -1105,23 +1105,26 @@ class InflationSDP(object):
         rest_of_dual = dual.copy()
         if '1' in rest_of_dual:
             if clean:
-                cert_as_string = '{0:.{prec}f}'.format(rest_of_dual.pop('1'), prec=round_decimals)
+                cert = '{0:.{prec}f}'.format(rest_of_dual.pop('1'),
+                                             prec=round_decimals)
             else:
-                cert_as_string = str(rest_of_dual.pop('1'))
+                cert = str(rest_of_dual.pop('1'))
         else:
-            cert_as_string = ''
+            cert = ''
         for mon_name, coeff in rest_of_dual.items():
             if mon_name != '0':
-                cert_as_string += "+" if coeff >= 0 else ""
-                if clean:
-                    cert_as_string += '{0:.{prec}f}*{1}'.format(coeff, mon_name, prec=round_decimals)
+                cert += "+" if coeff >= 0 else "-"
+                if np.isclose(abs(coeff), 1):
+                    cert += mon_name
                 else:
-                    cert_as_string += f"{abs(coeff)}*{mon_name}"
-        cert_as_string += " >= 0"
-        if cert_as_string[0] == '+':
-            return cert_as_string[1:]
-        else:
-            return cert_as_string
+                    if clean:
+                        cert += '{0:.{prec}f}*{1}'.format(abs(coeff),
+                                                          mon_name,
+                                                          prec=round_decimals)
+                    else:
+                        cert += f"{abs(coeff)}*{mon_name}"
+        cert += " >= 0"
+        return cert[1:] if cert[0] == "+" else cert
 
     ########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                   #
