@@ -328,17 +328,14 @@ class InflationSDP(object):
                     temp_dict = dict()
                     (normalization_col, summation_cols) = column_level_equality
                     norm_idx = row[normalization_col]
-                    temp_dict[norm_idx] = 1
-                    trivial_count = 0
-                    for col in summation_cols:
-                        idx = row[col]
-                        if idx > 0:  # Nonzero monomial
+                    summation_idxs = row.take(summation_cols)
+                    nontriv_summation_idxs = summation_idxs[summation_idxs != norm_idx]
+                    if len(nontriv_summation_idxs) > 0 or (len(nontriv_summation_idxs) == 0 and norm_idx > 0):
+                        temp_dict[norm_idx] = 1
+                        for idx in nontriv_summation_idxs.tolist():
                             temp_dict[idx] = -1
-                        else:
-                            trivial_count += 1
-                    if trivial_count != 1:
                         idx_linear_equalities.append(temp_dict)
-                    del signature, trivial_count, temp_dict
+                    del signature, temp_dict
         del seen_already
         return idx_linear_equalities
 
