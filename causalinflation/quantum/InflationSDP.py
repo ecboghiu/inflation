@@ -443,13 +443,12 @@ class InflationSDP(object):
         self.inflation_symmetries = self._calculate_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix.
-        self.momentmatrix, self.orbits, self.symidx_to_sym_monarray_dict \
-            = self._apply_inflation_symmetries(unsymmetrized_mm_idxs,
-                                               unsymidx_to_unsym_monarray_dict,
-                                               self.inflation_symmetries,
-                                               conserve_memory=False,
-                                               verbose=self.verbose)
-        del unsymmetrized_mm_idxs
+        self.momentmatrix, self.orbits, representative_unsym_idxs = self._apply_inflation_symmetries(unsymmetrized_mm_idxs,
+                                                                          self.inflation_symmetries,
+                                                                          conserve_memory=False,
+                                                                          verbose=self.verbose)
+        self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
+        del unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict
         for (k, v) in _unsymidx_from_hash_dict.items():
             self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
         del _unsymidx_from_hash_dict
@@ -1522,11 +1521,10 @@ class InflationSDP(object):
 
     @staticmethod
     def _apply_inflation_symmetries(momentmatrix: np.ndarray,
-                                    unsymidx_to_canonical_mon_dict: Dict,
                                     inflation_symmetries: np.ndarray,
                                     conserve_memory=False,
                                     verbose=0
-                                    ) -> Tuple[np.ndarray, np.ndarray, Dict]:
+                                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Applies the inflation symmetries to the moment matrix.
 
         Parameters
@@ -1544,7 +1542,8 @@ class InflationSDP(object):
         """
 
         if not len(inflation_symmetries):
-            return momentmatrix, np.arange(momentmatrix.max() + 1), unsymidx_to_canonical_mon_dict
+            default_array = np.arange(momentmatrix.max() + 1)
+            return momentmatrix, default_array, default_array
         else:
             unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
             absent_indices = np.arange(np.min(unique_values))
@@ -1587,10 +1586,7 @@ class InflationSDP(object):
                                   ), 'Something unexpected happened when calculating orbits.'
 
             symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
-            symidx_to_canonical_mon_dict = {new_idx: unsymidx_to_canonical_mon_dict[old_idx] for new_idx, old_idx in
-                                            enumerate(
-                                                old_representative_indices) if old_idx >= 1}
-            return symmetric_arr, unsym_idx_to_sym_idx, symidx_to_canonical_mon_dict
+            return symmetric_arr, unsym_idx_to_sym_idx, old_representative_indices
 
     ########################################################################
     # OTHER ROUTINES                                                       #
