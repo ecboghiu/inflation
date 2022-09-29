@@ -79,7 +79,7 @@ class TestMonomialGeneration(unittest.TestCase):
                          "Parsing a list-of-list description of columns fails.")
 
     def test_generation_from_str(self):
-        columns = self.bilocalSDP.build_columns('npa2',
+        columns = self.bilocalSDP.build_columns("npa2",
                                                 return_columns_numerical=False)
         self.assertEqual(columns, self.actual_cols,
                         "Parsing the string description of columns is failing.")
@@ -95,7 +95,8 @@ class TestMonomialGeneration(unittest.TestCase):
         self.assertTrue(len(columns) == len(truth),
                         "Generating columns with identities is not producing " +
                         "the correct number of columns.")
-        areequal = all(np.array_equiv(r[0].T, np.array(r[1]).T) for r in zip(columns, truth))
+        areequal = all(np.array_equiv(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, truth))
         self.assertTrue(areequal,
                          "The column generation is not capable of handling " +
                          "monomials that reduce to the identity")
@@ -158,7 +159,7 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
-        sdp.generate_relaxation('npa1')
+        sdp.generate_relaxation("npa1")
         self.assertEqual(len(sdp.generating_monomials), 5,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
@@ -171,7 +172,7 @@ class TestSDPOutput(unittest.TestCase):
         B0 = 2*meas[1][0][0][0] - 1
         B1 = 2*meas[1][0][1][0] - 1
 
-        sdp.set_objective(A0*(B0+B1)+A1*(B0-B1), 'max')
+        sdp.set_objective(A0*(B0+B1)+A1*(B0-B1), "max")
         self.assertEqual(len(sdp.objective), 7,
                          "The parsing of the objective function is failing")
         sdp.solve()
@@ -180,9 +181,9 @@ class TestSDPOutput(unittest.TestCase):
         bias = 3/4
         biased_chsh = 2.62132    # Value obtained by other means (ncpol2sdpa)
         sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
-                        'A_1_1_0': bias,           # Variable for p(a=0|x=1)
+                        "A_1_1_0": bias,           # Variable for p(a=0|x=1)
                         meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
-                        'B_1_1_0': bias            # Variable for p(b=0|y=1)
+                        "B_1_1_0": bias            # Variable for p(b=0|y=1)
                         })
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
@@ -192,9 +193,9 @@ class TestSDPOutput(unittest.TestCase):
         bias = 1/4
         biased_chsh = 2.55890
         sdp.set_values({meas[0][0][0][0]: bias,    # Variable for p(a=0|x=0)
-                        'A_1_1_0': bias,           # Variable for p(a=0|x=1)
+                        "A_1_1_0": bias,           # Variable for p(a=0|x=1)
                         meas[1][0][0][0]: bias,    # Variable for p(b=0|y=0)
-                        'B_1_1_0': bias            # Variable for p(b=0|y=1)
+                        "B_1_1_0": bias            # Variable for p(b=0|y=1)
                         })
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
@@ -203,7 +204,7 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_GHZ_commuting(self):
         sdp = InflationSDP(self.cutInflation, commuting=True)
-        sdp.generate_relaxation('local1')
+        sdp.generate_relaxation("local1")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
@@ -213,7 +214,7 @@ class TestSDPOutput(unittest.TestCase):
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
         sdp.solve()
-        self.assertEqual(sdp.status, 'infeasible',
+        self.assertEqual(sdp.status, "infeasible",
              "The commuting SDP is not identifying incompatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective <= 0,
@@ -221,7 +222,7 @@ class TestSDPOutput(unittest.TestCase):
                         "is not identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
         sdp.solve()
-        self.assertEqual(sdp.status, 'feasible',
+        self.assertEqual(sdp.status, "feasible",
                "The commuting SDP is not recognizing compatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective >= 0,
@@ -230,7 +231,7 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
-        sdp.generate_relaxation('local1')
+        sdp.generate_relaxation("local1")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here. No orthogonal moments in CG notation with one outcome.
@@ -243,7 +244,7 @@ class TestSDPOutput(unittest.TestCase):
                         (0.5+1e-2)/2 + (0.5-1e-2)/8),
                         "Setting the distribution is failing.")
         sdp.solve()
-        self.assertTrue(sdp.status in ['infeasible', 'unknown'],
+        self.assertTrue(sdp.status in ["infeasible", "unknown"],
                     "The NC SDP is not identifying incompatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective <= 0,
@@ -254,7 +255,7 @@ class TestSDPOutput(unittest.TestCase):
                          (0.5-1e-2)/2 + (0.5+1e-2)/8),
                          "Re-setting the distribution is failing.")
         sdp.solve()
-        self.assertEqual(sdp.status, 'feasible',
+        self.assertEqual(sdp.status, "feasible",
                       "The NC SDP is not recognizing compatible distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective >= 0,
@@ -286,7 +287,7 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(np.isclose(sdp.objective_value, 0.0640776),
                         "Optimization of a simple SDP with LPI-like " +
                         "constraints is not obtaining the correct known value.")
-        
+
     def test_lpi_bounds(self):
          sdp = InflationSDP(
                    InflationProblem({"h1": ["a", "b"],
