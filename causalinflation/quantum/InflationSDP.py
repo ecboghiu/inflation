@@ -6,15 +6,15 @@ instance (see arXiv:1909.10519).
 """
 import gc
 import itertools
-import numpy as np
-import sympy as sp
-
 from collections import Counter, deque
 from functools import reduce
 from numbers import Real
-from scipy.sparse import coo_matrix
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
+
+import numpy as np
+import sympy as sp
+from scipy.sparse import coo_matrix
 
 from causalinflation import InflationProblem
 from .fast_npa import (calculate_momentmatrix,
@@ -124,7 +124,7 @@ class InflationSDP(object):
         arr = np.array([to_numbers(op, self.names)[0]
                         for op in flatten(self.measurements)], dtype=self.np_dtype)
         if might_have_a_zero:
-            arr = np.concatenate((self.zero_operator, arr)) # To avoid problems with zero.
+            arr = np.concatenate((self.zero_operator, arr))  # To avoid problems with zero.
         self._default_lexorder = arr[np.lexsort(np.rot90(arr))]
         self._lexorder = self._default_lexorder.copy()
 
@@ -194,7 +194,7 @@ class InflationSDP(object):
         if quick_key in self.atomic_monomial_from_hash_cache:
             return self.atomic_monomial_from_hash_cache[quick_key]
         else:
-            #It is important NOT to consider conjugation symmetries for a single factor!
+            # It is important NOT to consider conjugation symmetries for a single factor!
             new_array2d = self.inflation_aware_to_ndarray_representative(array2d,
                                                                          consider_conjugation_symmetries=False)
             new_quick_key = self.from_2dndarray(new_array2d)
@@ -248,7 +248,6 @@ class InflationSDP(object):
             return False
         else:
             return self.inflation_aware_knowable_q(atomic_monarray)
-
 
     def commutation_relationships(self):
         """This returns a user-friendly representation of the commutation relationships."""
@@ -343,7 +342,6 @@ class InflationSDP(object):
         del seen_already
         return idx_linear_equalities
 
-
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
     ########################################################################
@@ -352,7 +350,7 @@ class InflationSDP(object):
                             Union[str,
                                   List[List[int]],
                                   List[sp.core.symbol.Symbol]] = 'npa1',
-                            suppress_implicit_equalities = False
+                            suppress_implicit_equalities=False
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -443,11 +441,13 @@ class InflationSDP(object):
         self.inflation_symmetries = self._calculate_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix.
-        self.momentmatrix, self.orbits, representative_unsym_idxs = self._apply_inflation_symmetries(unsymmetrized_mm_idxs,
-                                                                          self.inflation_symmetries,
-                                                                          conserve_memory=False,
-                                                                          verbose=self.verbose)
-        self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
+        self.momentmatrix, self.orbits, representative_unsym_idxs = self._apply_inflation_symmetries(
+            unsymmetrized_mm_idxs,
+            self.inflation_symmetries,
+            conserve_memory=False,
+            verbose=self.verbose)
+        self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for
+                                            unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
         del unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict
         for (k, v) in _unsymidx_from_hash_dict.items():
             self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
@@ -465,7 +465,8 @@ class InflationSDP(object):
             self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
 
         self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
-        assert all(v==1 for v in Counter(self.list_of_monomials).values()), "Critical error: multiple indices are being associated to the same monomial."
+        assert all(v == 1 for v in Counter(
+            self.list_of_monomials).values()), "Critical error: multiple indices are being associated to the same monomial."
         knowable_atoms = set()
         for m in self.list_of_monomials:
             knowable_atoms.update(m.knowable_factors)
@@ -596,7 +597,8 @@ class InflationSDP(object):
                 may be calculated. If universal shared randomness is present, only atomic
                 monomials may be evaluated from the distribution.
         """
-        knowable_values = {atom: atom.compute_marginal(prob_array) for atom in self.knowable_atoms} if (prob_array is not None) else dict()
+        knowable_values = {atom: atom.compute_marginal(prob_array) for atom in self.knowable_atoms} if (
+                    prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_specified_values=assume_shared_randomness)
@@ -641,8 +643,8 @@ class InflationSDP(object):
 
         if (len(self.objective) > 1) and self.use_lpi_constraints:
             warn("You have an objective function set. Be aware that imposing " +
-                          "linearized polynomial constraints will constrain the " +
-                          "optimization to distributions with fixed marginals.")
+                 "linearized polynomial constraints will constrain the " +
+                 "optimization to distributions with fixed marginals.")
 
         for (k, v) in values.items():
             if not np.isnan(v):
@@ -680,7 +682,6 @@ class InflationSDP(object):
                     f"\n\t{problematic_multifactor_specified}"
                 )
 
-
         atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
                                 (len(mon) == 1)}
         monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
@@ -708,7 +709,8 @@ class InflationSDP(object):
                     self.known_moments[mon] = value
                 elif known_status == 'Semi':
                     if self.use_lpi_constraints:
-                        monomial_corresponding_to_unknown_part = self.monomial_from_list_of_atomic(unknown_atomic_factors)
+                        monomial_corresponding_to_unknown_part = self.monomial_from_list_of_atomic(
+                            unknown_atomic_factors)
                         self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
                         if self.verbose > 0:
                             if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
@@ -784,9 +786,9 @@ class InflationSDP(object):
             if hasattr(self, 'use_lpi_constraints'):
                 if self.use_lpi_constraints and self.verbose > 0:
                     warn("You have the flag `use_lpi_constraints` set to True. Be " +
-                                  "aware that imposing linearized polynomial constraints will " +
-                                  "constrain the optimization to distributions with fixed " +
-                                  "marginals.")
+                         "aware that imposing linearized polynomial constraints will " +
+                         "constrain the optimization to distributions with fixed " +
+                         "marginals.")
             sign = (1 if self.maximize else -1)
             objective_as_dict = {self.One: 0}
             for mon, coeff in objective.items():
@@ -892,7 +894,7 @@ class InflationSDP(object):
             assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
             assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
             canon = self.to_canonical_memoized(array)
-            return self.Monomial(canon) # Automatically adjusts for zero or identity.
+            return self.Monomial(canon)  # Automatically adjusts for zero or identity.
         elif isinstance(mon, str):
             # If it is a string, I assume it is the name of one of the
             # monomials in self.list_of_monomials
@@ -919,12 +921,14 @@ class InflationSDP(object):
             self.list_of_monomials), f'Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}'
 
         default_return = {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
-                    "objective": {m.name: v for m, v in self._processed_objective.items()},
-                    "known_vars": {m.name: v for m, v in self.known_moments.items()},
-                    "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
-                    "var_equalities": [{m.name: v for m, v in eq.items()} for eq in self.moment_linear_equalities],
-                    "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in self.moment_linear_inequalities]
-                    }
+                          "objective": {m.name: v for m, v in self._processed_objective.items()},
+                          "known_vars": {m.name: v for m, v in self.known_moments.items()},
+                          "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
+                          "var_equalities": [{m.name: v for m, v in eq.items()} for eq in
+                                             self.moment_linear_equalities],
+                          "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in
+                                               self.moment_linear_inequalities]
+                          }
         # Special handling when self.One appears in _processed_moment_lowerbounds or _processed_moment_upperbounds
         if self.One in self.known_moments:
             for m, v in self._processed_moment_lowerbounds.items():
@@ -939,7 +943,6 @@ class InflationSDP(object):
             for m, v in self._processed_moment_upperbounds.items():
                 default_return["var_inequalities"].append({self.Fake_1_name: v, m.name: -1})
         return default_return
-
 
     def solve(self, interpreter: str = 'MOSEKFusion',
               feas_as_optim: bool = False,
@@ -982,8 +985,8 @@ class InflationSDP(object):
                             "Call 'InflationSDP.get_relaxation()' first")
         if feas_as_optim and len(self._processed_objective) > 1:
             warn("You have a non-trivial objective, but set to solve a " +
-                          "feasibility problem as optimization. Setting "
-                          + "feas_as_optim=False and optimizing the objective...")
+                 "feasibility problem as optimization. Setting "
+                 + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
         # When a keyword appears in both prepare_solver_arguments and core_solver_arguments,
@@ -1045,8 +1048,8 @@ class InflationSDP(object):
                             "a problem. Call 'InflationSDP.solve()' first.")
         if len(self.semiknown_moments) > 0:
             warn("Beware that, because the problem contains linearized " +
-                    "polynomial constraints, the certificate is not guaranteed " +
-                    "to apply to other distributions.")
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions.")
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
 
@@ -1468,11 +1471,11 @@ class InflationSDP(object):
         """Generate the moment matrix.
         """
         problem_arr, canonical_mon_as_bytes_to_idx_dict = calculate_momentmatrix(self.generating_monomials,
-                                                                        self._notcomm,
-                                                                        self._lexorder,
-                                                                        verbose=self.verbose,
-                                                                        commuting=self.commuting,
-                                                                        dtype=self.np_dtype)
+                                                                                 self._notcomm,
+                                                                                 self._lexorder,
+                                                                                 verbose=self.verbose,
+                                                                                 commuting=self.commuting,
+                                                                                 dtype=self.np_dtype)
         idx_to_canonical_mon_dict = {idx: self.to_2dndarray(mon_as_bytes) for (mon_as_bytes, idx) in
                                      canonical_mon_as_bytes_to_idx_dict.items()}
         del canonical_mon_as_bytes_to_idx_dict
@@ -1520,13 +1523,15 @@ class InflationSDP(object):
                         except:
                             if self.verbose > 0:
                                 warn("The generating set is not closed under source swaps." +
-                                              "Some symmetries will not be implemented.")
+                                     "Some symmetries will not be implemented.")
                 inflation_symmetries.append(inflation_symmetries_from_this_source)
             if generators_only:
-                inflation_symmetries_flat = list(itertools.chain.from_iterable((perms[1:] for perms in inflation_symmetries)))
+                inflation_symmetries_flat = list(
+                    itertools.chain.from_iterable((perms[1:] for perms in inflation_symmetries)))
                 return np.unique(inflation_symmetries_flat, axis=0)
             else:
-                inflation_symmetries_flat = [reduce(np.take, perms) for perms in itertools.product(*inflation_symmetries)]
+                inflation_symmetries_flat = [reduce(np.take, perms) for perms in
+                                             itertools.product(*inflation_symmetries)]
                 return np.unique(inflation_symmetries_flat[1:], axis=0)
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
@@ -1588,7 +1593,7 @@ class InflationSDP(object):
                             previous = val
                     except KeyError:
                         warn("Your generating set might not have enough" +
-                                      "elements to fully impose inflation symmetries.")
+                             "elements to fully impose inflation symmetries.")
                 orbits[key] = val
 
             old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
