@@ -322,20 +322,20 @@ class InflationSDP(object):
         seen_already = set()
         for column_level_equality in column_level_equalities:
             for i, row in enumerate(iter(momentmatrix)):
-                signature = (i, column_level_equality[-1][-1])
-                if signature not in seen_already:
-                    seen_already.add(signature)
-                    temp_dict = dict()
-                    (normalization_col, summation_cols) = column_level_equality
-                    norm_idx = row[normalization_col]
-                    summation_idxs = row.take(summation_cols)
-                    nontriv_summation_idxs = summation_idxs[summation_idxs != norm_idx]
-                    if len(nontriv_summation_idxs) > 0 or (len(nontriv_summation_idxs) == 0 and norm_idx > 0):
-                        temp_dict[norm_idx] = 1
-                        for idx in nontriv_summation_idxs.tolist():
+                (normalization_col, summation_cols) = column_level_equality
+                norm_idx = row[normalization_col]
+                summation_idxs = row.take(summation_cols)
+                summation_idxs.sort()
+                nontriv_summation_idxs = tuple(summation_idxs[summation_idxs != norm_idx].tolist())
+                if len(nontriv_summation_idxs) > 0 or (len(nontriv_summation_idxs) == 0 and norm_idx > 0):
+                    signature = (norm_idx, nontriv_summation_idxs)
+                    if signature not in seen_already:
+                        seen_already.add(signature)
+                        temp_dict = {norm_idx: 1}
+                        for idx in nontriv_summation_idxs:
                             temp_dict[idx] = -1
                         idx_linear_equalities.append(temp_dict)
-                    del signature, temp_dict
+                        del signature, temp_dict
         del seen_already
         return idx_linear_equalities
 
