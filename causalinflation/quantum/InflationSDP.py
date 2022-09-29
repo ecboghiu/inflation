@@ -1070,7 +1070,7 @@ class InflationSDP(object):
             cert_as_string = ''
         for mon_name, coeff in rest_of_dual.items():
             if mon_name != '0':
-                cert_as_string += "+" if coeff > 0 else "-"
+                cert_as_string += "+" if coeff >= 0 else ""
                 if clean:
                     cert_as_string += '{0:.{prec}f}*{1}'.format(coeff, mon_name, prec=round_decimals)
                 else:
