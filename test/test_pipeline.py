@@ -157,6 +157,31 @@ class TestSDPOutput(unittest.TestCase):
                         f"result obtained for [min x s.t. x >= {lb}] is " +
                         f"{sdp.objective_value}.")
 
+    def test_equalities(self):
+        prob = InflationProblem(dag={'U_AB': ['A', 'B'],
+                                     'U_AC': ['A', 'C'],
+                                     'U_AD': ['A', 'D'],
+                                     'C': ['D'],
+                                     'A': ['B', 'C', 'D']},
+                                outcomes_per_party=(2, 2, 2, 2),
+                                settings_per_party=(1, 1, 1, 1),
+                                inflation_level_per_source=(1, 1, 1),
+                                order=('A', 'B', 'C', 'D'),
+                                verbose=2)
+        sdp = InflationSDP(prob, commuting=False, verbose=0)
+        sdp.generate_relaxation('npa2')
+        equalities = sdp.moment_linear_equalities
+
+        self.assertTrue(len(equalities) > 0,
+                        "Failing to obtain implicit equalities in a non-network scenario.")
+
+        # TODO: When we add support for user-specifiable equalities, modify this test to only check implicit equalities.
+        self.assertTrue(all(set(eq_dict.values()) == {-1, 1} for eq_dict in equalities),
+                        "Some implicit equalities lack a nontrivial LHS or RHS.")
+
+        self.assertTrue(all(sdp.Zero.name not in eq_dict.keys() for eq_dict in equalities),
+                        "Some implicit equalities are wrongly assigning coefficients to the zero monomial.")
+
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation("npa1")
