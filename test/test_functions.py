@@ -50,7 +50,7 @@ class TestFunctions(unittest.TestCase):
                                         settings_per_party=[2],
                                         inflation_level_per_source=[1])
         sdp = InflationSDP(bellScenario)
-        sdp.generate_relaxation("npa2")
+        sdp.generate_relaxation("npa1")
         monom = sdp.list_of_monomials[-1]
         self.assertEqual(monom, sdp._sanitise_monomial(monom),
                          f"Sanitization of {monom} as a CompoundMonomial is " +
@@ -71,6 +71,11 @@ class TestFunctions(unittest.TestCase):
                          f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
         mon   = mon1*mon2
         truth = sdp.Zero
+        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+                         f"Sanitization of {mon} as a Mul is giving " +
+                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+        mon   = mon1*mon3
+        truth = sdp.list_of_monomials[6]
         self.assertEqual(sdp._sanitise_monomial(mon), truth,
                          f"Sanitization of {mon} as a Mul is giving " +
                          f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
@@ -105,8 +110,18 @@ class TestFunctions(unittest.TestCase):
                          f"Sanitization of {mon} is giving " +
                          f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
         # Tests for string forms
-        mon   = 'pA(0|0)'
+        mon   = "pA(0|0)"
         truth = sdp.list_of_monomials[2]
+        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+                         f"Sanitization of {mon} is giving " +
+                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+        mon   = "<A_1_0_0 A_1_1_0>"
+        truth = sdp.list_of_monomials[6]
+        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+                         f"Sanitization of {mon} is giving " +
+                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+        mon   = "<A_1_1_0 A_1_0_0>"
+        truth = sdp.list_of_monomials[6]
         self.assertEqual(sdp._sanitise_monomial(mon), truth,
                          f"Sanitization of {mon} is giving " +
                          f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
