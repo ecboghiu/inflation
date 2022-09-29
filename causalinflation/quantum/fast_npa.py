@@ -364,7 +364,7 @@ def mon_sorted_by_parties(mon: np.ndarray,
     ----------
     mon : numpy.ndarray
         Monomial as a matrix with rows as integer arrays representing operators.
-    lexorder : np.ndarray
+    lexorder : numpy.ndarray
         Matrix with rows as operators where the index of the row gives
         the lexicographic order of the operator.
 
@@ -609,10 +609,10 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
 
     Parameters
     ----------
-    mon_lexorder : np.ndarray
+    mon_lexorder : numpy.ndarray
         Monomial as an array of integers, where each integer represents
         the lexicographic order of an operator.
-    notcomm : np.ndarray
+    notcomm : numpy.ndarray
         Matrix whose (i,j) entry has value 1 if the operators with lexicographic
         ordering i and j respectively do not commute, and value 0 if they
         commute.
@@ -876,9 +876,14 @@ def calculate_momentmatrix(cols: List,
     ----------
     cols : List
         List of numpy.ndarray representing the generating set.
-    names : numpy.ndarray
-        The string names of each party.
-    commuting: bool, optional
+    notcomm : numpy.ndarray
+        Matrix whose (i,j) entry has value 1 if the operators with lexicographic
+        ordering i and j respectively do not commute, and value 0 if they
+        commute.
+    lexorder : numpy.ndarray
+        Matrix with rows as operators where the index of the row gives
+        the lexicographic order of the operator.
+    commuting : bool, optional
         Whether the variables in the problem commute or not. By default
         ``False``.
     verbose : int, optional
