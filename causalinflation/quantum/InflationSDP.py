@@ -6,15 +6,15 @@ instance (see arXiv:1909.10519).
 """
 import gc
 import itertools
-import warnings
-from collections import Counter, deque
-from numbers import Real
-from typing import List, Dict, Tuple, Union, Any
-
 import numpy as np
 import sympy as sp
-from scipy.sparse import coo_matrix
+
+from collections import Counter, deque
 from functools import reduce
+from numbers import Real
+from scipy.sparse import coo_matrix
+from typing import List, Dict, Tuple, Union, Any
+from warnings import warn
 
 from causalinflation import InflationProblem
 from .fast_npa import (calculate_momentmatrix,
@@ -41,6 +41,7 @@ from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
+import warnings
 formatwarning_orig = warnings.formatwarning
 warnings.formatwarning = lambda message, category, filename, lineno, line=None:\
     formatwarning_orig(message, category, filename, lineno, line="")
@@ -645,7 +646,7 @@ class InflationSDP(object):
         self.use_lpi_constraints = use_lpi_constraints
 
         if (len(self.objective) > 1) and self.use_lpi_constraints:
-            warnings.warn("You have an objective function set. Be aware that imposing " +
+            warn("You have an objective function set. Be aware that imposing " +
                           "linearized polynomial constraints will constrain the " +
                           "optimization to distributions with fixed marginals.")
 
@@ -659,7 +660,7 @@ class InflationSDP(object):
             # that is semi-known relative to the information in the dictionary
             # is left free.
             if self.use_lpi_constraints and self.verbose >= 1:
-                warnings.warn(
+                warn(
                     "set_values: Both only_specified_values=True and use_lpi_constraints=True has been detected. " +
                     "With only_specified_values=True, only moments that match exactly " +
                     "those provided in the values dictionary will be set. Values for moments " +
@@ -679,7 +680,7 @@ class InflationSDP(object):
                             problematic_multifactor_specified.append(mon)
                             break
             if len(problematic_multifactor_specified):
-                warnings.warn(
+                warn(
                     "At least one multi-factor monomial has been specified without providing a numerical value for" +
                     "each of its atomic factors:" +
                     f"\n\t{problematic_multifactor_specified}"
@@ -721,7 +722,7 @@ class InflationSDP(object):
                 else:
                     pass
         if len(suprising_semiknown_portions) >= 1:
-            warnings.warn(
+            warn(
                 f"Encountered at least one monomial that does not appear in the original moment matrix:\n\t{suprising_semiknown_portions}")
         del atomic_known_moments, suprising_semiknown_portions
         self.cleanup_after_set_values()
@@ -788,7 +789,7 @@ class InflationSDP(object):
         else:
             if hasattr(self, 'use_lpi_constraints'):
                 if self.use_lpi_constraints and self.verbose > 0:
-                    warnings.warn("You have the flag `use_lpi_constraints` set to True. Be " +
+                    warn("You have the flag `use_lpi_constraints` set to True. Be " +
                                   "aware that imposing linearized polynomial constraints will " +
                                   "constrain the optimization to distributions with fixed " +
                                   "marginals.")
@@ -986,7 +987,7 @@ class InflationSDP(object):
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
         if feas_as_optim and len(self._processed_objective) > 1:
-            warnings.warn("You have a non-trivial objective, but set to solve a " +
+            warn("You have a non-trivial objective, but set to solve a " +
                           "feasibility problem as optimization. Setting "
                           + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
@@ -1095,9 +1096,9 @@ class InflationSDP(object):
                             "a problem. Call 'InflationSDP.solve()' first")
         if len(self.semiknown_moments) > 0:
             if self.verbose > 0:
-                warnings.warn("Beware that, because the problem contains linearized " +
-                              "polynomial constraints, the certificate is not guaranteed " +
-                              "to apply to other distributions")
+                warn("Beware that, because the problem contains linearized " +
+                     "polynomial constraints, the certificate is not " +
+                     "guaranteed to apply to other distributions")
 
         if clean and not np.allclose(list(dual.values()), 0.):
             dual = clean_coefficients(dual, chop_tol, round_decimals)
@@ -1518,7 +1519,7 @@ class InflationSDP(object):
                             inflation_symmetries_from_this_source.append(np.asarray(total_perm, dtype=int))
                         except:
                             if self.verbose > 0:
-                                warnings.warn("The generating set is not closed under source swaps." +
+                                warn("The generating set is not closed under source swaps." +
                                               "Some symmetries will not be implemented.")
                 inflation_symmetries.append(inflation_symmetries_from_this_source)
             if generators_only:
@@ -1586,7 +1587,7 @@ class InflationSDP(object):
                         else:
                             previous = val
                     except KeyError:
-                        warnings.warn("Your generating set might not have enough" +
+                        warn("Your generating set might not have enough" +
                                       "elements to fully impose inflation symmetries.")
                 orbits[key] = val
 
