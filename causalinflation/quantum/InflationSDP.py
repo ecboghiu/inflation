@@ -989,7 +989,7 @@ class InflationSDP(object):
     ########################################################################
 
     def certificate_as_probs(self,
-                             clean: bool = False,
+                             clean: bool = True,
                              chop_tol: float = 1e-10,
                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
