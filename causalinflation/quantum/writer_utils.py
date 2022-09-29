@@ -79,15 +79,8 @@ def convert_to_human_readable(problem):
     bounds = np.zeros((len(bounded_vars), 3), dtype=object)
     for idx, var in enumerate(bounded_vars):
         bounds[idx, 0] = var
-        try:
-            bounds[idx, 1] = problem.moment_lowerbounds[var]
-        except KeyError:
-            bounds[idx, 1] = None
-        try:
-            bounds[idx, 2] = problem.moment_upperbounds[var]
-        except KeyError:
-            bounds[idx, 2] = None
-    return objective, matrix, bounds.tolist()
+        bounds[idx, 1] = problem.moment_lowerbounds.get(var, None)
+        bounds[idx, 2] = problem.moment_upperbounds.get(var, None)
 
     ### Process equalities
     equalities = []
