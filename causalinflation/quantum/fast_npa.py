@@ -574,6 +574,16 @@ def notcomm_from_lexorder(lexorder: np.ndarray, commuting=False) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def commuting_operator_sequence_test(mon: np.ndarray,
+                                     lexorder: np.ndarray,
+                                     notcomm: np.ndarray) -> bool:
+    if len(mon) <= 1:
+        return True
+    mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
+    sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]
+    return not sub_notcomm.any()
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
                              notcomm: np.ndarray) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations.
@@ -642,8 +652,9 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
-                 commuting=False) -> np.ndarray:
-    """Brings a monomial to canonical form with respect to commutations..
+                 commuting: bool_=False) -> np.ndarray:
+    """Brings a monomial to canonical form with respect to commutations,
+    and removes square projectors, and identifies orthogonality.
 
     Parameters
     ----------
@@ -659,16 +670,41 @@ def to_canonical(mon: np.ndarray,
     if mon.shape[0] <= 1:
         return mon
     else:
-        if commuting:
-            mon = mon_lexsorted(mon, lexorder)
-        else:
-            mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
-            mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
-            mon = lexorder[mon]
+        mon = hasty_to_canonical(mon, notcomm, lexorder, commuting=commuting)
         mon = remove_projector_squares(mon)
         if mon_is_zero(mon):
             return 0*mon[:1]
         else:
+            return mon
+
+def hasty_to_canonical(mon: np.ndarray,
+                 notcomm: np.ndarray,
+                 lexorder: np.ndarray,
+                 commuting: bool_=False) -> np.ndarray:
+    """Brings a monomial to canonical form with respect to commutations, but does
+    not check for squared projectors or orthogonality.
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Monomial as a matrix with rows as integer arrays representing operators.
+
+    Returns
+    -------
+    numpy.ndarray
+        The monomial in canonical form with respect to some commutation
+        relationships.
+    """
+    if len(mon) <= 1:
+        return mon
+    else:
+        if commuting:
+            mon = mon_lexsorted(mon, lexorder)
+            return mon
+        else:
+            mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
+            mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
+            mon = lexorder[mon]
             return mon
 
 
