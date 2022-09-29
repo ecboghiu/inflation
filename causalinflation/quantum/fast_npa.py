@@ -618,6 +618,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
     # Take only the rows and columns of notcomm that appear in the monomial,
     # in the correct order.
     sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]
+    if not sub_notcomm.any():
+        return np.sort(mon_lexorder)
     minimum = mon_lexorder[0]
     minimum_idx = 0
     for op in range(1, mon_lexorder.shape[0]):
