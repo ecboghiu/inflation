@@ -4,7 +4,7 @@ matrices. The functions in this file can be accelerated by JIT compilation in
 numba.
 @authors: Alejandro Pozas-Kerstjens, Elie Wolfe and Emanuel-Cristian Boghiu
 """
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 import numpy as np
 from scipy.sparse import dok_matrix
 
@@ -473,8 +473,8 @@ def to_hashable(monomial: np.ndarray) -> bytes:
     return monomial.tobytes()
 
 
-def to_name(monomial: np.ndarray,
-            names: List[str]) -> str:
+def to_name(monomial: Union[np.ndarray, List],
+            names: List) -> str:
     """Convert the 2d array representation of a monomial to a string.
 
     Parameters
@@ -806,7 +806,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
 
     """
     if len(raw_monomial) == 0:
-        return [raw_monomial]
+        return (raw_monomial,)
 
     monomial = np.asarray(raw_monomial, dtype=np.uint16)
     components_indices = np.zeros((len(monomial), 2), dtype=np.uint16)
@@ -859,7 +859,7 @@ def calculate_momentmatrix(cols: List,
                            lexorder: np.ndarray,
                            verbose: int=0,
                            commuting: bool=False,
-                           dtype: np.dtype = np.uint16) -> Tuple[np.ndarray, Dict]:
+                           dtype: object = np.uint16) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
