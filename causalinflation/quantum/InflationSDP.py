@@ -326,8 +326,9 @@ class InflationSDP(object):
                 norm_idx = row[normalization_col]
                 summation_idxs = row.take(summation_cols)
                 summation_idxs.sort()
-                nontriv_summation_idxs = tuple(summation_idxs[summation_idxs != norm_idx].tolist())
-                if len(nontriv_summation_idxs) > 0 or (len(nontriv_summation_idxs) == 0 and norm_idx > 0):
+                nontriv_summation_idxs = tuple(summation_idxs[np.flatnonzero(summation_idxs)].tolist())
+                if not ((len(nontriv_summation_idxs) == 1 and np.array_equiv(norm_idx, nontriv_summation_idxs)) or
+                        (len(nontriv_summation_idxs) == 0 and norm_idx == 0)):
                     signature = (norm_idx, nontriv_summation_idxs)
                     if signature not in seen_already:
                         seen_already.add(signature)
