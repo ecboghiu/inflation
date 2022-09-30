@@ -175,7 +175,7 @@ class InflationSDP(object):
         if len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
             self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
             self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = unsym_monarray
-            return (unsym_monarray, unsym_monarray)
+            return unsym_monarray, unsym_monarray
         else:
             sym_monarray, sym_monarray_conjugate = to_representative_pair(unsym_monarray,
                                              self.inflation_levels,
@@ -192,7 +192,7 @@ class InflationSDP(object):
             self.canonsym_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray_conjugate
             self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key] = sym_monarray_conjugate
             self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray
-            return (sym_monarray, sym_monarray_conjugate)
+            return sym_monarray, sym_monarray_conjugate
 
     def inflation_aware_to_ndarray_representative(self, mon: np.ndarray,
                                                   swaps_plus_commutations=True,
