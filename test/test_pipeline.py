@@ -182,6 +182,56 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(all(sdp.Zero.name not in eq_dict.keys() for eq_dict in equalities),
                         "Some implicit equalities are wrongly assigning coefficients to the zero monomial.")
 
+    def test_instrumental(self):
+        prob = InflationProblem(dag={'U_AB': ['A', 'B'],
+                                     'A': ['B']},
+                                outcomes_per_party=(2, 2),
+                                settings_per_party=(3, 1),
+                                inflation_level_per_source=(1,),
+                                order=('A', 'B'),
+                                verbose=2)
+        sdp = InflationSDP(prob, commuting=False, verbose=0, supports_problem=False)
+        sdp.generate_relaxation('local1')
+        incompat_dist_because_GPT = np.array([[[[0.5], [0.5], [0.0]], [[0.0], [0.0], [0.5]]],
+                         [[[0.0], [0.5], [0.0]], [[0.5], [0.0], [0.5]]]], dtype=float)
+        sdp.set_distribution(incompat_dist_because_GPT)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, 'infeasible',
+                        "Failing to detect the infeasibility of the distribution that maximally violates Bonet's inequalty.")
+        incompat_dist_because_supernormalized = np.ones((2, 2, 3, 1), dtype=float)
+        sdp.set_distribution(incompat_dist_because_supernormalized)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, 'infeasible',
+                        "Failing to detect the infeasibility of a distribution that violates normalization.")
+        compat_dist = incompat_dist_because_supernormalized/4
+        sdp.set_distribution(compat_dist)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, 'feasible',
+                         "A feasible distribution for the instrumental scenario is not being recognized as such.")
+
+    def test_instrumental_supports(self):
+        prob = InflationProblem(dag={'U_AB': ['A', 'B'],
+                                     'A': ['B']},
+                                outcomes_per_party=(2, 2),
+                                settings_per_party=(3, 1),
+                                inflation_level_per_source=(1,),
+                                order=('A', 'B'),
+                                verbose=2)
+        sdp = InflationSDP(prob, commuting=False, verbose=0, supports_problem=True)
+        sdp.generate_relaxation('local1')
+        incompat_dist_because_GPT = np.array([[[[0.5], [0.5], [0.0]], [[0.0], [0.0], [0.5]]],
+                         [[[0.0], [0.5], [0.0]], [[0.5], [0.0], [0.5]]]], dtype=float)
+        sdp.set_distribution(incompat_dist_because_GPT)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, 'infeasible',
+                        "Failing to detect the infeasibility of a support known to be incompatible.")
+        compat_support = np.ones((2, 2, 3, 1), dtype=float)
+        sdp.set_distribution(compat_support)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, 'feasible',
+                        "A feasible support for the instrumental scenario is not being recognized as such.")
+
+
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation("npa1")
