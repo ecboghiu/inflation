@@ -78,6 +78,7 @@ class InflationSDP(object):
         self.commuting = commuting
         self.InflationProblem = inflationproblem
         self.names = self.InflationProblem.names
+        self.names_to_ints_dict = {name: i + 1 for i, name in enumerate(self.names)}
         if self.verbose > 1:
             print(self.InflationProblem)
 
@@ -325,8 +326,7 @@ class InflationSDP(object):
                     return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
                 except KeyError:
                     pass
-            array = np.concatenate([to_numbers(op, self.names)
-                                    for op in symbol_to_string_list])
+            array = np.concatenate([self.interpret_atomic_string(str(op)) for op in symbol_to_string_list])
             return self._sanitise_monomial(array)
         elif isinstance(mon, (tuple, list, np.ndarray)):
             array = np.asarray(mon, dtype=self.np_dtype)
@@ -340,7 +340,7 @@ class InflationSDP(object):
             try:
                 return self.compound_monomial_from_name_dict[mon]
             except KeyError:
-                return self._sanitise_monomial(to_numbers(monomial=mon, parties_names=self.names))
+                return self._sanitise_monomial(self.interpret_compound_string(mon))
         elif isinstance(mon, Real):  # If they are number type
             if np.isclose(float(mon), 1):
                 return self.One
@@ -350,6 +350,27 @@ class InflationSDP(object):
                 raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
+
+    def interpret_compound_string(self, compound_monomial_string) -> np.ndarray:
+        # TODO: Recognize also strings such as '<A_1_0_0_0 A_1_0_1_0>^2'
+        assert '^' not in compound_monomial_string, "Cannot interpret exponent expressions."
+        factors = compound_monomial_string.split('*')
+        return np.vstack(tuple(self.interpret_atomic_string(factor_string) for factor_string in factors))
+
+    def interpret_atomic_string(self, factor_string) -> np.ndarray:
+        # TODO: Recognize also strings such as 'pAB(00|11)'
+        assert (factor_string[0] == '<' and factor_string[-1] == '>') or set(factor_string).isdisjoint(set("| ")), "Cannot interpret string of this format."
+        if factor_string[0] == '<':
+            operators = factor_string[1:-1].split(' ')
+            return np.vstack(tuple(self.interpret_operator_string(op_string) for op_string in operators))
+        else:
+            return self.interpret_operator_string(factor_string)[np.newaxis]
+
+    def interpret_operator_string(self, op_string) -> np.ndarray:
+        components = op_string.split('_')
+        assert len(components) == self._nr_properties, "Cannot interpret string of this format."
+        components[0] = self.names_to_ints_dict[components[0]]
+        return np.array([int(s) for s in components], dtype=self.np_dtype)
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
