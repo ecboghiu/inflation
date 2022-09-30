@@ -166,9 +166,8 @@ class TestSDPOutput(unittest.TestCase):
                                 outcomes_per_party=(2, 2, 2, 2),
                                 settings_per_party=(1, 1, 1, 1),
                                 inflation_level_per_source=(1, 1, 1),
-                                order=('A', 'B', 'C', 'D'),
-                                verbose=2)
-        sdp = InflationSDP(prob, commuting=False, verbose=0)
+                                order=('A', 'B', 'C', 'D'))
+        sdp = InflationSDP(prob)
         sdp.generate_relaxation('npa2')
         equalities = sdp.moment_linear_equalities
 
@@ -188,9 +187,8 @@ class TestSDPOutput(unittest.TestCase):
                                 outcomes_per_party=(2, 2),
                                 settings_per_party=(3, 1),
                                 inflation_level_per_source=(1,),
-                                order=('A', 'B'),
-                                verbose=2)
-        sdp = InflationSDP(prob, commuting=False, verbose=0, supports_problem=False)
+                                order=('A', 'B'))
+        sdp = InflationSDP(prob)
         sdp.generate_relaxation('local1')
         incompat_dist_because_GPT = np.array([[[[0.5], [0.5], [0.0]], [[0.0], [0.0], [0.5]]],
                          [[[0.0], [0.5], [0.0]], [[0.5], [0.0], [0.5]]]], dtype=float)
@@ -215,9 +213,8 @@ class TestSDPOutput(unittest.TestCase):
                                 outcomes_per_party=(2, 2),
                                 settings_per_party=(3, 1),
                                 inflation_level_per_source=(1,),
-                                order=('A', 'B'),
-                                verbose=2)
-        sdp = InflationSDP(prob, commuting=False, verbose=0, supports_problem=True)
+                                order=('A', 'B'))
+        sdp = InflationSDP(prob, supports_problem=True)
         sdp.generate_relaxation('local1')
         incompat_dist_because_GPT = np.array([[[[0.5], [0.5], [0.0]], [[0.0], [0.0], [0.5]]],
                          [[[0.0], [0.5], [0.0]], [[0.5], [0.0], [0.5]]]], dtype=float)
