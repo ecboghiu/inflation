@@ -262,6 +262,7 @@ class InflationSDP(object):
             return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
+        """The constructor function for initializing CompoundMonomial instances with memoization."""
         _factors = factorize_monomial(array2d, canonical_order=False)
         list_of_atoms = [self.AtomicMonomial(factor) for factor in _factors if len(factor)]
         mon = self.monomial_from_list_of_atomic(list_of_atoms)
@@ -553,8 +554,8 @@ class InflationSDP(object):
                 e.g., Eq. (D6) in `arXiv:2203.16543
                 <http://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
                 By default ``False``.
-
-            assume_shared_randomness (bool): Specification whether higher order monomials
+            assume_shared_randomness : bool, optional
+                Specification whether higher order monomials
                 may be calculated. If universal shared randomness is present, only atomic
                 monomials may be evaluated from the distribution.
         """
