@@ -1525,6 +1525,7 @@ class InflationSDP(object):
     def _identify_column_level_equalities(self, generating_monomials):
         """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
         An equality is a dictionary with keys being which column and values being coefficients."""
+        genmon_has_to_index_dict = {self.from_2dndarray(op): i for i, op in enumerate(iter(generating_monomials))}
         column_level_equalities = []
         for i, monomial in enumerate(iter(generating_monomials)):
             for k, operator in enumerate(iter(monomial)):
@@ -1538,19 +1539,18 @@ class InflationSDP(object):
                         variant_operator = operator_as_2d.copy()
                         variant_operator[0, -1] = outcome
                         variant_monomial = np.vstack((prefix, variant_operator, suffix))
-                        for j, monomial in enumerate(iter(generating_monomials)):
-                            if np.array_equal(monomial, variant_monomial):
-                                variant_locations.append(j)
-                                break
+                        try:
+                            j = genmon_has_to_index_dict[self.from_2dndarray(variant_monomial)]
+                            variant_locations.append(j)
+                        except KeyError:
+                            break
                     if len(variant_locations) == true_cardinality:
-                        missing_op_location = -1
                         missing_op_monomial = np.vstack((prefix, suffix))
-                        for j, monomial in enumerate(self.generating_monomials):
-                            if np.array_equal(monomial, missing_op_monomial):
-                                missing_op_location = j
-                                break
-                        if missing_op_location >= 0:
+                        try:
+                            missing_op_location = genmon_has_to_index_dict[self.from_2dndarray(missing_op_monomial)]
                             column_level_equalities.append((missing_op_location, tuple(variant_locations)))
+                        except KeyError:
+                            break
         num_of_column_level_equalities = len(column_level_equalities)
         if self.verbose > 1 and num_of_column_level_equalities:
             print("Number of column level equalities:", num_of_column_level_equalities)
