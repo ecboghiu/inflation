@@ -1,6 +1,6 @@
 """
 This file contains the functions to send the problems to SDP solvers.
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu and Elie Wolfe
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 import numpy as np
 import sys
@@ -191,9 +191,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
     constant_objective = False
     if list(objective.keys()) == [CONST_KEY]:
         constant_objective = True
-        if verbose > 1:
-            print('Constant objective detected. Treating the problem as ' +
-                  'a feasibility problem.')
+        if verbose > 0:
+            print("Constant objective detected. Treating the problem as " +
+                  "a feasibility problem.")
 
     if process_constraints:
         # If some variable is semiknown, then this is the same as a constraint
@@ -395,7 +395,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
     # Solving and readout
     xmat, ymat, primal, dual = None, None, None, None
     try:
-        if verbose > 1:
+        if verbose > 0:
             M.setLogHandler(sys.stdout)
 
         if solverparameters:
