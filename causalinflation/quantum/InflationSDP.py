@@ -500,8 +500,8 @@ class InflationSDP(object):
         self._relaxation_has_been_generated = True
 
     def reset_objective(self):
-        for attribute in {'objective', '_processed_objective',
-                          'objective_value', 'primal_objective', 'maximize'}:
+        self.reset_solution()
+        for attribute in {'_processed_objective', 'maximize'}:
             try:
                 delattr(self, attribute)
             except AttributeError:
@@ -510,7 +510,7 @@ class InflationSDP(object):
         gc.collect(2)
 
     def reset_values(self):
-        self.status = 'not yet solved'
+        self.reset_solution()
         self.known_moments = dict()
         self.semiknown_moments = dict()
         if self.momentmatrix_has_a_zero:
@@ -524,11 +524,11 @@ class InflationSDP(object):
         gc.collect(2)
 
     def reset_lowerbounds(self):
-        self.status = 'not yet solved'
+        self.reset_solution()
         self._processed_moment_lowerbounds = dict()
 
     def reset_upperbounds(self):
-        self.status = 'not yet solved'
+        self.reset_solution()
         self._processed_moment_upperbounds = dict()
 
     def update_lowerbounds(self):
@@ -992,6 +992,15 @@ class InflationSDP(object):
             self.primal_objective = 'Could not find a value, as the optimization problem was found to be infeasible.'
             self.objective_value = self.primal_objective
         gc.collect(generation=2)
+
+    def reset_solution(self):
+        for attribute in {'primal_objective', 'objective_value', 'solution_object'}:
+            try:
+                delattr(self, attribute)
+            except AttributeError:
+                pass
+        self.status = 'not yet solved'
+
 
     ########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #
