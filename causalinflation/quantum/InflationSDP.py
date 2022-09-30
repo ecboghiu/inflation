@@ -312,66 +312,7 @@ class InflationSDP(object):
         party = operator[0] - 1
         return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
 
-    def _identify_column_level_equalities(self, generating_monomials):
-        """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
-        An equality is a dictionary with keys being which column and values being coefficients."""
-        column_level_equalities = []
-        for i, monomial in enumerate(iter(generating_monomials)):
-            for k, operator in enumerate(iter(monomial)):
-                if self._operator_max_outcome_q(operator):
-                    operator_as_2d = np.expand_dims(operator, axis=0)
-                    prefix = monomial[:k]
-                    suffix = monomial[(k + 1):]
-                    variant_locations = [i]
-                    true_cardinality = self.outcome_cardinalities[operator[0] - 1] - 1
-                    for outcome in range(true_cardinality - 1):
-                        variant_operator = operator_as_2d.copy()
-                        variant_operator[0, -1] = outcome
-                        variant_monomial = np.vstack((prefix, variant_operator, suffix))
-                        for j, monomial in enumerate(iter(generating_monomials)):
-                            if np.array_equal(monomial, variant_monomial):
-                                variant_locations.append(j)
-                                break
-                    if len(variant_locations) == true_cardinality:
-                        missing_op_location = -1
-                        missing_op_monomial = np.vstack((prefix, suffix))
-                        for j, monomial in enumerate(self.generating_monomials):
-                            if np.array_equal(monomial, missing_op_monomial):
-                                missing_op_location = j
-                                break
-                        if missing_op_location >= 0:
-                            column_level_equalities.append((missing_op_location, tuple(variant_locations)))
-        num_of_column_level_equalities = len(column_level_equalities)
-        if self.verbose > 1 and num_of_column_level_equalities:
-            print("Number of column level equalities:", num_of_column_level_equalities)
-        return column_level_equalities
 
-    @staticmethod
-    def construct_idx_level_equalities_from_column_level_equalities(column_level_equalities,
-                                                                    momentmatrix):
-        """Given a list of column level equalities (a list of dictionaries with integer keys)
-        and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices."""
-        idx_linear_equalities = []
-        seen_already = set()
-        for column_level_equality in column_level_equalities:
-            for i, row in enumerate(iter(momentmatrix)):
-                (normalization_col, summation_cols) = column_level_equality
-                norm_idx = row[normalization_col]
-                summation_idxs = row.take(summation_cols)
-                summation_idxs.sort()
-                nontriv_summation_idxs = tuple(summation_idxs[np.flatnonzero(summation_idxs)].tolist())
-                if not ((len(nontriv_summation_idxs) == 1 and np.array_equiv(norm_idx, nontriv_summation_idxs)) or
-                        (len(nontriv_summation_idxs) == 0 and norm_idx == 0)):
-                    signature = (norm_idx, nontriv_summation_idxs)
-                    if signature not in seen_already:
-                        seen_already.add(signature)
-                        temp_dict = {norm_idx: 1}
-                        for idx in nontriv_summation_idxs:
-                            temp_dict[idx] = -1
-                        idx_linear_equalities.append(temp_dict)
-                        del signature, temp_dict
-        del seen_already
-        return idx_linear_equalities
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -1640,6 +1581,71 @@ class InflationSDP(object):
 
             symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
             return symmetric_arr, unsym_idx_to_sym_idx, old_representative_indices
+
+    ########################################################################
+    # ROUTINES RELATED TO IMPLICIT EQUALITY CONSTRAINTS                    #
+    ########################################################################
+
+    def _identify_column_level_equalities(self, generating_monomials):
+        """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
+        An equality is a dictionary with keys being which column and values being coefficients."""
+        column_level_equalities = []
+        for i, monomial in enumerate(iter(generating_monomials)):
+            for k, operator in enumerate(iter(monomial)):
+                if self._operator_max_outcome_q(operator):
+                    operator_as_2d = np.expand_dims(operator, axis=0)
+                    prefix = monomial[:k]
+                    suffix = monomial[(k + 1):]
+                    variant_locations = [i]
+                    true_cardinality = self.outcome_cardinalities[operator[0] - 1] - 1
+                    for outcome in range(true_cardinality - 1):
+                        variant_operator = operator_as_2d.copy()
+                        variant_operator[0, -1] = outcome
+                        variant_monomial = np.vstack((prefix, variant_operator, suffix))
+                        for j, monomial in enumerate(iter(generating_monomials)):
+                            if np.array_equal(monomial, variant_monomial):
+                                variant_locations.append(j)
+                                break
+                    if len(variant_locations) == true_cardinality:
+                        missing_op_location = -1
+                        missing_op_monomial = np.vstack((prefix, suffix))
+                        for j, monomial in enumerate(self.generating_monomials):
+                            if np.array_equal(monomial, missing_op_monomial):
+                                missing_op_location = j
+                                break
+                        if missing_op_location >= 0:
+                            column_level_equalities.append((missing_op_location, tuple(variant_locations)))
+        num_of_column_level_equalities = len(column_level_equalities)
+        if self.verbose > 1 and num_of_column_level_equalities:
+            print("Number of column level equalities:", num_of_column_level_equalities)
+        return column_level_equalities
+
+    @staticmethod
+    def construct_idx_level_equalities_from_column_level_equalities(column_level_equalities,
+                                                                    momentmatrix):
+        """Given a list of column level equalities (a list of dictionaries with integer keys)
+        and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices."""
+        idx_linear_equalities = []
+        seen_already = set()
+        for column_level_equality in column_level_equalities:
+            for i, row in enumerate(iter(momentmatrix)):
+                (normalization_col, summation_cols) = column_level_equality
+                norm_idx = row[normalization_col]
+                summation_idxs = row.take(summation_cols)
+                summation_idxs.sort()
+                nontriv_summation_idxs = tuple(summation_idxs[np.flatnonzero(summation_idxs)].tolist())
+                if not ((len(nontriv_summation_idxs) == 1 and np.array_equiv(norm_idx, nontriv_summation_idxs)) or
+                        (len(nontriv_summation_idxs) == 0 and norm_idx == 0)):
+                    signature = (norm_idx, nontriv_summation_idxs)
+                    if signature not in seen_already:
+                        seen_already.add(signature)
+                        temp_dict = {norm_idx: 1}
+                        for idx in nontriv_summation_idxs:
+                            temp_dict[idx] = -1
+                        idx_linear_equalities.append(temp_dict)
+                        del signature, temp_dict
+        del seen_already
+        return idx_linear_equalities
 
     ########################################################################
     # OTHER ROUTINES                                                       #
