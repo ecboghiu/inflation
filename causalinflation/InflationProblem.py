@@ -212,13 +212,13 @@ class InflationProblem(object):
 
         Parameters
         ----------
-            monomial : numpy.ndarray
-                An internal representation of a monomial as a 2d numpy array.
-                Each row in the array corresponds to an operator. For each row,
-                the zeroth element represents the party, the last element
-                represents the outcome, the second-to-last element represents
-                the setting, and the remaining elements represent inflation
-                copies.
+        monomial : numpy.ndarray
+            An internal representation of a monomial as a 2d numpy array.
+            Each row in the array corresponds to an operator. For each row,
+            the zeroth element represents the party, the last element
+            represents the outcome, the second-to-last element represents
+            the setting, and the remaining elements represent inflation
+            copies.
 
         Returns
         -------
