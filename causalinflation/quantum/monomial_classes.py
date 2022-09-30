@@ -15,7 +15,6 @@ from .fast_npa import mon_is_zero
 class InternalAtomicMonomial(object):
     __slots__ = ['as_ndarray',
                  'do_conditional',
-                 'inflation_indices_are_irrelevant',
                  'is_one',
                  'is_zero',
                  'knowable_q',
@@ -33,12 +32,33 @@ class InternalAtomicMonomial(object):
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
         self.n_ops, self.op_length = self.as_ndarray.shape
         assert self.op_length == self.sdp._nr_properties, "We insist on well-formed 2d arrays as input to AtomicMonomial."
-        self.is_zero = mon_is_zero(self.as_ndarray) # compare to mon_is_zero in fast_npa.py
+        self.is_zero = mon_is_zero(self.as_ndarray)
         self.is_one = (self.n_ops == 0)
         self.knowable_q = self.is_zero or self.is_one or self.sdp.atomic_knowable_q(self.as_ndarray)
         self.do_conditional = False
         if self.knowable_q:
             self.rectified_ndarray = np.asarray(self.sdp.rectify_fake_setting(np.take(self.as_ndarray, [0, -2, -1], axis=1)), dtype=int)
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        for attr in self.__slots__:
+            try:
+                result.__setattr__(attr, self.__getattribute__(attr))
+            except AttributeError:
+                pass
+        return result
+
+    @property
+    def dagger(self):
+        conjugate_ndarray = self.sdp.inflation_aware_to_ndarray_conjugate_representative(self.as_ndarray)
+        conjugate_signature = self.sdp.from_2dndarray(conjugate_ndarray)
+        if conjugate_signature != self.signature:
+            dagger = self.__copy__()
+            dagger.as_ndarray = conjugate_ndarray
+            return dagger
+        else:
+            return self
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
@@ -128,11 +148,12 @@ class CompoundMonomial(object):
 
     def __init__(self, tuple_of_atomic_monomials: Tuple[InternalAtomicMonomial]):
         """
-        This class is incredibly inefficient unless knowable_q has built-in memoization.
-        It is designed to categorize monomials into known, semiknown, unknown, etc.
-        Note that if knowable_q changes (such as given partial information) we can update this on the fly.
+        This class is designed to categorize monomials into known, semiknown, unknown, etc.
+        It also computes names for expectation values, and provides the ability to compare (in)equivalence.
         """
-        self.factors_as_atomic_monomials = tuple_of_atomic_monomials
+        default_factors = tuple(sorted(tuple_of_atomic_monomials))
+        conjugate_factors = tuple(sorted(factor.dagger for factor in tuple_of_atomic_monomials))
+        self.factors_as_atomic_monomials = min(default_factors, conjugate_factors)
         self.nof_factors = len(self.factors_as_atomic_monomials)
         self.is_atomic = (self.nof_factors <= 1)
         self.knowable_q = all(factor.knowable_q for factor in self.factors_as_atomic_monomials)
