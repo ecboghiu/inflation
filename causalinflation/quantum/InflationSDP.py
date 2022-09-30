@@ -283,7 +283,7 @@ class InflationSDP(object):
                 self.atomic_monomial_from_hash_cache[new_quick_key] = mon
                 return mon
 
-    def monomial_from_list_of_atomic(self, list_of_AtomicMonomials: List[InternalAtomicMonomial]):
+    def monomial_from_list_of_atomic(self, list_of_AtomicMonomials: List[InternalAtomicMonomial]) -> CompoundMonomial:
         list_of_atoms = []
         for factor in list_of_AtomicMonomials:
             if factor.is_zero:
