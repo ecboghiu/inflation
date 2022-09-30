@@ -227,14 +227,17 @@ class InflationSDP(object):
                                                                           swaps_plus_commutations=swaps_plus_commutations,
                                                                           consider_conjugation_symmetries=consider_conjugation_symmetries,
                                                                           commuting=self.commuting)
-            self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
-            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = sym_monarray_conjugate
             new_quick_key = self.from_2dndarray(sym_monarray)
             new_quick_key_conjugate = self.from_2dndarray(sym_monarray_conjugate)
+            # Before we get hasty, let's see if these new keys are recognized. If so, use existing representatives.
+            sym_monarray = self.canonsym_ndarray_from_hash_cache.get(new_quick_key, sym_monarray)
+            sym_monarray_conjugate = self.canonsym_conjugate_ndarray_from_hash_cache.get(new_quick_key, sym_monarray_conjugate)
+            self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
             self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
+            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = sym_monarray_conjugate
             self.canonsym_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray_conjugate
             self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key] = sym_monarray_conjugate
-            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray
             return sym_monarray, sym_monarray_conjugate
 
     def inflation_aware_to_ndarray_representative(self, mon: np.ndarray,
