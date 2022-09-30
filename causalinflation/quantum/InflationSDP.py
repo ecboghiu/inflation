@@ -21,7 +21,8 @@ from .fast_npa import (calculate_momentmatrix,
                        to_canonical,
                        to_name,
                        nb_mon_to_lexrepr,
-                       notcomm_from_lexorder)
+                       notcomm_from_lexorder,
+                       commuting_operator_sequence_test)
 from .general_tools import (to_representative_pair,
                             to_numbers,
                             to_symbol,
@@ -481,11 +482,19 @@ class InflationSDP(object):
                                             unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
         # TODO: canonsym_ndarray_from_hash_cache is NOT supposed to account for conjugation symmetry, but it does.
         # So we need to overhaul the moment matrix creation and symmetrization to avoid conjugation symmetry!!
-        # _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-        #                             unsymidx_to_unsym_monarray_dict.items()}
-        # for (k, v) in _unsymidx_from_hash_dict.items():
-        #     self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
-        # del _unsymidx_from_hash_dict
+        _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
+                                    unsymidx_to_unsym_monarray_dict.items()
+                                    if commuting_operator_sequence_test(v,
+                                                                        self._lexorder,
+                                                                        self._notcomm)}
+        for (k, v) in _unsymidx_from_hash_dict.items():
+            array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry = self.symidx_to_sym_monarray_dict[
+                self.orbits[v]]
+            self.canonsym_ndarray_from_hash_cache[
+                k] = array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry
+            self.canonsym_conjugate_ndarray_from_hash_cache[
+                k] = array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry
+        del _unsymidx_from_hash_dict
         del unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict
         # This is a good time to reclaim memory, as unsymmetrized_mm_idxs can be GBs.
         gc.collect(generation=2)
