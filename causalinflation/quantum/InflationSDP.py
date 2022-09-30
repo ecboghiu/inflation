@@ -75,10 +75,8 @@ class InflationSDP(object):
         """
         self.supports_problem = supports_problem
         if inflationproblem.verbose > verbose:
-            print("Inheriting the verbosity parameter from InflationProblem")
-            self.verbose = inflationproblem.verbose
-        else:
-            self.verbose = verbose
+            print("Overriding the verbosity parameter from InflationProblem")
+        self.verbose = verbose
         self.commuting = commuting
         self.InflationProblem = inflationproblem
         self.names = self.InflationProblem.names
