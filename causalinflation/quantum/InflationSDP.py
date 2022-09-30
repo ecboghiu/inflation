@@ -722,7 +722,6 @@ class InflationSDP(object):
         self._cleanup_after_set_values()
         return
 
-
     def set_objective(self,
                       objective: Union[sp.core.symbol.Symbol, dict, None],
                       direction: str = 'max') -> None:
@@ -931,7 +930,6 @@ class InflationSDP(object):
             except AttributeError:
                 pass
         self.status = 'not yet solved'
-
 
     ########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #
