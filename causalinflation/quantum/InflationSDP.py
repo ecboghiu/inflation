@@ -1411,8 +1411,6 @@ class InflationSDP(object):
         """
 
         symmetry_inducing_sources = [source for source, inf_level in enumerate(self.inflation_levels) if inf_level > 1]
-        # inflevel = self.inflation_levels
-        # n_sources = self.nr_sources
         if len(symmetry_inducing_sources):
             inflation_symmetries = []
             identity_permutation_of_columns = np.arange(self.nof_columns, dtype=int)
