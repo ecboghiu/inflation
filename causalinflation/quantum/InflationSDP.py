@@ -22,7 +22,7 @@ from .fast_npa import (calculate_momentmatrix,
                        to_name,
                        nb_mon_to_lexrepr,
                        notcomm_from_lexorder)
-from .general_tools import (to_representative,
+from .general_tools import (to_representative_pair,
                             to_numbers,
                             to_symbol,
                             flatten,
@@ -139,6 +139,7 @@ class InflationSDP(object):
 
         self.canon_ndarray_from_hash_cache = dict()
         self.canonsym_ndarray_from_hash_cache = dict()
+        self.canonsym_conjugate_ndarray_from_hash_cache = dict()
         self.atomic_monomial_from_hash_cache = dict()
         self.compound_monomial_from_tuple_of_atoms_cache = dict()
         self.compound_monomial_from_name_dict = dict()
@@ -168,16 +169,17 @@ class InflationSDP(object):
 
     def inflation_aware_to_ndarray_representative(self, mon: np.ndarray,
                                                   swaps_plus_commutations=True,
-                                                  consider_conjugation_symmetries=False) -> np.ndarray:
+                                                  consider_conjugation_symmetries=True) -> np.ndarray:
         unsym_monarray = self.to_canonical_memoized(mon)
         quick_key = self.from_2dndarray(unsym_monarray)
         if quick_key in self.canonsym_ndarray_from_hash_cache:
             return self.canonsym_ndarray_from_hash_cache[quick_key]
         elif len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
             self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = unsym_monarray
             return unsym_monarray
         else:
-            sym_monarray = to_representative(unsym_monarray,
+            sym_monarray, sym_monarray_conjugate = to_representative_pair(unsym_monarray,
                                              self.inflation_levels,
                                              self._notcomm,
                                              self._lexorder,
@@ -185,10 +187,43 @@ class InflationSDP(object):
                                              consider_conjugation_symmetries=consider_conjugation_symmetries,
                                              commuting=self.commuting)
             self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = sym_monarray_conjugate
             new_quick_key = self.from_2dndarray(sym_monarray)
-            if new_quick_key not in self.canonsym_ndarray_from_hash_cache:
-                self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
+            new_quick_key_conjugate = self.from_2dndarray(sym_monarray_conjugate)
+            self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
+            self.canonsym_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray_conjugate
+            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key] = sym_monarray_conjugate
+            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray
             return sym_monarray
+
+    def inflation_aware_to_ndarray_conjugate_representative(self, mon: np.ndarray,
+                                                  swaps_plus_commutations=True,
+                                                  consider_conjugation_symmetries=True) -> np.ndarray:
+        unsym_monarray = self.to_canonical_memoized(mon)
+        quick_key = self.from_2dndarray(unsym_monarray)
+        if quick_key in self.canonsym_conjugate_ndarray_from_hash_cache:
+            return self.canonsym_conjugate_ndarray_from_hash_cache[quick_key]
+        elif len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
+            self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = unsym_monarray
+            return unsym_monarray
+        else:
+            sym_monarray, sym_monarray_conjugate = to_representative_pair(unsym_monarray,
+                                             self.inflation_levels,
+                                             self._notcomm,
+                                             self._lexorder,
+                                             swaps_plus_commutations=swaps_plus_commutations,
+                                             consider_conjugation_symmetries=consider_conjugation_symmetries,
+                                             commuting=self.commuting)
+            self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = sym_monarray_conjugate
+            new_quick_key = self.from_2dndarray(sym_monarray)
+            new_quick_key_conjugate = self.from_2dndarray(sym_monarray_conjugate)
+            self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
+            self.canonsym_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray_conjugate
+            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key] = sym_monarray_conjugate
+            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray
+            return sym_monarray_conjugate
 
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
         quick_key = self.from_2dndarray(array2d)
@@ -197,7 +232,7 @@ class InflationSDP(object):
         else:
             # It is important NOT to consider conjugation symmetries for a single factor!
             new_array2d = self.inflation_aware_to_ndarray_representative(array2d,
-                                                                         consider_conjugation_symmetries=False)
+                                                                         consider_conjugation_symmetries=True)
             new_quick_key = self.from_2dndarray(new_array2d)
             if new_quick_key in self.atomic_monomial_from_hash_cache:
                 mon = self.atomic_monomial_from_hash_cache[new_quick_key]
@@ -433,9 +468,6 @@ class InflationSDP(object):
             print("Number of variables" + extra_message + ":",
                   len(unsymidx_to_unsym_monarray_dict) + (1 if 0 in unsymmetrized_mm_idxs.flat else 0))
 
-        _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                    unsymidx_to_unsym_monarray_dict.items()}
-
         # Calculate the inflation symmetries.
         self.inflation_symmetries = self._calculate_inflation_symmetries()
 
@@ -447,10 +479,14 @@ class InflationSDP(object):
             verbose=self.verbose)
         self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for
                                             unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
+        # TODO: canonsym_ndarray_from_hash_cache is NOT supposed to account for conjugation symmetry, but it does.
+        # So we need to overhaul the moment matrix creation and symmetrization to avoid conjugation symmetry!!
+        # _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
+        #                             unsymidx_to_unsym_monarray_dict.items()}
+        # for (k, v) in _unsymidx_from_hash_dict.items():
+        #     self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
+        # del _unsymidx_from_hash_dict
         del unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict
-        for (k, v) in _unsymidx_from_hash_dict.items():
-            self.canonsym_ndarray_from_hash_cache[k] = self.symidx_to_sym_monarray_dict[self.orbits[v]]
-        del _unsymidx_from_hash_dict
         # This is a good time to reclaim memory, as unsymmetrized_mm_idxs can be GBs.
         gc.collect(generation=2)
         (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
