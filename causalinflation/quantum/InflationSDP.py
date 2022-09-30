@@ -531,26 +531,6 @@ class InflationSDP(object):
         self.reset_solution()
         self._processed_moment_upperbounds = dict()
 
-    def update_lowerbounds(self):
-        for mon, lb in self.moment_lowerbounds.items():
-            self._processed_moment_lowerbounds[mon] = max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
-        for mon, value in self.known_moments.items():
-            try:
-                lb = self._processed_moment_lowerbounds[mon]
-                assert lb <= value, f"Value {value} assigned for monomial {mon} contradicts the assigned lower bound of {lb}!"
-                del self._processed_moment_lowerbounds[mon]
-            except KeyError:
-                pass
-
-    def update_upperbounds(self):
-        for mon, value in self.known_moments.items():
-            try:
-                ub = self._processed_moment_upperbounds[mon]
-                assert ub >= value, f"Value {value} assigned for monomial {mon} contradicts the assigned upper bound of {ub}!"
-                del self._processed_moment_upperbounds[mon]
-            except KeyError:
-                pass
-
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
@@ -617,7 +597,7 @@ class InflationSDP(object):
         self.reset_values()
 
         if (values is None) or (len(values) == 0):
-            self.cleanup_after_set_values()
+            self._cleanup_after_set_values()
             return
 
         self.use_lpi_constraints = use_lpi_constraints
@@ -644,7 +624,7 @@ class InflationSDP(object):
                     "that are products of others moments will not be inferred automatically, " +
                     "and neither will proportionality constraints between moments (LPI constraints). " +
                     "Set only_specified_values=False for these features.")
-            self.cleanup_after_set_values()
+            self._cleanup_after_set_values()
             return
 
         # Check for if there are any multi-factors monomials with unspecified-value factors.
@@ -702,33 +682,9 @@ class InflationSDP(object):
             warn(
                 f"Encountered at least one monomial that does not appear in the original moment matrix:\n\t{suprising_semiknown_portions}")
         del atomic_known_moments, suprising_semiknown_portions
-        self.cleanup_after_set_values()
+        self._cleanup_after_set_values()
         return
 
-    def cleanup_after_set_values(self):
-        if self.supports_problem:
-            # Convert positive known values into lower bounds.
-            nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
-            for mon in nonzero_known_monomials:
-                self._processed_moment_lowerbounds[mon] = 1.
-                del self.known_moments[mon]
-            self.semiknown_moments = dict()
-
-        # Create lowerbounds list for physical but unknown moments
-        self.update_lowerbounds()
-        self.update_upperbounds()
-        self._update_objective()
-        num_nontrivial_known = len(self.known_moments)
-        if self.momentmatrix_has_a_zero:
-            num_nontrivial_known -= 1
-        if self.momentmatrix_has_a_one:
-            num_nontrivial_known -= 1
-        if self.verbose > 0 and num_nontrivial_known > 0:
-            print(f"Number of variables with fixed numeric value: {len(self.known_moments)}")
-        num_semiknown = len(self.semiknown_moments)
-        if self.verbose > 2 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
-        return
 
     def set_objective(self,
                       objective: Union[sp.core.symbol.Symbol, dict, None],
@@ -802,7 +758,7 @@ class InflationSDP(object):
                 assert np.isclose(old_bound,
                                   upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
         self._processed_moment_upperbounds = sanitized_upperbound_dict
-        self.update_upperbounds()
+        self._update_upperbounds()
 
     def set_lowerbounds(self, lowerbound_dict: Union[dict, None]) -> None:
         """
@@ -821,7 +777,7 @@ class InflationSDP(object):
                 assert np.isclose(old_bound,
                                   lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
         self._processed_moment_lowerbounds = sanitized_lowerbound_dict
-        self.update_lowerbounds()
+        self._update_lowerbounds()
 
     def set_bounds(self, bounds_dict: Union[dict, None], bound_type: str = 'up') -> None:
         assert bound_type in ['up', 'lo'], ('The bound_type parameter should be'
@@ -831,27 +787,7 @@ class InflationSDP(object):
         else:
             self.set_lowerbounds(bounds_dict)
 
-    def _update_objective(self):
-        """Process the objective with the information from known_moments
-        and semiknown_moments.
-        """
-        self._processed_objective = self.objective.copy()
-        known_keys_to_process = set(self.known_moments.keys()).intersection(self._processed_objective.keys())
-        known_keys_to_process.discard(self.One)
-        for m in known_keys_to_process:
-            value = self.known_moments[m]
-            self._processed_objective[self.One] += self._processed_objective[m] * value
-            del self._processed_objective[m]
-        semiknown_keys_to_process = set(self.semiknown_moments.keys()).intersection(self._processed_objective.keys())
-        for v1 in semiknown_keys_to_process:
-            c1 = self._processed_objective[v1]
-            for (k, v2) in self.semiknown_moments[v1]:
-                # obj = ... + c1*v1 + c2*v2,
-                # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
-                # therefore we add to the coefficient of v2 the term c1*k
-                self._processed_objective[v2] = self._processed_objective.get(v2, 0) + c1 * k
-                del self._processed_objective[v1]
-        gc.collect(generation=2)  # To reduce memory leaks. Runs after set_values or set_objective.
+
 
     def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
         """Bring a monomial into the form used internally.
@@ -1655,6 +1591,77 @@ class InflationSDP(object):
                         del signature, temp_dict
         del seen_already
         return idx_linear_equalities
+
+    ########################################################################
+    # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                            #
+    ########################################################################
+
+    def _update_objective(self):
+        """Process the objective with the information from known_moments
+        and semiknown_moments.
+        """
+        self._processed_objective = self.objective.copy()
+        known_keys_to_process = set(self.known_moments.keys()).intersection(self._processed_objective.keys())
+        known_keys_to_process.discard(self.One)
+        for m in known_keys_to_process:
+            value = self.known_moments[m]
+            self._processed_objective[self.One] += self._processed_objective[m] * value
+            del self._processed_objective[m]
+        semiknown_keys_to_process = set(self.semiknown_moments.keys()).intersection(self._processed_objective.keys())
+        for v1 in semiknown_keys_to_process:
+            c1 = self._processed_objective[v1]
+            for (k, v2) in self.semiknown_moments[v1]:
+                # obj = ... + c1*v1 + c2*v2,
+                # v1=k*v2 implies obj = ... + v2*(c2 + c1*k)
+                # therefore we add to the coefficient of v2 the term c1*k
+                self._processed_objective[v2] = self._processed_objective.get(v2, 0) + c1 * k
+                del self._processed_objective[v1]
+        gc.collect(generation=2)  # To reduce memory leaks. Runs after set_values or set_objective.
+
+    def _update_lowerbounds(self):
+        for mon, lb in self.moment_lowerbounds.items():
+            self._processed_moment_lowerbounds[mon] = max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
+        for mon, value in self.known_moments.items():
+            try:
+                lb = self._processed_moment_lowerbounds[mon]
+                assert lb <= value, f"Value {value} assigned for monomial {mon} contradicts the assigned lower bound of {lb}!"
+                del self._processed_moment_lowerbounds[mon]
+            except KeyError:
+                pass
+
+    def _update_upperbounds(self):
+        for mon, value in self.known_moments.items():
+            try:
+                ub = self._processed_moment_upperbounds[mon]
+                assert ub >= value, f"Value {value} assigned for monomial {mon} contradicts the assigned upper bound of {ub}!"
+                del self._processed_moment_upperbounds[mon]
+            except KeyError:
+                pass
+
+    def _cleanup_after_set_values(self):
+        if self.supports_problem:
+            # Convert positive known values into lower bounds.
+            nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
+            for mon in nonzero_known_monomials:
+                self._processed_moment_lowerbounds[mon] = 1.
+                del self.known_moments[mon]
+            self.semiknown_moments = dict()
+
+        # Create lowerbounds list for physical but unknown moments
+        self._update_lowerbounds()
+        self._update_upperbounds()
+        self._update_objective()
+        num_nontrivial_known = len(self.known_moments)
+        if self.momentmatrix_has_a_zero:
+            num_nontrivial_known -= 1
+        if self.momentmatrix_has_a_one:
+            num_nontrivial_known -= 1
+        if self.verbose > 0 and num_nontrivial_known > 0:
+            print(f"Number of variables with fixed numeric value: {len(self.known_moments)}")
+        num_semiknown = len(self.semiknown_moments)
+        if self.verbose > 1 and num_semiknown > 0:
+            print(f"Number of semiknown variables: {num_semiknown}")
+        return
 
     ########################################################################
     # OTHER ROUTINES                                                       #
