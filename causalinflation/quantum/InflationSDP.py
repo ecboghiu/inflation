@@ -154,6 +154,48 @@ class InflationSDP(object):
     def to_2dndarray(self, bytestream):
         return np.frombuffer(bytestream, dtype=self.np_dtype).reshape((-1, self._nr_properties))
 
+    def commutation_relationships(self):
+        """This returns a user-friendly representation of the commutation relationships."""
+        from collections import namedtuple
+        nonzero = namedtuple('NonZeroExpressions', 'exprs')
+        data = []
+        for i in range(self._lexorder.shape[0]):
+            for j in range(i, self._lexorder.shape[0]):
+                # Most operators commute as they belong to different parties,
+                # so it is more interested to list those that DON'T commute.
+                if self._notcomm[i, j] != 0:
+                    op1 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
+                    op2 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
+                    if self.verbose > 0:
+                        print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
+                    data.append(op1 * op2 - op2 * op1)
+        return nonzero(data)
+
+    def lexicographic_order(self) -> dict:
+        """This returns a user-friendly representation of the lexicographic order."""
+        lexicographic_order = {}
+        for i, op in enumerate(self._lexorder):
+            lexicographic_order[sp.Symbol(to_name([op], self.names),
+                                          commutative=False)] = i
+        return lexicographic_order
+
+    def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
+        """Determines if an operator references the highest possible outcome of a given measurement."""
+        party = operator[0] - 1
+        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
+
+    ########################################################################
+    # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES          #
+    ########################################################################
+
+    def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
+        if not is_knowable(atomic_monarray):
+            return False
+        elif not self.not_network_model: # Double negative, that is, if it IS a network model
+            return True
+        else:
+            return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
+
     def to_canonical_memoized(self, array2d: np.ndarray):
         quick_key = self.from_2dndarray(array2d)
         if quick_key in self.canon_ndarray_from_hash_cache:
@@ -269,51 +311,45 @@ class InflationSDP(object):
         mon.attach_idx_to_mon(idx)
         return mon
 
-    def inflation_aware_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        if self.not_network_model:
-            minimal_monomial = tuple(tuple(vec) for vec in np.take(atomic_monarray, [0, -2, -1], axis=1))
-            return self._is_knowable_q_non_networks(minimal_monomial)
+    def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
+        """Bring a monomial into the form used internally.
+            NEW: InternalCompoundMonomial are only constructed if in representative form.
+            Therefore, if we encounter one, we are good!
+        """
+        if isinstance(mon, CompoundMonomial):
+            return mon
+        elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
+            symbol_to_string_list = flatten_symbolic_powers(mon)
+            if len(symbol_to_string_list) == 1:
+                try:
+                    return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
+                except KeyError:
+                    pass
+            array = np.concatenate([to_numbers(op, self.names)
+                                    for op in symbol_to_string_list])
+            return self._sanitise_monomial(array)
+        elif isinstance(mon, (tuple, list, np.ndarray)):
+            array = np.asarray(mon, dtype=self.np_dtype)
+            assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
+            assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
+            canon = self.to_canonical_memoized(array)
+            return self.Monomial(canon)  # Automatically adjusts for zero or identity.
+        elif isinstance(mon, str):
+            # If it is a string, I assume it is the name of one of the
+            # monomials in self.list_of_monomials
+            try:
+                return self.compound_monomial_from_name_dict[mon]
+            except KeyError:
+                return self._sanitise_monomial(to_numbers(monomial=mon, parties_names=self.names))
+        elif isinstance(mon, Real):  # If they are number type
+            if np.isclose(float(mon), 1):
+                return self.One
+            elif np.isclose(float(mon), 0):
+                return self.Zero
+            else:
+                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
         else:
-            return True
-
-    def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        first_test = is_knowable(atomic_monarray)
-        if not first_test:
-            return False
-        else:
-            return self.inflation_aware_knowable_q(atomic_monarray)
-
-    def commutation_relationships(self):
-        """This returns a user-friendly representation of the commutation relationships."""
-        from collections import namedtuple
-        nonzero = namedtuple('NonZeroExpressions', 'exprs')
-        data = []
-        for i in range(self._lexorder.shape[0]):
-            for j in range(i, self._lexorder.shape[0]):
-                # Most operators commute as they belong to different parties,
-                # so it is more interested to list those that DON'T commute.
-                if self._notcomm[i, j] != 0:
-                    op1 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
-                    op2 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
-                    if self.verbose > 0:
-                        print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
-                    data.append(op1 * op2 - op2 * op1)
-        return nonzero(data)
-
-    def lexicographic_order(self) -> dict:
-        """This returns a user-friendly representation of the lexicographic order."""
-        lexicographic_order = {}
-        for i, op in enumerate(self._lexorder):
-            lexicographic_order[sp.Symbol(to_name([op], self.names),
-                                          commutative=False)] = i
-        return lexicographic_order
-
-    def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
-        """Determines if an operator references the highest possible outcome of a given measurement."""
-        party = operator[0] - 1
-        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
-
-
+            raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -787,48 +823,6 @@ class InflationSDP(object):
             self.set_upperbounds(bounds_dict)
         else:
             self.set_lowerbounds(bounds_dict)
-
-
-
-    def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
-        """Bring a monomial into the form used internally.
-            NEW: InternalCompoundMonomial are only constructed if in representative form.
-            Therefore, if we encounter one, we are good!
-        """
-        if isinstance(mon, CompoundMonomial):
-            return mon
-        elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
-            symbol_to_string_list = flatten_symbolic_powers(mon)
-            if len(symbol_to_string_list) == 1:
-                try:
-                    return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
-                except KeyError:
-                    pass
-            array = np.concatenate([to_numbers(op, self.names)
-                                    for op in symbol_to_string_list])
-            return self._sanitise_monomial(array)
-        elif isinstance(mon, (tuple, list, np.ndarray)):
-            array = np.asarray(mon, dtype=self.np_dtype)
-            assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
-            assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
-            canon = self.to_canonical_memoized(array)
-            return self.Monomial(canon)  # Automatically adjusts for zero or identity.
-        elif isinstance(mon, str):
-            # If it is a string, I assume it is the name of one of the
-            # monomials in self.list_of_monomials
-            try:
-                return self.compound_monomial_from_name_dict[mon]
-            except KeyError:
-                return self._sanitise_monomial(to_numbers(monomial=mon, parties_names=self.names))
-        elif isinstance(mon, Real):  # If they are number type
-            if np.isclose(float(mon), 1):
-                return self.One
-            elif np.isclose(float(mon), 0):
-                return self.Zero
-            else:
-                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
-        else:
-            raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
 
     def prepare_solver_arguments(self):
         if self.momentmatrix is None:
