@@ -192,7 +192,7 @@ class InflationSDP(object):
     def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if not is_knowable(atomic_monarray):
             return False
-        elif not self.not_network_model: # Double negative, that is, if it IS a network model
+        elif not self.not_network_model:  # Double negative, that is, if it IS a network model
             return True
         else:
             return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
@@ -212,8 +212,8 @@ class InflationSDP(object):
             return new_array2d
 
     def _process_unrecognized_monarray_into_pair(self, unsym_monarray: np.ndarray,
-                                       swaps_plus_commutations=True,
-                                       consider_conjugation_symmetries=True) -> Tuple[np.ndarray, np.ndarray]:
+                                                 swaps_plus_commutations=True,
+                                                 consider_conjugation_symmetries=True) -> Tuple[np.ndarray, np.ndarray]:
         quick_key = self.from_2dndarray(unsym_monarray)
         if len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
             self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
@@ -221,12 +221,12 @@ class InflationSDP(object):
             return unsym_monarray, unsym_monarray
         else:
             sym_monarray, sym_monarray_conjugate = to_representative_pair(unsym_monarray,
-                                             self.inflation_levels,
-                                             self._notcomm,
-                                             self._lexorder,
-                                             swaps_plus_commutations=swaps_plus_commutations,
-                                             consider_conjugation_symmetries=consider_conjugation_symmetries,
-                                             commuting=self.commuting)
+                                                                          self.inflation_levels,
+                                                                          self._notcomm,
+                                                                          self._lexorder,
+                                                                          swaps_plus_commutations=swaps_plus_commutations,
+                                                                          consider_conjugation_symmetries=consider_conjugation_symmetries,
+                                                                          commuting=self.commuting)
             self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
             self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = sym_monarray_conjugate
             new_quick_key = self.from_2dndarray(sym_monarray)
@@ -252,8 +252,8 @@ class InflationSDP(object):
             return sym_monarray
 
     def inflation_aware_to_ndarray_conjugate_representative(self, mon: np.ndarray,
-                                                  swaps_plus_commutations=True,
-                                                  consider_conjugation_symmetries=True) -> np.ndarray:
+                                                            swaps_plus_commutations=True,
+                                                            consider_conjugation_symmetries=True) -> np.ndarray:
         unsym_monarray = self.to_canonical_memoized(mon)
         quick_key = self.from_2dndarray(unsym_monarray)
         if quick_key in self.canonsym_conjugate_ndarray_from_hash_cache:
@@ -617,7 +617,7 @@ class InflationSDP(object):
                 monomials may be evaluated from the distribution.
         """
         knowable_values = {atom: atom.compute_marginal(prob_array) for atom in self.knowable_atoms} if (
-                    prob_array is not None) else dict()
+                prob_array is not None) else dict()
         # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
         self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
                         only_specified_values=assume_shared_randomness)
