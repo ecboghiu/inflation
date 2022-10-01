@@ -22,7 +22,7 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
 
     Parameters
     ----------
-    prob_array : np.ndarray
+    prob_array : numpy.ndarray
         The target probability distribution. The dimensions of this array are
         (*outcomes_per_party, *settings_per_party), where the settings are
         explicitly 1 is there is only one measurement performed.

@@ -4,7 +4,8 @@ import numpy as np
 from causalinflation.quantum.general_tools import (is_knowable, is_physical,
                                                    to_numbers, to_representative
                                                    )
-from causalinflation.quantum.fast_npa import to_canonical, to_name
+from causalinflation.quantum.fast_npa import (commutation_matrix, to_canonical,
+                                              to_name)
 
 class TestKnowable(unittest.TestCase):
     # Triangle scenario. The structure is
@@ -105,7 +106,6 @@ class TestPhysical(unittest.TestCase):
 
 class TestToCanonical(unittest.TestCase):
     names = ('A', 'B', 'C')
-    from causalinflation.quantum.fast_npa import notcomm_from_lexorder
     lexorder = np.array([[1, 1, 1, 0, 0, 0],
                          [1, 1, 2, 0, 0, 0],
                          [1, 2, 1, 0, 0, 0],
@@ -120,7 +120,7 @@ class TestToCanonical(unittest.TestCase):
                          [3, 0, 1, 2, 0, 0],
                          [3, 0, 2, 1, 0, 0],
                          [3, 0, 2, 2, 0, 0]])
-    notcomm = notcomm_from_lexorder(lexorder)
+    notcomm = commutation_matrix(lexorder)
 
     def test_commutation(self):
         monomial_string = 'A_2_1_0_0_0*A_1_2_0_0_0*B_1_0_1_0_0'
@@ -149,7 +149,6 @@ class TestToCanonical(unittest.TestCase):
 
 
 class TestToRepr(unittest.TestCase):
-    from causalinflation.quantum.fast_npa import notcomm_from_lexorder
     lexorder = np.array([[1, 1, 1, 0, 0, 0],
                          [1, 1, 2, 0, 0, 0],
                          [1, 2, 1, 0, 0, 0],
@@ -164,7 +163,7 @@ class TestToRepr(unittest.TestCase):
                          [3, 0, 1, 2, 0, 0],
                          [3, 0, 2, 1, 0, 0],
                          [3, 0, 2, 2, 0, 0]], dtype=np.uint8)
-    notcomm = notcomm_from_lexorder(lexorder)
+    notcomm = commutation_matrix(lexorder)
 
     names = ('A', 'B', 'C')
     def test_commuting(self):

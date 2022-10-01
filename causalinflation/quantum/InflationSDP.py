@@ -21,7 +21,7 @@ from .fast_npa import (calculate_momentmatrix,
                        to_canonical,
                        to_name,
                        nb_mon_to_lexrepr,
-                       notcomm_from_lexorder,
+                       commutation_matrix,
                        commuting_operator_sequence_test)
 from .general_tools import (to_representative_pair,
                             to_numbers,
@@ -121,25 +121,24 @@ class InflationSDP(object):
             np.min_scalar_type(np.max(self.outcome_cardinalities)),
             np.min_scalar_type(self.nr_parties + 1),
             np.min_scalar_type(np.max(self.inflation_levels) + 1)], [])
-        self.identity_operator = np.empty((0, self._nr_properties), dtype=self.np_dtype)
-        self.zero_operator = np.zeros((1, self._nr_properties), dtype=self.np_dtype)
+        self.identity_operator = np.empty((0, self._nr_properties),
+                                          dtype=self.np_dtype)
+        self.zero_operator = np.zeros((1, self._nr_properties),
+                                      dtype=self.np_dtype)
 
         # Define default lexicographic order through np.lexsort
         # The lexicographic order is encoded as a matrix with rows as
         # operators and the row index gives the order
-        arr = np.array([to_numbers(op, self.names)[0]
-                        for op in flatten(self.measurements)], dtype=self.np_dtype)
+        lexorder = np.array([to_numbers(op, self.names)[0]
+                             for op in flatten(self.measurements)],
+                            dtype=self.np_dtype)
         if might_have_a_zero:
-            arr = np.concatenate((self.zero_operator, arr))  # To avoid problems with zero.
-        self._default_lexorder = arr[np.lexsort(np.rot90(arr))]
+            lexorder = np.concatenate((self.zero_operator, lexorder))
+
+        self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
 
-        # Given that most operators commute, we want the matrix encoding the
-        # commutations to be sparse, so self._default_commgraph[i, j] = 0
-        # implies commutation, and self._default_commgraph[i, j] = 1 is
-        # non-commutation.
-        self._default_notcomm = notcomm_from_lexorder(self._lexorder, commuting=self.commuting)
-        self._notcomm = self._default_notcomm.copy()
+        self._notcomm = commutation_matrix(self._lexorder, self.commuting)
 
         self.canon_ndarray_from_hash_cache = dict()
         self.canonsym_ndarray_from_hash_cache = dict()
@@ -194,7 +193,7 @@ class InflationSDP(object):
     def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if not is_knowable(atomic_monarray):
             return False
-        elif not self.not_network_model:  # Double negative, that is, if it IS a network model
+        elif not self.not_network_model:
             return True
         else:
             return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
@@ -457,8 +456,9 @@ class InflationSDP(object):
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.
-        self.generating_monomials_sym, self.generating_monomials = self.build_columns(column_specification,
-                                                                                      return_columns_numerical=True)
+        _, self.generating_monomials = \
+            self.build_columns(column_specification,
+                               return_columns_numerical=True)
         self.n_columns = len(self.generating_monomials)
         self.column_level_equalities = self._identify_column_level_equalities(self.generating_monomials)
 
@@ -469,7 +469,8 @@ class InflationSDP(object):
         unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
         symmetrization_required = np.any(self.inflation_levels - 1)
         if self.verbose > 1:
-            extra_msg = (" before symmetrization" if symmetrization_required else "")
+            extra_msg = (" before symmetrization" if symmetrization_required
+                         else "")
             print("Number of variables" + extra_msg + ":",
                   len(unsymidx_to_unsym_monarray_dict) + (1 if 0 in unsymmetrized_mm_idxs.flat else 0))
 
