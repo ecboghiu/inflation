@@ -256,9 +256,12 @@ class InflationSDP(object):
                 consider_conjugation_symmetries=consider_conjugation_symmetries)
             return sym_monarray
 
-    def inflation_aware_to_ndarray_conjugate_representative(self, mon: np.ndarray,
-                                                            swaps_plus_commutations=True,
-                                                            consider_conjugation_symmetries=True) -> np.ndarray:
+    def conjugate_ndarray(self,
+                          mon: np.ndarray,
+                          swaps_plus_commutations=True,
+                          consider_conjugation_symmetries=True) -> np.ndarray:
+        """DOCUMENTATION NEEDED
+        """
         unsym_monarray = self.to_canonical_memoized(mon)
         quick_key = self.from_2dndarray(unsym_monarray)
         if quick_key in self.canonsym_conjugate_ndarray_from_hash_cache:
@@ -638,7 +641,7 @@ class InflationSDP(object):
                         only_specified_values=assume_shared_randomness)
 
     def check_that_known_moments_are_all_knowable(self):
-        return all(mon.knowable_q for mon in self.known_moments.keys())
+        return all(mon.is_knowable for mon in self.known_moments.keys())
 
     def set_values(self,
                    values: Union[
@@ -692,11 +695,11 @@ class InflationSDP(object):
         for mon in monomials_not_present_in_moment_matrix:
             del self.known_moments[mon]
 
-        all_specified_atoms_are_knowable = all(atomic_mon.knowable_q for atomic_mon in atomic_known_moments)
+        all_specified_atoms_are_knowable = all(atomic_mon.is_knowable for atomic_mon in atomic_known_moments)
         if all_specified_atoms_are_knowable:
             if not self.use_lpi_constraints:
                 remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                                  (not mon.is_atomic) and mon.knowable_q)  # as iterator, saves memory.
+                                                  (not mon.is_atomic) and mon.is_knowable)  # as iterator, saves memory.
             else:
                 remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
                                                   (not mon.is_atomic) and mon.knowability_status in ["Yes",
