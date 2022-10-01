@@ -139,7 +139,7 @@ class InternalAtomicMonomial(object):
             for op in self.as_ndarray:
                 operators.append("_".join([self.sdp.names[op[0] - 1]]
                                           + [str(i) for i in op[1:]]))
-            return "<" + " ".join(operators_as_strings) + ">"
+            return "<" + " ".join(operators) + ">"
 
     @property
     def signature(self):
