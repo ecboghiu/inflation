@@ -173,6 +173,9 @@ class TestSDPOutput(unittest.TestCase):
 
         self.assertTrue(len(equalities) > 0,
                         "Failing to obtain implicit equalities in a non-network scenario.")
+        self.assertTrue(len(equalities) == 738,
+                        "The number of implicit equalities in a non-network " +
+                        "scenario is not correct.")
 
         # TODO: When we add support for user-specifiable equalities, modify this test to only check implicit equalities.
         self.assertTrue(all(set(eq_dict.values()) == {-1, 1} for eq_dict in equalities),
