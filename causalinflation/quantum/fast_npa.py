@@ -547,9 +547,11 @@ def nb_commuting(operator1: np.ndarray,
         return np.all(inf1 - inf2)
 
 
-def notcomm_from_lexorder(lexorder: np.ndarray, commuting=False) -> np.ndarray:
+def commutation_matrix(lexorder: np.ndarray, commuting=False) -> np.ndarray:
     """Helper function that builds a matrix encoding which operators commute
-    according to the function `nb_commuting`.
+    according to the function `nb_commuting`. Rows and columns are indexed by
+    operators, and each element is a 0 if the operators in the row and in the
+    column commute or 1 if they do not.
 
     Parameters
     ----------
@@ -913,10 +915,7 @@ def calculate_momentmatrix(cols: List,
                                       lexorder).astype(dtype)
             else:
                 mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
-            if mon_is_zero(mon_v1):
-                # If sparse, we don't need this, but for readibility...
-                momentmatrix[i, j] = 0
-            else:
+            if not mon_is_zero(mon_v1):
                 if not commuting:
                     mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder),
                                           notcomm,
