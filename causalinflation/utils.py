@@ -8,8 +8,8 @@ def blank_tqdm(*args, **kwargs):
     tqdm is not installed, this just prints the ``desc`` argument.
     """
     try:
-        if not kwargs['disable']:
-            print(kwargs['desc'])
+        if not kwargs["disable"]:
+            print(kwargs["desc"])
     except KeyError:
         pass
     return args[0]

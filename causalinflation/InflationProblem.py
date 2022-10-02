@@ -110,14 +110,14 @@ class InflationProblem(object):
                          + "used are determined by the list of variables "
                          + "with outcomes.")
         if not names_have_been_set_yet:
-            self.names = [chr(ord('A') + i) for i in range(self.nr_parties)]
+            self.names = [chr(ord("A") + i) for i in range(self.nr_parties)]
 
         if not dag:
             if self.verbose > 0:
                 warn("The DAG must be a non-empty dictionary with parent "
                      + "variables as keys and lists of children as values. "
                      + "Defaulting to one global source.")
-            self.dag = {'h_global': self.names}
+            self.dag = {"h_global": self.names}
         else:
             self.dag = dag
 

@@ -351,7 +351,7 @@ def mon_lexsorted(mon: np.ndarray,
         Sorted monomial.
     """
     mon_lexrepr = nb_mon_to_lexrepr(mon, lexorder)
-    return mon[np.argsort(mon_lexrepr, kind='quicksort')]
+    return mon[np.argsort(mon_lexrepr, kind="quicksort")]
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -495,11 +495,11 @@ def to_name(monomial: Union[np.ndarray, List],
     'a_1_0_3*Z_1_2_6*bb_3_3_4'
     """
     if len(monomial) == 0:
-        return '1'
+        return "1"
 
     # It is faster to convert to list of lists than to loop through numpy arrays
     monomial = monomial.tolist()
-    return '*'.join(['_'.join([names[letter[0] - 1]]
+    return "*".join(["_".join([names[letter[0] - 1]]
                               + [str(i) for i in letter[1:]])
                      for letter in monomial])
 
