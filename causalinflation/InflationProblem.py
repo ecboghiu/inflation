@@ -151,13 +151,12 @@ class InflationProblem(object):
 
         # Build the correspondence between effective settings and the true tuple
         # of setting values of all parents.
-        extract_parent_values_from_effective_setting = []
+        effective_to_parent_settings = []
         for i in range(self.nr_parties):
-            extract_parent_values_from_effective_setting.append(dict(zip(
+            effective_to_parent_settings.append(dict(zip(
                 range(self.settings_per_party[i]),
                 np.ndindex(tuple(settings_per_party_lst[i])))))
-        self.extract_parent_values_from_effective_setting = \
-            extract_parent_values_from_effective_setting
+        self.effective_to_parent_settings = effective_to_parent_settings
 
         # Create network corresponding to the unpacked scenario
         actual_sources  = [source for source in nodes_with_children
@@ -225,22 +224,22 @@ class InflationProblem(object):
         bool
             Whether the monomial can be assigned a knowable probability.
         """
-        # Parties start at #1 in our numpy vector notation, so we drop by one.
-        parties_in_play = np.asarray(monomial)[:, 0] - 1
+        # Parties start at 1 in our notation
+        parties_in_play    = np.asarray(monomial)[:, 0] - 1
         parents_referenced = set()
         for p in parties_in_play:
             parents_referenced.update(self.parents_per_party[p])
         if not parents_referenced.issubset(parties_in_play):
-            # Case of not an ancestrally closed set.
+            # Case of not an ancestrally closed set
             return False
-        # Parties start at #1 in our numpy vector notation.
+        # Parties start at 1 in our notation
         outcomes_by_party = {(o[0] - 1): o[-1] for o in monomial}
         for o in monomial:
-            party_index = o[0] - 1
-            effective_setting_as_integer = o[-2]
+            party_index           = o[0] - 1
+            effective_setting     = o[-2]
             o_nonprivate_settings = \
-                self.extract_parent_values_from_effective_setting[
-                                  party_index][effective_setting_as_integer][1:]
+                self.effective_to_parent_settings[
+                                  party_index][effective_setting][1:]
             for i, p_o in enumerate(self.parents_per_party[party_index]):
                 if not o_nonprivate_settings[i] == outcomes_by_party[p_o]:
                     return False
@@ -257,8 +256,7 @@ class InflationProblem(object):
         as settings. This function resets this 'effective setting' integer to
         the true 'private setting' integer. It is useful to relate knowable
         monomials to their meaning as conditional events in non-network
-        scenarios. If the scenario is a network, this function doesn't change
-        anything.
+        scenarios. If the scenario is a network, this function does nothing.
 
         Parameters
         ----------
@@ -276,13 +274,12 @@ class InflationProblem(object):
             The monomial with the index of the setting representing only the
             private setting.
         """
-        # Parties start at #1 in initial numpy vector notation, we reset that.
         new_mon = np.array(monomial, copy=False)
         for o in new_mon:
-            party_index = o[0] - 1
-            effective_setting_as_integer = o[-2]
+            party_index        = o[0] - 1      # Parties start at 1 our notation
+            effective_setting  = o[-2]
             o_private_settings = \
-                self.extract_parent_values_from_effective_setting[
-                                   party_index][effective_setting_as_integer][0]
+                self.effective_to_parent_settings[
+                                   party_index][effective_setting][0]
             o[-2] = o_private_settings
         return new_mon
