@@ -18,7 +18,7 @@ class InternalAtomicMonomial(object):
                  "is_one",
                  "is_zero",
                  "is_knowable",
-                 "n_ops",
+                 "n_operators",
                  "op_length",
                  "rectified_ndarray",
                  "sdp"
@@ -32,7 +32,7 @@ class InternalAtomicMonomial(object):
         """
         self.sdp        = inflation_sdp_instance
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
-        self.n_ops, self.op_length = self.as_ndarray.shape
+        self.n_operators, self.op_length = self.as_ndarray.shape
         assert self.op_length == self.sdp._nr_properties, \
             ("An AtomicMonomial should be a 2-d array where each row is a list"
              + f" of integers of length {self.sdp._nr_properties}. The first "
@@ -40,7 +40,7 @@ class InternalAtomicMonomial(object):
              + "the second-to-last to the setting, and the rest to the "
              + "inflation copies.")
         self.is_zero = mon_is_zero(self.as_ndarray)
-        self.is_one  = (self.n_ops == 0)
+        self.is_one  = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp.atomic_knowable_q(self.as_ndarray))
@@ -100,7 +100,7 @@ class InternalAtomicMonomial(object):
     @property
     def is_physical(self):
         """Whether the expectation value of the monomial is non-negative for
-        any quantum state
+        any quantum state.
         """
         return self.is_knowable or is_physical(self.as_ndarray)
 
@@ -187,15 +187,15 @@ class CompoundMonomial(object):
                  "mask_matrix"
                  ]
 
-    def __init__(self, tuple_of_atomic_monomials: Tuple[InternalAtomicMonomial]):
+    def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
         """
         This class is designed to categorize monomials into known, semiknown, unknown, etc.
         It also computes names for expectation values, and provides the ability to compare (in)equivalence.
 
         DOCUMENTATION NEEDED. What is this object, what is the input, what it is supposed to do.
         """
-        default_factors    = tuple(sorted(tuple_of_atomic_monomials))
-        conjugate_factors  = tuple(sorted(factor.dagger for factor in tuple_of_atomic_monomials))
+        default_factors    = tuple(sorted(monomials))
+        conjugate_factors  = tuple(sorted(factor.dagger for factor in monomials))
         self.factors       = min(default_factors, conjugate_factors)
         self.n_factors     = len(self.factors)
         self.is_atomic     = (self.n_factors <= 1)
@@ -212,9 +212,9 @@ class CompoundMonomial(object):
         self.n_knowable_factors   = len(self.knowable_factors)
         self.n_unknowable_factors = len(self.unknowable_factors)
         if self.n_unknowable_factors == 0:
-            self.knowability_status = "Yes"
+            self.knowability_status = "Knowable"
         elif self.n_unknowable_factors == self.n_factors:
-            self.knowability_status = "No"
+            self.knowability_status = "Unknowable"
         else:
             self.knowability_status = "Semi"
         self.is_zero = any(factor.is_zero for factor in self.factors)
@@ -229,8 +229,8 @@ class CompoundMonomial(object):
             return (self.n_factors == 1) and other.__eq__(self.factors[0])
         else:
             assert isinstance(other, self.__class__), \
-                (f"Expected {self.__class__}, received {other} of " +
-                 f"{type(other)}{list(map(type, other))}.")
+                (f"Expected object of class {self.__class__}, received {other} "
+                 + f"of class {type(other)}{list(map(type, other))}.")
             return False
 
     def __hash__(self):
@@ -255,13 +255,15 @@ class CompoundMonomial(object):
         return Counter(self.factors)
 
     @property
-    def n_ops(self):
-        """DOCUMENTATION NEEDED."""
-        return sum(factor.n_ops for factor in self.factors)
+    def n_operators(self):
+        """Return the amount of operators in the Monomial."""
+        return sum(factor.n_operators for factor in self.factors)
 
     @property
     def is_physical(self):
-        """DOCUMENTATION NEEDED."""
+        """Whether the expectation value of the monomial is non-negative for
+        any quantum state.
+        """
         return all(factor.is_physical for factor in self.factors)
 
     @property
@@ -271,23 +273,41 @@ class CompoundMonomial(object):
 
     @property
     def name(self):
-        """DOCUMENTATION NEEDED."""
+        """A string representing the <onomial. It merely combines the names of
+        the factors.
+        """
         return name_from_atomic_names(self._names_of_factors)
 
     @property
     def symbol(self):
-        """DOCUMENTATION NEEDED."""
+        """Return a product of sympy Symbols representing all the factors in the
+        Monomial."""
         return symbol_prod(self._symbols_of_factors)
 
     @property
     def _names_of_factors(self):
-        """DOCUMENTATION NEEDED."""
+        """Return the names of each of the factors in the Monomial."""
         return [factor.name for factor in self.factors]
 
     @property
     def _symbols_of_factors(self):
-        """DOCUMENTATION NEEDED."""
+        """Generate a sympy Symbol per factos in the Monomial."""
         return [factor.symbol for factor in self.factors]
+
+    def attach_idx_to_mon(self, idx: int):
+        """Assign an index to the Monomial. This is used when generating the
+        monomials in a scenario, and identifying them with integers."""
+        if idx >= 0:
+            self.idx = idx
+
+    def compute_marginal(self, prob_array: np.ndarray) -> float:
+        """DOCUMENTATION NEEDED."""
+        assert self.is_knowable, ("Only marginals of knowable monomials can " +
+                                  f"be computed, and {self} is not knowable.")
+        value = 1.
+        for factor, power in self.as_counter.items():
+            value *= (factor.compute_marginal(prob_array) ** power)
+        return value
 
     def evaluate_given_valuation_of_knowable_part(self,
                                                   valuation_of_knowable_part,
@@ -304,46 +324,34 @@ class CompoundMonomial(object):
         unknown_factors.extend(self.unknowable_factors)
         unknown_len = len(unknown_factors)
         if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
-            known_status = "Yes"
+            known_status = "Knowable"
         elif unknown_len == self.n_factors or (not use_lpi_constraints):
-            known_status = "No"
+            known_status = "Unknowable"
         else:
             known_status = "Semi"
         return known_value, unknown_factors, known_status
 
 
-    def evaluate_given_atomic_monomials_dict(self,
-                                             dict_of_known_atomic_monomials: Dict[InternalAtomicMonomial, float],
-                                             use_lpi_constraints=True):
+    def evaluate(self,
+                 known_monomials: Dict[InternalAtomicMonomial, float],
+                 use_lpi_constraints=True) -> Tuple[float, List, str]:
         """Yields both a numeric value and a CompoundMonomial corresponding to the unknown part.
         DOCUMENTATION NEEDED."""
-        known_value = 1.
-        unknown_factors_counter = Counter()
+        known_value     = 1.
+        unknown_counter = Counter()
         for factor, power in self.as_counter.items():
-            temp_value = dict_of_known_atomic_monomials.get(factor, np.nan)
+            temp_value = known_monomials.get(factor, np.nan)
             if np.isnan(temp_value):
-                unknown_factors_counter[factor] = power
+                unknown_counter[factor] = power
             else:
                 known_value *= (temp_value ** power)
-        unknown_factors = list(unknown_factors_counter.elements())
-        unknown_len = len(unknown_factors)
-        if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
-            known_status = "Yes"
-        elif unknown_len == self.n_factors or (not use_lpi_constraints):
-            known_status = "No"
+        unknown_factors = list(unknown_counter.elements())
+        if ((len(unknown_factors) == 0)
+            or (np.isclose(known_value, 0) and use_lpi_constraints)):
+            known_status = "Knowable"
+        elif ((len(unknown_factors) == self.n_factors)
+              or (not use_lpi_constraints)):
+            known_status = "Unknowable"
         else:
             known_status = "Semi"
         return known_value, unknown_factors, known_status
-
-    def compute_marginal(self, prob_array):
-        """DOCUMENTATION NEEDED."""
-        assert self.is_knowable, "Can't compute marginals of unknowable probabilities."
-        v = 1.
-        for factor, power in self.as_counter.items():
-            v *= (factor.compute_marginal(prob_array) ** power)
-        return v
-
-    def attach_idx_to_mon(self, idx: int):
-        """DOCUMENTATION NEEDED."""
-        if idx >= 0:
-            self.idx = idx

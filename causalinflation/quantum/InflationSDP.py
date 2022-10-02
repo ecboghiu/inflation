@@ -534,9 +534,9 @@ class InflationSDP(object):
         self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
 
         _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
-        self.n_knowable = _counter["Yes"]
+        self.n_knowable = _counter["Knowable"]
         self.n_something_knowable = _counter["Semi"]
-        self.n_unknowable = _counter["No"]
+        self.n_unknowable = _counter["Unknowable"]
         if self.verbose > 1:
             print(f"The problem has {self.n_knowable} knowable monomials, " +
                   f"{self.n_something_knowable} semi-knowable monomials, " +
@@ -703,17 +703,17 @@ class InflationSDP(object):
                                                   (not mon.is_atomic) and mon.is_knowable)  # as iterator, saves memory.
             else:
                 remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                                  (not mon.is_atomic) and mon.knowability_status in ["Yes",
+                                                  (not mon.is_atomic) and mon.knowability_status in ["Knowable",
                                                                                                      "Semi"])  # as iterator, saves memory.
         else:
             remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
         surprising_semiknowns = set()
         for mon in remaining_monomials_to_compute:
             if mon not in self.known_moments.keys():
-                value, unknown_atomic_factors, known_status = mon.evaluate_given_atomic_monomials_dict(
+                value, unknown_atomic_factors, known_status = mon.evaluate(
                     atomic_known_moments,
                     use_lpi_constraints=self.use_lpi_constraints)
-                if known_status == "Yes":
+                if known_status == "Knowable":
                     self.known_moments[mon] = value
                 elif known_status == "Semi":
                     if self.use_lpi_constraints:
