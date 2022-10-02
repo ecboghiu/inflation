@@ -2,7 +2,7 @@ import numpy as np
 
 from collections import Counter
 from functools import total_ordering
-from typing import Tuple, Dict
+from typing import Dict, List, Tuple
 
 from .fast_npa import mon_is_zero
 from .general_tools import is_physical
