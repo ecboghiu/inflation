@@ -62,7 +62,7 @@ def find_permutation(list1: List,
         different.
     """
     if (len(list1) != len(list2)) or (set(list1) != set(list2)):
-        raise Exception('The two lists are not permutations of one another')
+        raise Exception("The two lists are not permutations of one another")
     else:
         original_dict = {x: i for i, x in enumerate(list1)}
         return [original_dict[x] for x in list2]
@@ -298,7 +298,7 @@ def to_symbol(monomial: np.ndarray, names: Tuple[str]) -> sympy.core.symbol.Symb
     monomial = monomial.tolist()
     symbols = []
     for letter in monomial:
-        symbols.append(sympy.Symbol('_'.join([names[letter[0] - 1]] +
+        symbols.append(sympy.Symbol("_".join([names[letter[0] - 1]] +
                                              [str(i) for i in letter[1:]]),
                                     commutative=False))
     prod = sympy.S.One
@@ -332,14 +332,14 @@ def to_numbers(monomial: str,
     parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
 
     if isinstance(monomial, str):
-        monomial_parts = monomial.split('*')
+        monomial_parts = monomial.split("*")
     else:
         factors = flatten_symbolic_powers(monomial)
         monomial_parts = [str(factor) for factor in factors]
 
     monomial_parts_indices = []
     for part in monomial_parts:
-        atoms = part.split('_')
+        atoms = part.split("_")
         if atoms[0] not in parties_names_dict.keys():
             raise Exception(f"Party name {atoms[0]} not recognized.")
         indices = ((parties_names_dict[atoms[0]],)
@@ -479,14 +479,14 @@ def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
     parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
 
     if isinstance(monomial, str):
-        monomial_parts = monomial.split('*')
+        monomial_parts = monomial.split("*")
     else:
         factors = flatten_symbolic_powers(monomial)
         monomial_parts = [str(factor) for factor in factors]
 
     monomial_parts_indices = []
     for part in monomial_parts:
-        atoms = part.split('_')
+        atoms = part.split("_")
         indices = ([parties_names_dict[atoms[0]]]
                    + [int(j) for j in atoms[1:-2]]
                    + [int(atoms[-2]), int(atoms[-1])])
@@ -764,7 +764,7 @@ def generate_operators(outs_per_input: List[int],
         ops_per_output_per_input = []
         for o in range(outs):
             ops_per_output_per_input.append(
-                sympy.Symbol(name + '_' + str(x) + '_' + str(o),
+                sympy.Symbol(name + "_" + str(x) + "_" + str(o),
                              commutative=False)
             )
         ops_per_input.append(ops_per_output_per_input)

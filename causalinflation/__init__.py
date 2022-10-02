@@ -8,7 +8,7 @@ Provides
     probability distributions compatible with quantum causal scenarios.
 """
 
-__version__ = '0.1'
+__version__ = "0.1"
 
 from .InflationProblem import InflationProblem
 from .quantum.InflationSDP import InflationSDP
@@ -17,5 +17,5 @@ from ._version import __version__
 
 from typing import Dict, List, Tuple, Union, Any, NewType, Iterable
 
-__all__ = ['InflationProblem',
-           'InflationSDP']
+__all__ = ["InflationProblem",
+           "InflationSDP"]

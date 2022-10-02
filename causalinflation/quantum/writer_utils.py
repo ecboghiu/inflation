@@ -61,9 +61,9 @@ def convert_to_human_readable(problem):
             objective = str(independent_term)
             is_first = False
         else:
-            objective = ''
+            objective = ""
     except KeyError:
-        objective = ''
+        objective = ""
     for variable, coeff in problem.objective.items():
         if variable != problem.One:
             if (coeff < 0) or is_first:
@@ -319,5 +319,5 @@ def write_to_sdpa(problem, filename):
 
 
 def pickle_load(filename):
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         return pickle.load(f)

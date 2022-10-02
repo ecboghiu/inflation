@@ -68,16 +68,16 @@ def name_from_atomic_names(atomic_names: List[str]) -> str:
         The string representing the name of the product of the monomials.
     """
     if len(atomic_names):
-        output = ''
+        output = ""
         for i, (name, power) in enumerate(Counter(atomic_names).items()):
             if i > 0:
-                output += '*'
+                output += "*"
             output += name
             if power > 1:
-                output += '^' + str(power)
+                output += "^" + str(power)
         return output
     else:
-        return '1'
+        return "1"
 
 
 def symbol_from_atomic_name(atomic_name: str) -> sympy.core.symbol.Symbol:
@@ -93,9 +93,9 @@ def symbol_from_atomic_name(atomic_name: str) -> sympy.core.symbol.Symbol:
     sympy.core.symbol.Symbol
         The corresponding symbol.
     """
-    if atomic_name == '1':
+    if atomic_name == "1":
         return sympy.S.One
-    elif atomic_name == '0':
+    elif atomic_name == "0":
         return sympy.S.Zero
     else:
         return sympy.Symbol(atomic_name, commutative=True)
