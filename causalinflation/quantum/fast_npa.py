@@ -210,9 +210,10 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
         return True
     for i in range(1, mon.shape[0]):
         if ((mon[i, -1] != mon[i - 1, -1])
-            and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1])):
+                and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1])):
             return True
     return False
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_op_lexorder(operator: np.ndarray,
@@ -401,10 +402,10 @@ def nb_commuting(operator1: np.ndarray,
     """
     if operator1[0] != operator2[0]:  # Different parties
         return True
-    elif np.array_equal(operator1[1:-1], operator2[1:-1]): #= sources & settings
+    elif np.array_equal(operator1[1:-1], operator2[1:-1]):  # = sources & settings
         return True
     else:
-        inf1, inf2 = operator1[1:-2], operator2[1:-2]  #Compare just the sources
+        inf1, inf2 = operator1[1:-2], operator2[1:-2]  # Compare just the sources
         inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
         # If at least one in inf1-inf2 is 0, then there is one source in common
         # and therefore the letters don't commute.
@@ -448,6 +449,7 @@ def commuting_operator_sequence_test(mon: np.ndarray,
     mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
     sub_notcomm = notcomm[mon_lexorder, :][:, mon_lexorder]
     return not sub_notcomm.any()
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
@@ -520,7 +522,7 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
-                 commuting: bool_=False) -> np.ndarray:
+                 commuting: bool_ = False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations,
     and removes square projectors, and identifies orthogonality.
 
@@ -545,10 +547,11 @@ def to_canonical(mon: np.ndarray,
         else:
             return mon
 
+
 def hasty_to_canonical(mon: np.ndarray,
-                 notcomm: np.ndarray,
-                 lexorder: np.ndarray,
-                 commuting: bool_=False) -> np.ndarray:
+                       notcomm: np.ndarray,
+                       lexorder: np.ndarray,
+                       commuting: bool_ = False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations, but does
     not check for squared projectors or orthogonality.
 
@@ -574,6 +577,7 @@ def hasty_to_canonical(mon: np.ndarray,
             mon = nb_to_canonical_lexinput(mon_lexorder, notcomm)
             mon = lexorder[mon]
             return mon
+
 
 def factorize_monomial(raw_monomial: np.ndarray,
                        canonical_order=False) -> Tuple[np.ndarray]:
@@ -658,7 +662,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
                                    == inflation_indices[component[jdx], source])
                     # Add the components that overlap to the lookup list
                     component += components_indices[
-                                     overlapping & (components_indices[:, 1]==0)
+                                     overlapping & (components_indices[:, 1] == 0)
                                                     ][:, 0].tolist()
                     # Specify that the components that overlap have been used
                     components_indices[overlapping, 1] = 1
@@ -683,8 +687,8 @@ def factorize_monomial(raw_monomial: np.ndarray,
 def calculate_momentmatrix(cols: List,
                            notcomm: np.ndarray,
                            lexorder: np.ndarray,
-                           verbose: int=0,
-                           commuting: bool=False,
+                           verbose: int = 0,
+                           commuting: bool = False,
                            dtype: object = np.uint16) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
