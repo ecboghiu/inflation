@@ -547,7 +547,7 @@ class InflationSDP(object):
         else:
             self.physical_monomials = [mon for mon in self.list_of_monomials if mon.is_physical]
             if self.verbose > 1:
-                print(f"The problem has {self.physical_monomials} " +
+                print(f"The problem has {len(self.physical_monomials)} " +
                       "non-negative monomials.")
 
         # This is useful for certificates_as_probs
