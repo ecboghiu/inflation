@@ -561,7 +561,7 @@ class InflationSDP(object):
         del generating_monomials, genmon_hash_to_index_dict
         gc.collect(generation=2)
 
-        self.column_level_equalities = self._identify_column_level_equalities()
+        self.column_level_equalities = self._discover_column_level_equalities()
 
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
@@ -576,7 +576,7 @@ class InflationSDP(object):
                   len(unsymidx_to_unsym_monarray_dict) + (1 if 0 in unsymmetrized_mm_idxs.flat else 0))
 
         # Calculate the inflation symmetries.
-        self.inflation_symmetries = self._calculate_inflation_symmetries()
+        self.inflation_symmetries = self._discover_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix.
         self.momentmatrix, self.orbits, representative_unsym_idxs = \
@@ -1512,7 +1512,7 @@ class InflationSDP(object):
         del canonical_mon_as_bytes_to_idx_dict
         return problem_arr, idx_to_canonical_mon_dict
 
-    def _calculate_inflation_symmetries(self, generators_only=True) -> np.ndarray:
+    def _discover_inflation_symmetries(self, generators_only=True) -> np.ndarray:
         """Calculates all the symmetries and applies them to the set of
         operators used to define the moment matrix. The new set of operators
         is a permutation of the old. The function outputs a list of all
@@ -1642,7 +1642,7 @@ class InflationSDP(object):
     # ROUTINES RELATED TO IMPLICIT EQUALITY CONSTRAINTS                    #
     ########################################################################
 
-    def _identify_column_level_equalities(self):
+    def _discover_column_level_equalities(self):
         """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
         An equality is a dictionary with keys being which column and values being coefficients."""
         column_level_equalities = []
