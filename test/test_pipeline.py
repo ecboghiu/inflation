@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 
-from causalinflation.quantum.general_tools import apply_source_permutation_coord_input
 from causalinflation import InflationProblem, InflationSDP
 import warnings
 
@@ -395,31 +394,15 @@ class TestSymmetries(unittest.TestCase):
                                                  inflation_level_per_source=[2]
                                                  ),
                                 commuting=True)
-        lexorder = scenario._lexorder
-        notcomm = scenario._notcomm
-        scenario._generate_parties()
-        col_structure = [[], [0, 0]]
+        col_structure = [[],
+                         [[1, 2, 0, 0], [1, 2, 1, 0]],
+                         [[1, 1, 0, 0], [1, 2, 0, 0]],
+                         [[1, 1, 1, 0], [1, 2, 0, 0]],
+                         [[1, 1, 0, 0], [1, 2, 1, 0]],
+                         [[1, 1, 1, 0], [1, 2, 1, 0]],
+                         [[1, 1, 0, 0], [1, 1, 1, 0]]]
 
-        _, ordered_cols_num = scenario.build_columns(col_structure,
-                                                  return_columns_numerical=True)
-
-        expected = [[],
-                    [[1, 2, 0, 0], [1, 2, 1, 0]],
-                    [[1, 1, 0, 0], [1, 2, 0, 0]],
-                    [[1, 1, 1, 0], [1, 2, 0, 0]],
-                    [[1, 1, 0, 0], [1, 2, 1, 0]],
-                    [[1, 1, 1, 0], [1, 2, 1, 0]],
-                    [[1, 1, 0, 0], [1, 1, 1, 0]]]
-
-        raw_perm = np.array((1, 0))
-        perm_plus = np.hstack(([0], raw_perm + 1)).astype(int)
-        permuted_cols = apply_source_permutation_coord_input(ordered_cols_num,
-                                                             0,
-                                                             perm_plus,
-                                                             False,
-                                                             notcomm,
-                                                             lexorder
-                                                             )
-        self.assertTrue(np.array_equal(np.array(expected[5]), permuted_cols[5]),
+        scenario.generate_relaxation(col_structure)
+        self.assertTrue(np.array_equal(scenario.inflation_symmetries, [[0, 6, 2, 4, 3, 5, 1]]),
                          "The commuting relations of different copies are not "
                          + "being applied properly after inflation symmetries.")
