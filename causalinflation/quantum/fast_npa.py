@@ -290,45 +290,8 @@ def mon_lexsorted(mon: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_sorted_by_parties(mon: np.ndarray,
-                          lexorder: np.ndarray) -> np.ndarray:
-    """Sort by parties the monomial, i.e., sort by the first column in
-    the 2d representation of the monomial.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-    lexorder : numpy.ndarray
-        Matrix with rows as operators where the index of the row gives
-        the lexicographic order of the operator.
-
-    Returns
-    -------
-    numpy.ndarray
-        The sorted monomial.
-
-    Examples
-    --------
-    >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
-    np.array([[1,...],[3,...],[4,...]])
-    """
-    parties_ordered = np.unique(mon[:, 0])
-    mon_sorted = np.zeros_like(mon)
-    i_old = 0
-    i_new = 0
-    for p in parties_ordered:
-        pblock = mon[mon[:, 0] == p]
-        i_new += pblock.shape[0]
-        mon_sorted[i_old:i_new] = pblock
-        i_old = i_new
-    return mon_sorted
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
-            mon2: np.ndarray,
-            lexorder: np.ndarray) -> np.ndarray:
+            mon2: np.ndarray) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
 
     For hermitian operators this is the same as reversed(mon1)*mon2.
@@ -354,42 +317,8 @@ def dot_mon(mon1: np.ndarray,
     >>> dot_mon(mon1, mon2)
     np.array([[4,5,6],[1,2,3],[7,8,9]])
     """
-    if mon1.size <= 1:
-        return mon2
-    if mon2.size <= 1:
-        return mon_sorted_by_parties(reverse_mon(mon1), lexorder)
-    return mon_sorted_by_parties(np.concatenate((reverse_mon(mon1), mon2)),
-                                 lexorder)
+    return np.concatenate((reverse_mon(mon1), mon2))
 
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def dot_mon_commuting(mon1: np.ndarray,
-                      mon2: np.ndarray,
-                      lexorder: np.ndarray) -> np.ndarray:
-    """A faster implementation of `dot_mon` that assumes that all
-    operators commute. This implies we order everything lexicographically.
-
-    Parameters
-    ----------
-    mon1 : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-    mon2 : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-
-    Returns
-    -------
-    numpy.ndarray
-        The dot product :math:`M_1^\dagger M_2` with the assumption that
-        everything commutes with everything.
-    """
-    if mon1.size <= 1:
-        if mon2.size <= 1:
-            return mon2
-        return mon_lexsorted(mon2, lexorder)
-    if mon2.size <= 1:
-        return mon_lexsorted(mon1, lexorder)
-
-    return mon_lexsorted(np.concatenate((mon1, mon2)), lexorder)
 
 def to_hashable(monomial: np.ndarray) -> bytes:
     """Hashes a monomial by converting it to Python bytes containing the
@@ -804,21 +733,19 @@ def calculate_momentmatrix(cols: List,
                   desc="Calculating moment matrix"):
         for j in range(i, nrcols):
             mon1, mon2 = cols[i], cols[j]
-            if not commuting:
-                mon_v1 = to_canonical(dot_mon(mon1, mon2, lexorder),
-                                      notcomm,
-                                      lexorder).astype(dtype)
-            else:
-                mon_v1 = dot_mon_commuting(mon1, mon2, lexorder)
+            mon_v1 = to_canonical(dot_mon(mon1, mon2).astype(dtype),
+                                  notcomm,
+                                  lexorder,
+                                  commuting=commuting)
             if not mon_is_zero(mon_v1):
                 if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1, lexorder),
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1).astype(dtype),
                                           notcomm,
-                                          lexorder).astype(dtype)
+                                          lexorder,
+                                          commuting=commuting)
                     mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
                 else:
-                    mon = remove_projector_squares(mon_v1).astype(dtype)
-                    mon_hash = mon.tobytes()
+                    mon_hash = mon_v1.tobytes()
                 try:
                     known_varidx = canonical_mon_to_idx_dict[mon_hash]
                     momentmatrix[i, j] = known_varidx
