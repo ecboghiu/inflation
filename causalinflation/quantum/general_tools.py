@@ -10,11 +10,9 @@ from typing import Dict, Iterable, List, Tuple, Union
 import numpy as np
 import sympy
 
-from .fast_npa import (apply_source_swap_monomial,
-                       factorize_monomial,
+from .fast_npa import (factorize_monomial,
                        mon_lessthan_mon,
                        mon_lexsorted,
-                       nb_unique,
                        to_canonical,
                        to_name,
                        hasty_to_canonical,
@@ -515,17 +513,15 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
     monomial_component = to_canonical(
         np.asarray(monomial_component), notcomm, lexorder, commuting=commuting)
     new_mon = monomial_component.copy()
-    for source in range(monomial_component.shape[1] - 3):
-        source_inf_copy_nrs = monomial_component[:, 1 + source]
-        # This returns the unique values unsorted
-        uniquevals, _ = nb_unique(source_inf_copy_nrs)
-        uniquevals = uniquevals[uniquevals > 0]  # Remove the 0s
-        for idx, old_val in enumerate(uniquevals):
-            new_val = idx + 1
-            if old_val > new_val:
-                new_mon = apply_source_swap_monomial(new_mon, source,
-                                                     old_val, new_val)
-    return new_mon
+    nr_sources = monomial_component.shape[1] - 3
+    # We temporarily pad the monomial with a row a zeroes at the front.
+    new_mon_padded_transposed = np.concatenate((np.zeros_like(new_mon[:1]), new_mon)).T
+    for source in range(nr_sources):
+        source_inf_copy_nrs = new_mon_padded_transposed[1 + source]
+        # Numpy's return_inverse helps us reset the indices.
+        _, unique_positions = np.unique(source_inf_copy_nrs, return_inverse=True)
+        new_mon_padded_transposed[1 + source] = unique_positions
+    return new_mon_padded_transposed.T[1:]
 
 
 def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
