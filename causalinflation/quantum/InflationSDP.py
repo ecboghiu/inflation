@@ -726,7 +726,7 @@ class InflationSDP(object):
                 else:
                     pass
         if len(surprising_semiknowns) >= 1:
-            warn("Encountered at least one monomial that does not appear in " +
+            warn("When processing LPI constraints, we encountered at least one monomial that does not appear in " +
                  f"the original moment matrix:\n\t{surprising_semiknowns}")
         del atomic_known_moments, surprising_semiknowns
         self._cleanup_after_set_values()
@@ -778,6 +778,11 @@ class InflationSDP(object):
                     mon = self._sanitise_monomial(mon)
                     objective_as_dict[mon] = objective_as_dict.get(mon, 0) + (sign * coeff)
             self.objective = objective_as_dict
+            if self.verbose > 0:
+                surprising_objective_terms = {mon for mon in self.objective.keys() if mon not in self.list_of_monomials}
+                if len(surprising_objective_terms) >= 1:
+                    warn("When interpreting the objective we have encountered at least one monomial that does not appear in " +
+                         f"the original moment matrix:\n\t{surprising_objective_terms}")
             if self.supports_problem:
                 check_for_uniform_sign = np.array(list(self.objective.values()))
                 assert (np.array_equal(check_for_uniform_sign, np.abs(check_for_uniform_sign))
