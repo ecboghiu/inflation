@@ -22,6 +22,8 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
+
+
     bool_ = bool
 
 try:
@@ -422,7 +424,7 @@ def clean_coefficients(cert_dict: Dict[str, float],
       The cleaned-up coefficients.
     """
     processed_cert = deepcopy(cert_dict)
-    vars   = processed_cert.keys()
+    vars = processed_cert.keys()
     coeffs = np.asarray(list(processed_cert.values()))
     # Take the biggest one and make it 1
     normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
