@@ -11,13 +11,10 @@ import numpy as np
 import sympy
 
 from .fast_npa import (factorize_monomial,
-                       mon_lessthan_mon,
                        mon_lexsorted,
-                       to_canonical,
                        to_name,
                        hasty_to_canonical,
-                       reverse_mon,
-                       commuting_operator_sequence_test)
+                       apply_source_permplus_monomial)
 
 try:
     from numba import jit
@@ -66,43 +63,6 @@ def find_permutation(list1: List,
         return [original_dict[x] for x in list2]
 
 
-@jit(nopython=nopython)
-def apply_source_permplus_monomial(monomial: np.ndarray,
-                                   source: int,
-                                   permutation_plus: np.ndarray,
-                                   commuting: bool_,
-                                   lexorder
-                                   ) -> np.ndarray:
-    """This applies a source swap to a monomial.
-
-    We assume in the monomial that all operators COMMUTE with each other.
-
-    Parameters
-    ----------
-    monomial : numpy.ndarray
-        Input monomial in 2d array format.
-    source : int
-        The source that is being swapped.
-    permutation_plus : numpy.ndarray
-        The permutation of the copies of the specified source.
-        The format for the permutation here is to use indexing starting at one, so the permutation must be
-        padded with a leading zero.
-    commuting : bool
-        Whether all the involved operators commute or not.
-
-    Returns
-    -------
-    np.ndarray
-        Input monomial with the specified source swapped.
-    """
-    new_factors = monomial.copy()
-    new_factors[:, 1 + source] = np.take(permutation_plus, new_factors[:, 1 + source])
-    if commuting:
-        return mon_lexsorted(new_factors, lexorder)
-    else:
-        return new_factors
-
-
 def apply_source_permutation_coord_input(columns: List[np.ndarray],
                                          source: int,
                                          permutation: Union[np.ndarray, Tuple[int]],
@@ -144,9 +104,8 @@ def apply_source_permutation_coord_input(columns: List[np.ndarray],
             permuted_op_list.append(monomial)
         else:
             newmon = apply_source_permplus_monomial(monomial, source,
-                                                np.asarray(permutation),
-                                                commuting, lexorder)
-            canonical = to_canonical(newmon, notcomm, lexorder)
+                                                    np.asarray(permutation))
+            canonical = hasty_to_canonical(newmon, notcomm, lexorder, commuting=commuting)
             permuted_op_list.append(canonical)
     return permuted_op_list
 
@@ -213,26 +172,24 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
     template_new_mons_aux = [to_name(initial_monomial, names)]
-    all_perms_per_source = [np.array(list(permutations(range(inflevels[source]))), dtype=int)
-                            for source in range(nr_sources)]
+    all_perms_per_source = [np.array(list(permutations(range(inflevel))), dtype=int)
+                            for inflevel in inflevels.flat]
     # Note that we are not applying only the symmetry generators, but all
     # possible symmetries
-    all_permutationsplut_per_source = []
+    all_permutationsplus_per_source = []
     for array_of_perms in all_perms_per_source:
         permutations_plus = array_of_perms + 1
         padding = np.zeros((len(permutations_plus), 1), dtype=int)
         permutations_plus = np.hstack((padding, permutations_plus))
-        all_permutationsplut_per_source.append(permutations_plus)
+        all_permutationsplus_per_source.append(permutations_plus)
     del all_perms_per_source
-    for perms_plus in product(*all_permutationsplut_per_source):
+    for perms_plus in product(*all_permutationsplus_per_source):
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
-            permuted = apply_source_permplus_monomial(
+            permuted = mon_lexsorted(apply_source_permplus_monomial(
                 monomial=permuted,
                 source=source,
-                permutation_plus=perms_plus[source],
-                commuting=True,
-                lexorder=lexorder)
+                permutation_plus=perms_plus[source]), lexorder)
         permuted_name = to_name(permuted, names)
         if permuted_name not in template_new_mons_aux:
             template_new_mons_aux.append(permuted_name)
@@ -492,10 +449,7 @@ def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
     return monomial_parts_indices
 
 
-def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
-                                          notcomm: np.ndarray,
-                                          lexorder: np.ndarray,
-                                          commuting=False) -> np.ndarray:
+def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps
     until we reach a stable point in terms of lexiographic ordering. This might
     not be a global optimum if we also take into account the commutativity.
@@ -510,8 +464,6 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
     numpy.ndarray
         An equivalent monomial closer to its representative form.
     """
-    monomial_component = to_canonical(
-        np.asarray(monomial_component), notcomm, lexorder, commuting=commuting)
     new_mon = monomial_component.copy()
     nr_sources = monomial_component.shape[1] - 3
     # We temporarily pad the monomial with a row a zeroes at the front.
@@ -522,170 +474,6 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray,
         _, unique_positions = np.unique(source_inf_copy_nrs, return_inverse=True)
         new_mon_padded_transposed[1 + source] = unique_positions
     return new_mon_padded_transposed.T[1:]
-
-
-def to_repr_swap_plus_commutation(mon_aux: np.ndarray,
-                                  inflevels: np.ndarray,
-                                  notcomm: np.ndarray,
-                                  lexorder: np.ndarray,
-                                  commuting=False) -> np.ndarray:
-    nr_sources = inflevels.shape[0]
-    all_perms_per_source = [np.array(list(permutations(range(inflevels[source]))), dtype=int)
-                            for source in range(nr_sources)]
-    # Note that we are not applying only the symmetry generators, but all
-    # possible symmetries
-    all_permutationsplut_per_source = []
-    for array_of_perms in all_perms_per_source:
-        permutations_plus = array_of_perms + 1
-        padding = np.zeros((len(permutations_plus), 1), dtype=int)
-        permutations_plus = np.hstack((padding, permutations_plus))
-        all_permutationsplut_per_source.append(permutations_plus)
-    del all_perms_per_source
-    final_monomial = mon_aux.copy()
-    prev = mon_aux
-    while True:
-        for perms_plus in product(*all_permutationsplut_per_source):
-            permuted = final_monomial.copy()
-            for source in range(nr_sources):
-                permuted = apply_source_permplus_monomial(
-                    monomial=permuted,
-                    source=source,
-                    permutation_plus=perms_plus[source],
-                    commuting=commuting,
-                    lexorder=lexorder)
-            permuted = hasty_to_canonical(permuted, notcomm, lexorder, commuting=commuting)
-            if mon_lessthan_mon(permuted, final_monomial, lexorder):
-                final_monomial = permuted
-        if np.array_equal(final_monomial, prev):
-            break
-        prev = final_monomial
-
-    return final_monomial
-
-
-def to_representative_pair(mon: np.ndarray,
-                           inflevels: np.ndarray,
-                           notcomm: np.ndarray,
-                           lexorder: np.ndarray,
-                           commuting: bool_ = False,
-                           consider_conjugation_symmetries: bool_ = True,
-                           swaps_plus_commutations: bool_ = True,
-                           ) -> Tuple[np.ndarray, np.ndarray]:
-    """Take a monomial and applies inflation symmetries to bring it and its conjugate to
-    canonical forms.
-
-    Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
-    D^{150}_{00} E^{401}_{00} F^{031}_{00} \\rangle`. Let us put the inflation
-    copies as a matrix:
-
-    ::
-
-        [[3 5 0],
-         [4 5 0],
-         [1 5 0],
-         [4 0 1],
-         [0 3 1]]
-
-    For each column we assign to the first row index 1. Then the next different
-    one will be 2, and so on. Therefore, the representative of the monomial
-    above is :math:`\\langle D^{110}_{00} D^{210}_{00} D^{350}_{00} E^{201}_{00}
-    F^{021}_{00} \\rangle`.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial that cannot be further factorised.
-    inflevels : np.ndarray
-        Number of copies of each source in the inflated graph.
-    commuting : bool
-        Whether all the involved operators commute or not.
-
-    Returns
-    -------
-    tuple of numpy.ndarrays
-        The canonical form of the input monomial, and of its complex conjugate.
-    """
-
-    # We apply source swaps until we reach a stable point in terms of
-    # lexiographic ordering.
-    # Before we didn't consider that applying a source swap that decreases the
-    # ordering following by applying commutation rules can give us a smaller
-    # monomial lexicographically.
-    if len(mon) == 1 or np.array_equiv(mon, 0):
-        return (mon, mon)
-    representative_monomial = to_repr_lower_copy_indices_with_swaps(mon, notcomm, lexorder, commuting=commuting)
-    if swaps_plus_commutations:
-        representative_monomial = to_repr_swap_plus_commutation(representative_monomial,
-                                                                inflevels, notcomm, lexorder,
-                                                                commuting=commuting)
-    #There is no reason to check the conjugate if we are not checking commutation.
-    if (not swaps_plus_commutations) or (not consider_conjugation_symmetries) or commuting:
-        return (representative_monomial, representative_monomial)
-    if commuting_operator_sequence_test(representative_monomial, lexorder=lexorder, notcomm=notcomm):
-        return (representative_monomial, representative_monomial)
-    representative_monomial_dagger = hasty_to_canonical(reverse_mon(representative_monomial),
-                                                        notcomm=notcomm, lexorder=lexorder, commuting=False)
-    representative_monomial_dagger = to_repr_swap_plus_commutation(representative_monomial_dagger,
-                                                                   inflevels, notcomm, lexorder,
-                                                                   commuting=commuting)
-    return (representative_monomial, representative_monomial_dagger)
-
-def to_representative(mon: np.ndarray,
-                      inflevels: np.ndarray,
-                      notcomm: np.ndarray,
-                      lexorder: np.ndarray,
-                      commuting: bool_ = False,
-                      consider_conjugation_symmetries: bool_ = True,
-                      swaps_plus_commutations: bool_ = True,
-                      ) -> np.ndarray:
-    """Take a monomial and applies inflation symmetries to bring it to a
-    canonical form.
-
-    Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
-    D^{150}_{00} E^{401}_{00} F^{031}_{00} \\rangle`. Let us put the inflation
-    copies as a matrix:
-
-    ::
-
-        [[3 5 0],
-         [4 5 0],
-         [1 5 0],
-         [4 0 1],
-         [0 3 1]]
-
-    For each column we assign to the first row index 1. Then the next different
-    one will be 2, and so on. Therefore, the representative of the monomial
-    above is :math:`\\langle D^{110}_{00} D^{210}_{00} D^{350}_{00} E^{201}_{00}
-    F^{021}_{00} \\rangle`.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial that cannot be further factorised.
-    inflevels : np.ndarray
-        Number of copies of each source in the inflated graph.
-    commuting : bool
-        Whether all the involved operators commute or not.
-
-    Returns
-    -------
-    numpy.ndarray
-        The canonical form of the input monomial.
-    """
-    candidate_pair = to_representative_pair(mon=mon,
-                      inflevels=inflevels,
-                      notcomm=notcomm,
-                      lexorder=lexorder,
-                      commuting=commuting,
-                      consider_conjugation_symmetries=consider_conjugation_symmetries,
-                      swaps_plus_commutations=swaps_plus_commutations)
-    if not consider_conjugation_symmetries:
-        return candidate_pair[0]
-    else:
-        if mon_lessthan_mon(*candidate_pair, lexorder):
-            return candidate_pair[0]
-        else:
-            return candidate_pair[1]
 
 
 def clean_coefficients(cert_dict: Dict[str, float],
