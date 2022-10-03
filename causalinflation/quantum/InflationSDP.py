@@ -22,7 +22,7 @@ from .fast_npa import (calculate_momentmatrix,
                        to_name,
                        nb_mon_to_lexrepr,
                        commutation_matrix,
-                       commuting_operator_sequence_test,
+                       hermiticity_test,
                        apply_source_permplus_monomial)
 from .general_tools import (to_repr_lower_copy_indices_with_swaps,
                             to_numbers,
@@ -190,6 +190,15 @@ class InflationSDP(object):
     # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES          #
     ########################################################################
 
+    def hermitian_q(self, array2d: np.ndarray) -> bool:
+        """
+        Checks if all the operators in a monomial mutually commute.
+        """
+        return hermiticity_test(array2d,
+                                self._lexorder,
+                                self._notcomm)
+
+
     def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if not is_knowable(atomic_monarray):
             return False
@@ -293,10 +302,7 @@ class InflationSDP(object):
             self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = real_repr_mon_conjugate
             return (real_repr_mon, real_repr_mon_conjugate)
         except KeyError:
-            skip_conjugate_processing = (self.commuting or
-                                         commuting_operator_sequence_test(repr_mon,
-                                                                          lexorder=self._lexorder,
-                                                                          notcomm=self._notcomm))
+            skip_conjugate_processing = (self.commuting or self.hermitian_q(repr_mon))
             other_keys, optimal_key, real_repr_mon = self.orbit_and_rep_under_inflation_symmetries(repr_mon)
             try:
                 real_repr_mon_conjugate = self.canonsym_conjugate_ndarray_from_hash_cache[optimal_key]
@@ -589,10 +595,7 @@ class InflationSDP(object):
         # TODO: canonsym_ndarray_from_hash_cache is NOT supposed to account for conjugation symmetry, but it does.
         # So we need to overhaul the moment matrix creation and symmetrization to avoid conjugation symmetry!!
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                    unsymidx_to_unsym_monarray_dict.items()
-                                    if commuting_operator_sequence_test(v,
-                                                                        self._lexorder,
-                                                                        self._notcomm)}
+                                    unsymidx_to_unsym_monarray_dict.items() if self.hermitian_q(v)}
         for (k, v) in _unsymidx_from_hash_dict.items():
             array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry = self.symidx_to_sym_monarray_dict[
                 self.orbits[v]]
@@ -787,9 +790,16 @@ class InflationSDP(object):
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
 
+        nonhermitian_monomials = set()
         for (k, v) in values.items():
             if not np.isnan(v):
-                self.known_moments[self._sanitise_monomial(k)] = v
+                mon = self._sanitise_monomial(k)
+                if (self.verbose > 0) and (not mon.is_hermitian):
+                    nonhermitian_monomials.add(mon)
+                self.known_moments[mon] = v
+        if len(nonhermitian_monomials) >= 1:
+            warn("When setting values, we encountered at least one monomial with noncommuting operators:\n\t{nonhermitian_monomials}")
+        del nonhermitian_monomials
         if not only_specified_values:
             atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
                                     (len(mon) == 1)}
