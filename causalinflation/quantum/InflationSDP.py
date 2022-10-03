@@ -1527,7 +1527,6 @@ class InflationSDP(object):
         if len(symmetry_inducing_sources):
             inflation_symmetries = []
             identity_permutation_of_columns = np.arange(self.n_columns, dtype=int)
-            list_original = [self.from_2dndarray(op) for op in self.generating_monomials]
             for source in tqdm(symmetry_inducing_sources,
                                disable=not self.verbose,
                                desc="Calculating symmetries   "):
