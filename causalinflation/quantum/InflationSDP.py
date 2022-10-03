@@ -790,46 +790,46 @@ class InflationSDP(object):
         for (k, v) in values.items():
             if not np.isnan(v):
                 self.known_moments[self._sanitise_monomial(k)] = v
+        if not only_specified_values:
+            atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
+                                    (len(mon) == 1)}
+            monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
+            for mon in monomials_not_present_in_moment_matrix:
+                del self.known_moments[mon]
 
-        atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
-                                (len(mon) == 1)}
-        monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
-        for mon in monomials_not_present_in_moment_matrix:
-            del self.known_moments[mon]
-
-        all_specified_atoms_are_knowable = all(atomic_mon.is_knowable for atomic_mon in atomic_known_moments)
-        if all_specified_atoms_are_knowable:
-            if not self.use_lpi_constraints:
-                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                                  (not mon.is_atomic) and mon.is_knowable)  # as iterator, saves memory.
-            else:
-                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                                  (not mon.is_atomic) and mon.knowability_status in ["Knowable",
-                                                                                                     "Semi"])  # as iterator, saves memory.
-        else:
-            remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
-        surprising_semiknowns = set()
-        for mon in remaining_monomials_to_compute:
-            if mon not in self.known_moments.keys():
-                value, unknown_atomic_factors, known_status = mon.evaluate(
-                    atomic_known_moments,
-                    use_lpi_constraints=self.use_lpi_constraints)
-                if known_status == "Knowable":
-                    self.known_moments[mon] = value
-                elif known_status == "Semi":
-                    if self.use_lpi_constraints:
-                        monomial_corresponding_to_unknown_part = self.monomial_from_list_of_atomic(
-                            unknown_atomic_factors)
-                        self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
-                        if self.verbose > 0:
-                            if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
-                                surprising_semiknowns.add(monomial_corresponding_to_unknown_part)
+            all_specified_atoms_are_knowable = all(atomic_mon.is_knowable for atomic_mon in atomic_known_moments)
+            if all_specified_atoms_are_knowable:
+                if not self.use_lpi_constraints:
+                    remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                                      (not mon.is_atomic) and mon.is_knowable)  # as iterator, saves memory.
                 else:
-                    pass
-        if len(surprising_semiknowns) >= 1:
-            warn("When processing LPI constraints, we encountered at least one monomial that does not appear in " +
-                 f"the original moment matrix:\n\t{surprising_semiknowns}")
-        del atomic_known_moments, surprising_semiknowns
+                    remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                                      (not mon.is_atomic) and mon.knowability_status in ["Knowable",
+                                                                                                         "Semi"])  # as iterator, saves memory.
+            else:
+                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
+            surprising_semiknowns = set()
+            for mon in remaining_monomials_to_compute:
+                if mon not in self.known_moments.keys():
+                    value, unknown_atomic_factors, known_status = mon.evaluate(
+                        atomic_known_moments,
+                        use_lpi_constraints=self.use_lpi_constraints)
+                    if known_status == "Knowable":
+                        self.known_moments[mon] = value
+                    elif known_status == "Semi":
+                        if self.use_lpi_constraints:
+                            monomial_corresponding_to_unknown_part = self.monomial_from_list_of_atomic(
+                                unknown_atomic_factors)
+                            self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
+                            if self.verbose > 0:
+                                if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
+                                    surprising_semiknowns.add(monomial_corresponding_to_unknown_part)
+                    else:
+                        pass
+            if len(surprising_semiknowns) >= 1:
+                warn("When processing LPI constraints, we encountered at least one monomial that does not appear in " +
+                     f"the original moment matrix:\n\t{surprising_semiknowns}")
+            del atomic_known_moments, surprising_semiknowns
         self._cleanup_after_set_values()
         return
 
