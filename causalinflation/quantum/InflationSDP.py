@@ -318,7 +318,7 @@ class InflationSDP(object):
             self.canonsym_ndarray_from_hash_cache[key] = real_repr_mon
         return real_repr_mon
 
-    def conjugate_ndarray(self, mon: np.ndarray, hasty=False) -> np.ndarray:
+    def conjugate_ndarray(self, mon: np.ndarray, hasty=True) -> np.ndarray:
         """
         Takes a monomial and applies inflation symmetries to bring its conjugate to the conjugate's
         canonical form under relabelling through the inflation symmetries.
