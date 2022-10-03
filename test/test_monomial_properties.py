@@ -1,8 +1,9 @@
 import unittest
 import numpy as np
 
+from causalinflation import InflationProblem, InflationSDP
 from causalinflation.quantum.general_tools import (is_knowable, is_physical,
-                                                   to_numbers, to_representative
+                                                   to_numbers,
                                                    )
 from causalinflation.quantum.fast_npa import (commutation_matrix, to_canonical,
                                               to_name)
@@ -149,67 +150,48 @@ class TestToCanonical(unittest.TestCase):
 
 
 class TestToRepr(unittest.TestCase):
-    lexorder = np.array([[1, 1, 1, 0, 0, 0],
-                         [1, 1, 2, 0, 0, 0],
-                         [1, 2, 1, 0, 0, 0],
-                         [1, 2, 2, 0, 0, 0],
-                         [1, 3, 1, 0, 0, 0],
-                         [1, 3, 2, 0, 0, 0],
-                         [2, 1, 0, 1, 0, 0],
-                         [2, 1, 0, 2, 0, 0],
-                         [2, 2, 0, 1, 0, 0],
-                         [2, 2, 0, 2, 0, 0],
-                         [3, 0, 1, 1, 0, 0],
-                         [3, 0, 1, 2, 0, 0],
-                         [3, 0, 2, 1, 0, 0],
-                         [3, 0, 2, 2, 0, 0]], dtype=np.uint8)
-    notcomm = commutation_matrix(lexorder)
+    sdp_commuting = InflationSDP(InflationProblem({"lambda": ["A", "B"],
+                                                   "sigma": ["A", "C"],
+                                                   "mu": ["B", "C"]},
+                                                  outcomes_per_party=[2, 2, 2],
+                                                  settings_per_party=[1, 1, 1],
+                                                  inflation_level_per_source=[3, 2, 2],
+                                                  order=('A', 'B', 'C')),
+                                 commuting=True)
+    sdp_noncommuting = InflationSDP(InflationProblem({"lambda": ["A", "B"],
+                                                      "sigma": ["A", "C"],
+                                                      "mu": ["B", "C"]},
+                                                     outcomes_per_party=[2, 2, 2],
+                                                     settings_per_party=[1, 1, 1],
+                                                     inflation_level_per_source=[3, 2, 2],
+                                                     order=('A', 'B', 'C')),
+                                    commuting=False)
+    names = sdp_commuting.names
 
-    names = ('A', 'B', 'C')
     def test_commuting(self):
         initial = 'A_3_1_0_0_0*A_2_1_0_0_0*A_3_1_0_0_0'
         correct = 'A_1_1_0_0_0*A_2_1_0_0_0'
-        initial_array = np.array(to_numbers(initial, self.names), dtype=np.uint8)
-        result = to_name(to_representative(initial_array,
-                                            np.array([2, 1, 1]),
-                                            self.notcomm,
-                                            self.lexorder,
-                                            True), self.names)
-        self.assertEqual(result, correct,
+        self.assertEqual(self.sdp_commuting._sanitise_monomial(initial),
+                         self.sdp_commuting._sanitise_monomial(correct),
                          "Applying commutations for representative form fails.")
 
     def test_jump_sources(self):
         initial = 'A_3_1_0_0_0*A_2_1_0_0_0*A_3_1_0_0_0'
         correct = 'A_1_1_0_0_0*A_2_1_0_0_0*A_1_1_0_0_0'
-        result  = to_name(to_representative(np.array(to_numbers(initial,
-                                                    self.names)),
-                                            np.array([2, 1, 1]),
-                                            self.notcomm,
-                                            self.lexorder,
-                                            False), self.names)
-        self.assertEqual(result, correct,
+        self.assertEqual(self.sdp_noncommuting._sanitise_monomial(initial),
+                         self.sdp_noncommuting._sanitise_monomial(correct),
              "Skipping inflation indices when computing representatives fails.")
 
     def test_swap_all_sources(self):
         initial = 'A_1_1_0_0_0*A_2_2_0_0_0*B_2_0_1_0_0'
         correct = 'A_1_1_0_0_0*A_2_2_0_0_0*B_1_0_1_0_0'
-        result  = to_name(to_representative(np.array(to_numbers(initial,
-                                                                self.names)),
-                                            np.array([2, 2, 2]),
-                                            self.notcomm,
-                                            self.lexorder,
-                                            False), self.names)
-        self.assertEqual(result, correct,
+        self.assertEqual(self.sdp_noncommuting._sanitise_monomial(initial),
+                         self.sdp_noncommuting._sanitise_monomial(correct),
           "Swapping all sources and applying factorization commutations fails.")
 
     def test_swap_single_source(self):
         initial = 'A_1_1_0_0_0*A_2_2_0_0_0*B_1_0_2_0_0*B_2_0_1_0_0'
         correct = 'A_1_1_0_0_0*A_2_2_0_0_0*B_1_0_1_0_0*B_2_0_2_0_0'
-        result  = to_name(to_representative(np.array(to_numbers(initial,
-                                                                self.names)),
-                                            np.array([2, 2, 2]),
-                                            self.notcomm,
-                                            self.lexorder,
-                                            False), self.names)
-        self.assertEqual(result, correct,
+        self.assertEqual(self.sdp_noncommuting._sanitise_monomial(initial),
+                         self.sdp_noncommuting._sanitise_monomial(correct),
                         "Swapping a single source is failing.")

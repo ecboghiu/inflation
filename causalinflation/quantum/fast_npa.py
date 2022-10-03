@@ -120,33 +120,6 @@ def mon_equal_mon(mon1: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_lessthan_mon(mon1: np.ndarray,
-                     mon2: np.ndarray,
-                     lexorder: np.ndarray) -> bool_:
-    """Compares two monomials and returns True if mon1 < mon2 in lexicographic
-    order.
-
-    Parameters
-    ----------
-    mon1 : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-    mon2 : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-    lexorder : numpy.ndarray
-        The 2d array encoding the default lexicographical order.
-
-    Returns
-    -------
-    bool
-        Whether mon1 < mon2.
-    """
-    mon1_lexrank = nb_mon_to_lexrepr(mon1, lexorder)
-    mon2_lexrank = nb_mon_to_lexrepr(mon2, lexorder)
-
-    return nb_A_lessthan_B(mon1_lexrank, mon2_lexrank)
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """Return the reversed monomial.
 
@@ -522,7 +495,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
-                 commuting: bool_ = False) -> np.ndarray:
+                 commuting=False,
+                 hasty=False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations,
     and removes square projectors, and identifies orthogonality.
 
@@ -530,6 +504,11 @@ def to_canonical(mon: np.ndarray,
     ----------
     mon : numpy.ndarray
         Monomial as a matrix with rows as integer arrays representing operators.
+    commuting : bool, optional
+        Whether the variables in the problem commute or not. By default
+        ``False``.
+    hasty : bool, optional
+        Whether to skip the removal of projector squares and the test to see if the monomial is equal to zero.
 
     Returns
     -------
@@ -541,17 +520,20 @@ def to_canonical(mon: np.ndarray,
         return mon
     else:
         mon = hasty_to_canonical(mon, notcomm, lexorder, commuting=commuting)
-        mon = remove_projector_squares(mon)
-        if mon_is_zero(mon):
-            return 0*mon[:1]
-        else:
+        if hasty:
             return mon
+        else:
+            mon = remove_projector_squares(mon)
+            if mon_is_zero(mon):
+                return 0*mon[:1]
+            else:
+                return mon
 
 
 def hasty_to_canonical(mon: np.ndarray,
                        notcomm: np.ndarray,
                        lexorder: np.ndarray,
-                       commuting: bool_ = False) -> np.ndarray:
+                       commuting=False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations, but does
     not check for squared projectors or orthogonality.
 
@@ -681,6 +663,33 @@ def factorize_monomial(raw_monomial: np.ndarray,
     return disconnected_components
 
 
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def apply_source_permplus_monomial(monomial: np.ndarray,
+                                   source: int,
+                                   permutation_plus: np.ndarray) -> np.ndarray:
+    """This applies a source swap to a monomial.
+
+    We assume in the monomial that all operators COMMUTE with each other.
+
+    Parameters
+    ----------
+    monomial : numpy.ndarray
+        Input monomial in 2d array format.
+    source : int
+        The source that is being swapped.
+    permutation_plus : numpy.ndarray
+        The permutation of the copies of the specified source.
+        The format for the permutation here is to use indexing starting at one, so the permutation must be
+        padded with a leading zero.
+
+    Returns
+    -------
+    np.ndarray
+        Input monomial with the specified source swapped.
+    """
+    new_factors = monomial.copy()
+    new_factors[:, 1 + source] = permutation_plus[new_factors[:, 1 + source]]
+    return new_factors
 ################################################################################
 # OPERATIONS ON MOMENT MATRICES                                                #
 ################################################################################

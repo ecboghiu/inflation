@@ -22,8 +22,9 @@ from .fast_npa import (calculate_momentmatrix,
                        to_name,
                        nb_mon_to_lexrepr,
                        commutation_matrix,
-                       commuting_operator_sequence_test)
-from .general_tools import (to_representative_pair,
+                       commuting_operator_sequence_test,
+                       apply_source_permplus_monomial)
+from .general_tools import (to_repr_lower_copy_indices_with_swaps,
                             to_numbers,
                             to_symbol,
                             flatten,
@@ -198,7 +199,7 @@ class InflationSDP(object):
         else:
             return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
 
-    def to_canonical_memoized(self, array2d: np.ndarray):
+    def to_canonical_memoized(self, array2d: np.ndarray, hasty=False):
         quick_key = self.from_2dndarray(array2d)
         if quick_key in self.canon_ndarray_from_hash_cache:
             return self.canon_ndarray_from_hash_cache[quick_key]
@@ -206,70 +207,167 @@ class InflationSDP(object):
             self.canon_ndarray_from_hash_cache[quick_key] = array2d
             return array2d
         else:
-            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder, commuting=self.commuting)
+            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder, commuting=self.commuting, hasty=hasty)
             new_quick_key = self.from_2dndarray(new_array2d)
             self.canon_ndarray_from_hash_cache[quick_key] = new_array2d
             self.canon_ndarray_from_hash_cache[new_quick_key] = new_array2d
             return new_array2d
 
-    def _process_unrecognized_monarray_into_pair(self, unsym_monarray: np.ndarray,
-                                                 swaps_plus_commutations=True,
-                                                 consider_conjugation_symmetries=True) -> Tuple[np.ndarray, np.ndarray]:
-        quick_key = self.from_2dndarray(unsym_monarray)
-        if len(unsym_monarray) == 0 or np.array_equiv(unsym_monarray, 0):
-            self.canonsym_ndarray_from_hash_cache[quick_key] = unsym_monarray
-            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = unsym_monarray
-            return unsym_monarray, unsym_monarray
-        else:
-            sym_monarray, sym_monarray_conjugate = to_representative_pair(unsym_monarray,
-                                                                          self.inflation_levels,
-                                                                          self._notcomm,
-                                                                          self._lexorder,
-                                                                          swaps_plus_commutations=swaps_plus_commutations,
-                                                                          consider_conjugation_symmetries=consider_conjugation_symmetries,
-                                                                          commuting=self.commuting)
-            new_quick_key = self.from_2dndarray(sym_monarray)
-            new_quick_key_conjugate = self.from_2dndarray(sym_monarray_conjugate)
-            # Before we get hasty, let's see if these new keys are recognized. If so, use existing representatives.
-            sym_monarray = self.canonsym_ndarray_from_hash_cache.get(new_quick_key, sym_monarray)
-            sym_monarray_conjugate = self.canonsym_conjugate_ndarray_from_hash_cache.get(new_quick_key, sym_monarray_conjugate)
-            self.canonsym_ndarray_from_hash_cache[quick_key] = sym_monarray
-            self.canonsym_ndarray_from_hash_cache[new_quick_key] = sym_monarray
-            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray
-            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = sym_monarray_conjugate
-            self.canonsym_ndarray_from_hash_cache[new_quick_key_conjugate] = sym_monarray_conjugate
-            self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key] = sym_monarray_conjugate
-            return sym_monarray, sym_monarray_conjugate
+    def orbit_and_rep_under_inflation_symmetries(self, unsym_monarray: np.ndarray) -> Tuple[set, bytes, np.ndarray]:
+        """Note that we do NOT need to return the minimal representative according to LEXORDER.
+        We only need to return SOME canonically-chosen representative of the orbit."""
+        inflevels = unsym_monarray[:, 1:-2].max(axis=0)
+        nr_sources = inflevels.shape[0]
+        all_perms_per_source = [np.array(list(itertools.permutations(range(inflevel))), dtype=int)
+                                for inflevel in inflevels.flat]
+        # Note that we are not applying only the symmetry generators, but all
+        # possible symmetries
+        all_permutationsplus_per_source = []
+        for array_of_perms in all_perms_per_source:
+            permutations_plus = array_of_perms + 1
+            padding = np.zeros((len(permutations_plus), 1), dtype=int)
+            permutations_plus = np.hstack((padding, permutations_plus))
+            all_permutationsplus_per_source.append(permutations_plus)
+        del all_perms_per_source
+        thus_far_seen_hashes = set()
+        for perms_plus in itertools.product(*all_permutationsplus_per_source):
+            permuted = unsym_monarray.copy()
+            for source in range(nr_sources):
+                permuted = apply_source_permplus_monomial(
+                    monomial=permuted,
+                    source=source,
+                    permutation_plus=perms_plus[source])
+            #After having gone through all sources.
+            permuted = self.to_canonical_memoized(permuted, hasty=True)
+            new_hash = self.from_2dndarray(permuted)
+            thus_far_seen_hashes.add(new_hash)
+            try:
+                canonsym_ndarray = self.canonsym_ndarray_from_hash_cache[new_hash]
+                return (thus_far_seen_hashes, new_hash, canonsym_ndarray)
+            except KeyError:
+                pass
+        #If we have never encountered any of the variants herein yet.
+        new_hash = min(thus_far_seen_hashes)
+        canonsym_ndarray = self.to_2dndarray(new_hash)
+        return (thus_far_seen_hashes, new_hash, canonsym_ndarray)
 
-    def inflation_aware_to_ndarray_representative(self, mon: np.ndarray,
-                                                  swaps_plus_commutations=True,
-                                                  consider_conjugation_symmetries=True) -> np.ndarray:
+    def to_representative_pair(self, mon: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Takeas a monomial and applies inflation symmetries to bring it and its conjugate to
+        canonical forms.
+
+        Note that this function assumes that the monomial is already in canonical form,
+        and thus we are only applying inflation symmetries.
+
+        Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
+        D^{150}_{00} E^{401}_{00} F^{031}_{00} \\rangle`. Let us put the inflation
+        copies as a matrix:
+
+        ::
+
+            [[3 5 0],
+             [4 5 0],
+             [1 5 0],
+             [4 0 1],
+             [0 3 1]]
+
+        For each column we assign to the first row index 1. Then the next different
+        one will be 2, and so on. Therefore, the representative of the monomial
+        above is :math:`\\langle D^{110}_{00} D^{210}_{00} D^{350}_{00} E^{201}_{00}
+        F^{021}_{00} \\rangle`.
+
+        Parameters
+        ----------
+        mon : numpy.ndarray
+            Input monomial that cannot be further factorised.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            The canonical forms of the input monomial, and of its complex conjugate,
+            under relabelling through the inflation symmetries.
+        """
+        quick_key = self.from_2dndarray(mon)
+        if len(mon) == 0 or np.array_equiv(mon, 0):
+            self.canonsym_ndarray_from_hash_cache[quick_key] = mon
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = mon
+            return mon, mon
+        repr_mon = to_repr_lower_copy_indices_with_swaps(mon)
+        new_quick_key = self.from_2dndarray(repr_mon)
+        try:
+            real_repr_mon = self.canonsym_ndarray_from_hash_cache[new_quick_key]
+            real_repr_mon_conjugate = self.canonsym_conjugate_ndarray_from_hash_cache[new_quick_key]
+            self.canonsym_ndarray_from_hash_cache[quick_key] = real_repr_mon
+            self.canonsym_conjugate_ndarray_from_hash_cache[quick_key] = real_repr_mon_conjugate
+            return (real_repr_mon, real_repr_mon_conjugate)
+        except KeyError:
+            skip_conjugate_processing = (self.commuting or
+                                         commuting_operator_sequence_test(repr_mon,
+                                                                          lexorder=self._lexorder,
+                                                                          notcomm=self._notcomm))
+            other_keys, optimal_key, real_repr_mon = self.orbit_and_rep_under_inflation_symmetries(repr_mon)
+            try:
+                real_repr_mon_conjugate = self.canonsym_conjugate_ndarray_from_hash_cache[optimal_key]
+                other_keys_conjugate = set()
+            except KeyError:
+                if skip_conjugate_processing:
+                    real_repr_mon_conjugate = real_repr_mon
+                    other_keys_conjugate = set()
+                else:
+                    real_repr_mon_conjugate = to_repr_lower_copy_indices_with_swaps(self.to_canonical_memoized(np.flipud(real_repr_mon), hasty=True))
+                    other_keys_conjugate, _, real_repr_mon_conjugate = self.orbit_and_rep_under_inflation_symmetries(real_repr_mon_conjugate)
+            other_keys.update({quick_key, new_quick_key})
+            for key in other_keys:
+                self.canonsym_ndarray_from_hash_cache[key] = real_repr_mon
+                self.canonsym_conjugate_ndarray_from_hash_cache[key] = real_repr_mon_conjugate
+            for key in other_keys_conjugate:
+                self.canonsym_ndarray_from_hash_cache[key] = real_repr_mon_conjugate
+                self.canonsym_conjugate_ndarray_from_hash_cache[key] = real_repr_mon
+            return (real_repr_mon, real_repr_mon_conjugate)
+
+    def inflation_aware_to_ndarray_representative(self, mon: np.ndarray) -> np.ndarray:
+        """
+        Takes a monomial and applies inflation symmetries to bring it to its
+        canonical forms under relabelling through the inflation symmetries.
+
+        Parameters
+        ----------
+        mon : numpy.ndarray
+            Input monomial that cannot be further factorised.
+
+        Returns
+        -------
+        numpy.ndarray
+            The canonical form of the input monomial under relabelling through the inflation symmetries.
+        """
         unsym_monarray = self.to_canonical_memoized(mon)
         quick_key = self.from_2dndarray(unsym_monarray)
         if quick_key in self.canonsym_ndarray_from_hash_cache:
             return self.canonsym_ndarray_from_hash_cache[quick_key]
         else:
-            (sym_monarray, _) = self._process_unrecognized_monarray_into_pair(
-                unsym_monarray,
-                swaps_plus_commutations=swaps_plus_commutations,
-                consider_conjugation_symmetries=consider_conjugation_symmetries)
+            (sym_monarray, _) = self.to_representative_pair(unsym_monarray)
             return sym_monarray
 
-    def conjugate_ndarray(self,
-                          mon: np.ndarray,
-                          swaps_plus_commutations=True,
-                          consider_conjugation_symmetries=True) -> np.ndarray:
-        """DOCUMENTATION NEEDED
+    def conjugate_ndarray(self, mon: np.ndarray) -> np.ndarray:
+        """
+        Takes a monomial and applies inflation symmetries to bring its conjugate to the conjugate's
+        canonical forms under relabelling through the inflation symmetries.
+
+        Parameters
+        ----------
+        mon : numpy.ndarray
+            Input monomial that cannot be further factorised.
+
+        Returns
+        -------
+        numpy.ndarray
+            The canonical form of the conjugate of the input monomial under relabelling through the inflation symmetries.
         """
         unsym_monarray = self.to_canonical_memoized(mon)
         quick_key = self.from_2dndarray(unsym_monarray)
         if quick_key in self.canonsym_conjugate_ndarray_from_hash_cache:
             return self.canonsym_conjugate_ndarray_from_hash_cache[quick_key]
         else:
-            (_, sym_monarray_conjugate) = self._process_unrecognized_monarray_into_pair(
-                unsym_monarray,
-                swaps_plus_commutations=swaps_plus_commutations,
-                consider_conjugation_symmetries=consider_conjugation_symmetries)
+            (_, sym_monarray_conjugate) = self.to_representative_pair(unsym_monarray)
             return sym_monarray_conjugate
 
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
@@ -278,8 +376,7 @@ class InflationSDP(object):
             return self.atomic_monomial_from_hash_cache[quick_key]
         else:
             # It is important NOT to consider conjugation symmetries for a single factor!
-            new_array2d = self.inflation_aware_to_ndarray_representative(array2d,
-                                                                         consider_conjugation_symmetries=True)
+            new_array2d = self.inflation_aware_to_ndarray_representative(array2d)
             new_quick_key = self.from_2dndarray(new_array2d)
             if new_quick_key in self.atomic_monomial_from_hash_cache:
                 mon = self.atomic_monomial_from_hash_cache[new_quick_key]
