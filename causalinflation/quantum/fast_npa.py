@@ -70,71 +70,6 @@ def nb_intarray_eq(intarray1: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_linsearch(intarray: np.ndarray,
-                 value: int) -> int:
-    """Return the first index of an item in an array or -1 if the element is
-    not found.
-
-    Parameters
-    ----------
-    intarray : np.ndarray
-        The array to search.
-    value : int
-        The item to find.
-
-    Returns
-    -------
-    int
-        The position of the value if it is found, else -1.
-
-    Examples
-    --------
-    >>> nb_linsearch(np.array([1, 2, 3, 4, 5, 6]), 5)
-    4
-    """
-    for index in range(intarray.shape[0]):
-        if intarray[index] == value:
-            return index
-    return -1
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_unique(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Find the unique elements in an array without sorting
-    and in order of appearance.
-
-    Parameters
-    ----------
-    arr : numpy.ndarray
-        The array to search.
-
-    Returns
-    -------
-    Tuple[numpy.ndarray, numpy.ndarray]
-        The unique values unsorted and their indices.
-
-    Examples
-    --------
-    >>> nb_unique(np.array([1, 3, 3, 2, 2, 5, 4]))
-    (array([1, 3, 2, 5, 4], dtype=int16), array([0, 1, 3, 5, 6], dtype=int16))
-    """
-    uniquevals = np.unique(arr)
-    nr_uniquevals = uniquevals.shape[0]
-
-    indices = np.zeros(nr_uniquevals).astype(int64_)
-    for i in range(nr_uniquevals):
-        indices[i] = nb_linsearch(arr, uniquevals[i])
-    indices.sort()
-
-    uniquevals_unsorted = np.zeros(nr_uniquevals).astype(int64_)
-    for i in range(nr_uniquevals):
-        # Undo the sorting done by np.unique()
-        uniquevals_unsorted[i] = arr[indices[i]]
-
-    return uniquevals_unsorted, indices
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_A_lessthan_B(A: np.ndarray,
                     B: np.ndarray) -> bool_:
     """Compare two arrays lexicographically using the in-built '<' and '!='.
@@ -378,12 +313,12 @@ def mon_sorted_by_parties(mon: np.ndarray,
     >>> mon_sorted_by_parties(np.array([[3,...],[1,...],[4,...]]))
     np.array([[1,...],[3,...],[4,...]])
     """
-    party_order, _ = nb_unique(lexorder[:, 0])
+    parties_ordered = np.unique(mon[:, 0])
     mon_sorted = np.zeros_like(mon)
     i_old = 0
     i_new = 0
-    for i in range(party_order.shape[0]):
-        pblock = mon[mon[:, 0] == party_order[i]]
+    for p in parties_ordered:
+        pblock = mon[mon[:, 0] == p]
         i_new += pblock.shape[0]
         mon_sorted[i_old:i_new] = pblock
         i_old = i_new
