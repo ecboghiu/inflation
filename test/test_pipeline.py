@@ -171,11 +171,8 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation('npa2')
         equalities = sdp.moment_linear_equalities
 
-        self.assertTrue(len(equalities) > 0,
-                        "Failing to obtain implicit equalities in a non-network scenario.")
-        self.assertTrue(len(equalities) == 738,
-                        "The number of implicit equalities in a non-network " +
-                        "scenario is not correct.")
+        self.assertEqual(len(equalities), 738,
+                        "Failing to obtain the correct number of implicit equalities in a non-network scenario.")
 
         # TODO: When we add support for user-specifiable equalities, modify this test to only check implicit equalities.
         self.assertTrue(all(set(eq_dict.values()) == {-1, 1} for eq_dict in equalities),
@@ -364,33 +361,30 @@ class TestSDPOutput(unittest.TestCase):
                         "constraints is not obtaining the correct known value.")
 
     def test_lpi_bounds(self):
-         sdp = InflationSDP(
-                   InflationProblem({"h1": ["a", "b"],
-                                     "h2": ["b", "c"],
-                                     "h3": ["a", "c"]},
-                                     outcomes_per_party=[2, 2, 2],
-                                     settings_per_party=[1, 1, 1],
-                                     inflation_level_per_source=[3, 3, 3]),
-                             commuting=False)
-         cols = [np.array([]),
-                 np.array([[1, 1, 0, 1, 0, 0]]),
-                 np.array([[2, 2, 1, 0, 0, 0],
-                           [2, 3, 1, 0, 0, 0]]),
-                 np.array([[3, 0, 2, 2, 0, 0],
-                           [3, 0, 3, 2, 0, 0]]),
-                 np.array([[1, 1, 0, 1, 0, 0],
-                           [2, 2, 1, 0, 0, 0],
-                           [2, 3, 1, 0, 0, 0],
-                           [3, 0, 2, 2, 0, 0],
-                           [3, 0, 3, 2, 0, 0]])]
-         sdp.generate_relaxation(cols)
-         sdp.set_distribution(np.ones((2,2,2,1,1,1))/8,
-                              use_lpi_constraints=True)
+        sdp = InflationSDP(
+            InflationProblem({"u": ["A"]},
+                             outcomes_per_party=[2],
+                             settings_per_party=[2],
+                             inflation_level_per_source=[2]),
+            commuting=False)
 
-         self.assertTrue(np.all([abs(val[0]) <= 1.
-                                 for val in sdp.semiknown_moments.values()]),
-                     ("Semiknown moments need to be of the form " +
-                     "mon_index1 = (number<=1) * mon_index2, this is failing."))
+        cols = [[],
+                [[1, 2, 0, 0],
+                 [1, 2, 1, 0]],
+                [[1, 1, 0, 0],
+                 [1, 2, 0, 0],
+                 [1, 2, 1, 0]]]
+        sdp.generate_relaxation(cols)
+        sdp.set_distribution(np.ones((2, 1)) / 2,
+                             use_lpi_constraints=True)
+
+        self.assertGreaterEqual(len(sdp.semiknown_moments), 1,
+                                ("Failing to identify semiknown when they are present identified."))
+
+        self.assertTrue(all(abs(val[0]) <= 1.
+                                for val in sdp.semiknown_moments.values()),
+                        ("Semiknown moments need to be of the form " +
+                         "mon_index1 = (number<=1) * mon_index2, this is failing."))
 
 
 class TestSymmetries(unittest.TestCase):
