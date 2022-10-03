@@ -1334,6 +1334,8 @@ class InflationSDP(object):
                        for lexrepr in sortd]
 
         columns = [np.array(col, dtype=self.np_dtype).reshape((-1, self._nr_properties)) for col in columns]
+
+
         columns_symbolical = [to_symbol(col, self.names) for col in columns]
         if return_columns_numerical:
             return columns_symbolical, columns
@@ -1522,7 +1524,6 @@ class InflationSDP(object):
             The list of all permutations of the generating columns implied by
             the inflation symmetries.
         """
-
         symmetry_inducing_sources = [source for source, inf_level in enumerate(self.inflation_levels) if inf_level > 1]
         if len(symmetry_inducing_sources):
             inflation_symmetries = []
