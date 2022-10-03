@@ -711,48 +711,6 @@ def hasty_to_canonical(mon: np.ndarray,
             mon = lexorder[mon]
             return mon
 
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def apply_source_swap_monomial(monomial: np.ndarray,
-                               source: int,
-                               copy1: int,
-                               copy2: int) -> np.ndarray:
-    """Applies a swap of two sources to a monomial.
-    Parameters
-    ----------
-    monomial : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-    source : int
-        Integer in values [0, ..., nr_sources]
-    copy1 : int
-        Represents the copy of the source that swaps with copy2
-    copy2 : int
-        Represents the copy of the source that swaps with copy1
-    Returns
-    -------
-    numpy.ndarray
-         The new monomial with swapped sources.
-    Examples
-    --------
-    >>> apply_source_swap_monomial(np.array([[1, 0, 2, 1, 0, 0],
-                                             [2, 1, 3, 0, 0, 0]]),
-                                             1,  # source
-                                             2,  # copy1
-                                             3)  # copy2
-    array([[1, 0, 3, 1, 0, 0],
-           [2, 1, 2, 0, 0, 0]])
-    """
-    new_factors = monomial.copy()
-    for i in range(new_factors.shape[0]):
-        copy = new_factors[i, 1 + source]
-        if copy > 0:
-            if copy == copy1:
-                new_factors[i, 1 + source] = copy2
-            elif copy == copy2:
-                new_factors[i, 1 + source] = copy1
-    return new_factors
-
-
 def factorize_monomial(raw_monomial: np.ndarray,
                        canonical_order=False) -> Tuple[np.ndarray]:
     """This function splits a moment/expectation value into products of
