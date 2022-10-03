@@ -33,83 +33,6 @@ nopython = False
 cache = False
 
 
-def find_permutation(list1: List,
-                     list2: List
-                     ) -> List:
-    """Returns the permutation that transforms list2 in list1.
-
-    Parameters
-    ----------
-    list1 : List
-        First input list.
-    list2 : List
-        Second input list.
-
-    Returns
-    -------
-    List
-        Permutation the brings list2 to list1.
-
-    Raises
-    ------
-    Exception
-        If the lengths are different, or if the elements of the two lists are
-        different.
-    """
-    if (len(list1) != len(list2)) or (set(list1) != set(list2)):
-        raise Exception("The two lists are not permutations of one another")
-    else:
-        original_dict = {x: i for i, x in enumerate(list1)}
-        return [original_dict[x] for x in list2]
-
-
-def apply_source_permutation_coord_input(columns: List[np.ndarray],
-                                         source: int,
-                                         permutation: Union[np.ndarray, Tuple[int]],
-                                         commuting: bool,
-                                         notcomm,
-                                         lexorder
-                                         ) -> List[np.ndarray]:
-    """Applies a specific source permutation to the list of operators used to
-    define the moment matrix. Outputs the permuted list of operators.
-    The operators are encoded as lists of numbers denoting
-    [party, source_1_copy, source_2_copy, ..., input, output]
-    A product of operators is a list of such lists transformed into a
-    np.ndarray.
-
-    Parameters
-    ----------
-    columns : List[np.ndarray]
-        Generating set as a list of monomials in 2d array format.
-    source : int
-        Source that is being swapped.
-    permutation : List[int]
-        Permutation of the copies of the specified source.
-        The format for the permutation here is to use indexing starting at one, so the permutation must be
-        padded with a leading zero.
-    commuting : bool
-        Whether the operators commute or not.
-
-
-    Returns
-    -------
-    List[np.ndarray]
-        List of operators with the specified source permuted.
-
-    """
-    permuted_op_list = []
-    for monomial in columns:
-        (row_count, col_count) = monomial.shape
-        if row_count == 0 or col_count == 1:
-            permuted_op_list.append(monomial)
-        else:
-            newmon = apply_source_permplus_monomial(monomial, source,
-                                                    np.asarray(permutation))
-            canonical = hasty_to_canonical(newmon, notcomm, lexorder, commuting=commuting)
-            permuted_op_list.append(canonical)
-    return permuted_op_list
-
-
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   inflevels: np.ndarray,
                                   party: int,
@@ -172,17 +95,11 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
     template_new_mons_aux = [to_name(initial_monomial, names)]
-    all_perms_per_source = [np.array(list(permutations(range(inflevel))), dtype=int)
-                            for inflevel in inflevels.flat]
+    all_permutationsplus_per_source = [
+        increase_values_by_one_and_prepend_with_column_of_zeros(list(permutations(range(inflevel))))
+        for inflevel in inflevels.flat]
     # Note that we are not applying only the symmetry generators, but all
     # possible symmetries
-    all_permutationsplus_per_source = []
-    for array_of_perms in all_perms_per_source:
-        permutations_plus = array_of_perms + 1
-        padding = np.zeros((len(permutations_plus), 1), dtype=int)
-        permutations_plus = np.hstack((padding, permutations_plus))
-        all_permutationsplus_per_source.append(permutations_plus)
-    del all_perms_per_source
     for perms_plus in product(*all_permutationsplus_per_source):
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
@@ -210,6 +127,12 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                     new_monomial[mon_idx, -1] = output_slice[mon_idx]
                 new_monomials.append(new_monomial)
     return new_monomials
+
+
+def increase_values_by_one_and_prepend_with_column_of_zeros(array) -> np.ndarray:
+    array_plus = np.asarray(array) + 1
+    padding = np.zeros((len(array_plus), 1), dtype=int)
+    return np.hstack((padding, array_plus))
 
 
 def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol

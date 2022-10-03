@@ -31,11 +31,10 @@ from .general_tools import (to_repr_lower_copy_indices_with_swaps,
                             flatten_symbolic_powers,
                             phys_mon_1_party_of_given_len,
                             is_knowable,
-                            find_permutation,
-                            apply_source_permutation_coord_input,
                             generate_operators,
                             clean_coefficients,
-                            factorize_monomial
+                            factorize_monomial,
+                            increase_values_by_one_and_prepend_with_column_of_zeros
                             )
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
@@ -218,17 +217,11 @@ class InflationSDP(object):
         We only need to return SOME canonically-chosen representative of the orbit."""
         inflevels = unsym_monarray[:, 1:-2].max(axis=0)
         nr_sources = inflevels.shape[0]
-        all_perms_per_source = [np.array(list(itertools.permutations(range(inflevel))), dtype=int)
-                                for inflevel in inflevels.flat]
+        all_permutationsplus_per_source = [
+            increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(inflevel))))
+            for inflevel in inflevels.flat]
         # Note that we are not applying only the symmetry generators, but all
         # possible symmetries
-        all_permutationsplus_per_source = []
-        for array_of_perms in all_perms_per_source:
-            permutations_plus = array_of_perms + 1
-            padding = np.zeros((len(permutations_plus), 1), dtype=int)
-            permutations_plus = np.hstack((padding, permutations_plus))
-            all_permutationsplus_per_source.append(permutations_plus)
-        del all_perms_per_source
         thus_far_seen_hashes = set()
         for perms_plus in itertools.product(*all_permutationsplus_per_source):
             permuted = unsym_monarray.copy()
@@ -237,7 +230,7 @@ class InflationSDP(object):
                     monomial=permuted,
                     source=source,
                     permutation_plus=perms_plus[source])
-            #After having gone through all sources.
+            # After having gone through all sources.
             permuted = self.to_canonical_memoized(permuted, hasty=True)
             new_hash = self.from_2dndarray(permuted)
             thus_far_seen_hashes.add(new_hash)
@@ -246,7 +239,7 @@ class InflationSDP(object):
                 return (thus_far_seen_hashes, new_hash, canonsym_ndarray)
             except KeyError:
                 pass
-        #If we have never encountered any of the variants herein yet.
+        # If we have never encountered any of the variants herein yet.
         new_hash = min(thus_far_seen_hashes)
         canonsym_ndarray = self.to_2dndarray(new_hash)
         return (thus_far_seen_hashes, new_hash, canonsym_ndarray)
@@ -553,11 +546,22 @@ class InflationSDP(object):
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.
-        _, self.generating_monomials = \
+        _, generating_monomials = \
             self.build_columns(column_specification,
                                return_columns_numerical=True)
-        self.n_columns = len(self.generating_monomials)
-        self.column_level_equalities = self._identify_column_level_equalities(self.generating_monomials)
+        genmon_hash_to_index_dict = {self.from_2dndarray(op): i for i, op in enumerate(generating_monomials)}
+        if len(genmon_hash_to_index_dict) < len(generating_monomials):
+            generating_monomials = [generating_monomials[i] for i in genmon_hash_to_index_dict.values()]
+            genmon_hash_to_index_dict = {hash: i for i, hash in enumerate(genmon_hash_to_index_dict.keys())}
+            if self.verbose > 0:
+                warn("Duplicates were detected in the list of generating monomials. Automatically removed..")
+        self.genmon_hash_to_index_dict = genmon_hash_to_index_dict
+        self.n_columns = len(generating_monomials)
+        self.generating_monomials = generating_monomials
+        del generating_monomials, genmon_hash_to_index_dict
+        gc.collect(generation=2)
+
+        self.column_level_equalities = self._identify_column_level_equalities()
 
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
@@ -1528,25 +1532,32 @@ class InflationSDP(object):
                                disable=not self.verbose,
                                desc="Calculating symmetries   "):
                 inflation_symmetries_from_this_source = [identity_permutation_of_columns]
-                for permutation in itertools.permutations(range(self.inflation_levels[source])):
-                    # We do NOT need to calculate the "symmetry" induced by the identity permutation.
-                    if not permutation == tuple(range(self.inflation_levels[source])):
-                        permutation_plus = np.hstack(([0], np.array(permutation) + 1)).astype(int)
-                        permuted_cols_ind = \
-                            apply_source_permutation_coord_input(self.generating_monomials,
-                                                                 source,
-                                                                 permutation_plus,
-                                                                 self.commuting,
-                                                                 self._notcomm,
-                                                                 self._lexorder)
-                        list_permuted = [self.from_2dndarray(op) for op in permuted_cols_ind]
-                        try:
-                            total_perm = find_permutation(list_permuted, list_original)
-                            inflation_symmetries_from_this_source.append(np.asarray(total_perm, dtype=int))
-                        except:
-                            if self.verbose > 0:
-                                warn("The generating set is not closed under source swaps." +
-                                     "Some symmetries will not be implemented.")
+                if generators_only:
+                    #S_N can be generated by swapping the first two elements with also cycling all the elements.
+                    inflevel_of_this_source = self.inflation_levels[source]
+                    permutations_plus = np.zeros((min(2, inflevel_of_this_source - 1), inflevel_of_this_source + 1), dtype=int)
+                    permutations_plus[0] = np.arange(inflevel_of_this_source + 1)
+                    permutations_plus[0, 1] = 2
+                    permutations_plus[0, 2] = 1
+                    if len(permutations_plus) == 2:
+                        permutations_plus[1, 1:] = np.roll(np.arange(inflevel_of_this_source) + 1)
+                else:
+                    # We do never need to calculate the "symmetry" induced by the identity permutation.
+                    permutations_plus = increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(self.inflation_levels[source])))[1:])
+                permutation_could_not_be_applied = False
+                for permutation_plus in permutations_plus:
+                    try:
+                        total_perm = np.empty(self.n_columns, dtype=int)
+                        for i, mon in enumerate(self.generating_monomials):
+                            new_mon = apply_source_permplus_monomial(mon, source, permutation_plus)
+                            new_mon = self.to_canonical_memoized(new_mon, hasty=True)
+                            total_perm[i] = self.genmon_hash_to_index_dict[self.from_2dndarray(new_mon)]
+                        inflation_symmetries_from_this_source.append(total_perm)
+                    except KeyError:
+                        permutation_could_not_be_applied = True
+                if permutation_could_not_be_applied and (self.verbose > 0):
+                    warn("The generating set is not closed under source swaps." +
+                         "Some symmetries will not be implemented.")
                 inflation_symmetries.append(inflation_symmetries_from_this_source)
             if generators_only:
                 inflation_symmetries_flat = list(
@@ -1631,13 +1642,12 @@ class InflationSDP(object):
     # ROUTINES RELATED TO IMPLICIT EQUALITY CONSTRAINTS                    #
     ########################################################################
 
-    def _identify_column_level_equalities(self, generating_monomials):
+    def _identify_column_level_equalities(self):
         """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
         An equality is a dictionary with keys being which column and values being coefficients."""
-        genmon_has_to_index_dict = {self.from_2dndarray(op): i for i, op in enumerate(iter(generating_monomials))}
         column_level_equalities = []
-        for i, monomial in enumerate(iter(generating_monomials)):
-            for k, operator in enumerate(iter(monomial)):
+        for i, monomial in enumerate(self.generating_monomials):
+            for k, operator in enumerate(monomial):
                 if self._operator_max_outcome_q(operator):
                     operator_as_2d = np.expand_dims(operator, axis=0)
                     prefix = monomial[:k]
@@ -1649,14 +1659,14 @@ class InflationSDP(object):
                         variant_operator[0, -1] = outcome
                         variant_monomial = np.vstack((prefix, variant_operator, suffix))
                         try:
-                            j = genmon_has_to_index_dict[self.from_2dndarray(variant_monomial)]
+                            j = self.genmon_hash_to_index_dict[self.from_2dndarray(variant_monomial)]
                             variant_locations.append(j)
                         except KeyError:
                             break
                     if len(variant_locations) == true_cardinality:
                         missing_op_monomial = np.vstack((prefix, suffix))
                         try:
-                            missing_op_location = genmon_has_to_index_dict[self.from_2dndarray(missing_op_monomial)]
+                            missing_op_location = self.genmon_hash_to_index_dict[self.from_2dndarray(missing_op_monomial)]
                             column_level_equalities.append((missing_op_location, tuple(variant_locations)))
                         except KeyError:
                             break
