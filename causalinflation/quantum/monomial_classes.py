@@ -107,6 +107,13 @@ class InternalAtomicMonomial(object):
         return self.is_knowable or is_physical(self.as_ndarray)
 
     @property
+    def is_hermitian(self):
+        """Whether the atomic monomial is equivalent to its conjugate
+         under inflation symmetries and commutation.
+        """
+        return (self == self.dagger)
+
+    @property
     def name(self):
         """A string representing the monomial. In case of knowable monomials, it
         is of the form p(outputs|inputs). Otherwise it represents the
