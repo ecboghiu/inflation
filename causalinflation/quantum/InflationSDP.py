@@ -2,7 +2,7 @@
 The module generates the semidefinite program associated to a quantum inflation
 instance (see arXiv:1909.10519).
 
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu and Elie Wolfe
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import gc
 import itertools
@@ -86,13 +86,14 @@ class InflationSDP(object):
 
         self.nr_parties = len(self.names)
         self.nr_sources = self.InflationProblem.nr_sources
-        self.hypergraph = np.asarray(self.InflationProblem.hypergraph)
-        self.inflation_levels = np.asarray(self.InflationProblem.inflation_level_per_source)
+        self.hypergraph = self.InflationProblem.hypergraph
+        self.inflation_levels = self.InflationProblem.inflation_level_per_source
+        self.has_children = self.InflationProblem.has_children
+        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         if self.supports_problem:
-            self.has_children = np.ones(self.nr_parties, dtype=int)
+            self.outcome_cardinalities += 1
         else:
-            self.has_children = self.InflationProblem.has_children
-        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
+            self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         might_have_a_zero = np.any(self.outcome_cardinalities > 1)
@@ -138,7 +139,9 @@ class InflationSDP(object):
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
 
-        self._notcomm = commutation_matrix(self._lexorder, self.commuting)
+        self._default_notcomm = commutation_matrix(self._lexorder,
+                                                   self.commuting)
+        self._notcomm = self._default_notcomm.copy()
 
         self.canon_ndarray_from_hash_cache = dict()
         self.canonsym_ndarray_from_hash_cache = dict()
@@ -153,7 +156,8 @@ class InflationSDP(object):
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
     def to_2dndarray(self, bytestream):
-        return np.frombuffer(bytestream, dtype=self.np_dtype).reshape((-1, self._nr_properties))
+        array = np.frombuffer(bytestream, dtype=self.np_dtype)
+        return array.reshape((-1, self._nr_properties))
 
     def commutation_relationships(self):
         """This returns a user-friendly representation of the commutation relationships."""
@@ -523,74 +527,77 @@ class InflationSDP(object):
         """
         # Process the column_specification input and store the result
         # in self.generating_monomials.
-        _, generating_monomials = \
-            self.build_columns(column_specification,
-                               return_columns_numerical=True)
-        genmon_hash_to_index_dict = {self.from_2dndarray(op): i for i, op in enumerate(generating_monomials)}
-        if len(genmon_hash_to_index_dict) < len(generating_monomials):
-            generating_monomials = [generating_monomials[i] for i in genmon_hash_to_index_dict.values()]
-            genmon_hash_to_index_dict = {hash: i for i, hash in enumerate(genmon_hash_to_index_dict.keys())}
+        generating_monomials = self.build_columns(column_specification)
+        # Generate dictionary to indices (used in dealing with symmetries and
+        # column-level equalities)
+        genmon_hash_to_index = {self.from_2dndarray(op): i
+                                for i, op in enumerate(generating_monomials)}
+        # Check for duplicates
+        if len(genmon_hash_to_index) < len(generating_monomials):
+            generating_monomials = [generating_monomials[i]
+                                    for i in genmon_hash_to_index.values()]
+            genmon_hash_to_index = {hash: i for i, hash
+                                    in enumerate(genmon_hash_to_index.keys())}
             if self.verbose > 0:
-                warn("Duplicates were detected in the list of generating monomials. Automatically removed..")
-        self.genmon_hash_to_index_dict = genmon_hash_to_index_dict
-        self.n_columns = len(generating_monomials)
+                warn("Duplicates were detected in the list of generating " +
+                     "monomials and automatically removed.")
+        self.genmon_hash_to_index = genmon_hash_to_index
+        self.n_columns            = len(generating_monomials)
         self.generating_monomials = generating_monomials
-        del generating_monomials, genmon_hash_to_index_dict
+        del generating_monomials, genmon_hash_to_index
         gc.collect(generation=2)
-
-        self.column_level_equalities = self._discover_column_level_equalities()
-
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
 
-        # Calculate the moment matrix without the inflation symmetries.
-        unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict = self._build_momentmatrix()
+        # Calculate the moment matrix without the inflation symmetries
+        unsymmetrized_mm, unsymidx_to_unsym_monarray = self._build_momentmatrix()
         symmetrization_required = np.any(self.inflation_levels - 1)
         if self.verbose > 1:
             extra_msg = (" before symmetrization" if symmetrization_required
                          else "")
+            additional_var = (1 if 0 in unsymmetrized_mm.flat else 0)
             print("Number of variables" + extra_msg + ":",
-                  len(unsymidx_to_unsym_monarray_dict) + (1 if 0 in unsymmetrized_mm_idxs.flat else 0))
+                  len(unsymidx_to_unsym_monarray) + additional_var)
 
-        # Calculate the inflation symmetries.
+        # Calculate the inflation symmetries
         self.inflation_symmetries = self._discover_inflation_symmetries()
 
-        # Apply the inflation symmetries to the moment matrix.
+        # Apply the inflation symmetries to the moment matrix
         self.momentmatrix, self.orbits, representative_unsym_idxs = \
-            self._apply_inflation_symmetries(unsymmetrized_mm_idxs,
+            self._apply_inflation_symmetries(unsymmetrized_mm,
                                              self.inflation_symmetries,
                                              conserve_memory=False,
                                              verbose=self.verbose)
-        self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for
+        self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray[unsymidx] for
                                             unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                    unsymidx_to_unsym_monarray_dict.items() if self.all_commuting_q(v)}
+                                    unsymidx_to_unsym_monarray.items() if self.all_commuting_q(v)}
         for (k, v) in _unsymidx_from_hash_dict.items():
-            array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry = self.symidx_to_sym_monarray_dict[
-                self.orbits[v]]
-            self.canonsym_ndarray_from_hash_cache[
-                k] = array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry
+            self.canonsym_ndarray_from_hash_cache[k] = \
+                self.symidx_to_sym_monarray_dict[self.orbits[v]]
         del _unsymidx_from_hash_dict
-        del unsymmetrized_mm_idxs, unsymidx_to_unsym_monarray_dict
-        # This is a good time to reclaim memory, as unsymmetrized_mm_idxs can be GBs.
+        del unsymmetrized_mm, unsymidx_to_unsym_monarray
+        # This is a good time to reclaim memory, as unsymmetrized_mm can be GBs.
         gc.collect(generation=2)
-        (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = np.in1d([0, 1], self.momentmatrix.ravel())
-        self.largest_moment_index = max(self.symidx_to_sym_monarray_dict.keys())
+        (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = \
+            np.in1d([0, 1], self.momentmatrix.ravel())
 
-        self.compound_monomial_from_idx_dict = dict()
-        # The zero monomial is not stored during calculate_momentmatrix, so we manually added it here.
+        self.compound_monomial_from_idx = dict()
+        # Associate Monomials to the remaining entries. The zero monomial is not
+        # stored during calculate_momentmatrix, so we have to add it manually
         if self.momentmatrix_has_a_zero:
-            self.compound_monomial_from_idx_dict[0] = self.Zero
+            self.compound_monomial_from_idx[0] = self.Zero
         for (k, v) in self.symidx_to_sym_monarray_dict.items():
-            self.compound_monomial_from_idx_dict[k] = self.Monomial(v, idx=k)
+            self.compound_monomial_from_idx[k] = self.Monomial(v, idx=k)
 
-        self.list_of_monomials = list(self.compound_monomial_from_idx_dict.values())
-        assert all(v == 1 for v in Counter(
-            self.list_of_monomials).values()), "Critical error: multiple indices are being associated to the same monomial."
+        self.list_of_monomials = list(self.compound_monomial_from_idx.values())
+        assert all(v == 1 for v in Counter(self.list_of_monomials).values()), \
+            "Multiple indices are being associated to the same monomial"
         knowable_atoms = set()
         for m in self.list_of_monomials:
             knowable_atoms.update(m.knowable_factors)
-        self.knowable_atoms = [self.monomial_from_list_of_atomic([atom]) for atom in knowable_atoms]
+        self.knowable_atoms = [self.monomial_from_list_of_atomic([atom])
+                               for atom in knowable_atoms]
         del knowable_atoms
 
         if self.verbose > 0:
@@ -602,12 +609,14 @@ class InflationSDP(object):
         # Get mask matrices associated with each monomial
         for mon in self.list_of_monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
-        self.maskmatrices = {mon: mon.mask_matrix for mon in self.list_of_monomials}
+        self.maskmatrices   = {mon: mon.mask_matrix
+                               for mon in self.list_of_monomials}
 
-        _counter = Counter([mon.knowability_status for mon in self.list_of_monomials])
-        self.n_knowable = _counter["Knowable"]
+        _counter = Counter([mon.knowability_status
+                            for mon in self.list_of_monomials])
+        self.n_knowable           = _counter["Knowable"]
         self.n_something_knowable = _counter["Semi"]
-        self.n_unknowable = _counter["Unknowable"]
+        self.n_unknowable         = _counter["Unknowable"]
         if self.verbose > 1:
             print(f"The problem has {self.n_knowable} knowable monomials, " +
                   f"{self.n_something_knowable} semi-knowable monomials, " +
@@ -616,25 +625,28 @@ class InflationSDP(object):
         if self.commuting:
             self.physical_monomials = self.list_of_monomials
         else:
-            self.physical_monomials = [mon for mon in self.list_of_monomials if mon.is_physical]
+            self.physical_monomials = [mon for mon in self.list_of_monomials
+                                       if mon.is_physical]
             if self.verbose > 1:
                 print(f"The problem has {len(self.physical_monomials)} " +
                       "non-negative monomials.")
 
-        # This is useful for certificates_as_probs
-        self.names_to_symbols_dict = {mon.name: mon.symbol for mon in self.list_of_monomials}
-        self.names_to_symbols_dict[self.constant_term_name] = sp.S.One
+        # This dictionary useful for certificates_as_probs
+        self.names_to_symbols = {mon.name: mon.symbol
+                                 for mon in self.list_of_monomials}
+        self.names_to_symbols[self.constant_term_name] = sp.S.One
 
-        self.moment_linear_equalities = []
+        # In non-network scenarios we do not use Collins-Gisin notation for some
+        # variables, so there exist normalization constraints between them
+        self.column_level_equalities = self._discover_column_level_equalities()
         if suppress_implicit_equalities:
             self.moment_linear_equalities = []
         else:
             self.idx_level_equalities = self.construct_idx_level_equalities_from_column_level_equalities(
                 column_level_equalities=self.column_level_equalities,
                 momentmatrix=self.momentmatrix)
-            self.moment_linear_equalities = [{self.compound_monomial_from_idx_dict[i]: v for i, v in eq.items()}
+            self.moment_linear_equalities = [{self.compound_monomial_from_idx[i]: v for i, v in eq.items()}
                                              for eq in self.idx_level_equalities]
-            # del idx_level_equalities
 
         self.moment_linear_inequalities = []
         self.moment_upperbounds = dict()
@@ -642,8 +654,8 @@ class InflationSDP(object):
 
         self.set_lowerbounds(None)
         self.set_upperbounds(None)
-        self.set_objective(None)  # Equivalent to reset_objective
-        self.set_values(None)  # Equivalent to reset_values
+        self.set_objective(None)
+        self.set_values(None)
 
         self._relaxation_has_been_generated = True
 
@@ -1067,7 +1079,7 @@ class InflationSDP(object):
         for mon_name, coeff in dual.items():
             if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
                 coeff = int(coeff)
-            polynomial += coeff * self.names_to_symbols_dict[mon_name]
+            polynomial += coeff * self.names_to_symbols[mon_name]
         return polynomial
 
     def certificate_as_string(self,
@@ -1311,14 +1323,11 @@ class InflationSDP(object):
                        if lexrepr != [] else self.identity_operator
                        for lexrepr in sortd]
 
-        columns = [np.array(col, dtype=self.np_dtype).reshape((-1, self._nr_properties)) for col in columns]
-
-
-        columns_symbolical = [to_symbol(col, self.names) for col in columns]
-        if return_columns_numerical:
-            return columns_symbolical, columns
-        else:
-            return columns_symbolical
+        columns = [np.array(col,
+                            dtype=self.np_dtype).reshape((-1,
+                                                          self._nr_properties))
+                   for col in columns]
+        return columns
 
     def clear_known_values(self) -> None:
         """Clears the information about variables assigned to numerical
@@ -1485,7 +1494,8 @@ class InflationSDP(object):
                                    verbose=self.verbose,
                                    commuting=self.commuting,
                                    dtype=self.np_dtype)
-        idx_to_canonical_mon_dict = {idx: self.to_2dndarray(mon_as_bytes) for (mon_as_bytes, idx) in
+        idx_to_canonical_mon_dict = {idx: self.to_2dndarray(mon_as_bytes)
+                                     for (mon_as_bytes, idx) in
                                      canonical_mon_as_bytes_to_idx_dict.items()}
         del canonical_mon_as_bytes_to_idx_dict
         return problem_arr, idx_to_canonical_mon_dict
@@ -1529,7 +1539,7 @@ class InflationSDP(object):
                         for i, mon in enumerate(self.generating_monomials):
                             new_mon = apply_source_permplus_monomial(mon, source, permutation_plus)
                             new_mon = self.to_canonical_memoized(new_mon, hasty=True)
-                            total_perm[i] = self.genmon_hash_to_index_dict[self.from_2dndarray(new_mon)]
+                            total_perm[i] = self.genmon_hash_to_index[self.from_2dndarray(new_mon)]
                         inflation_symmetries_from_this_source.append(total_perm)
                     except KeyError:
                         permutation_could_not_be_applied = True
@@ -1637,14 +1647,14 @@ class InflationSDP(object):
                         variant_operator[0, -1] = outcome
                         variant_monomial = np.vstack((prefix, variant_operator, suffix))
                         try:
-                            j = self.genmon_hash_to_index_dict[self.from_2dndarray(variant_monomial)]
+                            j = self.genmon_hash_to_index[self.from_2dndarray(variant_monomial)]
                             variant_locations.append(j)
                         except KeyError:
                             break
                     if len(variant_locations) == true_cardinality:
                         missing_op_monomial = np.vstack((prefix, suffix))
                         try:
-                            missing_op_location = self.genmon_hash_to_index_dict[self.from_2dndarray(missing_op_monomial)]
+                            missing_op_location = self.genmon_hash_to_index[self.from_2dndarray(missing_op_monomial)]
                             column_level_equalities.append((missing_op_location, tuple(variant_locations)))
                         except KeyError:
                             break
