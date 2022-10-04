@@ -253,7 +253,7 @@ class InflationSDP(object):
 
     def inflation_aware_to_ndarray_representative(self, mon: np.ndarray, hasty=False) -> np.ndarray:
         """Takes a monomial and applies inflation symmetries to bring it to its
-        canonical forms.
+        canonical form.
 
 
         Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
