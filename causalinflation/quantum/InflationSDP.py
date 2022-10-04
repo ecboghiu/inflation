@@ -563,8 +563,6 @@ class InflationSDP(object):
                                              verbose=self.verbose)
         self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for
                                             unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
-        # TODO: canonsym_ndarray_from_hash_cache is NOT supposed to account for conjugation symmetry, but it does.
-        # So we need to overhaul the moment matrix creation and symmetrization to avoid conjugation symmetry!!
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
                                     unsymidx_to_unsym_monarray_dict.items() if self.hermitian_q(v)}
         for (k, v) in _unsymidx_from_hash_dict.items():

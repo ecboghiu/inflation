@@ -13,7 +13,6 @@ import sympy
 from .fast_npa import (factorize_monomial,
                        mon_lexsorted,
                        to_name,
-                       hasty_to_canonical,
                        apply_source_permplus_monomial)
 
 try:
