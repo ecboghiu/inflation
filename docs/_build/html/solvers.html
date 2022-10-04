@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interfaces with solvers &mdash; CausalInflation 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Functions to build problem elements" href="build.html" />
+    <link rel="prev" title="InflationSDP Class" href="inflationsdp.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="contents.html" class="icon icon-home"> CausalInflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">CausalInflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">API Reference</a> &raquo;</li>
+      <li>Interfaces with solvers</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/solvers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="interfaces-with-solvers">
+<h1>Interfaces with solvers<a class="headerlink" href="#interfaces-with-solvers" title="Permalink to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.sdp_utils.</span></span><span class="sig-name descname"><span class="pre">solveSDP_MosekFUSION</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maskmatrices_name_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">lil_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{1:</span> <span class="pre">0.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{0:</span> <span class="pre">0.0,</span> <span class="pre">1:</span> <span class="pre">1.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semiknown_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positive_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feas_as_optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solverparameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_lowerbounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_upperbounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_inequalities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_equalities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solve_dual</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/sdp_utils.html#solveSDP_MosekFUSION"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION" title="Permalink to this definition"></a></dt>
+<dd><p>Internal function to solve the SDP with the <a class="reference external" href="https://docs.mosek.com/latest/pythonfusion/index.html">MOSEK Fusion API</a>.</p>
+<p>Now follows an extended description of how the SDP is encoded. In general,
+it is prefered to solve using the dual formulation, which is the default.</p>
+<p>The primal is written as follows:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{max}\quad &amp; c_0 + c\cdot x\\
+\text{s.t.}\quad &amp; F_0 + \sum F_i x_i \succeq 0\end{split}\]</div>
+<p><span class="math notranslate nohighlight">\(F_0\)</span> is the constant entries of the moment matrix, and <span class="math notranslate nohighlight">\(F_i\)</span> is
+the matrix whose entry <span class="math notranslate nohighlight">\((n,m)\)</span> stores the value of the coefficient of
+the moment <span class="math notranslate nohighlight">\(x_i\)</span> at position <span class="math notranslate nohighlight">\((n,m)\)</span> in the moment matrix.</p>
+<p>The dual of the equation above is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{min}\quad &amp; c_0+\text{Tr}(Z\cdot F_0)\\
+\text{s.t.}\quad &amp; \text{Tr}(Z\cdot F_i) = - c_i \,\forall\, i,\\
+&amp;Z \succeq 0.\end{split}\]</div>
+<p>Typically, all the probability information is stored in <span class="math notranslate nohighlight">\(F_0\)</span>, and the
+coefficients <span class="math notranslate nohighlight">\(F_i\)</span> do not depend on the probabilities. However, if we
+use LPI constraints (see, e.g., <a class="reference external" href="http://www.arxiv.org/abs/2203.16543/">arXiv:2203.16543</a>), then <span class="math notranslate nohighlight">\(F_i\)</span> can depend on
+the probabilities. The form of the SDP does not change, in any case.</p>
+<p>If we have a constant objective function, then we have a feasibility
+problem. It can be rewritten into the following optimization problem:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{max}\quad&amp;\lambda\\
+\text{s.t.}\quad&amp; F_0 + \sum F_i x_i - \lambda \cdot 1 \succeq 0,\end{split}\]</div>
+<p>which achieves <span class="math notranslate nohighlight">\(\lambda\geq 0\)</span> if the original problem is feasible and
+<span class="math notranslate nohighlight">\(\lambda&lt;0\)</span> otherwise. The dual of this problem is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{min}\quad &amp; \text{Tr}(Z\cdot F_0) \\
+\text{s.t.}\quad &amp; \text{Tr}(Z\cdot F_i) = 0 \,\forall\, i,\\
+    &amp; Z \succeq 0,\,\text{Tr} Z = 1.\end{split}\]</div>
+<p>This still allows for the extraction of certificates. If we use a
+<span class="math notranslate nohighlight">\(Z_{P_1}\)</span> obtained from running the problem above on the probability
+distribution <span class="math notranslate nohighlight">\(P_1\)</span>, and we find that
+<span class="math notranslate nohighlight">\(\text{Tr}[Z_{P_1}\cdot F_0(P_2)] &lt; 0\)</span>, then clearly this is an upper
+bound of the optimal value of the problem, and thus we can certify that the
+optimisation will be negative when using <span class="math notranslate nohighlight">\(P_2\)</span>.</p>
+<p>If we have upper and lower bounds on the variables, the problems change as
+follows:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{max}\quad &amp; c_0 + c\cdot x \\
+\text{s.t.}\quad &amp; F_0 + \sum F_i x_i \succeq 0,\\
+&amp; x_i - l_i \geq 0,\\
+&amp; u_i - x_i \geq 0,\end{split}\]</div>
+<p>with dual:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{min}\quad &amp; \text{Tr}(Z\cdot F_0 - L\cdot l + U\cdot u) \\
+\text{s.t.}\quad &amp; \text{Tr}(Z \cdot F_i) = -c_i+U_i-L_i \,\forall\,i,\\
+&amp; Z \succeq 0,\,L \geq 0,\,U \geq 0.\end{split}\]</div>
+<p>The relaxed feasibility problems change accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>positionsmatrix</strong> (<em>scipy.sparse.lil_matrix</em>) – Matrix of positions of the monomials in the moment matrix.</p></li>
+<li><p><strong>objective</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary with keys as monomials and as values the monomial’s
+coefficient in the objective function. By default <code class="docutils literal notranslate"><span class="pre">{1:</span> <span class="pre">0.}</span></code></p></li>
+<li><p><strong>known_vars</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of values for monomials (keys). By default <code class="docutils literal notranslate"><span class="pre">{0:</span> <span class="pre">0.,</span> <span class="pre">1:</span> <span class="pre">1.}</span></code></p></li>
+<li><p><strong>semiknown_vars</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary encoding proportionality constraints between
+different monomials. By default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><strong>var_lowerbounds</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of lower bounds for monomials. By default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><strong>var_upperbounds</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of upper bounds for monomials. By default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><strong>var_inequalities</strong> (<em>list</em><em>, </em><em>optional</em>) – List of inequalities enconded as dictionaries of coefficients. By
+default <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></li>
+<li><p><strong>var_equalities</strong> (<em>list</em><em>, </em><em>optional</em>) – List of equalities enconded as dictionaries of coefficients. By default
+<code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></li>
+<li><p><strong>solve_dual</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to solve the dual (True) or primal (False) formulation. By
+default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – How much information to display to the user. By default <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p><strong>feas_as_optim</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to treat feasibility problems, where the objective is,
+constant, as an optimisation problem. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>solverparameters</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of parameters to pass to the MOSEK solver, see <a class="reference external" href="https://docs.mosek.com/latest/pythonfusion/solver-parameters.html">MOSEK’s
+documentation</a>.
+By default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The first element of the tuple is a dictionary containing the
+optimisation information such as the 1) primal objective value,
+2) the moment matrix, 3) the dual values, 4) the certificate and
+a 5) dictionary of values for the monomials, in the following keys in
+the same order: 1) <code class="docutils literal notranslate"><span class="pre">sol</span></code>, 2) <code class="docutils literal notranslate"><span class="pre">G</span></code>, 3) <code class="docutils literal notranslate"><span class="pre">Z</span></code>, 4) <code class="docutils literal notranslate"><span class="pre">dual_certificate</span></code>,
+5) <code class="docutils literal notranslate"><span class="pre">xi</span></code>. The second element is the objective value and the last is the
+problem status.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[Dict, float, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="inflationsdp.html" class="btn btn-neutral float-left" title="InflationSDP Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="build.html" class="btn btn-neutral float-right" title="Functions to build problem elements" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
