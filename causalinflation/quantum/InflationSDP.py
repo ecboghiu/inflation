@@ -22,7 +22,7 @@ from .fast_npa import (calculate_momentmatrix,
                        to_name,
                        nb_mon_to_lexrepr,
                        commutation_matrix,
-                       hermiticity_test,
+                       all_commuting_test,
                        apply_source_permplus_monomial)
 from .general_tools import (to_repr_lower_copy_indices_with_swaps,
                             to_numbers,
@@ -189,13 +189,13 @@ class InflationSDP(object):
     # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES          #
     ########################################################################
 
-    def hermitian_q(self, array2d: np.ndarray) -> bool:
+    def all_commuting_q(self, array2d: np.ndarray) -> bool:
         """
         Checks if all the operators in a monomial mutually commute.
         """
-        return hermiticity_test(array2d,
-                                self._lexorder,
-                                self._notcomm)
+        return all_commuting_test(array2d,
+                                  self._lexorder,
+                                  self._notcomm)
 
 
     def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
@@ -335,7 +335,7 @@ class InflationSDP(object):
         numpy.ndarray
             The canonical form of the conjugate of the input monomial under relabelling through the inflation symmetries.
         """
-        if self.hermitian_q(mon):
+        if self.all_commuting_q(mon):
             return mon
         else:
             return self.inflation_aware_to_ndarray_representative(np.flipud(mon), hasty=hasty)
@@ -564,7 +564,7 @@ class InflationSDP(object):
         self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray_dict[unsymidx] for
                                             unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
         _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                    unsymidx_to_unsym_monarray_dict.items() if self.hermitian_q(v)}
+                                    unsymidx_to_unsym_monarray_dict.items() if self.all_commuting_q(v)}
         for (k, v) in _unsymidx_from_hash_dict.items():
             array_after_inflation_symmetry_and_regardless_of_conjugation_symmetry = self.symidx_to_sym_monarray_dict[
                 self.orbits[v]]
@@ -761,7 +761,7 @@ class InflationSDP(object):
         for (k, v) in values.items():
             if not np.isnan(v):
                 mon = self._sanitise_monomial(k)
-                if (self.verbose > 0) and (not mon.is_hermitian):
+                if (self.verbose > 0) and (not mon.is_all_commuting):
                     nonhermitian_monomials.add(mon)
                 self.known_moments[mon] = v
         if len(nonhermitian_monomials) >= 1:
