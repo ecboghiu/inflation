@@ -772,6 +772,7 @@ class InflationSDP(object):
         if not only_specified_values:
             atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
                                     (len(mon) == 1)}
+            atomic_known_moments.update({atom.dagger: val for atom, val in atomic_known_moments.items()})
             monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
             for mon in monomials_not_present_in_moment_matrix:
                 del self.known_moments[mon]
