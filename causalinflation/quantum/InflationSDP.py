@@ -757,16 +757,16 @@ class InflationSDP(object):
                  "linearized polynomial constraints will constrain the " +
                  "optimization to distributions with fixed marginals.")
 
-        nonhermitian_monomials = set()
+        non_all_commuting_monomials = set()
         for (k, v) in values.items():
             if not np.isnan(v):
                 mon = self._sanitise_monomial(k)
                 if (self.verbose > 0) and (not mon.is_all_commuting):
-                    nonhermitian_monomials.add(mon)
+                    non_all_commuting_monomials.add(mon)
                 self.known_moments[mon] = v
-        if len(nonhermitian_monomials) >= 1:
+        if len(non_all_commuting_monomials) >= 1:
             warn("When setting values, we encountered at least one monomial with noncommuting operators:\n\t{nonhermitian_monomials}")
-        del nonhermitian_monomials
+        del non_all_commuting_monomials
         if not only_specified_values:
             atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
                                     (len(mon) == 1)}
