@@ -18,7 +18,7 @@ class InternalAtomicMonomial(object):
                  "is_one",
                  "is_zero",
                  "is_knowable",
-                 "is_hermitian",
+                 "is_all_commuting",
                  "n_operators",
                  "op_length",
                  "rectified_ndarray",
@@ -45,7 +45,7 @@ class InternalAtomicMonomial(object):
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp.atomic_knowable_q(self.as_ndarray))
-        self.is_hermitian = self.sdp.hermitian_q(self.as_ndarray)
+        self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
         self.do_conditional = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
@@ -176,7 +176,7 @@ class InternalAtomicMonomial(object):
 class CompoundMonomial(object):
     __slots__ = ["factors",
                  "is_atomic",
-                 "is_hermitian",
+                 "is_all_commuting",
                  "is_zero",
                  "is_one",
                  "n_factors",
@@ -203,7 +203,7 @@ class CompoundMonomial(object):
         self.n_factors     = len(self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
-        self.is_hermitian  = all(factor.is_hermitian for factor in self.factors)
+        self.is_all_commuting  = all(factor.is_all_commuting for factor in self.factors)
         knowable_factors   = []
         unknowable_factors = []
         for factor in self.factors:

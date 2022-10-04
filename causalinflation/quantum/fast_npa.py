@@ -414,9 +414,9 @@ def commutation_matrix(lexorder: np.ndarray, commuting=False) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def hermiticity_test(mon: np.ndarray,
-                     lexorder: np.ndarray,
-                     notcomm: np.ndarray) -> bool:
+def all_commuting_test(mon: np.ndarray,
+                       lexorder: np.ndarray,
+                       notcomm: np.ndarray) -> bool:
     if len(mon) <= 1:
         return True
     mon_lexorder = nb_mon_to_lexrepr(mon, lexorder)
