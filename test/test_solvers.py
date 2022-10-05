@@ -15,8 +15,10 @@ class TestMosek(unittest.TestCase):
                                                     {'w': 1,  '1': 1}],   # w >= -1
                               "var_equalities": [{'x': 1/2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
         }
-        _, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        _, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        primal_sol   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
+        dual_sol     = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual   = dual_sol["primal_value"]
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2), "The solution is not correct.")  # Found with WolframAlpha
 
@@ -29,11 +31,13 @@ class TestMosek(unittest.TestCase):
         solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
                               "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                               "known_vars": {'1': 1}}
-        optim_vars, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        primal_sol   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
+        dual_sol     = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual   = dual_sol["primal_value"]
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.abs(value_primal - 2*np.sqrt(2)) < 1e-5, "The solution is not 2√2")
-        self.assertTrue(np.abs(optim_vars['x']['7'] - 1/np.sqrt(2)) < 1e-5, "The two body correlator is not 1/√2")
+        self.assertTrue(np.abs(dual_sol['x']['7'] - 1/np.sqrt(2)) < 1e-5, "The two body correlator is not 1/√2")
 
         # Test SDP mixed with inequality constraints. Max CHSH while enforcing CHSH <= 2.23
         solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
@@ -41,8 +45,10 @@ class TestMosek(unittest.TestCase):
                               "known_vars": {'1': 1},
                               "var_inequalities": [{'1': 2.23, '7': -1, '8': -1, '9': -1, '10': 1}]  # CHSH <= 2.23
                             }
-        optim_vars, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        primal_sol   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
+        dual_sol     = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual   = dual_sol["primal_value"]
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.abs(value_primal - 2.23) < 1e-5, "Max CHSH with CHSH <= 2.23 is not 2.23.")
 
@@ -78,12 +84,14 @@ class TestMosek(unittest.TestCase):
                                                  {**A1B0.as_coefficients_dict(), '9': -1},
                                                  {**A1B1.as_coefficients_dict(), '10': -1}]
                             }
-        optim_vars, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        primal_sol   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
+        dual_sol     = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual   = dual_sol["primal_value"]
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.abs(value_primal - 2) < 1e-5, "Max CHSH over local strategies is not 2, the local bound.")
         # Check that some of the constraints are satisfied
-        vals = optim_vars['x']
+        vals = dual_sol['x']
         for i in range(4):
             for j in range(4):
                 self.assertTrue(vals[q[i, j]] >= -1e-9, f"q[{i}, {j}] is negative.")
