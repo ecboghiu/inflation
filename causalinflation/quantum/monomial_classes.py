@@ -4,7 +4,7 @@ from collections import Counter
 from functools import total_ordering
 from typing import Dict, List, Tuple
 
-from .fast_npa import mon_is_zero
+from .fast_npa import all_commuting_test, mon_is_zero
 from .general_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atomic_names,
@@ -44,8 +44,10 @@ class InternalAtomicMonomial(object):
         self.is_one  = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
-        self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
+        self.is_all_commuting = all_commuting_test(self.as_ndarray,
+                                                   self.sdp._lexorder,
+                                                   self.sdp._notcomm)
         self.do_conditional = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:

@@ -152,14 +152,6 @@ class InflationSDP(object):
         self.One = self.Monomial(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
 
-    def all_commuting_q(self, array2d: np.ndarray) -> bool:
-        """
-        Checks if all the operators in a monomial mutually commute.
-        """
-        return all_commuting_test(array2d,
-                                  self._lexorder,
-                                  self._notcomm)
-
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
     ########################################################################
