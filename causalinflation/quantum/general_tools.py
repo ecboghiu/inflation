@@ -12,7 +12,6 @@ import sympy
 
 from .fast_npa import (factorize_monomial,
                        mon_lexsorted,
-                       to_name,
                        apply_source_permplus_monomial)
 
 try:
@@ -95,7 +94,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         initial_monomial[mon_idx, -2] = 0
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
-    template_new_mons_aux = [to_name(initial_monomial, names)]
+    template_new_mons_dict = {initial_monomial.tobytes(): initial_monomial}
+
     all_permutationsplus_per_source = [
         increase_values_by_one_and_prepend_with_column_of_zeros(list(permutations(range(inflevel))))
         for inflevel in inflevels.flat]
@@ -108,12 +108,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                 monomial=permuted,
                 source=source,
                 permutation_plus=perms_plus[source]), lexorder)
-        permuted_name = to_name(permuted, names)
-        if permuted_name not in template_new_mons_aux:
-            template_new_mons_aux.append(permuted_name)
-
-    template_new_monomials = [
-        np.asarray(to_numbers(mon, names)) for mon in template_new_mons_aux]
+        template_new_mons_dict[permuted.tobytes()] = permuted
+    template_new_monomials = list(template_new_mons_dict.values())
 
     new_monomials = []
     # Insert all combinations of inputs and outputs
@@ -164,49 +160,6 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
                 factors_expanded.append(base)
     factors = factors_expanded
     return factors
-
-
-def to_numbers(monomial: str,
-               parties_names: Tuple[str]
-               ) -> np.ndarray:
-    """Monomial from string to matrix representation.
-
-    Given a monomial input in string format, return the matrix representation
-    where each row represents an operators and the columns are operator labels
-    such as party, inflation copies and input and output cardinalities.
-
-    Parameters
-    ----------
-    monomial : str
-        Monomial in string format.
-    parties_names : Tuple[str]
-        Tuple of party names.
-
-    Returns
-    -------
-    Tuple[Tuple[int]]
-        Monomial in tuple of tuples format (equivalent to 2d array format by
-        calling np.array() on the result).
-    """
-    parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
-
-    if isinstance(monomial, str):
-        monomial_parts = monomial.split("*")
-    else:
-        factors = flatten_symbolic_powers(monomial)
-        monomial_parts = [str(factor) for factor in factors]
-
-    monomial_parts_indices = []
-    for part in monomial_parts:
-        atoms = part.split("_")
-        if atoms[0] not in parties_names_dict.keys():
-            raise Exception(f"Party name {atoms[0]} not recognized.")
-        indices = ((parties_names_dict[atoms[0]],)
-                   + tuple(int(j) for j in atoms[1:-2])
-                   + (int(atoms[-2]), int(atoms[-1])))
-        monomial_parts_indices.append(indices)
-
-    return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
 def is_knowable(monomial: np.ndarray) -> bool:
@@ -314,44 +267,6 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
 ################################################################################
 # REPRESENTATIONS AND CONVERSIONS                                              #
 ################################################################################
-
-def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
-    """Convert monomial from string to matrix representation.
-
-    Given a monomial input in string format, return the matrix representation
-    where each row represents an operators and the columns are operator labels
-    such as party, inflation copies and input and output cardinalities.
-
-    Parameters
-    ----------
-    monomial : str
-        Monomial in string format.
-    parties_names : List[str]
-        List of party names.
-
-    Returns
-    -------
-    List[List[int]]
-        The monomial in list of lists format (equivalent to 2d array format by
-        calling np.array() on the result).
-    """
-    parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
-
-    if isinstance(monomial, str):
-        monomial_parts = monomial.split("*")
-    else:
-        factors = flatten_symbolic_powers(monomial)
-        monomial_parts = [str(factor) for factor in factors]
-
-    monomial_parts_indices = []
-    for part in monomial_parts:
-        atoms = part.split("_")
-        indices = ([parties_names_dict[atoms[0]]]
-                   + [int(j) for j in atoms[1:-2]]
-                   + [int(atoms[-2]), int(atoms[-1])])
-        monomial_parts_indices.append(indices)
-    return monomial_parts_indices
-
 
 def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps
