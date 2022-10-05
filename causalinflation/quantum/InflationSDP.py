@@ -1584,6 +1584,7 @@ class InflationSDP(object):
             return momentmatrix, default_array, default_array
         else:
             unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
+            (relevant_rows, relevant_cols) = np.unravel_index(where_it_matters_flat, momentmatrix.shape)
             absent_indices = np.arange(np.min(unique_values))
             symmetric_arr = momentmatrix.copy()
 
@@ -1592,15 +1593,14 @@ class InflationSDP(object):
                                     desc="Applying symmetries      "):
                 if not np.array_equal(permutation, np.arange(len(momentmatrix))):
                     if conserve_memory:
-                        for i, ip in enumerate(permutation):
-                            for j, jp in enumerate(permutation):
-                                new_val = symmetric_arr[i, j]
-                                if new_val < symmetric_arr[ip, jp]:
-                                    symmetric_arr[ip, jp] = new_val
-                                    symmetric_arr[jp, ip] = new_val
+                        for i, ip in zip(relevant_rows.flat, permutation[relevant_rows].flat):
+                            for j, jp in zip(relevant_cols.flat, permutation[relevant_cols].flat):
+                                symmetric_arr[ip, jp] = np.minimum(symmetric_arr[i, j], symmetric_arr[ip, jp])
                     else:
-                        np.minimum(symmetric_arr, symmetric_arr[permutation].T[permutation].T, out=symmetric_arr)
-            orbits = np.concatenate((absent_indices, symmetric_arr.flat[where_it_matters_flat].flat))
+                        symmetric_arr.flat[where_it_matters_flat] = np.minimum(
+                            symmetric_arr.flat[where_it_matters_flat],
+                            symmetric_arr[(permutation[relevant_rows], permutation[relevant_cols])])
+            orbits = np.concatenate((absent_indices, symmetric_arr.ravel()[where_it_matters_flat]))
             # Make the orbits go until the representative
             for key, val in enumerate(orbits):
                 previous = 0
