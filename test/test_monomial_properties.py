@@ -2,9 +2,7 @@ import unittest
 import numpy as np
 
 from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.general_tools import (is_knowable, is_physical,
-                                                   to_numbers,
-                                                   )
+from causalinflation.quantum.general_tools import is_knowable, is_physical
 from causalinflation.quantum.fast_npa import (commutation_matrix, to_canonical,
                                               to_name)
 
@@ -106,46 +104,24 @@ class TestPhysical(unittest.TestCase):
 
 
 class TestToCanonical(unittest.TestCase):
-    names = ('A', 'B', 'C')
-    lexorder = np.array([[1, 1, 1, 0, 0, 0],
-                         [1, 1, 2, 0, 0, 0],
-                         [1, 2, 1, 0, 0, 0],
-                         [1, 2, 2, 0, 0, 0],
-                         [1, 3, 1, 0, 0, 0],
-                         [1, 3, 2, 0, 0, 0],
-                         [2, 1, 0, 1, 0, 0],
-                         [2, 1, 0, 2, 0, 0],
-                         [2, 2, 0, 1, 0, 0],
-                         [2, 2, 0, 2, 0, 0],
-                         [3, 0, 1, 1, 0, 0],
-                         [3, 0, 1, 2, 0, 0],
-                         [3, 0, 2, 1, 0, 0],
-                         [3, 0, 2, 2, 0, 0]])
-    notcomm = commutation_matrix(lexorder)
+    sdp = InflationSDP(InflationProblem({"lambda": ["A", "B"],
+                                         "sigma": ["A", "C"],
+                                         "mu": ["B", "C"]},
+                                        outcomes_per_party=[2, 2, 2],
+                                        settings_per_party=[1, 1, 1],
+                                        inflation_level_per_source=[3, 2, 2]))
 
     def test_commutation(self):
         monomial_string = 'A_2_1_0_0_0*A_1_2_0_0_0*B_1_0_1_0_0'
-        result  = to_name(
-                      to_canonical(
-                          np.array(to_numbers(monomial_string, self.names)),
-                      self.notcomm,
-                      self.lexorder),
-                      self.names)
         correct = 'A_1_2_0_0_0*A_2_1_0_0_0*B_1_0_1_0_0'
-        self.assertEqual(result, correct,
+        self.assertEqual(self.sdp._sanitise_monomial(monomial_string), self.sdp._sanitise_monomial(correct),
                          "to_canonical has problems with bringing monomials " +
                          "to representative form.")
 
     def test_ordering_parties(self):
         monomial_string = 'A_1_1_0_0_0*A_1_2_0_0_0*C_0_2_1_0_0*B_1_0_2_0_0'
-        result  = to_name(
-                      to_canonical(
-                          np.array(to_numbers(monomial_string, self.names)),
-                      self.notcomm,
-                      self.lexorder),
-                      self.names)
         correct = 'A_1_1_0_0_0*A_1_2_0_0_0*B_1_0_2_0_0*C_0_2_1_0_0'
-        self.assertEqual(result, correct,
+        self.assertEqual(self.sdp._sanitise_monomial(monomial_string), self.sdp._sanitise_monomial(correct),
                          "to_canonical fails to order parties correctly.")
 
 
