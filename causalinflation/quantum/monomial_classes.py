@@ -44,8 +44,8 @@ class InternalAtomicMonomial(object):
         self.is_one  = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
-                            or self.sdp.atomic_knowable_q(self.as_ndarray))
         self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
+                            or self.sdp._atomic_knowable_q(self.as_ndarray))
         self.do_conditional = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
@@ -90,8 +90,8 @@ class InternalAtomicMonomial(object):
     @property
     def dagger(self):
         """Returns the adjoint of the Monomial."""
-        conjugate_ndarray   = self.sdp.conjugate_ndarray(self.as_ndarray)
-        conjugate_signature = self.sdp.from_2dndarray(conjugate_ndarray)
+        conjugate_ndarray   = self.sdp._conjugate_ndarray(self.as_ndarray)
+        conjugate_signature = self.sdp._from_2dndarray(conjugate_ndarray)
         if conjugate_signature != self.signature:
             dagger = self.__copy__()
             dagger.as_ndarray = conjugate_ndarray
@@ -152,7 +152,7 @@ class InternalAtomicMonomial(object):
 
     @property
     def signature(self):
-        return self.sdp.from_2dndarray(self.as_ndarray)
+        return self.sdp._from_2dndarray(self.as_ndarray)
 
     @property
     def symbol(self):
