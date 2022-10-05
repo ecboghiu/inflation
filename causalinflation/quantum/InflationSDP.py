@@ -152,47 +152,6 @@ class InflationSDP(object):
         self.One = self.Monomial(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
 
-    def from_2dndarray(self, array2d: np.ndarray):
-        return np.asarray(array2d, dtype=self.np_dtype).tobytes()
-
-    def to_2dndarray(self, bytestream):
-        array = np.frombuffer(bytestream, dtype=self.np_dtype)
-        return array.reshape((-1, self._nr_properties))
-
-    def commutation_relationships(self):
-        """This returns a user-friendly representation of the commutation relationships."""
-        from collections import namedtuple
-        nonzero = namedtuple("NonZeroExpressions", "exprs")
-        data = []
-        for i in range(self._lexorder.shape[0]):
-            for j in range(i, self._lexorder.shape[0]):
-                # Most operators commute as they belong to different parties,
-                # so it is more interested to list those that DON'T commute.
-                if self._notcomm[i, j] != 0:
-                    op1 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
-                    op2 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
-                    if self.verbose > 0:
-                        print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
-                    data.append(op1 * op2 - op2 * op1)
-        return nonzero(data)
-
-    def lexicographic_order(self) -> dict:
-        """This returns a user-friendly representation of the lexicographic order."""
-        lexicographic_order = {}
-        for i, op in enumerate(self._lexorder):
-            lexicographic_order[sp.Symbol(to_name([op], self.names),
-                                          commutative=False)] = i
-        return lexicographic_order
-
-    def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
-        """Determines if an operator references the highest possible outcome of a given measurement."""
-        party = operator[0] - 1
-        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
-
-    ########################################################################
-    # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES          #
-    ########################################################################
-
     def all_commuting_q(self, array2d: np.ndarray) -> bool:
         """
         Checks if all the operators in a monomial mutually commute.
@@ -200,259 +159,6 @@ class InflationSDP(object):
         return all_commuting_test(array2d,
                                   self._lexorder,
                                   self._notcomm)
-
-
-    def atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        if not is_knowable(atomic_monarray):
-            return False
-        elif not self.not_network_model:
-            return True
-        else:
-            return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
-
-    def to_canonical_memoized(self, array2d: np.ndarray, hasty=False):
-        quick_key = self.from_2dndarray(array2d)
-        if quick_key in self.canon_ndarray_from_hash_cache:
-            return self.canon_ndarray_from_hash_cache[quick_key]
-        elif len(array2d) == 0 or np.array_equiv(array2d, 0):
-            self.canon_ndarray_from_hash_cache[quick_key] = array2d
-            return array2d
-        else:
-            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder, commuting=self.commuting, hasty=hasty)
-            new_quick_key = self.from_2dndarray(new_array2d)
-            self.canon_ndarray_from_hash_cache[quick_key] = new_array2d
-            self.canon_ndarray_from_hash_cache[new_quick_key] = new_array2d
-            return new_array2d
-
-    def orbit_and_rep_under_inflation_symmetries(self, unsym_monarray: np.ndarray) -> Tuple[set, np.ndarray]:
-        """Note that we do NOT need to return the minimal representative according to LEXORDER.
-        We only need to return SOME canonically-chosen representative of the orbit."""
-        inflevels = unsym_monarray[:, 1:-2].max(axis=0)
-        nr_sources = inflevels.shape[0]
-        all_permutationsplus_per_source = [
-            increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(inflevel))))
-            for inflevel in inflevels.flat]
-        # Note that we are not applying only the symmetry generators, but all
-        # possible symmetries
-        thus_far_seen_hashes = set()
-        for perms_plus in itertools.product(*all_permutationsplus_per_source):
-            permuted = unsym_monarray.copy()
-            for source in range(nr_sources):
-                permuted = apply_source_permplus_monomial(
-                    monomial=permuted,
-                    source=source,
-                    permutation_plus=perms_plus[source])
-            # After having gone through all sources.
-            permuted = self.to_canonical_memoized(permuted, hasty=True)
-            new_hash = self.from_2dndarray(permuted)
-            thus_far_seen_hashes.add(new_hash)
-            try:
-                canonsym_ndarray = self.canonsym_ndarray_from_hash_cache[new_hash]
-                return (thus_far_seen_hashes, canonsym_ndarray)
-            except KeyError:
-                pass
-        # If we have never encountered any of the variants herein yet.
-        canonsym_ndarray = self.to_2dndarray(min(thus_far_seen_hashes))
-        return (thus_far_seen_hashes, canonsym_ndarray)
-
-    def inflation_aware_to_ndarray_representative(self, mon: np.ndarray, hasty=False) -> np.ndarray:
-        """Takes a monomial and applies inflation symmetries to bring it to its
-        canonical form.
-
-
-        Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
-        D^{150}_{00} E^{401}_{00} F^{031}_{00} \\rangle`. Let us put the inflation
-        copies as a matrix:
-
-        ::
-
-            [[3 5 0],
-             [4 5 0],
-             [1 5 0],
-             [4 0 1],
-             [0 3 1]]
-
-        For each column we assign to the first row index 1. Then the next different
-        one will be 2, and so on. Therefore, the representative of the monomial
-        above is :math:`\\langle D^{110}_{00} D^{210}_{00} D^{350}_{00} E^{201}_{00}
-        F^{021}_{00} \\rangle`.
-
-        Parameters
-        ----------
-        mon : numpy.ndarray
-            Input monomial that cannot be further factorised.
-        hasty : bool, optional
-            If True, skip checking if monomial is zero and if there square projectors.
-
-        Returns
-        -------
-        tuple of numpy.ndarray
-            The canonical form of the input monomial under relabelling through the inflation symmetries.
-        """
-        quick_key_1 = self.from_2dndarray(mon)
-        if len(mon) == 0 or np.array_equiv(mon, 0):
-            self.canonsym_ndarray_from_hash_cache[quick_key_1] = mon
-            return mon
-        else:
-            pass
-        try:
-            return self.canonsym_ndarray_from_hash_cache[quick_key_1]
-        except KeyError:
-            pass
-        canonical_mon = self.to_canonical_memoized(mon, hasty=hasty)
-        quick_key_2 = self.from_2dndarray(canonical_mon)
-        try:
-            real_repr_mon = self.canonsym_ndarray_from_hash_cache[quick_key_2]
-            self.canonsym_ndarray_from_hash_cache[quick_key_1] = real_repr_mon
-            return real_repr_mon
-        except KeyError:
-            pass
-        repr_mon = to_repr_lower_copy_indices_with_swaps(mon)
-        quick_key_3 = self.from_2dndarray(repr_mon)
-        try:
-            real_repr_mon = self.canonsym_ndarray_from_hash_cache[quick_key_3]
-            self.canonsym_ndarray_from_hash_cache[quick_key_1] = real_repr_mon
-            self.canonsym_ndarray_from_hash_cache[quick_key_2] = real_repr_mon
-            return real_repr_mon
-        except KeyError:
-            pass
-        other_keys, real_repr_mon = self.orbit_and_rep_under_inflation_symmetries(repr_mon)
-        other_keys.update({quick_key_1, quick_key_2, quick_key_3})
-        for key in other_keys:
-            self.canonsym_ndarray_from_hash_cache[key] = real_repr_mon
-        return real_repr_mon
-
-    def conjugate_ndarray(self, mon: np.ndarray, hasty=True) -> np.ndarray:
-        """
-        Takes a monomial and applies inflation symmetries to bring its conjugate to the conjugate's
-        canonical form under relabelling through the inflation symmetries.
-
-        Parameters
-        ----------
-        mon : numpy.ndarray
-            Input monomial that cannot be further factorised.
-        hasty : bool, optional
-            If True, skip checking if monomial is zero and if there square projectors.
-
-        Returns
-        -------
-        numpy.ndarray
-            The canonical form of the conjugate of the input monomial under relabelling through the inflation symmetries.
-        """
-        if self.all_commuting_q(mon):
-            return mon
-        else:
-            return self.inflation_aware_to_ndarray_representative(np.flipud(mon), hasty=hasty)
-
-    def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
-        quick_key = self.from_2dndarray(array2d)
-        if quick_key in self.atomic_monomial_from_hash_cache:
-            return self.atomic_monomial_from_hash_cache[quick_key]
-        else:
-            # It is important NOT to consider conjugation symmetries for a single factor!
-            new_array2d = self.inflation_aware_to_ndarray_representative(array2d)
-            new_quick_key = self.from_2dndarray(new_array2d)
-            if new_quick_key in self.atomic_monomial_from_hash_cache:
-                mon = self.atomic_monomial_from_hash_cache[new_quick_key]
-                self.atomic_monomial_from_hash_cache[quick_key] = mon
-                return mon
-            else:
-                mon = InternalAtomicMonomial(inflation_sdp_instance=self, array2d=new_array2d)
-                self.atomic_monomial_from_hash_cache[quick_key] = mon
-                self.atomic_monomial_from_hash_cache[new_quick_key] = mon
-                return mon
-
-    def monomial_from_list_of_atomic(self, list_of_AtomicMonomials: List[InternalAtomicMonomial]) -> CompoundMonomial:
-        list_of_atoms = []
-        for factor in list_of_AtomicMonomials:
-            if factor.is_zero:
-                list_of_atoms = [factor]
-                break
-            elif not factor.is_one:
-                list_of_atoms.append(factor)
-            else:
-                pass
-        tuple_of_atoms = tuple(sorted(list_of_atoms))
-        try:
-            mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
-            return mon
-        except KeyError:
-            mon = CompoundMonomial(tuple_of_atoms)
-            self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
-            self.compound_monomial_from_name_dict[mon.name] = mon
-            return mon
-
-    def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
-        """The constructor function for initializing CompoundMonomial instances with memoization."""
-        _factors = factorize_monomial(array2d, canonical_order=False)
-        list_of_atoms = [self.AtomicMonomial(factor) for factor in _factors if len(factor)]
-        mon = self.monomial_from_list_of_atomic(list_of_atoms)
-        mon.attach_idx_to_mon(idx)
-        return mon
-
-    def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
-        """Bring a monomial into the form used internally.
-            NEW: InternalCompoundMonomial are only constructed if in representative form.
-            Therefore, if we encounter one, we are good!
-        """
-        if isinstance(mon, CompoundMonomial):
-            return mon
-        elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
-            symbol_to_string_list = flatten_symbolic_powers(mon)
-            if len(symbol_to_string_list) == 1:
-                try:
-                    return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
-                except KeyError:
-                    pass
-            array = np.concatenate([self.interpret_atomic_string(str(op)) for op in symbol_to_string_list])
-            return self._sanitise_monomial(array)
-        elif isinstance(mon, (tuple, list, np.ndarray)):
-            array = np.asarray(mon, dtype=self.np_dtype)
-            assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
-            assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
-            canon = self.to_canonical_memoized(array)
-            return self.Monomial(canon)  # Automatically adjusts for zero or identity.
-        elif isinstance(mon, str):
-            # If it is a string, I assume it is the name of one of the
-            # monomials in self.list_of_monomials
-            try:
-                return self.compound_monomial_from_name_dict[mon]
-            except KeyError:
-                return self._sanitise_monomial(self.interpret_compound_string(mon))
-        elif isinstance(mon, Real):  # If they are number type
-            if np.isclose(float(mon), 1):
-                return self.One
-            elif np.isclose(float(mon), 0):
-                return self.Zero
-            else:
-                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
-        else:
-            raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
-
-    def interpret_compound_string(self, compound_monomial_string: Union[str, sp.core.symbol.Expr, int]) -> np.ndarray:
-        if isinstance(compound_monomial_string, sp.core.symbol.Expr):
-            factors = [str(factor) for factor in flatten_symbolic_powers(compound_monomial_string)]
-        elif str(compound_monomial_string) == '1':
-            return self.identity_operator
-        else:
-            assert "^" not in compound_monomial_string, "Cannot interpret exponent expressions."
-            factors = compound_monomial_string.split("*")
-        return np.vstack(tuple(self.interpret_atomic_string(factor_string) for factor_string in factors))
-
-    def interpret_atomic_string(self, factor_string) -> np.ndarray:
-        assert (factor_string[0] == "<" and factor_string[-1] == ">") or set(factor_string).isdisjoint(
-            set("| ")), "Cannot interpret string of this format."
-        if factor_string[0] == "<":
-            operators = factor_string[1:-1].split(" ")
-            return np.vstack(tuple(self.interpret_operator_string(op_string) for op_string in operators))
-        else:
-            return self.interpret_operator_string(factor_string)[np.newaxis]
-
-    def interpret_operator_string(self, op_string) -> np.ndarray:
-        components = op_string.split("_")
-        assert len(components) == self._nr_properties, "Cannot interpret string of this format."
-        components[0] = self.names_to_ints_dict[components[0]]
-        return np.array([int(s) for s in components], dtype=self.np_dtype)
 
     ########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                    #
@@ -534,7 +240,7 @@ class InflationSDP(object):
         generating_monomials = self.build_columns(column_specification)
         # Generate dictionary to indices (used in dealing with symmetries and
         # column-level equalities)
-        genmon_hash_to_index = {self.from_2dndarray(op): i
+        genmon_hash_to_index = {self._from_2dndarray(op): i
                                 for i, op in enumerate(generating_monomials)}
         # Check for duplicates
         if len(genmon_hash_to_index) < len(generating_monomials):
@@ -600,7 +306,7 @@ class InflationSDP(object):
         knowable_atoms = set()
         for m in self.list_of_monomials:
             knowable_atoms.update(m.knowable_factors)
-        self.knowable_atoms = [self.monomial_from_list_of_atomic([atom])
+        self.knowable_atoms = [self._monomial_from_list_of_atomic([atom])
                                for atom in knowable_atoms]
         del knowable_atoms
 
@@ -642,11 +348,11 @@ class InflationSDP(object):
 
         # In non-network scenarios we do not use Collins-Gisin notation for some
         # variables, so there exist normalization constraints between them
-        self.column_level_equalities = self._discover_column_level_equalities()
+        self.column_level_equalities = self._discover_column_equalities()
         if suppress_implicit_equalities:
             self.moment_linear_equalities = []
         else:
-            self.idx_level_equalities = self.construct_idx_level_equalities_from_column_level_equalities(
+            self.idx_level_equalities = self._construct_normalization_eqs(
                 column_level_equalities=self.column_level_equalities,
                 momentmatrix=self.momentmatrix)
             self.moment_linear_equalities = [{self.compound_monomial_from_idx[i]: v for i, v in eq.items()}
@@ -656,52 +362,31 @@ class InflationSDP(object):
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.physical_monomials}
 
-        self.set_lowerbounds(None)
-        self.set_upperbounds(None)
+        self._set_lowerbounds(None)
+        self._set_upperbounds(None)
         self.set_objective(None)
         self.set_values(None)
 
         self._relaxation_has_been_generated = True
 
-    def reset_objective(self):
-        self.reset_solution()
-        for attribute in {"_processed_objective", "maximize"}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
-        self.objective = {self.One: 0.}
-        gc.collect(2)
-
-    def reset_values(self):
-        self.reset_solution()
-        self.known_moments = dict()
-        self.semiknown_moments = dict()
-        if self.momentmatrix_has_a_zero:
-            self.known_moments[self.Zero] = 0.
-        self.known_moments[self.One] = 1.
-        gc.collect(2)
-
-    def reset_bounds(self):
-        self.reset_lowerbounds()
-        self.reset_upperbounds()
-        gc.collect(2)
-
-    def reset_lowerbounds(self):
-        self.reset_solution()
-        self._processed_moment_lowerbounds = dict()
-
-    def reset_upperbounds(self):
-        self.reset_solution()
-        self._processed_moment_upperbounds = dict()
+    def set_bounds(self,
+                   bounds_dict: Union[dict, None],
+                   bound_type: str = "up") -> None:
+        """Documentation needed
+        """
+        assert bound_type in ["up", "lo"], ("The 'bound_type' argument should" +
+                                            "be either 'up' or 'lo'")
+        if bound_type == "up":
+            self._set_upperbounds(bounds_dict)
+        else:
+            self._set_lowerbounds(bounds_dict)
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
-                         assume_shared_randomness: bool = False) -> None:
+                         shared_randomness: bool = False) -> None:
         """Set numerically all the knowable (and optionally semiknowable)
-        moments according to the probability distribution
-        specified.
+        moments according to the probability distribution specified.
 
         Parameters
         ----------
@@ -715,117 +400,18 @@ class InflationSDP(object):
             use_lpi_constraints : bool, optional
                 Specification whether linearized polynomial constraints (see,
                 e.g., Eq. (D6) in `arXiv:2203.16543
-                <http://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
-                By default ``False``.
-            assume_shared_randomness : bool, optional
-                Specification whether higher order monomials
-                may be calculated. If universal shared randomness is present, only atomic
-                monomials may be evaluated from the distribution.
+                <http://www.arxiv.org/abs/2203.16543/>`_) will be imposed or
+                not. By default ``False``.
+            shared_randomness : bool, optional
+                Specification whether higher order monomials may be calculated.
+                If universal shared randomness is present (i.e., the flag is
+                ``True``), only atomic monomials are assigned numerical values.
         """
         knowable_values = {atom: atom.compute_marginal(prob_array) for atom in self.knowable_atoms} if (
                 prob_array is not None) else dict()
-        # Compute self.known_moments and self.semiknown_moments and names their corresponding names dictionaries
-        self.set_values(knowable_values, use_lpi_constraints=use_lpi_constraints,
-                        only_specified_values=assume_shared_randomness)
-
-    def check_that_known_moments_are_all_knowable(self):
-        return all(mon.is_knowable for mon in self.known_moments.keys())
-
-    def set_values(self,
-                   values: Union[
-        Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
-                   use_lpi_constraints: bool = False,
-                   only_specified_values: bool = False) -> None:
-        """Directly assign numerical values to variables in the moment matrix.
-        This is done via a dictionary where keys are the variables to have
-        numerical values assigned (either in their operator form, in string
-        form, or directly referring to the variable in the moment matrix), and
-        the values are the corresponding numerical quantities.
-
-        Parameters
-        ----------
-        values : Dict[Union[sympy.core.symbol.Symbol, str, Monomial], float]
-            The description of the variables to be assigned numerical values and
-            the corresponding values. The keys can be either of the Monomial
-            class, symbols or strings (which should be the name of some
-            Monomial).
-
-        use_lpi_constraints : bool
-            Specification whether linearized polynomial constraints (see, e.g.,
-            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
-
-        only_specified_values : bool
-            Specifies whether one wishes to fix only the variables provided
-            (True), or also the variables containing products of the monomials
-            fixed (False). Regardless of this flag, unknowable variables can
-            also be fixed.
-        """
-        self.reset_values()
-
-        if (values is None) or (len(values) == 0):
-            self._cleanup_after_set_values()
-            return
-
-        self.use_lpi_constraints = use_lpi_constraints
-
-        if (len(self.objective) > 1) and self.use_lpi_constraints:
-            warn("You have an objective function set. Be aware that imposing " +
-                 "linearized polynomial constraints will constrain the " +
-                 "optimization to distributions with fixed marginals.")
-
-        non_all_commuting_monomials = set()
-        for (k, v) in values.items():
-            if not np.isnan(v):
-                mon = self._sanitise_monomial(k)
-                if (self.verbose > 0) and (not mon.is_all_commuting):
-                    non_all_commuting_monomials.add(mon)
-                self.known_moments[mon] = v
-        if len(non_all_commuting_monomials) >= 1:
-            warn("When setting values, we encountered at least one monomial with noncommuting operators:\n\t{non_all_commuting_monomials}")
-        del non_all_commuting_monomials
-        if not only_specified_values:
-            atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
-                                    (len(mon) == 1)}
-            atomic_known_moments.update({atom.dagger: val for atom, val in atomic_known_moments.items()})
-            monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
-            for mon in monomials_not_present_in_moment_matrix:
-                del self.known_moments[mon]
-
-            all_specified_atoms_are_knowable = all(atomic_mon.is_knowable for atomic_mon in atomic_known_moments)
-            if all_specified_atoms_are_knowable:
-                if not self.use_lpi_constraints:
-                    remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                                      (not mon.is_atomic) and mon.is_knowable)  # as iterator, saves memory.
-                else:
-                    remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
-                                                      (not mon.is_atomic) and mon.knowability_status in ["Knowable",
-                                                                                                         "Semi"])  # as iterator, saves memory.
-            else:
-                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
-            surprising_semiknowns = set()
-            for mon in remaining_monomials_to_compute:
-                if mon not in self.known_moments.keys():
-                    value, unknown_atomic_factors, known_status = mon.evaluate(
-                        atomic_known_moments,
-                        use_lpi_constraints=self.use_lpi_constraints)
-                    if known_status == "Knowable":
-                        self.known_moments[mon] = value
-                    elif known_status == "Semi":
-                        if self.use_lpi_constraints:
-                            monomial_corresponding_to_unknown_part = self.monomial_from_list_of_atomic(
-                                unknown_atomic_factors)
-                            self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
-                            if self.verbose > 0:
-                                if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
-                                    surprising_semiknowns.add(monomial_corresponding_to_unknown_part)
-                    else:
-                        pass
-            if len(surprising_semiknowns) >= 1:
-                warn("When processing LPI constraints, we encountered at least one monomial that does not appear in " +
-                     f"the original moment matrix:\n\t{surprising_semiknowns}")
-            del atomic_known_moments, surprising_semiknowns
-        self._cleanup_after_set_values()
-        return
+        self.set_values(knowable_values,
+                        use_lpi_constraints=use_lpi_constraints,
+                        only_specified_values=shared_randomness)
 
     def set_objective(self,
                       objective: Union[sp.core.symbol.Symbol, dict, None],
@@ -886,86 +472,104 @@ class InflationSDP(object):
             self._update_objective()
             return
 
-    def set_upperbounds(self, upperbound_dict: Union[dict, None]) -> None:
+    def set_values(self,
+                   values: Union[
+        Dict[Union[sp.core.symbol.Symbol, str, CompoundMonomial, InternalAtomicMonomial], float], None],
+                   use_lpi_constraints: bool = False,
+                   only_specified_values: bool = False) -> None:
+        """Directly assign numerical values to variables in the moment matrix.
+        This is done via a dictionary where keys are the variables to have
+        numerical values assigned (either in their operator form, in string
+        form, or directly referring to the variable in the moment matrix), and
+        the values are the corresponding numerical quantities.
+
+        Parameters
+        ----------
+        values : Dict[Union[sympy.core.symbol.Symbol, str, Monomial], float]
+            The description of the variables to be assigned numerical values and
+            the corresponding values. The keys can be either of the Monomial
+            class, symbols or strings (which should be the name of some
+            Monomial).
+
+        use_lpi_constraints : bool
+            Specification whether linearized polynomial constraints (see, e.g.,
+            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+
+        only_specified_values : bool
+            Specifies whether one wishes to fix only the variables provided
+            (``True``), or also the variables containing products of the
+            monomials fixed (``False``). Regardless of this flag, unknowable
+            variables can also be fixed.
         """
-        Documentation needed.
-        """
-        self.reset_upperbounds()
-        if upperbound_dict is None:
+        self.reset_values()
+
+        if (values is None) or (len(values) == 0):
+            self._cleanup_after_set_values()
             return
-        sanitized_upperbound_dict = dict()
-        for mon, upperbound in upperbound_dict.items():
-            mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_upperbound_dict.keys():
-                sanitized_upperbound_dict[mon] = upperbound
+
+        self.use_lpi_constraints = use_lpi_constraints
+
+        if (len(self.objective) > 1) and self.use_lpi_constraints:
+            warn("You have an objective function set. Be aware that imposing " +
+                 "linearized polynomial constraints will constrain the " +
+                 "optimization to distributions with fixed marginals.")
+
+        non_all_commuting_monomials = set()
+        for (k, v) in values.items():
+            if not np.isnan(v):
+                mon = self._sanitise_monomial(k)
+                if (self.verbose > 0) and (not mon.is_all_commuting):
+                    non_all_commuting_monomials.add(mon)
+                self.known_moments[mon] = v
+        if len(non_all_commuting_monomials) >= 1:
+            warn("When setting values, we encountered at least one monomial with noncommuting operators:\n\t{non_all_commuting_monomials}")
+        del non_all_commuting_monomials
+        if not only_specified_values:
+            atomic_known_moments = {mon.knowable_factors[0]: val for mon, val in self.known_moments.items() if
+                                    (len(mon) == 1)}
+            atomic_known_moments.update({atom.dagger: val for atom, val in atomic_known_moments.items()})
+            monomials_not_present_in_moment_matrix = set(self.known_moments.keys()).difference(self.list_of_monomials)
+            for mon in monomials_not_present_in_moment_matrix:
+                del self.known_moments[mon]
+
+            all_specified_atoms_are_knowable = all(atomic_mon.is_knowable for atomic_mon in atomic_known_moments)
+            if all_specified_atoms_are_knowable:
+                if not self.use_lpi_constraints:
+                    remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                                      (not mon.is_atomic) and mon.is_knowable)  # as iterator, saves memory.
+                else:
+                    remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if
+                                                      (not mon.is_atomic) and mon.knowability_status in ["Knowable",
+                                                                                                         "Semi"])  # as iterator, saves memory.
             else:
-                old_bound = sanitized_upperbound_dict[mon]
-                assert np.isclose(old_bound,
-                                  upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
-        self._processed_moment_upperbounds = sanitized_upperbound_dict
-        self._update_upperbounds()
+                remaining_monomials_to_compute = (mon for mon in self.list_of_monomials if not mon.is_atomic)
+            surprising_semiknowns = set()
+            for mon in remaining_monomials_to_compute:
+                if mon not in self.known_moments.keys():
+                    value, unknown_atomic_factors, known_status = mon.evaluate(
+                        atomic_known_moments,
+                        use_lpi_constraints=self.use_lpi_constraints)
+                    if known_status == "Knowable":
+                        self.known_moments[mon] = value
+                    elif known_status == "Semi":
+                        if self.use_lpi_constraints:
+                            monomial_corresponding_to_unknown_part = self._monomial_from_list_of_atomic(
+                                unknown_atomic_factors)
+                            self.semiknown_moments[mon] = (value, monomial_corresponding_to_unknown_part)
+                            if self.verbose > 0:
+                                if monomial_corresponding_to_unknown_part not in self.list_of_monomials:
+                                    surprising_semiknowns.add(monomial_corresponding_to_unknown_part)
+                    else:
+                        pass
+            if len(surprising_semiknowns) >= 1:
+                warn("When processing LPI constraints, we encountered at least one monomial that does not appear in " +
+                     f"the original moment matrix:\n\t{surprising_semiknowns}")
+            del atomic_known_moments, surprising_semiknowns
+        self._cleanup_after_set_values()
+        return
 
-    def set_lowerbounds(self, lowerbound_dict: Union[dict, None]) -> None:
-        """
-        Documentation needed.
-        """
-        self.reset_lowerbounds()
-        if lowerbound_dict is None:
-            return
-        sanitized_lowerbound_dict = dict()
-        for mon, lowerbound in lowerbound_dict.items():
-            mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_lowerbound_dict.keys():
-                sanitized_lowerbound_dict[mon] = lowerbound
-            else:
-                old_bound = sanitized_lowerbound_dict[mon]
-                assert np.isclose(old_bound,
-                                  lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
-        self._processed_moment_lowerbounds = sanitized_lowerbound_dict
-        self._update_lowerbounds()
-
-    def set_bounds(self, bounds_dict: Union[dict, None], bound_type: str = "up") -> None:
-        assert bound_type in ["up", "lo"], ("The bound_type parameter should be"
-                                            + " set to either 'up' or 'lo'")
-        if bound_type == "up":
-            self.set_upperbounds(bounds_dict)
-        else:
-            self.set_lowerbounds(bounds_dict)
-
-    def prepare_solver_arguments(self):
-        if self.momentmatrix is None:
-            raise Exception("Relaxation is not generated yet. " +
-                            "Call 'InflationSDP.get_relaxation()' first")
-
-        assert set(self.known_moments.keys()).issubset(
-            self.list_of_monomials), f"Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}"
-
-        default_return = {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
-                          "objective": {m.name: v for m, v in self._processed_objective.items()},
-                          "known_vars": {m.name: v for m, v in self.known_moments.items()},
-                          "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
-                          "var_equalities": [{m.name: v for m, v in eq.items()} for eq in
-                                             self.moment_linear_equalities],
-                          "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in
-                                               self.moment_linear_inequalities]
-                          }
-        # One handling path regardless of where self.One appears.
-        default_return["known_vars"][self.constant_term_name] = 1.
-        for m, v in self._processed_moment_lowerbounds.items():
-            temp_dict = {m.name: 1}
-            if not np.isclose(v, 0):
-                temp_dict[self.constant_term_name] = -v
-            default_return["var_inequalities"].append(temp_dict)
-        for m, v in self._processed_moment_upperbounds.items():
-            temp_dict = {m.name: -1}
-            if not np.isclose(v, 0):
-                temp_dict[self.constant_term_name] = v
-            default_return["var_inequalities"].append(temp_dict)
-        default_return["mask_matrices"][self.constant_term_name] = coo_matrix(
-            (self.n_columns, self.n_columns)).tocsr()
-        return default_return
-
-    def solve(self, interpreter: str = "MOSEKFusion",
+    def solve(self,
+              interpreter: str = "MOSEKFusion",
               feas_as_optim: bool = False,
               dualise: bool = True,
               solverparameters=None,
@@ -1009,7 +613,7 @@ class InflationSDP(object):
 
         # When a keyword appears in both prepare_solver_arguments and core_solver_arguments,
         # we use the value manually specified in core_solver_arguments.
-        arguments_to_pass_forward = self.prepare_solver_arguments()
+        arguments_to_pass_forward = self._prepare_solver_arguments()
         arguments_to_pass_forward.update(core_solver_arguments)
         solveSDP_arguments = {**arguments_to_pass_forward,
                               "feas_as_optim": feas_as_optim,
@@ -1029,18 +633,9 @@ class InflationSDP(object):
             self.objective_value = self.primal_objective
         gc.collect(generation=2)
 
-    def reset_solution(self):
-        for attribute in {"primal_objective", "objective_value", "solution_object"}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
-        self.status = "not yet solved"
-
     ########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #
     ########################################################################
-
     def certificate_as_probs(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
@@ -1298,7 +893,7 @@ class InflationSDP(object):
                         for mon_tuple in itertools.product(
                                 *physmons_per_party_per_length):
                             physical_monomials.append(
-                                self.to_canonical_memoized(np.concatenate(mon_tuple)))
+                                self._to_canonical_memoized(np.concatenate(mon_tuple)))
                 columns = physical_monomials
             else:
                 raise Exception("I have not understood the format of the "
@@ -1322,11 +917,63 @@ class InflationSDP(object):
                    for col in columns]
         return columns
 
-    def clear_known_values(self) -> None:
-        """Clears the information about variables assigned to numerical
-        quantities in the problem.
+    def commutation_relations(self):
+        """Return a user-friendly representation of the commutation relations.
         """
-        self.set_values(None)
+        from collections import namedtuple
+        nonzero = namedtuple("NonZeroExpressions", "exprs")
+        data = []
+        for i in range(self._lexorder.shape[0]):
+            for j in range(i, self._lexorder.shape[0]):
+                # Most operators commute as they belong to different parties,
+                # so it is more interested to list those that DON'T commute.
+                if self._notcomm[i, j] != 0:
+                    op1 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
+                    op2 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
+                    if self.verbose > 0:
+                        print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
+                    data.append(op1 * op2 - op2 * op1)
+        return nonzero(data)
+
+    def lexicographic_order(self) -> dict:
+        """Return a user-friendly representation of the lexicographic order."""
+        lexicographic_order = {}
+        for i, op in enumerate(self._lexorder):
+            lexicographic_order[sp.Symbol(to_name([op], self.names),
+                                          commutative=False)] = i
+        return lexicographic_order
+
+    def reset_objective(self):
+        self._reset_solution()
+        for attribute in {"_processed_objective", "maximize"}:
+            try:
+                delattr(self, attribute)
+            except AttributeError:
+                pass
+        self.objective = {self.One: 0.}
+        gc.collect(2)
+
+    def reset_values(self):
+        self._reset_solution()
+        self.known_moments = dict()
+        self.semiknown_moments = dict()
+        if self.momentmatrix_has_a_zero:
+            self.known_moments[self.Zero] = 0.
+        self.known_moments[self.One] = 1.
+        gc.collect(2)
+
+    def reset_bounds(self):
+        self.reset_lowerbounds()
+        self.reset_upperbounds()
+        gc.collect(2)
+
+    def reset_lowerbounds(self):
+        self._reset_solution()
+        self._processed_moment_lowerbounds = dict()
+
+    def reset_upperbounds(self):
+        self._reset_solution()
+        self._processed_moment_upperbounds = dict()
 
     def write_to_file(self, filename: str):
         """Exports the problem to a file.
@@ -1357,6 +1004,242 @@ class InflationSDP(object):
         else:
             raise Exception("File format not supported. Please choose between" +
                             " the extensions .csv, .dat-s and .mat.")
+
+    ########################################################################
+    # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES          #
+    ########################################################################
+    def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
+        quick_key = self._from_2dndarray(array2d)
+        if quick_key in self.atomic_monomial_from_hash_cache:
+            return self.atomic_monomial_from_hash_cache[quick_key]
+        else:
+            # It is important NOT to consider conjugation symmetries for a single factor!
+            new_array2d = self._inflation_aware_to_ndarray_representative(array2d)
+            new_quick_key = self._from_2dndarray(new_array2d)
+            if new_quick_key in self.atomic_monomial_from_hash_cache:
+                mon = self.atomic_monomial_from_hash_cache[new_quick_key]
+                self.atomic_monomial_from_hash_cache[quick_key] = mon
+                return mon
+            else:
+                mon = InternalAtomicMonomial(inflation_sdp_instance=self, array2d=new_array2d)
+                self.atomic_monomial_from_hash_cache[quick_key] = mon
+                self.atomic_monomial_from_hash_cache[new_quick_key] = mon
+                return mon
+
+    def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
+        """The constructor function for initializing CompoundMonomial instances with memoization."""
+        _factors = factorize_monomial(array2d, canonical_order=False)
+        list_of_atoms = [self.AtomicMonomial(factor) for factor in _factors if len(factor)]
+        mon = self._monomial_from_list_of_atomic(list_of_atoms)
+        mon.attach_idx_to_mon(idx)
+        return mon
+
+    def _conjugate_ndarray(self, mon: np.ndarray, hasty=True) -> np.ndarray:
+        """
+        Takes a monomial and applies inflation symmetries to bring its conjugate to the conjugate's
+        canonical form under relabelling through the inflation symmetries.
+
+        Parameters
+        ----------
+        mon : numpy.ndarray
+            Input monomial that cannot be further factorised.
+        hasty : bool, optional
+            If True, skip checking if monomial is zero and if there square projectors.
+
+        Returns
+        -------
+        numpy.ndarray
+            The canonical form of the conjugate of the input monomial under relabelling through the inflation symmetries.
+        """
+        if all_commuting_test(mon, self._lexorder, self._notcomm):
+            return mon
+        else:
+            return self._inflation_aware_to_ndarray_representative(np.flipud(mon), hasty=hasty)
+
+    def _inflation_aware_to_ndarray_representative(self, mon: np.ndarray, hasty=False) -> np.ndarray:
+        """Takes a monomial and applies inflation symmetries to bring it to its
+        canonical form.
+
+
+        Example: Assume the monomial is :math:`\\langle D^{350}_{00} D^{450}_{00}
+        D^{150}_{00} E^{401}_{00} F^{031}_{00} \\rangle`. Let us put the inflation
+        copies as a matrix:
+
+        ::
+
+            [[3 5 0],
+             [4 5 0],
+             [1 5 0],
+             [4 0 1],
+             [0 3 1]]
+
+        For each column we assign to the first row index 1. Then the next different
+        one will be 2, and so on. Therefore, the representative of the monomial
+        above is :math:`\\langle D^{110}_{00} D^{210}_{00} D^{350}_{00} E^{201}_{00}
+        F^{021}_{00} \\rangle`.
+
+        Parameters
+        ----------
+        mon : numpy.ndarray
+            Input monomial that cannot be further factorised.
+        hasty : bool, optional
+            If True, skip checking if monomial is zero and if there square projectors.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            The canonical form of the input monomial under relabelling through the inflation symmetries.
+        """
+        quick_key_1 = self._from_2dndarray(mon)
+        if len(mon) == 0 or np.array_equiv(mon, 0):
+            self.canonsym_ndarray_from_hash_cache[quick_key_1] = mon
+            return mon
+        else:
+            pass
+        try:
+            return self.canonsym_ndarray_from_hash_cache[quick_key_1]
+        except KeyError:
+            pass
+        canonical_mon = self._to_canonical_memoized(mon, hasty=hasty)
+        quick_key_2 = self._from_2dndarray(canonical_mon)
+        try:
+            real_repr_mon = self.canonsym_ndarray_from_hash_cache[quick_key_2]
+            self.canonsym_ndarray_from_hash_cache[quick_key_1] = real_repr_mon
+            return real_repr_mon
+        except KeyError:
+            pass
+        repr_mon = to_repr_lower_copy_indices_with_swaps(mon)
+        quick_key_3 = self._from_2dndarray(repr_mon)
+        try:
+            real_repr_mon = self.canonsym_ndarray_from_hash_cache[quick_key_3]
+            self.canonsym_ndarray_from_hash_cache[quick_key_1] = real_repr_mon
+            self.canonsym_ndarray_from_hash_cache[quick_key_2] = real_repr_mon
+            return real_repr_mon
+        except KeyError:
+            pass
+        other_keys, real_repr_mon = self._orbit_and_rep_under_inflation_symmetries(repr_mon)
+        other_keys.update({quick_key_1, quick_key_2, quick_key_3})
+        for key in other_keys:
+            self.canonsym_ndarray_from_hash_cache[key] = real_repr_mon
+        return real_repr_mon
+
+    def _monomial_from_list_of_atomic(self, list_of_AtomicMonomials: List[InternalAtomicMonomial]) -> CompoundMonomial:
+        list_of_atoms = []
+        for factor in list_of_AtomicMonomials:
+            if factor.is_zero:
+                list_of_atoms = [factor]
+                break
+            elif not factor.is_one:
+                list_of_atoms.append(factor)
+            else:
+                pass
+        tuple_of_atoms = tuple(sorted(list_of_atoms))
+        try:
+            mon = self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms]
+            return mon
+        except KeyError:
+            mon = CompoundMonomial(tuple_of_atoms)
+            self.compound_monomial_from_tuple_of_atoms_cache[tuple_of_atoms] = mon
+            self.compound_monomial_from_name_dict[mon.name] = mon
+            return mon
+
+    def _orbit_and_rep_under_inflation_symmetries(self, unsym_monarray: np.ndarray) -> Tuple[set, np.ndarray]:
+        """Note that we do NOT need to return the minimal representative according to LEXORDER.
+        We only need to return SOME canonically-chosen representative of the orbit."""
+        inflevels = unsym_monarray[:, 1:-2].max(axis=0)
+        nr_sources = inflevels.shape[0]
+        all_permutationsplus_per_source = [
+            increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(inflevel))))
+            for inflevel in inflevels.flat]
+        # Note that we are not applying only the symmetry generators, but all
+        # possible symmetries
+        thus_far_seen_hashes = set()
+        for perms_plus in itertools.product(*all_permutationsplus_per_source):
+            permuted = unsym_monarray.copy()
+            for source in range(nr_sources):
+                permuted = apply_source_permplus_monomial(
+                    monomial=permuted,
+                    source=source,
+                    permutation_plus=perms_plus[source])
+            # After having gone through all sources.
+            permuted = self._to_canonical_memoized(permuted, hasty=True)
+            new_hash = self._from_2dndarray(permuted)
+            thus_far_seen_hashes.add(new_hash)
+            try:
+                canonsym_ndarray = self.canonsym_ndarray_from_hash_cache[new_hash]
+                return (thus_far_seen_hashes, canonsym_ndarray)
+            except KeyError:
+                pass
+        # If we have never encountered any of the variants herein yet.
+        canonsym_ndarray = self._to_2dndarray(min(thus_far_seen_hashes))
+        return (thus_far_seen_hashes, canonsym_ndarray)
+
+    def _sanitise_monomial(self, mon: Any, ) -> Union[CompoundMonomial, int]:
+        """Bring a monomial into the form used internally.
+            NEW: InternalCompoundMonomial are only constructed if in representative form.
+            Therefore, if we encounter one, we are good!
+        """
+        if isinstance(mon, CompoundMonomial):
+            return mon
+        elif isinstance(mon, (sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul)):
+            symbol_to_string_list = flatten_symbolic_powers(mon)
+            if len(symbol_to_string_list) == 1:
+                try:
+                    return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
+                except KeyError:
+                    pass
+            array = np.concatenate([self._interpret_atomic_string(str(op)) for op in symbol_to_string_list])
+            return self._sanitise_monomial(array)
+        elif isinstance(mon, (tuple, list, np.ndarray)):
+            array = np.asarray(mon, dtype=self.np_dtype)
+            assert array.ndim == 2, "Cannot allow 1d or 3d arrays as monomial representations."
+            assert array.shape[-1] == self._nr_properties, "The input does not conform to the operator specification."
+            canon = self._to_canonical_memoized(array)
+            return self.Monomial(canon)  # Automatically adjusts for zero or identity.
+        elif isinstance(mon, str):
+            # If it is a string, I assume it is the name of one of the
+            # monomials in self.list_of_monomials
+            try:
+                return self.compound_monomial_from_name_dict[mon]
+            except KeyError:
+                return self._sanitise_monomial(self._interpret_compound_string(mon))
+        elif isinstance(mon, Real):  # If they are number type
+            if np.isclose(float(mon), 1):
+                return self.One
+            elif np.isclose(float(mon), 0):
+                return self.Zero
+            else:
+                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
+        else:
+            raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
+
+    ########################################################################
+    # ROUTINES RELATED TO NAME PARSING                                     #
+    ########################################################################
+    def _interpret_compound_string(self, compound_monomial_string: Union[str, sp.core.symbol.Expr, int]) -> np.ndarray:
+        if isinstance(compound_monomial_string, sp.core.symbol.Expr):
+            factors = [str(factor) for factor in flatten_symbolic_powers(compound_monomial_string)]
+        elif str(compound_monomial_string) == '1':
+            return self.identity_operator
+        else:
+            assert "^" not in compound_monomial_string, "Cannot interpret exponent expressions."
+            factors = compound_monomial_string.split("*")
+        return np.vstack(tuple(self._interpret_atomic_string(factor_string) for factor_string in factors))
+
+    def _interpret_atomic_string(self, factor_string) -> np.ndarray:
+        assert (factor_string[0] == "<" and factor_string[-1] == ">") or set(factor_string).isdisjoint(
+            set("| ")), "Cannot interpret string of this format."
+        if factor_string[0] == "<":
+            operators = factor_string[1:-1].split(" ")
+            return np.vstack(tuple(self._interpret_operator_string(op_string) for op_string in operators))
+        else:
+            return self._interpret_operator_string(factor_string)[np.newaxis]
+
+    def _interpret_operator_string(self, op_string) -> np.ndarray:
+        components = op_string.split("_")
+        assert len(components) == self._nr_properties, "Cannot interpret string of this format."
+        components[0] = self.names_to_ints_dict[components[0]]
+        return np.array([int(s) for s in components], dtype=self.np_dtype)
 
     ########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX              #
@@ -1404,7 +1287,7 @@ class InflationSDP(object):
                 for monomial_factors in itertools.product(*meas_ops):
                     mon = np.array([to_numbers(op, self.names)[0]
                                     for op in monomial_factors], dtype=self.np_dtype)
-                    canon = self.to_canonical_memoized(mon)
+                    canon = self._to_canonical_memoized(mon)
                     if not np.array_equal(canon, 0):
                         # If the block is [0, 0], and we have the monomial
                         # A**2 which simplifies to A, then A could be included
@@ -1487,7 +1370,7 @@ class InflationSDP(object):
                                    verbose=self.verbose,
                                    commuting=self.commuting,
                                    dtype=self.np_dtype)
-        idx_to_canonical_mon_dict = {idx: self.to_2dndarray(mon_as_bytes)
+        idx_to_canonical_mon_dict = {idx: self._to_2dndarray(mon_as_bytes)
                                      for (mon_as_bytes, idx) in
                                      canonical_mon_as_bytes_to_idx_dict.items()}
         del canonical_mon_as_bytes_to_idx_dict
@@ -1531,8 +1414,8 @@ class InflationSDP(object):
                         total_perm = np.empty(self.n_columns, dtype=int)
                         for i, mon in enumerate(self.generating_monomials):
                             new_mon = apply_source_permplus_monomial(mon, source, permutation_plus)
-                            new_mon = self.to_canonical_memoized(new_mon, hasty=True)
-                            total_perm[i] = self.genmon_hash_to_index[self.from_2dndarray(new_mon)]
+                            new_mon = self._to_canonical_memoized(new_mon, hasty=True)
+                            total_perm[i] = self.genmon_hash_to_index[self._from_2dndarray(new_mon)]
                         inflation_symmetries_from_this_source.append(total_perm)
                     except KeyError:
                         permutation_could_not_be_applied = True
@@ -1622,8 +1505,7 @@ class InflationSDP(object):
     ########################################################################
     # ROUTINES RELATED TO IMPLICIT EQUALITY CONSTRAINTS                    #
     ########################################################################
-
-    def _discover_column_level_equalities(self):
+    def _discover_column_equalities(self):
         """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
         An equality is a dictionary with keys being which column and values being coefficients."""
         column_level_equalities = []
@@ -1640,7 +1522,7 @@ class InflationSDP(object):
                         variant_operator[0, -1] = outcome
                         variant_monomial = np.vstack((prefix, variant_operator, suffix))
                         try:
-                            j = self.genmon_hash_to_index[self.from_2dndarray(variant_monomial)]
+                            j = self.genmon_hash_to_index[self._from_2dndarray(variant_monomial)]
                             variant_locations.append(j)
                         except KeyError:
                             break
@@ -1657,8 +1539,7 @@ class InflationSDP(object):
         return column_level_equalities
 
     @staticmethod
-    def construct_idx_level_equalities_from_column_level_equalities(column_level_equalities,
-                                                                    momentmatrix):
+    def _construct_normalization_eqs(column_level_equalities, momentmatrix):
         """Given a list of column level equalities (a list of dictionaries with integer keys)
         and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices."""
         idx_linear_equalities = []
@@ -1683,9 +1564,39 @@ class InflationSDP(object):
         del seen_already
         return idx_linear_equalities
 
+    def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
+        """Determines if an operator references the highest possible outcome of a given measurement."""
+        party = operator[0] - 1
+        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
+
     ########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                            #
     ########################################################################
+    def _cleanup_after_set_values(self):
+        if self.supports_problem:
+            # Convert positive known values into lower bounds.
+            nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
+            for mon in nonzero_known_monomials:
+                self._processed_moment_lowerbounds[mon] = 1.
+                del self.known_moments[mon]
+            self.semiknown_moments = dict()
+
+        # Create lowerbounds list for physical but unknown moments
+        self._update_lowerbounds()
+        self._update_upperbounds()
+        self._update_objective()
+        num_nontrivial_known = len(self.known_moments)
+        if self.momentmatrix_has_a_zero:
+            num_nontrivial_known -= 1
+        if self.momentmatrix_has_a_one:
+            num_nontrivial_known -= 1
+        if self.verbose > 1 and num_nontrivial_known > 0:
+            print("Number of variables with fixed numeric value:",
+                  len(self.known_moments))
+        num_semiknown = len(self.semiknown_moments)
+        if self.verbose > 1 and num_semiknown > 0:
+            print(f"Number of semiknown variables: {num_semiknown}")
+        return
 
     def _update_objective(self):
         """Process the objective with the information from known_moments
@@ -1729,35 +1640,17 @@ class InflationSDP(object):
             except KeyError:
                 pass
 
-    def _cleanup_after_set_values(self):
-        if self.supports_problem:
-            # Convert positive known values into lower bounds.
-            nonzero_known_monomials = [mon for mon, value in self.known_moments.items() if not np.isclose(value, 0)]
-            for mon in nonzero_known_monomials:
-                self._processed_moment_lowerbounds[mon] = 1.
-                del self.known_moments[mon]
-            self.semiknown_moments = dict()
-
-        # Create lowerbounds list for physical but unknown moments
-        self._update_lowerbounds()
-        self._update_upperbounds()
-        self._update_objective()
-        num_nontrivial_known = len(self.known_moments)
-        if self.momentmatrix_has_a_zero:
-            num_nontrivial_known -= 1
-        if self.momentmatrix_has_a_one:
-            num_nontrivial_known -= 1
-        if self.verbose > 1 and num_nontrivial_known > 0:
-            print("Number of variables with fixed numeric value:",
-                  len(self.known_moments))
-        num_semiknown = len(self.semiknown_moments)
-        if self.verbose > 1 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
-        return
-
     ########################################################################
     # OTHER ROUTINES                                                       #
     ########################################################################
+    def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
+        if not is_knowable(atomic_monarray):
+            return False
+        elif not self.not_network_model:
+            return True
+        else:
+            return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
+
     def _dump_to_file(self, filename):
         """
         Saves the whole object to a file using `pickle`.
@@ -1770,3 +1663,103 @@ class InflationSDP(object):
         import pickle
         with open(filename, "w") as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+
+    def _from_2dndarray(self, array2d: np.ndarray):
+        return np.asarray(array2d, dtype=self.np_dtype).tobytes()
+
+    def _prepare_solver_arguments(self):
+        if self.momentmatrix is None:
+            raise Exception("Relaxation is not generated yet. " +
+                            "Call 'InflationSDP.get_relaxation()' first")
+
+        assert set(self.known_moments.keys()).issubset(
+            self.list_of_monomials), f"Error: Assigning known values outside of moment matrix: {set(self.known_moments.keys()).difference(self.list_of_monomials)}"
+
+        default_return = {"mask_matrices": {mon.name: mon.mask_matrix for mon in self.list_of_monomials},
+                          "objective": {m.name: v for m, v in self._processed_objective.items()},
+                          "known_vars": {m.name: v for m, v in self.known_moments.items()},
+                          "semiknown_vars": {m.name: (v, m2.name) for m, (v, m2) in self.semiknown_moments.items()},
+                          "var_equalities": [{m.name: v for m, v in eq.items()} for eq in
+                                             self.moment_linear_equalities],
+                          "var_inequalities": [{m.name: v for m, v in ineq.items()} for ineq in
+                                               self.moment_linear_inequalities]
+                          }
+        # One handling path regardless of where self.One appears.
+        default_return["known_vars"][self.constant_term_name] = 1.
+        for m, v in self._processed_moment_lowerbounds.items():
+            temp_dict = {m.name: 1}
+            if not np.isclose(v, 0):
+                temp_dict[self.constant_term_name] = -v
+            default_return["var_inequalities"].append(temp_dict)
+        for m, v in self._processed_moment_upperbounds.items():
+            temp_dict = {m.name: -1}
+            if not np.isclose(v, 0):
+                temp_dict[self.constant_term_name] = v
+            default_return["var_inequalities"].append(temp_dict)
+        default_return["mask_matrices"][self.constant_term_name] = coo_matrix(
+            (self.n_columns, self.n_columns)).tocsr()
+        return default_return
+
+    def _reset_solution(self):
+        for attribute in {"primal_objective", "objective_value", "solution_object"}:
+            try:
+                delattr(self, attribute)
+            except AttributeError:
+                pass
+        self.status = "not yet solved"
+
+    def _set_upperbounds(self, upperbound_dict: Union[dict, None]) -> None:
+        """
+        Documentation needed.
+        """
+        self.reset_upperbounds()
+        if upperbound_dict is None:
+            return
+        sanitized_upperbound_dict = dict()
+        for mon, upperbound in upperbound_dict.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_upperbound_dict.keys():
+                sanitized_upperbound_dict[mon] = upperbound
+            else:
+                old_bound = sanitized_upperbound_dict[mon]
+                assert np.isclose(old_bound,
+                                  upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
+        self._processed_moment_upperbounds = sanitized_upperbound_dict
+        self._update_upperbounds()
+
+    def _set_lowerbounds(self, lowerbound_dict: Union[dict, None]) -> None:
+        """
+        Documentation needed.
+        """
+        self.reset_lowerbounds()
+        if lowerbound_dict is None:
+            return
+        sanitized_lowerbound_dict = dict()
+        for mon, lowerbound in lowerbound_dict.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_lowerbound_dict.keys():
+                sanitized_lowerbound_dict[mon] = lowerbound
+            else:
+                old_bound = sanitized_lowerbound_dict[mon]
+                assert np.isclose(old_bound,
+                                  lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
+        self._processed_moment_lowerbounds = sanitized_lowerbound_dict
+        self._update_lowerbounds()
+
+    def _to_2dndarray(self, bytestream):
+        array = np.frombuffer(bytestream, dtype=self.np_dtype)
+        return array.reshape((-1, self._nr_properties))
+
+    def _to_canonical_memoized(self, array2d: np.ndarray, hasty=False):
+        quick_key = self._from_2dndarray(array2d)
+        if quick_key in self.canon_ndarray_from_hash_cache:
+            return self.canon_ndarray_from_hash_cache[quick_key]
+        elif len(array2d) == 0 or np.array_equiv(array2d, 0):
+            self.canon_ndarray_from_hash_cache[quick_key] = array2d
+            return array2d
+        else:
+            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder, commuting=self.commuting, hasty=hasty)
+            new_quick_key = self._from_2dndarray(new_array2d)
+            self.canon_ndarray_from_hash_cache[quick_key] = new_array2d
+            self.canon_ndarray_from_hash_cache[new_quick_key] = new_array2d
+            return new_array2d

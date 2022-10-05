@@ -48,7 +48,7 @@ class TestMonomialGeneration(unittest.TestCase):
                    C_0_1_0_0*C_0_2_0_0]
     actual_cols_as_ndarrays = []
     for col in actual_cols:
-        actual_cols_as_ndarrays.append(bilocalSDP.interpret_compound_string(col))
+        actual_cols_as_ndarrays.append(bilocalSDP._interpret_compound_string(col))
 
     def test_generating_columns_c(self):
        truth = 37
@@ -233,7 +233,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_solveSDP_Mosek(self):
         "Test the MOSEK Fusion API interface independently of InflationSDP."
         from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
-        
+
         # Test only linear constraints, with no Matrix variables
         solveSDP_arguments = {"objective":  {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
                               "known_vars": {'1': 1},  # Define the variable that is the identity
@@ -247,7 +247,7 @@ class TestSDPOutput(unittest.TestCase):
         _, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2), "The solution is not correct.")  # Found with WolframAlpha
-    
+
         # Test only SDP. Max CHSH by bypassing InflationSDP and setting it by hand
         G = np.array([[1,  2,  3,  4,  5],
                       [2,  1,  6,  7,  8],
@@ -262,7 +262,7 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.abs(value_primal - 2*np.sqrt(2)) < 1e-5, "The solution is not 2√2")
         self.assertTrue(np.abs(optim_vars['x']['7'] - 1/np.sqrt(2)) < 1e-5, "The two body correlator is not 1/√2")
-        
+
         # Test SDP mixed with inequality constraints. Max CHSH while enforcing CHSH <= 2.23
         solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
                               "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
@@ -273,8 +273,8 @@ class TestSDPOutput(unittest.TestCase):
         optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
         self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
         self.assertTrue(np.abs(value_primal - 2.23) < 1e-5, "Max CHSH with CHSH <= 2.23 is not 2.23.")
- 
-        # Test SDP mixed with equality constraints plus new variables not 
+
+        # Test SDP mixed with equality constraints plus new variables not
         # in the moment matrix. Max CHSH while enforcing that the 2 body
         # correlators satisfy a local model calculated with Mathematica.
         import sympy as sp
@@ -282,7 +282,7 @@ class TestSDPOutput(unittest.TestCase):
         for i in range(4):
             for j in range(4):
                 q[i, j] = sp.Symbol(f'q{i}{j}')
-                
+
         A0B0 =  q[0,0] - q[0,1] + q[0,2] - q[0,3] - q[1,0] + q[1,1] - \
                 q[1,2] + q[1,3] + q[2,0] - q[2,1] + q[2,2] - q[2,3] - \
                 q[3,0] + q[3,1] - q[3,2] + q[3,3]
@@ -299,7 +299,7 @@ class TestSDPOutput(unittest.TestCase):
                               "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                               "known_vars": {'1': 1},
                               "var_inequalities": [*[{q[i, j]: 1} for i in range(4) for j in range(4)]  # Positivity
-                                                   ], 
+                                                   ],
                               "var_equalities": [{**{q[i, j]: 1 for i in range(4) for j in range(4)}, '1': -1},  # Normalisation
                                                  {**A0B0.as_coefficients_dict(), '7': -1},  # LHV
                                                  {**A0B1.as_coefficients_dict(), '8': -1},  # ...
