@@ -166,26 +166,6 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     return factors
 
 
-def to_symbol(monomial: np.ndarray, names: Tuple[str]) -> sympy.core.symbol.Symbol:
-    """Converts a monomial to a symbolic representation.
-    """
-    if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
-        return sympy.S.One
-
-    if type(monomial) == str:
-        monomial = to_numbers(monomial, names)
-    monomial = monomial.tolist()
-    symbols = []
-    for letter in monomial:
-        symbols.append(sympy.Symbol("_".join([names[letter[0] - 1]] +
-                                             [str(i) for i in letter[1:]]),
-                                    commutative=False))
-    prod = sympy.S.One
-    for s in symbols:
-        prod *= s
-    return prod
-
-
 def to_numbers(monomial: str,
                parties_names: Tuple[str]
                ) -> np.ndarray:
