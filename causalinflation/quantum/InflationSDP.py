@@ -26,7 +26,6 @@ from .fast_npa import (calculate_momentmatrix,
                        apply_source_permplus_monomial)
 from .general_tools import (to_repr_lower_copy_indices_with_swaps,
                             to_numbers,
-                            to_symbol,
                             flatten,
                             flatten_symbolic_powers,
                             phys_mon_1_party_of_given_len,
@@ -91,9 +90,10 @@ class InflationSDP(object):
         self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         if self.supports_problem:
-            self.outcome_cardinalities += 1
+            self.has_children = np.ones(self.nr_parties, dtype=int)
         else:
-            self.outcome_cardinalities += self.has_children
+            self.has_children = self.InflationProblem.has_children
+        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party + self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
         might_have_a_zero = np.any(self.outcome_cardinalities > 1)
@@ -429,15 +429,19 @@ class InflationSDP(object):
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type {type(mon)} and is not supported.")
 
-    def interpret_compound_string(self, compound_monomial_string) -> np.ndarray:
-        # TODO: Recognize also strings such as '<A_1_0_0_0 A_1_0_1_0>^2'
-        assert "^" not in compound_monomial_string, "Cannot interpret exponent expressions."
-        factors = compound_monomial_string.split("*")
+    def interpret_compound_string(self, compound_monomial_string: Union[str, sp.core.symbol.Expr, int]) -> np.ndarray:
+        if isinstance(compound_monomial_string, sp.core.symbol.Expr):
+            factors = [str(factor) for factor in flatten_symbolic_powers(compound_monomial_string)]
+        elif str(compound_monomial_string) == '1':
+            return self.identity_operator
+        else:
+            assert "^" not in compound_monomial_string, "Cannot interpret exponent expressions."
+            factors = compound_monomial_string.split("*")
         return np.vstack(tuple(self.interpret_atomic_string(factor_string) for factor_string in factors))
 
     def interpret_atomic_string(self, factor_string) -> np.ndarray:
-        # TODO: Recognize also strings such as 'pAB(00|11)'
-        assert (factor_string[0] == "<" and factor_string[-1] == ">") or set(factor_string).isdisjoint(set("| ")), "Cannot interpret string of this format."
+        assert (factor_string[0] == "<" and factor_string[-1] == ">") or set(factor_string).isdisjoint(
+            set("| ")), "Cannot interpret string of this format."
         if factor_string[0] == "<":
             operators = factor_string[1:-1].split(" ")
             return np.vstack(tuple(self.interpret_operator_string(op_string) for op_string in operators))
@@ -1154,8 +1158,7 @@ class InflationSDP(object):
     def build_columns(self,
                       column_specification: Union[str, List[List[int]],
                                                   List[sp.core.symbol.Symbol]],
-                      max_monomial_length: int = 0,
-                      return_columns_numerical: bool = False):
+                      max_monomial_length: int = 0):
         """Creates the objects indexing the columns of the moment matrix from
         a specification.
 
@@ -1170,9 +1173,6 @@ class InflationSDP(object):
             ABC\}`. If we set ``max_monomial_length=2``, the generating set is
             instead :math:`\{1, A, B, C, AB, AC, BC\}`. By default ``0`` (no
             limit).
-        return_columns_numerical : bool, optional
-            Whether to return the columns also in integer array form (like the
-            output of ``to_numbers``). By default ``False``.
         """
         columns = None
         if type(column_specification) == list:

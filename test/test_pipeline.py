@@ -6,7 +6,7 @@ import warnings
 
 
 class TestMonomialGeneration(unittest.TestCase):
-    bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
+    bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
     inflation  = [2, 2]
     bilocality = InflationProblem(dag=bilocalDAG,
                                   settings_per_party=[1, 1, 1],
@@ -46,11 +46,13 @@ class TestMonomialGeneration(unittest.TestCase):
                    B_2_1_0_0*C_0_1_0_0, B_2_1_0_0*C_0_2_0_0,
                    B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
                    C_0_1_0_0*C_0_2_0_0]
+    actual_cols_as_ndarrays = []
+    for col in actual_cols:
+        actual_cols_as_ndarrays.append(bilocalSDP.interpret_compound_string(col))
 
     def test_generating_columns_c(self):
        truth = 37
-       columns = self.bilocalSDP_commuting.build_columns(self.col_structure,
-                                                return_columns_numerical=False)
+       columns = self.bilocalSDP_commuting.build_columns(self.col_structure)
        self.assertEqual(len(columns), truth,
                         "With commuting variables, there are  " +
                         str(len(columns)) + " columns but " + str(truth) +
@@ -58,35 +60,36 @@ class TestMonomialGeneration(unittest.TestCase):
 
     def test_generating_columns_nc(self):
         truth = 41
-        columns = self.bilocalSDP.build_columns(self.col_structure,
-                                                return_columns_numerical=False)
+        columns = self.bilocalSDP.build_columns(self.col_structure)
         self.assertEqual(len(columns), truth,
                          "With noncommuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
                          " were expected.")
 
     def test_generation_from_columns(self):
-        columns = self.bilocalSDP.build_columns(self.actual_cols,
-                                                return_columns_numerical=False)
-        self.assertEqual(columns, self.actual_cols,
+        columns = self.bilocalSDP.build_columns(self.actual_cols)
+        areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, self.actual_cols_as_ndarrays))
+        self.assertTrue(areequal,
                          "The direct copying of columns is failing.")
 
     def test_generation_from_lol(self):
-        columns = self.bilocalSDP.build_columns(self.col_structure,
-                                                return_columns_numerical=False)
-        self.assertEqual(columns, self.actual_cols,
+        columns = self.bilocalSDP.build_columns(self.col_structure)
+        areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, self.actual_cols_as_ndarrays))
+        self.assertTrue(areequal,
                          "Parsing a list-of-list description of columns fails.")
 
     def test_generation_from_str(self):
-        columns = self.bilocalSDP.build_columns("npa2",
-                                                return_columns_numerical=False)
-        self.assertEqual(columns, self.actual_cols,
+        columns = self.bilocalSDP.build_columns("npa2")
+        areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, self.actual_cols_as_ndarrays))
+        self.assertTrue(areequal,
                         "Parsing the string description of columns is failing.")
 
     def test_generate_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
-        _, columns = oneParty.build_columns([[], [0, 0]],
-                                            return_columns_numerical=True)
+        columns = oneParty.build_columns([[], [0, 0]])
         truth   = [[],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
