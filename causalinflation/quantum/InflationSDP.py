@@ -129,7 +129,7 @@ class InflationSDP(object):
         # Define default lexicographic order through np.lexsort
         # The lexicographic order is encoded as a matrix with rows as
         # operators and the row index gives the order
-        lexorder = self.interpret_compound_string(flatten(self.measurements))
+        lexorder = self._interpret_compound_string(flatten(self.measurements))
         if might_have_a_zero:
             lexorder = np.concatenate((self.zero_operator, lexorder))
 
@@ -269,8 +269,8 @@ class InflationSDP(object):
                                              verbose=self.verbose)
         self.symidx_to_sym_monarray_dict = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray[unsymidx] for
                                             unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
-        _unsymidx_from_hash_dict = {self.from_2dndarray(v): k for (k, v) in
-                                    unsymidx_to_unsym_monarray.items() if self.all_commuting_q(v)}
+        _unsymidx_from_hash_dict = {self._from_2dndarray(v): k for (k, v) in
+                                    unsymidx_to_unsym_monarray.items() if all_commuting_test(v, self._lexorder, self._notcomm)}
         for (k, v) in _unsymidx_from_hash_dict.items():
             self.canonsym_ndarray_from_hash_cache[k] = \
                 self.symidx_to_sym_monarray_dict[self.orbits[v]]
@@ -784,7 +784,7 @@ class InflationSDP(object):
                         else:
                             columns.append(self.identity_operator)
                     elif type(col) in [sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
-                        columns.append(self.interpret_compound_string(col))
+                        columns.append(self._interpret_compound_string(col))
                     else:
                         raise Exception("The columns are not specified in a valid format.")
             else:
@@ -1210,6 +1210,8 @@ class InflationSDP(object):
             factors = [str(factor) for factor in flatten_symbolic_powers(compound_monomial_string)]
         elif str(compound_monomial_string) == '1':
             return self.identity_operator
+        elif isinstance(compound_monomial_string, tuple) or isinstance(compound_monomial_string, list):
+            factors = [str(factor) for factor in compound_monomial_string]
         else:
             assert "^" not in compound_monomial_string, "Cannot interpret exponent expressions."
             factors = compound_monomial_string.split("*")
@@ -1268,7 +1270,7 @@ class InflationSDP(object):
         for block in col_specs:
             if len(block) == 0:
                 res.append(self.identity_operator)
-                allvars.add(self.from_2dndarray(self.identity_operator))
+                allvars.add(self._from_2dndarray(self.identity_operator))
             else:
                 meas_ops = []
                 for party in block:
@@ -1283,7 +1285,7 @@ class InflationSDP(object):
                         # means all monomials of length 2 AFTER simplifications,
                         # so we omit monomials of length 1.
                         if canon.shape[0] == len(monomial_factors):
-                            quick_key = self.from_2dndarray(canon)
+                            quick_key = self._from_2dndarray(canon)
                             if quick_key not in allvars:
                                 allvars.add(quick_key)
                                 res.append(canon)
@@ -1514,7 +1516,7 @@ class InflationSDP(object):
                     if len(variant_locations) == true_cardinality:
                         missing_op_monomial = np.vstack((prefix, suffix))
                         try:
-                            missing_op_location = self.genmon_hash_to_index[self.from_2dndarray(missing_op_monomial)]
+                            missing_op_location = self.genmon_hash_to_index[self._from_2dndarray(missing_op_monomial)]
                             column_level_equalities.append((missing_op_location, tuple(variant_locations)))
                         except KeyError:
                             break
