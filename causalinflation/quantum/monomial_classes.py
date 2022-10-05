@@ -14,7 +14,6 @@ from .monomial_utils import (compute_marginal,
 @total_ordering
 class InternalAtomicMonomial(object):
     __slots__ = ["as_ndarray",
-                 "do_conditional",
                  "is_one",
                  "is_zero",
                  "is_knowable",
@@ -48,7 +47,6 @@ class InternalAtomicMonomial(object):
         self.is_all_commuting = all_commuting_test(self.as_ndarray,
                                                    self.sdp._lexorder,
                                                    self.sdp._notcomm)
-        self.do_conditional = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -136,14 +134,9 @@ class InternalAtomicMonomial(object):
             # We will probably never have more than 1 digit cardinalities, but who knows...
             i_divider = "" if all(len(i) == 1 for i in inputs) else ","
             o_divider = "" if all(len(o) == 1 for o in outputs) else ","
-            if self.do_conditional:
-                return ("p" + p_divider.join(parties) +
-                        "(" + o_divider.join(outputs) +
-                        " do: " + i_divider.join(inputs) + ")")
-            else:
-                return ("p" + p_divider.join(parties) +
-                        "(" + o_divider.join(outputs) +
-                        "|" + i_divider.join(inputs) + ")")
+            return ("p" + p_divider.join(parties) +
+                    "(" + o_divider.join(outputs) +
+                    "|" + i_divider.join(inputs) + ")")
         else:
             # Use expectation value notation
             operators = []
