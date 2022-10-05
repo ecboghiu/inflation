@@ -159,7 +159,7 @@ class InternalAtomicMonomial(object):
         """Return a sympy Symbol representing the monomial."""
         return symbol_from_atomic_name(self.name)
 
-    def compute_marginal(self, prob_array):
+    def compute_marginal(self, prob_array: np.ndarray):
         """Given a probability distribution, compute the value of the Monomial.
 
         Parameters

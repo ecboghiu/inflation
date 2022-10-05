@@ -41,7 +41,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   settings_per_party: Tuple[int],
                                   outputs_per_party: Tuple[int],
                                   names: Tuple[str],
-                                  lexorder
+                                  lexorder: np.ndarray
                                   ) -> List[np.ndarray]:
     """Generate all possible positive monomials given a scenario and a maximum
     length. Note that the maximum length cannot be greater than the minimum

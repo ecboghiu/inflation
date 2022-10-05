@@ -1187,7 +1187,7 @@ class InflationSDP(object):
                     columns = self._build_cols_from_specs(column_specification)
                 else:
                     raise Exception("The columns are not specified in a valid format.")
-            elif type(column_specification[0]) in [int, sp.Symbol,
+            elif type(column_specification[0]) in [int, sp.core.symbol.Symbol,
                                                    sp.core.power.Pow,
                                                    sp.core.mul.Mul,
                                                    sp.core.numbers.One]:
@@ -1199,7 +1199,7 @@ class InflationSDP(object):
                             raise Exception("The columns are not specified in a valid format.")
                         else:
                             columns += [self.identity_operator]
-                    elif type(col) in [sp.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
+                    elif type(col) in [sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
                         columns += [to_numbers(str(col), self.names)]
                     else:
                         raise Exception("The columns are not specified in a valid format.")
@@ -1234,13 +1234,9 @@ class InflationSDP(object):
                 else:
                     max_length = local_length
 
-                party_frequencies = []
-                for pfreq in itertools.product(
-                        *[range(local_level + 1)] * self.nr_parties
-                ):
-                    if sum(pfreq) <= max_length:
-                        party_frequencies.append(list(reversed(pfreq)))
-                party_frequencies = sorted(party_frequencies, key=sum)
+                party_frequencies = sorted((list(reversed(pfreq))
+                                            for pfreq in itertools.product(*[range(local_level + 1)] * self.nr_parties)
+                                            if sum(pfreq) <= max_length), key=sum)
 
                 col_specs = []
                 for pfreq in party_frequencies:
@@ -1273,13 +1269,10 @@ class InflationSDP(object):
                 if max_monomial_length > 0:
                     max_total_mon_length = max_monomial_length
 
-                party_frequencies = []
-                for pfreq in itertools.product(*[range(physmon_lens[party] + 1)
-                                                 for party in range(self.nr_parties)]
-                                               ):
-                    if sum(pfreq) <= max_total_mon_length:
-                        party_frequencies.append(list(reversed(pfreq)))
-                party_frequencies = sorted(party_frequencies, key=sum)
+                party_frequencies = sorted((list(reversed(pfreq))
+                                     for pfreq in itertools.product(*[range(physmon_lens[party] + 1)
+                                                                      for party in range(self.nr_parties)])
+                                     if sum(pfreq) <= max_total_mon_length), key=sum)
 
                 physical_monomials = []
                 for freqs in party_frequencies:
