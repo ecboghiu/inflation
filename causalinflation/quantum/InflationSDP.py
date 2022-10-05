@@ -629,24 +629,26 @@ class InflationSDP(object):
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
-
-        self.solution_object, lambdaval, self.status = \
-            solveSDP_MosekFUSION(**solveSDP_arguments)
-
-        # Process the solution
-        if self.status == "feasible":
-            self.primal_objective = lambdaval
-            self.objective_value = lambdaval * (1 if self.maximize else -1)
-        else:
-            self.primal_objective = "Could not find a value, as the optimization problem was found to be infeasible."
-            self.objective_value = self.primal_objective
-        gc.collect(generation=2)
         args = self._prepare_solver_arguments()
         args.update(solver_arguments)
         args.update({"feas_as_optim": feas_as_optim,
                      "verbose": self.verbose,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
+
+        self.solution_object = solveSDP_MosekFUSION(**args)
+        try:
+            self.status = self.solution_object["status"]
+            if self.status == "feasible":
+                self.primal_objective = self.solution_object["primal_value"]
+                self.objective_value  = self.solution_object["primal_value"]
+                self.objective_value *= (1 if self.maximize else -1)
+            else:
+                self.primal_objective = "Unavailable (infeasible problem)"
+                self.objective_value  = self.primal_objective
+            gc.collect(generation=2)
+        except KeyError:
+            pass
 
     ########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #

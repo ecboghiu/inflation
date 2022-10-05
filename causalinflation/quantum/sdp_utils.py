@@ -146,7 +146,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
         from time import perf_counter
         t0 = perf_counter()
         print('Starting pre-processing for the SDP solver.')
-    
+
     if mask_matrices is None:
         mask_matrices = {}
     if objective is None:
@@ -159,7 +159,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
         var_inequalities = []
     if var_equalities is None:
         var_equalities = []
-    
+
     Fi = mask_matrices
     if mask_matrices:
         Fi = {k: scipy.sparse.lil_matrix(v, dtype=float) for k, v in Fi.items()}
@@ -176,7 +176,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
 
     if feas_as_optim and mask_matrices:
         if verbose > 0:
-            print("Feasibility as optimisation detected: overwriting objective" + 
+            print("Feasibility as optimisation detected: overwriting objective" +
                     "to maximize the smallest eigenvalue of the matrix variable.")
         lam = 'lambda'
         while lam in variables:
@@ -204,9 +204,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
         ineq_vars = set(inequality)
         for x in ineq_vars.difference(known_vars):
             A[i, var2index[x]] = inequality[x]
-        b[i, 0] = float(sum([inequality[x] * known_vars[x] 
+        b[i, 0] = float(sum([inequality[x] * known_vars[x]
                        for x in ineq_vars.intersection(known_vars)]))
-              
+
     C = scipy.sparse.dok_matrix((len(var_equalities), len(variables)))
     d = scipy.sparse.dok_matrix((len(var_equalities), 1))
     for i, equality in enumerate(var_equalities):
@@ -285,7 +285,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                     CtI.append(Expr.dot(slice_moseksparse, E))
 
             # Define and set objective function
-            # c0 + Tr Z F0 + I·b + E·d 
+            # c0 + Tr Z F0 + I·b + E·d
             obj_mosek = 0.0
             if not feas_as_optim:
                 obj_mosek = float(c0)
@@ -332,9 +332,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
             #     ci_constraints.append(M.constraint('trZ=1',
             #                                     Expr.dot(Z, Matrix.eye(mat_dim)),
             #                                     Domain.equalsTo(1)))
-        else: 
+        else:
             # Set up the problem in primal formulation
-            
+
             # Define variables
             x_mosek = M.variable('x', len(variables), Domain.unbounded())
 
@@ -355,7 +355,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
 
             if mask_matrices:
                 G = M.variable("G", Domain.inPSDCone(mat_dim))
-                    
+
                 F0_mosek = Matrix.sparse(*F0.shape, *F0.nonzero(), F0[F0.nonzero()].A[0])
                 Fi_mosek = {x: Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].A[0])
                             for x, F in Fi.items()}
@@ -377,7 +377,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                     for j in range(i, mat_dim):
                         # G(i,j) - F0(i,j) - sum_i xi Fi(i,j) = 0
                         M.constraint(constraints[i, j], Domain.equalsTo(0))
-                        
+
                 del F0_mosek, Fi_mosek
 
             mosek_obj = c0
@@ -385,7 +385,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                 ci = float(objective[x])
                 mosek_obj = Expr.add(mosek_obj,
                                         Expr.mul(ci,
-                                                x_mosek.index(var2index[x])))                   
+                                                x_mosek.index(var2index[x])))
 
             M.objective(ObjectiveSense.Maximize, mosek_obj)
 
@@ -412,8 +412,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
             M.solve()
 
             if solve_dual:
-                x_values = {x: -ci_constraints[i].dual()[0] 
-                            for i, x in enumerate(variables)} 
+                x_values = {x: -ci_constraints[i].dual()[0]
+                            for i, x in enumerate(variables)}
                 if mask_matrices:
                     ymat = Z.level().reshape([mat_dim, mat_dim])
                     xmat = F0 + sum([x_values[x] * Fi[x]
@@ -423,7 +423,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                 if mask_matrices:
                     ymat = G.dual().reshape([mat_dim, mat_dim])
                     xmat = G.level().reshape([mat_dim, mat_dim])
-                
+
 
             status = M.getProblemStatus()
             if status == ProblemStatus.PrimalAndDualFeasible:
@@ -449,42 +449,42 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                     " has been obtained.")
         except OptimizeError as e:
             print("Optimization failed. Error: {0}".format(e))
-            return None, None, None
+            return None
         except SolutionError as e:
             status = M.getProblemStatus()
             print("Solution status: {}. Error: {0}".format(status, e))
-            return None, None, status
+            return {"status": status}
         except Exception as e:
             print("Unexpected error: {0}".format(e))
-            return None, None, None
+            return None
 
         if status_str in ['feasible', 'infeasible']:
             certificate = {x: 0 for x in known_vars}
-            
+
             # c0(P(a...|x...))
             if not feas_as_optim:
                 for x in set(objective).intersection(known_vars):
                     certificate[x] += objective[x]
-            
+
             # + Tr Z F0(P(a...|x...)) = \sum_i x_{known i}(P(a...|x...))*F_{known i}
             if mask_matrices:
                 for x in set(Fi).intersection(known_vars):
                     support = Fi[x].nonzero()
-                    certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])                  
+                    certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
 
             # + I · b
             if var_inequalities:
                 Ivalues = I.level() if solve_dual else -ineq_constraint.dual()
                 for i, inequality in enumerate(var_inequalities):
                     for x in set(inequality).intersection(known_vars):
-                        certificate[x] += Ivalues[i] * inequality[x]                        
-                        
+                        certificate[x] += Ivalues[i] * inequality[x]
+
             # + E · d
             if var_equalities:
                 Evalues = E.level() if solve_dual else -eq_constraint.dual()
                 for i, equality in enumerate(var_equalities):
                     for x in set(equality).intersection(known_vars):
-                        certificate[x] += Evalues[i] * equality[x]                       
+                        certificate[x] += Evalues[i] * equality[x]
 
             # Clean entires with coefficient zero
             for x in list(certificate.keys()):
@@ -513,11 +513,11 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                             in enumerate(zip(np.abs(x) > TOL, var_equalities))
                             if violated])
 
-            vars_of_interest = {'primal_value': primal, 'dual_value': dual,
-                                'F': xmat, 'Z': ymat,
-                                'dual_certificate': certificate,
-                                'x': x_values}
+            vars_of_interest = {"primal_value": primal, "dual_value": dual,
+                                "status": status_str, "F": xmat, "Z": ymat,
+                                "dual_certificate": certificate,
+                                "x": x_values}
 
-            return vars_of_interest, primal, status_str
+            return vars_of_interest
         else:
-            return None, None, status_str
+            return None
