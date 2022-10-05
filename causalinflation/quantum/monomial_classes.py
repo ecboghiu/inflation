@@ -212,7 +212,8 @@ class CompoundMonomial(object):
         self.n_factors     = len(self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
-        self.is_all_commuting  = all(factor.is_all_commuting for factor in self.factors)
+        self.is_all_commuting = all(factor.is_all_commuting
+                                    for factor in self.factors)
         knowable_factors   = []
         unknowable_factors = []
         for factor in self.factors:
@@ -322,29 +323,6 @@ class CompoundMonomial(object):
             value *= (factor.compute_marginal(prob_array) ** power)
         return value
 
-    def evaluate_given_valuation_of_knowable_part(self,
-                                                  valuation_of_knowable_part,
-                                                  use_lpi_constraints=True):
-        """DOCUMENTATION NEEDED."""
-        actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
-        known_value = float(np.prod(np.compress(
-            actually_known_factors,
-            valuation_of_knowable_part)))
-        unknown_factors = [factor for factor, known in
-                           zip(self.knowable_factors,
-                               actually_known_factors)
-                           if not known]
-        unknown_factors.extend(self.unknowable_factors)
-        unknown_len = len(unknown_factors)
-        if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
-            known_status = "Knowable"
-        elif unknown_len == self.n_factors or (not use_lpi_constraints):
-            known_status = "Unknowable"
-        else:
-            known_status = "Semi"
-        return known_value, unknown_factors, known_status
-
-
     def evaluate(self,
                  known_monomials: Dict[InternalAtomicMonomial, float],
                  use_lpi_constraints=True) -> Tuple[float, List, str]:
@@ -361,10 +339,10 @@ class CompoundMonomial(object):
         unknown_factors = list(unknown_counter.elements())
         if ((len(unknown_factors) == 0)
             or (np.isclose(known_value, 0) and use_lpi_constraints)):
-            known_status = "Knowable"
+            known_status = "Known"
         elif ((len(unknown_factors) == self.n_factors)
               or (not use_lpi_constraints)):
-            known_status = "Unknowable"
+            known_status = "Unknown"
         else:
             known_status = "Semi"
         return known_value, unknown_factors, known_status
