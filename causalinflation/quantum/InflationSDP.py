@@ -25,7 +25,6 @@ from .fast_npa import (calculate_momentmatrix,
                        all_commuting_test,
                        apply_source_permplus_monomial)
 from .general_tools import (to_repr_lower_copy_indices_with_swaps,
-                            to_numbers,
                             flatten,
                             flatten_symbolic_powers,
                             phys_mon_1_party_of_given_len,
@@ -130,9 +129,7 @@ class InflationSDP(object):
         # Define default lexicographic order through np.lexsort
         # The lexicographic order is encoded as a matrix with rows as
         # operators and the row index gives the order
-        lexorder = np.array([to_numbers(op, self.names)[0]
-                             for op in flatten(self.measurements)],
-                            dtype=self.np_dtype)
+        lexorder = self.interpret_compound_string(flatten(self.measurements))
         if might_have_a_zero:
             lexorder = np.concatenate((self.zero_operator, lexorder))
 
@@ -404,7 +401,7 @@ class InflationSDP(object):
                     return self.compound_monomial_from_name_dict[str(symbol_to_string_list[0])]
                 except KeyError:
                     pass
-            array = np.concatenate([self.interpret_atomic_string(str(op)) for op in symbol_to_string_list])
+            array = self.interpret_compound_string(symbol_to_string_list)
             return self._sanitise_monomial(array)
         elif isinstance(mon, (tuple, list, np.ndarray)):
             array = np.asarray(mon, dtype=self.np_dtype)
@@ -434,6 +431,8 @@ class InflationSDP(object):
             factors = [str(factor) for factor in flatten_symbolic_powers(compound_monomial_string)]
         elif str(compound_monomial_string) == '1':
             return self.identity_operator
+        elif isinstance(compound_monomial_string, tuple) or isinstance(compound_monomial_string, list):
+            factors = [str(factor) for factor in compound_monomial_string]
         else:
             assert "^" not in compound_monomial_string, "Cannot interpret exponent expressions."
             factors = compound_monomial_string.split("*")
@@ -1198,9 +1197,9 @@ class InflationSDP(object):
                         if not np.isclose(float(col), 1):
                             raise Exception("The columns are not specified in a valid format.")
                         else:
-                            columns += [self.identity_operator]
+                            columns.append(self.identity_operator)
                     elif type(col) in [sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
-                        columns += [to_numbers(str(col), self.names)]
+                        columns.append(self.interpret_compound_string(col))
                     else:
                         raise Exception("The columns are not specified in a valid format.")
             else:
@@ -1396,14 +1395,13 @@ class InflationSDP(object):
         for block in col_specs:
             if len(block) == 0:
                 res.append(self.identity_operator)
-                allvars.add("1")
+                allvars.add(self.from_2dndarray(self.identity_operator))
             else:
                 meas_ops = []
                 for party in block:
                     meas_ops.append(flatten(self.measurements[party]))
                 for monomial_factors in itertools.product(*meas_ops):
-                    mon = np.array([to_numbers(op, self.names)[0]
-                                    for op in monomial_factors], dtype=self.np_dtype)
+                    mon = self.interpret_compound_string(monomial_factors)
                     canon = self.to_canonical_memoized(mon)
                     if not np.array_equal(canon, 0):
                         # If the block is [0, 0], and we have the monomial
@@ -1412,13 +1410,10 @@ class InflationSDP(object):
                         # means all monomials of length 2 AFTER simplifications,
                         # so we omit monomials of length 1.
                         if canon.shape[0] == len(monomial_factors):
-                            name = to_name(canon, self.names)
-                            if name not in allvars:
-                                allvars.add(name)
-                                if name == "1":
-                                    res.append(self.identity_operator)
-                                else:
-                                    res.append(canon)
+                            quick_key = self.from_2dndarray(canon)
+                            if quick_key not in allvars:
+                                allvars.add(quick_key)
+                                res.append(canon)
 
         return res
 
