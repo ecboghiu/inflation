@@ -267,9 +267,7 @@ class InflationSDP(object):
         # Apply the inflation symmetries to the moment matrix
         self.momentmatrix, self.orbits, representative_unsym_idxs = \
             self._apply_inflation_symmetries(unsymmetrized_mm,
-                                             self.inflation_symmetries,
-                                             conserve_memory=False,
-                                             verbose=self.verbose)
+                                             self.inflation_symmetries)
         self.symmetrized_corresp = \
             {self.orbits[idx]: unsymmetrized_corresp[idx]
              for idx in representative_unsym_idxs.flat if idx >= 1}
@@ -1447,10 +1445,10 @@ class InflationSDP(object):
     @staticmethod
     def _apply_inflation_symmetries(momentmatrix: np.ndarray,
                                     inflation_symmetries: np.ndarray,
-                                    conserve_memory=False,
-                                    verbose=0
-                                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                    ) -> Tuple[np.ndarray, Union[dict, np.ndarray], np.ndarray]:
         """Applies the inflation symmetries to the moment matrix.
+        Note: This function does not require all permutation group elements as the inflation_symmetries input;
+        rather, providing generators of the group is sufficient.
 
         Parameters
         ----------
@@ -1460,57 +1458,51 @@ class InflationSDP(object):
             The generators of the inflation symmetries, acting on the columns and row of the moment matrix.
 
 
-        It stores in `self.measurements` a list of lists of measurement
-        operators indexed as self.measurements[p][c][i][o] for party p,
-        copies c, input i, output o.
+        Returns a symmetrized version of the moment matrix, with lower indices,
+        as well as a map from unsymmetrized indices to their symmetrized counterparts,
+        and an array of unique representative former (unsymmetrized) indices
         """
-
+        max_value = momentmatrix.max(initial=0)
         if not len(inflation_symmetries):
-            default_array = np.arange(momentmatrix.max(initial=0) + 1)
+            default_array = np.arange(max_value + 1)
             return momentmatrix, default_array, default_array
         else:
-            unique_values, where_it_matters_flat = np.unique(momentmatrix.flat, return_index=True)
-            (relevant_rows, relevant_cols) = np.unravel_index(where_it_matters_flat, momentmatrix.shape)
-            absent_indices = np.arange(np.min(unique_values))
-            symmetric_arr = momentmatrix.copy()
-
-            for permutation in tqdm(inflation_symmetries,
-                                    disable=not verbose,
-                                    desc="Applying symmetries      "):
-                if not np.array_equal(permutation, np.arange(len(momentmatrix))):
-                    if conserve_memory:
-                        for i, ip in zip(relevant_rows.flat, permutation[relevant_rows].flat):
-                            for j, jp in zip(relevant_cols.flat, permutation[relevant_cols].flat):
-                                symmetric_arr[ip, jp] = np.minimum(symmetric_arr[i, j], symmetric_arr[ip, jp])
-                    else:
-                        symmetric_arr.flat[where_it_matters_flat] = np.minimum(
-                            symmetric_arr.flat[where_it_matters_flat],
-                            symmetric_arr[(permutation[relevant_rows], permutation[relevant_cols])])
-            orbits = np.concatenate((absent_indices, symmetric_arr.ravel()[where_it_matters_flat]))
-            # Make the orbits go until the representative
-            for key, val in enumerate(orbits):
-                previous = 0
-                changed = True
-                while changed:
-                    try:
-                        val = orbits[val]
-                        if val == previous:
-                            changed = False
-                        else:
-                            previous = val
-                    except KeyError:
-                        warn("Your generating set might not have enough" +
-                             "elements to fully impose inflation symmetries.")
-                orbits[key] = val
-
-            old_representative_indices, new_indices, unsym_idx_to_sym_idx = np.unique(orbits,
-                                                                                      return_index=True,
-                                                                                      return_inverse=True)
-            assert np.array_equal(old_representative_indices, new_indices
-                                  ), "Something unexpected happened when calculating orbits."
-
-            symmetric_arr = unsym_idx_to_sym_idx.take(momentmatrix)
-            return symmetric_arr, unsym_idx_to_sym_idx, old_representative_indices
+            old_representative_values, where_it_matters_flat, how_to_put_it_back = np.unique(momentmatrix.ravel(),
+                                                                                             return_index=True,
+                                                                                             return_inverse=True)
+            how_to_put_it_back = how_to_put_it_back.reshape(momentmatrix.shape)
+            prev_unique_count = np.inf
+            new_unique_count = old_representative_values.shape[0]
+            new_values = np.arange(new_unique_count)
+            inversion_tracker = new_values.copy()
+            representative_values = old_representative_values.copy()
+            # We repeat minimizing under the group until the unique values become invariant.
+            while prev_unique_count > new_unique_count:
+                for permutation in inflation_symmetries:
+                    if prev_unique_count > new_unique_count:
+                        (relevant_rows, relevant_cols) = np.unravel_index(where_it_matters_flat, momentmatrix.shape)
+                    prev_unique_count = new_unique_count
+                    assert np.array_equal(new_values, how_to_put_it_back[(relevant_rows, relevant_cols)])
+                    np.minimum(
+                        new_values,
+                        how_to_put_it_back[(permutation[relevant_rows], permutation[relevant_cols])], out=new_values)
+                    unique_values, unique_values_indices, unique_values_inverse = np.unique(new_values,
+                                                                                            return_index=True,
+                                                                                            return_inverse=True)
+                    new_unique_count = unique_values.shape[0]
+                    if prev_unique_count > new_unique_count:
+                        how_to_put_it_back = unique_values_inverse[how_to_put_it_back]
+                        where_it_matters_flat = where_it_matters_flat[unique_values_indices]
+                        representative_values = representative_values[unique_values_indices]
+                        inversion_tracker = unique_values_inverse[inversion_tracker]
+                        del unique_values_indices, unique_values_inverse
+                        new_values = np.arange(new_unique_count)
+            prior_min_value = old_representative_values.min()
+            if old_representative_values.min() != 0:
+                new_values += prior_min_value
+            orbits = dict(zip(old_representative_values, new_values[inversion_tracker]))
+            sym_array = new_values[how_to_put_it_back]
+            return sym_array, orbits, representative_values
 
     ########################################################################
     # ROUTINES RELATED TO IMPLICIT EQUALITY CONSTRAINTS                    #
