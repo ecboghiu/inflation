@@ -115,7 +115,7 @@ class InflationSDP(object):
             print()
         self.maximize = True  # Direction of the optimization
         self.use_lpi_constraints = False
-        self.not_network_model = self.InflationProblem.non_network_scenario
+        self.network_scenario    = self.InflationProblem.is_network
         self._is_knowable_q_non_networks = \
             self.InflationProblem._is_knowable_q_non_networks
         self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
@@ -253,14 +253,14 @@ class InflationSDP(object):
             print("Number of columns in the moment matrix:", self.n_columns)
 
         # Calculate the moment matrix without the inflation symmetries
-        unsymmetrized_mm, unsymidx_to_unsym_monarray = self._build_momentmatrix()
+        unsymmetrized_mm, unsymmetrized_corresp = self._build_momentmatrix()
         symmetrization_required = np.any(self.inflation_levels - 1)
         if self.verbose > 1:
             extra_msg = (" before symmetrization" if symmetrization_required
                          else "")
             additional_var = (1 if 0 in unsymmetrized_mm.flat else 0)
             print("Number of variables" + extra_msg + ":",
-                  len(unsymidx_to_unsym_monarray) + additional_var)
+                  len(unsymmetrized_corresp) + additional_var)
 
         # Calculate the inflation symmetries
         self.inflation_symmetries = self._discover_inflation_symmetries()
@@ -271,31 +271,31 @@ class InflationSDP(object):
                                              self.inflation_symmetries,
                                              conserve_memory=False,
                                              verbose=self.verbose)
-        self.symidx_to_sym_monarray = {self.orbits[unsymidx]: unsymidx_to_unsym_monarray[unsymidx] for
-                                            unsymidx in representative_unsym_idxs.flat if unsymidx >= 1}
-        _unsymidx_from_hash_dict = {self._from_2dndarray(v): k for (k, v) in
-                                    unsymidx_to_unsym_monarray.items()
-                                    if all_commuting_test(v,
-                                                          self._lexorder,
-                                                          self._notcomm)}
-        for (k, v) in _unsymidx_from_hash_dict.items():
-            self.canonsym_ndarray_from_hash[k] = \
-                self.symidx_to_sym_monarray[self.orbits[v]]
-        del _unsymidx_from_hash_dict
-        del unsymmetrized_mm, unsymidx_to_unsym_monarray
-        # This is a good time to reclaim memory, as unsymmetrized_mm can be GBs.
+        self.symmetrized_corresp = \
+            {self.orbits[idx]: unsymmetrized_corresp[idx]
+             for idx in representative_unsym_idxs.flat if idx >= 1}
+        unsymidx_from_hash = {self._from_2dndarray(mon): idx for (idx, mon) in
+                              unsymmetrized_corresp.items()
+                              if all_commuting_test(mon,
+                                                    self._lexorder,
+                                                    self._notcomm)}
+        for (hash, idx) in unsymidx_from_hash.items():
+            self.canonsym_ndarray_from_hash[hash] = \
+                self.symmetrized_corresp[self.orbits[idx]]
+        del unsymidx_from_hash, unsymmetrized_mm, unsymmetrized_corresp
+        # This is a good time to reclaim memory, as unsymmetrized_mm can be GBs
         gc.collect(generation=2)
 
         (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = \
             np.in1d([0, 1], self.momentmatrix.ravel())
 
-        self.compound_monomial_from_idx = dict()
         # Associate Monomials to the remaining entries. The zero monomial is not
         # stored during calculate_momentmatrix, so we have to add it manually
+        self.compound_monomial_from_idx = dict()
         if self.momentmatrix_has_a_zero:
             self.compound_monomial_from_idx[0] = self.Zero
-        for (k, v) in self.symidx_to_sym_monarray.items():
-            self.compound_monomial_from_idx[k] = self.Monomial(v, idx=k)
+        for (idx, mon) in self.symmetrized_corresp.items():
+            self.compound_monomial_from_idx[idx] = self.Monomial(mon, idx)
 
         self.monomials = list(self.compound_monomial_from_idx.values())
         assert all(v == 1 for v in Counter(self.monomials).values()), \
@@ -343,12 +343,12 @@ class InflationSDP(object):
         # variables, so there exist normalization constraints between them
         self.column_level_equalities = self._discover_column_equalities()
         if suppress_implicit_equalities:
-            self.moment_linear_equalities = []
+            self.moment_equalities = []
         else:
             self.idx_level_equalities = self._construct_normalization_eqs(
                 column_level_equalities=self.column_level_equalities,
                 momentmatrix=self.momentmatrix)
-            self.moment_linear_equalities = [{self.compound_monomial_from_idx[i]: v for i, v in eq.items()}
+            self.moment_equalities = [{self.compound_monomial_from_idx[idx]: coeff for idx, coeff in eq.items()}
                                              for eq in self.idx_level_equalities]
 
         self.moment_inequalities = []
@@ -1374,18 +1374,18 @@ class InflationSDP(object):
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
         """Generate the moment matrix.
         """
-        problem_arr, canonical_mon_as_bytes_to_idx_dict = \
+        problem_arr, canonical_mon_as_bytes_to_idx = \
             calculate_momentmatrix(self.generating_monomials,
                                    self._notcomm,
                                    self._lexorder,
                                    verbose=self.verbose,
                                    commuting=self.commuting,
                                    dtype=self.np_dtype)
-        idx_to_canonical_mon_dict = {idx: self._to_2dndarray(mon_as_bytes)
-                                     for (mon_as_bytes, idx) in
-                                     canonical_mon_as_bytes_to_idx_dict.items()}
-        del canonical_mon_as_bytes_to_idx_dict
-        return problem_arr, idx_to_canonical_mon_dict
+        idx_to_canonical_mon = {idx: self._to_2dndarray(mon_as_bytes)
+                                for (mon_as_bytes, idx) in
+                                canonical_mon_as_bytes_to_idx.items()}
+        del canonical_mon_as_bytes_to_idx
+        return problem_arr, idx_to_canonical_mon
 
     def _discover_inflation_symmetries(self, generators_only=True) -> np.ndarray:
         """Calculates all the symmetries and applies them to the set of
@@ -1518,7 +1518,8 @@ class InflationSDP(object):
     ########################################################################
     def _discover_column_equalities(self):
         """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
-        An equality is a dictionary with keys being which column and values being coefficients."""
+        An equality is a dictionary with keys being which column and values being coefficients.
+        BETTER DOCUMENTATION NEEDED"""
         column_level_equalities = []
         for i, monomial in enumerate(self.generating_monomials):
             for k, operator in enumerate(monomial):
@@ -1529,54 +1530,63 @@ class InflationSDP(object):
                     variant_locations = [i]
                     true_cardinality = self.outcome_cardinalities[operator[0] - 1] - 1
                     for outcome in range(true_cardinality - 1):
-                        variant_operator = operator_as_2d.copy()
+                        variant_operator        = operator_2d.copy()
                         variant_operator[0, -1] = outcome
-                        variant_monomial = np.vstack((prefix, variant_operator, suffix))
+                        variant_mon             = np.vstack((prefix,
+                                                             variant_operator,
+                                                             suffix))
                         try:
-                            j = self.genmon_hash_to_index[self._from_2dndarray(variant_monomial)]
-                            variant_locations.append(j)
+                            j = self.genmon_hash_to_index[
+                                self._from_2dndarray(variant_mon)]
+                            positions.append(j)
                         except KeyError:
                             break
-                    if len(variant_locations) == true_cardinality:
-                        missing_op_monomial = np.vstack((prefix, suffix))
+                    if len(positions) == true_cardinality:
+                        normalization_mon = np.vstack((prefix, suffix))
                         try:
-                            missing_op_location = self.genmon_hash_to_index[self._from_2dndarray(missing_op_monomial)]
-                            column_level_equalities.append((missing_op_location, tuple(variant_locations)))
+                            j = self.genmon_hash_to_index[
+                                self._from_2dndarray(normalization_mon)]
+                            column_level_equalities.append((j,
+                                                            tuple(positions)))
                         except KeyError:
                             break
-        num_of_column_level_equalities = len(column_level_equalities)
-        if self.verbose > 1 and num_of_column_level_equalities:
-            print("Number of column level equalities:", num_of_column_level_equalities)
+        if self.verbose > 1 and len(column_level_equalities):
+            print("Number of column level equalities:",
+                  len(column_level_equalities))
         return column_level_equalities
 
     @staticmethod
     def _construct_normalization_eqs(column_level_equalities, momentmatrix):
         """Given a list of column level equalities (a list of dictionaries with integer keys)
-        and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices."""
-        idx_linear_equalities = []
+        and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices.
+        BETTER DOCUMENTATION NEEDED"""
+        equalities = []
         seen_already = set()
-        for column_level_equality in column_level_equalities:
+        for equality in column_level_equalities:
             for i, row in enumerate(iter(momentmatrix)):
-                (normalization_col, summation_cols) = column_level_equality
-                norm_idx = row[normalization_col]
+                (normalization_col, summation_cols) = equality
+                norm_idx       = row[normalization_col]
                 summation_idxs = row.take(summation_cols)
                 summation_idxs.sort()
-                nontriv_summation_idxs = tuple(summation_idxs[np.flatnonzero(summation_idxs)].tolist())
-                if not ((len(nontriv_summation_idxs) == 1 and np.array_equiv(norm_idx, nontriv_summation_idxs)) or
-                        (len(nontriv_summation_idxs) == 0 and norm_idx == 0)):
-                    signature = (norm_idx, nontriv_summation_idxs)
+                summation_idxs = summation_idxs[np.flatnonzero(summation_idxs)]
+                summation_idxs = tuple(summation_idxs.tolist())
+                if not ((len(summation_idxs) == 1
+                         and np.array_equiv(norm_idx, summation_idxs))
+                        or (len(summation_idxs) == 0 and norm_idx == 0)):
+                    signature = (norm_idx, summation_idxs)
                     if signature not in seen_already:
                         seen_already.add(signature)
-                        temp_dict = {norm_idx: 1}
-                        for idx in nontriv_summation_idxs:
-                            temp_dict[idx] = -1
-                        idx_linear_equalities.append(temp_dict)
-                        del signature, temp_dict
+                        eq = {**{norm_idx: 1},
+                              **{idx: -1 for idx in summation_idxs}}
+                        equalities.append(eq)
+                        del signature, eq
         del seen_already
-        return idx_linear_equalities
+        return equalities
 
     def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
-        """Determines if an operator references the highest possible outcome of a given measurement."""
+        """Determines if an operator references the highest possible outcome of a given measurement.
+        BETTER DOCUMENTATION NEEDED
+        """
         party = operator[0] - 1
         return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
 
@@ -1584,6 +1594,7 @@ class InflationSDP(object):
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                            #
     ########################################################################
     def _cleanup_after_set_values(self):
+        """DOCUMENTATION NEEDED"""
         if self.supports_problem:
             # Convert positive known values into lower bounds.
             nonzero_known_monomials = [mon for
@@ -1666,7 +1677,7 @@ class InflationSDP(object):
     def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         if not is_knowable(atomic_monarray):
             return False
-        elif not self.not_network_model:
+        elif self.network_scenario:
             return True
         else:
             return self._is_knowable_q_non_networks(np.take(atomic_monarray, [0, -2, -1], axis=1))
@@ -1685,6 +1696,9 @@ class InflationSDP(object):
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
     def _from_2dndarray(self, array2d: np.ndarray):
+        """Obtains the bytes representation of an array. The library uses this
+        representation as hashes for the corresponding monomials.
+        """
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
     def _prepare_solver_arguments(self):
@@ -1695,21 +1709,20 @@ class InflationSDP(object):
         assert set(self.known_moments.keys()).issubset(self.monomials),\
             ("Error: Tried to assign known values outside of moment matrix: " +
              str(set(self.known_moments.keys()
-                          "objective": {mon.name: coeff for mon, coeff
-                                        in self._processed_objective.items()},
-                          "known_vars": {mon.name: val for mon, val
-                                         in self.known_moments.items()},
-                          "semiknown_vars": {mon.name: (coeff, subs.name)
-                                             for mon, (coeff, subs)
-                                             in self.semiknown_moments.items()},
-                          "var_equalities": [{mon.name: coeff
-                                              for mon, coeff in eq.items()}
-                                             for eq in
-                                             self.moment_linear_equalities],
                      ).difference(self.monomials)))
 
         solverargs = {"mask_matrices": {mon.name: mon.mask_matrix
                                         for mon in self.monomials},
+                      "objective": {mon.name: coeff for mon, coeff
+                                    in self._processed_objective.items()},
+                      "known_vars": {mon.name: val for mon, val
+                                     in self.known_moments.items()},
+                      "semiknown_vars": {mon.name: (coeff, subs.name)
+                                         for mon, (coeff, subs)
+                                         in self.semiknown_moments.items()},
+                      "var_equalities": [{mon.name: coeff
+                                          for mon, coeff in eq.items()}
+                                         for eq in self.moment_equalities],
                       "inequalities": [{mon.name: coeff
                                         for mon, coeff in ineq.items()}
                                        for ineq in self.moment_inequalities]
@@ -1731,12 +1744,14 @@ class InflationSDP(object):
         return solverargs
 
     def _reset_solution(self):
-        for attribute in {"primal_objective", "objective_value", "solution_object"}:
+        for attribute in {"primal_objective",
+                          "objective_value",
+                          "solution_object"}:
             try:
                 delattr(self, attribute)
             except AttributeError:
                 pass
-        self.status = "not yet solved"
+        self.status = "Not yet solved"
 
     def _set_upperbounds(self, upperbound_dict: Union[dict, None]) -> None:
         """
@@ -1753,7 +1768,9 @@ class InflationSDP(object):
             else:
                 old_bound = sanitized_upperbound_dict[mon]
                 assert np.isclose(old_bound,
-                                  upperbound), f"Contradiction: Cannot set the same monomial {mon} to have different upper bounds."
+                                  upperbound), \
+                    (f"Contradiction: Cannot set the same monomial {mon} to " +
+                     "have different upper bounds.")
         self._processed_moment_upperbounds = sanitized_upperbound_dict
         self._update_upperbounds()
 
@@ -1772,15 +1789,30 @@ class InflationSDP(object):
             else:
                 old_bound = sanitized_lowerbound_dict[mon]
                 assert np.isclose(old_bound,
-                                  lowerbound), f"Contradiction: Cannot set the same monomial {mon} to have different lower bounds."
+                                  lowerbound), \
+                    (f"Contradiction: Cannot set the same monomial {mon} to " +
+                     "have different lower bounds.")
         self._processed_moment_lowerbounds = sanitized_lowerbound_dict
         self._update_lowerbounds()
 
-    def _to_2dndarray(self, bytestream):
+    def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:
+        """Create a monomial array from its corresponding stream of bytes.
+
+        Parameters
+        ----------
+        bytestream : bytes
+            The stream of bytes encoding the monomial.
+
+        Returns
+        -------
+        numpy.ndarray
+            The corresponding monomial in array form.
+        """
         array = np.frombuffer(bytestream, dtype=self.np_dtype)
         return array.reshape((-1, self._nr_properties))
 
     def _to_canonical_memoized(self, array2d: np.ndarray, hasty=False):
+        """DOCUMENTATION NEEDED"""
         quick_key = self._from_2dndarray(array2d)
         if quick_key in self.canon_ndarray_from_hash:
             return self.canon_ndarray_from_hash[quick_key]
@@ -1788,8 +1820,9 @@ class InflationSDP(object):
             self.canon_ndarray_from_hash[quick_key] = array2d
             return array2d
         else:
-            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder, commuting=self.commuting, hasty=hasty)
+            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
+                                       self.commuting, hasty)
             new_quick_key = self._from_2dndarray(new_array2d)
-            self.canon_ndarray_from_hash[quick_key] = new_array2d
+            self.canon_ndarray_from_hash[quick_key]     = new_array2d
             self.canon_ndarray_from_hash[new_quick_key] = new_array2d
             return new_array2d

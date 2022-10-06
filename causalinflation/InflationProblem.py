@@ -124,8 +124,7 @@ class InflationProblem(object):
         # Unpacking of visible nodes with children
         nodes_with_children = list(self.dag.keys())
         self.has_children   = np.zeros(self.nr_parties, dtype=int)
-        self.non_network_scenario = (not
-                                set(nodes_with_children).isdisjoint(self.names))
+        self.is_network     = set(nodes_with_children).isdisjoint(self.names)
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties),
