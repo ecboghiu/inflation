@@ -297,12 +297,12 @@ class InflationSDP(object):
         for (k, v) in self.symidx_to_sym_monarray.items():
             self.compound_monomial_from_idx[k] = self.Monomial(v, idx=k)
 
-        self.list_of_monomials = list(self.compound_monomial_from_idx.values())
-        assert all(v == 1 for v in Counter(self.list_of_monomials).values()), \
+        self.monomials = list(self.compound_monomial_from_idx.values())
+        assert all(v == 1 for v in Counter(self.monomials).values()), \
             "Multiple indices are being associated to the same monomial"
         knowable_atoms = set()
-        for m in self.list_of_monomials:
-            knowable_atoms.update(m.knowable_factors)
+        for mon in self.monomials:
+            knowable_atoms.update(mon.knowable_factors)
         self.knowable_atoms = [self._monomial_from_atoms([atom])
                                for atom in knowable_atoms]
         del knowable_atoms
@@ -310,17 +310,14 @@ class InflationSDP(object):
         if self.verbose > 0:
             extra_msg = (" after symmetrization" if symmetrization_required
                          else "")
-            print(f"Number of variables{extra_msg}:",
-                  len(self.list_of_monomials))
+            print(f"Number of variables{extra_msg}: {len(self.monomials)}")
 
         # Get mask matrices associated with each monomial
-        for mon in self.list_of_monomials:
+        for mon in self.monomials:
             mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
-        self.maskmatrices   = {mon: mon.mask_matrix
-                               for mon in self.list_of_monomials}
+        self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
 
-        _counter = Counter([mon.knowability_status
-                            for mon in self.list_of_monomials])
+        _counter = Counter([mon.knowability_status for mon in self.monomials])
         self.n_knowable           = _counter["Knowable"]
         self.n_something_knowable = _counter["Semi"]
         self.n_unknowable         = _counter["Unknowable"]
@@ -330,17 +327,16 @@ class InflationSDP(object):
                   f"and {self.n_unknowable} monomials.")
 
         if self.commuting:
-            self.physical_monomials = self.list_of_monomials
+            self.physical_monomials = self.monomials
         else:
-            self.physical_monomials = [mon for mon in self.list_of_monomials
+            self.physical_monomials = [mon for mon in self.monomials
                                        if mon.is_physical]
             if self.verbose > 1:
                 print(f"The problem has {len(self.physical_monomials)} " +
                       "non-negative monomials.")
 
         # This dictionary useful for certificates_as_probs
-        self.names_to_symbols = {mon.name: mon.symbol
-                                 for mon in self.list_of_monomials}
+        self.names_to_symbols = {mon.name: mon.symbol for mon in self.monomials}
         self.names_to_symbols[self.constant_term_name] = sp.S.One
 
         # In non-network scenarios we do not use Collins-Gisin notation for some
@@ -355,7 +351,7 @@ class InflationSDP(object):
             self.moment_linear_equalities = [{self.compound_monomial_from_idx[i]: v for i, v in eq.items()}
                                              for eq in self.idx_level_equalities]
 
-        self.moment_linear_inequalities = []
+        self.moment_inequalities = []
         self.moment_upperbounds = dict()
         self.moment_lowerbounds = {m: 0. for m in self.physical_monomials}
 
@@ -461,7 +457,7 @@ class InflationSDP(object):
                         objective_dict.get(mon, 0) + (sign * coeff)
             self.objective = objective_dict
             if self.verbose > 0:
-                surprising_objective_terms = {mon for mon in self.objective.keys() if mon not in self.list_of_monomials}
+                surprising_objective_terms = {mon for mon in self.objective.keys() if mon not in self.monomials}
                 if len(surprising_objective_terms) >= 1:
                     warn("When interpreting the objective we have encountered at least one monomial that does not appear in " +
                          f"the original moment matrix:\n\t{surprising_objective_terms}")
@@ -541,23 +537,23 @@ class InflationSDP(object):
                 {atom.dagger: val for atom, val in atomic_known_moments.items()}
                                         )
             monomials_not_present = set(self.known_moments.keys()
-                                        ).difference(self.list_of_monomials)
+                                        ).difference(self.monomials)
             for mon in monomials_not_present:
                 del self.known_moments[mon]
 
             # Get the remaining monomials that need assignment
             if all(atom.is_knowable for atom in atomic_known_moments):
                 if not self.use_lpi_constraints:
-                    remaining_mons = (mon for mon in self.list_of_monomials
+                    remaining_mons = (mon for mon in self.monomials
                                       if ((not mon.is_atomic)
                                           and mon.is_knowable))
                 else:
-                    remaining_mons = (mon for mon in self.list_of_monomials
+                    remaining_mons = (mon for mon in self.monomials
                                       if ((not mon.is_atomic)
                                           and mon.knowability_status
                                           in ["Knowable", "Semi"]))
             else:
-                remaining_mons = (mon for mon in self.list_of_monomials
+                remaining_mons = (mon for mon in self.monomials
                                   if not mon.is_atomic)
             surprising_semiknowns = set()
             for mon in remaining_mons:
@@ -573,7 +569,7 @@ class InflationSDP(object):
                                 self._monomial_from_atoms(unknown_factors)
                             self.semiknown_moments[mon] = (value, unknown_mon)
                             if self.verbose > 0:
-                                if unknown_mon not in self.list_of_monomials:
+                                if unknown_mon not in self.monomials:
                                     surprising_semiknowns.add(unknown_mon)
                     else:
                         pass
@@ -1215,7 +1211,7 @@ class InflationSDP(object):
             return self.Monomial(canon)  # Automatically adjusts for zero or identity.
         elif isinstance(mon, str):
             # If it is a string, I assume it is the name of one of the
-            # monomials in self.list_of_monomials
+            # monomials in self.monomials
             try:
                 return self.monomial_from_name[mon]
             except KeyError:
@@ -1696,12 +1692,9 @@ class InflationSDP(object):
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
 
-        assert set(self.known_moments.keys()).issubset(self.list_of_monomials),\
+        assert set(self.known_moments.keys()).issubset(self.monomials),\
             ("Error: Tried to assign known values outside of moment matrix: " +
              str(set(self.known_moments.keys()
-                     ).difference(self.list_of_monomials)))
-
-                                            for mon in self.list_of_monomials},
                           "objective": {mon.name: coeff for mon, coeff
                                         in self._processed_objective.items()},
                           "known_vars": {mon.name: val for mon, val
@@ -1713,7 +1706,10 @@ class InflationSDP(object):
                                               for mon, coeff in eq.items()}
                                              for eq in
                                              self.moment_linear_equalities],
+                     ).difference(self.monomials)))
+
         solverargs = {"mask_matrices": {mon.name: mon.mask_matrix
+                                        for mon in self.monomials},
                       "inequalities": [{mon.name: coeff
                                         for mon, coeff in ineq.items()}
                                        for ineq in self.moment_inequalities]
