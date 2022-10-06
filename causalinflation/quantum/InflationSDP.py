@@ -162,8 +162,7 @@ class InflationSDP(object):
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = "npa1",
-                            suppress_implicit_equalities=False
+                                  List[sp.core.symbol.Symbol]] = "npa1"
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -341,11 +340,11 @@ class InflationSDP(object):
 
         # In non-network scenarios we do not use Collins-Gisin notation for some
         # variables, so there exist normalization constraints between them
-        self.column_level_equalities = self._discover_column_equalities()
-        if suppress_implicit_equalities:
+        if self.network_scenario:
             self.moment_equalities = []
         else:
-            self.idx_level_equalities = self._construct_normalization_eqs(
+            self.column_level_equalities = self._discover_column_equalities()
+            self.idx_level_equalities    = self._construct_normalization_eqs(
                 column_level_equalities=self.column_level_equalities,
                 momentmatrix=self.momentmatrix)
             self.moment_equalities = [{self.compound_monomial_from_idx[idx]: coeff for idx, coeff in eq.items()}
