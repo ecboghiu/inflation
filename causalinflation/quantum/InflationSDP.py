@@ -1701,7 +1701,6 @@ class InflationSDP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.list_of_monomials)))
 
-        default_return = {"mask_matrices": {mon.name: mon.mask_matrix
                                             for mon in self.list_of_monomials},
                           "objective": {mon.name: coeff for mon, coeff
                                         in self._processed_objective.items()},
@@ -1714,26 +1713,26 @@ class InflationSDP(object):
                                               for mon, coeff in eq.items()}
                                              for eq in
                                              self.moment_linear_equalities],
-                          "var_inequalities": [{mon.name: coeff
-                                                for mon, coeff in ineq.items()}
-                                               for ineq in
-                                               self.moment_linear_inequalities]
-                          }
+        solverargs = {"mask_matrices": {mon.name: mon.mask_matrix
+                      "inequalities": [{mon.name: coeff
+                                        for mon, coeff in ineq.items()}
+                                       for ineq in self.moment_inequalities]
+                      }
         # One handling path regardless of where self.One appears.
-        default_return["known_vars"][self.constant_term_name] = 1.
+        solverargs["known_vars"][self.constant_term_name] = 1.
         for mon, bnd in self._processed_moment_lowerbounds.items():
-            temp_dict = {mon.name: 1}
+            lb_dict = {mon.name: 1}
             if not np.isclose(bnd, 0):
-                temp_dict[self.constant_term_name] = -bnd
-            default_return["var_inequalities"].append(temp_dict)
+                lb_dict[self.constant_term_name] = -bnd
+            solverargs["inequalities"].append(lb_dict)
         for mon, bnd in self._processed_moment_upperbounds.items():
-            temp_dict = {mon.name: -1}
+            ub_dict = {mon.name: -1}
             if not np.isclose(bnd, 0):
-                temp_dict[self.constant_term_name] = bnd
-            default_return["var_inequalities"].append(temp_dict)
-        default_return["mask_matrices"][self.constant_term_name] = coo_matrix(
+                ub_dict[self.constant_term_name] = bnd
+            solverargs["inequalities"].append(ub_dict)
+        solverargs["mask_matrices"][self.constant_term_name] = coo_matrix(
             (self.n_columns, self.n_columns)).tocsr()
-        return default_return
+        return solverargs
 
     def _reset_solution(self):
         for attribute in {"primal_objective", "objective_value", "solution_object"}:

@@ -9,10 +9,10 @@ class TestMosek(unittest.TestCase):
         # Test only linear constraints, with no Matrix variables
         solveSDP_arguments = {"objective":  {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
                               "known_vars": {'1': 1},  # Define the variable that is the identity
-                              "var_inequalities":  [{'x': -1, '1': 2},    # 2 - x >= 0
-                                                    {'y': -1, '1': 5},    # 5 - y >= 0
-                                                    {'z': -1, '1': 1/2},  # 1/2 - z >= 0
-                                                    {'w': 1,  '1': 1}],   # w >= -1
+                              "inequalities":  [{'x': -1, '1': 2},    # 2 - x >= 0
+                                                {'y': -1, '1': 5},    # 5 - y >= 0
+                                                {'z': -1, '1': 1/2},  # 1/2 - z >= 0
+                                                {'w': 1,  '1': 1}],   # w >= -1
                               "var_equalities": [{'x': 1/2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
         }
         primal_sol   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
@@ -43,7 +43,7 @@ class TestMosek(unittest.TestCase):
         solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
                               "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                               "known_vars": {'1': 1},
-                              "var_inequalities": [{'1': 2.23, '7': -1, '8': -1, '9': -1, '10': 1}]  # CHSH <= 2.23
+                              "inequalities": [{'1': 2.23, '7': -1, '8': -1, '9': -1, '10': 1}]  # CHSH <= 2.23
                             }
         primal_sol   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
         dual_sol     = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
@@ -76,7 +76,7 @@ class TestMosek(unittest.TestCase):
         solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
                               "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                               "known_vars": {'1': 1},
-                              "var_inequalities": [*[{q[i, j]: 1} for i in range(4) for j in range(4)]  # Positivity
+                              "inequalities": [*[{q[i, j]: 1} for i in range(4) for j in range(4)]  # Positivity
                                                    ],
                               "var_equalities": [{**{q[i, j]: 1 for i in range(4) for j in range(4)}, '1': -1},  # Normalisation
                                                  {**A0B0.as_coefficients_dict(), '7': -1},  # LHV

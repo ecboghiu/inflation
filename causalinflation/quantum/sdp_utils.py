@@ -11,7 +11,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                          objective: Dict=None,
                          known_vars: Dict=None,
                          semiknown_vars: Dict=None,
-                         var_inequalities: List[Dict]=None,
+                         inequalities: List[Dict]=None,
                          var_equalities: List[Dict]=None,
                          solve_dual: bool=True,
                          feas_as_optim: bool=False,
@@ -103,7 +103,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
     semiknown_vars : dict, optional
         Dictionary encoding proportionality constraints between
         different monomials.
-    var_inequalities : list, optional
+    inequalities : list, optional
         List of inequalities encoded as dictionaries of coefficients.
     var_equalities : list, optional
         List of equalities encoded as dictionaries of coefficients.
@@ -155,8 +155,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
         known_vars = {}
     if semiknown_vars is None:
         semiknown_vars = {}
-    if var_inequalities is None:
-        var_inequalities = []
+    if inequalities is None:
+        inequalities = []
     if var_equalities is None:
         var_equalities = []
 
@@ -170,7 +170,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
     variables.update(objective.keys())
     for eq in var_equalities:
         variables.update(eq.keys())
-    for ineq in var_inequalities:
+    for ineq in inequalities:
         variables.update(ineq.keys())
     variables.difference_update(known_vars.keys())
 
@@ -198,9 +198,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
-    A = scipy.sparse.dok_matrix((len(var_inequalities), len(variables)))
-    b = scipy.sparse.dok_matrix((len(var_inequalities), 1))
-    for i, inequality in enumerate(var_inequalities):
+    A = scipy.sparse.dok_matrix((len(inequalities), len(variables)))
+    b = scipy.sparse.dok_matrix((len(inequalities), 1))
+    for i, inequality in enumerate(inequalities):
         ineq_vars = set(inequality)
         for x in ineq_vars.difference(known_vars):
             A[i, var2index[x]] = inequality[x]
@@ -232,7 +232,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
             for equality in var_equalities:
                 if x in equality:
                     equality[x2] = equality.get(x2, 0) + c * equality[x]
-            for inequality in var_inequalities:
+            for inequality in inequalities:
                 if x in inequality:
                     inequality[x2] = inequality.get(x2, 0) + c * inequality[x]
     else:
@@ -261,8 +261,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
             # Define variables
             if mask_matrices:
                 Z = M.variable('Z', Domain.inPSDCone(mat_dim))
-            if var_inequalities:
-                I = M.variable('I', len(var_inequalities), Domain.greaterThan(0))
+            if inequalities:
+                I = M.variable('I', len(inequalities), Domain.greaterThan(0))
                 # It seems MOSEK Fusion API does not allow to pick index i
                 # of an expression (A^T I)_i, so this does it manually row by row.
                 A = A.tocsr()
@@ -293,7 +293,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                 F0_mosek = Matrix.sparse(*F0.shape, *F0.nonzero(), F0[F0.nonzero()].A[0])
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(Z, F0_mosek))
                 del F0_mosek
-            if var_inequalities:
+            if inequalities:
                 b_mosek = Matrix.sparse(*b.shape, *b.nonzero(), b[b.nonzero()].A[0])
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(I, b_mosek))
                 del b_mosek
@@ -317,7 +317,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                     F = Matrix.sparse(*F.shape, *F.nonzero(), F[F.nonzero()].A[0])
                     lhs = Expr.add(lhs, Expr.dot(Z, F))
                     del F
-                if var_inequalities:
+                if inequalities:
                     lhs = Expr.add(lhs, AtI[i])
                     AtI[i] = None
                 if var_equalities:
@@ -338,7 +338,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
             # Define variables
             x_mosek = M.variable('x', len(variables), Domain.unbounded())
 
-            if var_inequalities:
+            if inequalities:
                 b_mosek = Matrix.sparse(*b.shape, *b.nonzero(), b[b.nonzero()].A[0])
                 A_mosek = Matrix.sparse(*A.shape, *A.nonzero(), A[A.nonzero()].A[0])
                 ineq_constraint = M.constraint('Ineq', Expr.add(Expr.mul(A_mosek, x_mosek),
@@ -473,9 +473,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                     certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
 
             # + I · b
-            if var_inequalities:
+            if inequalities:
                 Ivalues = I.level() if solve_dual else -ineq_constraint.dual()
-                for i, inequality in enumerate(var_inequalities):
+                for i, inequality in enumerate(inequalities):
                     for x in set(inequality).intersection(known_vars):
                         certificate[x] += Ivalues[i] * inequality[x]
 
@@ -494,14 +494,14 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
             # For debugging purposes
             if status_str == 'feasible' and verbose > 1:
                 TOL = 1e-8  # Constraint tolerance
-                if var_inequalities:
+                if inequalities:
                     x = A.todense().A @ np.array(list(x_values.values())) + b.T.A[0]
                     if np.any(x < -TOL):
                         print("Warning: Inequality constraints not satisfied to " +
                             f"{TOL} precision.")
                         print(f"Inequality constraints and their deviation from 0:")
                         print([(ineq, x[i]) for i, (violated, ineq)
-                            in enumerate(zip(x < -TOL, var_inequalities))
+                            in enumerate(zip(x < -TOL, inequalities))
                             if violated])
                 if var_equalities:
                     x = C.todense().A @ np.array(list(x_values.values())) + d.T.A[0]
