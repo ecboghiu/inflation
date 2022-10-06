@@ -171,7 +171,7 @@ class TestSDPOutput(unittest.TestCase):
                                 order=('A', 'B', 'C', 'D'))
         sdp = InflationSDP(prob)
         sdp.generate_relaxation('npa2')
-        equalities = sdp.moment_linear_equalities
+        equalities = sdp.moment_equalities
 
         self.assertEqual(len(equalities), 738,
                         "Failing to obtain the correct number of implicit equalities in a non-network scenario.")
