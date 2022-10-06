@@ -1526,10 +1526,10 @@ class InflationSDP(object):
                     operator_as_2d = np.expand_dims(operator, axis=0)
                     prefix = monomial[:k]
                     suffix = monomial[(k + 1):]
-                    variant_locations = [i]
+                    positions = [i]
                     true_cardinality = self.outcome_cardinalities[operator[0] - 1] - 1
                     for outcome in range(true_cardinality - 1):
-                        variant_operator        = operator_2d.copy()
+                        variant_operator        = operator_as_2d.copy()
                         variant_operator[0, -1] = outcome
                         variant_mon             = np.vstack((prefix,
                                                              variant_operator,
