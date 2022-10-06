@@ -313,7 +313,7 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong.")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.list_of_monomials[8]],
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
                         (0.5+1e-2)/2 + (0.5-1e-2)/8),
                         "Setting the distribution is failing.")
         sdp.solve()
@@ -324,7 +324,7 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.list_of_monomials[8]],
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
                          (0.5-1e-2)/2 + (0.5+1e-2)/8),
                          "Re-setting the distribution is failing.")
         sdp.solve()
