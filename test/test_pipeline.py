@@ -28,35 +28,30 @@ class TestMonomialGeneration(unittest.TestCase):
     B_2_2_0_0 = meas[1][3][0][0]
     C_0_1_0_0 = meas[2][0][0][0]
     C_0_2_0_0 = meas[2][1][0][0]
-    actual_cols = [1, A_1_0_0_0, A_2_0_0_0, B_1_1_0_0, B_1_2_0_0, B_2_1_0_0,
-                   B_2_2_0_0, C_0_1_0_0, C_0_2_0_0, A_1_0_0_0*A_2_0_0_0,
-                   A_1_0_0_0*B_1_1_0_0, A_1_0_0_0*B_1_2_0_0,
-                   A_1_0_0_0*B_2_1_0_0, A_1_0_0_0*B_2_2_0_0,
-                   A_2_0_0_0*B_1_1_0_0, A_2_0_0_0*B_1_2_0_0,
-                   A_2_0_0_0*B_2_1_0_0, A_2_0_0_0*B_2_2_0_0,
-                   A_1_0_0_0*C_0_1_0_0, A_1_0_0_0*C_0_2_0_0,
-                   A_2_0_0_0*C_0_1_0_0, A_2_0_0_0*C_0_2_0_0,
-                   B_1_1_0_0*B_1_2_0_0, B_1_1_0_0*B_2_1_0_0,
-                   B_1_1_0_0*B_2_2_0_0, B_1_2_0_0*B_1_1_0_0,
-                   B_1_2_0_0*B_2_1_0_0, B_1_2_0_0*B_2_2_0_0,
-                   B_2_1_0_0*B_1_1_0_0, B_2_1_0_0*B_2_2_0_0,
-                   B_2_2_0_0*B_1_2_0_0, B_2_2_0_0*B_2_1_0_0,
-                   B_1_1_0_0*C_0_1_0_0, B_1_1_0_0*C_0_2_0_0,
-                   B_1_2_0_0*C_0_1_0_0, B_1_2_0_0*C_0_2_0_0,
-                   B_2_1_0_0*C_0_1_0_0, B_2_1_0_0*C_0_2_0_0,
-                   B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
-                   C_0_1_0_0*C_0_2_0_0]
-    actual_cols_as_ndarrays = []
-    for col in actual_cols:
-        actual_cols_as_ndarrays.append(bilocalSDP._interpret_compound_string(col))
+    cols = [1, A_1_0_0_0, A_2_0_0_0, B_1_1_0_0, B_1_2_0_0, B_2_1_0_0,
+            B_2_2_0_0, C_0_1_0_0, C_0_2_0_0, A_1_0_0_0*A_2_0_0_0,
+            A_1_0_0_0*B_1_1_0_0, A_1_0_0_0*B_1_2_0_0, A_1_0_0_0*B_2_1_0_0,
+            A_1_0_0_0*B_2_2_0_0, A_2_0_0_0*B_1_1_0_0, A_2_0_0_0*B_1_2_0_0,
+            A_2_0_0_0*B_2_1_0_0, A_2_0_0_0*B_2_2_0_0, A_1_0_0_0*C_0_1_0_0,
+            A_1_0_0_0*C_0_2_0_0, A_2_0_0_0*C_0_1_0_0, A_2_0_0_0*C_0_2_0_0,
+            B_1_1_0_0*B_1_2_0_0, B_1_1_0_0*B_2_1_0_0, B_1_1_0_0*B_2_2_0_0,
+            B_1_2_0_0*B_1_1_0_0, B_1_2_0_0*B_2_1_0_0, B_1_2_0_0*B_2_2_0_0,
+            B_2_1_0_0*B_1_1_0_0, B_2_1_0_0*B_2_2_0_0, B_2_2_0_0*B_1_2_0_0,
+            B_2_2_0_0*B_2_1_0_0, B_1_1_0_0*C_0_1_0_0, B_1_1_0_0*C_0_2_0_0,
+            B_1_2_0_0*C_0_1_0_0, B_1_2_0_0*C_0_2_0_0, B_2_1_0_0*C_0_1_0_0,
+            B_2_1_0_0*C_0_2_0_0, B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
+            C_0_1_0_0*C_0_2_0_0]
+    actual_cols = []
+    for col in cols:
+        actual_cols.append(bilocalSDP._interpret_compound_string(col))
 
     def test_generating_columns_c(self):
-       truth = 37
-       columns = self.bilocalSDP_commuting.build_columns(self.col_structure)
-       self.assertEqual(len(columns), truth,
-                        "With commuting variables, there are  " +
-                        str(len(columns)) + " columns but " + str(truth) +
-                        " were expected.")
+        truth = 37
+        columns = self.bilocalSDP_commuting.build_columns(self.col_structure)
+        self.assertEqual(len(columns), truth,
+                         "With commuting variables, there are  " +
+                         str(len(columns)) + " columns but " + str(truth) +
+                         " were expected.")
 
     def test_generating_columns_nc(self):
         truth = 41
@@ -69,23 +64,72 @@ class TestMonomialGeneration(unittest.TestCase):
     def test_generation_from_columns(self):
         columns = self.bilocalSDP.build_columns(self.actual_cols)
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
-                       for r in zip(columns, self.actual_cols_as_ndarrays))
-        self.assertTrue(areequal,
-                         "The direct copying of columns is failing.")
+                       for r in zip(columns, self.actual_cols))
+        self.assertTrue(areequal, "The direct copying of columns is failing.")
 
     def test_generation_from_lol(self):
         columns = self.bilocalSDP.build_columns(self.col_structure)
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
-                       for r in zip(columns, self.actual_cols_as_ndarrays))
+                       for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal,
-                         "Parsing a list-of-list description of columns fails.")
+                        "Parsing a list-of-list description of columns fails.")
 
     def test_generation_from_str(self):
         columns = self.bilocalSDP.build_columns("npa2")
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
-                       for r in zip(columns, self.actual_cols_as_ndarrays))
+                       for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal,
-                        "Parsing the string description of columns is failing.")
+                        "Parsing NPA levels with string description fails.")
+        columns = self.bilocalSDP.build_columns("local2",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in self.actual_cols))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing local levels with string description fails.")
+        columns = self.bilocalSDP.build_columns("local221",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in self.actual_cols[:-1]))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing local levels with individual string " +
+                        "descriptions fails.")
+        columns = self.bilocalSDP.build_columns("physical2",
+                                                max_monomial_length=2)
+        physical = (self.actual_cols[:22] + [self.actual_cols[24]]
+                    + [self.actual_cols[26]] + self.actual_cols[32:])
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in physical))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing physical levels with global string " +
+                        "description fails.")
+        columns = self.bilocalSDP.build_columns("physical",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in physical))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing physical levels without further " +
+                        "description fails.")
+        columns = self.bilocalSDP.build_columns("physical121",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in (self.actual_cols[:9]
+                                       + self.actual_cols[10:22]
+                                       + [self.actual_cols[24]]
+                                       + [self.actual_cols[26]]
+                                       + self.actual_cols[32:-1])))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing physical levels with individual string " +
+                        "descriptions fails.")
 
     def test_generate_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
