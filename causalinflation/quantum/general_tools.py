@@ -264,6 +264,33 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     return new_monomial
 
 
+def construct_normalization_eqs(column_level_equalities, momentmatrix):
+    """Given a list of column level equalities (a list of dictionaries with integer keys)
+    and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices.
+    BETTER DOCUMENTATION NEEDED"""
+    equalities = []
+    seen_already = set()
+    for equality in column_level_equalities:
+        for i, row in enumerate(iter(momentmatrix)):
+            (normalization_col, summation_cols) = equality
+            norm_idx       = row[normalization_col]
+            summation_idxs = row.take(summation_cols)
+            summation_idxs.sort()
+            summation_idxs = summation_idxs[np.flatnonzero(summation_idxs)]
+            summation_idxs = tuple(summation_idxs.tolist())
+            if not ((len(summation_idxs) == 1
+                     and np.array_equiv(norm_idx, summation_idxs))
+                    or (len(summation_idxs) == 0 and norm_idx == 0)):
+                signature = (norm_idx, summation_idxs)
+                if signature not in seen_already:
+                    seen_already.add(signature)
+                    eq = {**{norm_idx: 1},
+                          **{idx: -1 for idx in summation_idxs}}
+                    equalities.append(eq)
+                    del signature, eq
+    del seen_already
+    return equalities
+
 ################################################################################
 # REPRESENTATIONS AND CONVERSIONS                                              #
 ################################################################################
