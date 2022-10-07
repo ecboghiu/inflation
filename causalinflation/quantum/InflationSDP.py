@@ -829,82 +829,71 @@ class InflationSDP(object):
                             col_specs += [a.tolist()]
                 columns = self._build_cols_from_specs(col_specs)
 
-            elif "local" in column_specification.lower():
-                local_level = int(column_specification[5:])
-                local_length = local_level * self.nr_parties
+            elif (("local" in column_specification.lower())
+                  or ("physical" in column_specification.lower())):
+                lengths_init = (5 if "local" in column_specification.lower()
+                                else 8)
+                spec    = column_specification[:lengths_init]
+                lengths = column_specification[lengths_init:]
+                if len(lengths) == 0:
+                    if spec == "local":
+                        raise Exception("Please specify a concrete local level")
+                    else:
+                        lengths = [min(self.inflation_levels[party])
+                                   for party in self.hypergraph.T]
+                elif len(lengths) == self.nr_parties:
+                    lengths = [int(level) for level in lengths]
+                else:
+                    lengths = [int(lengths)] * self.nr_parties
+                max_length = sum(lengths)
                 # Determine maximum length
                 if ((max_monomial_length > 0)
-                        and (max_monomial_length < local_length)):
+                        and (max_monomial_length < max_length)):
                     max_length = max_monomial_length
+
+                party_freqs = sorted((list(pfreq)
+                                      for pfreq in itertools.product(
+                                       *[range(level + 1) for level in lengths]
+                                                                     )
+                                      if sum(pfreq) <= max_length),
+                                     key=lambda x: (sum(x), [-p for p in x]))
+                if spec == "local":
+                    col_specs = []
+                    for pfreq in party_freqs:
+                        operators = []
+                        for party in range(self.nr_parties):
+                            operators += [party] * pfreq[party]
+                        col_specs += [operators]
+                    columns = self._build_cols_from_specs(col_specs)
                 else:
-                    max_length = local_length
+                    physical_monomials = []
+                    for freqs in party_freqs:
+                        if freqs == [0] * self.nr_parties:
+                            physical_monomials.append(self.identity_operator)
+                        else:
+                            physmons_per_party = []
+                            for party, freq in enumerate(freqs):
+                                # E.g., if freq = [1, 2, 0], then
+                                # physmons_per_party_per_length will be a list
+                                # of lists of physical monomials of lengths
+                                # 1, 2 and 0
+                                if freq > 0:
+                                    physmons = phys_mon_1_party_of_given_len(
+                                        self.hypergraph,
+                                        self.inflation_levels,
+                                        party, freq,
+                                        self.setting_cardinalities,
+                                        self.outcome_cardinalities,
+                                        self.names,
+                                        self._lexorder)
+                                    physmons_per_party.append(physmons)
 
-                party_frequencies = sorted((list(reversed(pfreq))
-                                            for pfreq in itertools.product(*[range(local_level + 1)] * self.nr_parties)
-                                            if sum(pfreq) <= max_length), key=sum)
-
-                col_specs = []
-                for pfreq in party_frequencies:
-                    lst = []
-                    for party in range(self.nr_parties):
-                        lst += [party] * pfreq[party]
-                    col_specs += [lst]
-                columns = self._build_cols_from_specs(col_specs)
-
-            elif "physical" in column_specification.lower():
-                try:
-                    inf_level = int(column_specification[8])
-                    length = len(column_specification[8:])
-                    message = ("Physical monomial generating set party number" +
-                               "specification must have length equal to 1 or " +
-                               "number of parties. E.g.: For 3 parties, " +
-                               "'physical322'.")
-                    assert (length == self.nr_parties) or (length == 1), message
-                    if length == 1:
-                        physmon_lens = [inf_level] * self.nr_sources
-                    else:
-                        physmon_lens = [int(inf_level)
-                                        for inf_level in column_specification[8:]]
-                    max_total_mon_length = sum(physmon_lens)
-                except:
-                    # If no numbers come after, we use all physical operators
-                    physmon_lens = self.inflation_levels
-                    max_total_mon_length = sum(physmon_lens)
-
-                if max_monomial_length > 0:
-                    max_total_mon_length = max_monomial_length
-
-                party_frequencies = sorted((list(reversed(pfreq))
-                                     for pfreq in itertools.product(*[range(physmon_lens[party] + 1)
-                                                                      for party in range(self.nr_parties)])
-                                     if sum(pfreq) <= max_total_mon_length), key=sum)
-
-                physical_monomials = []
-                for freqs in party_frequencies:
-                    if freqs == [0] * self.nr_parties:
-                        physical_monomials.append(self.identity_operator)
-                    else:
-                        physmons_per_party_per_length = []
-                        for party, freq in enumerate(freqs):
-                            # E.g., if freq = [1, 2, 0], then
-                            # physmons_per_party_per_length will be a list of
-                            # lists of physical monomials of length 1, 2 and 0
-                            if freq > 0:
-                                physmons = phys_mon_1_party_of_given_len(
-                                    self.hypergraph,
-                                    self.inflation_levels,
-                                    party, freq,
-                                    self.setting_cardinalities,
-                                    self.outcome_cardinalities,
-                                    self.names,
-                                    self._lexorder)
-                                physmons_per_party_per_length.append(physmons)
-
-                        for mon_tuple in itertools.product(
-                                *physmons_per_party_per_length):
-                            physical_monomials.append(
-                                self._to_canonical_memoized(np.concatenate(mon_tuple)))
-                columns = physical_monomials
+                            for mon_tuple in itertools.product(
+                                    *physmons_per_party):
+                                physical_monomials.append(
+                                    self._to_canonical_memoized(
+                                        np.concatenate(mon_tuple)))
+                    columns = physical_monomials
             else:
                 raise Exception("I have not understood the format of the "
                                 + "column specification")
