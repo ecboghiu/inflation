@@ -265,6 +265,8 @@ class InflationSDP(object):
         self.inflation_symmetries = self._discover_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix
+        if self.verbose > 0:
+            print("Applying inflation symmetries")
         self.momentmatrix, self.orbits, representative_unsym_idxs = \
             self._apply_inflation_symmetries(unsymmetrized_mm,
                                              self.inflation_symmetries)
@@ -791,38 +793,43 @@ class InflationSDP(object):
                     # This is the standard specification for the helper
                     columns = self._build_cols_from_specs(column_specification)
                 else:
-                    raise Exception("The columns are not specified in a valid format.")
+                    raise Exception("The generating columns are not specified "
+                                    + "in a valid format.")
             elif type(column_specification[0]) in [int, sp.core.symbol.Symbol,
                                                    sp.core.power.Pow,
                                                    sp.core.mul.Mul,
                                                    sp.core.numbers.One]:
                 columns = []
                 for col in column_specification:
-                    # We also check the type element by element, and not only the first one
                     if type(col) in [int, sp.core.numbers.One]:
                         if not np.isclose(float(col), 1):
-                            raise Exception("The columns are not specified in a valid format.")
+                            raise Exception(f"Column {col} is just a number. "
+                                            + "Please use a valid format.")
                         else:
                             columns.append(self.identity_operator)
-                    elif type(col) in [sp.core.symbol.Symbol, sp.core.power.Pow, sp.core.mul.Mul]:
+                    elif type(col) in [sp.core.symbol.Symbol,
+                                       sp.core.power.Pow,
+                                       sp.core.mul.Mul]:
                         columns.append(self._interpret_compound_string(col))
                     else:
-                        raise Exception("The columns are not specified in a valid format.")
+                        raise Exception(f"The column {col} is not specified " +
+                                        "in a valid format.")
             else:
-                raise Exception("The columns are not specified in a valid format.")
+                raise Exception("The generating columns are not specified " +
+                                "in a valid format.")
         elif type(column_specification) == str:
             if "npa" in column_specification.lower():
                 npa_level = int(column_specification[3:])
                 col_specs = [[]]
-                # Determine maximum length
-                if (max_monomial_length > 0) and (max_monomial_length < npa_level):
+                if ((max_monomial_length > 0)
+                        and (max_monomial_length < npa_level)):
                     max_length = max_monomial_length
                 else:
                     max_length = npa_level
                 for length in range(1, max_length + 1):
                     for number_tuple in itertools.product(
                             *[range(self.nr_parties)] * length
-                    ):
+                                                          ):
                         a = np.array(number_tuple)
                         # Add only if tuple is in increasing order
                         if np.all(a[:-1] <= a[1:]):

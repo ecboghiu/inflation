@@ -144,8 +144,8 @@ class TestMonomialGeneration(unittest.TestCase):
         areequal = all(np.array_equiv(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, truth))
         self.assertTrue(areequal,
-                         "The column generation is not capable of handling " +
-                         "monomials that reduce to the identity")
+                        "The column generation is not capable of handling " +
+                        "monomials that reduce to the identity")
         self.assertTrue(areequal,
                         "The column generation is not capable of handling " +
                         "monomials that reduce to the identity.")
@@ -158,14 +158,14 @@ class TestSDPOutput(unittest.TestCase):
         warnings.simplefilter("ignore", category=UserWarning)
 
     def GHZ(self, v):
-        dist = np.zeros((2,2,2,1,1,1))
+        dist = np.zeros((2, 2, 2, 1, 1, 1))
         for a in [0, 1]:
             for b in [0, 1]:
                 for c in [0, 1]:
                     if (a == b) and (b == c):
-                        dist[a,b,c,0,0,0] = v/2 + (1-v)/8
+                        dist[a, b, c, 0, 0, 0] = v/2 + (1-v)/8
                     else:
-                        dist[a,b,c,0,0,0] = (1-v)/8
+                        dist[a, b, c, 0, 0, 0] = (1-v)/8
         return dist
 
     cutInflation = InflationProblem({"lambda": ["a", "b"],
