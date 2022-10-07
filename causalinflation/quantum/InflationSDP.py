@@ -1512,16 +1512,20 @@ class InflationSDP(object):
         An equality is a dictionary with keys being which column and values being coefficients.
         BETTER DOCUMENTATION NEEDED"""
         column_level_equalities = []
-        for i, monomial in enumerate(self.generating_monomials):
-            for k, operator in enumerate(monomial):
-                if self._operator_max_outcome_q(operator):
-                    operator_as_2d = np.expand_dims(operator, axis=0)
-                    prefix = monomial[:k]
-                    suffix = monomial[(k + 1):]
+        for i, mon in enumerate(self.generating_monomials):
+            for k, operator in enumerate(mon):
+                party = operator[0] - 1
+                # Operators that are involved in normalization equalities are
+                # those which are unpacked in non-network scenarios
+                if (self.has_children[party]
+                   and operator[-1] == self.outcome_cardinalities[party] - 2):
+                    operator_2d = np.expand_dims(operator, axis=0)
+                    prefix = mon[:k]
+                    suffix = mon[(k + 1):]
                     positions = [i]
-                    true_cardinality = self.outcome_cardinalities[operator[0] - 1] - 1
+                    true_cardinality = self.outcome_cardinalities[party] - 1
                     for outcome in range(true_cardinality - 1):
-                        variant_operator        = operator_as_2d.copy()
+                        variant_operator        = operator_2d.copy()
                         variant_operator[0, -1] = outcome
                         variant_mon             = np.vstack((prefix,
                                                              variant_operator,
@@ -1573,13 +1577,6 @@ class InflationSDP(object):
                         del signature, eq
         del seen_already
         return equalities
-
-    def _operator_max_outcome_q(self, operator: np.ndarray) -> bool:
-        """Determines if an operator references the highest possible outcome of a given measurement.
-        BETTER DOCUMENTATION NEEDED
-        """
-        party = operator[0] - 1
-        return self.has_children[party] and operator[-1] == self.outcome_cardinalities[party] - 2
 
     ########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                            #
