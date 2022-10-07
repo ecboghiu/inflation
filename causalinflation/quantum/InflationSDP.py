@@ -24,7 +24,8 @@ from .fast_npa import (calculate_momentmatrix,
                        commutation_matrix,
                        all_commuting_test,
                        apply_source_permplus_monomial)
-from .general_tools import (to_repr_lower_copy_indices_with_swaps,
+from .general_tools import (construct_normalization_eqs,
+                            to_repr_lower_copy_indices_with_swaps,
                             flatten,
                             flatten_symbolic_powers,
                             phys_mon_1_party_of_given_len,
@@ -344,9 +345,9 @@ class InflationSDP(object):
             self.moment_equalities = []
         else:
             self.column_level_equalities = self._discover_column_equalities()
-            self.idx_level_equalities    = self._construct_normalization_eqs(
-                column_level_equalities=self.column_level_equalities,
-                momentmatrix=self.momentmatrix)
+            self.idx_level_equalities    = construct_normalization_eqs(
+                                                self.column_level_equalities,
+                                                self.momentmatrix)
             self.moment_equalities = [{self.compound_monomial_from_idx[idx]: coeff for idx, coeff in eq.items()}
                                              for eq in self.idx_level_equalities]
 
@@ -1545,34 +1546,6 @@ class InflationSDP(object):
             print("Number of column level equalities:",
                   len(column_level_equalities))
         return column_level_equalities
-
-    @staticmethod
-    def _construct_normalization_eqs(column_level_equalities, momentmatrix):
-        """Given a list of column level equalities (a list of dictionaries with integer keys)
-        and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices.
-        BETTER DOCUMENTATION NEEDED"""
-        equalities = []
-        seen_already = set()
-        for equality in column_level_equalities:
-            for i, row in enumerate(iter(momentmatrix)):
-                (normalization_col, summation_cols) = equality
-                norm_idx       = row[normalization_col]
-                summation_idxs = row.take(summation_cols)
-                summation_idxs.sort()
-                summation_idxs = summation_idxs[np.flatnonzero(summation_idxs)]
-                summation_idxs = tuple(summation_idxs.tolist())
-                if not ((len(summation_idxs) == 1
-                         and np.array_equiv(norm_idx, summation_idxs))
-                        or (len(summation_idxs) == 0 and norm_idx == 0)):
-                    signature = (norm_idx, summation_idxs)
-                    if signature not in seen_already:
-                        seen_already.add(signature)
-                        eq = {**{norm_idx: 1},
-                              **{idx: -1 for idx in summation_idxs}}
-                        equalities.append(eq)
-                        del signature, eq
-        del seen_already
-        return equalities
 
     ########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                            #
