@@ -1409,7 +1409,7 @@ class InflationSDP(object):
                     permutations_plus[0, 1] = 2
                     permutations_plus[0, 2] = 1
                     if len(permutations_plus) == 2:
-                        permutations_plus[1, 1:] = np.roll(np.arange(inflevel_of_this_source) + 1)
+                        permutations_plus[1, 1:] = np.roll(np.arange(inflevel_of_this_source) + 1, 1)
                 else:
                     # We do never need to calculate the "symmetry" induced by the identity permutation.
                     permutations_plus = increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(self.inflation_levels[source])))[1:])
