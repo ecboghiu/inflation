@@ -171,14 +171,14 @@ class TestSDPOutput(unittest.TestCase):
     cutInflation = InflationProblem({"lambda": ["a", "b"],
                                      "mu": ["b", "c"],
                                      "sigma": ["a", "c"]},
-                                     outcomes_per_party=[2, 2, 2],
-                                     settings_per_party=[1, 1, 1],
-                                     inflation_level_per_source=[2, 1, 1])
+                                    outcomes_per_party=[2, 2, 2],
+                                    settings_per_party=[1, 1, 1],
+                                    inflation_level_per_source=[2, 1, 1])
 
     bellScenario = InflationProblem({"Lambda": ["A", "B"]},
-                                         outcomes_per_party=[2, 2],
-                                         settings_per_party=[2, 2],
-                                         inflation_level_per_source=[1])
+                                    outcomes_per_party=[2, 2],
+                                    settings_per_party=[2, 2],
+                                    inflation_level_per_source=[1])
 
     def test_bounds(self):
         from sympy import Symbol
