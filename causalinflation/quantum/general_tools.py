@@ -5,7 +5,7 @@ matrices.
 """
 from copy import deepcopy
 from itertools import chain, permutations, product
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
 import sympy
@@ -13,9 +13,10 @@ from sympy.combinatorics import Permutation
 from sympy.combinatorics.perm_groups import PermutationGroup
 
 
-from .fast_npa import (factorize_monomial,
+from .fast_npa import (apply_source_permplus_monomial,
+                       factorize_monomial,
                        mon_lexsorted,
-                       apply_source_permplus_monomial)
+                       to_name)
 
 try:
     from numba import jit
@@ -23,8 +24,6 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-
-
     bool_ = bool
 
 try:
@@ -34,7 +33,6 @@ except ImportError:
 
 nopython = False
 cache = False
-
 
 
 def apply_inflation_symmetries(momentmatrix: np.ndarray,
@@ -116,6 +114,57 @@ def apply_inflation_symmetries(momentmatrix: np.ndarray,
         orbits = dict(zip(old_indices, new_indices[inversion_tracker]))
         sym_mm = new_indices[inverse]
         return sym_mm, orbits, repr_values
+
+def commutation_relations(infSDP):
+    """Return a user-friendly representation of the commutation relations.
+
+    Parameters
+    ----------
+    infSDP : causalinflation.InflationSDP
+        The SDP object for which the commutation relations are to be extracted.
+
+    Returns
+    -------
+    Tuple[sympy.Expr]
+        The list of commutators (given as sympy Expressions) that are nonzero.
+    """
+    from collections import namedtuple
+    nonzero = namedtuple("NonZeroExpressions", "exprs")
+    data = []
+    for i in range(infSDP._lexorder.shape[0]):
+        for j in range(i, infSDP._lexorder.shape[0]):
+            # Most operators commute as they belong to different parties,
+            if infSDP._notcomm[i, j] != 0:
+                op1 = sympy.Symbol(to_name([infSDP._lexorder[i]], infSDP.names),
+                                   commutative=False)
+                op2 = sympy.Symbol(to_name([infSDP._lexorder[i]], infSDP.names),
+                                   commutative=False)
+                if infSDP.verbose > 0:
+                    print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
+                data.append(op1 * op2 - op2 * op1)
+    return nonzero(data)
+
+
+def lexicographic_order(infSDP) -> Dict[str, int]:
+    """Return a user-friendly representation of the lexicographic order.
+
+    Parameters
+    ----------
+    infSDP : causalinflation.InflationProblem
+        The SDP object for which the commutation relations are to be extracted.
+
+    Returns
+    -------
+    dict[str, int]
+        The lexicographic order as a dictionary where keys are the monomials in
+        the problem and the values are their positions in the lexicographic
+        ordering.
+    """
+    lexorder = {}
+    for i, op in enumerate(infSDP._lexorder):
+        lexorder[sympy.Symbol(to_name([op], infSDP.names),
+                              commutative=False)] = i
+    return lexorder
 
 
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
