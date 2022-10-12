@@ -173,7 +173,6 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   max_monomial_length: int,
                                   settings_per_party: Tuple[int],
                                   outputs_per_party: Tuple[int],
-                                  names: Tuple[str],
                                   lexorder: np.ndarray
                                   ) -> List[np.ndarray]:
     """Generate all possible positive monomials given a scenario and a maximum
@@ -200,8 +199,6 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     outputs_per_party : List[int]
         List containing the cardinality of the output/measurement outcome
         of each party.
-    names : List[str]
-        names[i] is the string name of the party i+1.
 
     Returns
     -------
