@@ -19,7 +19,6 @@ from scipy.sparse import coo_matrix
 from causalinflation import InflationProblem
 from .fast_npa import (calculate_momentmatrix,
                        to_canonical,
-                       to_name,
                        nb_mon_to_lexrepr,
                        commutation_matrix,
                        all_commuting_test,
@@ -927,32 +926,6 @@ class InflationSDP(object):
                                                           self._nr_properties))
                    for col in columns]
         return columns
-
-    def commutation_relations(self):
-        """Return a user-friendly representation of the commutation relations.
-        """
-        from collections import namedtuple
-        nonzero = namedtuple("NonZeroExpressions", "exprs")
-        data = []
-        for i in range(self._lexorder.shape[0]):
-            for j in range(i, self._lexorder.shape[0]):
-                # Most operators commute as they belong to different parties,
-                # so it is more interested to list those that DON'T commute.
-                if self._notcomm[i, j] != 0:
-                    op1 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
-                    op2 = sp.Symbol(to_name([self._lexorder[i]], self.names), commutative=False)
-                    if self.verbose > 0:
-                        print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
-                    data.append(op1 * op2 - op2 * op1)
-        return nonzero(data)
-
-    def lexicographic_order(self) -> dict:
-        """Return a user-friendly representation of the lexicographic order."""
-        lexicographic_order = {}
-        for i, op in enumerate(self._lexorder):
-            lexicographic_order[sp.Symbol(to_name([op], self.names),
-                                          commutative=False)] = i
-        return lexicographic_order
 
     def reset_objective(self):
         self._reset_solution()
