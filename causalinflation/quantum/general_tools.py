@@ -36,6 +36,88 @@ nopython = False
 cache = False
 
 
+
+def apply_inflation_symmetries(momentmatrix: np.ndarray,
+                               inflation_symmetries: np.ndarray,
+                               verbose: bool = False
+                               ) -> Tuple[np.ndarray,
+                                          Dict[int, int],
+                                          np.ndarray]:
+    """Applies the inflation symmetries, in the form of permutations of the
+    rows and colums of a moment matrix, to the moment matrix.
+
+    Parameters
+    ----------
+    momentmatrix : numpy.ndarray
+        The moment matrix.
+    inflation_symmetries : numpy.ndarray
+        Two-dimensional array where each row represents a permutation of
+        the rows and columns of the moment matrix.
+    verbose : bool
+        Whether information about progress is printed out.
+
+    Returns
+    -------
+    sym_mm : numpy.ndarray
+        The symmetrized version of the moment matrix, where each cell is
+        the lowest index of all the Monomials that are equivalent to that
+        in the corresponding cell in momentmatrix.
+    orbits : Dict[int, int]
+        The map from unsymmetrized indices in momentmatrix to their
+        symmetrized counterparts in sym_mm.
+    repr_values: numpy.ndarray
+        An array of unique representative former (unsymmetrized) indices.
+        This is later used for hashing indices and making sanitization much
+        faster.
+    """
+    max_value = momentmatrix.max(initial=0)
+    if not len(inflation_symmetries):
+        repr_values = np.arange(max_value + 1)
+        orbits = dict(zip(repr_values, repr_values))
+        return momentmatrix, orbits, repr_values
+    else:
+        old_indices, flat_pos, inverse = np.unique(momentmatrix.ravel(),
+                                                   return_index=True,
+                                                   return_inverse=True)
+        inverse           = inverse.reshape(momentmatrix.shape)
+        prev_unique_count = np.inf
+        new_unique_count  = old_indices.shape[0]
+        new_indices       = np.arange(new_unique_count)
+        inversion_tracker = new_indices.copy()
+        repr_values = old_indices.copy()
+        # We minimize under every element of the inflation symmetry group.
+        for permutation in tqdm(inflation_symmetries,
+                                disable=not verbose,
+                                desc="Applying symmetries      "):
+            if prev_unique_count > new_unique_count:
+                rows, cols = np.unravel_index(flat_pos, momentmatrix.shape)
+            prev_unique_count = new_unique_count
+            assert np.array_equal(new_indices, inverse[(rows, cols)]), \
+                ("The representatives of the symmetrized indices are " +
+                 "not minimal.")
+            np.minimum(new_indices,
+                       inverse[(permutation[rows], permutation[cols])],
+                       out=new_indices)
+            unique_values, unique_values_pos, unique_values_inv = \
+                np.unique(new_indices,
+                          return_index=True,
+                          return_inverse=True)
+            new_unique_count = unique_values.shape[0]
+            if prev_unique_count > new_unique_count:
+                inverse           = unique_values_inv[inverse]
+                flat_pos          = flat_pos[unique_values_pos]
+                repr_values       = repr_values[unique_values_pos]
+                inversion_tracker = unique_values_inv[inversion_tracker]
+                del unique_values_pos, unique_values_inv
+                new_indices = np.arange(new_unique_count)
+        prior_min_value = old_indices.min()
+        if old_indices.min() != 0:
+            new_indices += prior_min_value
+        orbits = dict(zip(old_indices, new_indices[inversion_tracker]))
+        sym_mm = new_indices[inverse]
+        return sym_mm, orbits, repr_values
+
+
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   inflevels: np.ndarray,
                                   party: int,
