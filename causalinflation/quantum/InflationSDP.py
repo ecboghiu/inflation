@@ -636,18 +636,17 @@ class InflationSDP(object):
                      "solve_dual": dualise})
 
         self.solution_object = solveSDP_MosekFUSION(**args)
-        try:
-            self.status = self.solution_object["status"]
-            if self.status == "feasible":
-                self.primal_objective = self.solution_object["primal_value"]
-                self.objective_value  = self.solution_object["primal_value"]
-                self.objective_value *= (1 if self.maximize else -1)
-            else:
-                self.primal_objective = "Unavailable (infeasible problem)"
-                self.objective_value  = self.primal_objective
-            gc.collect(generation=2)
-        except KeyError:
-            pass
+
+        self.status = self.solution_object["status"]
+        if self.status == "feasible":
+            self.primal_objective = self.solution_object["primal_value"]
+            self.objective_value  = self.solution_object["primal_value"]
+            self.objective_value *= (1 if self.maximize else -1)
+        else:
+            self.primal_objective = self.status
+            self.objective_value  = self.status
+        gc.collect(generation=2)
+
 
     ########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES            #
