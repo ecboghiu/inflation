@@ -2,7 +2,11 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "# Examples and features\n",
     "\n",
@@ -12,7 +16,11 @@
   {
    "cell_type": "code",
    "execution_count": 1,
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [],
    "source": [
     "def bisect(f, x0, x1, eps=1e-4, verbose=1):\n",
@@ -25,20 +33,24 @@
     "        else:\n",
     "            x1 = x\n",
     "        if verbose:\n",
-    "            print(f\"Maximum smallest eigenvalue: {fx:10.4g}   Visibility = {x:.4g}\")\n",
+    "            print(f'Maximum smallest eigenvalue: {fx:10.4g}   Visibility = {x:.4g}')\n",
     "        x = (x0 + x1) / 2\n",
     "    return x"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## Feasibility problems and extraction of certificates\n",
     "\n",
     "### Example 1: Infeasibility of the W distribution in the quantum triangle scenario \n",
     "\n",
-    "Consider determining if the following distribution, the so-called \"W distribution\" (due to its similarity to the W state), is compatible with the triangle scenario:\n",
+    "Consider determining if the following distribution, the so-called 'W distribution' (due to its similarity to the W state), is compatible with the triangle scenario:\n",
     "\n",
     "$$ P_{A B C}=\\frac{[100]+[010]+[001]}{3}, \\quad \\text {i.e.,} \\quad P_{A B C}(a b c)= \\begin{cases}\\frac{1}{3} & \\text { if } a+b+c=1, \\\\ 0 & \\text { otherwise. }\\end{cases} $$\n",
     "\n",
@@ -52,7 +64,11 @@
   {
    "cell_type": "code",
    "execution_count": 2,
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
@@ -69,24 +85,22 @@
     "from causalinflation import InflationProblem, InflationSDP\n",
     "import numpy as np\n",
     "\n",
-    "qtriangle = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"],\n",
-    "                                  \"rho_BC\": [\"B\", \"C\"],\n",
-    "                                  \"rho_AC\": [\"A\", \"C\"]}, \n",
-    "                             outcomes_per_party=[2, 2, 2],\n",
-    "                             settings_per_party=[1, 1, 1],\n",
-    "                             inflation_level_per_source=[2, 2, 2])\n",
+    "qtriangle = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                  'rho_BC': ['B', 'C'],\n",
+    "                                  'rho_AC': ['A', 'C']}, \n",
+    "                             outcomes_per_party=(2, 2, 2),\n",
+    "                             settings_per_party=(1, 1, 1),\n",
+    "                             inflation_level_per_source=(2, 2, 2))\n",
     "\n",
     "sdp = InflationSDP(qtriangle)\n",
     "sdp.generate_relaxation('npa2')\n",
     "\n",
     "def P_W(vis=1):\n",
-    "    dims = [2, 2, 2, 1, 1, 1]\n",
-    "    noise = np.ones(dims) / 2**3\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, c, x, y, z in np.ndindex(*dims):    \n",
+    "    p = np.zeros((2, 2, 2, 1, 1, 1))\n",
+    "    for a, b, c, x, y, z in np.ndindex(*p.shape):    \n",
     "        if a + b + c == 1:\n",
     "            p[a, b, c, x, y, z] = 1 / 3\n",
-    "    return vis * p + (1 - vis) * noise\n",
+    "    return vis * p + (1 - vis) * np.ones(p.shape) / 2 ** 3\n",
     "\n",
     "sdp.set_distribution(P_W())\n",
     "sdp.solve()\n",
@@ -95,7 +109,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "The problem status is reported as infeasible, therefore this serves as a proof that the W distribution is incompatible with the quantum triangle scenario. \n",
     "\n",
@@ -107,15 +125,19 @@
   {
    "cell_type": "code",
    "execution_count": 3,
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
       "text/latex": [
-       "$\\displaystyle 0.476 p_{ABC}(000|000) p_{A}(0|0) + 0.476 p_{ABC}(000|000) p_{B}(0|0) + 0.476 p_{ABC}(000|000) p_{C}(0|0) + 0.75 p_{ABC}(000|000) + 0.217 p_{AB}(00|00)^{2} + 0.085 p_{AB}(00|00) p_{AC}(00|00) + 0.059 p_{AB}(00|00) p_{A}(0|0) + 0.085 p_{AB}(00|00) p_{BC}(00|00) + 0.059 p_{AB}(00|00) p_{B}(0|0) - 0.359 p_{AB}(00|00) p_{C}(0|0) + 0.126 p_{AB}(00|00) + 0.217 p_{AC}(00|00)^{2} + 0.059 p_{AC}(00|00) p_{A}(0|0) + 0.085 p_{AC}(00|00) p_{BC}(00|00) - 0.359 p_{AC}(00|00) p_{B}(0|0) + 0.059 p_{AC}(00|00) p_{C}(0|0) + 0.126 p_{AC}(00|00) - 0.476 p_{A}(0|0)^{2} - 0.359 p_{A}(0|0) p_{BC}(00|00) + 1.0 p_{A}(0|0) p_{B}(0|0) p_{C}(0|0) - 0.765 p_{A}(0|0) p_{B}(0|0) - 0.765 p_{A}(0|0) p_{C}(0|0) + 0.365 p_{A}(0|0) + 0.217 p_{BC}(00|00)^{2} + 0.059 p_{BC}(00|00) p_{B}(0|0) + 0.059 p_{BC}(00|00) p_{C}(0|0) + 0.126 p_{BC}(00|00) - 0.476 p_{B}(0|0)^{2} - 0.765 p_{B}(0|0) p_{C}(0|0) + 0.365 p_{B}(0|0) - 0.476 p_{C}(0|0)^{2} + 0.365 p_{C}(0|0) + 0.563$"
+       "$\\displaystyle - 0.476 pA(0|0)^{2} + 0.059 pA(0|0) pAB(00|00) + 0.476 pA(0|0) pABC(000|000) + 0.059 pA(0|0) pAC(00|00) + pA(0|0) pB(0|0) pC(0|0) - 0.765 pA(0|0) pB(0|0) - 0.359 pA(0|0) pBC(00|00) - 0.765 pA(0|0) pC(0|0) + 0.365 pA(0|0) + 0.217 pAB(00|00)^{2} + 0.085 pAB(00|00) pAC(00|00) + 0.059 pAB(00|00) pB(0|0) + 0.085 pAB(00|00) pBC(00|00) - 0.359 pAB(00|00) pC(0|0) + 0.126 pAB(00|00) + 0.476 pABC(000|000) pB(0|0) + 0.476 pABC(000|000) pC(0|0) + 0.75 pABC(000|000) + 0.217 pAC(00|00)^{2} - 0.359 pAC(00|00) pB(0|0) + 0.085 pAC(00|00) pBC(00|00) + 0.059 pAC(00|00) pC(0|0) + 0.126 pAC(00|00) - 0.476 pB(0|0)^{2} + 0.059 pB(0|0) pBC(00|00) - 0.765 pB(0|0) pC(0|0) + 0.365 pB(0|0) + 0.217 pBC(00|00)^{2} + 0.059 pBC(00|00) pC(0|0) + 0.126 pBC(00|00) - 0.476 pC(0|0)^{2} + 0.365 pC(0|0) + 0.563$"
       ],
       "text/plain": [
-       "0.476*p_{ABC}(000|000)*p_{A}(0|0) + 0.476*p_{ABC}(000|000)*p_{B}(0|0) + 0.476*p_{ABC}(000|000)*p_{C}(0|0) + 0.75*p_{ABC}(000|000) + 0.217*p_{AB}(00|00)**2 + 0.085*p_{AB}(00|00)*p_{AC}(00|00) + 0.059*p_{AB}(00|00)*p_{A}(0|0) + 0.085*p_{AB}(00|00)*p_{BC}(00|00) + 0.059*p_{AB}(00|00)*p_{B}(0|0) - 0.359*p_{AB}(00|00)*p_{C}(0|0) + 0.126*p_{AB}(00|00) + 0.217*p_{AC}(00|00)**2 + 0.059*p_{AC}(00|00)*p_{A}(0|0) + 0.085*p_{AC}(00|00)*p_{BC}(00|00) - 0.359*p_{AC}(00|00)*p_{B}(0|0) + 0.059*p_{AC}(00|00)*p_{C}(0|0) + 0.126*p_{AC}(00|00) - 0.476*p_{A}(0|0)**2 - 0.359*p_{A}(0|0)*p_{BC}(00|00) + 1.0*p_{A}(0|0)*p_{B}(0|0)*p_{C}(0|0) - 0.765*p_{A}(0|0)*p_{B}(0|0) - 0.765*p_{A}(0|0)*p_{C}(0|0) + 0.365*p_{A}(0|0) + 0.217*p_{BC}(00|00)**2 + 0.059*p_{BC}(00|00)*p_{B}(0|0) + 0.059*p_{BC}(00|00)*p_{C}(0|0) + 0.126*p_{BC}(00|00) - 0.476*p_{B}(0|0)**2 - 0.765*p_{B}(0|0)*p_{C}(0|0) + 0.365*p_{B}(0|0) - 0.476*p_{C}(0|0)**2 + 0.365*p_{C}(0|0) + 0.563"
+       "-0.476*pA(0|0)**2 + 0.059*pA(0|0)*pAB(00|00) + 0.476*pA(0|0)*pABC(000|000) + 0.059*pA(0|0)*pAC(00|00) + pA(0|0)*pB(0|0)*pC(0|0) - 0.765*pA(0|0)*pB(0|0) - 0.359*pA(0|0)*pBC(00|00) - 0.765*pA(0|0)*pC(0|0) + 0.365*pA(0|0) + 0.217*pAB(00|00)**2 + 0.085*pAB(00|00)*pAC(00|00) + 0.059*pAB(00|00)*pB(0|0) + 0.085*pAB(00|00)*pBC(00|00) - 0.359*pAB(00|00)*pC(0|0) + 0.126*pAB(00|00) + 0.476*pABC(000|000)*pB(0|0) + 0.476*pABC(000|000)*pC(0|0) + 0.75*pABC(000|000) + 0.217*pAC(00|00)**2 - 0.359*pAC(00|00)*pB(0|0) + 0.085*pAC(00|00)*pBC(00|00) + 0.059*pAC(00|00)*pC(0|0) + 0.126*pAC(00|00) - 0.476*pB(0|0)**2 + 0.059*pB(0|0)*pBC(00|00) - 0.765*pB(0|0)*pC(0|0) + 0.365*pB(0|0) + 0.217*pBC(00|00)**2 + 0.059*pBC(00|00)*pC(0|0) + 0.126*pBC(00|00) - 0.476*pC(0|0)**2 + 0.365*pC(0|0) + 0.563"
       ]
      },
      "execution_count": 3,
@@ -129,45 +151,22 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "In the above, lower indices indicate marginals. For example, $p_{AC}(ac|xz) := \\sum_b p(abc|xyz)$. Note that due to no-signaling, in this example the marginal is independent of the setting $y$.\n",
-    "\n",
-    " Finally, given that we only have two outcomes, we can also express the certificate in \"correlator form\", where the correlators are defined as \n",
-    " \n",
-    " $$\\left\\langle A_{x} \\right\\rangle =\\sum_{a\\in \\{0,1\\}} (-1)^{a} \\, p_{A}(a|x)$$ \n",
-    " $$\\left\\langle A_{x} B_{y} \\right\\rangle =\\sum_{a, b \\in \\{0,1\\}} (-1)^{a+b} \\, p_{AB}(ab|xy)$$\n",
-    " $$\\left\\langle A_{x} B_{y} C_{z}\\right\\rangle =\\sum_{a, b, c \\in \\{0,1\\}} (-1)^{a+b+c} \\, p(abc|xyz)$$ \n",
-    " \n",
-    " where the omitted 2-body and 1-body correlators have similar definitions."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 4,
-   "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/latex": [
-       "$\\displaystyle 0.238 \\langle A_{0} B_{0} C_{0} \\rangle \\langle A_{0} \\rangle + 0.238 \\langle A_{0} B_{0} C_{0} \\rangle \\langle B_{0} \\rangle + 0.238 \\langle A_{0} B_{0} C_{0} \\rangle \\langle C_{0} \\rangle + 1.464 \\langle A_{0} B_{0} C_{0} \\rangle + 0.108 \\langle A_{0} B_{0} \\rangle^{2} + 0.042 \\langle A_{0} B_{0} \\rangle \\langle A_{0} C_{0} \\rangle + 0.556 \\langle A_{0} B_{0} \\rangle \\langle A_{0} \\rangle + 0.042 \\langle A_{0} B_{0} \\rangle \\langle B_{0} C_{0} \\rangle + 0.556 \\langle A_{0} B_{0} \\rangle \\langle B_{0} \\rangle - 0.036 \\langle A_{0} B_{0} \\rangle \\langle C_{0} \\rangle + 1.777 \\langle A_{0} B_{0} \\rangle + 0.108 \\langle A_{0} C_{0} \\rangle^{2} + 0.556 \\langle A_{0} C_{0} \\rangle \\langle A_{0} \\rangle + 0.042 \\langle A_{0} C_{0} \\rangle \\langle B_{0} C_{0} \\rangle - 0.036 \\langle A_{0} C_{0} \\rangle \\langle B_{0} \\rangle + 0.556 \\langle A_{0} C_{0} \\rangle \\langle C_{0} \\rangle + 1.777 \\langle A_{0} C_{0} \\rangle - 0.336 \\langle A_{0} \\rangle^{2} - 0.036 \\langle A_{0} \\rangle \\langle B_{0} C_{0} \\rangle + \\langle A_{0} \\rangle \\langle B_{0} \\rangle \\langle C_{0} \\rangle - 0.31 \\langle A_{0} \\rangle \\langle B_{0} \\rangle - 0.31 \\langle A_{0} \\rangle \\langle C_{0} \\rangle - 0.417 \\langle A_{0} \\rangle + 0.108 \\langle B_{0} C_{0} \\rangle^{2} + 0.556 \\langle B_{0} C_{0} \\rangle \\langle B_{0} \\rangle + 0.556 \\langle B_{0} C_{0} \\rangle \\langle C_{0} \\rangle + 1.777 \\langle B_{0} C_{0} \\rangle - 0.336 \\langle B_{0} \\rangle^{2} - 0.31 \\langle B_{0} \\rangle \\langle C_{0} \\rangle - 0.417 \\langle B_{0} \\rangle - 0.336 \\langle C_{0} \\rangle^{2} - 0.417 \\langle C_{0} \\rangle + 4.388$"
-      ],
-      "text/plain": [
-       "0.238*\\langle A_{0} B_{0} C_{0} \\rangle*\\langle A_{0} \\rangle + 0.238*\\langle A_{0} B_{0} C_{0} \\rangle*\\langle B_{0} \\rangle + 0.238*\\langle A_{0} B_{0} C_{0} \\rangle*\\langle C_{0} \\rangle + 1.464*\\langle A_{0} B_{0} C_{0} \\rangle + 0.108*\\langle A_{0} B_{0} \\rangle**2 + 0.042*\\langle A_{0} B_{0} \\rangle*\\langle A_{0} C_{0} \\rangle + 0.556*\\langle A_{0} B_{0} \\rangle*\\langle A_{0} \\rangle + 0.042*\\langle A_{0} B_{0} \\rangle*\\langle B_{0} C_{0} \\rangle + 0.556*\\langle A_{0} B_{0} \\rangle*\\langle B_{0} \\rangle - 0.036*\\langle A_{0} B_{0} \\rangle*\\langle C_{0} \\rangle + 1.777*\\langle A_{0} B_{0} \\rangle + 0.108*\\langle A_{0} C_{0} \\rangle**2 + 0.556*\\langle A_{0} C_{0} \\rangle*\\langle A_{0} \\rangle + 0.042*\\langle A_{0} C_{0} \\rangle*\\langle B_{0} C_{0} \\rangle - 0.036*\\langle A_{0} C_{0} \\rangle*\\langle B_{0} \\rangle + 0.556*\\langle A_{0} C_{0} \\rangle*\\langle C_{0} \\rangle + 1.777*\\langle A_{0} C_{0} \\rangle - 0.336*\\langle A_{0} \\rangle**2 - 0.036*\\langle A_{0} \\rangle*\\langle B_{0} C_{0} \\rangle + \\langle A_{0} \\rangle*\\langle B_{0} \\rangle*\\langle C_{0} \\rangle - 0.31*\\langle A_{0} \\rangle*\\langle B_{0} \\rangle - 0.31*\\langle A_{0} \\rangle*\\langle C_{0} \\rangle - 0.417*\\langle A_{0} \\rangle + 0.108*\\langle B_{0} C_{0} \\rangle**2 + 0.556*\\langle B_{0} C_{0} \\rangle*\\langle B_{0} \\rangle + 0.556*\\langle B_{0} C_{0} \\rangle*\\langle C_{0} \\rangle + 1.777*\\langle B_{0} C_{0} \\rangle - 0.336*\\langle B_{0} \\rangle**2 - 0.31*\\langle B_{0} \\rangle*\\langle C_{0} \\rangle - 0.417*\\langle B_{0} \\rangle - 0.336*\\langle C_{0} \\rangle**2 - 0.417*\\langle C_{0} \\rangle + 4.388"
-      ]
-     },
-     "execution_count": 4,
-     "metadata": {},
-     "output_type": "execute_result"
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
     }
-   ],
+   },
    "source": [
-    "sdp.certificate_as_correlators(clean=True, use_langlerangle=True)"
+    "In the above, lower indices indicate marginals. For example, $p_{AC}(ac|xz) := \\sum_b p(abc|xyz)$. Note that due to no-signaling, in this example the marginal is independent of the setting $y$."
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 2: Critical visibility of the 2PR distribution in the quantum tripartite-line scenario\n",
     "\n",
@@ -177,7 +176,7 @@
     "\n",
     "is incompatible with the tripartite-line scenario (also called \"quantum bilocal scenario\"), whose DAG is depicted in the following figure:\n",
     "\n",
-    "<center> <img src=\"./figures/bilocal_1.PNG\" alt=\"drawing\" width=\"400\"/> </center>\n",
+    "<center> <img src=\"./figures/bilocal_1.PNG\" alt=\"drawing\" width=\"450\"/> </center>\n",
     "\n",
     "This can be shown by running a feasibility program, as in Example 1. We might also be interested in studying how much noise this distribution can tolerate before the relaxation no longer identifies the distribution as incompatible. One simple model of noise is that of a probabilistic mixture with the uniform distribution:\n",
     "\n",
@@ -196,14 +195,18 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 5,
-   "metadata": {},
+   "execution_count": 4,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "Maximum smallest eigenvalue:  4.271e-09   Visibility = 0.5\n",
+      "Maximum smallest eigenvalue:  4.272e-09   Visibility = 0.5\n",
       "Maximum smallest eigenvalue:   -0.04709   Visibility = 0.75\n",
       "Maximum smallest eigenvalue:   -0.02075   Visibility = 0.625\n",
       "Maximum smallest eigenvalue:  -0.009571   Visibility = 0.5625\n",
@@ -225,7 +228,7 @@
        "0.500030517578125"
       ]
      },
-     "execution_count": 5,
+     "execution_count": 4,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -234,21 +237,19 @@
     "from causalinflation import InflationProblem, InflationSDP\n",
     "import numpy as np\n",
     "\n",
-    "qbilocal = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"],\n",
-    "                                 \"rho_BC\": [\"B\", \"C\"]},\n",
-    "                            outcomes_per_party=[2, 2, 2],\n",
-    "                            settings_per_party=[2, 2, 2],\n",
-    "                            inflation_level_per_source=[2, 2])\n",
+    "qbilocal = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                 'rho_BC': ['B', 'C']},\n",
+    "                            outcomes_per_party=(2, 2, 2),\n",
+    "                            settings_per_party=(2, 2, 2),\n",
+    "                            inflation_level_per_source=(2, 2))\n",
     "sdp = InflationSDP(qbilocal)\n",
     "sdp.generate_relaxation('npa2')\n",
     "\n",
     "def P_2PR(vis=1):\n",
-    "    dims = [2, 2, 2, 2, 2, 2]\n",
-    "    noise = np.ones(dims) / 2**3\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, c, x, y, z in np.ndindex(*dims):    \n",
+    "    p = np.zeros((2, 2, 2, 2, 2, 2))\n",
+    "    for a, b, c, x, y, z in np.ndindex(*p.shape):    \n",
     "        p[a, b, c, x, y, z] = ( 1 + (-1) ** (a + b + c + x*y + y*z) ) / 8\n",
-    "    return vis * p + (1 - vis) * noise\n",
+    "    return vis * p + (1 - vis) *  np.ones(p.shape) / 2 ** 3\n",
     "\n",
     "def f(vis):\n",
     "    sdp.set_distribution(P_2PR(vis))\n",
@@ -260,14 +261,22 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "We recover a critical visibility that is consistent with the known critical visibility of the 2PR distribution in the quantum tripartite-line scenario, namely $v>\\frac{1}{2}$. Higher order inflations or higher levels in the NPA hierarchy are expected (but not proved) to get a numerical visibility that gets asymptotically closer to $v=\\frac{1}{2}$ as the hierarchy increases."
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## Optimisation over classical distributions and feasibility problems \n",
     "\n",
@@ -278,7 +287,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 3: Critical visibility of the 2PR distribution in the *classical* tripartite-line scenario\n",
     "\n",
@@ -289,8 +302,12 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 6,
-   "metadata": {},
+   "execution_count": 5,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
@@ -298,7 +315,7 @@
        "0.353546142578125"
       ]
      },
-     "execution_count": 6,
+     "execution_count": 5,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -307,21 +324,20 @@
     "from causalinflation import InflationProblem, InflationSDP\n",
     "import numpy as np\n",
     "\n",
-    "qbilocal = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"], \"rho_BC\": [\"B\", \"C\"]},\n",
-    "                            outcomes_per_party=[2, 2, 2],\n",
-    "                            settings_per_party=[2, 2, 2],\n",
-    "                            inflation_level_per_source=[2, 2])\n",
+    "qbilocal = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                 'rho_BC': ['B', 'C']},\n",
+    "                            outcomes_per_party=(2, 2, 2),\n",
+    "                            settings_per_party=(2, 2, 2),\n",
+    "                            inflation_level_per_source=(2, 2))\n",
     "\n",
     "sdp = InflationSDP(qbilocal, commuting=True)\n",
     "sdp.generate_relaxation('local1')\n",
     "\n",
     "def P_2PR(vis=1):\n",
-    "    dims = [2, 2, 2, 2, 2, 2]\n",
-    "    noise = np.ones(dims) / 2**3\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, c, x, y, z in np.ndindex(*dims):    \n",
+    "    p = np.zeros((2, 2, 2, 2, 2, 2))\n",
+    "    for a, b, c, x, y, z in np.ndindex(*p.shape):    \n",
     "        p[a, b, c, x, y, z] = ( 1 + (-1) ** (a + b + c + x*y + y*z) ) / 8\n",
-    "    return vis * p + (1 - vis) * noise\n",
+    "    return vis * p + (1 - vis) * np.ones(p.shape) / 2 ** 3\n",
     "\n",
     "def f(vis):\n",
     "    sdp.set_distribution(P_2PR(vis))\n",
@@ -333,7 +349,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "This relaxation of the set of distributions classically simulable in the tripartite line scenario certifies then the incompatibility of the $P_{\\text{2PR}}$ distribution for $v>0.3536$. This does not completely certify incompatibility down to the known critical threshold of $v_{\\text{crit}}=\\frac{1}{4}$, but we expect tighter relaxations, which are computationally more expensive, might recover this value. \n",
     "\n",
@@ -342,7 +362,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## Optimization of Bell operators\n",
     "\n",
@@ -351,13 +375,21 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 4. Upper bounds on Mermin's inequality\n",
     "\n",
-    "Let us consider Mermin's inequality, written in the correlator form introduced in Example 1:\n",
+    "Let us consider Mermin's inequality, written in the correlator form as follows:\n",
     "\n",
     "$$ \\text{Mermin} = \\langle A_1 B_0 C_0 \\rangle +  \\langle A_0 B_1 C_0 \\rangle +  \\langle A_0 B_0 C_1 \\rangle -  \\langle A_1 B_1 C_1 \\rangle $$\n",
+    "\n",
+    "where correlators are defined as\n",
+    "\n",
+    "$$\\left\\langle A_{x} B_{y} C_{z}\\right\\rangle =\\sum_{a, b, c \\in \\{0,1\\}} (-1)^{a+b+c} \\, p_{ABC}(abc|xyz).$$\n",
     "\n",
     "It is known that the algebraic maximum of 4 is achieved in the tripartite scenario both with global shared randomness and also global non-signaling sources. However, one can see a difference between quantum and general no-signaling sources when restricting to the triangle scenario from Example 1.\n",
     "\n",
@@ -366,16 +398,20 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 7,
-   "metadata": {},
+   "execution_count": 6,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "3.9999999812894727"
+       "3.999999981240686"
       ]
      },
-     "execution_count": 7,
+     "execution_count": 6,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -383,12 +419,12 @@
    "source": [
     "from causalinflation import InflationProblem, InflationSDP\n",
     "\n",
-    "qtriangle = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"],\n",
-    "                                  \"rho_BC\": [\"B\", \"C\"],\n",
-    "                                  \"rho_AC\": [\"A\", \"C\"]}, \n",
-    "                             outcomes_per_party=[2, 2, 2],\n",
-    "                             settings_per_party=[2, 2, 2],\n",
-    "                             inflation_level_per_source=[2, 2, 2])\n",
+    "qtriangle = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                  'rho_BC': ['B', 'C'],\n",
+    "                                  'rho_AC': ['A', 'C']}, \n",
+    "                             outcomes_per_party=(2, 2, 2),\n",
+    "                             settings_per_party=(2, 2, 2),\n",
+    "                             inflation_level_per_source=(2, 2, 2))\n",
     "\n",
     "sdp = InflationSDP(qtriangle)\n",
     "sdp.generate_relaxation('npa2')\n",
@@ -404,7 +440,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "Notice that we get a value that is within numerical precision the algebraic maximum of 4. To improve on this result, we will need to do a tighter SDP relaxation.\n",
     "\n",
@@ -417,16 +457,20 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 8,
-   "metadata": {},
+   "execution_count": 7,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "3.085044522906496"
+       "3.085044522904397"
       ]
      },
-     "execution_count": 8,
+     "execution_count": 7,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -434,12 +478,12 @@
    "source": [
     "from causalinflation import InflationProblem, InflationSDP\n",
     "\n",
-    "qtriangle = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"],\n",
-    "                                  \"rho_BC\": [\"B\", \"C\"],\n",
-    "                                  \"rho_AC\": [\"A\", \"C\"]}, \n",
-    "                             outcomes_per_party=[2, 2, 2],\n",
-    "                             settings_per_party=[2, 2, 2],\n",
-    "                             inflation_level_per_source=[2, 2, 2])\n",
+    "qtriangle = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                  'rho_BC': ['B', 'C'],\n",
+    "                                  'rho_AC': ['A', 'C']}, \n",
+    "                             outcomes_per_party=(2, 2, 2),\n",
+    "                             settings_per_party=(2, 2, 2),\n",
+    "                             inflation_level_per_source=(2, 2, 2))\n",
     "sdp = InflationSDP(qtriangle)\n",
     "\n",
     "npa2   = sdp.build_columns('npa2')\n",
@@ -455,14 +499,22 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "After running the above, we can certify then that the Mermin inequality cannot have a value larger than $3.085$ for the quantum triangle causal scenario. "
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## Standard NPA\n",
     "\n",
@@ -471,7 +523,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources\n",
     "\n",
@@ -480,8 +536,12 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 9,
-   "metadata": {},
+   "execution_count": 41,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -509,13 +569,13 @@
     {
      "data": {
       "text/latex": [
-       "$\\displaystyle \\langle A_{0} B_{0} \\rangle + \\langle A_{0} B_{1} \\rangle + \\langle A_{1} B_{0} \\rangle - \\langle A_{1} B_{1} \\rangle - 2.829$"
+       "$\\displaystyle pA(0|0) - pAB(00|00) - pAB(00|01) - pAB(00|10) + pAB(00|11) + pB(0|0)$"
       ],
       "text/plain": [
-       "\\langle A_{0} B_{0} \\rangle + \\langle A_{0} B_{1} \\rangle + \\langle A_{1} B_{0} \\rangle - \\langle A_{1} B_{1} \\rangle - 2.829"
+       "pA(0|0) - pAB(00|00) - pAB(00|01) - pAB(00|10) + pAB(00|11) + pB(0|0)"
       ]
      },
-     "execution_count": 9,
+     "execution_count": 41,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -524,25 +584,22 @@
     "from causalinflation import InflationProblem, InflationSDP\n",
     "import numpy as np\n",
     "\n",
-    "bellscenario = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"]},\n",
-    "                                outcomes_per_party=[2, 2], \n",
-    "                                settings_per_party=[2, 2])\n",
-    "\n",
+    "bellscenario = InflationProblem(dag={'rho_AB': ['A', 'B']},\n",
+    "                                outcomes_per_party=(2, 2), \n",
+    "                                settings_per_party=(2, 2))\n",
     "sdp = InflationSDP(bellscenario)\n",
     "sdp.generate_relaxation('npa1')\n",
     "\n",
     "def P_PRbox(vis=1):\n",
-    "    dims = [2, 2, 2, 2]\n",
-    "    noise = np.ones(dims) / 2**2\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, x, y in np.ndindex(*dims):\n",
+    "    p = np.zeros((2, 2, 2, 2))\n",
+    "    for a, b, x, y in np.ndindex(*p.shape):\n",
     "        if (x, y) == (1, 1):\n",
     "            if a != b:\n",
     "                p[a, b, x, y] = 1 / 2\n",
     "        else:\n",
     "            if a == b:\n",
     "                p[a, b, x, y] = 1 / 2\n",
-    "    return vis * p + (1 - vis) * noise\n",
+    "    return vis * p + (1 - vis) * np.ones(p.shape) / 2 ** 2\n",
     "\n",
     "def f(vis):\n",
     "    sdp.set_distribution(P_PRbox(vis))\n",
@@ -553,19 +610,49 @@
     "\n",
     "sdp.set_distribution(P_PRbox(v_crit))\n",
     "sdp.solve()\n",
-    "sdp.certificate_as_correlators(clean=True, use_langlerangle=True)"
+    "sdp.certificate_as_probs(clean=True)"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
-    "Notice that the dual certificate that we extract in correlator form (which has been renormalised and rounded numerically) is the CHSH inequality tangent to the quantum set of correlations."
+    "Notice that the dual certificate that we extract in correlator form (which has been renormalised and rounded numerically) is the well-known CHSH inequality tangent to the quantum set of correlations save for a constant term and rescaling. Extracted certificates can be readility plugged in as an objective function to optimise:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 42,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "2.8284149169921875"
+      ]
+     },
+     "execution_count": 42,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "sdp.set_objective(2-4*sdp.certificate_as_probs(), direction='max')\n",
+    "sdp.solve(dualise=False)\n",
+    "sdp.objective_value"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## SDP hierarchy of \"physical moments\"\n",
     "\n",
@@ -574,7 +661,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 6: Critical visibility of the W distribution with the physical moments hierarchy\n",
     "\n",
@@ -583,8 +674,12 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 10,
-   "metadata": {},
+   "execution_count": 43,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
@@ -592,7 +687,7 @@
        "0.803863525390625"
       ]
      },
-     "execution_count": 10,
+     "execution_count": 43,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -601,24 +696,22 @@
     "from causalinflation import InflationProblem, InflationSDP\n",
     "import numpy as np\n",
     "\n",
-    "qtriangle = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"],\n",
-    "                                  \"rho_BC\": [\"B\", \"C\"],\n",
-    "                                  \"rho_AC\": [\"A\", \"C\"],},\n",
-    "                            outcomes_per_party=[2, 2, 2],\n",
-    "                            settings_per_party=[1, 1, 1],\n",
-    "                            inflation_level_per_source=[2, 2, 2])\n",
+    "qtriangle = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                  'rho_BC': ['B', 'C'],\n",
+    "                                  'rho_AC': ['A', 'C']},\n",
+    "                            outcomes_per_party=(2, 2, 2),\n",
+    "                            settings_per_party=(1, 1, 1),\n",
+    "                            inflation_level_per_source=(2, 2, 2))\n",
     "\n",
     "sdp = InflationSDP(qtriangle)\n",
     "sdp.generate_relaxation(sdp.build_columns('physical2', max_monomial_length=4))\n",
     "\n",
     "def P_W(vis=1):\n",
-    "    dims = [2, 2, 2, 1, 1, 1]\n",
-    "    noise = np.ones(dims) / 2**3\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, c, x, y, z in np.ndindex(*dims):    \n",
+    "    p = np.zeros((2, 2, 2, 1, 1, 1))\n",
+    "    for a, b, c, x, y, z in np.ndindex(*p.shape):    \n",
     "        if a + b + c == 1:\n",
     "            p[a, b, c, x, y, z] = 1 / 3\n",
-    "    return vis * p + (1 - vis) * noise\n",
+    "    return vis * p + (1 - vis) * np.ones(p.shape) / 2 ** 3\n",
     "\n",
     "def f(vis):\n",
     "    sdp.set_distribution(P_W(vis))\n",
@@ -630,14 +723,22 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "We recover the same critical visibility of $v_{\\text{crit}}\\approx 0.8039$ with a moment matrix of size 287x287 as opposed to 1175x1175, which leads to a signfificant gain in performance."
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## Linearized polynomial identification (LPI) constraints\n",
     "\n",
@@ -654,7 +755,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 7: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints\n",
     "\n",
@@ -663,16 +768,20 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 11,
-   "metadata": {},
+   "execution_count": 44,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "0.765045166015625"
+       "0.764984130859375"
       ]
      },
-     "execution_count": 11,
+     "execution_count": 44,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -681,25 +790,23 @@
     "from causalinflation import InflationProblem, InflationSDP\n",
     "import numpy as np\n",
     "\n",
-    "qtriangle = InflationProblem(dag={\"rho_AB\": [\"A\", \"B\"],\n",
-    "                                  \"rho_BC\": [\"B\", \"C\"],\n",
-    "                                  \"rho_AC\": [\"A\", \"C\"],},\n",
-    "                            outcomes_per_party=[2, 2, 2],\n",
-    "                            settings_per_party=[1, 1, 1],\n",
-    "                            inflation_level_per_source=[2, 2, 2])\n",
+    "qtriangle = InflationProblem(dag={'rho_AB': ['A', 'B'],\n",
+    "                                  'rho_BC': ['B', 'C'],\n",
+    "                                  'rho_AC': ['A', 'C']},\n",
+    "                            outcomes_per_party=(2, 2, 2),\n",
+    "                            settings_per_party=(1, 1, 1),\n",
+    "                            inflation_level_per_source=(2, 2, 2))\n",
     "\n",
     "qtriangle_relax = InflationSDP(qtriangle)\n",
     "cols = qtriangle_relax.build_columns('physical2', max_monomial_length=4)\n",
     "qtriangle_relax.generate_relaxation(cols)\n",
     "\n",
     "def P_W(vis=1):\n",
-    "    dims = [2, 2, 2, 1, 1, 1]\n",
-    "    noise = np.ones(dims) / 2**3\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, c, x, y, z in np.ndindex(*dims):    \n",
+    "    p = np.zeros((2, 2, 2, 1, 1, 1))\n",
+    "    for a, b, c, x, y, z in np.ndindex(*p.shape):    \n",
     "        if a + b + c == 1:\n",
     "            p[a, b, c, x, y, z] = 1 / 3\n",
-    "    return vis * p + (1 - vis) * noise\n",
+    "    return vis * p + (1 - vis) * np.ones(p.shape) / 2 ** 3\n",
     "\n",
     "def f(vis):\n",
     "    sdp.set_distribution(P_W(vis), use_lpi_constraints=True)\n",
@@ -711,7 +818,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "The critical value for the noise that we achieve, $v_{\\text{crit}}=0.7650$, is lower than the critical value for the noise that we achieved in Example 7, $v_{\\text{crit}}=0.8039$.\n",
     "\n",
@@ -720,14 +831,22 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "## Partial information support"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "It is also interesting to study scenarios where not all the information about a particular distribution in the original scenario is known. Specifying particular elements of a distribution in an `InflationSDP` object is achieved via the use of the function `InflationSDP.set_values()`, which admits as input a dictionary where the keys are the variables to be assigned numerical quantities, and the corresponding values are the quantities themselves. \n",
     "\n",
@@ -738,28 +857,30 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 13,
-   "metadata": {},
+   "execution_count": null,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [],
    "source": [
     "from causalinflation import InflationSDP, InflationProblem\n",
     "import numpy as np\n",
     "\n",
-    "InfProb = InflationProblem(dag={\"rhoABE\": [\"A\", \"B\", \"E\"],\n",
-    "                                \"rhoBCE\": [\"B\", \"C\", \"E\"]},\n",
-    "                           outcomes_per_party=[2, 4, 2, 2],  # Parties in alphabetical order, [\"A\", \"B\", \"C\", \"E\"]\n",
-    "                           settings_per_party=[2, 1, 2, 1],\n",
-    "                           inflation_level_per_source=[2, 2])\n",
-    "\n",
+    "InfProb = InflationProblem(dag={'rhoABE': ['A', 'B', 'E'],\n",
+    "                                'rhoBCE': ['B', 'C', 'E']},\n",
+    "                           outcomes_per_party=(2, 4, 2, 2),\n",
+    "                           settings_per_party=(2, 1, 2, 1),\n",
+    "                           inflation_level_per_source=(2, 2),\n",
+    "                           order=['A', 'B', 'C', 'E'])\n",
     "InfSDP = InflationSDP(InfProb)\n",
-    "\n",
     "InfSDP.generate_relaxation(InfSDP.build_columns('local1', max_monomial_length=3))\n",
     "meas = InfSDP.measurements  # accessed as meas[party][0][setting][outcome]\n",
     "\n",
     "def P_EveGuessing(noise=1):\n",
-    "    dims = [2, 4, 2, 2, 1, 2]\n",
-    "    p = np.zeros(dims)\n",
-    "    for a, b, c, x, y, z in np.ndindex(*dims):\n",
+    "    p = np.zeros((2, 4, 2, 2, 1, 2))\n",
+    "    for a, b, c, x, y, z in np.ndindex(*p.shape):\n",
     "        b0, b1 = np.unravel_index(b, (2, 2))  # 0 --> 00, 1 --> 01, 2 --> 10, 3 --> 11\n",
     "        p[a, 2*b1 + b0, c, x, y, z] = (1 + noise**2*(-1)**(a + c)*(((-1)**b0 + (-1)**(b1 + x + z))/2))/2**4\n",
     "    return p\n",
@@ -800,7 +921,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "After running the code above and plotting the curve:\n",
     "<center> <img src=\"./figures/repeater.PNG\" alt=\"drawing\" width=\"450\"/> </center>\n",
@@ -810,7 +935,11 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "### Example 9: Device independent entanglement certification\n",
     "\n",
@@ -823,8 +952,12 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 14,
-   "metadata": {},
+   "execution_count": 45,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "data": {
@@ -832,7 +965,7 @@
        "0.723358154296875"
       ]
      },
-     "execution_count": 14,
+     "execution_count": 45,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -845,7 +978,7 @@
     "N = 7  # How many spins in the system\n",
     "outcomes_per_party = [2] * N  # 2 measurements per site\n",
     "settings_per_party = [2] * N  # 2 outcomes per site\n",
-    "entcert = InflationProblem(dag={\"rhoW\": [\"A\", \"B\", \"C\", \"D\", \"E\", \"F\", \"G\"]},\n",
+    "entcert = InflationProblem(dag={'rhoW': ['A', 'B', 'C', 'D', 'E', 'F', 'G']},\n",
     "                           outcomes_per_party=outcomes_per_party,\n",
     "                           settings_per_party=settings_per_party)\n",
     "sdp = InflationSDP(entcert, commuting=True)\n",
@@ -905,9 +1038,196 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
    "source": [
     "We correctly recover the results for the W state visibility of $\\nu_{\\textrm{crit}}\\approx 0.723$ for $N=7$ in [[Table I, 4]](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   },
+   "source": [
+    "## Beyond networks\n",
+    "\n",
+    "### Example 10: The instrumental scenario\n",
+    "\n",
+    "The simplest causal scenario that exhibits a gap between classical, quantum and post-quantum correlations is the [instrumental scenario [8]](https://quantum-journal.org/papers/q-2019-09-16-186/). In the instrumental scenario we have two parties, Alice and Bob, that share a common source of correlations. While Alice can choose between different measurement settings, $x$, Bob has no choice. However, Alice is allowed to signal her output to Bob. This is depicted as a DAG in Figure a) below. For correlations arising in a standard Bell experiment, one can post-select only those where Bob's input is the same as Alice's output, $p(a,b|x,y{=}a)$. The postselection introduces one-way signaling by correlating Bob's input with Alice's output, thus simulating the instrumental scenario. This is depicted in Figure b) below. Clearly then we can project a Bell-type correlation to an instrumental-type correlation. The reverse also holds, namely instrumental-type correlations can be lifted to Bell-type correlations. Due to this, if one can prove that certain correlations, when lifted to a network-type scenario, are incompatible with said scenario, it must also be the case that the unlifted correlations are incompatible with the base scenario.  \n",
+    "\n",
+    "<center> <img src=\"./figures/instrumental.png\" alt=\"drawing\" width=\"650\"/> </center>\n",
+    "\n",
+    "The generated SDP relaxation for the instrumental scenario corresponds to that of the Bell scenario with the following modification: expectation values involving operators with a mismatch between Alice's output and Bob's input, $a\\neq y$, are left as free variables, and are not fixed when specifying a probability distribution. While in standard Bell scenarios we can fully use the so-called [Collins-Gisin notation [9]](https://arxiv.org/abs/quant-ph/0306129), which has normalisation built-in by expressing moments in the moment matrix without using the last output, in beyond-network scenarios we need to explicitly include the last output when it serves as an input to another party (and add the corresponding normalisation constraints) as it cannot be rewritten in terms of other variables. This is all done automatically by the package. \n",
+    "\n",
+    "In the lifted scenario, the input cardinality of children (those that are on the receiving end of one-way signalling influences) increases to accomodate the different output values of the parent nodes. For the instrumental scenario, this means that Bob's input goes from $y$ in the base scenario to $y'=(y,a)$ in the lifted scenario. The attribute `InflationProblem.effective_to_parent_settings` is a list of dictionaries which, for each party, unravels the effective setting in the lifted scenario to a tuple encoding the private setting and the parents' outputs. For example, in a network with parties Alice, Bob, Charlie and Dave, if Alice and Dave signal to Bob, then the effective setting $y'$ of Bob in the lifted scenario is $y'=(y,a,d)$ (or $y'=(y,d,a)$ if we specify specify a custom order with via the `order` optional parameter where Dave appears before Alice).\n",
+    "\n",
+    "As a specific application, we can show that the following distribution: \n",
+    "$$p(a,b|x)= \\begin{cases}1 / 2 & \\text { if } b=a+f(x, a) \\quad \\bmod 2 \\\\ 0 & \\text { otherwise }\\end{cases}$$\n",
+    "with $f(0,a)=0$, $f(1,a){=}a$, $f(2,a){=}a+1 \\bmod2$, is incompatible with the instrumental scenario with quantum sources of correlations with the following code:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 46,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.716400146484375"
+      ]
+     },
+     "execution_count": 46,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from causalinflation import InflationProblem, InflationSDP\n",
+    "import numpy as np\n",
+    "\n",
+    "prob = InflationProblem(dag={'rhoAB': ['A', 'B'], 'A': ['B']},\n",
+    "                        outcomes_per_party=(2, 2),\n",
+    "                        settings_per_party=(3, 1))\n",
+    "sdp = InflationSDP(prob)\n",
+    "sdp.generate_relaxation('local1')\n",
+    "\n",
+    "def P(noise):\n",
+    "     def f(x, a):\n",
+    "          return x*(2 - x)*a + 1/2*x*(x - 1)*(a + 1) % 2 \n",
+    "     p = np.zeros((2, 2, 3, 1))\n",
+    "     for a, b, x, y in np.ndindex(*p.shape):\n",
+    "          if b == (a + f(x, a)) % 2:\n",
+    "               p[a, b, x, y] = 1 / 2  \n",
+    "     return noise * p + (1 - noise) * np.ones(p.shape) / 4\n",
+    "\n",
+    "def func(vis):\n",
+    "     sdp.set_distribution(P(vis))\n",
+    "     sdp.solve(feas_as_optim=True)\n",
+    "     return sdp.objective_value\n",
+    "\n",
+    "bisect(func, 0, 1, verbose=0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This shows that there is no realisation of the above distribution for visibilities $\\nu\\geq 0.7164$ in the instrumental scenario.\n",
+    "\n",
+    "One can also compute bounds for Bell functionals in beyond-network scenarios. As an example, we can derive bounds in the instrumental scenario for the Bonet Bell operator appearing in Bonet's inequality:\n",
+    "$$\n",
+    "I_{\\text {Bonet }}:=p(a{=}b\\vert 0)+p(b{=}0\\vert 1)+p(a{=}0, b{=}1\\vert 2) \\leq \\begin{cases}2 & \\text { Classical } \\\\ (3+\\sqrt{2}) / 2 & \\text { Quantum }\\end{cases}\n",
+    "$$\n",
+    "Recall that the moment matrix contains expressions involving Alice's last output, $a{=}1$, but not Bob's, as Bob is not a parent in the DAG. As such, all probabilities involving Bob's last output, $b{=}1$, need to be expressed in terms of moments that do appear in the moment matrix. In this case, $p(a, b{=}1\\vert x) = p(a \\vert x) - p(a, b{=}0\\vert x)$. At the moment this is not done automatically, but needs to be considered by the user. The code to compute the bound is as follows:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 47,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Bonet Bell operator ≤ 2.0000 (Classical)\n",
+      "Bonet Bell operator ≤ 2.2071 (Quantum)\n"
+     ]
+    }
+   ],
+   "source": [
+    "from causalinflation import InflationProblem, InflationSDP\n",
+    "import numpy as np\n",
+    "from sympy import Symbol\n",
+    "\n",
+    "prob = InflationProblem(dag={'rhoAB': ['A', 'B'], 'A': ['B']},\n",
+    "                        outcomes_per_party=(2, 2),\n",
+    "                        settings_per_party=(3, 1))\n",
+    "sdp = InflationSDP(prob)\n",
+    "sdp.generate_relaxation('local1')\n",
+    "\n",
+    "objective = Symbol('pAB(00|00)') + Symbol('pAB(00|10)') + Symbol('pAB(10|10)')\n",
+    "objective += Symbol('pA(1|0)') - Symbol('pAB(10|00)')  # 'pAB(01|00)' \n",
+    "objective += Symbol('pA(0|2)') - Symbol('pAB(00|20)')  # 'pAB(01|20)'\n",
+    "\n",
+    "sdp = InflationSDP(prob, commuting=True)\n",
+    "sdp.generate_relaxation('local1')\n",
+    "sdp.set_objective(objective, direction='max')\n",
+    "sdp.solve()\n",
+    "print(f\"Bonet Bell operator ≤ {sdp.objective_value:.4f} (Classical)\")\n",
+    "\n",
+    "sdp = InflationSDP(prob)\n",
+    "sdp.generate_relaxation('local1')\n",
+    "sdp.set_objective(objective, direction='max')\n",
+    "sdp.solve()\n",
+    "print(f\"Bonet Bell operator ≤ {sdp.objective_value:.4f} (Quantum)\")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Probabilitic support compatibility\n",
+    "\n",
+    " @eliewolfe @apozas should we add this section?\n",
+    "\n",
+    "Hardy's paradox \"is the simplest form of Bell's theorem\". It is a proof without inequalities that certain correlations are incompatible with local realism based only on possibilistic arguments: it only assumes whether certain events are possible (positive probability) or impossible (zero probability) in order to reach a contradiction [[10]](https://arxiv.org/abs/1105.1819). In the spirit of Hardy-type paradoxes, one can extend the quantum inflation technique to tackle compatibility of a possibilistic support with a given causal structure. Standard quantum inflation cannot handle support problems numerically because one cannot distinguish with floating point precision between $0$ and a number that is sufficiently close to zero. One approach to circumvent this problem is to scale the moment matrix by an appropriate positive factor. \n",
+    "\n",
+    "Consider a SDP relaxation testing compatibility that is feasible and let $\\Gamma^*$ be the optimal analytical solution. If we divide $\\Gamma^*$ by the smallest non-zero element of $\\Gamma^*$, $\\epsilon$, then moments that are identical to zero (e.g., those which involve impossible events) will be mapped to zero. However all other moments will be mapped either to the interval $[1,\\infty)$ if they are positive moments, or to $(-\\infty, \\infty)$ if they can be negative. The expectation value of the identity will also be mapped to $[1,\\infty)$,  $\\langle 1 \\rangle \\to \\langle 1 \\rangle/\\epsilon$, and it will upper bound all other moments in the moment matrix. Notice that instead of finding the optimal solution of the original SDP and rescaling it, we can solve the rescaled SDP from the beginning. To get back the original moment matrix whose moments can be interpreted as probabilities, we can divide $\\Gamma^*/\\epsilon$ by the numerical value found for the identity moment, $\\langle 1 \\rangle^*/\\epsilon$. Given that this scaling is one to one, infeasibility of the rescaled SDP implies infeasibility for the original SDP and viceversa. Furthermore, in the rescaled SDP moments that are identically zero can be distinguished from non-zero moments, and as such, the rescaled SDP can be solved numerically. \n",
+    "\n",
+    "All the constraints that the rescaled SDP must fulfill are imposed automatically by the package by setting the flag `supports_problem=True` when instantiating `InflationSDP`.\n",
+    "\n",
+    "#### Example 11: Possibilistic support compatibility\n",
+    "\n",
+    "As an example, one can show that any distribution that has the same support as the distribution from Example 10 is incompatbile with the instrumental scenario:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 48,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'infeasible'"
+      ]
+     },
+     "execution_count": 48,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from causalinflation import InflationProblem, InflationSDP\n",
+    "import numpy as np\n",
+    "\n",
+    "prob = InflationProblem(dag={'rhoAB': ['A', 'B'], 'A': ['B']},\n",
+    "                        outcomes_per_party=(2, 2),\n",
+    "                        settings_per_party=(3, 1))\n",
+    "\n",
+    "sdp = InflationSDP(prob, supports_problem=True)\n",
+    "sdp.generate_relaxation('local1')\n",
+    "\n",
+    "def P(noise):\n",
+    "     def f(x, a):\n",
+    "          return x*(2 - x)*a + 1/2*x*(x - 1)*(a + 1) % 2 \n",
+    "     p = np.zeros((2, 2, 3, 1))\n",
+    "     for a, b, x, y in np.ndindex(*p.shape):\n",
+    "          if b == (a + f(x, a)) % 2:\n",
+    "               p[a, b, x, y] = 1 / 2  \n",
+    "     return noise * p + (1 - noise) * np.ones(p.shape) / 4\n",
+    "\n",
+    "sdp.set_distribution(P(1))\n",
+    "sdp.solve()\n",
+    "sdp.status"
    ]
   },
   {
@@ -916,7 +1236,7 @@
    "source": [
     "## References\n",
     "\n",
-    "[1] *[E. Wolfe,  R. W. Spekkens, T. Fritz. Journal of Causal Inference, vol. 7, no. 2, 2019, pp. 20170020.](https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html?lang=en)*\n",
+    "[1] *[E. Wolfe,  R. W. Spekkens, and T. Fritz. Journal of Causal Inference, vol. 7, no. 2, 2019, pp. 20170020.](https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html?lang=en)*\n",
     "\n",
     "[2] *[E. Wolfe, A. Pozas-Kerstjens, M. Grinberg, D. Rosset, A. Acín, and Miguel Navascués Phys. Rev. X 11, 021043](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043)*\n",
     "\n",
@@ -925,25 +1245,28 @@
     "[4] *[F. Baccari, D. Cavalcanti, P. Wittek, and A. Acín\n",
     "Phys. Rev. X 7, 021042](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042)*\n",
     "\n",
-    "[5] *[S. Popescu, D. Rohrlich, Found Phys 24, 379–385 (1994).](https://link.springer.com/article/10.1007/BF02058098)*\n",
+    "[5] *[S. Popescu, and D. Rohrlich, Found Phys 24, 379–385 (1994).](https://link.springer.com/article/10.1007/BF02058098)*\n",
     "\n",
-    "[6] *[A. Pozas-Kerstjens, N. Gisin, M. O. Renou, (2022). arXiv preprint arXiv:2203.16543.](https://arxiv.org/abs/2203.16543)*\n",
+    "[6] *[A. Pozas-Kerstjens, N. Gisin, and M. O. Renou, (2022). arXiv preprint arXiv:2203.16543.](https://arxiv.org/abs/2203.16543)*\n",
     "\n",
     "[7] *[N. Brunner, D. Cavalcanti, S. Pironio, V. Scarani, and S. Wehner\n",
-    "Rev. Mod. Phys. 86, 419](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.86.419)*\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "The calculations for all the examples in this section use the following package versions:"
+    "Rev. Mod. Phys. 86, 419](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.86.419)*\n",
+    "\n",
+    "[8] *[T. Van Himbeeck, J. Bohr Brask, S. Pironio, R. Ramanathan, A. Belén Sainz, and E. Wolfe, Quantum 3, 186 (2019)](https://quantum-journal.org/papers/q-2019-09-16-186/)*.\n",
+    "\n",
+    "[9] *[D. Collins, and N. Gisin 2004 J. Phys. A: Math. Gen. 37 1775](https://arxiv.org/abs/quant-ph/0306129)*\n",
+    "\n",
+    "[10] *[S. Mansfield and, T. Fritz. Found Phys 42, 709–719 (2012)](https://arxiv.org/abs/1105.1819)*\n"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 17,
-   "metadata": {},
+   "execution_count": null,
+   "metadata": {
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -973,17 +1296,9 @@
    ],
    "source": [
     "import causalinflation, qutip\n",
-    "\n",
     "causalinflation.about()\n",
-    "print(\"QuTiP version: \", qutip.__version__)"
+    "print('QuTiP version: ', qutip.__version__)"
    ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
   }
  ],
  "metadata": {
@@ -1004,7 +1319,6 @@
    "pygments_lexer": "ipython3",
    "version": "3.10.4"
   },
-  "orig_nbformat": 4,
   "vscode": {
    "interpreter": {
     "hash": "b9d9d82ce614342c99c73b6bb2461ce41dfad241e1082458cbcf020875f9158b"

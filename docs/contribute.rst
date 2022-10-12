@@ -2,4 +2,4 @@
 How to contribute
 *****************
 
-.. mdinclude:: CONTRIBUTE.md
+.. mdinclude:: CONTRIBUTE_MD.md
