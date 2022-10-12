@@ -438,25 +438,33 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
                 status_str = 'unknown'
                 # The solutions status is unknown. The termination code
                 # indicates why the optimizer terminated prematurely.
+                symname, desc = mosek.Env.getcodedesc(
+                    mosek.rescode(int(M.getSolverIntInfo("optimizeResponse"))))
+                error_message = "Termination code: {0} {1}".format(symname, desc)
                 if verbose > 0:
-                    print("The solution status is unknown.")
-                    symname, desc = mosek.Env.getcodedesc(
-                        mosek.rescode(int(M.getSolverIntInfo("optimizeResponse"))))
-                    print("   Termination code: {0} {1}".format(symname, desc))
+                    print("The solution status is unknown.\n   " + error_message)
+                return {"status": status_str, "error": error_message}
             else:
                 status_str = 'other'
-                print("Another unexpected problem, status {0}".format(status) +
-                    " has been obtained.")
+                error_message = "Another unexpected problem, status {0}".format(status) +\
+                    " has been obtained."
+                print(error_message)
+                return {"status": status_str, "error": error_message}
         except OptimizeError as e:
-            print("Optimization failed. Error: {0}".format(e))
-            return None
+            status_str = 'other'
+            error_message = "Optimization failed. Error: {0}".format(e)
+            print(error_message)
+            return {"status": status_str, "error": error_message}
         except SolutionError as e:
-            status = M.getProblemStatus()
-            print("Solution status: {}. Error: {0}".format(status, e))
-            return {"status": status}
+            status_str = M.getProblemStatus()
+            error_message = "Solution status: {0}. Error: {1}".format(status_str, e)
+            print(error_message)
+            return {"status": status_str, "error": error_message}
         except Exception as e:
-            print("Unexpected error: {0}".format(e))
-            return None
+            status_str = 'other'
+            error_message = "Unexpected error: {0}".format(e)
+            print(error_message)
+            return {"status": status_str, "error": error_message}
 
         if status_str in ['feasible', 'infeasible']:
             certificate = {x: 0 for x in known_vars}
@@ -520,4 +528,4 @@ def solveSDP_MosekFUSION(mask_matrices: Dict=None,
 
             return vars_of_interest
         else:
-            return None
+            return {"status": status_str}
