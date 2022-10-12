@@ -477,7 +477,7 @@ class InflationSDP(object):
                                             InternalAtomicMonomial,
                                             sp.core.symbol.Symbol,
                                             str],
-                                      float],
+                                      Union[float, sp.core.expr.Expr]],
                                  None],
                    use_lpi_constraints: bool = False,
                    only_specified_values: bool = False) -> None:
