@@ -84,7 +84,7 @@ def convert_to_human_readable(problem):
 
     ### Process equalities
     equalities = []
-    for eq_dict in problem.moment_linear_equalities:
+    for eq_dict in problem.moment_equalities:
         equality = ""
         for monom, coeff in eq_dict.items():
             equality += "+" if coeff > 0 else "-"
@@ -156,7 +156,7 @@ def write_to_mat(problem, filename):
     names       = [[mon.idx + offset, mon.name]
                    for mon in problem.list_of_monomials]
     equalities = []
-    for eq_dict in problem.moment_linear_equalities:
+    for eq_dict in problem.moment_equalities:
         equality = [[mon.idx + offset, coeff] for mon, coeff in eq_dict.items()]
         equalities.append(equality)
 
@@ -286,12 +286,12 @@ def write_to_sdpa(problem, filename):
             ii += 1
 
     # Prepare equalities
-    if len(problem.moment_linear_equalities) > 0:
+    if len(problem.moment_equalities) > 0:
         block += 1
         ii     = 1
-        block_size = 2*len(problem.moment_linear_equalities)
+        block_size = 2*len(problem.moment_equalities)
         blockstruct.append(str(-block_size))
-    for equality in problem.moment_linear_equalities:
+    for equality in problem.moment_equalities:
         for var, coeff in equality.items():
             if var != problem.One:
                 var = new_var_dict[var.idx]

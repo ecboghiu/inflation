@@ -6,7 +6,7 @@ import warnings
 
 
 class TestMonomialGeneration(unittest.TestCase):
-    bilocalDAG = {"h1": ["v1", "v2"], "h2": ["v2", "v3"]}
+    bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
     inflation  = [2, 2]
     bilocality = InflationProblem(dag=bilocalDAG,
                                   settings_per_party=[1, 1, 1],
@@ -28,65 +28,112 @@ class TestMonomialGeneration(unittest.TestCase):
     B_2_2_0_0 = meas[1][3][0][0]
     C_0_1_0_0 = meas[2][0][0][0]
     C_0_2_0_0 = meas[2][1][0][0]
-    actual_cols = [1, A_1_0_0_0, A_2_0_0_0, B_1_1_0_0, B_1_2_0_0, B_2_1_0_0,
-                   B_2_2_0_0, C_0_1_0_0, C_0_2_0_0, A_1_0_0_0*A_2_0_0_0,
-                   A_1_0_0_0*B_1_1_0_0, A_1_0_0_0*B_1_2_0_0,
-                   A_1_0_0_0*B_2_1_0_0, A_1_0_0_0*B_2_2_0_0,
-                   A_2_0_0_0*B_1_1_0_0, A_2_0_0_0*B_1_2_0_0,
-                   A_2_0_0_0*B_2_1_0_0, A_2_0_0_0*B_2_2_0_0,
-                   A_1_0_0_0*C_0_1_0_0, A_1_0_0_0*C_0_2_0_0,
-                   A_2_0_0_0*C_0_1_0_0, A_2_0_0_0*C_0_2_0_0,
-                   B_1_1_0_0*B_1_2_0_0, B_1_1_0_0*B_2_1_0_0,
-                   B_1_1_0_0*B_2_2_0_0, B_1_2_0_0*B_1_1_0_0,
-                   B_1_2_0_0*B_2_1_0_0, B_1_2_0_0*B_2_2_0_0,
-                   B_2_1_0_0*B_1_1_0_0, B_2_1_0_0*B_2_2_0_0,
-                   B_2_2_0_0*B_1_2_0_0, B_2_2_0_0*B_2_1_0_0,
-                   B_1_1_0_0*C_0_1_0_0, B_1_1_0_0*C_0_2_0_0,
-                   B_1_2_0_0*C_0_1_0_0, B_1_2_0_0*C_0_2_0_0,
-                   B_2_1_0_0*C_0_1_0_0, B_2_1_0_0*C_0_2_0_0,
-                   B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
-                   C_0_1_0_0*C_0_2_0_0]
+    cols = [1, A_1_0_0_0, A_2_0_0_0, B_1_1_0_0, B_1_2_0_0, B_2_1_0_0,
+            B_2_2_0_0, C_0_1_0_0, C_0_2_0_0, A_1_0_0_0*A_2_0_0_0,
+            A_1_0_0_0*B_1_1_0_0, A_1_0_0_0*B_1_2_0_0, A_1_0_0_0*B_2_1_0_0,
+            A_1_0_0_0*B_2_2_0_0, A_2_0_0_0*B_1_1_0_0, A_2_0_0_0*B_1_2_0_0,
+            A_2_0_0_0*B_2_1_0_0, A_2_0_0_0*B_2_2_0_0, A_1_0_0_0*C_0_1_0_0,
+            A_1_0_0_0*C_0_2_0_0, A_2_0_0_0*C_0_1_0_0, A_2_0_0_0*C_0_2_0_0,
+            B_1_1_0_0*B_1_2_0_0, B_1_1_0_0*B_2_1_0_0, B_1_1_0_0*B_2_2_0_0,
+            B_1_2_0_0*B_1_1_0_0, B_1_2_0_0*B_2_1_0_0, B_1_2_0_0*B_2_2_0_0,
+            B_2_1_0_0*B_1_1_0_0, B_2_1_0_0*B_2_2_0_0, B_2_2_0_0*B_1_2_0_0,
+            B_2_2_0_0*B_2_1_0_0, B_1_1_0_0*C_0_1_0_0, B_1_1_0_0*C_0_2_0_0,
+            B_1_2_0_0*C_0_1_0_0, B_1_2_0_0*C_0_2_0_0, B_2_1_0_0*C_0_1_0_0,
+            B_2_1_0_0*C_0_2_0_0, B_2_2_0_0*C_0_1_0_0, B_2_2_0_0*C_0_2_0_0,
+            C_0_1_0_0*C_0_2_0_0]
+    actual_cols = []
+    for col in cols:
+        actual_cols.append(bilocalSDP._interpret_name(col))
 
     def test_generating_columns_c(self):
-       truth = 37
-       columns = self.bilocalSDP_commuting.build_columns(self.col_structure,
-                                                return_columns_numerical=False)
-       self.assertEqual(len(columns), truth,
-                        "With commuting variables, there are  " +
-                        str(len(columns)) + " columns but " + str(truth) +
-                        " were expected.")
+        truth = 37
+        columns = self.bilocalSDP_commuting.build_columns(self.col_structure)
+        self.assertEqual(len(columns), truth,
+                         "With commuting variables, there are  " +
+                         str(len(columns)) + " columns but " + str(truth) +
+                         " were expected.")
 
     def test_generating_columns_nc(self):
         truth = 41
-        columns = self.bilocalSDP.build_columns(self.col_structure,
-                                                return_columns_numerical=False)
+        columns = self.bilocalSDP.build_columns(self.col_structure)
         self.assertEqual(len(columns), truth,
                          "With noncommuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
                          " were expected.")
 
     def test_generation_from_columns(self):
-        columns = self.bilocalSDP.build_columns(self.actual_cols,
-                                                return_columns_numerical=False)
-        self.assertEqual(columns, self.actual_cols,
-                         "The direct copying of columns is failing.")
+        columns = self.bilocalSDP.build_columns(self.actual_cols)
+        areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, self.actual_cols))
+        self.assertTrue(areequal, "The direct copying of columns is failing.")
 
     def test_generation_from_lol(self):
-        columns = self.bilocalSDP.build_columns(self.col_structure,
-                                                return_columns_numerical=False)
-        self.assertEqual(columns, self.actual_cols,
-                         "Parsing a list-of-list description of columns fails.")
+        columns = self.bilocalSDP.build_columns(self.col_structure)
+        areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, self.actual_cols))
+        self.assertTrue(areequal,
+                        "Parsing a list-of-list description of columns fails.")
 
     def test_generation_from_str(self):
-        columns = self.bilocalSDP.build_columns("npa2",
-                                                return_columns_numerical=False)
-        self.assertEqual(columns, self.actual_cols,
-                        "Parsing the string description of columns is failing.")
+        columns = self.bilocalSDP.build_columns("npa2")
+        areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
+                       for r in zip(columns, self.actual_cols))
+        self.assertTrue(areequal,
+                        "Parsing NPA levels with string description fails.")
+        columns = self.bilocalSDP.build_columns("local2",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in self.actual_cols))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing local levels with string description fails.")
+        columns = self.bilocalSDP.build_columns("local221",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in self.actual_cols[:-1]))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing local levels with individual string " +
+                        "descriptions fails.")
+        columns = self.bilocalSDP.build_columns("physical2",
+                                                max_monomial_length=2)
+        physical = (self.actual_cols[:22] + [self.actual_cols[24]]
+                    + [self.actual_cols[26]] + self.actual_cols[32:])
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in physical))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing physical levels with global string " +
+                        "description fails.")
+        columns = self.bilocalSDP.build_columns("physical",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in physical))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing physical levels without further " +
+                        "description fails.")
+        columns = self.bilocalSDP.build_columns("physical121",
+                                                max_monomial_length=2)
+        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+                   ).difference(
+                       set(self.bilocalSDP._from_2dndarray(col)
+                           for col in (self.actual_cols[:9]
+                                       + self.actual_cols[10:22]
+                                       + [self.actual_cols[24]]
+                                       + [self.actual_cols[26]]
+                                       + self.actual_cols[32:-1])))
+        self.assertTrue(len(diff) == 0,
+                        "Parsing physical levels with individual string " +
+                        "descriptions fails.")
 
     def test_generate_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
-        _, columns = oneParty.build_columns([[], [0, 0]],
-                                            return_columns_numerical=True)
+        columns = oneParty.build_columns([[], [0, 0]])
         truth   = [[],
                    [[1, 1, 0, 0], [1, 1, 1, 0]],
                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
@@ -97,8 +144,8 @@ class TestMonomialGeneration(unittest.TestCase):
         areequal = all(np.array_equiv(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, truth))
         self.assertTrue(areequal,
-                         "The column generation is not capable of handling " +
-                         "monomials that reduce to the identity")
+                        "The column generation is not capable of handling " +
+                        "monomials that reduce to the identity")
         self.assertTrue(areequal,
                         "The column generation is not capable of handling " +
                         "monomials that reduce to the identity.")
@@ -111,27 +158,27 @@ class TestSDPOutput(unittest.TestCase):
         warnings.simplefilter("ignore", category=UserWarning)
 
     def GHZ(self, v):
-        dist = np.zeros((2,2,2,1,1,1))
+        dist = np.zeros((2, 2, 2, 1, 1, 1))
         for a in [0, 1]:
             for b in [0, 1]:
                 for c in [0, 1]:
                     if (a == b) and (b == c):
-                        dist[a,b,c,0,0,0] = v/2 + (1-v)/8
+                        dist[a, b, c, 0, 0, 0] = v/2 + (1-v)/8
                     else:
-                        dist[a,b,c,0,0,0] = (1-v)/8
+                        dist[a, b, c, 0, 0, 0] = (1-v)/8
         return dist
 
     cutInflation = InflationProblem({"lambda": ["a", "b"],
                                      "mu": ["b", "c"],
                                      "sigma": ["a", "c"]},
-                                     outcomes_per_party=[2, 2, 2],
-                                     settings_per_party=[1, 1, 1],
-                                     inflation_level_per_source=[2, 1, 1])
+                                    outcomes_per_party=[2, 2, 2],
+                                    settings_per_party=[1, 1, 1],
+                                    inflation_level_per_source=[2, 1, 1])
 
     bellScenario = InflationProblem({"Lambda": ["A", "B"]},
-                                         outcomes_per_party=[2, 2],
-                                         settings_per_party=[2, 2],
-                                         inflation_level_per_source=[1])
+                                    outcomes_per_party=[2, 2],
+                                    settings_per_party=[2, 2],
+                                    inflation_level_per_source=[1])
 
     def test_bounds(self):
         from sympy import Symbol
@@ -168,7 +215,7 @@ class TestSDPOutput(unittest.TestCase):
                                 order=('A', 'B', 'C', 'D'))
         sdp = InflationSDP(prob)
         sdp.generate_relaxation('npa2')
-        equalities = sdp.moment_linear_equalities
+        equalities = sdp.moment_equalities
 
         self.assertEqual(len(equalities), 738,
                         "Failing to obtain the correct number of implicit equalities in a non-network scenario.")
@@ -226,93 +273,6 @@ class TestSDPOutput(unittest.TestCase):
         sdp.solve(feas_as_optim=False)
         self.assertEqual(sdp.status, 'feasible',
                         "A feasible support for the instrumental scenario is not being recognized as such.")
-
-    def test_solveSDP_Mosek(self):
-        "Test the MOSEK Fusion API interface independently of InflationSDP."
-        from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
-        
-        # Test only linear constraints, with no Matrix variables
-        solveSDP_arguments = {"objective":  {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
-                              "known_vars": {'1': 1},  # Define the variable that is the identity
-                              "var_inequalities":  [{'x': -1, '1': 2},    # 2 - x >= 0
-                                                    {'y': -1, '1': 5},    # 5 - y >= 0
-                                                    {'z': -1, '1': 1/2},  # 1/2 - z >= 0
-                                                    {'w': 1,  '1': 1}],   # w >= -1
-                              "var_equalities": [{'x': 1/2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
-        }
-        _, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        _, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
-        self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
-        self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2), "The solution is not correct.")  # Found with WolframAlpha
-    
-        # Test only SDP. Max CHSH by bypassing InflationSDP and setting it by hand
-        G = np.array([[1,  2,  3,  4,  5],
-                      [2,  1,  6,  7,  8],
-                      [3,  6,  1,  9, 10],
-                      [4,  7,  9,  1, 11],
-                      [5,  8, 10, 11,  1]])
-        solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
-                              "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
-                              "known_vars": {'1': 1}}
-        optim_vars, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
-        self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
-        self.assertTrue(np.abs(value_primal - 2*np.sqrt(2)) < 1e-5, "The solution is not 2√2")
-        self.assertTrue(np.abs(optim_vars['x']['7'] - 1/np.sqrt(2)) < 1e-5, "The two body correlator is not 1/√2")
-        
-        # Test SDP mixed with inequality constraints. Max CHSH while enforcing CHSH <= 2.23
-        solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
-                              "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
-                              "known_vars": {'1': 1},
-                              "var_inequalities": [{'1': 2.23, '7': -1, '8': -1, '9': -1, '10': 1}]  # CHSH <= 2.23
-                            }
-        optim_vars, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
-        self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
-        self.assertTrue(np.abs(value_primal - 2.23) < 1e-5, "Max CHSH with CHSH <= 2.23 is not 2.23.")
- 
-        # Test SDP mixed with equality constraints plus new variables not 
-        # in the moment matrix. Max CHSH while enforcing that the 2 body
-        # correlators satisfy a local model calculated with Mathematica.
-        import sympy as sp
-        q = np.zeros((4,4), dtype=object)
-        for i in range(4):
-            for j in range(4):
-                q[i, j] = sp.Symbol(f'q{i}{j}')
-                
-        A0B0 =  q[0,0] - q[0,1] + q[0,2] - q[0,3] - q[1,0] + q[1,1] - \
-                q[1,2] + q[1,3] + q[2,0] - q[2,1] + q[2,2] - q[2,3] - \
-                q[3,0] + q[3,1] - q[3,2] + q[3,3]
-        A0B1 =  q[0,0] + q[0,1] - q[0,2] - q[0,3] - q[1,0] - q[1,1] + \
-                q[1,2] + q[1,3] + q[2,0] + q[2,1] - q[2,2] - q[2,3] - \
-                q[3,0] - q[3,1] + q[3,2] + q[3,3]
-        A1B0 =  q[0,0] - q[0,1] + q[0,2] - q[0,3] + q[1,0] - q[1,1] + \
-                q[1,2] - q[1,3] - q[2,0] + q[2,1] - q[2,2] + q[2,3] - \
-                q[3,0] + q[3,1] - q[3,2] + q[3,3]
-        A1B1 =  q[0,0] + q[0,1] - q[0,2] - q[0,3] + q[1,0] + q[1,1] - \
-                q[1,2] - q[1,3] - q[2,0] - q[2,1] + q[2,2] + q[2,3] - \
-                q[3,0] - q[3,1] + q[3,2] + q[3,3]
-        solveSDP_arguments = {"mask_matrices": {str(i): G == i for i in np.unique(G)},
-                              "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
-                              "known_vars": {'1': 1},
-                              "var_inequalities": [*[{q[i, j]: 1} for i in range(4) for j in range(4)]  # Positivity
-                                                   ], 
-                              "var_equalities": [{**{q[i, j]: 1 for i in range(4) for j in range(4)}, '1': -1},  # Normalisation
-                                                 {**A0B0.as_coefficients_dict(), '7': -1},  # LHV
-                                                 {**A0B1.as_coefficients_dict(), '8': -1},  # ...
-                                                 {**A1B0.as_coefficients_dict(), '9': -1},
-                                                 {**A1B1.as_coefficients_dict(), '10': -1}]
-                            }
-        optim_vars, value_primal, _ = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=False)
-        optim_vars, value_dual, _   = solveSDP_MosekFUSION(**solveSDP_arguments, solve_dual=True)
-        self.assertTrue(np.isclose(value_primal, value_dual), "The dual and primal solutions are not equal.")
-        self.assertTrue(np.abs(value_primal - 2) < 1e-5, "Max CHSH over local strategies is not 2, the local bound.")
-        # Check that some of the constraints are satisfied
-        vals = optim_vars['x']
-        for i in range(4):
-            for j in range(4):
-                self.assertTrue(vals[q[i, j]] >= -1e-9, f"q[{i}, {j}] is negative.")
-        self.assertTrue(np.abs(np.sum([vals[q[i, j]] for i in range(4) for j in range(4)]) - 1) < 1e-9, "q is not normalised.")
 
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
@@ -397,7 +357,7 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong.")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.list_of_monomials[8]],
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
                         (0.5+1e-2)/2 + (0.5-1e-2)/8),
                         "Setting the distribution is failing.")
         sdp.solve()
@@ -408,7 +368,7 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.list_of_monomials[8]],
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
                          (0.5-1e-2)/2 + (0.5+1e-2)/8),
                          "Re-setting the distribution is failing.")
         sdp.solve()

@@ -690,6 +690,8 @@ def apply_source_permplus_monomial(monomial: np.ndarray,
     new_factors = monomial.copy()
     new_factors[:, 1 + source] = permutation_plus[new_factors[:, 1 + source]]
     return new_factors
+
+
 ################################################################################
 # OPERATIONS ON MOMENT MATRICES                                                #
 ################################################################################

@@ -124,8 +124,7 @@ class InflationProblem(object):
         # Unpacking of visible nodes with children
         nodes_with_children = list(self.dag.keys())
         self.has_children   = np.zeros(self.nr_parties, dtype=int)
-        self.non_network_scenario = (not
-                                set(nodes_with_children).isdisjoint(self.names))
+        self.is_network     = set(nodes_with_children).isdisjoint(self.names)
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties),
@@ -162,13 +161,11 @@ class InflationProblem(object):
         actual_sources  = [source for source in nodes_with_children
                            if source not in self.names]
         self.nr_sources = len(actual_sources)
-        hypergraph      = np.zeros((self.nr_sources, self.nr_parties),
+        self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
         for ii, source in enumerate(actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
-            hypergraph[ii, pos] = 1
-
-        self.hypergraph = hypergraph
+            self.hypergraph[ii, pos] = 1
 
         assert self.hypergraph.shape[1] == self.nr_parties, \
             ("The number of parties derived from the DAG is "

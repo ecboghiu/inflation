@@ -5,15 +5,18 @@ matrices.
 """
 from copy import deepcopy
 from itertools import chain, permutations, product
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
 import sympy
+from sympy.combinatorics import Permutation
+from sympy.combinatorics.perm_groups import PermutationGroup
 
-from .fast_npa import (factorize_monomial,
+
+from .fast_npa import (apply_source_permplus_monomial,
+                       factorize_monomial,
                        mon_lexsorted,
-                       to_name,
-                       apply_source_permplus_monomial)
+                       to_name)
 
 try:
     from numba import jit
@@ -21,8 +24,6 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-
-
     bool_ = bool
 
 try:
@@ -34,14 +35,145 @@ nopython = False
 cache = False
 
 
+def apply_inflation_symmetries(momentmatrix: np.ndarray,
+                               inflation_symmetries: np.ndarray,
+                               verbose: bool = False
+                               ) -> Tuple[np.ndarray,
+                                          Dict[int, int],
+                                          np.ndarray]:
+    """Applies the inflation symmetries, in the form of permutations of the
+    rows and colums of a moment matrix, to the moment matrix.
+
+    Parameters
+    ----------
+    momentmatrix : numpy.ndarray
+        The moment matrix.
+    inflation_symmetries : numpy.ndarray
+        Two-dimensional array where each row represents a permutation of
+        the rows and columns of the moment matrix.
+    verbose : bool
+        Whether information about progress is printed out.
+
+    Returns
+    -------
+    sym_mm : numpy.ndarray
+        The symmetrized version of the moment matrix, where each cell is
+        the lowest index of all the Monomials that are equivalent to that
+        in the corresponding cell in momentmatrix.
+    orbits : Dict[int, int]
+        The map from unsymmetrized indices in momentmatrix to their
+        symmetrized counterparts in sym_mm.
+    repr_values: numpy.ndarray
+        An array of unique representative former (unsymmetrized) indices.
+        This is later used for hashing indices and making sanitization much
+        faster.
+    """
+    max_value = momentmatrix.max(initial=0)
+    if not len(inflation_symmetries):
+        repr_values = np.arange(max_value + 1)
+        orbits = dict(zip(repr_values, repr_values))
+        return momentmatrix, orbits, repr_values
+    else:
+        old_indices, flat_pos, inverse = np.unique(momentmatrix.ravel(),
+                                                   return_index=True,
+                                                   return_inverse=True)
+        inverse           = inverse.reshape(momentmatrix.shape)
+        prev_unique_count = np.inf
+        new_unique_count  = old_indices.shape[0]
+        new_indices       = np.arange(new_unique_count)
+        inversion_tracker = new_indices.copy()
+        repr_values = old_indices.copy()
+        # We minimize under every element of the inflation symmetry group.
+        for permutation in tqdm(inflation_symmetries,
+                                disable=not verbose,
+                                desc="Applying symmetries      "):
+            if prev_unique_count > new_unique_count:
+                rows, cols = np.unravel_index(flat_pos, momentmatrix.shape)
+            prev_unique_count = new_unique_count
+            assert np.array_equal(new_indices, inverse[(rows, cols)]), \
+                ("The representatives of the symmetrized indices are " +
+                 "not minimal.")
+            np.minimum(new_indices,
+                       inverse[(permutation[rows], permutation[cols])],
+                       out=new_indices)
+            unique_values, unique_values_pos, unique_values_inv = \
+                np.unique(new_indices,
+                          return_index=True,
+                          return_inverse=True)
+            new_unique_count = unique_values.shape[0]
+            if prev_unique_count > new_unique_count:
+                inverse           = unique_values_inv[inverse]
+                flat_pos          = flat_pos[unique_values_pos]
+                repr_values       = repr_values[unique_values_pos]
+                inversion_tracker = unique_values_inv[inversion_tracker]
+                del unique_values_pos, unique_values_inv
+                new_indices = np.arange(new_unique_count)
+        prior_min_value = old_indices.min()
+        if old_indices.min() != 0:
+            new_indices += prior_min_value
+        orbits = dict(zip(old_indices, new_indices[inversion_tracker]))
+        sym_mm = new_indices[inverse]
+        return sym_mm, orbits, repr_values
+
+def commutation_relations(infSDP):
+    """Return a user-friendly representation of the commutation relations.
+
+    Parameters
+    ----------
+    infSDP : causalinflation.InflationSDP
+        The SDP object for which the commutation relations are to be extracted.
+
+    Returns
+    -------
+    Tuple[sympy.Expr]
+        The list of commutators (given as sympy Expressions) that are nonzero.
+    """
+    from collections import namedtuple
+    nonzero = namedtuple("NonZeroExpressions", "exprs")
+    data = []
+    for i in range(infSDP._lexorder.shape[0]):
+        for j in range(i, infSDP._lexorder.shape[0]):
+            # Most operators commute as they belong to different parties,
+            if infSDP._notcomm[i, j] != 0:
+                op1 = sympy.Symbol(to_name([infSDP._lexorder[i]], infSDP.names),
+                                   commutative=False)
+                op2 = sympy.Symbol(to_name([infSDP._lexorder[i]], infSDP.names),
+                                   commutative=False)
+                if infSDP.verbose > 0:
+                    print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
+                data.append(op1 * op2 - op2 * op1)
+    return nonzero(data)
+
+
+def lexicographic_order(infSDP) -> Dict[str, int]:
+    """Return a user-friendly representation of the lexicographic order.
+
+    Parameters
+    ----------
+    infSDP : causalinflation.InflationProblem
+        The SDP object for which the commutation relations are to be extracted.
+
+    Returns
+    -------
+    dict[str, int]
+        The lexicographic order as a dictionary where keys are the monomials in
+        the problem and the values are their positions in the lexicographic
+        ordering.
+    """
+    lexorder = {}
+    for i, op in enumerate(infSDP._lexorder):
+        lexorder[sympy.Symbol(to_name([op], infSDP.names),
+                              commutative=False)] = i
+    return lexorder
+
+
 def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                   inflevels: np.ndarray,
                                   party: int,
                                   max_monomial_length: int,
                                   settings_per_party: Tuple[int],
                                   outputs_per_party: Tuple[int],
-                                  names: Tuple[str],
-                                  lexorder
+                                  lexorder: np.ndarray
                                   ) -> List[np.ndarray]:
     """Generate all possible positive monomials given a scenario and a maximum
     length. Note that the maximum length cannot be greater than the minimum
@@ -67,8 +199,6 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     outputs_per_party : List[int]
         List containing the cardinality of the output/measurement outcome
         of each party.
-    names : List[str]
-        names[i] is the string name of the party i+1.
 
     Returns
     -------
@@ -95,7 +225,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         initial_monomial[mon_idx, -2] = 0
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
-    template_new_mons_aux = [to_name(initial_monomial, names)]
+    template_new_mons_dict = {initial_monomial.tobytes(): initial_monomial}
+
     all_permutationsplus_per_source = [
         increase_values_by_one_and_prepend_with_column_of_zeros(list(permutations(range(inflevel))))
         for inflevel in inflevels.flat]
@@ -108,12 +239,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                 monomial=permuted,
                 source=source,
                 permutation_plus=perms_plus[source]), lexorder)
-        permuted_name = to_name(permuted, names)
-        if permuted_name not in template_new_mons_aux:
-            template_new_mons_aux.append(permuted_name)
-
-    template_new_monomials = [
-        np.asarray(to_numbers(mon, names)) for mon in template_new_mons_aux]
+        template_new_mons_dict[permuted.tobytes()] = permuted
+    template_new_monomials = list(template_new_mons_dict.values())
 
     new_monomials = []
     # Insert all combinations of inputs and outputs
@@ -164,69 +291,6 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
                 factors_expanded.append(base)
     factors = factors_expanded
     return factors
-
-
-def to_symbol(monomial: np.ndarray, names: Tuple[str]) -> sympy.core.symbol.Symbol:
-    """Converts a monomial to a symbolic representation.
-    """
-    if np.array_equal(monomial, np.array([[0]], dtype=np.uint16)):
-        return sympy.S.One
-
-    if type(monomial) == str:
-        monomial = to_numbers(monomial, names)
-    monomial = monomial.tolist()
-    symbols = []
-    for letter in monomial:
-        symbols.append(sympy.Symbol("_".join([names[letter[0] - 1]] +
-                                             [str(i) for i in letter[1:]]),
-                                    commutative=False))
-    prod = sympy.S.One
-    for s in symbols:
-        prod *= s
-    return prod
-
-
-def to_numbers(monomial: str,
-               parties_names: Tuple[str]
-               ) -> np.ndarray:
-    """Monomial from string to matrix representation.
-
-    Given a monomial input in string format, return the matrix representation
-    where each row represents an operators and the columns are operator labels
-    such as party, inflation copies and input and output cardinalities.
-
-    Parameters
-    ----------
-    monomial : str
-        Monomial in string format.
-    parties_names : Tuple[str]
-        Tuple of party names.
-
-    Returns
-    -------
-    Tuple[Tuple[int]]
-        Monomial in tuple of tuples format (equivalent to 2d array format by
-        calling np.array() on the result).
-    """
-    parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
-
-    if isinstance(monomial, str):
-        monomial_parts = monomial.split("*")
-    else:
-        factors = flatten_symbolic_powers(monomial)
-        monomial_parts = [str(factor) for factor in factors]
-
-    monomial_parts_indices = []
-    for part in monomial_parts:
-        atoms = part.split("_")
-        if atoms[0] not in parties_names_dict.keys():
-            raise Exception(f"Party name {atoms[0]} not recognized.")
-        indices = ((parties_names_dict[atoms[0]],)
-                   + tuple(int(j) for j in atoms[1:-2])
-                   + (int(atoms[-2]), int(atoms[-1])))
-        monomial_parts_indices.append(indices)
-
-    return np.array(monomial_parts_indices, dtype=np.uint16)
 
 
 def is_knowable(monomial: np.ndarray) -> bool:
@@ -331,47 +395,36 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     return new_monomial
 
 
+def construct_normalization_eqs(column_level_equalities, momentmatrix):
+    """Given a list of column level equalities (a list of dictionaries with integer keys)
+    and the momentmatrix (a ndarray with integer values) we compute the implicit equalities between indices.
+    BETTER DOCUMENTATION NEEDED"""
+    equalities = []
+    seen_already = set()
+    for equality in column_level_equalities:
+        for i, row in enumerate(iter(momentmatrix)):
+            (normalization_col, summation_cols) = equality
+            norm_idx       = row[normalization_col]
+            summation_idxs = row.take(summation_cols)
+            summation_idxs.sort()
+            summation_idxs = summation_idxs[np.flatnonzero(summation_idxs)]
+            summation_idxs = tuple(summation_idxs.tolist())
+            if not ((len(summation_idxs) == 1
+                     and np.array_equiv(norm_idx, summation_idxs))
+                    or (len(summation_idxs) == 0 and norm_idx == 0)):
+                signature = (norm_idx, summation_idxs)
+                if signature not in seen_already:
+                    seen_already.add(signature)
+                    eq = {**{norm_idx: 1},
+                          **{idx: -1 for idx in summation_idxs}}
+                    equalities.append(eq)
+                    del signature, eq
+    del seen_already
+    return equalities
+
 ################################################################################
 # REPRESENTATIONS AND CONVERSIONS                                              #
 ################################################################################
-
-def to_numbers(monomial: str, parties_names: List[str]) -> List[List[int]]:
-    """Convert monomial from string to matrix representation.
-
-    Given a monomial input in string format, return the matrix representation
-    where each row represents an operators and the columns are operator labels
-    such as party, inflation copies and input and output cardinalities.
-
-    Parameters
-    ----------
-    monomial : str
-        Monomial in string format.
-    parties_names : List[str]
-        List of party names.
-
-    Returns
-    -------
-    List[List[int]]
-        The monomial in list of lists format (equivalent to 2d array format by
-        calling np.array() on the result).
-    """
-    parties_names_dict = {name: i + 1 for i, name in enumerate(parties_names)}
-
-    if isinstance(monomial, str):
-        monomial_parts = monomial.split("*")
-    else:
-        factors = flatten_symbolic_powers(monomial)
-        monomial_parts = [str(factor) for factor in factors]
-
-    monomial_parts_indices = []
-    for part in monomial_parts:
-        atoms = part.split("_")
-        indices = ([parties_names_dict[atoms[0]]]
-                   + [int(j) for j in atoms[1:-2]]
-                   + [int(atoms[-2]), int(atoms[-1])])
-        monomial_parts_indices.append(indices)
-    return monomial_parts_indices
-
 
 def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.ndarray:
     """Auxiliary function for to_representative. It applies source swaps

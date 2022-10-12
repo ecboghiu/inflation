@@ -4,7 +4,7 @@ from collections import Counter
 from functools import total_ordering
 from typing import Dict, List, Tuple
 
-from .fast_npa import mon_is_zero
+from .fast_npa import all_commuting_test, mon_is_zero
 from .general_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atomic_names,
@@ -14,7 +14,6 @@ from .monomial_utils import (compute_marginal,
 @total_ordering
 class InternalAtomicMonomial(object):
     __slots__ = ["as_ndarray",
-                 "do_conditional",
                  "is_one",
                  "is_zero",
                  "is_knowable",
@@ -44,9 +43,10 @@ class InternalAtomicMonomial(object):
         self.is_one  = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
-                            or self.sdp.atomic_knowable_q(self.as_ndarray))
-        self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
-        self.do_conditional = False
+                            or self.sdp._atomic_knowable_q(self.as_ndarray))
+        self.is_all_commuting = all_commuting_test(self.as_ndarray,
+                                                   self.sdp._lexorder,
+                                                   self.sdp._notcomm)
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -90,8 +90,8 @@ class InternalAtomicMonomial(object):
     @property
     def dagger(self):
         """Returns the adjoint of the Monomial."""
-        conjugate_ndarray   = self.sdp.conjugate_ndarray(self.as_ndarray)
-        conjugate_signature = self.sdp.from_2dndarray(conjugate_ndarray)
+        conjugate_ndarray   = self.sdp._conjugate_ndarray(self.as_ndarray)
+        conjugate_signature = self.sdp._from_2dndarray(conjugate_ndarray)
         if conjugate_signature != self.signature:
             dagger = self.__copy__()
             dagger.as_ndarray = conjugate_ndarray
@@ -134,14 +134,9 @@ class InternalAtomicMonomial(object):
             # We will probably never have more than 1 digit cardinalities, but who knows...
             i_divider = "" if all(len(i) == 1 for i in inputs) else ","
             o_divider = "" if all(len(o) == 1 for o in outputs) else ","
-            if self.do_conditional:
-                return ("p" + p_divider.join(parties) +
-                        "(" + o_divider.join(outputs) +
-                        " do: " + i_divider.join(inputs) + ")")
-            else:
-                return ("p" + p_divider.join(parties) +
-                        "(" + o_divider.join(outputs) +
-                        "|" + i_divider.join(inputs) + ")")
+            return ("p" + p_divider.join(parties) +
+                    "(" + o_divider.join(outputs) +
+                    "|" + i_divider.join(inputs) + ")")
         else:
             # Use expectation value notation
             operators = []
@@ -152,14 +147,14 @@ class InternalAtomicMonomial(object):
 
     @property
     def signature(self):
-        return self.sdp.from_2dndarray(self.as_ndarray)
+        return self.sdp._from_2dndarray(self.as_ndarray)
 
     @property
     def symbol(self):
         """Return a sympy Symbol representing the monomial."""
         return symbol_from_atomic_name(self.name)
 
-    def compute_marginal(self, prob_array):
+    def compute_marginal(self, prob_array: np.ndarray):
         """Given a probability distribution, compute the value of the Monomial.
 
         Parameters
@@ -210,7 +205,8 @@ class CompoundMonomial(object):
         self.n_factors     = len(self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
-        self.is_all_commuting  = all(factor.is_all_commuting for factor in self.factors)
+        self.is_all_commuting = all(factor.is_all_commuting
+                                    for factor in self.factors)
         knowable_factors   = []
         unknowable_factors = []
         for factor in self.factors:
@@ -320,29 +316,6 @@ class CompoundMonomial(object):
             value *= (factor.compute_marginal(prob_array) ** power)
         return value
 
-    def evaluate_given_valuation_of_knowable_part(self,
-                                                  valuation_of_knowable_part,
-                                                  use_lpi_constraints=True):
-        """DOCUMENTATION NEEDED."""
-        actually_known_factors = np.logical_not(np.isnan(valuation_of_knowable_part))
-        known_value = float(np.prod(np.compress(
-            actually_known_factors,
-            valuation_of_knowable_part)))
-        unknown_factors = [factor for factor, known in
-                           zip(self.knowable_factors,
-                               actually_known_factors)
-                           if not known]
-        unknown_factors.extend(self.unknowable_factors)
-        unknown_len = len(unknown_factors)
-        if unknown_len == 0 or (np.isclose(known_value, 0) and use_lpi_constraints):
-            known_status = "Knowable"
-        elif unknown_len == self.n_factors or (not use_lpi_constraints):
-            known_status = "Unknowable"
-        else:
-            known_status = "Semi"
-        return known_value, unknown_factors, known_status
-
-
     def evaluate(self,
                  known_monomials: Dict[InternalAtomicMonomial, float],
                  use_lpi_constraints=True) -> Tuple[float, List, str]:
@@ -359,10 +332,10 @@ class CompoundMonomial(object):
         unknown_factors = list(unknown_counter.elements())
         if ((len(unknown_factors) == 0)
             or (np.isclose(known_value, 0) and use_lpi_constraints)):
-            known_status = "Knowable"
+            known_status = "Known"
         elif ((len(unknown_factors) == self.n_factors)
               or (not use_lpi_constraints)):
-            known_status = "Unknowable"
+            known_status = "Unknown"
         else:
             known_status = "Semi"
         return known_value, unknown_factors, known_status
