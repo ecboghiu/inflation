@@ -45,21 +45,52 @@ def symbolic_values_sdp_optimize(sdp: InflationSDP,
         currently_rejected_values = solution['x']
         currently_rejected_optimum = solution['fun']
         if verbose:
-            print("Currently rejected value" + plural + ":", currently_rejected_values)
-            print("Currently rejected optimum:", currently_rejected_optimum)
-            print(u'\u2500' * 80, sep='\n\n')
+            if len(currently_rejected_values) == 1:
+                current_rejection = currently_rejected_values[0]
+            else:
+                current_rejection = currently_rejected_values
+            print("Currently rejected value" + plural + ":", current_rejection)
     return {"best_feasible_values": previously_rejected_values,
+            "tolerance": tolerance,
             "certificate": sdp.certificate_as_probs()}
 
 
-def maximize_scalar_such_that_sdp_feasible(sdp: InflationSDP,
-                                           distribution_as_scalar_function: Callable,
-                                           **kwargs) -> tuple:
+def maximize_scalar_such_that_sdp_feasible_using_dual_solution(sdp: InflationSDP,
+                                                               distribution_as_scalar_function: Callable,
+                                                               tolerance=0.0001,
+                                                               **kwargs) -> tuple:
     vis = var('v', real=True)
     sdp.set_distribution(distribution_as_scalar_function(vis))
     sympolic_values = sdp._prepare_solver_arguments()["known_vars"]
     optimality_dict = symbolic_values_sdp_optimize(sdp=sdp,
                                                    list_of_symbols=[vis],
                                                    dict_mon_names_to_symbolic_expressions=sympolic_values,
+                                                   tolerance=tolerance,
                                                    **kwargs)
-    return optimality_dict["best_feasible_values"][0], optimality_dict["certificate"]
+    return optimality_dict["best_feasible_values"][0], optimality_dict["certificate"], tolerance
+
+def bisect(f, x0, x1, eps=1e-4, verbose=1):
+    # We assume f(x1) < 0 and f(x0) > 0
+    x = (x0 + x1) / 2
+    while abs(x1 - x0) > eps:
+        fx = f(x)
+        if fx >= 0:
+            x0 = x
+        else:
+            x1 = x
+        if verbose:
+            print(f'Maximum smallest eigenvalue: {fx:10.4g}   Visibility = {x:.4g}')
+        x = (x0 + x1) / 2
+    return x
+
+def maximize_scalar_such_that_sdp_feasible_using_bisection(sdp: InflationSDP,
+                                                           distribution_as_scalar_function: Callable,
+                                                           bounds=(0, 1),
+                                                           tolerance=0.0001,
+                                                           verbose=True) -> float:
+    def f(vis):
+        sdp.set_distribution(distribution_as_scalar_function(vis), use_lpi_constraints=True)
+        sdp.solve(feas_as_optim=True)
+        return sdp.objective_value
+
+    return bisect(f, bounds[0], bounds[1], tolerance, verbose=verbose)
