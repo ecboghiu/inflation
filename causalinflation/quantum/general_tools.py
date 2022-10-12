@@ -533,12 +533,3 @@ def generate_operators(outs_per_input: List[int],
             )
         ops_per_input.append(ops_per_output_per_input)
     return ops_per_input
-
-def group_elements_from_group_generators(group_generators: np.ndarray) -> np.ndarray:
-    """
-    Given a list of generating permutations, returns all the elements of the generated group as permutations.
-    """
-    gens = [Permutation(list(gen)) for gen in group_generators]
-    group = PermutationGroup(gens)
-    group_elements = list(group.generate_dimino(af=True))
-    return group_elements
