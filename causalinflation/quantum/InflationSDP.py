@@ -33,7 +33,8 @@ from .general_tools import (construct_normalization_eqs,
                             generate_operators,
                             clean_coefficients,
                             factorize_monomial,
-                            increase_values_by_one_and_prepend_with_column_of_zeros
+                            increase_values_by_one_and_prepend_with_column_of_zeros,
+                            group_elements_from_group_generators
                             )
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
@@ -1417,7 +1418,7 @@ class InflationSDP(object):
                     if len(permutations_plus) == 2:
                         permutations_plus[1, 1:] = np.roll(
                                                       np.arange(inf_level) + 1,
-                                                      1)
+                                                      1, -1)
                 else:
                     permutations_plus = increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(self.inflation_levels[source])))[1:])
                 permutation_failed = False
@@ -1438,14 +1439,13 @@ class InflationSDP(object):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
             if generators_only:
-                inflation_symmetries_flat = list(
-                    itertools.chain.from_iterable((perms[1:] for perms
-                                                   in inflation_symmetries)))
-                return np.unique(inflation_symmetries_flat, axis=0)
+                inflation_generators_flat = itertools.chain.from_iterable((perms[1:] for perms
+                                                   in inflation_symmetries))
+                inflation_symmetries_flat = group_elements_from_group_generators(inflation_generators_flat)
             else:
                 inflation_symmetries_flat = [reduce(np.take, perms) for perms in
                                              itertools.product(*inflation_symmetries)]
-                return np.unique(inflation_symmetries_flat[1:], axis=0)
+            return np.unique(inflation_symmetries_flat[1:], axis=0)
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
 
@@ -1487,27 +1487,26 @@ class InflationSDP(object):
             new_values = np.arange(new_unique_count)
             inversion_tracker = new_values.copy()
             representative_values = old_representative_values.copy()
-            # We repeat minimizing under the group until the unique values become invariant.
-            while prev_unique_count > new_unique_count:
-                for permutation in inflation_symmetries:
-                    if prev_unique_count > new_unique_count:
-                        (relevant_rows, relevant_cols) = np.unravel_index(where_it_matters_flat, momentmatrix.shape)
-                    prev_unique_count = new_unique_count
-                    assert np.array_equal(new_values, how_to_put_it_back[(relevant_rows, relevant_cols)])
-                    np.minimum(
-                        new_values,
-                        how_to_put_it_back[(permutation[relevant_rows], permutation[relevant_cols])], out=new_values)
-                    unique_values, unique_values_indices, unique_values_inverse = np.unique(new_values,
-                                                                                            return_index=True,
-                                                                                            return_inverse=True)
-                    new_unique_count = unique_values.shape[0]
-                    if prev_unique_count > new_unique_count:
-                        how_to_put_it_back = unique_values_inverse[how_to_put_it_back]
-                        where_it_matters_flat = where_it_matters_flat[unique_values_indices]
-                        representative_values = representative_values[unique_values_indices]
-                        inversion_tracker = unique_values_inverse[inversion_tracker]
-                        del unique_values_indices, unique_values_inverse
-                        new_values = np.arange(new_unique_count)
+            # We minimize under every element of the inflation symmetry group.
+            for permutation in inflation_symmetries:
+                if prev_unique_count > new_unique_count:
+                    (relevant_rows, relevant_cols) = np.unravel_index(where_it_matters_flat, momentmatrix.shape)
+                prev_unique_count = new_unique_count
+                assert np.array_equal(new_values, how_to_put_it_back[(relevant_rows, relevant_cols)])
+                np.minimum(
+                    new_values,
+                    how_to_put_it_back[(permutation[relevant_rows], permutation[relevant_cols])], out=new_values)
+                unique_values, unique_values_indices, unique_values_inverse = np.unique(new_values,
+                                                                                        return_index=True,
+                                                                                        return_inverse=True)
+                new_unique_count = unique_values.shape[0]
+                if prev_unique_count > new_unique_count:
+                    how_to_put_it_back = unique_values_inverse[how_to_put_it_back]
+                    where_it_matters_flat = where_it_matters_flat[unique_values_indices]
+                    representative_values = representative_values[unique_values_indices]
+                    inversion_tracker = unique_values_inverse[inversion_tracker]
+                    del unique_values_indices, unique_values_inverse
+                    new_values = np.arange(new_unique_count)
             prior_min_value = old_representative_values.min()
             if old_representative_values.min() != 0:
                 new_values += prior_min_value
