@@ -530,6 +530,7 @@ class InflationSDP(object):
                 mon = self._sanitise_monomial(k)
                 if (self.verbose > 0) and (not mon.is_all_commuting):
                     non_all_commuting_monomials.add(mon)
+                self.known_moments[mon] = v
         if (len(non_all_commuting_monomials) >= 1) and (self.verbose > 0):
             warn("When setting values, we encountered at least one monomial " +
                  "with noncommuting operators:\n\t" +
