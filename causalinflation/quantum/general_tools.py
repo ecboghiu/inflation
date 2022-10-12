@@ -530,3 +530,13 @@ def generate_operators(outs_per_input: List[int],
             )
         ops_per_input.append(ops_per_output_per_input)
     return ops_per_input
+
+def make_numerical(dictionary_with_values_as_symbolic_expressions: Dict[str, sympy.core.expr.Expr],
+                   symbolic_variables_to_numerical_values: Dict[sympy.core.symbol.Symbol, float]) -> Dict[str, float]:
+    numeric_values = dict()
+    for k, v in dictionary_with_values_as_symbolic_expressions.items():
+        try:
+            numeric_values[k] = float(v.evalf(subs=symbolic_variables_to_numerical_values))
+        except AttributeError:
+            numeric_values[k] = float(v)
+    return numeric_values
