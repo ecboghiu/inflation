@@ -5,7 +5,7 @@ matrices.
 """
 from copy import deepcopy
 from itertools import chain, permutations, product
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
 import sympy
@@ -24,8 +24,6 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-
-
     bool_ = bool
 
 try:
@@ -35,7 +33,6 @@ except ImportError:
 
 nopython = False
 cache = False
-
 
 
 def apply_inflation_symmetries(momentmatrix: np.ndarray,
