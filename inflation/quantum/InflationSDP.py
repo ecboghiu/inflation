@@ -510,13 +510,14 @@ class InflationSDP(object):
             self._update_objective()
 
     def set_values(self,
-                   values: Union[None, Dict[Union[CompoundMonomial,
-                                                  InternalAtomicMonomial,
-                                                  sp.core.symbol.Symbol,
-                                                  str],
-                                            float]],
-                   use_lpi_constraints=False,
-                   only_specified_values=False) -> None:
+                   values: Union[Dict[Union[CompoundMonomial,
+                                            InternalAtomicMonomial,
+                                            sp.core.symbol.Symbol,
+                                            str],
+                                      Union[float, sp.core.expr.Expr]],
+                                 None],
+                   use_lpi_constraints: bool = False,
+                   only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the moment matrix.
         This is done via a dictionary where keys are the variables to have
         numerical values assigned (either in their operator form, in string
