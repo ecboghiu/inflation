@@ -894,7 +894,6 @@ class InflationSDP(object):
                                         party, freq,
                                         self.setting_cardinalities,
                                         self.outcome_cardinalities,
-                                        self.names,
                                         self._lexorder)
                                     physmons_per_party.append(physmons)
 
