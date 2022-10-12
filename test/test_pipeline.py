@@ -43,7 +43,7 @@ class TestMonomialGeneration(unittest.TestCase):
             C_0_1_0_0*C_0_2_0_0]
     actual_cols = []
     for col in cols:
-        actual_cols.append(bilocalSDP._interpret_compound_string(col))
+        actual_cols.append(bilocalSDP._interpret_name(col))
 
     def test_generating_columns_c(self):
         truth = 37
