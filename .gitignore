@@ -178,3 +178,4 @@ examples/triangle_W.py
 
 #Visual Studio IDE
 .vs/
+docs/_build/html/CONTRIBUTE.html
