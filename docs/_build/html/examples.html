@@ -4,7 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
 
   
   
@@ -37,6 +38,8 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -137,6 +140,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#Example-9:-Device-independent-entanglement-certification">Example 9: Device independent entanglement certification</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#Beyond-networks">Beyond networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-10:-The-instrumental-scenario">Example 10: The instrumental scenario</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Probabilitic-support-compatibility">Probabilitic support compatibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#References">References</a></li>
 </ul>
 </li>
@@ -506,7 +514,7 @@ div.rendered_html tbody tr:hover {
         <span class="k">else</span><span class="p">:</span>
             <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Maximum smallest eigenvalue: </span><span class="si">{</span><span class="n">fx</span><span class="si">:</span><span class="s2">10.4g</span><span class="si">}</span><span class="s2">   Visibility = </span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Maximum smallest eigenvalue: </span><span class="si">{</span><span class="n">fx</span><span class="si">:</span><span class="s1">10.4g</span><span class="si">}</span><span class="s1">   Visibility = </span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s1">.4g</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="n">x1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
     <span class="k">return</span> <span class="n">x</span>
 </pre></div>
@@ -516,7 +524,7 @@ div.rendered_html tbody tr:hover {
 <h2>Feasibility problems and extraction of certificates<a class="headerlink" href="#Feasibility-problems-and-extraction-of-certificates" title="Permalink to this heading">¶</a></h2>
 <section id="Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario">
 <h3>Example 1: Infeasibility of the W distribution in the quantum triangle scenario<a class="headerlink" href="#Example-1:-Infeasibility-of-the-W-distribution-in-the-quantum-triangle-scenario" title="Permalink to this heading">¶</a></h3>
-<p>Consider determining if the following distribution, the so-called “W distribution” (due to its similarity to the W state), is compatible with the triangle scenario:</p>
+<p>Consider determining if the following distribution, the so-called ‘W distribution’ (due to its similarity to the W state), is compatible with the triangle scenario:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}P_{A B C}=\frac{[100]+[010]+[001]}{3}, \quad \text {i.e.,} \quad P_{A B C}(a b c)= \begin{cases}\frac{1}{3} &amp; \text { if } a+b+c=1, \\ 0 &amp; \text { otherwise. }\end{cases}\end{split}\]</div>
 <p>It is known that it is <a class="reference external" href="https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html">incompatible with the classical triangle scenario [1]</a> , however with quantum inflation, once can also show that it is incompatible with the quantum triangle scenario, depicted in the following figure:</p>
@@ -529,24 +537,22 @@ div.rendered_html tbody tr:hover {
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
-                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_AC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">P_W</span><span class="p">(</span><span class="n">vis</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">3</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span>
-    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">3</span>
 
 <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W</span><span class="p">())</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
@@ -581,33 +587,9 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="math notranslate nohighlight">
-$\displaystyle 0.476 p_{ABC}(000|000) p_{A}(0|0) + 0.476 p_{ABC}(000|000) p_{B}(0|0) + 0.476 p_{ABC}(000|000) p_{C}(0|0) + 0.75 p_{ABC}(000|000) + 0.217 p_{AB}(00|00)^{2} + 0.085 p_{AB}(00|00) p_{AC}(00|00) + 0.059 p_{AB}(00|00) p_{A}(0|0) + 0.085 p_{AB}(00|00) p_{BC}(00|00) + 0.059 p_{AB}(00|00) p_{B}(0|0) - 0.359 p_{AB}(00|00) p_{C}(0|0) + 0.126 p_{AB}(00|00) + 0.217 p_{AC}(00|00)^{2} + 0.059 p_{AC}(00|00) p_{A}(0|0) + 0.085 p_{AC}(00|00) p_{BC}(00|00) - 0.359 p_{AC}(00|00) p_{B}(0|0) + 0.059 p_{AC}(00|00) p_{C}(0|0) + 0.126 p_{AC}(00|00) - 0.476 p_{A}(0|0)^{2} - 0.359 p_{A}(0|0) p_{BC}(00|00) + 1.0 p_{A}(0|0) p_{B}(0|0) p_{C}(0|0) - 0.765 p_{A}(0|0) p_{B}(0|0) - 0.765 p_{A}(0|0) p_{C}(0|0) + 0.365 p_{A}(0|0) + 0.217 p_{BC}(00|00)^{2} + 0.059 p_{BC}(00|00) p_{B}(0|0) + 0.059 p_{BC}(00|00) p_{C}(0|0) + 0.126 p_{BC}(00|00) - 0.476 p_{B}(0|0)^{2} - 0.765 p_{B}(0|0) p_{C}(0|0) + 0.365 p_{B}(0|0) - 0.476 p_{C}(0|0)^{2} + 0.365 p_{C}(0|0) + 0.563$</div></div>
+$\displaystyle - 0.476 pA(0|0)^{2} + 0.059 pA(0|0) pAB(00|00) + 0.476 pA(0|0) pABC(000|000) + 0.059 pA(0|0) pAC(00|00) + pA(0|0) pB(0|0) pC(0|0) - 0.765 pA(0|0) pB(0|0) - 0.359 pA(0|0) pBC(00|00) - 0.765 pA(0|0) pC(0|0) + 0.365 pA(0|0) + 0.217 pAB(00|00)^{2} + 0.085 pAB(00|00) pAC(00|00) + 0.059 pAB(00|00) pB(0|0) + 0.085 pAB(00|00) pBC(00|00) - 0.359 pAB(00|00) pC(0|0) + 0.126 pAB(00|00) + 0.476 pABC(000|000) pB(0|0) + 0.476 pABC(000|000) pC(0|0) + 0.75 pABC(000|000) + 0.217 pAC(00|00)^{2} - 0.359 pAC(00|00) pB(0|0) + 0.085 pAC(00|00) pBC(00|00) + 0.059 pAC(00|00) pC(0|0) + 0.126 pAC(00|00) - 0.476 pB(0|0)^{2} + 0.059 pB(0|0) pBC(00|00) - 0.765 pB(0|0) pC(0|0) + 0.365 pB(0|0) + 0.217 pBC(00|00)^{2} + 0.059 pBC(00|00) pC(0|0) + 0.126 pBC(00|00) - 0.476 pC(0|0)^{2} + 0.365 pC(0|0) + 0.563$</div></div>
 </div>
 <p>In the above, lower indices indicate marginals. For example, <span class="math notranslate nohighlight">\(p_{AC}(ac|xz) := \sum_b p(abc|xyz)\)</span>. Note that due to no-signaling, in this example the marginal is independent of the setting <span class="math notranslate nohighlight">\(y\)</span>.</p>
-<p>Finally, given that we only have two outcomes, we can also express the certificate in “correlator form”, where the correlators are defined as</p>
-<div class="math notranslate nohighlight">
-\[\left\langle A_{x} \right\rangle =\sum_{a\in \{0,1\}} (-1)^{a} \, p_{A}(a|x)\]</div>
-<div class="math notranslate nohighlight">
-\[\left\langle A_{x} B_{y} \right\rangle =\sum_{a, b \in \{0,1\}} (-1)^{a+b} \, p_{AB}(ab|xy)\]</div>
-<div class="math notranslate nohighlight">
-\[\left\langle A_{x} B_{y} C_{z}\right\rangle =\sum_{a, b, c \in \{0,1\}} (-1)^{a+b+c} \, p(abc|xyz)\]</div>
-<p>where the omitted 2-body and 1-body correlators have similar definitions.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_langlerangle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="math notranslate nohighlight">
-$\displaystyle 0.238 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0.238 \langle A_{0} B_{0} C_{0} \rangle \langle B_{0} \rangle + 0.238 \langle A_{0} B_{0} C_{0} \rangle \langle C_{0} \rangle + 1.464 \langle A_{0} B_{0} C_{0} \rangle + 0.108 \langle A_{0} B_{0} \rangle^{2} + 0.042 \langle A_{0} B_{0} \rangle \langle A_{0} C_{0} \rangle + 0.556 \langle A_{0} B_{0} \rangle \langle A_{0} \rangle + 0.042 \langle A_{0} B_{0} \rangle \langle B_{0} C_{0} \rangle + 0.556 \langle A_{0} B_{0} \rangle \langle B_{0} \rangle - 0.036 \langle A_{0} B_{0} \rangle \langle C_{0} \rangle + 1.777 \langle A_{0} B_{0} \rangle + 0.108 \langle A_{0} C_{0} \rangle^{2} + 0.556 \langle A_{0} C_{0} \rangle \langle A_{0} \rangle + 0.042 \langle A_{0} C_{0} \rangle \langle B_{0} C_{0} \rangle - 0.036 \langle A_{0} C_{0} \rangle \langle B_{0} \rangle + 0.556 \langle A_{0} C_{0} \rangle \langle C_{0} \rangle + 1.777 \langle A_{0} C_{0} \rangle - 0.336 \langle A_{0} \rangle^{2} - 0.036 \langle A_{0} \rangle \langle B_{0} C_{0} \rangle + \langle A_{0} \rangle \langle B_{0} \rangle \langle C_{0} \rangle - 0.31 \langle A_{0} \rangle \langle B_{0} \rangle - 0.31 \langle A_{0} \rangle \langle C_{0} \rangle - 0.417 \langle A_{0} \rangle + 0.108 \langle B_{0} C_{0} \rangle^{2} + 0.556 \langle B_{0} C_{0} \rangle \langle B_{0} \rangle + 0.556 \langle B_{0} C_{0} \rangle \langle C_{0} \rangle + 1.777 \langle B_{0} C_{0} \rangle - 0.336 \langle B_{0} \rangle^{2} - 0.31 \langle B_{0} \rangle \langle C_{0} \rangle - 0.417 \langle B_{0} \rangle - 0.336 \langle C_{0} \rangle^{2} - 0.417 \langle C_{0} \rangle + 4.388$</div></div>
-</div>
 </section>
 </section>
 <section id="Example-2:-Critical-visibility-of-the-2PR-distribution-in-the-quantum-tripartite-line-scenario">
@@ -616,7 +598,7 @@ $\displaystyle 0.238 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0
 <div class="math notranslate nohighlight">
 \[P_{\text{2PR}}(abc|xyz) := \frac{1+ (-1)^{a+b+c+xy+yz}}{8}\]</div>
 <p>is incompatible with the tripartite-line scenario (also called “quantum bilocal scenario”), whose DAG is depicted in the following figure:</p>
-<center><p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_1.PNG" style="width: 400px;" /></p>
+<center><p><img alt="drawing" class="no-scaled-link" src="_images/bilocal_1.PNG" style="width: 450px;" /></p>
 </center><p>This can be shown by running a feasibility program, as in Example 1. We might also be interested in studying how much noise this distribution can tolerate before the relaxation no longer identifies the distribution as incompatible. One simple model of noise is that of a probabilistic mixture with the uniform distribution:</p>
 <div class="math notranslate nohighlight">
 \[P_{\text{2PR,v}} := v P_{\text{2PR}}  + (1-v)/8\]</div>
@@ -627,27 +609,25 @@ $\displaystyle 0.238 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0
 <p>By setting the flag <code class="docutils literal notranslate"><span class="pre">feas_as_optim</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> in the <code class="docutils literal notranslate"><span class="pre">InflationSDP.solve()</span></code> method, feasibility problems are converted to optimisation problems. The result is stored in <code class="docutils literal notranslate"><span class="pre">InflationSDP.objective_value</span></code>.</p>
 <p>We encode the inflation scenario and generate the relaxation corresponding to NPA level 2. Next we run a simple bisection to find the <span class="math notranslate nohighlight">\(v_{\text{crit}}\)</span> for which the maximum minimum eigenvalue is 0. The bisection is implemented in an auxiliary file:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
-                                 <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qbilocal</span><span class="p">)</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">P_2PR</span><span class="p">(</span><span class="n">vis</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">3</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">z</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="mi">8</span>
-    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span>  <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">3</span>
 
 <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">vis</span><span class="p">):</span>
     <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_2PR</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
@@ -663,7 +643,7 @@ $\displaystyle 0.238 \langle A_{0} B_{0} C_{0} \rangle \langle A_{0} \rangle + 0
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Maximum smallest eigenvalue:  4.271e-09   Visibility = 0.5
+Maximum smallest eigenvalue:  4.272e-09   Visibility = 0.5
 Maximum smallest eigenvalue:   -0.04709   Visibility = 0.75
 Maximum smallest eigenvalue:   -0.02075   Visibility = 0.625
 Maximum smallest eigenvalue:  -0.009571   Visibility = 0.5625
@@ -680,7 +660,7 @@ Maximum smallest eigenvalue: -8.719e-06   Visibility = 0.5001
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -702,27 +682,26 @@ operators commute, then they become equal.</p>
 <p>As an example, we find the critical visibility of the <span class="math notranslate nohighlight">\(P_{\text{2PR}}\)</span> distribution from Example 2, but in the classical tripartite line scenario with a second order inflation, and with the local level 1 generating set for the SDP relaxation.</p>
 <p>The so-called “local levels” are a different choice of generating set for the moment matrix. Whereas NPA level <span class="math notranslate nohighlight">\(n\)</span> is the <span class="math notranslate nohighlight">\(n\)</span>-times cartesian product (without duplicated elements) of the set of measurements of the parties together with the identity, local level <span class="math notranslate nohighlight">\(n\)</span> refers to a generating set with all the products up to <span class="math notranslate nohighlight">\(n\)</span> operators per party. For more details, see <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Ref. [2]</a>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span> <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qbilocal</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                 <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qbilocal</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">P_2PR</span><span class="p">(</span><span class="n">vis</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">3</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span> <span class="o">+</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">z</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="mi">8</span>
-    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">3</span>
 
 <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">vis</span><span class="p">):</span>
     <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_2PR</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
@@ -734,7 +713,7 @@ operators commute, then they become equal.</p>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -751,23 +730,26 @@ operators commute, then they become equal.</p>
 <p>One can use inflation techniques to not only run causal compatibility problems, but also to optimize over the generated relaxation, and therefore get upper bounds on the values of various Bell operators.</p>
 <section id="Example-4.-Upper-bounds-on-Mermin’s-inequality">
 <h3>Example 4. Upper bounds on Mermin’s inequality<a class="headerlink" href="#Example-4.-Upper-bounds-on-Mermin’s-inequality" title="Permalink to this heading">¶</a></h3>
-<p>Let us consider Mermin’s inequality, written in the correlator form introduced in Example 1:</p>
+<p>Let us consider Mermin’s inequality, written in the correlator form as follows:</p>
 <div class="math notranslate nohighlight">
 \[\text{Mermin} = \langle A_1 B_0 C_0 \rangle +  \langle A_0 B_1 C_0 \rangle +  \langle A_0 B_0 C_1 \rangle -  \langle A_1 B_1 C_1 \rangle\]</div>
+<p>where correlators are defined as</p>
+<div class="math notranslate nohighlight">
+\[\left\langle A_{x} B_{y} C_{z}\right\rangle =\sum_{a, b, c \in \{0,1\}} (-1)^{a+b+c} \, p_{ABC}(abc|xyz).\]</div>
 <p>It is known that the algebraic maximum of 4 is achieved in the tripartite scenario both with global shared randomness and also global non-signaling sources. However, one can see a difference between quantum and general no-signaling sources when restricting to the triangle scenario from Example 1.</p>
 <p>First we generate the relaxation corresponding to a second order inflation of the triangle of NPA level 2. Then we implement the objective function after extracting the measurement operators and solve the program:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 
-<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
-                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_AC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
@@ -783,12 +765,12 @@ operators commute, then they become equal.</p>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-3.9999999812894727
+3.999999981240686
 </pre></div></div>
 </div>
 <p>Notice that we get a value that is within numerical precision the algebraic maximum of 4. To improve on this result, we will need to do a tighter SDP relaxation.</p>
@@ -797,17 +779,17 @@ operators commute, then they become equal.</p>
 <p>To get a tighter SDP relaxation, we will add more monomoials to the generating set. Namely, we will use the union of the monomoials corresponding to NPA level 2 and local level 1.</p>
 <p>In what follows, we use the built-in method <code class="docutils literal notranslate"><span class="pre">InflationSDP.build_columns()</span></code> to generate the columns corresponding to NPA level 2 and local level 1. Then we do a union, generate the relaxation and again, solve the program. As it will now take a bit longer, we increase the verbosity level to see the progress:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 
-<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]},</span>
-                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_AC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                             <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                             <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                             <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
 
 <span class="n">npa2</span>   <span class="o">=</span> <span class="n">sdp</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;npa2&#39;</span><span class="p">)</span>
@@ -823,12 +805,12 @@ operators commute, then they become equal.</p>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-3.085044522906496
+3.085044522904397
 </pre></div></div>
 </div>
 <p>After running the above, we can certify then that the Mermin inequality cannot have a value larger than <span class="math notranslate nohighlight">\(3.085\)</span> for the quantum triangle causal scenario.</p>
@@ -843,31 +825,28 @@ operators commute, then they become equal.</p>
 <h3>Example 5: Critical visibility of the PR box in the standard Bell scenario with quantum sources<a class="headerlink" href="#Example-5:-Critical-visibility-of-the-PR-box-in-the-standard-Bell-scenario-with-quantum-sources" title="Permalink to this heading">¶</a></h3>
 <p>We recover the critical visibility of <span class="math notranslate nohighlight">\(v_{\text{crit}}=\frac{1}{\sqrt{2}}\)</span> for a <a class="reference external" href="https://link.springer.com/article/10.1007/BF02058098">Popeschu-Rohrlich box [5]</a> in the Bell scenario.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">bellscenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]},</span>
-                                <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                                <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
-
+<span class="n">bellscenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">]},</span>
+                                <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                                <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">bellscenario</span><span class="p">)</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">P_PRbox</span><span class="p">(</span><span class="n">vis</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">2</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span><span class="p">:</span>
                 <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">:</span>
                 <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span>
-    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">2</span>
 
 <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">vis</span><span class="p">):</span>
     <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_PRbox</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
@@ -878,7 +857,7 @@ operators commute, then they become equal.</p>
 
 <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_PRbox</span><span class="p">(</span><span class="n">v_crit</span><span class="p">))</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-<span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_correlators</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_langlerangle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_probs</span><span class="p">(</span><span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -907,14 +886,33 @@ Maximum smallest eigenvalue:  2.266e-06   Visibility = 0.7071
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="math notranslate nohighlight">
-$\displaystyle \langle A_{0} B_{0} \rangle + \langle A_{0} B_{1} \rangle + \langle A_{1} B_{0} \rangle - \langle A_{1} B_{1} \rangle - 2.829$</div></div>
+$\displaystyle pA(0|0) - pAB(00|00) - pAB(00|01) - pAB(00|10) + pAB(00|11) + pB(0|0)$</div></div>
 </div>
-<p>Notice that the dual certificate that we extract in correlator form (which has been renormalised and rounded numerically) is the CHSH inequality tangent to the quantum set of correlations.</p>
+<p>Notice that the dual certificate that we extract in correlator form (which has been renormalised and rounded numerically) is the well-known CHSH inequality tangent to the quantum set of correlations save for a constant term and rescaling. Extracted certificates can be readility plugged in as an objective function to optimise:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sdp</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="mi">2</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_probs</span><span class="p">(),</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">dualise</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">objective_value</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2.8284149169921875
+</pre></div></div>
+</div>
 </section>
 </section>
 <section id="SDP-hierarchy-of-“physical-moments”">
@@ -925,30 +923,28 @@ $\displaystyle \langle A_{0} B_{0} \rangle + \langle A_{0} B_{1} \rangle + \lang
 <p>As an application, we show how we can recover the critical visibility <span class="math notranslate nohighlight">\(v_{\text{crit}}\approx=0.8038\)</span> of the W distribution in the triangle causal scenario achieved with the generating set corresponding to local level 2 with monomials of maximum length 4, as shown in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Ref. [2]</a>. This corresponds to a moment matrix of size 1175x1175. However, by using the second level of the physical moments hierarchy of monomials up to
 length 4, we recover the same results with a smaller moment matrix:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_AC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
 <span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;physical2&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
 
 <span class="k">def</span> <span class="nf">P_W</span><span class="p">(</span><span class="n">vis</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">3</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span>
-    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">3</span>
 
 <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">vis</span><span class="p">):</span>
     <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
@@ -960,7 +956,7 @@ length 4, we recover the same results with a smaller moment matrix:</p>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -984,31 +980,29 @@ measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of set
 <h3>Example 7: Critical visibility of the W distribution with the physical moments hierarchy and LPI constraints<a class="headerlink" href="#Example-7:-Critical-visibility-of-the-W-distribution-with-the-physical-moments-hierarchy-and-LPI-constraints" title="Permalink to this heading">¶</a></h3>
 <p>We will now show how using LPI constraints lead to tighter relaxations. For example, we can certify incompatiblity with the triangle for noisier W distributions than before.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rho_AB&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_BC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
-                                  <span class="s2">&quot;rho_AC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],},</span>
-                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">qtriangle</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rho_AB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_BC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">],</span>
+                                  <span class="s1">&#39;rho_AC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]},</span>
+                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                            <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
 <span class="n">qtriangle_relax</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">qtriangle</span><span class="p">)</span>
 <span class="n">cols</span> <span class="o">=</span> <span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;physical2&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 <span class="n">qtriangle_relax</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">P_W</span><span class="p">(</span><span class="n">vis</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">3</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span>
-    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">vis</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vis</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">3</span>
 
 <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">vis</span><span class="p">):</span>
     <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P_W</span><span class="p">(</span><span class="n">vis</span><span class="p">),</span> <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1020,12 +1014,12 @@ measuring outcome <span class="math notranslate nohighlight">\(b\)</span> of set
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-0.765045166015625
+0.764984130859375
 </pre></div></div>
 </div>
 <p>The critical value for the noise that we achieve, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.7650\)</span>, is lower than the critical value for the noise that we achieved in Example 7, <span class="math notranslate nohighlight">\(v_{\text{crit}}=0.8039\)</span>.</p>
@@ -1041,27 +1035,25 @@ incompatible with the same causal structure.</p>
 <p>An important example is the the analysis of cryptographic scenarios, where the honest parties may know their joint distribution but they cannot know their joint distribution together with a potential adversary. One simple such scenario is considered in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">[Sec. VII, 3]</a>. This scenario considers the quantum repeater/entanglement swapping experiment from Example 2 but with a hidden adversary, Eve, which is eavesdropping the sources
 <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> in an attempt to extract information about the secret key Alice and Charlie are trying to establish. Using quantum inflation, one can derive strict bounds on the amount of information Eve can extract about the secret key, as detailed in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Ref. [3]</a>. To implement this example with our package one would write:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationSDP</span><span class="p">,</span> <span class="n">InflationProblem</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rhoABE&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">],</span>
-                                <span class="s2">&quot;rhoBCE&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">]},</span>
-                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>  <span class="c1"># Parties in alphabetical order, [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;E&quot;]</span>
-                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
-
+<span class="n">InfProb</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rhoABE&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">],</span>
+                                <span class="s1">&#39;rhoBCE&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">]},</span>
+                           <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                           <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                           <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                           <span class="n">order</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">])</span>
 <span class="n">InfSDP</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">InfProb</span><span class="p">)</span>
-
 <span class="n">InfSDP</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="n">InfSDP</span><span class="o">.</span><span class="n">build_columns</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">,</span> <span class="n">max_monomial_length</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
 <span class="n">meas</span> <span class="o">=</span> <span class="n">InfSDP</span><span class="o">.</span><span class="n">measurements</span>  <span class="c1"># accessed as meas[party][0][setting][outcome]</span>
 
 <span class="k">def</span> <span class="nf">P_EveGuessing</span><span class="p">(</span><span class="n">noise</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
         <span class="n">b0</span><span class="p">,</span> <span class="n">b1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>  <span class="c1"># 0 --&gt; 00, 1 --&gt; 01, 2 --&gt; 10, 3 --&gt; 11</span>
         <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">b1</span> <span class="o">+</span> <span class="n">b0</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">noise</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="p">(((</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="n">b0</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">b1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">z</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="mi">4</span>
     <span class="k">return</span> <span class="n">p</span>
@@ -1114,7 +1106,7 @@ becomes exactly the local set, i.e., it converges to the local polytope. For int
 <p>In what follows, we reproduce a simple example from <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">Ref. [4]</a> where we certify entanglement of the W state and the noise robustness of this technique. For this, we use tools from the <a class="reference external" href="https://github.com/FlavioBaccari/Hierarchy-for-nonlocality-detection">Hierarchy for nonlocality detection</a> Github repository. This example also requires the use of the <a class="reference external" href="https://qutip.org/">QuTiP</a> Python package to simulate measurements on
 the W state.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationSDP</span><span class="p">,</span> <span class="n">InflationProblem</span>
@@ -1124,7 +1116,7 @@ the W state.</p>
 <span class="n">N</span> <span class="o">=</span> <span class="mi">7</span>  <span class="c1"># How many spins in the system</span>
 <span class="n">outcomes_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">N</span>  <span class="c1"># 2 measurements per site</span>
 <span class="n">settings_per_party</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">N</span>  <span class="c1"># 2 outcomes per site</span>
-<span class="n">entcert</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rhoW&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="s2">&quot;F&quot;</span><span class="p">,</span> <span class="s2">&quot;G&quot;</span><span class="p">]},</span>
+<span class="n">entcert</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rhoW&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">]},</span>
                            <span class="n">outcomes_per_party</span><span class="o">=</span><span class="n">outcomes_per_party</span><span class="p">,</span>
                            <span class="n">settings_per_party</span><span class="o">=</span><span class="n">settings_per_party</span><span class="p">)</span>
 <span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">entcert</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1184,7 +1176,7 @@ the W state.</p>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -1195,24 +1187,179 @@ the W state.</p>
 <p>We correctly recover the results for the W state visibility of <span class="math notranslate nohighlight">\(\nu_{\textrm{crit}}\approx 0.723\)</span> for <span class="math notranslate nohighlight">\(N=7\)</span> in <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">[Table I, 4]</a>.</p>
 </section>
 </section>
+<section id="Beyond-networks">
+<h2>Beyond networks<a class="headerlink" href="#Beyond-networks" title="Permalink to this heading">¶</a></h2>
+<section id="Example-10:-The-instrumental-scenario">
+<h3>Example 10: The instrumental scenario<a class="headerlink" href="#Example-10:-The-instrumental-scenario" title="Permalink to this heading">¶</a></h3>
+<p>The simplest causal scenario that exhibits a gap between classical, quantum and post-quantum correlations is the <a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">instrumental scenario [8]</a>. In the instrumental scenario we have two parties, Alice and Bob, that share a common source of correlations. While Alice can choose between different measurement settings, <span class="math notranslate nohighlight">\(x\)</span>, Bob has no choice. However, Alice is allowed to signal her output to Bob. This is depicted as a DAG in Figure a)
+below. For correlations arising in a standard Bell experiment, one can post-select only those where Bob’s input is the same as Alice’s output, <span class="math notranslate nohighlight">\(p(a,b|x,y{=}a)\)</span>. The postselection introduces one-way signaling by correlating Bob’s input with Alice’s output, thus simulating the instrumental scenario. This is depicted in Figure b) below. Clearly then we can project a Bell-type correlation to an instrumental-type correlation. The reverse also holds, namely instrumental-type correlations can be
+lifted to Bell-type correlations. Due to this, if one can prove that certain correlations, when lifted to a network-type scenario, are incompatible with said scenario, it must also be the case that the unlifted correlations are incompatible with the base scenario.</p>
+<center><p><img alt="drawing" class="no-scaled-link" src="_images/instrumental.png" style="width: 650px;" /></p>
+</center><p>The generated SDP relaxation for the instrumental scenario corresponds to that of the Bell scenario with the following modification: expectation values involving operators with a mismatch between Alice’s output and Bob’s input, <span class="math notranslate nohighlight">\(a\neq y\)</span>, are left as free variables, and are not fixed when specifying a probability distribution. While in standard Bell scenarios we can fully use the so-called <a class="reference external" href="https://arxiv.org/abs/quant-ph/0306129">Collins-Gisin notation [9]</a>, which has normalisation
+built-in by expressing moments in the moment matrix without using the last output, in beyond-network scenarios we need to explicitly include the last output when it serves as an input to another party (and add the corresponding normalisation constraints) as it cannot be rewritten in terms of other variables. This is all done automatically by the package.</p>
+<p>In the lifted scenario, the input cardinality of children (those that are on the receiving end of one-way signalling influences) increases to accomodate the different output values of the parent nodes. For the instrumental scenario, this means that Bob’s input goes from <span class="math notranslate nohighlight">\(y\)</span> in the base scenario to <span class="math notranslate nohighlight">\(y'=(y,a)\)</span> in the lifted scenario. The attribute <code class="docutils literal notranslate"><span class="pre">InflationProblem.effective_to_parent_settings</span></code> is a list of dictionaries which, for each party, unravels the effective setting in the
+lifted scenario to a tuple encoding the private setting and the parents’ outputs. For example, in a network with parties Alice, Bob, Charlie and Dave, if Alice and Dave signal to Bob, then the effective setting <span class="math notranslate nohighlight">\(y'\)</span> of Bob in the lifted scenario is <span class="math notranslate nohighlight">\(y'=(y,a,d)\)</span> (or <span class="math notranslate nohighlight">\(y'=(y,d,a)\)</span> if we specify specify a custom order with via the <code class="docutils literal notranslate"><span class="pre">order</span></code> optional parameter where Dave appears before Alice).</p>
+<p>As a specific application, we can show that the following distribution:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}p(a,b|x)= \begin{cases}1 / 2 &amp; \text { if } b=a+f(x, a) \quad \bmod 2 \\ 0 &amp; \text { otherwise }\end{cases}\end{split}\]</div>
+<p>with <span class="math notranslate nohighlight">\(f(0,a)=0\)</span>, <span class="math notranslate nohighlight">\(f(1,a){=}a\)</span>, <span class="math notranslate nohighlight">\(f(2,a){=}a+1 \bmod2\)</span>, is incompatible with the instrumental scenario with quantum sources of correlations with the following code:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">prob</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rhoAB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span> <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]},</span>
+                        <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                        <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">P</span><span class="p">(</span><span class="n">noise</span><span class="p">):</span>
+     <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+          <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">a</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span>
+     <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+     <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+          <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+               <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span>
+     <span class="k">return</span> <span class="n">noise</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">noise</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span>
+
+<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">vis</span><span class="p">):</span>
+     <span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
+     <span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">feas_as_optim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+     <span class="k">return</span> <span class="n">sdp</span><span class="o">.</span><span class="n">objective_value</span>
+
+<span class="n">bisect</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.716400146484375
+</pre></div></div>
+</div>
+<p>This shows that there is no realisation of the above distribution for visibilities <span class="math notranslate nohighlight">\(\nu\geq 0.7164\)</span> in the instrumental scenario.</p>
+<p>One can also compute bounds for Bell functionals in beyond-network scenarios. As an example, we can derive bounds in the instrumental scenario for the Bonet Bell operator appearing in Bonet’s inequality:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}I_{\text {Bonet }}:=p(a{=}b\vert 0)+p(b{=}0\vert 1)+p(a{=}0, b{=}1\vert 2) \leq \begin{cases}2 &amp; \text { Classical } \\ (3+\sqrt{2}) / 2 &amp; \text { Quantum }\end{cases}\end{split}\]</div>
+<p>Recall that the moment matrix contains expressions involving Alice’s last output, <span class="math notranslate nohighlight">\(a{=}1\)</span>, but not Bob’s, as Bob is not a parent in the DAG. As such, all probabilities involving Bob’s last output, <span class="math notranslate nohighlight">\(b{=}1\)</span>, need to be expressed in terms of moments that do appear in the moment matrix. In this case, <span class="math notranslate nohighlight">\(p(a, b{=}1\vert x) = p(a \vert x) - p(a, b{=}0\vert x)\)</span>. At the moment this is not done automatically, but needs to be considered by the user. The code to compute the bound is as
+follows:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Symbol</span>
+
+<span class="n">prob</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rhoAB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span> <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]},</span>
+                        <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                        <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+
+<span class="n">objective</span> <span class="o">=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pAB(00|00)&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pAB(00|10)&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pAB(10|10)&#39;</span><span class="p">)</span>
+<span class="n">objective</span> <span class="o">+=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pA(1|0)&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pAB(10|00)&#39;</span><span class="p">)</span>  <span class="c1"># &#39;pAB(01|00)&#39;</span>
+<span class="n">objective</span> <span class="o">+=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pA(0|2)&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;pAB(00|20)&#39;</span><span class="p">)</span>  <span class="c1"># &#39;pAB(01|20)&#39;</span>
+
+<span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bonet Bell operator ≤ </span><span class="si">{</span><span class="n">sdp</span><span class="o">.</span><span class="n">objective_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (Classical)&quot;</span><span class="p">)</span>
+
+<span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">set_objective</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bonet Bell operator ≤ </span><span class="si">{</span><span class="n">sdp</span><span class="o">.</span><span class="n">objective_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (Quantum)&quot;</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Bonet Bell operator ≤ 2.0000 (Classical)
+Bonet Bell operator ≤ 2.2071 (Quantum)
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Probabilitic-support-compatibility">
+<h2>Probabilitic support compatibility<a class="headerlink" href="#Probabilitic-support-compatibility" title="Permalink to this heading">¶</a></h2>
+<p>&#64;eliewolfe &#64;apozas should we add this section?</p>
+<p>Hardy’s paradox “is the simplest form of Bell’s theorem”. It is a proof without inequalities that certain correlations are incompatible with local realism based only on possibilistic arguments: it only assumes whether certain events are possible (positive probability) or impossible (zero probability) in order to reach a contradiction <a class="reference external" href="https://arxiv.org/abs/1105.1819">[10]</a>. In the spirit of Hardy-type paradoxes, one can extend the quantum inflation technique to tackle compatibility of a
+possibilistic support with a given causal structure. Standard quantum inflation cannot handle support problems numerically because one cannot distinguish with floating point precision between <span class="math notranslate nohighlight">\(0\)</span> and a number that is sufficiently close to zero. One approach to circumvent this problem is to scale the moment matrix by an appropriate positive factor.</p>
+<p>Consider a SDP relaxation testing compatibility that is feasible and let <span class="math notranslate nohighlight">\(\Gamma^*\)</span> be the optimal analytical solution. If we divide <span class="math notranslate nohighlight">\(\Gamma^*\)</span> by the smallest non-zero element of <span class="math notranslate nohighlight">\(\Gamma^*\)</span>, <span class="math notranslate nohighlight">\(\epsilon\)</span>, then moments that are identical to zero (e.g., those which involve impossible events) will be mapped to zero. However all other moments will be mapped either to the interval <span class="math notranslate nohighlight">\([1,\infty)\)</span> if they are positive moments, or to <span class="math notranslate nohighlight">\((-\infty, \infty)\)</span> if they can be
+negative. The expectation value of the identity will also be mapped to <span class="math notranslate nohighlight">\([1,\infty)\)</span>, <span class="math notranslate nohighlight">\(\langle 1 \rangle \to \langle 1 \rangle/\epsilon\)</span>, and it will upper bound all other moments in the moment matrix. Notice that instead of finding the optimal solution of the original SDP and rescaling it, we can solve the rescaled SDP from the beginning. To get back the original moment matrix whose moments can be interpreted as probabilities, we can divide <span class="math notranslate nohighlight">\(\Gamma^*/\epsilon\)</span> by the numerical
+value found for the identity moment, <span class="math notranslate nohighlight">\(\langle 1 \rangle^*/\epsilon\)</span>. Given that this scaling is one to one, infeasibility of the rescaled SDP implies infeasibility for the original SDP and viceversa. Furthermore, in the rescaled SDP moments that are identically zero can be distinguished from non-zero moments, and as such, the rescaled SDP can be solved numerically.</p>
+<p>All the constraints that the rescaled SDP must fulfill are imposed automatically by the package by setting the flag <code class="docutils literal notranslate"><span class="pre">supports_problem=True</span></code> when instantiating <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>.</p>
+<p>As an example, one can show that any distribution that has the same support as the distribution from Example 10 is incompatbile with the instrumental scenario:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">prob</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rhoAB&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span> <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]},</span>
+                        <span class="n">outcomes_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                        <span class="n">settings_per_party</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="n">sdp</span> <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">supports_problem</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;local1&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">P</span><span class="p">(</span><span class="n">noise</span><span class="p">):</span>
+     <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+          <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">a</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span>
+     <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+     <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+          <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+               <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span>
+     <span class="k">return</span> <span class="n">noise</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">noise</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span>
+
+<span class="n">sdp</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">P</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="n">sdp</span><span class="o">.</span><span class="n">status</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&#39;infeasible&#39;
+</pre></div></div>
+</div>
+</section>
 <section id="References">
 <h2>References<a class="headerlink" href="#References" title="Permalink to this heading">¶</a></h2>
-<p>[1] <a class="reference external" href="https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html?lang=en">E. Wolfe, R. W. Spekkens, T. Fritz. Journal of Causal Inference, vol. 7, no. 2, 2019, pp. 20170020.</a></p>
+<p>[1] <a class="reference external" href="https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html?lang=en">E. Wolfe, R. W. Spekkens, and T. Fritz. Journal of Causal Inference, vol. 7, no. 2, 2019, pp. 20170020.</a></p>
 <p>[2] <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">E. Wolfe, A. Pozas-Kerstjens, M. Grinberg, D. Rosset, A. Acín, and Miguel Navascués Phys. Rev. X 11, 021043</a></p>
 <p>[3] <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">M. Navascués et al 2008 New J. Phys. 10 073013</a></p>
 <p>[4] <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.7.021042">F. Baccari, D. Cavalcanti, P. Wittek, and A. Acín Phys. Rev. X 7, 021042</a></p>
-<p>[5] <a class="reference external" href="https://link.springer.com/article/10.1007/BF02058098">S. Popescu, D. Rohrlich, Found Phys 24, 379–385 (1994).</a></p>
-<p>[6] <a class="reference external" href="https://arxiv.org/abs/2203.16543">A. Pozas-Kerstjens, N. Gisin, M. O. Renou, (2022). arXiv preprint arXiv:2203.16543.</a></p>
+<p>[5] <a class="reference external" href="https://link.springer.com/article/10.1007/BF02058098">S. Popescu, and D. Rohrlich, Found Phys 24, 379–385 (1994).</a></p>
+<p>[6] <a class="reference external" href="https://arxiv.org/abs/2203.16543">A. Pozas-Kerstjens, N. Gisin, and M. O. Renou, (2022). arXiv preprint arXiv:2203.16543.</a></p>
 <p>[7] <a class="reference external" href="https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.86.419">N. Brunner, D. Cavalcanti, S. Pironio, V. Scarani, and S. Wehner Rev. Mod. Phys. 86, 419</a></p>
-<p>The calculations for all the examples in this section use the following package versions:</p>
+<p>[8] <a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">T. Van Himbeeck, J. Bohr Brask, S. Pironio, R. Ramanathan, A. Belén Sainz, and E. Wolfe, Quantum 3, 186 (2019)</a>.</p>
+<p>[9] <a class="reference external" href="https://arxiv.org/abs/quant-ph/0306129">D. Collins, and N. Gisin 2004 J. Phys. A: Math. Gen. 37 1775</a></p>
+<p>[10] <a class="reference external" href="https://arxiv.org/abs/1105.1819">S. Mansfield and, T. Fritz. Found Phys 42, 709–719 (2012)</a></p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">causalinflation</span><span class="o">,</span> <span class="nn">qutip</span>
-
 <span class="n">causalinflation</span><span class="o">.</span><span class="n">about</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;QuTiP version: &quot;</span><span class="p">,</span> <span class="n">qutip</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;QuTiP version: &#39;</span><span class="p">,</span> <span class="n">qutip</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1241,14 +1388,6 @@ Platform Info:  Windows (AMD64)
 
 QuTiP version:  4.7.0
 </pre></div></div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
 </div>
 </section>
 </section>
