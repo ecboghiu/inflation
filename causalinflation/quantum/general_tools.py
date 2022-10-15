@@ -13,7 +13,7 @@ from sympy.combinatorics import Permutation
 from sympy.combinatorics.perm_groups import PermutationGroup
 
 
-from .fast_npa import (apply_source_permplus_monomial,
+from .fast_npa import (apply_source_perm,
                        factorize_monomial,
                        mon_lexsorted,
                        to_name)
@@ -167,21 +167,16 @@ def lexicographic_order(infSDP) -> Dict[str, int]:
     return lexorder
 
 
-def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
-                                  inflevels: np.ndarray,
-                                  party: int,
-                                  max_monomial_length: int,
-                                  settings_per_party: Tuple[int],
-                                  outputs_per_party: Tuple[int],
-                                  lexorder: np.ndarray
-                                  ) -> List[np.ndarray]:
-    """Generate all possible positive monomials given a scenario and a maximum
-    length. Note that the maximum length cannot be greater than the minimum
-    number of copies for each source that the party has access to. For example,
-    if party 2 has access to 3 sources, the first has 3 copies, the second
-    4 copies and the third 5 copies, the maximum length cannot be greater than
-    3. This is because the extra operators will not commute with the ones before
-    as they will be sharing support.
+def party_physical_monomials(hypergraph: np.ndarray,
+                             inflevels: np.ndarray,
+                             party: int,
+                             max_monomial_length: int,
+                             settings_per_party: Tuple[int],
+                             outputs_per_party: Tuple[int],
+                             lexorder: np.ndarray
+                             ) -> List[np.ndarray]:
+    """Generate all possible non-negative monomials for a given party composed
+    of at most ``max_monomial_length`` operators.
 
     Parameters
     ----------
@@ -199,6 +194,7 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     outputs_per_party : List[int]
         List containing the cardinality of the output/measurement outcome
         of each party.
+    DOCUMENTATION MISSING
 
     Returns
     -------
@@ -214,33 +210,28 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
         ("You cannot have a longer list of commuting operators" +
          " than the inflation level.")
 
-    # The initial monomial to which we will apply the symmetries
-    # For instance, if max_monomial_length=4, this is something of the form
-    # A_1_1_0_xa * A_2_2_0_xa * A_3_3_0_xa * A_4_4_0_xa
+    # The strategy is building an initial non-negative monomial and apply all
+    # inflation symmetries
     initial_monomial = np.zeros(
         (max_monomial_length, 1 + nr_sources + 2), dtype=np.uint16)
     for mon_idx in range(max_monomial_length):
-        initial_monomial[mon_idx, 0] = 1 + party
-        initial_monomial[mon_idx, -1] = 0
-        initial_monomial[mon_idx, -2] = 0
+        initial_monomial[mon_idx, 0]    = 1 + party
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
-    template_new_mons_dict = {initial_monomial.tobytes(): initial_monomial}
+    inflation_equivalents = {initial_monomial.tobytes(): initial_monomial}
 
-    all_permutationsplus_per_source = [
-        increase_values_by_one_and_prepend_with_column_of_zeros(list(permutations(range(inflevel))))
+    all_permutations_per_source = [
+        format_permutations(list(permutations(range(inflevel))))
         for inflevel in inflevels.flat]
-    # Note that we are not applying only the symmetry generators, but all
-    # possible symmetries
-    for perms_plus in product(*all_permutationsplus_per_source):
+    for permutation in product(*all_permutations_per_source):
         permuted = initial_monomial.copy()
         for source in range(nr_sources):
-            permuted = mon_lexsorted(apply_source_permplus_monomial(
-                monomial=permuted,
-                source=source,
-                permutation_plus=perms_plus[source]), lexorder)
-        template_new_mons_dict[permuted.tobytes()] = permuted
-    template_new_monomials = list(template_new_mons_dict.values())
+            permuted = mon_lexsorted(apply_source_perm(permuted,
+                                                       source,
+                                                       permutation[source]),
+                                     lexorder)
+        inflation_equivalents[permuted.tobytes()] = permuted
+    inflation_equivalents = list(inflation_equivalents.values())
 
     new_monomials = []
     # Insert all combinations of inputs and outputs
@@ -248,8 +239,8 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
                                  for _ in range(max_monomial_length)]):
         for output_slice in product(*[range(outputs_per_party[party] - 1)
                                       for _ in range(max_monomial_length)]):
-            for new_mon_idx in range(len(template_new_monomials)):
-                new_monomial = deepcopy(template_new_monomials[new_mon_idx])
+            for new_mon_idx in range(len(inflation_equivalents)):
+                new_monomial = deepcopy(inflation_equivalents[new_mon_idx])
                 for mon_idx in range(max_monomial_length):
                     new_monomial[mon_idx, -2] = input_slice[mon_idx]
                     new_monomial[mon_idx, -1] = output_slice[mon_idx]
@@ -257,10 +248,25 @@ def phys_mon_1_party_of_given_len(hypergraph: np.ndarray,
     return new_monomials
 
 
-def increase_values_by_one_and_prepend_with_column_of_zeros(array) -> np.ndarray:
-    array_plus = np.asarray(array) + 1
-    padding = np.zeros((len(array_plus), 1), dtype=int)
-    return np.hstack((padding, array_plus))
+def format_permutations(array) -> np.ndarray:
+    """Permutations of inflation indices must leave the integers 0,
+    corresponding to sources not being measured by the operator, invariant.
+    In order to achieve this, this function shifts a permutation of sources
+    by 1 and prepends it with the integer 0.
+
+    Parameters
+    ----------
+    array : numpy.ndarray
+        2-d array where each row is a permutations.
+
+    Returns
+    -------
+    numpy.ndarray
+        The processed list of permutations.
+    """
+    source_permutation = np.asarray(array) + 1
+    padding = np.zeros((len(source_permutation), 1), dtype=int)
+    return np.hstack((padding, source_permutation))
 
 
 def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
@@ -422,18 +428,17 @@ def construct_normalization_eqs(column_level_equalities, momentmatrix):
     del seen_already
     return equalities
 
-################################################################################
-# REPRESENTATIONS AND CONVERSIONS                                              #
-################################################################################
 
-def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.ndarray:
-    """Auxiliary function for to_representative. It applies source swaps
-    until we reach a stable point in terms of lexiographic ordering. This might
-    not be a global optimum if we also take into account the commutativity.
+###############################################################################
+# REPRESENTATIONS AND CONVERSIONS                                             #
+###############################################################################
+def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
+    """Reduce the inflation indices of a monomial as much as possible. This
+    procedure might not give the canonical form directly due to commutations.
 
     Parameters
     ----------
-    monomial_component : numpy.ndarray
+    monomial : numpy.ndarray
         Input monomial.
 
     Returns
@@ -441,14 +446,15 @@ def to_repr_lower_copy_indices_with_swaps(monomial_component: np.ndarray) -> np.
     numpy.ndarray
         An equivalent monomial closer to its representative form.
     """
-    new_mon = monomial_component.copy()
-    nr_sources = monomial_component.shape[1] - 3
-    # We temporarily pad the monomial with a row a zeroes at the front.
-    new_mon_padded_transposed = np.concatenate((np.zeros_like(new_mon[:1]), new_mon)).T
+    new_mon    = monomial.copy()
+    nr_sources = monomial.shape[1] - 3
+    # Pad the monomial with a row a zeros at the front so as to have the
+    # relevant inflation indices to begin at 1
+    new_mon_padded_transposed = np.concatenate((np.zeros_like(new_mon[:1]),
+                                                new_mon)).T
     for source in range(nr_sources):
-        source_inf_copy_nrs = new_mon_padded_transposed[1 + source]
-        # Numpy's return_inverse helps us reset the indices.
-        _, unique_positions = np.unique(source_inf_copy_nrs, return_inverse=True)
+        copies_used = new_mon_padded_transposed[1 + source]
+        _, unique_positions = np.unique(copies_used, return_inverse=True)
         new_mon_padded_transposed[1 + source] = unique_positions
     return new_mon_padded_transposed.T[1:]
 
