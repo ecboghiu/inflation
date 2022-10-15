@@ -664,12 +664,10 @@ def factorize_monomial(raw_monomial: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def apply_source_permplus_monomial(monomial: np.ndarray,
-                                   source: int,
-                                   permutation_plus: np.ndarray) -> np.ndarray:
-    """This applies a source swap to a monomial.
-
-    We assume in the monomial that all operators COMMUTE with each other.
+def apply_source_perm(monomial: np.ndarray,
+                      source: int,
+                      permutation: np.ndarray) -> np.ndarray:
+    """Apply a source swap to a monomial.
 
     Parameters
     ----------
@@ -677,10 +675,12 @@ def apply_source_permplus_monomial(monomial: np.ndarray,
         Input monomial in 2d array format.
     source : int
         The source that is being swapped.
-    permutation_plus : numpy.ndarray
+    permutation : numpy.ndarray
         The permutation of the copies of the specified source.
-        The format for the permutation here is to use indexing starting at one, so the permutation must be
-        padded with a leading zero.
+        The format for the permutation here is to use indexing starting at one,
+        so the permutation must be padded with a leading zero. The function
+        ``causalinflation.quantum.general_tools.format_permutations`` converts
+        a list of permutations to the necessary format.
 
     Returns
     -------
@@ -688,7 +688,7 @@ def apply_source_permplus_monomial(monomial: np.ndarray,
         Input monomial with the specified source swapped.
     """
     new_factors = monomial.copy()
-    new_factors[:, 1 + source] = permutation_plus[new_factors[:, 1 + source]]
+    new_factors[:, 1 + source] = permutation[new_factors[:, 1 + source]]
     return new_factors
 
 

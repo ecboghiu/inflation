@@ -17,24 +17,23 @@ import sympy as sp
 from scipy.sparse import coo_matrix
 
 from causalinflation import InflationProblem
-from .fast_npa import (calculate_momentmatrix,
-                       to_canonical,
-                       nb_mon_to_lexrepr,
+from .fast_npa import (all_commuting_test,
+                       apply_source_perm,
+                       calculate_momentmatrix,
                        commutation_matrix,
-                       all_commuting_test,
-                       apply_source_permplus_monomial)
+                       nb_mon_to_lexrepr,
+                       to_canonical)
 from .general_tools import (apply_inflation_symmetries,
+                            clean_coefficients,
                             construct_normalization_eqs,
-                            to_repr_lower_copy_indices_with_swaps,
+                            factorize_monomial,
                             flatten,
                             flatten_symbolic_powers,
-                            phys_mon_1_party_of_given_len,
-                            is_knowable,
+                            format_permutations,
                             generate_operators,
-                            clean_coefficients,
-                            factorize_monomial,
-                            increase_values_by_one_and_prepend_with_column_of_zeros
-                            )
+                            is_knowable,
+                            party_physical_monomials,
+                            reduce_inflation_indices)
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
@@ -134,8 +133,6 @@ class InflationSDP(object):
                                       dtype=self.np_dtype)
 
         # Define default lexicographic order through np.lexsort
-        # The lexicographic order is encoded as a matrix with rows as
-        # operators and the row index gives the order
         lexorder = self._interpret_name(flatten(self.measurements))
         if might_have_a_zero:
             lexorder = np.concatenate((self.zero_operator, lexorder))
@@ -169,8 +166,8 @@ class InflationSDP(object):
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
         applies the symmetries inferred from inflation.
 
-        It takes as input the generating set of monomials :math:`\{M_i\}_i`. The
-        moment matrix :math:`\Gamma` is defined by all the possible inner
+        It takes as input the generating set of monomials :math:`\{M_i\}_i`.
+        The moment matrix :math:`\Gamma` is defined by all the possible inner
         products between these monomials:
 
         .. math::
@@ -189,8 +186,9 @@ class InflationSDP(object):
         column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
             Describes the generating set of monomials :math:`\{M_i\}_i`.
 
-            * `(str)` ``"npaN"``: where N is an integer. This represents level N
-              in the Navascues-Pironio-Acin hierarchy (`arXiv:quant-ph/0607119
+            * `(str)` ``"npaN"``: where N is an integer. This represents level
+              N in the Navascues-Pironio-Acin hierarchy
+              (`arXiv:quant-ph/0607119
               <https://www.arxiv.org/abs/quant-ph/0607119>`_).
               For example, level 3 with measurements :math:`\{A, B\}` will give
               the set :math:`{1, A, B, AA, AB, BB, AAA, AAB, ABB, BBB\}` for
@@ -205,8 +203,8 @@ class InflationSDP(object):
 
             * `(str)` ``"physicalN"``: The subset of local level N with only
               operators that have non-negative expectation values with any
-              state. N cannot be greater than the smallest number of copies of a
-              source in the inflated graph. For example, in the scenario
+              state. N cannot be greater than the smallest number of copies of
+              a source in the inflated graph. For example, in the scenario
               A-source-B-source-C with 2 outputs and no inputs, ``physical2``
               only gives 5 possibilities for B: :math:`\{1, B^{1,1}_{0|0},
               B^{2,2}_{0|0}, B^{1,1}_{0|0}B^{2,2}_{0|0},
@@ -220,9 +218,9 @@ class InflationSDP(object):
               input, output and inflation indices are taken into account. For
               example, ``[[], [0], [1], [0, 1]]`` gives the set :math:`\{1, A,
               B, AB\}`, which is the same as ``local1``. The set ``[[], [0],
-              [1], [2], [0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]`` is the
-              same as :math:`\{1, A, B, C, AA, AB, AC, BB, BC, CC\}`, which is
-              the same as ``npa2`` for three parties. ``[[]]`` encodes the
+              [1], [2], [0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]`` is
+              the same as :math:`\{1, A, B, C, AA, AB, AC, BB, BC, CC\}`, which
+              is the same as ``npa2`` for three parties. ``[[]]`` encodes the
               identity element.
 
             * `List[sympy.core.symbol.Symbol]`: one can also fully specify the
@@ -287,11 +285,11 @@ class InflationSDP(object):
         # This is a good time to reclaim memory, as unsymmetrized_mm can be GBs
         gc.collect(generation=2)
 
-        (self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one) = \
+        self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one = \
             np.in1d([0, 1], self.momentmatrix.ravel())
 
-        # Associate Monomials to the remaining entries. The zero monomial is not
-        # stored during calculate_momentmatrix, so we have to add it manually
+        # Associate Monomials to the remaining entries. The zero monomial is
+        # not stored during calculate_momentmatrix
         self.compmonomial_from_idx = dict()
         if self.momentmatrix_has_a_zero:
             self.compmonomial_from_idx[0] = self.Zero
@@ -340,8 +338,8 @@ class InflationSDP(object):
         self.names_to_symbols = {mon.name: mon.symbol for mon in self.monomials}
         self.names_to_symbols[self.constant_term_name] = sp.S.One
 
-        # In non-network scenarios we do not use Collins-Gisin notation for some
-        # variables, so there exist normalization constraints between them
+        # In non-network scenarios we do not use Collins-Gisin notation for
+        # some variables, so there exist normalization constraints between them
         if self.network_scenario:
             self.moment_equalities = []
         else:
@@ -354,8 +352,8 @@ class InflationSDP(object):
                                       for eq in self.idx_level_equalities]
 
         self.moment_inequalities = []
-        self.moment_upperbounds = dict()
-        self.moment_lowerbounds = {m: 0. for m in self.physical_monomials}
+        self.moment_upperbounds  = dict()
+        self.moment_lowerbounds  = {m: 0. for m in self.physical_monomials}
 
         self._set_lowerbounds(None)
         self._set_upperbounds(None)
@@ -369,8 +367,8 @@ class InflationSDP(object):
                    bound_type: str = "up") -> None:
         """Documentation needed
         """
-        assert bound_type in ["up", "lo"], ("The 'bound_type' argument should" +
-                                            "be either 'up' or 'lo'")
+        assert bound_type in ["up", "lo"], \
+            "The 'bound_type' argument should be either 'up' or 'lo'"
         if bound_type == "up":
             self._set_upperbounds(bounds_dict)
         else:
@@ -389,8 +387,8 @@ class InflationSDP(object):
                 Multidimensional array encoding the distribution, which is
                 called as ``prob_array[a,b,c,...,x,y,z,...]`` where
                 :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
-                inputs. Note: even if the inputs have cardinality 1 they must be
-                specified, and the corresponding axis dimensions are 1.
+                inputs. Note: even if the inputs have cardinality 1 they must
+                be specified, and the corresponding axis dimensions are 1.
 
             use_lpi_constraints : bool, optional
                 Specification whether linearized polynomial constraints (see,
@@ -426,6 +424,8 @@ class InflationSDP(object):
             Direction of the optimization (``"max"``/``"min"``). By default
             ``"max"``.
         """
+        assert (not self.supports_problem) or (objective is None), \
+            "Supports problems do not support specifying objective functions."
         assert direction in ["max", "min"], ("The 'direction' argument should "
                                              + " be either 'max' or 'min'")
 
@@ -458,26 +458,20 @@ class InflationSDP(object):
                     objective_dict[mon] = \
                         objective_dict.get(mon, 0) + (sign * coeff)
             self.objective = objective_dict
-            if self.verbose > 0:
-                surprising_objective_terms = {mon for mon in self.objective.keys() if mon not in self.monomials}
-                if len(surprising_objective_terms) >= 1:
-                    warn("When interpreting the objective we have encountered at least one monomial that does not appear in " +
-                         f"the original moment matrix:\n\t{surprising_objective_terms}")
-            if self.supports_problem:
-                check_for_uniform_sign = np.array(list(self.objective.values()))
-                assert (np.array_equal(check_for_uniform_sign, np.abs(check_for_uniform_sign))
-                        or np.array_equal(check_for_uniform_sign, -np.abs(
-                            check_for_uniform_sign))), "Cannot evaluate mixed-coefficient objectives for a supports problem."
+            surprising_objective_terms = {mon for mon in self.objective.keys()
+                                          if mon not in self.monomials}
+            assert len(surprising_objective_terms) == 0, \
+                ("When interpreting the objective we have encountered at " +
+                 "least one monomial that does not appear in the original " +
+                 f"moment matrix:\n\t{surprising_objective_terms}")
             self._update_objective()
-            return
 
     def set_values(self,
-                   values: Union[Dict[Union[CompoundMonomial,
-                                            InternalAtomicMonomial,
-                                            sp.core.symbol.Symbol,
-                                            str],
-                                      float],
-                                 None],
+                   values: Union[None, Dict[Union[CompoundMonomial,
+                                                  InternalAtomicMonomial,
+                                                  sp.core.symbol.Symbol,
+                                                  str],
+                                            float]],
                    use_lpi_constraints: bool = False,
                    only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the moment matrix.
@@ -513,9 +507,9 @@ class InflationSDP(object):
         self.use_lpi_constraints = use_lpi_constraints
 
         if (len(self.objective) > 1) and self.use_lpi_constraints:
-            warn("You have an objective function set. Be aware that imposing " +
-                 "linearized polynomial constraints will constrain the " +
-                 "optimization to distributions with fixed marginals.")
+            warn("You have an objective function set. Be aware that imposing "
+                 + "linearized polynomial constraints will constrain the "
+                 + "optimization to distributions with fixed marginals.")
 
         # It is funny to set values to monomials created from operators that do
         # not commute with each other, so we display a warning.
@@ -532,19 +526,18 @@ class InflationSDP(object):
                  str(non_all_commuting_monomials))
         del non_all_commuting_monomials
         if not only_specified_values:
-            atomic_known_moments = {mon.knowable_factors[0]: val
-                                    for mon, val in self.known_moments.items()
-                                    if len(mon) == 1}
-            atomic_known_moments.update(
-                {atom.dagger: val for atom, val in atomic_known_moments.items()}
-                                        )
+            atomic_knowns = {mon.knowable_factors[0]: val
+                             for mon, val in self.known_moments.items()
+                             if len(mon) == 1}
+            atomic_knowns.update({atom.dagger: val
+                                  for atom, val in atomic_knowns.items()})
             monomials_not_present = set(self.known_moments.keys()
                                         ).difference(self.monomials)
             for mon in monomials_not_present:
                 del self.known_moments[mon]
 
             # Get the remaining monomials that need assignment
-            if all(atom.is_knowable for atom in atomic_known_moments):
+            if all(atom.is_knowable for atom in atomic_knowns):
                 if not self.use_lpi_constraints:
                     remaining_mons = (mon for mon in self.monomials
                                       if ((not mon.is_atomic)
@@ -561,7 +554,7 @@ class InflationSDP(object):
             for mon in remaining_mons:
                 if mon not in self.known_moments.keys():
                     value, unknown_factors, known_status = mon.evaluate(
-                        atomic_known_moments,
+                        atomic_knowns,
                         self.use_lpi_constraints)
                     if known_status == "Known":
                         self.known_moments[mon] = value
@@ -579,9 +572,8 @@ class InflationSDP(object):
                 warn("When processing LPI constraints we encountered at " +
                      "least one monomial that does not appear in the " +
                      f"original moment matrix:\n\t{surprising_semiknowns}")
-            del atomic_known_moments, surprising_semiknowns
+            del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
-        return
 
     def solve(self,
               interpreter: str = "MOSEKFusion",
@@ -766,7 +758,8 @@ class InflationSDP(object):
     # OTHER ROUTINES EXPOSED TO THE USER                                   #
     ########################################################################
     def build_columns(self,
-                      column_specification: Union[str, List[List[int]],
+                      column_specification: Union[str,
+                                                  List[List[int]],
                                                   List[sp.core.symbol.Symbol]],
                       max_monomial_length: int = 0):
         r"""Creates the objects indexing the columns of the moment matrix from
@@ -883,12 +876,8 @@ class InflationSDP(object):
                         else:
                             physmons_per_party = []
                             for party, freq in enumerate(freqs):
-                                # E.g., if freq = [1, 2, 0], then
-                                # physmons_per_party_per_length will be a list
-                                # of lists of physical monomials of lengths
-                                # 1, 2 and 0
                                 if freq > 0:
-                                    physmons = phys_mon_1_party_of_given_len(
+                                    physmons = party_physical_monomials(
                                         self.hypergraph,
                                         self.inflation_levels,
                                         party, freq,
@@ -896,12 +885,11 @@ class InflationSDP(object):
                                         self.outcome_cardinalities,
                                         self._lexorder)
                                     physmons_per_party.append(physmons)
-
-                            for mon_tuple in itertools.product(
+                            for monomial_parts in itertools.product(
                                     *physmons_per_party):
                                 physical_monomials.append(
                                     self._to_canonical_memoized(
-                                        np.concatenate(mon_tuple)))
+                                        np.concatenate(monomial_parts)))
                     columns = physical_monomials
             else:
                 raise Exception("I have not understood the format of the "
@@ -937,7 +925,7 @@ class InflationSDP(object):
 
     def reset_values(self):
         self._reset_solution()
-        self.known_moments = dict()
+        self.known_moments     = dict()
         self.semiknown_moments = dict()
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
@@ -991,6 +979,7 @@ class InflationSDP(object):
     # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES          #
     ########################################################################
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
+        """DOCUMENTATION NEEDED"""
         key = self._from_2dndarray(array2d)
         if key in self.atomic_monomial_from_hash:
             return self.atomic_monomial_from_hash[key]
@@ -1056,7 +1045,7 @@ class InflationSDP(object):
         For each column the function assigns to the first row index 1. Then,
         the next different one will be 2, and so on. Therefore, the
         representative of the monomial above is :math:`\langle D^{110}_{00}
-        D^{210}_{00} D^{350}_{00} E^{201}_{00} F^{021}_{00} \rangle`.
+        D^{210}_{00} D^{310}_{00} E^{201}_{00} F^{021}_{00} \rangle`.
 
         Parameters
         ----------
@@ -1085,12 +1074,12 @@ class InflationSDP(object):
         canonical_mon = self._to_canonical_memoized(mon, hasty=hasty)
         canonical_key = self._from_2dndarray(canonical_mon)
         try:
-            real_repr_mon = self.canonsym_ndarray_from_hash[canonical_key]
-            self.canonsym_ndarray_from_hash[key] = real_repr_mon
-            return real_repr_mon
+            repr_mon = self.canonsym_ndarray_from_hash[canonical_key]
+            self.canonsym_ndarray_from_hash[key] = repr_mon
+            return repr_mon
         except KeyError:
             pass
-        repr_mon = to_repr_lower_copy_indices_with_swaps(mon)
+        repr_mon = reduce_inflation_indices(mon)
         repr_key = self._from_2dndarray(repr_mon)
         try:
             real_repr_mon = self.canonsym_ndarray_from_hash[repr_key]
@@ -1099,7 +1088,7 @@ class InflationSDP(object):
             return real_repr_mon
         except KeyError:
             pass
-        other_keys, real_repr_mon = self._orbit_and_rep_under_inflation(repr_mon)
+        other_keys, real_repr_mon = self._inflation_orbit_and_rep(repr_mon)
         other_keys.update({key, canonical_key, repr_key})
         for key in other_keys:
             self.canonsym_ndarray_from_hash[key] = real_repr_mon
@@ -1108,6 +1097,7 @@ class InflationSDP(object):
     def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomial]
                              ) -> CompoundMonomial:
+        """DOCUMENTATION NEEDED"""
         list_of_atoms = []
         for factor in atoms:
             if factor.is_zero:
@@ -1127,36 +1117,32 @@ class InflationSDP(object):
             self.monomial_from_name[mon.name]        = mon
             return mon
 
-    def _orbit_and_rep_under_inflation(self, unsym_monarray: np.ndarray) -> Tuple[set, np.ndarray]:
-        """Note that we do NOT need to return the minimal representative according to LEXORDER.
-        We only need to return SOME canonically-chosen representative of the orbit."""
-        inflevels = unsym_monarray[:, 1:-2].max(axis=0)
-        nr_sources = inflevels.shape[0]
-        all_permutationsplus_per_source = [
-            increase_values_by_one_and_prepend_with_column_of_zeros(list(itertools.permutations(range(inflevel))))
-            for inflevel in inflevels.flat]
-        # Note that we are not applying only the symmetry generators, but all
-        # possible symmetries
-        thus_far_seen_hashes = set()
-        for perms_plus in itertools.product(*all_permutationsplus_per_source):
-            permuted = unsym_monarray.copy()
+    def _inflation_orbit_and_rep(self,
+                                 monomial: np.ndarray
+                                 ) -> Tuple[set, np.ndarray]:
+        """DOCUMENTATION NEEDED"""
+        inf_levels = monomial[:, 1:-2].max(axis=0)
+        nr_sources = inf_levels.shape[0]
+        all_permutations_per_source = [
+            format_permutations(list(itertools.permutations(range(inflevel))))
+            for inflevel in inf_levels.flat]
+        seen_hashes = set()
+        for permutation in itertools.product(*all_permutations_per_source):
+            permuted = monomial.copy()
             for source in range(nr_sources):
-                permuted = apply_source_permplus_monomial(
-                    monomial=permuted,
-                    source=source,
-                    permutation_plus=perms_plus[source])
-            # After having gone through all sources.
+                permuted = apply_source_perm(permuted,
+                                             source,
+                                             permutation[source])
             permuted = self._to_canonical_memoized(permuted, hasty=True)
-            new_hash = self._from_2dndarray(permuted)
-            thus_far_seen_hashes.add(new_hash)
+            hash     = self._from_2dndarray(permuted)
+            seen_hashes.add(hash)
             try:
-                canonsym_ndarray = self.canonsym_ndarray_from_hash[new_hash]
-                return (thus_far_seen_hashes, canonsym_ndarray)
+                representative = self.canonsym_ndarray_from_hash[hash]
+                return seen_hashes, representative
             except KeyError:
                 pass
-        # If we have never encountered any of the variants herein yet.
-        canonsym_ndarray = self._to_2dndarray(min(thus_far_seen_hashes))
-        return (thus_far_seen_hashes, canonsym_ndarray)
+        representative = self._to_2dndarray(min(seen_hashes))
+        return seen_hashes, representative
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
         """Bring a monomial into the form used internally.
@@ -1263,23 +1249,26 @@ class InflationSDP(object):
         ----------
         col_specs : List[List[int]]
             The column specification as specified in the method description.
+
+        Returns
+        -------
+        List[numpy.ndarray]
+            The list of operators indexing the columns, in array form.
         """
         if self.verbose > 1:
-            # Display col_specs in a more readable way such as 1+A+B+AB etc.
+            # Display col_specs in a readable way
             to_print = []
-            for col in col_specs:
-                if col == []:
-                    to_print.append("1")
-                else:
-                    to_print.append("".join([self.names[i] for i in col]))
+            for specs in col_specs:
+                to_print.append("1" if specs == []
+                                else "".join([self.names[p] for p in specs]))
             print("Column structure:", "+".join(to_print))
 
-        res = []
-        allvars = set()
+        columns      = []
+        seen_columns = set()
         for block in col_specs:
             if len(block) == 0:
-                res.append(self.identity_operator)
-                allvars.add(self._from_2dndarray(self.identity_operator))
+                columns.append(self.identity_operator)
+                seen_columns.add(self._from_2dndarray(self.identity_operator))
             else:
                 meas_ops = []
                 for party in block:
@@ -1294,66 +1283,12 @@ class InflationSDP(object):
                         # means all monomials of length 2 AFTER simplifications,
                         # so we omit monomials of length 1.
                         if canon.shape[0] == len(monomial_factors):
-                            quick_key = self._from_2dndarray(canon)
-                            if quick_key not in allvars:
-                                allvars.add(quick_key)
-                                res.append(canon)
+                            key = self._from_2dndarray(canon)
+                            if key not in seen_columns:
+                                seen_columns.add(key)
+                                columns.append(canon)
 
-        return res
-
-    def _generate_parties(self):
-        """Generates all the party operators in the quantum inflation.
-
-        It stores in `self.measurements` a list of lists of measurement
-        operators indexed as self.measurements[p][c][i][o] for party p,
-        copies c, input i, output o.
-        """
-        settings = self.setting_cardinalities
-        outcomes = self.outcome_cardinalities
-
-        assert len(settings) == len(outcomes), \
-            "There\'s a different number of settings and outcomes"
-        assert len(settings) == self.hypergraph.shape[1], \
-            "The hypergraph does not have as many columns as parties"
-        measurements = []
-        parties = self.names
-        n_states = self.hypergraph.shape[0]
-        for pos, [party, ins, outs] in enumerate(zip(parties,
-                                                     settings,
-                                                     outcomes)):
-            party_meas = []
-            # Generate all possible copy indices for a party
-            all_inflation_indices = itertools.product(
-                *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.nonzero(self.hypergraph[:, pos])[0]]
-            )
-            # Include zeros in the positions of states not feeding the party
-            all_indices = []
-            for inflation_indices in all_inflation_indices:
-                indices = []
-                i = 0
-                for idx in range(n_states):
-                    if self.hypergraph[idx, pos] == 0:
-                        indices.append("0")
-                    elif self.hypergraph[idx, pos] == 1:
-                        # The +1 is just to begin at 1
-                        indices.append(str(inflation_indices[i] + 1))
-                        i += 1
-                    else:
-                        raise Exception("You don\'t have a proper hypergraph")
-                all_indices.append(indices)
-            # Generate measurements for every combination of indices.
-            # The -1 in outs - 1 is because the use of Collins-Gisin notation
-            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
-            # understood to be written as the identity minus the rest.
-            for indices in all_indices:
-                meas = generate_operators(
-                    [outs - 1 for _ in range(ins)],
-                    party + "_" + "_".join(indices)
-                )
-                party_meas.append(meas)
-            measurements.append(party_meas)
-        return measurements
+        return columns
 
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
         """Generate the moment matrix.
@@ -1371,61 +1306,10 @@ class InflationSDP(object):
         del canonical_mon_as_bytes_to_idx
         return problem_arr, idx_to_canonical_mon
 
-    def _discover_inflation_symmetries(self) -> np.ndarray:
-        """Calculates all the symmetries and applies them to the set of
-        operators used to define the moment matrix. The new set of operators
-        is a permutation of the old. The function outputs a list of all
-        permutations.
-
-        Returns
-        -------
-        List[List[int]]
-            The list of all permutations of the generating columns implied by
-            the inflation symmetries.
-        """
-        sources_with_copies = [source for source, inf_level
-                               in enumerate(self.inflation_levels)
-                               if inf_level > 1]
-        if len(sources_with_copies):
-            inflation_symmetries = []
-            identity_perm        = np.arange(self.n_columns, dtype=int)
-            for source in tqdm(sources_with_copies,
-                               disable=not self.verbose,
-                               desc="Calculating symmetries   "):
-                one_source_symmetries = [identity_perm]
-                inf_level = self.inflation_levels[source]
-                permutations_plus = increase_values_by_one_and_prepend_with_column_of_zeros(list(
-                    itertools.permutations(range(inf_level)))[1:])
-                permutation_failed = False
-                for permutation_plus in permutations_plus:
-                    try:
-                        total_perm = np.empty(self.n_columns, dtype=int)
-                        for i, mon in enumerate(self.generating_monomials):
-                            new_mon = apply_source_permplus_monomial(mon, source, permutation_plus)
-                            new_mon = self._to_canonical_memoized(new_mon,
-                                                                  hasty=True)
-                            total_perm[i] = self.genmon_hash_to_index[
-                                                self._from_2dndarray(new_mon)]
-                        one_source_symmetries.append(total_perm)
-                    except KeyError:
-                        permutation_failed = True
-                inflation_symmetries.append(one_source_symmetries)
-            if permutation_failed and (self.verbose > 0):
-                warn("The generating set is not closed under source swaps."
-                     + " Some symmetries will not be implemented.")
-            inflation_symmetries_flat = [reduce(np.take, perms) for perms in
-                                         itertools.product(*inflation_symmetries)]
-            return np.unique(inflation_symmetries_flat[1:], axis=0)
-        else:
-            return np.empty((0, len(self.generating_monomials)), dtype=int)
-
-
-    ########################################################################
-    # ROUTINES RELATED TO IMPLICIT EQUALITY CONSTRAINTS                    #
-    ########################################################################
     def _discover_column_equalities(self):
-        """Given the generating monomials, infer implicit equalities between columns of the moment matrix.
-        An equality is a dictionary with keys being which column and values being coefficients.
+        """Given the generating monomials, infer implicit equalities between
+        columns of the moment matrix. An equality is a dictionary with keys
+        being which column and values being coefficients.
         BETTER DOCUMENTATION NEEDED"""
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
@@ -1466,6 +1350,109 @@ class InflationSDP(object):
                   len(column_level_equalities))
         return column_level_equalities
 
+    def _discover_inflation_symmetries(self) -> np.ndarray:
+        """Calculates all the symmetries and applies them to the set of
+        operators used to define the moment matrix. The new set of operators
+        is a permutation of the old. The function outputs a list of all
+        permutations.
+
+        Returns
+        -------
+        numpy.ndarray[int]
+            The list of all permutations of the generating columns implied by
+            the inflation symmetries.
+        """
+        sources_with_copies = [source for source, inf_level
+                               in enumerate(self.inflation_levels)
+                               if inf_level > 1]
+        if len(sources_with_copies):
+            inflation_symmetries = []
+            identity_perm        = np.arange(self.n_columns, dtype=int)
+            for source in tqdm(sources_with_copies,
+                               disable=not self.verbose,
+                               desc="Calculating symmetries   "):
+                one_source_symmetries = [identity_perm]
+                inf_level = self.inflation_levels[source]
+                permutations = format_permutations(list(
+                    itertools.permutations(range(inf_level)))[1:])
+                permutation_failed = False
+                for permutation in permutations:
+                    try:
+                        total_perm = np.empty(self.n_columns, dtype=int)
+                        for i, mon in enumerate(self.generating_monomials):
+                            new_mon = apply_source_perm(mon,
+                                                        source,
+                                                        permutation)
+                            new_mon = self._to_canonical_memoized(new_mon,
+                                                                  hasty=True)
+                            total_perm[i] = self.genmon_hash_to_index[
+                                                self._from_2dndarray(new_mon)]
+                        one_source_symmetries.append(total_perm)
+                    except KeyError:
+                        permutation_failed = True
+                inflation_symmetries.append(one_source_symmetries)
+            if permutation_failed and (self.verbose > 0):
+                warn("The generating set is not closed under source swaps."
+                     + " Some symmetries will not be implemented.")
+            inflation_symmetries = [reduce(np.take, perms) for perms in
+                                    itertools.product(*inflation_symmetries)]
+            return np.unique(inflation_symmetries[1:], axis=0)
+        else:
+            return np.empty((0, len(self.generating_monomials)), dtype=int)
+
+    def _generate_parties(self):
+        """Generates all the party operators in the quantum inflation.
+
+        It stores in `self.measurements` a list of lists of measurement
+        operators indexed as self.measurements[p][c][i][o] for party p,
+        copies c, input i, output o.
+        """
+        settings = self.setting_cardinalities
+        outcomes = self.outcome_cardinalities
+
+        assert len(settings) == len(outcomes), \
+            "There\'s a different number of settings and outcomes"
+        assert len(settings) == self.hypergraph.shape[1], \
+            "The hypergraph does not have as many columns as parties"
+        measurements = []
+        parties = self.names
+        n_states = self.hypergraph.shape[0]
+        for pos, [party, ins, outs] in enumerate(zip(parties,
+                                                     settings,
+                                                     outcomes)):
+            party_meas = []
+            # Generate all possible copy indices for a party
+            all_inflation_indices = itertools.product(
+                *[list(range(self.inflation_levels[p_idx]))
+                  for p_idx in np.nonzero(self.hypergraph[:, pos])[0]])
+            # Include zeros in the positions of states not feeding the party
+            all_indices = []
+            for inflation_indices in all_inflation_indices:
+                indices = []
+                i = 0
+                for idx in range(n_states):
+                    if self.hypergraph[idx, pos] == 0:
+                        indices.append("0")
+                    elif self.hypergraph[idx, pos] == 1:
+                        # The +1 is just to begin at 1
+                        indices.append(str(inflation_indices[i] + 1))
+                        i += 1
+                    else:
+                        raise Exception("You don\'t have a proper hypergraph")
+                all_indices.append(indices)
+            # Generate measurements for every combination of indices.
+            # The -1 in outs - 1 is because the use of Collins-Gisin notation
+            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
+            # understood to be written as the identity minus the rest.
+            for indices in all_indices:
+                meas = generate_operators(
+                    [outs - 1 for _ in range(ins)],
+                    party + "_" + "_".join(indices)
+                )
+                party_meas.append(meas)
+            measurements.append(party_meas)
+        return measurements
+
     ########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                            #
     ########################################################################
@@ -1495,7 +1482,6 @@ class InflationSDP(object):
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
-        return
 
     def _update_objective(self):
         """Process the objective with the information from known_moments
@@ -1523,6 +1509,9 @@ class InflationSDP(object):
         gc.collect(generation=2)
 
     def _update_lowerbounds(self):
+        """
+        Documentation needed.
+        """
         for mon, lb in self.moment_lowerbounds.items():
             self._processed_moment_lowerbounds[mon] = \
                 max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
@@ -1537,6 +1526,9 @@ class InflationSDP(object):
                 pass
 
     def _update_upperbounds(self):
+        """
+        Documentation needed.
+        """
         for mon, value in self.known_moments.items():
             try:
                 ub = self._processed_moment_upperbounds[mon]
@@ -1580,6 +1572,9 @@ class InflationSDP(object):
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
     def _prepare_solver_arguments(self):
+        """
+        Documentation needed.
+        """
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
@@ -1622,6 +1617,9 @@ class InflationSDP(object):
         return solverargs
 
     def _reset_solution(self):
+        """
+        Documentation needed.
+        """
         for attribute in {"primal_objective",
                           "objective_value",
                           "solution_object"}:
@@ -1631,46 +1629,45 @@ class InflationSDP(object):
                 pass
         self.status = "Not yet solved"
 
-    def _set_upperbounds(self, upperbound_dict: Union[dict, None]) -> None:
+    def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
         """
         Documentation needed.
         """
         self.reset_upperbounds()
-        if upperbound_dict is None:
+        if upperbounds is None:
             return
-        sanitized_upperbound_dict = dict()
-        for mon, upperbound in upperbound_dict.items():
+        sanitized_upperbounds = dict()
+        for mon, upperbound in upperbounds.items():
             mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_upperbound_dict.keys():
-                sanitized_upperbound_dict[mon] = upperbound
+            if mon not in sanitized_upperbounds.keys():
+                sanitized_upperbounds[mon] = upperbound
             else:
-                old_bound = sanitized_upperbound_dict[mon]
+                old_bound = sanitized_upperbounds[mon]
                 assert np.isclose(old_bound,
                                   upperbound), \
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different upper bounds.")
-        self._processed_moment_upperbounds = sanitized_upperbound_dict
+        self._processed_moment_upperbounds = sanitized_upperbounds
         self._update_upperbounds()
 
-    def _set_lowerbounds(self, lowerbound_dict: Union[dict, None]) -> None:
+    def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
         """
         Documentation needed.
         """
         self.reset_lowerbounds()
-        if lowerbound_dict is None:
+        if lowerbounds is None:
             return
-        sanitized_lowerbound_dict = dict()
-        for mon, lowerbound in lowerbound_dict.items():
+        sanitized_lowerbounds = dict()
+        for mon, lowerbound in lowerbounds.items():
             mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_lowerbound_dict.keys():
-                sanitized_lowerbound_dict[mon] = lowerbound
+            if mon not in sanitized_lowerbounds.keys():
+                sanitized_lowerbounds[mon] = lowerbound
             else:
-                old_bound = sanitized_lowerbound_dict[mon]
-                assert np.isclose(old_bound,
-                                  lowerbound), \
+                old_bound = sanitized_lowerbounds[mon]
+                assert np.isclose(old_bound, lowerbound), \
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different lower bounds.")
-        self._processed_moment_lowerbounds = sanitized_lowerbound_dict
+        self._processed_moment_lowerbounds = sanitized_lowerbounds
         self._update_lowerbounds()
 
     def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:
@@ -1691,16 +1688,16 @@ class InflationSDP(object):
 
     def _to_canonical_memoized(self, array2d: np.ndarray, hasty=False):
         """DOCUMENTATION NEEDED"""
-        quick_key = self._from_2dndarray(array2d)
-        if quick_key in self.canon_ndarray_from_hash:
-            return self.canon_ndarray_from_hash[quick_key]
+        key = self._from_2dndarray(array2d)
+        if key in self.canon_ndarray_from_hash:
+            return self.canon_ndarray_from_hash[key]
         elif len(array2d) == 0 or np.array_equiv(array2d, 0):
-            self.canon_ndarray_from_hash[quick_key] = array2d
+            self.canon_ndarray_from_hash[key] = array2d
             return array2d
         else:
             new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
                                        self.commuting, hasty)
-            new_quick_key = self._from_2dndarray(new_array2d)
-            self.canon_ndarray_from_hash[quick_key]     = new_array2d
-            self.canon_ndarray_from_hash[new_quick_key] = new_array2d
+            new_key = self._from_2dndarray(new_array2d)
+            self.canon_ndarray_from_hash[key]     = new_array2d
+            self.canon_ndarray_from_hash[new_key] = new_array2d
             return new_array2d
