@@ -3,8 +3,7 @@ import numpy as np
 
 from causalinflation import InflationProblem, InflationSDP
 from causalinflation.quantum.general_tools import is_knowable, is_physical
-from causalinflation.quantum.fast_npa import (commutation_matrix, to_canonical,
-                                              to_name)
+
 
 class TestKnowable(unittest.TestCase):
     # Triangle scenario. The structure is

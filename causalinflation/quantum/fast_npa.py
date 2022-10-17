@@ -2,14 +2,13 @@
 This file contains helper functions to manipulate monomials and generate moment
 matrices. The functions in this file can be accelerated by JIT compilation in
 numba.
-@authors: Alejandro Pozas-Kerstjens, Elie Wolfe and Emanuel-Cristian Boghiu
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 from typing import List, Dict, Tuple, Union
 import numpy as np
 from scipy.sparse import dok_matrix
 
 try:
-    import numba
     from numba import jit
     from numba.types import bool_, void
     from numba.types import uint16 as uint16_
@@ -19,34 +18,34 @@ try:
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-    bool_ = bool
+    bool_   = bool
     uint16_ = np.uint16
-    int16_ = np.int16
-    int64_ = np.int
+    int16_  = np.int16
+    int64_  = np.int
     nb_Dict = dict
-    void = None
+    void    = None
 
 try:
     from tqdm import tqdm
 except ImportError:
     from ..utils import blank_tqdm as tqdm
 
-cache = True
+cache    = True
 nopython = True
 if not nopython:
-    bool_ = bool
+    bool_   = bool
     uint16_ = np.uint16
-    int64_ = np.int
+    int64_  = np.int
     nb_Dict = dict
 
 
-################################################################################
-# FUNCTIONS WITH ARRAY OPERATIONS                                              #
-################################################################################
+###############################################################################
+# FUNCTIONS WITH ARRAY OPERATIONS                                             #
+###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_intarray_eq(intarray1: np.ndarray,
                    intarray2: np.ndarray) -> bool_:
-    """Checks if two arrays of integers are equal.
+    """Check if two arrays of integers are equal.
 
     NOTE: There is no check for shape consistency. As this is
     an internal function, it is assumed to be used carefully.
@@ -294,14 +293,16 @@ def dot_mon(mon1: np.ndarray,
     return np.concatenate((reverse_mon(mon1), mon2))
 
 
-def to_name(monomial: Union[np.ndarray, List],
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def to_name(monomial: Union[np.ndarray, List[List[int]]],
             names: List) -> str:
     """Convert the 2d array representation of a monomial to a string.
 
     Parameters
     ----------
     monomial : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
+        Monomial as a matrix with each row being an integer array representing
+        an operators.
     names : List[str]
         List of party names.
 
@@ -318,16 +319,15 @@ def to_name(monomial: Union[np.ndarray, List],
     if len(monomial) == 0:
         return "1"
 
-    # It is faster to convert to list of lists than to loop through numpy arrays
     monomial = monomial.tolist()
     return "*".join(["_".join([names[letter[0] - 1]]
                               + [str(i) for i in letter[1:]])
                      for letter in monomial])
 
 
-################################################################################
-# OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #
-################################################################################
+###############################################################################
+# OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
+###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_commuting(operator1: np.ndarray,
                  operator2: np.ndarray) -> bool_:
@@ -376,16 +376,16 @@ def commutation_matrix(lexorder: np.ndarray, commuting=False) -> np.ndarray:
 
     Parameters
     ----------
-    lexorder : np.ndarray
+    lexorder : numpy.ndarray
         Matrix with rows as operators where the index of the row gives
         the lexicographic order of the operator.
 
     Returns
     -------
-    np.ndarray
-        Matrix whose (i,j) entry has value 1 if the operators with lexicographic
-        ordering i and j respectively do not commute, and value 0 if they
-        commute.
+    numpy.ndarray
+        Matrix whose entry :math:`(i,j)` has value 1 if the operators with
+        lexicographic ordering :math:`i` and :math:`j` do not commute, and
+        value 0 if they commute.
     """
     notcomm = np.zeros((lexorder.shape[0], lexorder.shape[0]), dtype=bool)
     if not commuting:
@@ -437,9 +437,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
         Monomial as an array of integers, where each integer represents
         the lexicographic order of an operator.
     notcomm : numpy.ndarray
-        Matrix whose (i,j) entry has value 1 if the operators with lexicographic
-        ordering i and j respectively do not commute, and value 0 if they
-        commute.
+        Matrix of commutation relations, given in the format specified by
+        `causalinflation.quantum.fast_npa.commutation_matrix`.
 
     Returns
     -------
@@ -475,6 +474,8 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
         return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
 
 
+# to_canonical is not numba-ifiable, but must be stored here due to circular
+# import issues
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
@@ -565,7 +566,7 @@ def apply_source_perm(monomial: np.ndarray,
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Input monomial with the specified source swapped.
     """
     new_factors = monomial.copy()
@@ -573,15 +574,16 @@ def apply_source_perm(monomial: np.ndarray,
     return new_factors
 
 
-################################################################################
-# OPERATIONS ON MOMENT MATRICES                                                #
-################################################################################
+###############################################################################
+# OPERATIONS ON MOMENT MATRICES                                               #
+###############################################################################
 def calculate_momentmatrix(cols: List,
                            notcomm: np.ndarray,
                            lexorder: np.ndarray,
                            verbose: int = 0,
                            commuting: bool = False,
-                           dtype: object = np.uint16) -> Tuple[np.ndarray, Dict]:
+                           dtype: object = np.uint16
+                           ) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
@@ -599,9 +601,8 @@ def calculate_momentmatrix(cols: List,
     cols : List
         List of numpy.ndarray representing the generating set.
     notcomm : numpy.ndarray
-        Matrix whose (i,j) entry has value 1 if the operators with lexicographic
-        ordering i and j respectively do not commute, and value 0 if they
-        commute.
+        Matrix of commutation relations, given in the format specified by
+        `causalinflation.quantum.fast_npa.commutation_matrix`.
     lexorder : numpy.ndarray
         Matrix with rows as operators where the index of the row gives
         the lexicographic order of the operator.
