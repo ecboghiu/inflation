@@ -22,6 +22,7 @@ from .fast_npa import (all_commuting_test,
                        calculate_momentmatrix,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
+                       reverse_mon,
                        to_canonical)
 from .general_tools import (apply_inflation_symmetries,
                             clean_coefficients,
@@ -1024,7 +1025,7 @@ class InflationSDP(object):
         if all_commuting_test(mon, self._lexorder, self._notcomm):
             return mon
         else:
-            return self._to_inflation_repr(np.flipud(mon), hasty=hasty)
+            return self._to_inflation_repr(reverse_mon(mon), hasty=hasty)
 
     def _to_inflation_repr(self, mon: np.ndarray, hasty=False) -> np.ndarray:
         r"""Apply inflation symmetries to a monomial in order to bring it to
