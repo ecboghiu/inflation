@@ -40,58 +40,8 @@ if not nopython:
 
 
 ###############################################################################
-# FUNCTIONS WITH ARRAY OPERATIONS                                             #
+# ABSTRACT OPERATIONS ON MONOMIALS                                            #
 ###############################################################################
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_A_lessthan_B(A: np.ndarray,
-                    B: np.ndarray) -> bool_:
-    """Compare two arrays lexicographically using the in-built '<' and '!='.
-
-    Parameters
-    ----------
-    A : numpy.ndarray
-    B : numpy.ndarray
-
-    Returns
-    -------
-    bool
-        Whether A is lexicographically smaller than B.
-    """
-    for i in range(A.shape[0]):
-        if A[i] != B[i]:
-            return A[i] < B[i]
-    return True
-
-
-################################################################################
-# ABSTRACT OPERATIONS ON MONOMIALS                                             #
-################################################################################
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_equal_mon(mon1: np.ndarray,
-                  mon2: np.ndarray) -> bool_:
-    """Checks if two monomials are equal.
-
-    Parameters
-    ----------
-    mon1 : np.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-    mon2 : np.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-
-    Returns
-    -------
-    bool_
-        Returns True if the monomials are equal, False otherwise.
-    """
-    if mon1.shape != mon2.shape:
-        return False
-    else:
-        for i in range(mon1.shape[0]):
-            if not nb_intarray_eq(mon1[i], mon2[i]):
-                return False
-        return True
-
-
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def reverse_mon(mon: np.ndarray) -> np.ndarray:
     """Return the reversed monomial.
