@@ -27,7 +27,6 @@ from .general_tools import (apply_inflation_symmetries,
                             clean_coefficients,
                             construct_normalization_eqs,
                             factorize_monomial,
-                            flatten,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
@@ -37,6 +36,7 @@ from .general_tools import (apply_inflation_symmetries,
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
+from ..utils import flatten
 
 try:
     from tqdm import tqdm
