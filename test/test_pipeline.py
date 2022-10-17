@@ -270,17 +270,9 @@ class TestSDPOutput(unittest.TestCase):
                          "scenario is not being recognized as such.")
 
     def test_instrumental_supports(self):
-        prob = InflationProblem(dag={'U_AB': ['A', 'B'],
-                                     'A': ['B']},
-                                outcomes_per_party=(2, 2),
-                                settings_per_party=(3, 1),
-                                inflation_level_per_source=(1,),
-                                order=('A', 'B'))
-        sdp = InflationSDP(prob, supports_problem=True)
+        sdp = InflationSDP(self.instrumental, supports_problem=True)
         sdp.generate_relaxation('local1')
-        incompat_dist_because_GPT = np.array([[[[0.5], [0.5], [0.0]], [[0.0], [0.0], [0.5]]],
-                         [[[0.0], [0.5], [0.0]], [[0.5], [0.0], [0.5]]]], dtype=float)
-        sdp.set_distribution(incompat_dist_because_GPT)
+        sdp.set_distribution(self.incompatible_dist)
         sdp.solve(feas_as_optim=False)
         self.assertEqual(sdp.status, "infeasible",
                          "Failing to detect the infeasibility of a support "
@@ -425,8 +417,7 @@ class TestSDPOutput(unittest.TestCase):
                         )
 
     def test_lpi_bounds(self):
-        sdp = InflationSDP(trivial)
-
+        sdp  = InflationSDP(trivial)
         cols = [[],
                 [[1, 2, 0, 0],
                  [1, 2, 1, 0]],
