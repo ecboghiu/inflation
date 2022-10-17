@@ -34,6 +34,108 @@ except ImportError:
 nopython = False
 cache = False
 
+def factorize_monomial(raw_monomial: np.ndarray,
+                       canonical_order=False) -> Tuple[np.ndarray]:
+    """This function splits a moment/expectation value into products of
+    moments according to the support of the operators within the moment.
+
+    The moment is encoded as a 2d array where each row is an operator.
+    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
+    In each row, the columns encode the following information:
+
+    First column:       The party index, *starting from 1*.
+                        (1 for A, 2 for B, etc.)
+    Last two columns:   The input x, starting from zero and then the
+                        output a, starting from zero.
+    In between:         This encodes the support of the operator. There
+                        are as many columns as sources/quantum states.
+                        Column j represents source j-1 (-1 because the 1st
+                        col is the party). If the value is 0, then this
+                        operator does not measure this source. If the value
+                        is for e.g. 2, then this operator is acting on
+                        copy 2 of source j-1.
+
+    The output is a tuple of ndarrays where each array represents another
+    monomial s.t. their product is equal to the original monomial.
+
+    Parameters
+    ----------
+    raw_monomial : np.ndarray
+        Monomial in 2d array form.
+    canonical_order: bool, optional
+        Whether to return the different factors in a canonical order.
+
+    Returns
+    -------
+    Tuple[np.ndarray]
+        A tuple of ndarrays, where each array represents an atomic monomial
+        factor.
+
+    Examples
+    --------
+    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                             [2, 1, 0, 2, 0, 0],
+                             [1, 0, 3, 3, 0, 0],
+                             [3, 3, 5, 0, 0, 0],
+                             [3, 1, 4, 0, 0, 0],
+                             [3, 6, 6, 0, 0, 0],
+                             [3, 4, 5, 0, 0, 0]])
+    >>> factorised = factorize_monomial(monomial)
+    [array([[1, 0, 1, 1, 0, 0]]),
+     array([[1, 0, 3, 3, 0, 0]]),
+     array([[2, 1, 0, 2, 0, 0],
+            [3, 1, 4, 0, 0, 0]]),
+     array([[3, 3, 5, 0, 0, 0],
+            [3, 4, 5, 0, 0, 0]]),
+     array([[3, 6, 6, 0, 0, 0]])]
+
+    """
+    if len(raw_monomial) == 0:
+        return (raw_monomial,)
+
+    monomial = np.asarray(raw_monomial, dtype=np.uint16)
+    components_indices = np.zeros((len(monomial), 2), dtype=np.uint16)
+    # Labels to see if the components have been used
+    components_indices[:, 0] = np.arange(0, len(monomial), 1)
+
+    inflation_indices = monomial[:, 1:-2]
+    disconnected_components = []
+
+    idx = 0
+    while idx < len(monomial):
+        component = []
+        if components_indices[idx, 1] == 0:
+            component.append(idx)
+            components_indices[idx, 1] = 1
+            jdx = 0
+            # Iterate over all components that are connected
+            while jdx < len(component):
+                nonzero_sources = np.nonzero(
+                    inflation_indices[component[jdx]])[0]
+                for source in nonzero_sources:
+                    overlapping = (inflation_indices[:, source]
+                                   == inflation_indices[component[jdx], source]
+                                   )
+                    # Add the components that overlap to the lookup list
+                    component += components_indices[
+                                  overlapping & (components_indices[:, 1] == 0)
+                                                    ][:, 0].tolist()
+                    # Specify that the components that overlap have been used
+                    components_indices[overlapping, 1] = 1
+                jdx += 1
+        if len(component) > 0:
+            disconnected_components.append(component)
+        idx += 1
+
+    disconnected_components = tuple(
+        monomial[sorted(component)] for component in disconnected_components)
+
+    if canonical_order:
+        disconnected_components = tuple(sorted(disconnected_components,
+                                               key=to_hashable))
+    return disconnected_components
+
+
 
 def apply_inflation_symmetries(momentmatrix: np.ndarray,
                                inflation_symmetries: np.ndarray,
