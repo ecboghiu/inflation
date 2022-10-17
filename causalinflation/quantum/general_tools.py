@@ -12,12 +12,6 @@ import sympy
 from sympy.combinatorics import Permutation
 from sympy.combinatorics.perm_groups import PermutationGroup
 
-
-from .fast_npa import (apply_source_perm,
-                       factorize_monomial,
-                       mon_lexsorted,
-                       to_name)
-
 try:
     from numba import jit
     from numba.types import bool_
@@ -25,6 +19,7 @@ except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
     bool_ = bool
+from .fast_npa import apply_source_perm, mon_lexsorted, to_name
 
 try:
     from tqdm import tqdm
@@ -132,7 +127,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
 
     if canonical_order:
         disconnected_components = tuple(sorted(disconnected_components,
-                                               key=to_hashable))
+                                               key=lambda x: x.tobytes()))
     return disconnected_components
 
 
