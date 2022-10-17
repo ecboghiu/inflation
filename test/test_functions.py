@@ -7,21 +7,23 @@ from causalinflation.quantum.general_tools import remove_sandwich
 class TestFunctions(unittest.TestCase):
 
     def test_sandwich(self):
-        # <(A_0111*A_0121*A_0111)*(A_332*A_0342*A_332)*(B_0011*B_0012)>
-        monomial = np.array([[1, 0, 1, 1, 1, 0, 0],
-                             [1, 0, 1, 2, 1, 0, 0],
-                             [1, 0, 1, 1, 1, 0, 0],
-                             [1, 0, 3, 3, 2, 0, 0],
-                             [1, 0, 3, 4, 2, 0, 0],
-                             [1, 0, 3, 3, 2, 0, 0],
-                             [2, 0, 0, 1, 1, 0, 0],
-                             [2, 0, 0, 1, 2, 0, 0]])
+        # <(A_111*A_121*A_111)*(A_332*A_312*A_342*A_312*A_332)*(B_011*B_012)>
+        monomial = np.array([[1, 1, 1, 1, 0, 0],
+                             [1, 1, 2, 1, 0, 0],
+                             [1, 1, 1, 1, 0, 0],
+                             [1, 3, 3, 2, 0, 0],
+                             [1, 3, 5, 2, 0, 0],
+                             [1, 3, 4, 2, 0, 0],
+                             [1, 3, 5, 2, 0, 0],
+                             [1, 3, 3, 2, 0, 0],
+                             [2, 0, 1, 1, 0, 0],
+                             [2, 0, 1, 2, 0, 0]])
 
         delayered = remove_sandwich(monomial)
-        correct = np.array([[1, 0, 1, 2, 1, 0, 0],
-                            [1, 0, 3, 4, 2, 0, 0],
-                            [2, 0, 0, 1, 1, 0, 0],
-                            [2, 0, 0, 1, 2, 0, 0]])
+        correct = np.array([[1, 1, 2, 1, 0, 0],
+                            [1, 3, 4, 2, 0, 0],
+                            [2, 0, 1, 1, 0, 0],
+                            [2, 0, 1, 2, 0, 0]])
 
         self.assertTrue(np.array_equal(delayered, correct),
                         "Removal of complex sandwiches is not working.")
