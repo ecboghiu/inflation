@@ -88,8 +88,9 @@ class InflationSDP(object):
         self.nr_parties = len(self.names)
         self.nr_sources = self.InflationProblem.nr_sources
         self.hypergraph = self.InflationProblem.hypergraph
-        self.inflation_levels = self.InflationProblem.inflation_level_per_source
-        self.has_children     = self.InflationProblem.has_children
+        self.inflation_levels = \
+            self.InflationProblem.inflation_level_per_source
+        self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities = \
             self.InflationProblem.outcomes_per_party.copy()
         if self.supports_problem:
