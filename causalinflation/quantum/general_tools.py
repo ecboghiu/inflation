@@ -492,18 +492,6 @@ def clean_coefficients(cert_dict: Dict[str, float],
     return dict(zip(vars, coeffs.flat))
 
 
-def flatten(nested):
-    """Keeps flattening a nested lists of lists until  the
-    first element of the resulting list is not a list.
-    """
-    if isinstance(nested, np.ndarray):
-        return nested.ravel().tolist()
-    else:
-        while isinstance(nested[0], Iterable):
-            nested = list(chain.from_iterable(nested))
-        return nested
-
-
 def generate_operators(outs_per_input: List[int],
                        name: str
                        ) -> List[List[List[sympy.core.symbol.Symbol]]]:
