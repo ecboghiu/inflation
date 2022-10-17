@@ -385,7 +385,7 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        The monomial without one layer of sandwiching.
+        The monomial without sandwiches.
     """
     new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
     parties = np.unique(monomial[:, 0])
@@ -393,11 +393,9 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
         party_monomial = monomial[monomial[:, 0] == party].copy()
         party_monomial_factorized = factorize_monomial(party_monomial)
         for factor in party_monomial_factorized:
-            factor_copy = factor
-            if len(factor) > 1:
-                if np.array_equal(factor[0], factor[-1]):
-                    factor_copy = np.delete(factor, (0, -1), axis=0)
-            new_monomial = np.append(new_monomial, factor_copy, axis=0)
+            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
+                factor = np.delete(factor, (0, -1), axis=0)
+            new_monomial = np.append(new_monomial, factor, axis=0)
     return new_monomial
 
 
