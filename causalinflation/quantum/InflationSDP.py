@@ -90,12 +90,12 @@ class InflationSDP(object):
         self.hypergraph = self.InflationProblem.hypergraph
         self.inflation_levels = self.InflationProblem.inflation_level_per_source
         self.has_children     = self.InflationProblem.has_children
-        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
+        self.outcome_cardinalities = \
+            self.InflationProblem.outcomes_per_party.copy()
         if self.supports_problem:
             self.has_children = np.ones(self.nr_parties, dtype=int)
         else:
             self.has_children = self.InflationProblem.has_children
-        self.outcome_cardinalities = self.InflationProblem.outcomes_per_party
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
