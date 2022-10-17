@@ -1007,20 +1007,21 @@ class InflationSDP(object):
 
     def _conjugate_ndarray(self, mon: np.ndarray, hasty=True) -> np.ndarray:
         """
-        Takes a monomial and applies inflation symmetries to bring its conjugate to the conjugate's
-        canonical form under relabelling through the inflation symmetries.
+        Compute the canonical form of the conjugate of a monomial.
 
         Parameters
         ----------
         mon : numpy.ndarray
             Input monomial that cannot be further factorised.
         hasty : bool, optional
-            If True, skip checking if monomial is zero and if there square projectors.
+            If True, skip checking if monomial is zero and if there are square
+            projectors.
 
         Returns
         -------
         numpy.ndarray
-            The canonical form of the conjugate of the input monomial under relabelling through the inflation symmetries.
+            The canonical form of the conjugate of the input monomial under
+            relabelling through the inflation symmetries.
         """
         if all_commuting_test(mon, self._lexorder, self._notcomm):
             return mon
@@ -1601,7 +1602,7 @@ class InflationSDP(object):
                                         for mon, coeff in ineq.items()}
                                        for ineq in self.moment_inequalities]
                       }
-        # One handling path regardless of where self.One appears.
+        # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
         for mon, bnd in self._processed_moment_lowerbounds.items():
             lb_dict = {mon.name: 1}

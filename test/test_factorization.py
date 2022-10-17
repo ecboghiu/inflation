@@ -3,6 +3,7 @@ import numpy as np
 
 from causalinflation.quantum.general_tools import factorize_monomial
 
+
 class TestFactorization(unittest.TestCase):
     def test_factorizable_NC(self):
         # monomial = < A^011 * B^102 * A^033 * C^350 * C^140 * C^660 * C^450 >
