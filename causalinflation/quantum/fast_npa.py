@@ -294,23 +294,6 @@ def dot_mon(mon1: np.ndarray,
     return np.concatenate((reverse_mon(mon1), mon2))
 
 
-def to_hashable(monomial: np.ndarray) -> bytes:
-    """Hashes a monomial by converting it to Python bytes containing the
-    raw data bytes in the array
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
-
-    Returns
-    -------
-    bytes
-        Monomial as bytes.
-    """
-    return monomial.tobytes()
-
-
 def to_name(monomial: Union[np.ndarray, List],
             names: List) -> str:
     """Convert the 2d array representation of a monomial to a string.
