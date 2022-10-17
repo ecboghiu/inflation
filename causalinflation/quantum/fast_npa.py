@@ -43,32 +43,6 @@ if not nopython:
 # FUNCTIONS WITH ARRAY OPERATIONS                                             #
 ###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_intarray_eq(intarray1: np.ndarray,
-                   intarray2: np.ndarray) -> bool_:
-    """Check if two arrays of integers are equal.
-
-    NOTE: There is no check for shape consistency. As this is
-    an internal function, it is assumed to be used carefully.
-
-    Parameters
-    ----------
-    intarray1 : np.ndarray
-        Array of integers.
-    intarray2 : np.ndarray
-        Array of integers.
-
-    Returns
-    -------
-    bool_
-        Whether the arrays are equal.
-    """
-    for i in range(intarray1.shape[0]):
-        if intarray1[i] != intarray2[i]:
-            return False
-    return True
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_A_lessthan_B(A: np.ndarray,
                     B: np.ndarray) -> bool_:
     """Compare two arrays lexicographically using the in-built '<' and '!='.
@@ -156,7 +130,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     """
     to_keep = np.ones(mon.shape[0], dtype=bool_)
     for i in range(1, mon.shape[0]):
-        if nb_intarray_eq(mon[i], mon[i - 1]):
+        if np.array_equal(mon[i], mon[i - 1]):
             to_keep[i] = False
     return mon[to_keep]
 
@@ -182,7 +156,7 @@ def mon_is_zero(mon: np.ndarray) -> bool_:
         return True
     for i in range(1, mon.shape[0]):
         if ((mon[i, -1] != mon[i - 1, -1])
-                and nb_intarray_eq(mon[i, :-1], mon[i - 1, :-1])):
+                and np.array_equal(mon[i, :-1], mon[i - 1, :-1])):
             return True
     return False
 
@@ -210,7 +184,7 @@ def nb_op_lexorder(operator: np.ndarray,
         The index of the operator in the lexorder matrix.
     """
     for i in range(lexorder.shape[0]):
-        if nb_intarray_eq(lexorder[i, :], operator):
+        if np.array_equal(lexorder[i, :], operator):
             return i
 
 
