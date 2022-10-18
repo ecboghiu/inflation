@@ -24,7 +24,7 @@ from .fast_npa import (all_commuting_test,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical)
-from .general_tools import (apply_inflation_symmetries,
+from .quantum_tools import (apply_inflation_symmetries,
                             clean_coefficients,
                             construct_normalization_eqs,
                             factorize_monomial,

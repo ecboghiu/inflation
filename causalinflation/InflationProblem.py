@@ -203,7 +203,7 @@ class InflationProblem(object):
         form) corresponds to a knowable probability. The function assumes that
         the candidate monomial already passed the preliminary knowable test from
 
-        causalinflation.quantum.general_tools.py.
+        causalinflation.quantum.quantum_tools.py.
         If the scenario is a network, this function always returns ``True``.
 
         Parameters
