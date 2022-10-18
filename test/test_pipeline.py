@@ -1,9 +1,8 @@
 import unittest
 import numpy as np
-
-from causalinflation import InflationProblem, InflationSDP
 import warnings
 
+from causalinflation import InflationProblem, InflationSDP
 
 trivial = InflationProblem({"h": ["v"]},
                            outcomes_per_party=[2],
@@ -137,13 +136,13 @@ class TestMonomialGeneration(unittest.TestCase):
                         "Parsing physical levels with individual string " +
                         "descriptions fails.")
 
-    def test_generate_with_identities(self):
+    def test_generation_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         columns  = oneParty.build_columns([[], [0, 0]])
         truth    = [[],
                     [[1, 1, 0, 0], [1, 1, 1, 0]],
                     [[1, 1, 1, 0], [1, 1, 0, 0]]]
-        truth   = [np.array(mon) for mon in truth]
+        truth    = [np.array(mon) for mon in truth]
         self.assertTrue(len(columns) == len(truth),
                         "Generating columns with identities is not producing "
                         + "the correct number of columns.")

@@ -4,17 +4,17 @@ instance (see arXiv:1909.10519).
 
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import gc
-import itertools
-from collections import Counter, deque
-from functools import reduce
-from numbers import Real
-from typing import List, Dict, Tuple, Union, Any
-from warnings import warn
-
 import numpy as np
 import sympy as sp
+
+from collections import Counter, deque
+from functools import reduce
+from gc import collect
+from itertools import chain, count, product, permutations
+from numbers import Real
 from scipy.sparse import coo_matrix
+from typing import List, Dict, Tuple, Union, Any
+from warnings import warn
 
 from causalinflation import InflationProblem
 from .fast_npa import (all_commuting_test,
@@ -107,9 +107,9 @@ class InflationSDP(object):
             print("Number of single operator measurements per party:", end="")
             prefix = " "
             for i, measures in enumerate(self.measurements):
-                counter = itertools.count()
-                deque(zip(itertools.chain.from_iterable(
-                    itertools.chain.from_iterable(measures)),
+                counter = count()
+                deque(zip(chain.from_iterable(
+                    chain.from_iterable(measures)),
                           counter),
                       maxlen=0)
                 print(prefix + f"{self.names[i]}={next(counter)}", end="")
@@ -248,7 +248,7 @@ class InflationSDP(object):
         self.n_columns            = len(generating_monomials)
         self.generating_monomials = generating_monomials
         del generating_monomials, genmon_hash_to_index
-        gc.collect(generation=2)
+        collect()
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
 
@@ -266,8 +266,6 @@ class InflationSDP(object):
         self.inflation_symmetries = self._discover_inflation_symmetries()
 
         # Apply the inflation symmetries to the moment matrix
-        if self.verbose > 0:
-            print("Applying inflation symmetries")
         self.momentmatrix, self.orbits, representative_unsym_idxs = \
             apply_inflation_symmetries(unsymmetrized_mm,
                                        self.inflation_symmetries,
@@ -285,7 +283,7 @@ class InflationSDP(object):
                 self.symmetrized_corresp[self.orbits[idx]]
         del unsymidx_from_hash, unsymmetrized_mm, unsymmetrized_corresp
         # This is a good time to reclaim memory, as unsymmetrized_mm can be GBs
-        gc.collect(generation=2)
+        collect()
 
         self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one = \
             np.in1d([0, 1], self.momentmatrix.ravel())
@@ -638,7 +636,7 @@ class InflationSDP(object):
         else:
             self.primal_objective = self.status
             self.objective_value  = self.status
-        gc.collect(generation=2)
+        collect()
 
 
     ########################################################################
@@ -825,9 +823,9 @@ class InflationSDP(object):
                 else:
                     max_length = npa_level
                 for length in range(1, max_length + 1):
-                    for number_tuple in itertools.product(
+                    for number_tuple in product(
                             *[range(self.nr_parties)] * length
-                                                          ):
+                                                ):
                         a = np.array(number_tuple)
                         # Add only if tuple is in increasing order
                         if np.all(a[:-1] <= a[1:]):
@@ -857,9 +855,9 @@ class InflationSDP(object):
                     max_length = max_monomial_length
 
                 party_freqs = sorted((list(pfreq)
-                                      for pfreq in itertools.product(
+                                      for pfreq in product(
                                        *[range(level + 1) for level in lengths]
-                                                                     )
+                                                           )
                                       if sum(pfreq) <= max_length),
                                      key=lambda x: (sum(x), [-p for p in x]))
                 if spec == "local":
@@ -887,7 +885,7 @@ class InflationSDP(object):
                                         self.outcome_cardinalities,
                                         self._lexorder)
                                     physmons_per_party.append(physmons)
-                            for monomial_parts in itertools.product(
+                            for monomial_parts in product(
                                     *physmons_per_party):
                                 physical_monomials.append(
                                     self._to_canonical_memoized(
@@ -923,7 +921,7 @@ class InflationSDP(object):
             except AttributeError:
                 pass
         self.objective = {self.One: 0.}
-        gc.collect(2)
+        collect()
 
     def reset_values(self):
         self._reset_solution()
@@ -932,12 +930,12 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
         self.known_moments[self.One] = 1.
-        gc.collect(2)
+        collect()
 
     def reset_bounds(self):
         self.reset_lowerbounds()
         self.reset_upperbounds()
-        gc.collect(2)
+        collect()
 
     def reset_lowerbounds(self):
         self._reset_solution()
@@ -1006,7 +1004,7 @@ class InflationSDP(object):
         mon.attach_idx_to_mon(idx)
         return mon
 
-    def _conjugate_ndarray(self, mon: np.ndarray, hasty=True) -> np.ndarray:
+    def _conjugate_ndarray(self, mon: np.ndarray, apply_only_commutations=True) -> np.ndarray:
         """
         Compute the canonical form of the conjugate of a monomial.
 
@@ -1014,7 +1012,7 @@ class InflationSDP(object):
         ----------
         mon : numpy.ndarray
             Input monomial that cannot be further factorised.
-        hasty : bool, optional
+        apply_only_commutations : bool, optional
             If True, skip checking if monomial is zero and if there are square
             projectors.
 
@@ -1027,9 +1025,9 @@ class InflationSDP(object):
         if all_commuting_test(mon, self._lexorder, self._notcomm):
             return mon
         else:
-            return self._to_inflation_repr(reverse_mon(mon), hasty=hasty)
+            return self._to_inflation_repr(reverse_mon(mon), apply_only_commutations=apply_only_commutations)
 
-    def _to_inflation_repr(self, mon: np.ndarray, hasty=False) -> np.ndarray:
+    def _to_inflation_repr(self, mon: np.ndarray, apply_only_commutations=False) -> np.ndarray:
         r"""Apply inflation symmetries to a monomial in order to bring it to
         its canonical form.
 
@@ -1054,7 +1052,7 @@ class InflationSDP(object):
         ----------
         mon : numpy.ndarray
             Input monomial that cannot be further factorised.
-        hasty : bool, optional
+        apply_only_commutations : bool, optional
             If True, skip checking if monomial is zero and if there are
             multiple same projectors that square to just one of them.
 
@@ -1074,7 +1072,7 @@ class InflationSDP(object):
             return self.canonsym_ndarray_from_hash[key]
         except KeyError:
             pass
-        canonical_mon = self._to_canonical_memoized(mon, hasty=hasty)
+        canonical_mon = self._to_canonical_memoized(mon, apply_only_commutations=apply_only_commutations)
         canonical_key = self._from_2dndarray(canonical_mon)
         try:
             repr_mon = self.canonsym_ndarray_from_hash[canonical_key]
@@ -1127,16 +1125,16 @@ class InflationSDP(object):
         inf_levels = monomial[:, 1:-2].max(axis=0)
         nr_sources = inf_levels.shape[0]
         all_permutations_per_source = [
-            format_permutations(list(itertools.permutations(range(inflevel))))
+            format_permutations(list(permutations(range(inflevel))))
             for inflevel in inf_levels.flat]
         seen_hashes = set()
-        for permutation in itertools.product(*all_permutations_per_source):
+        for permutation in product(*all_permutations_per_source):
             permuted = monomial.copy()
             for source in range(nr_sources):
                 permuted = apply_source_perm(permuted,
                                              source,
                                              permutation[source])
-            permuted = self._to_canonical_memoized(permuted, hasty=True)
+            permuted = self._to_canonical_memoized(permuted, apply_only_commutations=True)
             hash     = self._from_2dndarray(permuted)
             seen_hashes.add(hash)
             try:
@@ -1276,7 +1274,7 @@ class InflationSDP(object):
                 meas_ops = []
                 for party in block:
                     meas_ops.append(flatten(self.measurements[party]))
-                for monomial_factors in itertools.product(*meas_ops):
+                for monomial_factors in product(*meas_ops):
                     mon   = self._interpret_name(monomial_factors)
                     canon = self._to_canonical_memoized(mon)
                     if not np.array_equal(canon, 0):
@@ -1376,10 +1374,10 @@ class InflationSDP(object):
                                desc="Calculating symmetries   "):
                 one_source_symmetries = [identity_perm]
                 inf_level = self.inflation_levels[source]
-                permutations = format_permutations(list(
-                    itertools.permutations(range(inf_level)))[1:])
+                perms = format_permutations(list(
+                    permutations(range(inf_level)))[1:])
                 permutation_failed = False
-                for permutation in permutations:
+                for permutation in perms:
                     try:
                         total_perm = np.empty(self.n_columns, dtype=int)
                         for i, mon in enumerate(self.generating_monomials):
@@ -1387,7 +1385,7 @@ class InflationSDP(object):
                                                         source,
                                                         permutation)
                             new_mon = self._to_canonical_memoized(new_mon,
-                                                                  hasty=True)
+                                                                  apply_only_commutations=True)
                             total_perm[i] = self.genmon_hash_to_index[
                                                 self._from_2dndarray(new_mon)]
                         one_source_symmetries.append(total_perm)
@@ -1398,7 +1396,7 @@ class InflationSDP(object):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
             inflation_symmetries = [reduce(np.take, perms) for perms in
-                                    itertools.product(*inflation_symmetries)]
+                                    product(*inflation_symmetries)]
             return np.unique(inflation_symmetries[1:], axis=0)
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
@@ -1425,7 +1423,7 @@ class InflationSDP(object):
                                                      outcomes)):
             party_meas = []
             # Generate all possible copy indices for a party
-            all_inflation_indices = itertools.product(
+            all_inflation_indices = product(
                 *[list(range(self.inflation_levels[p_idx]))
                   for p_idx in np.nonzero(self.hypergraph[:, pos])[0]])
             # Include zeros in the positions of states not feeding the party
@@ -1509,7 +1507,7 @@ class InflationSDP(object):
                 self._processed_objective[subs] = \
                     self._processed_objective.get(subs, 0) + coeff * subs_coeff
                 del self._processed_objective[mon]
-        gc.collect(generation=2)
+        collect()
 
     def _update_lowerbounds(self):
         """
@@ -1689,7 +1687,7 @@ class InflationSDP(object):
         array = np.frombuffer(bytestream, dtype=self.np_dtype)
         return array.reshape((-1, self._nr_properties))
 
-    def _to_canonical_memoized(self, array2d: np.ndarray, hasty=False):
+    def _to_canonical_memoized(self, array2d: np.ndarray, apply_only_commutations=False):
         """DOCUMENTATION NEEDED"""
         key = self._from_2dndarray(array2d)
         if key in self.canon_ndarray_from_hash:
@@ -1699,7 +1697,7 @@ class InflationSDP(object):
             return array2d
         else:
             new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
-                                       self.commuting, hasty)
+                                       self.commuting, apply_only_commutations)
             new_key = self._from_2dndarray(new_array2d)
             self.canon_ndarray_from_hash[key]     = new_array2d
             self.canon_ndarray_from_hash[new_key] = new_array2d
