@@ -5,7 +5,7 @@ from functools import total_ordering
 from typing import Dict, List, Tuple
 
 from .fast_npa import all_commuting_test, mon_is_zero
-from .general_tools import is_physical
+from .quantum_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atomic_names,
                              symbol_from_atomic_name,

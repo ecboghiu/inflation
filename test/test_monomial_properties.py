@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.general_tools import is_knowable, is_physical
+from causalinflation.quantum.quantum_tools import is_knowable, is_physical
 
 
 scenario = InflationProblem({"lambda": ["A", "B"],
