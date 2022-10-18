@@ -6,7 +6,6 @@ from causalinflation.quantum.quantum_tools import remove_sandwich
 
 
 class TestFunctions(unittest.TestCase):
-
     def test_sandwich(self):
         # <(A_111*A_121*A_111)*(A_332*A_312*A_342*A_312*A_332)*(B_011*B_012)>
         monomial = np.array([[1, 1, 1, 1, 0, 0],

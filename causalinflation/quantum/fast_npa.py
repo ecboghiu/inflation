@@ -71,7 +71,7 @@ def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     mon : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
+        Input monomial in 2d array format.
 
     Returns
     -------
@@ -404,19 +404,21 @@ def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
                  commuting=False,
-                 hasty=False) -> np.ndarray:
+                 apply_only_commutations=False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations,
     and removes square projectors, and identifies orthogonality.
 
     Parameters
     ----------
     mon : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
+        Input monomial in 2d array format.
+    DOCUMENTATION MISSING
     commuting : bool, optional
         Whether the variables in the problem commute or not. By default
         ``False``.
-    hasty : bool, optional
-        Whether to skip the removal of projector squares and the test to see if the monomial is equal to zero.
+    apply_only_commutations : bool, optional
+        If ``True``, skip the removal of projector squares and the test to see
+        if the monomial is equal to zero. By default ``False``.
 
     Returns
     -------
@@ -427,8 +429,8 @@ def to_canonical(mon: np.ndarray,
     if mon.shape[0] <= 1:
         return mon
     else:
-        mon = hasty_to_canonical(mon, notcomm, lexorder, commuting=commuting)
-        if hasty:
+        mon = order_via_commutation(mon, notcomm, lexorder, commuting)
+        if apply_only_commutations:
             return mon
         else:
             mon = remove_projector_squares(mon)
@@ -438,17 +440,17 @@ def to_canonical(mon: np.ndarray,
                 return mon
 
 
-def hasty_to_canonical(mon: np.ndarray,
-                       notcomm: np.ndarray,
-                       lexorder: np.ndarray,
-                       commuting=False) -> np.ndarray:
-    """Brings a monomial to canonical form with respect to commutations, but does
-    not check for squared projectors or orthogonality.
+def order_via_commutation(mon: np.ndarray,
+                          notcomm: np.ndarray,
+                          lexorder: np.ndarray,
+                          commuting=False) -> np.ndarray:
+    """Applies commutations between the operators forming a monomial until
+    finding the smallest lexicographic representation.
 
     Parameters
     ----------
     mon : numpy.ndarray
-        Monomial as a matrix with rows as integer arrays representing operators.
+        Input monomial in 2d array format.
 
     Returns
     -------
@@ -485,7 +487,7 @@ def apply_source_perm(monomial: np.ndarray,
         The permutation of the copies of the specified source.
         The format for the permutation here is to use indexing starting at one,
         so the permutation must be padded with a leading zero. The function
-        ``causalinflation.quantum.general_tools.format_permutations`` converts
+        ``causalinflation.quantum.quantum_tools.format_permutations`` converts
         a list of permutations to the necessary format.
 
     Returns
