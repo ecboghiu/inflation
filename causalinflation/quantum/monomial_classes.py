@@ -7,9 +7,10 @@ from typing import Dict, List, Tuple
 from .fast_npa import all_commuting_test, mon_is_zero
 from .quantum_tools import is_physical
 from .monomial_utils import (compute_marginal,
-                             name_from_atomic_names,
+                             name_from_atom_names,
                              symbol_from_atomic_name,
                              symbol_prod)
+
 
 @total_ordering
 class InternalAtomicMonomial(object):
@@ -39,8 +40,8 @@ class InternalAtomicMonomial(object):
              + "index corresponds to the party, the last one to the outcome, "
              + "the second-to-last to the setting, and the rest to the "
              + "inflation copies.")
-        self.is_zero = mon_is_zero(self.as_ndarray)
-        self.is_one  = (self.n_operators == 0)
+        self.is_zero     = mon_is_zero(self.as_ndarray)
+        self.is_one      = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
@@ -53,9 +54,10 @@ class InternalAtomicMonomial(object):
                 self.sdp.rectify_fake_setting(np.take(self.as_ndarray,
                                                       [0, -2, -1],
                                                       axis=1)),
-                                                dtype=int)
+                dtype=int)
 
     def __copy__(self):
+        """Make a copy of the Monomial"""
         cls = self.__class__
         result = cls.__new__(cls)
         for attr in self.__slots__:
@@ -115,8 +117,8 @@ class InternalAtomicMonomial(object):
 
     @property
     def name(self):
-        """A string representing the monomial. In case of knowable monomials, it
-        is of the form p(outputs|inputs). Otherwise it represents the
+        """A string representing the monomial. In case of knowable monomials,
+        it is of the form ``p(outputs|inputs)``. Otherwise it represents the
         expectation value of the monomial with bracket notation.
         """
         if self.is_one:
@@ -154,7 +156,7 @@ class InternalAtomicMonomial(object):
         """Return a sympy Symbol representing the monomial."""
         return symbol_from_atomic_name(self.name)
 
-    def compute_marginal(self, prob_array: np.ndarray):
+    def compute_marginal(self, prob_array: np.ndarray) -> float:
         """Given a probability distribution, compute the value of the Monomial.
 
         Parameters
@@ -167,7 +169,8 @@ class InternalAtomicMonomial(object):
         Returns
         -------
         float
-            The value of the corresponding probability (which can be a marginal)
+            The value of the corresponding probability (which can be a marginal
+            involving only a few parties)
         """
         if self.is_zero:
             return 0.
@@ -200,7 +203,8 @@ class CompoundMonomial(object):
         DOCUMENTATION NEEDED. What is this object, what is the input, what it is supposed to do.
         """
         default_factors    = tuple(sorted(monomials))
-        conjugate_factors  = tuple(sorted(factor.dagger for factor in monomials))
+        conjugate_factors  = tuple(sorted(factor.dagger
+                                          for factor in monomials))
         self.factors       = min(default_factors, conjugate_factors)
         self.n_factors     = len(self.factors)
         self.is_atomic     = (self.n_factors <= 1)
@@ -236,8 +240,8 @@ class CompoundMonomial(object):
             return (self.n_factors == 1) and other.__eq__(self.factors[0])
         else:
             assert isinstance(other, self.__class__), \
-                (f"Expected object of class {self.__class__}, received {other} "
-                 + f"of class {type(other)}{list(map(type, other))}.")
+                (f"Expected object of class {self.__class__}, received {other}"
+                 + f" of class {type(other)}{list(map(type, other))}.")
             return False
 
     def __hash__(self):
@@ -280,15 +284,15 @@ class CompoundMonomial(object):
 
     @property
     def name(self):
-        """A string representing the <onomial. It merely combines the names of
+        """A string representing the monomial. It merely combines the names of
         the factors.
         """
-        return name_from_atomic_names(self._names_of_factors)
+        return name_from_atom_names(self._names_of_factors)
 
     @property
     def symbol(self):
-        """Return a product of sympy Symbols representing all the factors in the
-        Monomial."""
+        """Return a product of sympy Symbols representing all the factors in
+        the Monomial."""
         return symbol_prod(self._symbols_of_factors)
 
     @property
@@ -319,7 +323,8 @@ class CompoundMonomial(object):
     def evaluate(self,
                  known_monomials: Dict[InternalAtomicMonomial, float],
                  use_lpi_constraints=True) -> Tuple[float, List, str]:
-        """Yields both a numeric value and a CompoundMonomial corresponding to the unknown part.
+        """Yields both a numeric value and a CompoundMonomial corresponding to
+        the unknown part.
         DOCUMENTATION NEEDED."""
         known_value     = 1.
         unknown_counter = Counter()

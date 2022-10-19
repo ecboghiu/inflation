@@ -94,7 +94,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
     Parameters
     ----------
-    maskmatrices_name_dict : dict
+    mask_matrices : dict
         A dictionary with keys as monomials and values as scipy sparse arrays
         indicating the locations of the monomial in the moment matrix.
     objective : dict, optional
@@ -112,20 +112,20 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation. By
         default ``True``.
-    verbose : int, optional
-        How much information to display to the user. By default ``0``.
     feas_as_optim : bool, optional
         Whether to treat feasibility problems, where the objective is,
         constant, as an optimisation problem. By default ``False``.
+    verbose : int, optional
+        How much information to display to the user. By default ``0``.
+    solverparameters : dict, optional
+        Dictionary of parameters to pass to the MOSEK solver, see `MOSEK's
+        documentation
+        <https://docs.mosek.com/latest/pythonfusion/solver-parameters.html>`_.
     process_constraints: bool, optional
         Whether to remove the simple equalities constraints contained
         in the `semiknown_vars` arguments by eliminating variables (True)
         or pass them to the solver as equality constraints (False). By
         default ``True``.
-    solverparameters : dict, optional
-        Dictionary of parameters to pass to the MOSEK solver, see `MOSEK's
-        documentation
-        <https://docs.mosek.com/latest/pythonfusion/solver-parameters.html>`_.
 
     Returns
     -------

@@ -28,9 +28,9 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
         explicitly 1 is there is only one measurement performed.
     atom : np.ndarray
         Monomial indicating a (commuting) collection of measurement operators.
-        The array is a list of length-3 vectors. The first element indicates the
-        party, the second element indicates the setting, and the final element
-        indicates the outcome.
+        The array is a list of length-3 vectors. The first element indicates
+        the party, the second element indicates the setting, and the final
+        element indicates the outcome.
 
     Returns
     -------
@@ -54,12 +54,12 @@ def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
         return 1.
 
 
-def name_from_atomic_names(atomic_names: List[str]) -> str:
+def name_from_atom_names(atom_names: List[str]) -> str:
     """Join the names of monomials to a single string.
 
     Parameters
     ----------
-    atomic_names : List[str]
+    atom_names : List[str]
         The list of names of the atoms.
 
     Returns
@@ -67,9 +67,9 @@ def name_from_atomic_names(atomic_names: List[str]) -> str:
     str
         The string representing the name of the product of the monomials.
     """
-    if len(atomic_names):
+    if len(atom_names):
         output = ""
-        for i, (name, power) in enumerate(Counter(atomic_names).items()):
+        for i, (name, power) in enumerate(Counter(atom_names).items()):
             if i > 0:
                 output += "*"
             output += name

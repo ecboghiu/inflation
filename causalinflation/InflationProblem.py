@@ -1,9 +1,11 @@
 """
 The module creates the inflation scenario associated to a causal structure. See
-arXiv:1609.00672 and arXiv:1707.06476 for the original description of inflation.
+arXiv:1609.00672 and arXiv:1707.06476 for the original description of
+inflation.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
+
 from itertools import chain
 from warnings import warn
 
@@ -11,8 +13,9 @@ from warnings import warn
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
 import warnings
 formatwarning_orig = warnings.formatwarning
-warnings.formatwarning = lambda message, category, filename, lineno, line=None:\
-    formatwarning_orig(message, category, filename, lineno, line="")
+warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
+    formatwarning_orig(msg, category, filename, lineno, line="")
+
 
 class InflationProblem(object):
     """Class for enconding relevant details concerning the causal compatibility
@@ -22,8 +25,8 @@ class InflationProblem(object):
     ----------
     dag : Dict[str, List[str]], optional
         Dictionary where each key is a parent node, and the corresponding value
-        is a list of the corresponding children nodes. By default it is a single
-        source connecting all the parties.
+        is a list of the corresponding children nodes. By default it is a
+        single source connecting all the parties.
     outcomes_per_party : List[int], optional
         Measurement outcome cardinalities. By default ``2`` for all parties.
     settings_per_party : List[int], optional
@@ -60,14 +63,14 @@ class InflationProblem(object):
         self.nr_parties         = len(self.outcomes_per_party)
         if not settings_per_party:
             if self.verbose > 0:
-                warn("No settings per party provided, "
-                      + "assuming all parties have one setting.")
+                warn("No settings per party provided, " +
+                     "assuming all parties have one setting.")
             self.private_settings_per_party = np.ones(self.nr_parties,
                                                       dtype=int)
         else:
             self.private_settings_per_party = np.asarray(settings_per_party,
                                                          dtype=int)
-            assert len(self.private_settings_per_party) == self.nr_parties,    \
+            assert len(self.private_settings_per_party) == self.nr_parties, \
                 (f"You have specified a list of {len(outcomes_per_party)} "
                  + f"outcomes and a list of {len(settings_per_party)} inputs. "
                  + "These lists must have the same length and equal to the "
@@ -77,7 +80,7 @@ class InflationProblem(object):
         names_have_been_set_yet = False
         if dag:
             implicit_names = set(chain.from_iterable(dag.values()))
-            assert len(implicit_names) == self.nr_parties,                     \
+            assert len(implicit_names) == self.nr_parties, \
                 ("You must provide a number of outcomes for the following "
                  + f"{len(implicit_names)} variables: {implicit_names}")
             if order:
@@ -89,8 +92,8 @@ class InflationProblem(object):
                 else:
                     if self.verbose > 0:
                         warn("The names read from the DAG do not match those "
-                             + "read from the `order` argument. The names used "
-                             + "are those read from the DAG.")
+                             + "read from the `order` argument. The names used"
+                             + " are those read from the DAG.")
             if not names_have_been_set_yet:
                 if len(implicit_names) > 1:
                     if self.verbose > 0:
@@ -141,15 +144,14 @@ class InflationProblem(object):
         settings_per_party_lst = [[s] for s in self.private_settings_per_party]
         for party_idx, party_parents_idxs in enumerate(self.parents_per_party):
             settings_per_party_lst[party_idx].extend(
-                                                np.take(self.outcomes_per_party,
-                                                        party_parents_idxs)
+                np.take(self.outcomes_per_party, party_parents_idxs)
                                                      )
-        self.settings_per_party = np.asarray([np.prod(multisetting)
-                                    for multisetting in settings_per_party_lst],
-                                             dtype=int)
+        self.settings_per_party = np.asarray(
+            [np.prod(multisetting) for multisetting in settings_per_party_lst],
+            dtype=int)
 
-        # Build the correspondence between effective settings and the true tuple
-        # of setting values of all parents.
+        # Build the correspondence between effective settings and the true
+        # tuple of setting values of all parents.
         effective_to_parent_settings = []
         for i in range(self.nr_parties):
             effective_to_parent_settings.append(dict(zip(
@@ -174,8 +176,8 @@ class InflationProblem(object):
 
         if len(inflation_level_per_source) == 0:
             if self.verbose > 0:
-                warn("The inflation level per source must be a non-empty list. "
-                     + "Defaulting to 1 (no inflation, just NPA hierarchy).")
+                warn("The inflation level per source must be a non-empty list."
+                     + " Defaulting to 1 (no inflation, just NPA hierarchy).")
             self.inflation_level_per_source = np.array([1] * self.nr_sources)
         elif type(inflation_level_per_source) == int:
             self.inflation_level_per_source = \
@@ -184,10 +186,10 @@ class InflationProblem(object):
             self.inflation_level_per_source = \
                 np.array(inflation_level_per_source)
             assert self.nr_sources == len(self.inflation_level_per_source), \
-                ("The number of sources as described by the unpacked hypergraph"
-                 + f", {len(self.nr_sources)}, and by the list of inflation "
-                 + f"levels specified, {len(self.inflation_level_per_source)}, "
-                 + "does not coincide.")
+                ("The number of sources as described by the unpacked " +
+                 f"hypergraph, {len(self.nr_sources)}, and by the list of " +
+                 "inflation levels specified, " +
+                 f"{len(self.inflation_level_per_source)}, does not coincide.")
 
     def __repr__(self):
         return ("InflationProblem with " + str(self.hypergraph.tolist()) +
@@ -197,24 +199,21 @@ class InflationProblem(object):
                 str(self.inflation_level_per_source) +
                 " inflation copies per source.")
 
-
     def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
-        the candidate monomial already passed the preliminary knowable test from
-
-        causalinflation.quantum.quantum_tools.py.
+        the candidate monomial already passed the preliminary knowable test
+        from `causalinflation.quantum.quantum_tools.py`.
         If the scenario is a network, this function always returns ``True``.
 
         Parameters
         ----------
         monomial : numpy.ndarray
-            An internal representation of a monomial as a 2d numpy array.
-            Each row in the array corresponds to an operator. For each row,
-            the zeroth element represents the party, the last element
-            represents the outcome, the second-to-last element represents
-            the setting, and the remaining elements represent inflation
-            copies.
+            An internal representation of a monomial as a 2d numpy array. Each
+            row in the array corresponds to an operator. For each row, the
+            zeroth element represents the party, the last element represents
+            the outcome, the second-to-last element represents the setting, and
+            the remaining elements represent inflation copies.
 
         Returns
         -------
@@ -243,17 +242,17 @@ class InflationProblem(object):
         else:
             return True
 
-
     def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
-        """When constructing the monomials in a non-network scenario, we rely on
-        an internal representation of operators where the integer denoting the
-        setting actually is an 'effective setting' that encodes, in addition to
-        the 'private setting' that each party is free to choose, the values of
-        all the parents of the variable in question, which also effectively act
-        as settings. This function resets this 'effective setting' integer to
-        the true 'private setting' integer. It is useful to relate knowable
-        monomials to their meaning as conditional events in non-network
-        scenarios. If the scenario is a network, this function does nothing.
+        """When constructing the monomials in a non-network scenario, we rely
+        on an internal representation of operators where the integer denoting
+        the setting actually is an 'effective setting' that encodes, in
+        addition to the 'private setting' that each party is free to choose,
+        the values of all the parents of the variable in question, which also
+        effectively act as settings. This function resets this 'effective
+        setting' integer to the true 'private setting' integer. It is useful to
+        relate knowable monomials to their meaning as conditional events in
+        non-network scenarios. If the scenario is a network, this function does
+        nothing.
 
         Parameters
         ----------
@@ -273,7 +272,7 @@ class InflationProblem(object):
         """
         new_mon = np.array(monomial, copy=False)
         for o in new_mon:
-            party_index        = o[0] - 1      # Parties start at 1 our notation
+            party_index        = o[0] - 1     # Parties start at 1 our notation
             effective_setting  = o[-2]
             o_private_settings = \
                 self.effective_to_parent_settings[

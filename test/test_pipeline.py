@@ -236,13 +236,13 @@ class TestSDPOutput(unittest.TestCase):
 
         # TODO: When we add support for user-specifiable equalities, modify
         # this test to only check implicit equalities.
-        self.assertTrue(all(set(eq_dict.values()) == {-1, 1}
-                            for eq_dict in equalities),
+        self.assertTrue(all(set(equality.values()) == {-1, 1}
+                            for equality in equalities),
                         "Some implicit equalities lack a nontrivial left-hand"
                         + "or right-hand side.")
 
-        self.assertTrue(all(sdp.Zero.name not in eq_dict.keys()
-                            for eq_dict in equalities),
+        self.assertTrue(all(sdp.Zero.name not in equality.keys()
+                            for equality in equalities),
                         "Some implicit equalities are wrongly assigning " +
                         "coefficients to the zero monomial.")
 
