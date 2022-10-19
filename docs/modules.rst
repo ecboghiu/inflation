@@ -10,6 +10,8 @@ API Reference
 
    solvers
 
+   monomials
+
    build
 
    operations
