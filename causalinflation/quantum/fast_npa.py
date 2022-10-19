@@ -6,7 +6,6 @@ numba.
 """
 from typing import List, Dict, Tuple, Union
 import numpy as np
-from scipy.sparse import dok_matrix
 
 try:
     from numba import jit
@@ -503,84 +502,3 @@ def apply_source_perm(monomial: np.ndarray,
     new_factors = monomial.copy()
     new_factors[:, 1 + source] = permutation[new_factors[:, 1 + source]]
     return new_factors
-
-
-###############################################################################
-# OPERATIONS ON MOMENT MATRICES                                               #
-###############################################################################
-def calculate_momentmatrix(cols: List,
-                           notcomm: np.ndarray,
-                           lexorder: np.ndarray,
-                           verbose: int = 0,
-                           commuting: bool = False,
-                           dtype: object = np.uint16
-                           ) -> Tuple[np.ndarray, Dict]:
-    r"""Calculate the moment matrix. The function takes as input the generating
-    set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
-    matrix where each row is an operator and the columns specify the operator
-    labels/indices. The moment matrix is the inner product between all possible
-    pairs of elements from the generating set. The program outputs the moment
-    matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the
-    index of the monomial that represents the result of the expectation value
-    :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state
-    :math:`\rho` after applying the substitutions. The program returns the
-    moment matrix and the dictionary mapping each monomial in string
-    representation to its integer representation.
-
-    Parameters
-    ----------
-    cols : List
-        List of numpy.ndarray representing the generating set.
-    notcomm : numpy.ndarray
-        Matrix of commutation relations, given in the format specified by
-        `causalinflation.quantum.fast_npa.commutation_matrix`.
-    lexorder : numpy.ndarray
-        Matrix with rows as operators where the index of the row gives
-        the lexicographic order of the operator.
-    commuting : bool, optional
-        Whether the variables in the problem commute or not. By default
-        ``False``.
-    verbose : int, optional
-        How much information to print. By default ``0``.
-    dtype: np.dtype, optional
-        The dtype for constructing monomials when represented as numpy arrays.
-
-    Returns
-    -------
-    Tuple[numpy.ndarray, Dict]
-        The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores
-        the integer representation of a monomial. The Dict is a mapping from
-        string representation to integer representation.
-    """
-    nrcols = len(cols)
-    canonical_mon_to_idx_dict = dict()
-    momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
-    varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i in tqdm(range(nrcols),
-                  disable=not verbose,
-                  desc="Calculating moment matrix"):
-        for j in range(i, nrcols):
-            mon1, mon2 = cols[i], cols[j]
-            mon_v1 = to_canonical(dot_mon(mon1, mon2).astype(dtype),
-                                  notcomm,
-                                  lexorder,
-                                  commuting=commuting)
-            if not mon_is_zero(mon_v1):
-                if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1).astype(dtype),
-                                          notcomm,
-                                          lexorder,
-                                          commuting=commuting)
-                    mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
-                else:
-                    mon_hash = mon_v1.tobytes()
-                try:
-                    known_varidx = canonical_mon_to_idx_dict[mon_hash]
-                    momentmatrix[i, j] = known_varidx
-                    momentmatrix[j, i] = known_varidx
-                except KeyError:
-                    canonical_mon_to_idx_dict[mon_hash] = varidx
-                    momentmatrix[i, j] = varidx
-                    momentmatrix[j, i] = varidx
-                    varidx += 1
-    return momentmatrix.toarray(), canonical_mon_to_idx_dict
