@@ -14,6 +14,7 @@ try:
     from numba.types import uint16 as uint16_
     from numba.types import int16 as int16_
     from numba.types import int64 as int64_
+    from numba.types import uint8 as uint8_
     from numba.typed import Dict as nb_Dict
 except ImportError:
     def jit(*args, **kwargs):
@@ -22,6 +23,7 @@ except ImportError:
     uint16_ = np.uint16
     int16_  = np.int16
     int64_  = np.int
+    uint8_  = np.uint8
     nb_Dict = dict
     void    = None
 
@@ -36,6 +38,7 @@ if not nopython:
     bool_   = bool
     uint16_ = np.uint16
     int64_  = np.int
+    uint8_  = np.uint8
     nb_Dict = dict
 
 
@@ -398,8 +401,7 @@ def nb_to_canonical_lexinput(mon_lexorder: np.ndarray,
         return np.concatenate((m1, nb_to_canonical_lexinput(m2, notcomm)))
 
 
-# to_canonical is not numba-ifiable, but must be stored here due to circular
-# import issues
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
@@ -426,6 +428,7 @@ def to_canonical(mon: np.ndarray,
         The monomial in canonical form with respect to some commutation
         relationships.
     """
+    mon = np.asarray(mon, dtype=uint8_)
     if mon.shape[0] <= 1:
         return mon
     else:
@@ -435,11 +438,12 @@ def to_canonical(mon: np.ndarray,
         else:
             mon = remove_projector_squares(mon)
             if mon_is_zero(mon):
-                return 0*mon[:1]
+                return np.asarray(0*mon[:1], dtype=uint8_)
             else:
                 return mon
 
 
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def order_via_commutation(mon: np.ndarray,
                           notcomm: np.ndarray,
                           lexorder: np.ndarray,
@@ -458,6 +462,7 @@ def order_via_commutation(mon: np.ndarray,
         The monomial in canonical form with respect to some commutation
         relationships.
     """
+    mon = np.asarray(mon, dtype=uint8_)
     if len(mon) <= 1:
         return mon
     else:
