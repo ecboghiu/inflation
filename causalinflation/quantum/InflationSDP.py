@@ -1007,7 +1007,7 @@ class InflationSDP(object):
         list_of_atoms = [self.AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
-        mon.attach_idx_to_mon(idx)
+        mon.attach_idx(idx)
         return mon
 
     def _conjugate_ndarray(self,
