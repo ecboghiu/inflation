@@ -435,7 +435,7 @@ class InflationSDP(object):
         assert direction in ["max", "min"], ("The 'direction' argument should "
                                              + " be either 'max' or 'min'")
 
-        self.reset_objective()
+        self._reset_objective()
         if direction == "max":
             self.maximize = True
         else:
@@ -504,7 +504,7 @@ class InflationSDP(object):
             monomials fixed (``False``). Regardless of this flag, unknowable
             variables can also be fixed.
         """
-        self.reset_values()
+        self._reset_values()
 
         if (values is None) or (len(values) == 0):
             self._cleanup_after_set_values()
@@ -918,42 +918,36 @@ class InflationSDP(object):
                    for col in columns]
         return columns
 
-    def reset_objective(self):
-        """Reset the objective function"""
-        self._reset_solution()
-        for attribute in {"_processed_objective", "maximize"}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
-        self.objective = {self.One: 0.}
+    def reset(self, which: Union[str, List[str]]):
+        """Reset the various user-specifiable objects in the inflation SDP.
+
+        Parameters
+        ----------
+        which : Union[str, List[str]]
+            The objects to be reset. It can be fed as a single string or a list
+            of them. Options include ``"bounds"``, ``"lowerbounds"``,
+            ``"upperbounds"``, ``"objective"``, ``"values"``, and ``"all"``.
+        """
+        if type(which) == str:
+            if which == "all":
+                self.reset(["bounds", "objective", "values"])
+            elif which == "bounds":
+                self._reset_bounds()
+            elif which == "lowerbounds":
+                self._reset_lowerbounds()
+            elif which == "upperbounds":
+                self._reset_upperbounds()
+            elif which == "objective":
+                self._reset_objective()
+            elif which == "values":
+                self._reset_values()
+            else:
+                raise Exception(f"The attribute {which} is not part of " +
+                                "InflationSDP.")
+        else:
+            for attr in which:
+                self.reset(attr)
         collect()
-
-    def reset_values(self):
-        """Reset the known values"""
-        self._reset_solution()
-        self.known_moments     = dict()
-        self.semiknown_moments = dict()
-        if self.momentmatrix_has_a_zero:
-            self.known_moments[self.Zero] = 0.
-        self.known_moments[self.One] = 1.
-        collect()
-
-    def reset_bounds(self):
-        """Reset the lists of bounds"""
-        self.reset_lowerbounds()
-        self.reset_upperbounds()
-        collect()
-
-    def reset_lowerbounds(self):
-        """Reset the list of lower bounds"""
-        self._reset_solution()
-        self._processed_moment_lowerbounds = dict()
-
-    def reset_upperbounds(self):
-        """Reset the list of upper bounds"""
-        self._reset_solution()
-        self._processed_moment_upperbounds = dict()
 
     def write_to_file(self, filename: str):
         """Exports the problem to a file.
@@ -1508,6 +1502,42 @@ class InflationSDP(object):
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
 
+    def _reset_bounds(self):
+        """Reset the lists of bounds."""
+        self._reset_lowerbounds()
+        self._reset_upperbounds()
+        collect()
+
+    def _reset_lowerbounds(self):
+        """Reset the list of lower bounds."""
+        self._reset_solution()
+        self._processed_moment_lowerbounds = dict()
+
+    def _reset_upperbounds(self):
+        """Reset the list of upper bounds."""
+        self._reset_solution()
+        self._processed_moment_upperbounds = dict()
+
+    def _reset_objective(self):
+        """Reset the objective function."""
+        self._reset_solution()
+        for attribute in {"_processed_objective", "maximize"}:
+            try:
+                delattr(self, attribute)
+            except AttributeError:
+                pass
+        self.objective = {self.One: 0.}
+
+    def _reset_values(self):
+        """Reset the known values."""
+        self._reset_solution()
+        self.known_moments     = dict()
+        self.semiknown_moments = dict()
+        if self.momentmatrix_has_a_zero:
+            self.known_moments[self.Zero] = 0.
+        self.known_moments[self.One] = 1.
+        collect()
+
     def _update_objective(self):
         """Process the objective with the information from known_moments
         and semiknown_moments.
@@ -1659,7 +1689,7 @@ class InflationSDP(object):
         """
         Documentation needed.
         """
-        self.reset_upperbounds()
+        self._reset_upperbounds()
         if upperbounds is None:
             return
         sanitized_upperbounds = dict()
@@ -1680,7 +1710,7 @@ class InflationSDP(object):
         """
         Documentation needed.
         """
-        self.reset_lowerbounds()
+        self._reset_lowerbounds()
         if lowerbounds is None:
             return
         sanitized_lowerbounds = dict()
