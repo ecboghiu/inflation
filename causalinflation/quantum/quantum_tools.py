@@ -3,13 +3,13 @@ This file contains helper functions to manipulate monomials and generate moment
 matrices.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
+import numpy as np
+import sympy
+
 from copy import deepcopy
 from itertools import permutations, product
 from scipy.sparse import dok_matrix
 from typing import Dict, Iterable, List, Tuple
-
-import numpy as np
-import sympy
 
 from .fast_npa import (apply_source_perm,
                        dot_mon,
@@ -332,7 +332,7 @@ def calculate_momentmatrix(cols: List,
         string representation to integer representation.
     """
     nrcols = len(cols)
-    canonical_mon_to_idx_dict = dict()
+    canonical_mon_to_idx = dict()
     momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i in tqdm(range(nrcols),
@@ -354,15 +354,15 @@ def calculate_momentmatrix(cols: List,
                 else:
                     mon_hash = mon_v1.tobytes()
                 try:
-                    known_varidx = canonical_mon_to_idx_dict[mon_hash]
+                    known_varidx = canonical_mon_to_idx[mon_hash]
                     momentmatrix[i, j] = known_varidx
                     momentmatrix[j, i] = known_varidx
                 except KeyError:
-                    canonical_mon_to_idx_dict[mon_hash] = varidx
+                    canonical_mon_to_idx[mon_hash] = varidx
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
-    return momentmatrix.toarray(), canonical_mon_to_idx_dict
+    return momentmatrix.toarray(), canonical_mon_to_idx
 
 
 ###############################################################################
@@ -511,7 +511,7 @@ def construct_normalization_eqs(column_equalities: List[Dict[int, float]],
     return equalities
 
 
-def format_permutations(array) -> np.ndarray:
+def format_permutations(array: np.ndarray) -> np.ndarray:
     """Permutations of inflation indices must leave the integers 0,
     corresponding to sources not being measured by the operator, invariant.
     In order to achieve this, this function shifts a permutation of sources
@@ -670,14 +670,14 @@ def party_physical_monomials(hypergraph: np.ndarray,
 ###############################################################################
 # OTHER FUNCTIONS                                                             #
 ###############################################################################
-def clean_coefficients(cert_dict: Dict[str, float],
+def clean_coefficients(cert: Dict[str, float],
                        chop_tol: float = 1e-10,
                        round_decimals: int = 3) -> Dict:
     """Clean the list of coefficients in a certificate.
 
     Parameters
     ----------
-    cert_dict : Dict[str, float]
+    cert : Dict[str, float]
       A dictionary containing as keys the monomials associated to the elements
       of the certificate and as values the corresponding coefficients.
     chop_tol : float, optional
@@ -692,7 +692,7 @@ def clean_coefficients(cert_dict: Dict[str, float],
     np.ndarray
       The cleaned-up coefficients.
     """
-    processed_cert = deepcopy(cert_dict)
+    processed_cert = deepcopy(cert)
     vars = processed_cert.keys()
     coeffs = np.asarray(list(processed_cert.values()))
     # Take the biggest one and make it 1
