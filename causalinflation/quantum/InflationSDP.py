@@ -19,12 +19,12 @@ from warnings import warn
 from causalinflation import InflationProblem
 from .fast_npa import (all_commuting_test,
                        apply_source_perm,
-                       calculate_momentmatrix,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical)
 from .quantum_tools import (apply_inflation_symmetries,
+                            calculate_momentmatrix,
                             clean_coefficients,
                             construct_normalization_eqs,
                             factorize_monomial,
