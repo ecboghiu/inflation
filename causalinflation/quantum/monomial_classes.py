@@ -266,11 +266,6 @@ class CompoundMonomial(object):
         return Counter(self.factors)
 
     @property
-    def n_operators(self):
-        """Return the amount of operators in the Monomial."""
-        return sum(factor.n_operators for factor in self.factors)
-
-    @property
     def is_physical(self):
         """Whether the expectation value of the monomial is non-negative for
         any quantum state.
@@ -278,9 +273,9 @@ class CompoundMonomial(object):
         return all(factor.is_physical for factor in self.factors)
 
     @property
-    def signature(self):
-        """DOCUMENTATION NEEDED."""
-        return tuple(sorted(self.factors))
+    def n_operators(self):
+        """Return the amount of operators in the Monomial."""
+        return sum(factor.n_operators for factor in self.factors)
 
     @property
     def name(self):
@@ -288,6 +283,11 @@ class CompoundMonomial(object):
         the factors.
         """
         return name_from_atom_names(self._names_of_factors)
+
+    @property
+    def signature(self):
+        """DOCUMENTATION NEEDED."""
+        return tuple(sorted(self.factors))
 
     @property
     def symbol(self):
@@ -305,7 +305,7 @@ class CompoundMonomial(object):
         """Generate a sympy Symbol per factos in the Monomial."""
         return [factor.symbol for factor in self.factors]
 
-    def attach_idx_to_mon(self, idx: int):
+    def attach_idx(self, idx: int):
         """Assign an index to the Monomial. This is used when generating the
         monomials in a scenario, and identifying them with integers."""
         if idx >= 0:
