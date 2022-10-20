@@ -80,7 +80,7 @@ def name_from_atom_names(atom_names: List[str]) -> str:
         return "1"
 
 
-def symbol_from_atomic_name(atomic_name: str) -> sympy.core.symbol.Symbol:
+def symbol_from_atom_name(atomic_name: str) -> sympy.core.symbol.Symbol:
     """Create a sympy Symbol for a monomial from its name.
 
     Parameters
