@@ -8,7 +8,7 @@ from .fast_npa import all_commuting_test, mon_is_zero
 from .quantum_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atom_names,
-                             symbol_from_atomic_name,
+                             symbol_from_atom_name,
                              symbol_prod)
 
 
@@ -154,7 +154,7 @@ class InternalAtomicMonomial(object):
     @property
     def symbol(self):
         """Return a sympy Symbol representing the monomial."""
-        return symbol_from_atomic_name(self.name)
+        return symbol_from_atom_name(self.name)
 
     def compute_marginal(self, prob_array: np.ndarray) -> float:
         """Given a probability distribution, compute the value of the Monomial.
