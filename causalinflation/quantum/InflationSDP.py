@@ -12,7 +12,7 @@ from functools import reduce
 from gc import collect
 from itertools import chain, count, product, permutations
 from numbers import Real
-from scipy.sparse import coo_matrix
+from scipy.sparse import lil_matrix
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
@@ -255,10 +255,12 @@ class InflationSDP(object):
         # Calculate the moment matrix without the inflation symmetries
         unsymmetrized_mm, unsymmetrized_corresp = self._build_momentmatrix()
         symmetrization_required = np.any(self.inflation_levels - 1)
+        additional_var = 0
         if self.verbose > 1:
             extra_msg = (" before symmetrization" if symmetrization_required
                          else "")
-            additional_var = (1 if 0 in unsymmetrized_mm.flat else 0)
+            if 0 in unsymmetrized_mm.flat:
+                additional_var = 1
             print("Number of variables" + extra_msg + ":",
                   len(unsymmetrized_corresp) + additional_var)
 
@@ -281,19 +283,29 @@ class InflationSDP(object):
         for (hash, idx) in unsymidx_from_hash.items():
             self.canonsym_ndarray_from_hash[hash] = \
                 self.symmetrized_corresp[self.orbits[idx]]
-        del unsymidx_from_hash, unsymmetrized_mm, unsymmetrized_corresp
+        if self.verbose > 0:
+            extra_msg = (" after symmetrization" if symmetrization_required
+                         else "")
+            print(f"Number of variables{extra_msg}: "
+                  + f"{len(self.symmetrized_corresp)+additional_var}")
+        del unsymidx_from_hash, unsymmetrized_mm, unsymmetrized_corresp, \
+            symmetrization_required, additional_var
         # This is a good time to reclaim memory, as unsymmetrized_mm can be GBs
         collect()
 
         self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one = \
             np.in1d([0, 1], self.momentmatrix.ravel())
 
+
+
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
         self.compmonomial_from_idx = dict()
         if self.momentmatrix_has_a_zero:
             self.compmonomial_from_idx[0] = self.Zero
-        for (idx, mon) in self.symmetrized_corresp.items():
+        for (idx, mon) in tqdm(self.symmetrized_corresp.items(),
+                           disable=not self.verbose,
+                           desc="Interpreting monomials   "):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
 
         self.monomials = list(self.compmonomial_from_idx.values())
@@ -305,16 +317,6 @@ class InflationSDP(object):
         self.knowable_atoms = [self._monomial_from_atoms([atom])
                                for atom in knowable_atoms]
         del knowable_atoms
-
-        if self.verbose > 0:
-            extra_msg = (" after symmetrization" if symmetrization_required
-                         else "")
-            print(f"Number of variables{extra_msg}: {len(self.monomials)}")
-
-        # Get mask matrices associated with each monomial
-        for mon in self.monomials:
-            mon.mask_matrix = coo_matrix(self.momentmatrix == mon.idx).tocsr()
-        self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
 
         _counter = Counter([mon.knowability_status for mon in self.monomials])
         self.n_knowable           = _counter["Knowable"]
@@ -328,8 +330,12 @@ class InflationSDP(object):
         if self.commuting:
             self.physical_monomials = self.monomials
         else:
-            self.physical_monomials = [mon for mon in self.monomials
-                                       if mon.is_physical]
+            self.physical_monomials = list()
+            for mon in tqdm(self.monomials,
+                            disable=not self.verbose,
+                            desc="Determining physicality  "):
+                if mon.is_physical:
+                    self.physical_monomials.append(mon)
             if self.verbose > 1:
                 print(f"The problem has {len(self.physical_monomials)} " +
                       "non-negative monomials.")
@@ -347,7 +353,11 @@ class InflationSDP(object):
             self.column_level_equalities = self._discover_column_equalities()
             self.idx_level_equalities    = construct_normalization_eqs(
                                                 self.column_level_equalities,
-                                                self.momentmatrix)
+                                                self.momentmatrix,
+                                                self.verbose)
+            if self.verbose > 1 and len(self.idx_level_equalities):
+                print("Number of normalization equalities:",
+                      len(self.idx_level_equalities))
             self.moment_equalities = [{self.compmonomial_from_idx[idx]: coeff
                                        for idx, coeff in eq.items()}
                                       for eq in self.idx_level_equalities]
@@ -360,6 +370,14 @@ class InflationSDP(object):
         self._set_upperbounds(None)
         self.set_objective(None)
         self.set_values(None)
+
+        # Get mask matrices associated with each monomial
+        for mon in tqdm(self.monomials,
+                           disable=not self.verbose,
+                           desc="Assigning mask matrices  "):
+            mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
+        self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
+        assert False, self.maskmatrices
 
         self._relaxation_has_been_generated = True
 
@@ -1361,9 +1379,6 @@ class InflationSDP(object):
                                                             tuple(positions)))
                         except KeyError:
                             break
-        if self.verbose > 1 and len(column_level_equalities):
-            print("Number of column level equalities:",
-                  len(column_level_equalities))
         return column_level_equalities
 
     def _discover_inflation_symmetries(self) -> np.ndarray:
@@ -1668,8 +1683,8 @@ class InflationSDP(object):
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
             solverargs["inequalities"].append(ub)
-        solverargs["mask_matrices"][self.constant_term_name] = coo_matrix(
-            (self.n_columns, self.n_columns)).tocsr()
+        solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
+            (self.n_columns, self.n_columns))
         return solverargs
 
     def _reset_solution(self):

@@ -482,14 +482,17 @@ def commutation_relations(infSDP):
 
 
 def construct_normalization_eqs(column_equalities: List[Dict[int, float]],
-                                momentmatrix: np.ndarray
+                                momentmatrix: np.ndarray,
+                                verbose=0,
                                 ) -> List[Dict[int, float]]:
     """Given a list of column level equalities and the momentmatrix it computes
     the implicit equalities between indices in the moment matrix.
     BETTER DOCUMENTATION NEEDED"""
     equalities = []
     seen_already = set()
-    for equality in column_equalities:
+    for equality in tqdm(column_equalities,
+                        disable=not verbose,
+                         desc="Imposing normalization   "):
         for i, row in enumerate(iter(momentmatrix)):
             (normalization_col, summation_cols) = equality
             norm_idx       = row[normalization_col]
