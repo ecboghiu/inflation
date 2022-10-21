@@ -13,12 +13,13 @@ from typing import List
 
 def compute_marginal(prob_array: np.ndarray, atom: np.ndarray) -> float:
     """Given an atomic monomial and a probability distribution ``prob_array``,
-    called as ``prob_array[a,b,c,...,x,y,z,...]``, returns the numerical value
-    of the probability associated to the monomial. It is possible to insert
-    atomic monomials corresponding to marginals (i.e., where the list of first
-    elements does not contain all the parties in the scenario) and the function
-    will automatically compute all the summations over
-    ``p[a,b,c,...,x,y,z,...]``.
+    called as ``prob_array[a,b,c,...,x,y,z,...]``, returns the value of the
+    probability associated to the monomial. (A numeric value if the distribution
+    is numeric, or a symbolic expression if the distribution in an array of
+    SymPy expressions.) It is possible to insert atomic monomials corresponding
+    to marginals (i.e., where the list of first elements does not contain all
+    the parties in the scenario) and the function will automatically compute all
+    the summations over ``p[a,b,c,...,x,y,z,...]``.
 
     Parameters
     ----------

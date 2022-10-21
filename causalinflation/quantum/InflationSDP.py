@@ -381,8 +381,9 @@ class InflationSDP(object):
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints: bool = False,
                          shared_randomness: bool = False) -> None:
-        r"""Set numerically all the knowable (and optionally semiknowable)
-        moments according to the probability distribution specified.
+        r"""Set all the knowable (and optionally semiknowable)
+        moments according to the probability distribution specified. (Note that
+        the given distribution is allowed to involve symbolic expressions.)
 
         Parameters
         ----------
