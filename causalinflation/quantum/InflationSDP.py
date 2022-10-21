@@ -377,7 +377,6 @@ class InflationSDP(object):
                            desc="Assigning mask matrices  "):
             mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
         self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
-        assert False, self.maskmatrices
 
         self._relaxation_has_been_generated = True
 
