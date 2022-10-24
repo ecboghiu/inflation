@@ -1038,27 +1038,6 @@ class InflationSDP(object):
         InternalAtomicMonomial
             An instance of the `InternalAtomicMonomial` class representing the
             input 2D array moment, brought to canonical form.
-            
-        Example
-        -------
-        The following 
-        
-        >>> moment = np.array([[1, 0, 1, 2, 2, 3], [3, 2, 0, 2, 1, 1]])
-        
-        represents the moment `<A^{0,1,2}_{x=2,a=3}*C^{2,0,2}_{z=1,c=1}>`, where
-        party `A` acts on copies 1 and 2 of the second and third sources, and
-        does not act on the first source, and party `C` acts on copies 2 of the
-        first and last sources, and does not act on the second source.
-        
-        Note that the returned moment
-        
-        >>> InflationSDP._AtomicMonomial(moment)
-        
-        is actually `<A^{0,1,1}_{x=2,a=3}*C^{1,0,1}_{z=1,c=1}>` which has all
-        operators acting on the first source for all sources, as that is the
-        lowest lexicographic ordering considering inflation symmetries.
-        Furthermore, the name of this atomic monomial is simplified to
-        `'pAC(31|21)'` as this moment can be identified with a probability.
         """
         key = self._from_2dndarray(array2d)
         if key in self.atomic_monomial_from_hash:
