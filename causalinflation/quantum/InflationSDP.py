@@ -1327,9 +1327,8 @@ class InflationSDP(object):
             calculate_momentmatrix(self.generating_monomials,
                                    self._notcomm,
                                    self._lexorder,
-                                   verbose=self.verbose,
                                    commuting=self.commuting,
-                                   dtype=self.np_dtype)
+                                   verbose=self.verbose)
         idx_to_canonical_mon = {idx: self._to_2dndarray(mon_as_bytes)
                                 for (mon_as_bytes, idx) in
                                 canonical_mon_as_bytes_to_idx.items()}
