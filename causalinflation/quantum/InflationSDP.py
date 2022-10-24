@@ -1245,19 +1245,21 @@ class InflationSDP(object):
     def _inflation_orbit_and_rep(self,
                                  monomial: np.ndarray
                                  ) -> Tuple[set, np.ndarray]:
-        """Given a monomial as a 2D array, it returns 
-
-        _extended_summary_
+        """Given a monomial as a 2D array, it returns its representative 
+        under inflation symmetries and the orbit. Only source swaps up to the
+        maximum index of the source that appears in the monomials are
+        considered.
 
         Parameters
         ----------
         monomial : np.ndarray
-            _description_
+            Monomial as a 2D array.
 
         Returns
         -------
         Tuple[set, np.ndarray]
-            _description_
+            The orbit as a set of all monomials explored, and the
+            representative, the minimum over said set.
         """
         inf_levels = monomial[:, 1:-2].max(axis=0)
         nr_sources = inf_levels.shape[0]
@@ -1779,7 +1781,20 @@ class InflationSDP(object):
     # OTHER ROUTINES                                                          #
     ###########################################################################
     def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        "DOCUMENTATION NEEDED"
+        """Returns `True` if the input monomial, encoded as a 2D array,
+        can be associated to a knowable value in the scenario, `False`
+        otherwise.
+
+        Parameters
+        ----------
+        atomic_monarray : np.ndarray
+            Monomial encoded as a 2D array.
+
+        Returns
+        -------
+        bool
+            `True` if the monomial is knowable, `False` otherwise.
+        """
         if not is_knowable(atomic_monarray):
             return False
         elif self.network_scenario:
@@ -1805,12 +1820,40 @@ class InflationSDP(object):
     def _from_2dndarray(self, array2d: np.ndarray) -> None:
         """Obtains the bytes representation of an array. The library uses this
         representation as hashes for the corresponding monomials.
+        
+        Parameters
+        ----------
+        array2d : np.ndarray
+            Monomial encoded as a 2D array.
         """
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
     def _prepare_solver_arguments(self) -> dict:
-        """
-        Documentation needed.
+        """Prepare arguments to pass to the solver. 
+
+        The solver takes as input the following arguments, which are all 
+        dicts with keys as scalar SDP variables:
+            * "mask_matrices": dict with values the coefficient of the key
+            variable in the SDP variable 
+            * "objective": dict with values the coefficient of the key
+            variable in the objective function
+            * "known_vars": scalar variables that are fixed to be constant
+            * "semiknown_vars": if applicable, linear proportionality 
+            constraints between scalar variables
+            * "var_equalities": list of dicts where each dict gives the
+            coefficients of the keys in a linear equality constraint 
+            * "inequalities": list of dicts where each dict gives the
+            coefficients of the keys in a linear inequality constraint 
+
+        Returns
+        -------
+        dict
+            A tuple with the arguments to be passed to the solver.
+
+        Raises
+        ------
+        Exception
+            If the SDP relaxation has not been calculated yet.
         """
         if self.momentmatrix is None:
             raise Exception("Relaxation is not generated yet. " +
