@@ -187,7 +187,7 @@ class InflationProblem(object):
                 np.array(inflation_level_per_source)
             assert self.nr_sources == len(self.inflation_level_per_source), \
                 ("The number of sources as described by the unpacked " +
-                 f"hypergraph, {len(self.nr_sources)}, and by the list of " +
+                 f"hypergraph, {self.nr_sources}, and by the list of " +
                  "inflation levels specified, " +
                  f"{len(self.inflation_level_per_source)}, does not coincide.")
 
