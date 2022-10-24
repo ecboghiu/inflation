@@ -335,10 +335,10 @@ def calculate_momentmatrix(cols: List,
     canonical_mon_to_idx = dict()
     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i in tqdm(range(nrcols),
+    for i, mon1 in tqdm(enumerate(cols),
                   disable=not verbose,
-                  desc="Calculating moment matrix"):
-        mon1 = cols[i]
+                  desc="Calculating moment matrix",
+                  total=nrcols):
         for j in range(i, nrcols):
             mon2 = cols[j]
             mon_v1 = to_canonical(dot_mon(mon1, mon2).astype(dtype),
@@ -492,7 +492,7 @@ def construct_normalization_eqs(column_equalities: List[Dict[int, float]],
     equalities = []
     seen_already = set()
     for equality in tqdm(column_equalities,
-                        disable=not verbose,
+                         disable=not verbose,
                          desc="Imposing normalization   "):
         for i, row in enumerate(iter(momentmatrix)):
             (normalization_col, summation_cols) = equality
