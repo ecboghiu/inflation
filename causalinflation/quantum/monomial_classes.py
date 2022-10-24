@@ -18,6 +18,7 @@ class InternalAtomicMonomial(object):
                  "is_one",
                  "is_zero",
                  "is_knowable",
+                 'is_physical',
                  "is_all_commuting",
                  "n_operators",
                  "op_length",
@@ -55,6 +56,17 @@ class InternalAtomicMonomial(object):
                                                       [0, -2, -1],
                                                       axis=1)),
                 dtype=int)
+        if self.sdp.commuting:
+            self.is_physical = True
+        elif self.is_knowable:
+            self.is_physical = True
+        elif self.is_all_commuting and is_physical(self.as_ndarray):
+            self.is_physical = True
+        else:
+            self.is_physical = False
+
+
+
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -100,13 +112,6 @@ class InternalAtomicMonomial(object):
             return dagger
         else:
             return self
-
-    @property
-    def is_physical(self):
-        """Whether the expectation value of the monomial is non-negative for
-        any quantum state.
-        """
-        return self.is_knowable or is_physical(self.as_ndarray)
 
     @property
     def is_hermitian(self):
@@ -185,6 +190,7 @@ class CompoundMonomial(object):
                  "is_zero",
                  "is_one",
                  "n_factors",
+                 "n_operators",
                  "knowable_factors",
                  "unknowable_factors",
                  "n_knowable_factors",
@@ -192,7 +198,12 @@ class CompoundMonomial(object):
                  "knowability_status",
                  "is_knowable",
                  "idx",
-                 "mask_matrix"
+                 "mask_matrix",
+                 "is_physical",
+                 "as_counter",
+                 "name",
+                 "symbol",
+                 "signature"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
@@ -207,6 +218,7 @@ class CompoundMonomial(object):
                                           for factor in monomials))
         self.factors       = min(default_factors, conjugate_factors)
         self.n_factors     = len(self.factors)
+        self.n_operators   = sum(factor.n_operators for factor in self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
         self.is_all_commuting = all(factor.is_all_commuting
@@ -231,6 +243,11 @@ class CompoundMonomial(object):
         self.is_zero = any(factor.is_zero for factor in self.factors)
         self.is_one  = (all(factor.is_one for factor in self.factors)
                         or (self.n_factors == 0))
+        self.is_physical = all(factor.is_physical for factor in self.factors)
+        self.as_counter  = Counter(self.factors)
+        self.name        = name_from_atom_names(self._names_of_factors)
+        self.symbol      = symbol_prod(self._symbols_of_factors)
+        self.signature   = tuple(sorted(self.factors))
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
@@ -259,41 +276,6 @@ class CompoundMonomial(object):
     def __str__(self):
         """Return the name of the Monomial."""
         return self.name
-
-    @property
-    def as_counter(self):
-        """DOCUMENTATION NEEDED."""
-        return Counter(self.factors)
-
-    @property
-    def is_physical(self):
-        """Whether the expectation value of the monomial is non-negative for
-        any quantum state.
-        """
-        return all(factor.is_physical for factor in self.factors)
-
-    @property
-    def n_operators(self):
-        """Return the amount of operators in the Monomial."""
-        return sum(factor.n_operators for factor in self.factors)
-
-    @property
-    def name(self):
-        """A string representing the monomial. It merely combines the names of
-        the factors.
-        """
-        return name_from_atom_names(self._names_of_factors)
-
-    @property
-    def signature(self):
-        """DOCUMENTATION NEEDED."""
-        return tuple(sorted(self.factors))
-
-    @property
-    def symbol(self):
-        """Return a product of sympy Symbols representing all the factors in
-        the Monomial."""
-        return symbol_prod(self._symbols_of_factors)
 
     @property
     def _names_of_factors(self):
