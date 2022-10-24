@@ -15,7 +15,5 @@ from .quantum.InflationSDP import InflationSDP
 from ._about import about
 from ._version import __version__
 
-from typing import Dict, List, Tuple, Union, Any, NewType, Iterable
-
 __all__ = ["InflationProblem",
            "InflationSDP"]
