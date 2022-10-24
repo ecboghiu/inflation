@@ -666,7 +666,7 @@ class InflationSDP(object):
                              chop_tol: float = 1e-10,
                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
-        of incompatibility is ``cert >= 0``.
+        of incompatibility is ``cert < 0``.
 
         Parameters
         ----------
@@ -685,7 +685,7 @@ class InflationSDP(object):
         -------
         sympy.core.add.Add
             The expression of the certificate in terms or probabilities and
-            marginals. The certificate of incompatibility is ``cert > 0``.
+            marginals. The certificate of incompatibility is ``cert < 0``.
         """
         try:
             dual = self.solution_object["dual_certificate"]
@@ -731,7 +731,7 @@ class InflationSDP(object):
         str
             The certificate in terms of symbols representing the monomials in
             the moment matrix. The certificate of incompatibility is
-            ``cert > 0``.
+            ``cert < 0``.
         """
         try:
             dual = self.solution_object["dual_certificate"]
