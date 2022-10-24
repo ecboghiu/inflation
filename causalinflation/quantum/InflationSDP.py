@@ -305,7 +305,7 @@ class InflationSDP(object):
             self.compmonomial_from_idx[0] = self.Zero
         for (idx, mon) in tqdm(self.symmetrized_corresp.items(),
                            disable=not self.verbose,
-                           desc="Interpreting monomials   "):
+                           desc="Initializing monomials   "):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
 
         self.monomials = list(self.compmonomial_from_idx.values())
@@ -331,9 +331,7 @@ class InflationSDP(object):
             self.physical_monomials = self.monomials
         else:
             self.physical_monomials = list()
-            for mon in tqdm(self.monomials,
-                            disable=not self.verbose,
-                            desc="Determining physicality  "):
+            for mon in self.monomials:
                 if mon.is_physical:
                     self.physical_monomials.append(mon)
             if self.verbose > 1:
@@ -1400,7 +1398,9 @@ class InflationSDP(object):
             identity_perm        = np.arange(self.n_columns, dtype=int)
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
-                               desc="Calculating symmetries   "):
+                               desc="Calculating symmetries   ",
+                               leave=False,
+                               position=0):
                 one_source_symmetries = [identity_perm]
                 inf_level = self.inflation_levels[source]
                 perms = format_permutations(list(
