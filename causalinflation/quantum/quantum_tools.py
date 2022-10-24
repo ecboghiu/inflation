@@ -338,8 +338,9 @@ def calculate_momentmatrix(cols: List,
     for i in tqdm(range(nrcols),
                   disable=not verbose,
                   desc="Calculating moment matrix"):
+        mon1 = cols[i]
         for j in range(i, nrcols):
-            mon1, mon2 = cols[i], cols[j]
+            mon2 = cols[j]
             mon_v1 = to_canonical(dot_mon(mon1, mon2).astype(dtype),
                                   notcomm,
                                   lexorder,
