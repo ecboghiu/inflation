@@ -333,7 +333,7 @@ def calculate_momentmatrix(cols: List,
     """
     nrcols = len(cols)
     canonical_mon_to_idx = dict()
-    momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
+    momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i in tqdm(range(nrcols),
                   disable=not verbose,
@@ -363,7 +363,7 @@ def calculate_momentmatrix(cols: List,
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
-    return momentmatrix.toarray(), canonical_mon_to_idx
+    return momentmatrix, canonical_mon_to_idx
 
 
 ###############################################################################
