@@ -1210,7 +1210,19 @@ class InflationSDP(object):
     def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomial]
                              ) -> CompoundMonomial:
-        """DOCUMENTATION NEEDED"""
+        """Build an instance of `CompoundMonomial` from a list of instances
+        of `InternalAtomicMonomial`.
+
+        Parameters
+        ----------
+        atoms : List[InternalAtomicMonomial]
+            List of instances of `InternalAtomicMonomial`.
+
+        Returns
+        -------
+        CompoundMonomial
+            A `CompoundMonomial` with atomic factors given by `atoms`.
+        """
         list_of_atoms = []
         for factor in atoms:
             if factor.is_zero:
@@ -1233,7 +1245,20 @@ class InflationSDP(object):
     def _inflation_orbit_and_rep(self,
                                  monomial: np.ndarray
                                  ) -> Tuple[set, np.ndarray]:
-        """DOCUMENTATION NEEDED"""
+        """Given a monomial as a 2D array, it returns 
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        monomial : np.ndarray
+            _description_
+
+        Returns
+        -------
+        Tuple[set, np.ndarray]
+            _description_
+        """
         inf_levels = monomial[:, 1:-2].max(axis=0)
         nr_sources = inf_levels.shape[0]
         all_permutations_per_source = [
@@ -1258,9 +1283,32 @@ class InflationSDP(object):
         return seen_hashes, representative
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
-        """Bring a monomial into the form used internally.
-        BETTER DOCUMENTATION NEEDED
+        """Return a `CompoundMonomial` built from `mon`, where `mon` can be 
+        either the name of a moment as a string, a SymPy variable, a monomial
+        encoded as a 2D array or an integer, in case the moment is the unit
+        moment or the zero moment.
+        
+
+        Parameters
+        ----------
+        mon : Any
+            The name of a moment as a string, a SymPy variable with the name of
+            a valid moment, a 2D array encoding of a moment or an integer in
+            case the moment is the unit moment or the zero moment.
+
+        Returns
+        -------
+        CompoundMonomial
+            Instance of `CompoundMonomial` built from `mon`.
+
+        Raises
+        ------
+        Exception
+            If `mon` is the constant monomial, it can only be numbers 0 or 1.
+        Exception
+            If the type of `mon` is not supported.
         """
+        
         if isinstance(mon, CompoundMonomial):
             return mon
         elif isinstance(mon, (sp.core.symbol.Symbol,
@@ -1305,7 +1353,22 @@ class InflationSDP(object):
     def _interpret_name(self,
                         monomial: Union[str, sp.core.symbol.Expr, int]
                         ) -> np.ndarray:
-        """DOCUMENTATION NEEDED"""
+        """Build a 2D array encoding of a monomial which can be passed either
+        as a string, as a SymPy expression or as an integer.
+
+        See the documentation of `InflationSDP.Moment` for a description
+        of the 2D array encoding.
+
+        Parameters
+        ----------
+        monomial : Union[str, sp.core.symbol.Expr, int]
+            Input moment.
+
+        Returns
+        -------
+        np.ndarray
+            2D array encoding of the input moment.
+        """
         if isinstance(monomial, sp.core.symbol.Expr):
             factors = [str(factor)
                        for factor in flatten_symbolic_powers(monomial)]
@@ -1320,11 +1383,23 @@ class InflationSDP(object):
                                for factor_string in factors))
 
     def _interpret_atomic_string(self, factor_string: str) -> np.ndarray:
-        """DOCUMENTATION NEEDED"""
+        """Build a 2D array encoding of a moment that cannot be further
+        factorised into products of other moments.
+
+        Parameters
+        ----------
+        factor_string : str
+            String representation of a moment in expected value notation, e.g.,
+            "<A_1_1_1_2*B_2_1_3_4>".
+
+        Returns
+        -------
+        np.ndarray
+            2D array encoding of the input atomic moment.
+        """
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
                 or set(factor_string).isdisjoint(set("| "))), \
-            ("Monomial names must be between < > signs, or in conditional " +
-             "probability form.")
+            ("Monomial names must be between < > signs.")
         if factor_string[0] == "<":
             operators = factor_string[1:-1].split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
@@ -1333,7 +1408,18 @@ class InflationSDP(object):
             return self._interpret_operator_string(factor_string)[np.newaxis]
 
     def _interpret_operator_string(self, op_string: str) -> np.ndarray:
-        """DOCUMENTATION NEEDED"""
+        """Build a 1D array encoding of an operator passed as a string.
+
+        Parameters
+        ----------
+        factor_string : str
+            String representation of an operator, e.g., "B_2_1_3_4".
+
+        Returns
+        -------
+        np.ndarray
+            2D array encoding of the operator.
+        """
         components = op_string.split("_")
         assert len(components) == self._nr_properties, \
             "Cannot interpret string of this format."
@@ -1573,8 +1659,8 @@ class InflationSDP(object):
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
     ###########################################################################
-    def _cleanup_after_set_values(self):
-        """DOCUMENTATION NEEDED"""
+    def _cleanup_after_set_values(self) -> None:
+        """Helper function to reset class attributes after setting values."""
         if self.supports_problem:
             # Convert positive known values into lower bounds.
             nonzero_known_monomials = [mon for
@@ -1600,30 +1686,30 @@ class InflationSDP(object):
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
 
-    def _reset_bounds(self):
+    def _reset_bounds(self) -> None:
         """Reset the lists of bounds."""
         self._reset_lowerbounds()
         self._reset_upperbounds()
         collect()
 
-    def _reset_lowerbounds(self):
+    def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
         self._processed_moment_lowerbounds = dict()
 
-    def _reset_upperbounds(self):
+    def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
         self._reset_solution()
         self._processed_moment_upperbounds = dict()
 
-    def _reset_objective(self):
+    def _reset_objective(self) -> None:
         """Reset the objective function."""
         self._reset_solution()
         self.objective = {self.One: 0.}
         self._processed_objective = self.objective
         self.maximize = True  # Direction of the optimization
 
-    def _reset_values(self):
+    def _reset_values(self) -> None:
         """Reset the known values."""
         self._reset_solution()
         self.known_moments     = dict()
@@ -1633,7 +1719,7 @@ class InflationSDP(object):
         self.known_moments[self.One] = 1.
         collect()
 
-    def _update_objective(self):
+    def _update_objective(self) -> None:
         """Process the objective with the information from known_moments
         and semiknown_moments.
         """
@@ -1658,7 +1744,7 @@ class InflationSDP(object):
                 del self._processed_objective[mon]
         collect()
 
-    def _update_lowerbounds(self):
+    def _update_lowerbounds(self) -> None:
         """
         Documentation needed.
         """
@@ -1675,7 +1761,7 @@ class InflationSDP(object):
             except KeyError:
                 pass
 
-    def _update_upperbounds(self):
+    def _update_upperbounds(self) -> None:
         """
         Documentation needed.
         """
@@ -1703,7 +1789,7 @@ class InflationSDP(object):
                                                             [0, -2, -1],
                                                     axis=1))
 
-    def _dump_to_file(self, filename: str):
+    def _dump_to_file(self, filename: str) -> None:
         """
         Saves the whole object to a file using `pickle`.
 
@@ -1716,7 +1802,7 @@ class InflationSDP(object):
         with open(filename, "w") as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
-    def _from_2dndarray(self, array2d: np.ndarray):
+    def _from_2dndarray(self, array2d: np.ndarray) -> None:
         """Obtains the bytes representation of an array. The library uses this
         representation as hashes for the corresponding monomials.
         """
@@ -1767,7 +1853,7 @@ class InflationSDP(object):
             (self.n_columns, self.n_columns))
         return solverargs
 
-    def _reset_solution(self):
+    def _reset_solution(self) -> None:
         """
         Documentation needed.
         """
@@ -1780,7 +1866,7 @@ class InflationSDP(object):
                 pass
         self.status = "Not yet solved"
 
-    def _set_upperbounds(self, upperbounds: Union[dict, None]):
+    def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
         """
         Documentation needed.
         """
@@ -1801,7 +1887,7 @@ class InflationSDP(object):
         self._processed_moment_upperbounds = sanitized_upperbounds
         self._update_upperbounds()
 
-    def _set_lowerbounds(self, lowerbounds: Union[dict, None]):
+    def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
         """
         Documentation needed.
         """
