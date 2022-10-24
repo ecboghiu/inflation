@@ -156,7 +156,7 @@ class InflationProblem(object):
         for i in range(self.nr_parties):
             effective_to_parent_settings.append(dict(zip(
                 range(self.settings_per_party[i]),
-                np.ndindex(tuple(settings_per_party_lst[i])))))
+                np.ndindex(*settings_per_party_lst[i]))))
         self.effective_to_parent_settings = effective_to_parent_settings
 
         # Create network corresponding to the unpacked scenario
