@@ -115,7 +115,6 @@ class InflationSDP(object):
                 print(prefix + f"{self.names[i]}={next(counter)}", end="")
                 prefix = ", "
             print()
-        self.maximize = True  # Direction of the optimization
         self.use_lpi_constraints = False
         self.network_scenario    = self.InflationProblem.is_network
         self._is_knowable_q_non_networks = \
@@ -1537,7 +1536,7 @@ class InflationSDP(object):
         self._reset_solution()
         self.objective = {self.One: 0.}
         self._processed_objective = self.objective
-        self.maximize = False
+        self.maximize = True  # Direction of the optimization
 
     def _reset_values(self):
         """Reset the known values."""
