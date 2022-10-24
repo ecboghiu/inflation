@@ -22,13 +22,14 @@ from .fast_npa import (all_commuting_test,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
                        reverse_mon,
-                       to_canonical)
+                       to_canonical,
+                       nb_inf_indices_refer_common_source,
+                       nb_adjmat_to_component_labels)
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix,
                             clean_coefficients,
                             construct_normalization_eqs,
-                            factorize_monomial,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
@@ -142,6 +143,24 @@ class InflationSDP(object):
 
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
+
+        # Prepare adjacency matrix for quick monomial factorization
+        inflation_indices = np.unique(self._lexorder[:, 1:-2], axis=0)
+        self._inflation_indices_position_by_hash = {
+            self._from_2dndarray(op): i
+            for i, op in enumerate(inflation_indices)}
+        self._adjmat_for_factorization = np.eye(len(inflation_indices),
+                                                    dtype=bool)
+        for i in range(1, len(inflation_indices)):
+            inf_indices_i = inflation_indices[i]
+            for j in range(i):
+                inf_indices_j = inflation_indices[j]
+                if nb_inf_indices_refer_common_source(inf_indices_i,
+                                                      inf_indices_j):
+                    self._adjmat_for_factorization[i, j] = True
+        self._adjmat_for_factorization = np.logical_or(
+                self._adjmat_for_factorization,
+                self._adjmat_for_factorization.T)
 
         self._default_notcomm = commutation_matrix(self._lexorder,
                                                    self.commuting)
@@ -1022,7 +1041,7 @@ class InflationSDP(object):
         """The constructor function for initializing CompoundMonomial instances with memoization.
         BETTER DOCUMENTATION NEEDED"""
         if self.ever_factorizes:
-            _factors = factorize_monomial(array2d, canonical_order=False)
+            _factors = self.factorize_monomial(array2d, canonical_order=False)
         else:
             _factors = (array2d,)
         list_of_atoms = [self.AtomicMonomial(factor)
@@ -1612,6 +1631,83 @@ class InflationSDP(object):
     ###########################################################################
     # OTHER ROUTINES                                                          #
     ###########################################################################
+    def factorize_monomial(self,
+                           monomial: np.ndarray,
+                           canonical_order=False) -> Tuple[np.ndarray]:
+        """This function splits a moment/expectation value into products of
+        moments according to the support of the operators within the moment.
+
+        The moment is encoded as a 2d array where each row is an operator.
+        If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
+        In each row, the columns encode the following information:
+
+        First column:       The party index, *starting from 1*.
+                            (1 for A, 2 for B, etc.)
+        Last two columns:   The input x, starting from zero and then the
+                            output a, starting from zero.
+        In between:         This encodes the support of the operator. There
+                            are as many columns as sources/quantum states.
+                            Column j represents source j-1 (-1 because the 1st
+                            col is the party). If the value is 0, then this
+                            operator does not measure this source. If the value
+                            is for e.g. 2, then this operator is acting on
+                            copy 2 of source j-1.
+
+        The output is a tuple of ndarrays where each array represents another
+        monomial s.t. their product is equal to the original monomial.
+
+        Parameters
+        ----------
+        monomial : np.ndarray
+            Monomial in 2d array form.
+        canonical_order: bool, optional
+            Whether to return the different factors in a canonical order.
+
+        Returns
+        -------
+        Tuple[np.ndarray]
+            A tuple of ndarrays, where each array represents an atomic monomial
+            factor.
+
+        Examples
+        --------
+        >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                                 [2, 1, 0, 2, 0, 0],
+                                 [1, 0, 3, 3, 0, 0],
+                                 [3, 3, 5, 0, 0, 0],
+                                 [3, 1, 4, 0, 0, 0],
+                                 [3, 6, 6, 0, 0, 0],
+                                 [3, 4, 5, 0, 0, 0]])
+        >>> factorised = factorize_monomial(monomial)
+        [array([[1, 0, 1, 1, 0, 0]]),
+         array([[1, 0, 3, 3, 0, 0]]),
+         array([[2, 1, 0, 2, 0, 0],
+                [3, 1, 4, 0, 0, 0]]),
+         array([[3, 3, 5, 0, 0, 0],
+                [3, 4, 5, 0, 0, 0]]),
+         array([[3, 6, 6, 0, 0, 0]])]
+
+        """
+        n = len(monomial)
+        if n <= 1:
+            return (monomial,)
+
+        inflation_indices_position = [self._inflation_indices_position_by_hash[
+            op.tobytes()] for op in monomial[:, 1:-2]]
+        adj_mat = self._adjmat_for_factorization[inflation_indices_position][
+            :, inflation_indices_position]
+
+        component_labels = nb_adjmat_to_component_labels(adj_mat)
+        disconnected_components = tuple(
+            monomial[component_labels == i]
+            for i in range(component_labels.max(initial=0) + 1))
+
+        if canonical_order:
+            disconnected_components = tuple(sorted(disconnected_components,
+                                                   key=lambda x: x.tobytes()))
+        return disconnected_components
+
+
     def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
         "DOCUMENTATION NEEDED"
         if not is_knowable(atomic_monarray):

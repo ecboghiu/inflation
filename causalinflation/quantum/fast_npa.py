@@ -30,6 +30,30 @@ if not nopython:
 # ABSTRACT OPERATIONS ON MONOMIALS                                            #
 ###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_adjmat_to_component_labels(adj_mat: np.ndarray) -> np.ndarray:
+    n = len(adj_mat)
+    if n <= 1 or adj_mat.all():
+        return np.zeros(n, dtype=np.uint8)
+    component_labels = np.zeros(n, dtype=np.uint8)
+    component_counter = 1
+    for i in range(n):
+        if not component_labels[i]:
+            old_component = np.logical_not(np.ones(n, dtype=np.uint8))
+            new_component = old_component.copy()
+            new_component[i] = True
+            search_next = np.logical_xor(new_component, old_component)
+            while search_next.any():
+                old_component = new_component.copy()
+                new_component = np.logical_or(
+                    new_component,
+                    adj_mat[search_next].sum(axis=0).astype(bool_))
+                search_next = np.logical_xor(new_component, old_component)
+            component_labels[new_component] = component_counter
+            component_counter += 1
+    return (component_labels-1).astype(np.uint8)
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
             mon2: np.ndarray) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
