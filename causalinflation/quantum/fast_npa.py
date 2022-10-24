@@ -329,6 +329,88 @@ def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
         return np.zeros(n, dtype=np.uint8)
     return nb_adjmat_to_component_labels(nb_inf_indxs_to_adjmat(
         monomial[:, 1:-2]))
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
+    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
+    monomial represented by :math:`U A U^\dagger` into :math:`A`.
+
+    Parameters
+    ----------
+    monomial : numpy.ndarray
+        Input monomial.
+
+    Returns
+    -------
+    numpy.ndarray
+        The monomial without sandwiches.
+    """
+    picklist = np.logical_not(np.ones(len(monomial), dtype=np.uint8))
+    parties = np.unique(monomial[:, 0])
+    for party in parties:
+        indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
+        party_monomial = monomial[indices_for_this_party]
+        party_monomial_comp_labels = nb_monomial_to_components(party_monomial)
+        for i in range(party_monomial_comp_labels.max() + 1):
+            indices_for_this_factor = np.flatnonzero(
+                party_monomial_comp_labels == i)
+            factor = party_monomial[indices_for_this_factor]
+            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
+                indices_for_this_factor = indices_for_this_factor[1:-1]
+                factor = factor[1:-1]
+            picklist[indices_for_this_party[indices_for_this_factor]] = True
+    return monomial[picklist]
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
+    r"""Determines whether a monomial is physical, this is, if it always has a
+    non-negative expectation value.
+
+    This code also supports the detection of "sandwiches", i.e., monomials
+    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
+    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
+    value of this term. However, note that :math:`A_1` can be absorbed into
+    :math:`| \psi \rangle` forming an unnormalised quantum state
+    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
+    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
+    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
+    the unknown normalisation, however we know it must be non-negative,
+    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
+    This simple example can be extended to various layers of sandwiching.
+
+    Parameters
+    ----------
+    monomial_in : numpy.ndarray
+        Input monomial in 2d array format.
+    sandwich_positivity : bool, optional
+        Whether to consider sandwiching. By default ``True``.
+
+    Returns
+    -------
+    bool
+        Whether the monomial has always non-negative expectation or not.
+    """
+    if not len(monomial_in):
+        return True
+    if sandwich_positivity:
+        monomial = nb_remove_sandwich(monomial_in)
+    else:
+        monomial = monomial_in.copy()
+    nonnegative = True
+    parties = np.unique(monomial[:, 0])
+    for party in parties:
+        party_monomial = monomial[monomial[:, 0] == party]
+        n = len(party_monomial)
+        if not n == 1:
+            component_labels = nb_monomial_to_components(party_monomial)
+            if component_labels.max() + 1 != len(party_monomial):
+                nonnegative = False
+                break
+    return nonnegative
+
+
 ###############################################################################
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################

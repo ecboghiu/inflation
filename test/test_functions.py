@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.quantum_tools import remove_sandwich
+from causalinflation.quantum.fast_npa import nb_remove_sandwich
 
 
 class TestFunctions(unittest.TestCase):

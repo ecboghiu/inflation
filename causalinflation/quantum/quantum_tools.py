@@ -152,53 +152,6 @@ def is_knowable(monomial: np.ndarray) -> bool:
                     for source in monomial[:, 1:-2].T])
 
 
-def is_physical(monomial_in: Iterable[Iterable[int]],
-                sandwich_positivity=True
-                ) -> bool:
-    r"""Determines whether a monomial is physical, this is, if it always have a
-    non-negative expectation value.
-
-    This code also supports the detection of "sandwiches", i.e., monomials
-    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
-    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
-    value of this term. However, note that :math:`A_1` can be absorbed into
-    :math:`| \psi \rangle` forming an unnormalised quantum state
-    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
-    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
-    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
-    the unknown normalisation, however we know it must be non-negative,
-    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
-    This simple example can be extended to various layers of sandwiching.
-
-    Parameters
-    ----------
-    monomial_in : Union[List[List[int]], numpy.ndarray]
-        Input monomial in 2d array format.
-    sandwich_positivity : bool, optional
-        Whether to consider sandwiching. By default ``True``.
-
-    Returns
-    -------
-    bool
-        Whether the monomial has always non-negative expectation or not.
-    """
-    if not len(monomial_in):
-        return monomial_in
-    monomial = np.array(monomial_in, dtype=np.uint16, copy=True)
-    if sandwich_positivity:
-        monomial = remove_sandwich(monomial)
-    nonnegative = True
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party]
-        if not len(party_monomial) == 1:
-            factors = factorize_monomial(party_monomial)
-            if len(factors) != len(party_monomial):
-                nonnegative *= False
-                break
-    return nonnegative
-
-
 def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
     """Reduce the inflation indices of a monomial as much as possible. This
     procedure might not give the canonical form directly due to commutations.
@@ -224,32 +177,6 @@ def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
         _, unique_positions = np.unique(copies_used, return_inverse=True)
         new_mon_padded_transposed[1 + source] = unique_positions
     return new_mon_padded_transposed.T[1:]
-
-
-def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
-    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
-    monomial represented by :math:`U A U^\dagger` into :math:`A`.
-
-    Parameters
-    ----------
-    monomial : numpy.ndarray
-        Input monomial.
-
-    Returns
-    -------
-    numpy.ndarray
-        The monomial without sandwiches.
-    """
-    new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party].copy()
-        party_monomial_factorized = factorize_monomial(party_monomial)
-        for factor in party_monomial_factorized:
-            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
-                factor = np.delete(factor, (0, -1), axis=0)
-            new_monomial = np.append(new_monomial, factor, axis=0)
-    return new_monomial
 
 
 ###############################################################################
