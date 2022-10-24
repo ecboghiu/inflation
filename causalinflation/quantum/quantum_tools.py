@@ -290,10 +290,8 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
 def calculate_momentmatrix(cols: List,
                            notcomm: np.ndarray,
                            lexorder: np.ndarray,
-                           verbose: int = 0,
                            commuting: bool = False,
-                           dtype: object = np.uint8
-                           ) -> Tuple[np.ndarray, Dict]:
+                           verbose: int = 0) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
@@ -321,8 +319,6 @@ def calculate_momentmatrix(cols: List,
         ``False``.
     verbose : int, optional
         How much information to print. By default ``0``.
-    dtype: np.dtype, optional
-        The dtype for constructing monomials when represented as numpy arrays.
 
     Returns
     -------
@@ -341,13 +337,13 @@ def calculate_momentmatrix(cols: List,
                   total=nrcols):
         for j in range(i, nrcols):
             mon2 = cols[j]
-            mon_v1 = to_canonical(dot_mon(mon1, mon2).astype(dtype),
+            mon_v1 = to_canonical(dot_mon(mon1, mon2),
                                   notcomm,
                                   lexorder,
                                   commuting=commuting)
             if not mon_is_zero(mon_v1):
                 if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1).astype(dtype),
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1),
                                           notcomm,
                                           lexorder,
                                           commuting=commuting)
