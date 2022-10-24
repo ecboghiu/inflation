@@ -257,6 +257,78 @@ def to_name(monomial: np.ndarray,
                      for letter in monomial])
 
 
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_inf_indxs_to_adjmat(array_of_inflation_indxs: np.ndarray) -> np.ndarray:
+    """
+    Returns a matrix of the size of the monomial, where a 1 indicates a common
+    source.
+    """
+    n = len(array_of_inflation_indxs)
+    adj_mat = np.eye(n, dtype=np.bool_)
+    for i in range(1, n):
+        inf_indices_i = array_of_inflation_indxs[i]
+        for j in range(i):
+            inf_indices_j = array_of_inflation_indxs[j]
+            if nb_inf_indices_refer_common_source(inf_indices_i,
+                                                  inf_indices_j):
+                adj_mat[i, j] = True
+    adj_mat = np.logical_or(adj_mat, adj_mat.T)
+    return adj_mat
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
+    # See https://stackoverflow.com/a/9112588
+    """This function help split a moment/expectation value into products of
+    moments according to the support of the operators within the moment.
+
+    The moment is encoded as a 2d array where each row is an operator.
+    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
+    In each row, the columns encode the following information:
+
+    First column:       The party index, *starting from 1*.
+                        (1 for A, 2 for B, etc.)
+    Last two columns:   The input x, starting from zero and then the
+                        output a, starting from zero.
+    In between:         This encodes the support of the operator. There
+                        are as many columns as sources/quantum states.
+                        Column j represents source j-1 (-1 because the 1st
+                        col is the party). If the value is 0, then this
+                        operator does not measure this source. If the value
+                        is for e.g. 2, then this operator is acting on
+                        copy 2 of source j-1.
+
+    The output is a vector (numpy array) where each integer represents the
+    component the operator is associated with.
+
+    Parameters
+    ----------
+    raw_monomial : numpy.ndarray
+        Monomial in 2d array form.
+
+    Returns
+    -------
+    numpy.ndarray
+        A vector where each integer gives the component associated with the
+        operator of that index.
+
+    Examples
+    --------
+    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                             [2, 1, 0, 2, 0, 0],
+                             [1, 0, 3, 3, 0, 0],
+                             [3, 3, 5, 0, 0, 0],
+                             [3, 1, 4, 0, 0, 0],
+                             [3, 6, 6, 0, 0, 0],
+                             [3, 4, 5, 0, 0, 0]])
+    >>> factorised = monomial_to_components(monomial)
+    [0, 1, 2, 3, 1, 4, 3]
+    """
+    n = len(monomial)
+    if n <= 1:
+        return np.zeros(n, dtype=np.uint8)
+    return nb_adjmat_to_component_labels(nb_inf_indxs_to_adjmat(
+        monomial[:, 1:-2]))
 ###############################################################################
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################

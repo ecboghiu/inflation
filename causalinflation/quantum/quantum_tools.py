@@ -16,7 +16,8 @@ from .fast_npa import (apply_source_perm,
                        mon_is_zero,
                        mon_lexsorted,
                        to_canonical,
-                       to_name)
+                       to_name,
+                       nb_monomial_to_components)
 
 try:
     from tqdm import tqdm
@@ -27,8 +28,8 @@ except ImportError:
 ###############################################################################
 # FUNCTIONS FOR MONOMIALS                                                     #
 ###############################################################################
-def factorize_monomial(raw_monomial: np.ndarray,
-                       canonical_order=False) -> Tuple[np.ndarray]:
+def factorize_monomial(monomial: np.ndarray,
+                       canonical_order=False) -> Tuple[np.ndarray, ...]:
     """This function splits a moment/expectation value into products of
     moments according to the support of the operators within the moment.
 
@@ -53,7 +54,7 @@ def factorize_monomial(raw_monomial: np.ndarray,
 
     Parameters
     ----------
-    raw_monomial : np.ndarray
+    monomial : np.ndarray
         Monomial in 2d array form.
     canonical_order: bool, optional
         Whether to return the different factors in a canonical order.
@@ -83,45 +84,12 @@ def factorize_monomial(raw_monomial: np.ndarray,
      array([[3, 6, 6, 0, 0, 0]])]
 
     """
-    if len(raw_monomial) == 0:
-        return (raw_monomial,)
+    if len(monomial) <= 1:
+        return (monomial,)
 
-    monomial = np.asarray(raw_monomial, dtype=np.uint16)
-    components_indices = np.zeros((len(monomial), 2), dtype=np.uint16)
-    # Labels to see if the components have been used
-    components_indices[:, 0] = np.arange(0, len(monomial), 1)
-
-    inflation_indices = monomial[:, 1:-2]
-    disconnected_components = []
-
-    idx = 0
-    while idx < len(monomial):
-        component = []
-        if components_indices[idx, 1] == 0:
-            component.append(idx)
-            components_indices[idx, 1] = 1
-            jdx = 0
-            # Iterate over all components that are connected
-            while jdx < len(component):
-                nonzero_sources = np.nonzero(
-                    inflation_indices[component[jdx]])[0]
-                for source in nonzero_sources:
-                    overlapping = (inflation_indices[:, source]
-                                   == inflation_indices[component[jdx], source]
-                                   )
-                    # Add the components that overlap to the lookup list
-                    component += components_indices[
-                                  overlapping & (components_indices[:, 1] == 0)
-                                                    ][:, 0].tolist()
-                    # Specify that the components that overlap have been used
-                    components_indices[overlapping, 1] = 1
-                jdx += 1
-        if len(component) > 0:
-            disconnected_components.append(component)
-        idx += 1
-
-    disconnected_components = tuple(
-        monomial[sorted(component)] for component in disconnected_components)
+    component_labels = nb_monomial_to_components(monomial)
+    disconnected_components = tuple(monomial[component_labels == i] for i in
+                                    range(component_labels.max(initial=0)+1))
 
     if canonical_order:
         disconnected_components = tuple(sorted(disconnected_components,

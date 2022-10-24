@@ -23,7 +23,7 @@ from .fast_npa import (all_commuting_test,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical,
-                       nb_inf_indices_refer_common_source,
+                       nb_inf_indxs_to_adjmat,
                        nb_adjmat_to_component_labels)
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
@@ -149,18 +149,8 @@ class InflationSDP(object):
         self._inflation_indices_position_by_hash = {
             self._from_2dndarray(op): i
             for i, op in enumerate(inflation_indices)}
-        self._adjmat_for_factorization = np.eye(len(inflation_indices),
-                                                    dtype=bool)
-        for i in range(1, len(inflation_indices)):
-            inf_indices_i = inflation_indices[i]
-            for j in range(i):
-                inf_indices_j = inflation_indices[j]
-                if nb_inf_indices_refer_common_source(inf_indices_i,
-                                                      inf_indices_j):
-                    self._adjmat_for_factorization[i, j] = True
-        self._adjmat_for_factorization = np.logical_or(
-                self._adjmat_for_factorization,
-                self._adjmat_for_factorization.T)
+        self._adjmat_for_factorization = nb_inf_indxs_to_adjmat(
+            inflation_indices)
 
         self._default_notcomm = commutation_matrix(self._lexorder,
                                                    self.commuting)
