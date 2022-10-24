@@ -1025,7 +1025,6 @@ class InflationSDP(object):
         
         See the documentation of `InflationSDP.Monomial` for details on the 
         2D array encoding of a moment.
-        
 
         Parameters
         ----------
@@ -1492,11 +1491,7 @@ class InflationSDP(object):
         return columns
 
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
-        """Generate the moment matrix and the correspondence between indices
-        and monomials.
-
-        BETTER DOCUMENTATION NEEDED
-        """
+        """Wrapper method for building the moment matrix."""
         problem_arr, canonical_mon_as_bytes_to_idx = \
             calculate_momentmatrix(self.generating_monomials,
                                    self._notcomm,
@@ -1513,6 +1508,7 @@ class InflationSDP(object):
         """Given the generating monomials, infer implicit equalities between
         columns of the moment matrix. An equality is a dictionary with keys
         being which column and values being coefficients.
+        
         BETTER DOCUMENTATION NEEDED"""
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
@@ -1662,7 +1658,8 @@ class InflationSDP(object):
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
     ###########################################################################
     def _cleanup_after_set_values(self) -> None:
-        """Helper function to reset class attributes after setting values."""
+        """Helper function to reset or make consistent class attributes after
+        setting values."""
         if self.supports_problem:
             # Convert positive known values into lower bounds.
             nonzero_known_monomials = [mon for
@@ -1748,7 +1745,9 @@ class InflationSDP(object):
 
     def _update_lowerbounds(self) -> None:
         """
-        Documentation needed.
+        Helper function to check that lowerbounds are consistent with the 
+        specified known values, and to keep only the lowest lowerbounds 
+        in case of redundancy.
         """
         for mon, lb in self.moment_lowerbounds.items():
             self._processed_moment_lowerbounds[mon] = \
@@ -1765,7 +1764,8 @@ class InflationSDP(object):
 
     def _update_upperbounds(self) -> None:
         """
-        Documentation needed.
+        Helper function to check that upperbounds are consistent with the 
+        specified known values.
         """
         for mon, value in self.known_moments.items():
             try:
@@ -1897,9 +1897,8 @@ class InflationSDP(object):
         return solverargs
 
     def _reset_solution(self) -> None:
-        """
-        Documentation needed.
-        """
+        """Resets class attributes storing the solution to the SDP
+        relaxation."""
         for attribute in {"primal_objective",
                           "objective_value",
                           "solution_object"}:
@@ -1910,8 +1909,14 @@ class InflationSDP(object):
         self.status = "Not yet solved"
 
     def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
-        """
-        Documentation needed.
+        """Set upper bounds for variables in the SDP relaxation.
+
+        Parameters
+        ----------
+        upperbounds : Union[dict, None]
+            Dictionary with keys as moments and values as upper bounds. The
+            keys can be either strings, instances of `CompoundMonomial` or
+            moments encoded as 2D arrays.
         """
         self._reset_upperbounds()
         if upperbounds is None:
@@ -1931,8 +1936,14 @@ class InflationSDP(object):
         self._update_upperbounds()
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
-        """
-        Documentation needed.
+        """Set lower bounds for variables in the SDP relaxation.
+
+        Parameters
+        ----------
+        upperbounds : Union[dict, None]
+            Dictionary with keys as moments and values as upper bounds. The
+            keys can be either strings, instances of `CompoundMonomial` or
+            moments encoded as 2D arrays.
         """
         self._reset_lowerbounds()
         if lowerbounds is None:
@@ -1969,7 +1980,25 @@ class InflationSDP(object):
     def _to_canonical_memoized(self,
                                array2d: np.ndarray,
                                apply_only_commutations=False) -> np.ndarray:
-        """DOCUMENTATION NEEDED"""
+        """Cached function to convert a monomial to its canonical form. 
+        
+        It checks whether the input monomial's canonical form has already been
+        calculated and stored in the `self.canon_ndarray_from_hash`. If not, it
+        calculates it. 
+
+        Parameters
+        ----------
+        array2d : np.ndarray
+            Moment encoded as a 2D array. 
+        apply_only_commutations : bool, optional
+            If True, skip the removal of projector squares and the test to see
+            if the monomial is equal to zero, by default False.
+
+        Returns
+        -------
+        np.ndarray
+            Moment in canonical form.
+        """
         key = self._from_2dndarray(array2d)
         if key in self.canon_ndarray_from_hash:
             return self.canon_ndarray_from_hash[key]
