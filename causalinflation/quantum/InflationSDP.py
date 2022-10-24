@@ -33,9 +33,9 @@ from .quantum_tools import (apply_inflation_symmetries,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
-                            is_knowable,
                             party_physical_monomials,
                             reduce_inflation_indices)
+from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 from ..utils import flatten
