@@ -187,7 +187,7 @@ def is_knowable(monomial: np.ndarray) -> bool:
 def is_physical(monomial_in: Iterable[Iterable[int]],
                 sandwich_positivity=True
                 ) -> bool:
-    r"""Determines whether a monomial is physical, this is, if it always have a
+    r"""Determines whether a monomial is physical, this is, if it always has a
     non-negative expectation value.
 
     This code also supports the detection of "sandwiches", i.e., monomials
@@ -215,17 +215,19 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
         Whether the monomial has always non-negative expectation or not.
     """
     if not len(monomial_in):
-        return monomial_in
-    monomial = np.array(monomial_in, dtype=np.uint16, copy=True)
+        return True
     if sandwich_positivity:
-        monomial = remove_sandwich(monomial)
+        monomial = remove_sandwich(monomial_in)
+    else:
+        monomial = monomial_in.copy()
     nonnegative = True
     parties = np.unique(monomial[:, 0])
     for party in parties:
         party_monomial = monomial[monomial[:, 0] == party]
-        if not len(party_monomial) == 1:
+        n = len(party_monomial)
+        if not n == 1:
             factors = factorize_monomial(party_monomial)
-            if len(factors) != len(party_monomial):
+            if len(factors) != n:
                 nonnegative *= False
                 break
     return nonnegative
@@ -275,11 +277,11 @@ def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
     new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
     parties = np.unique(monomial[:, 0])
     for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party].copy()
+        party_monomial = monomial[monomial[:, 0] == party]
         party_monomial_factorized = factorize_monomial(party_monomial)
         for factor in party_monomial_factorized:
             while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
-                factor = np.delete(factor, (0, -1), axis=0)
+                factor = factor[1:-1]
             new_monomial = np.append(new_monomial, factor, axis=0)
     return new_monomial
 
