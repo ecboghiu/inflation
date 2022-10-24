@@ -384,18 +384,19 @@ class InflationSDP(object):
         """Set numerical lower or upper bounds on the moments generated in
         the SDP relaxation. 
         
-        These bounds are at the level of the SDP variables without taking
-        into consideration non-convex constraints. E.g., two individual lower
-        bounds `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` are not equivalent 
-        to `{'pA(0|0)*pB(0|0)': 0.01}` as `'pA(0|0)'`, `'pB(0|0)'` and
-        `'pA(0|0)*pB(0|0)'` are independent variables in the SDP. The latter
-        lower bound needs to be set manually. More complex bounds, e.g.,
-        in terms of other variables, should be set as inequality constraints. 
+        These bounds are at the level of the SDP variables without taking into
+        consideration non-convex constraints. E.g., two individual lower bounds
+        `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` are not equivalent to
+        `{'pA(0|0)*pB(0|0)': 0.01}`. The latter lower bound needs to be set
+        manually. More complex bounds, e.g., in terms of other variables, should
+        be set as inequality constraints. 
 
         Parameters
         ----------
         bounds : Union[dict, None]
             A dictionary with keys as monomials and values being the bounds.
+            The keys can be either CompoundMonomial objects, or names (`str`)
+            of Monomial objects.
         bound_type : str, optional
             Specifies whether we are setting upper ("up") or lower ("lo")
             bounds, by default "up".
@@ -1021,26 +1022,24 @@ class InflationSDP(object):
     ###########################################################################
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
         """Construct an instance of the `InternalAtomicMonomial` class from
-        a 2D array description of a monomial. 
+        a 2D array description of a monomial. An atomic moment is a moment that
+        does not factorize into a product of other moments. 
         
-        A monomial `M=Op1*Op2*...*Opn` is specified by a 2D array `array2d` with
-        `n` rows, one for each operator. The order of the rows is the same as
-        the order in which the operators are multiplied in the monomial. There
-        are `3+nr_sources` columns, one for each property of the operator. The
-        first column is an index from `1` to `nr_parties` indicating the party,
-        the next `nr_sources` indices indicate on which copy of the source `i`
-        the operator is acting (integer `0` represents no support on that
-        source), and the second-to-last and last columns encode the setting and
-        the outcome of the operator, respectively. 
+        A moment `M=<Op1*Op2*...*Opn>` is specified by a 2D array `array2d` with
+        `n` rows, one for each operator `Opk`. The order of the rows is the same
+        as the order in which the operators are multiplied in the monomial.
+        There are `3+nr_sources` columns, one for each property of the operator,
+        where `n_sources` is the number of sources in the DAG. The first column
+        is an index in `{1,...,nr_parties}` indicating the party, where where
+        `nr_parties` is the number of parties in the DAG. The second-to-last and
+        last columns encode the setting and the outcome of the operator,
+        respectively. The remaining columns in-between, `nr_sources` in number,
+        indicate on which copy of the source `i` the operator is acting, with
+        value `0` representing no support on the `i`-th source. 
         
-        Example:
-        
-        `np.array([[1, 0, 1, 1, 2, 3], [2, 2, 0, 1, 1, 1]])`
-        
-        represents the monomial `A^{0,1,1}_{x=2,a=3}*B^{2,0,1}_{y=1,b=1}`, where
-        party `A` acts on copies `1` of the last two sources, and does not act
-        on the first source, and party `B` acts on copies `2` and `1` of the
-        first and last sources, and does not act on the second source.
+        The returned atomic moment is in canonical form, i.e., it cannot be
+        brought to a lower lexicographic order through symmetries nor
+        commutation rules.  
 
         Parameters
         ----------
@@ -1050,7 +1049,26 @@ class InflationSDP(object):
         Returns
         -------
         InternalAtomicMonomial
-            _description_
+            An instance of the `InternalAtomicMonomial` class representing the
+            inputted moment, brought to canonical form.
+            
+        Example
+        -------
+        The following 
+        
+        >>> InflationSDP.AtomicMonomial(np.array([[1, 0, 1, 2, 2, 3],
+                                                   [3, 2, 0, 2, 1, 1]]))
+        
+        builds the moment `<A^{0,1,2}_{x=2,a=3}*C^{2,0,2}_{z=1,c=1}>`, where
+        party `A` acts on copies 1 and 2 of the second and third sources, and
+        does not act on the first source, and party `C` acts on copies 2 of the
+        first and last sources, and does not act on the second source.
+        Furthermore, inflation symmetries are used to bring the moment to
+        canonical form, and the final moment returned is
+        `<A^{0,1,1}_{x=2,a=3}*C^{1,0,1}_{z=1,c=1}>` which has all operators
+        acting on the first source for all sources. Furthermore, the name of
+        this atomic monomial is simplified to `'pAC(31|21)'` as this moment can
+        be identified with a probability.
         """
         key = self._from_2dndarray(array2d)
         if key in self.atomic_monomial_from_hash:
