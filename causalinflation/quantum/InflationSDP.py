@@ -1019,7 +1019,7 @@ class InflationSDP(object):
     ###########################################################################
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES             #
     ###########################################################################
-    def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
+    def _AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
         """Construct an instance of the `InternalAtomicMonomial` class from
         a 2D array description of a monomial. An atomic moment is a moment that
         does not factorize into a product of other moments. 
@@ -1055,7 +1055,7 @@ class InflationSDP(object):
         -------
         The following 
         
-        >>> InflationSDP.AtomicMonomial(np.array([[1, 0, 1, 2, 2, 3],
+        >>> InflationSDP._AtomicMonomial(np.array([[1, 0, 1, 2, 2, 3],
                                                    [3, 2, 0, 2, 1, 1]]))
         
         builds the moment `<A^{0,1,2}_{x=2,a=3}*C^{2,0,2}_{z=1,c=1}>`, where
@@ -1086,10 +1086,24 @@ class InflationSDP(object):
                 return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
-        """The constructor function for initializing CompoundMonomial instances with memoization.
-        BETTER DOCUMENTATION NEEDED"""
+        """Create an instance of the `CompoundMonomial` class from a 2D array.
+
+        
+
+        Parameters
+        ----------
+        array2d : np.ndarray
+            _description_
+        idx : int, optional
+            _description_, by default -1
+
+        Returns
+        -------
+        CompoundMonomial
+            _description_
+        """
         _factors = factorize_monomial(array2d, canonical_order=False)
-        list_of_atoms = [self.AtomicMonomial(factor)
+        list_of_atoms = [self._AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
         mon.attach_idx(idx)
