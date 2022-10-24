@@ -313,6 +313,34 @@ def commutation_matrix(lexorder: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_inf_indices_refer_common_source(op1_inf_indxs: np.ndarray,
+                                       op2_inf_indxs: np.ndarray) -> bool_:
+    """Determine if there is any common source referred to by two
+     specifications of inflation (a.k.a. 'copy') indices.
+
+    Parameters
+    ----------
+    op1_inf_indxs : numpy.ndarray
+        An array of integers indicating which copy index of each source is
+         being referenced.
+    op2_inf_indxs : numpy.ndarray
+        An array of integers indicating which copy index of each source is
+         being referenced.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``op1_inf_indxs`` and ``op2_inf_indxs`` share a source in
+        common, ``False`` if they do not.
+    """
+    common_active_source_types = np.logical_and(op1_inf_indxs, op2_inf_indxs)
+    if not np.any(common_active_source_types):
+        return False
+    return not np.subtract(op1_inf_indxs[common_active_source_types],
+                           op2_inf_indxs[common_active_source_types]).all()
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_operators_commute(operator1: np.ndarray,
                          operator2: np.ndarray) -> bool_:
     """Determine if two operators commute. Currently, this only takes into
@@ -345,14 +373,10 @@ def nb_operators_commute(operator1: np.ndarray,
     """
     if operator1[0] != operator2[0]:  # Different parties
         return True
-    elif np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources&settings
+    if np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources & settings
         return True
-    else:
-        inf1, inf2 = operator1[1:-2], operator2[1:-2]  # Just the sources
-        inf1, inf2 = inf1[np.flatnonzero(inf1)], inf2[np.flatnonzero(inf2)]
-        # If at least one in inf1-inf2 is 0, then there is one source in common
-        # and therefore the letters don't commute.
-        return np.all(inf1 - inf2)
+    return not nb_inf_indices_refer_common_source(operator1[1:-2],
+                                                  operator2[1:-2])
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
