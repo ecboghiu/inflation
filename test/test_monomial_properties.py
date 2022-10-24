@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.quantum_tools import is_knowable
+from causalinflation.quantum.fast_npa import nb_is_knowable as is_knowable
 from causalinflation.quantum.fast_npa import nb_is_physical as is_physical
 
 
