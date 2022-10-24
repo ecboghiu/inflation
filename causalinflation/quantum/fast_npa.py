@@ -411,6 +411,34 @@ def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
     return nonnegative
 
 
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_knowable(monomial: np.ndarray) -> bool_:
+    """Determine whether a given atomic monomial admits an identification with
+    a probability of the original scenario.
+
+    Parameters
+    ----------
+    monomial : np.ndarray
+        List of operators, denoted each by a list of indices
+
+    Returns
+    -------
+    bool
+        Whether the monomial is knowable or not.
+    """
+    if len(monomial) <= 1:
+        return True
+    # Knowable monomials have at most one operator per party and one copy of
+    # each source in the DAG
+    parties = monomial[:, 0]
+    if len(np.unique(parties)) != len(monomial):
+        return False
+    for source in monomial.T[1:-2]:
+        if len(np.unique(source[np.flatnonzero(source)])) > 1:
+            return False
+    return True
+
+
 ###############################################################################
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################

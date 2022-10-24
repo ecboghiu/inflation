@@ -125,33 +125,6 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     return factors
 
 
-def is_knowable(monomial: np.ndarray) -> bool:
-    """Determine whether a given atomic monomial admits an identification with
-    a probability of the original scenario.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        List of operators, denoted each by a list of indices
-
-    Returns
-    -------
-    bool
-        Whether the monomial is knowable or not.
-    """
-    assert monomial.ndim == 2, \
-        ("You must enter a list of operators. Hence, the number of dimensions "
-         + "of the monomial must be 2")
-    parties = monomial[:, 0].astype(int)
-    # Knowable monomials have at most one operator per party and one copy of
-    # each source in the DAG
-    if len(set(parties)) != len(parties):
-        return False
-    else:
-        return all([len(set(source[np.nonzero(source)])) <= 1
-                    for source in monomial[:, 1:-2].T])
-
-
 def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
     """Reduce the inflation indices of a monomial as much as possible. This
     procedure might not give the canonical form directly due to commutations.
