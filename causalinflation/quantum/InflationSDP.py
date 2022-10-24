@@ -387,7 +387,7 @@ class InflationSDP(object):
         the SDP relaxation. 
         
         These bounds are at the level of the SDP variables without taking
-        into consideration non-convex constriants. E.g., two individual lower
+        into consideration non-convex constraints. E.g., two individual lower
         bounds `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` are not equivalent 
         to `{'pA(0|0)*pB(0|0)': 0.01}` as `'pA(0|0)'`, `'pB(0|0)'` and
         `'pA(0|0)*pB(0|0)'` are independent variables in the SDP. The latter
