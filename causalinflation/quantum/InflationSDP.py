@@ -99,6 +99,7 @@ class InflationSDP(object):
             self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
+        self.ever_factorizes = self.InflationProblem.ever_factorizes
 
         might_have_a_zero = np.any(self.outcome_cardinalities > 1)
 
@@ -1020,7 +1021,10 @@ class InflationSDP(object):
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
         """The constructor function for initializing CompoundMonomial instances with memoization.
         BETTER DOCUMENTATION NEEDED"""
-        _factors = factorize_monomial(array2d, canonical_order=False)
+        if self.ever_factorizes:
+            _factors = factorize_monomial(array2d, canonical_order=False)
+        else:
+            _factors = (array2d,)
         list_of_atoms = [self.AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
