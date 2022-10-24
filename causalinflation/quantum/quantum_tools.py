@@ -9,7 +9,7 @@ import sympy
 from copy import deepcopy
 from itertools import permutations, product
 from scipy.sparse import dok_matrix
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List, Tuple
 
 from .fast_npa import (apply_source_perm,
                        dot_mon,
