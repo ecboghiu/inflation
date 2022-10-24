@@ -383,7 +383,29 @@ class InflationSDP(object):
     def set_bounds(self,
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
-        """Documentation needed
+        """Set numerical lower or upper bounds on the moments generated in
+        the SDP relaxation. 
+        
+        These bounds are at the level of the SDP variables without taking
+        into consideration non-convex constriants. E.g., two individual lower
+        bounds `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` are not equivalent 
+        to `{'pA(0|0)*pB(0|0)': 0.01}` as `'pA(0|0)'`, `'pB(0|0)'` and
+        `'pA(0|0)*pB(0|0)'` are independent variables in the SDP. The latter
+        lower bound needs to be set manually. More complex bounds, e.g.,
+        in terms of other variables, should be set as inequality constraints. 
+
+        Parameters
+        ----------
+        bounds : Union[dict, None]
+            A dictionary with keys as monomials and values being the bounds.
+        bound_type : str, optional
+            Specifies whether we are setting upper ("up") or lower ("lo")
+            bounds, by default "up".
+            
+        Examples
+        --------
+        >>> set_bounds({'pAB(00|00)': 0.2}, 'lo')
+        True
         """
         assert bound_type in ["up", "lo"], \
             "The 'bound_type' argument should be either 'up' or 'lo'"
@@ -997,10 +1019,41 @@ class InflationSDP(object):
                             + " the extensions .csv, .dat-s and .mat.")
 
     ###########################################################################
-    # ROUTINES RELATED TO CONSTRUCTING COMPOUNDMONOMIAL INSTANCES             #
+    # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES             #
     ###########################################################################
     def AtomicMonomial(self, array2d: np.ndarray) -> InternalAtomicMonomial:
-        """DOCUMENTATION NEEDED"""
+        """Construct an instance of the `InternalAtomicMonomial` class from
+        a 2D array description of a monomial. 
+        
+        A monomial `M=Op1*Op2*...*Opn` is specified by a 2D array `array2d` with
+        `n` rows, one for each operator. The order of the rows is the same as
+        the order in which the operators are multiplied in the monomial. There
+        are `3+nr_sources` columns, one for each property of the operator. The
+        first column is an index from `1` to `nr_parties` indicating the party,
+        the next `nr_sources` indices indicate on which copy of the source `i`
+        the operator is acting (integer `0` represents no support on that
+        source), and the second-to-last and last columns encode the setting and
+        the outcome of the operator, respectively. 
+        
+        Example:
+        
+        `np.array([[1, 0, 1, 1, 2, 3], [2, 2, 0, 1, 1, 1]])`
+        
+        represents the monomial `A^{0,1,1}_{x=2,a=3}*B^{2,0,1}_{y=1,b=1}`, where
+        party `A` acts on copies `1` of the last two sources, and does not act
+        on the first source, and party `B` acts on copies `2` and `1` of the
+        first and last sources, and does not act on the second source.
+
+        Parameters
+        ----------
+        array2d : np.ndarray
+            Operator as an array of integers.
+
+        Returns
+        -------
+        InternalAtomicMonomial
+            _description_
+        """
         key = self._from_2dndarray(array2d)
         if key in self.atomic_monomial_from_hash:
             return self.atomic_monomial_from_hash[key]
