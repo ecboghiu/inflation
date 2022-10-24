@@ -1539,12 +1539,9 @@ class InflationSDP(object):
     def _reset_objective(self):
         """Reset the objective function."""
         self._reset_solution()
-        for attribute in {"_processed_objective", "maximize"}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
         self.objective = {self.One: 0.}
+        self._processed_objective = self.objective
+        self.maximize = False
 
     def _reset_values(self):
         """Reset the known values."""
