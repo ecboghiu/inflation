@@ -242,8 +242,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
     if mask_matrices:
         # These indices seem to be more difficult to extract later.
-        ij_F0_nonzero = [(i, j) for (i, j) in zip(*F0.nonzero()) if j >= i]
-        ij_Fi_nonzero = {x: [(i, j)
+        ij_F0_nonzero = [(int(i), int(j)) for (i, j) in zip(*F0.nonzero()) if j >= i]
+        ij_Fi_nonzero = {x: [(int(i), int(j))
                              for (i, j) in zip(*Fi[x].nonzero()) if j >= i]
                          for x in Fi}
 
