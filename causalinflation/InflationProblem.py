@@ -6,7 +6,7 @@ inflation.
 """
 import numpy as np
 
-from itertools import chain, combinations
+from itertools import chain, combinations_with_replacement
 from warnings import warn
 
 # Force warnings.warn() to omit the source code line in the message
@@ -192,18 +192,17 @@ class InflationProblem(object):
                  f"{len(self.inflation_level_per_source)}, does not coincide.")
 
         # Determine if the inflation problem has a factorizing pair of parties.
-        common_sources_patterns = [np.prod(np.vstack(pair).astype(bool),
-                                           axis=0) for pair in
-                                   combinations(self.hypergraph.T, 2)]
+        common_sources_patterns = [np.all(np.vstack(pair), axis=0) for pair in
+                                   combinations_with_replacement(self.hypergraph.T, 2)]
         inflation_levels_equal_one = (self.inflation_level_per_source == 1)
-        self.potential_for_factorization = False
+        self.ever_factorizes = False
         for common_sources_pattern in common_sources_patterns:
             # If for some two parties, the sources that they share in common
             # can all have different inflation levels, then there exists the
             # potential for factorization.
             if not np.any(common_sources_pattern) or not np.all(
                     inflation_levels_equal_one[common_sources_pattern]):
-                self.potential_for_factorization = True
+                self.ever_factorizes = True
                 break
 
 
