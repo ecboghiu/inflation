@@ -17,34 +17,34 @@ scenario = InflationProblem({"lambda": ["A", "B"],
 
 class TestKnowable(unittest.TestCase):
     def test_knowable_complete(self):
-        A12B23C31 = np.array([[1, 2, 0, 1, None, None],
-                              [2, 2, 3, 0, None, None],
-                              [3, 0, 3, 1, None, None]])
+        A12B23C31 = np.array([[1, 2, 0, 1, 0, 0],
+                              [2, 2, 3, 0, 0, 0],
+                              [3, 0, 3, 1, 0, 0]])
 
         self.assertTrue(is_knowable(A12B23C31),
                         "Monomials composed of a complete copy of the scenario"
                         + " are not identified as knowable.")
 
     def test_knowable_partial(self):
-        A11 = np.array([[1, 1, 0, 1, None, None]])
+        A11 = np.array([[1, 1, 0, 1, 0, 0]])
 
         self.assertTrue(is_knowable(A11),
                         "Knowable monomials composed of a subset of parties "
                         + "are not identified as knowable.")
 
     def test_unknowable_complete(self):
-        A11B12C22 = np.array([[1, 1, 0, 1, None, None],
-                              [2, 1, 2, 0, None, None],
-                              [3, 0, 2, 2, None, None]])
+        A11B12C22 = np.array([[1, 1, 0, 1, 0, 0],
+                              [2, 1, 2, 0, 0, 0],
+                              [3, 0, 2, 2, 0, 0]])
 
         self.assertFalse(is_knowable(A11B12C22),
                          "Monomials composed of an open copy of the scenario" +
                          " are not identified as unknowable.")
 
     def test_unknowable_partial(self):
-        A11B11C1211 = np.array([[1, 1, 0, 1, 0, 0, 0, None, None],
-                                [2, 1, 1, 0, 0, 0, 0, None, None],
-                                [3, 0, 1, 2, 1, 1, 0, None, None]])
+        A11B11C1211 = np.array([[1, 1, 0, 1, 0, 0, 0, 0, 0],
+                                [2, 1, 1, 0, 0, 0, 0, 0, 0],
+                                [3, 0, 1, 2, 1, 1, 0, 0, 0]])
 
         self.assertFalse(is_knowable(A11B11C1211),
                          "Unknowable monomials composed of a subset of parties"
