@@ -25,7 +25,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
 
     Now follows an extended description of how the SDP is encoded. In general,
-    it is prefered to solve using the dual formulation, which is the default.
+    it is preferred to solve using the dual formulation, which is the default.
 
     The primal is written as follows:
 

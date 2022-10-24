@@ -284,7 +284,7 @@ class CompoundMonomial(object):
 
     @property
     def _symbols_of_factors(self):
-        """Generate a sympy Symbol per factos in the Monomial."""
+        """Generate a sympy Symbol per factor in the Monomial."""
         return [factor.symbol for factor in self.factors]
 
     def attach_idx(self, idx: int):
