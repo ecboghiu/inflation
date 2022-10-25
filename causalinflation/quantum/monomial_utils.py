@@ -113,7 +113,7 @@ def symbol_prod(atomic_symbols: List[sympy.core.symbol.Symbol]
     Returns
     -------
     sympy.core.mul.Mul
-        The product of the symbols inputed.
+        The product of the symbols inputted.
     """
     prod = sympy.S.One
     for sym in atomic_symbols:
