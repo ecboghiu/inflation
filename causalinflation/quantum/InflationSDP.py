@@ -329,10 +329,8 @@ class InflationSDP(object):
         if self.commuting:
             self.physical_monomials = self.monomials
         else:
-            self.physical_monomials = list()
-            for mon in self.monomials:
-                if mon.is_physical:
-                    self.physical_monomials.append(mon)
+            self.physical_monomials = [mon for mon in self.monomials
+                                       if mon.is_physical]
             if self.verbose > 1:
                 print(f"The problem has {len(self.physical_monomials)} " +
                       "non-negative monomials.")
@@ -373,8 +371,8 @@ class InflationSDP(object):
 
         # Get mask matrices associated with each monomial
         for mon in tqdm(self.monomials,
-                           disable=not self.verbose,
-                           desc="Assigning mask matrices  "):
+                        disable=not self.verbose,
+                        desc="Assigning mask matrices  "):
             mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
         self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
 
@@ -384,14 +382,14 @@ class InflationSDP(object):
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
         """Set numerical lower or upper bounds on the moments generated in
-        the SDP relaxation. 
-        
+        the SDP relaxation.
+
         These bounds are at the level of the SDP variables without taking into
         consideration non-convex constraints. E.g., two individual lower bounds
         `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` are not equivalent to
         `{'pA(0|0)*pB(0|0)': 0.01}`. The latter lower bound needs to be set
         manually. More complex bounds, e.g., in terms of other variables, should
-        be set as inequality constraints. 
+        be set as inequality constraints.
 
         Parameters
         ----------
@@ -402,7 +400,7 @@ class InflationSDP(object):
         bound_type : str, optional
             Specifies whether we are setting upper ("up") or lower ("lo")
             bounds, by default "up".
-            
+
         Examples
         --------
         >>> set_bounds({'pAB(00|00)': 0.2}, 'lo')
@@ -996,8 +994,9 @@ class InflationSDP(object):
         Parameters
         ----------
         filename : str
-            Name of the exported file. If no file format is
-            specified, it defaults to sparse SDPA format.
+            Name of the exported file. If no file format is specified, it
+            defaults to sparse SDPA format. Supported formats are ``.mat``
+            (MATLAB), ``.dat-s`` (SDPA), and ``.csv`` (human-readable).
         """
         # Determine file extension
         parts = filename.split(".")
@@ -1027,8 +1026,8 @@ class InflationSDP(object):
                         array2d: np.ndarray) -> InternalAtomicMonomial:
         """Construct an instance of the `InternalAtomicMonomial` class from
         a 2D array description of a monomial.
-        
-        See the documentation of `InflationSDP.Monomial` for details on the 
+
+        See the documentation of `InflationSDP.Monomial` for details on the
         2D array encoding of a moment.
 
         Parameters
@@ -1060,11 +1059,11 @@ class InflationSDP(object):
                 return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
-        """Create an instance of the `CompoundMonomial` class from a 2D array. 
+        """Create an instance of the `CompoundMonomial` class from a 2D array.
         An instance of `CompoundMonomial` is a collection of atomic moments,
         encoded as instances of `InternalAtomicMonomial`. An atomic moment is a
         moment that cannot be broken down into products of other moments.
-        
+
         An moment `M=<Op1*Op2*...*Opn>` can be specified by a 2D array with `n`
         rows, one for each operator `Opk`. The order of the rows is the same as
         the order in which the operators are multiplied in the monomial. There
@@ -1075,15 +1074,15 @@ class InflationSDP(object):
         last columns encode the setting and the outcome of the operator,
         respectively. The remaining columns in-between indicate on which copy of
         the source `i` the operator is acting, with value `0` representing no
-        support on the `i`-th source. 
-        
+        support on the `i`-th source.
+
         For example, the moment
         `<A^{0,2,1}_{x=2,a=3}*C^{2,0,1}_{z=1,c=1}*C^{1,0,2}_{z=0,c=0}>` can be
-        represented the following 2D array: 
+        represented the following 2D array:
         >>> m = np.array([[1, 0, 2, 1, 2, 3],
-                          [3, 2, 0, 1, 1, 1], 
+                          [3, 2, 0, 1, 1, 1],
                           [3, 1, 0, 2, 0, 0]])
-                          
+
         The resulting monomial, `InflationSDP.Monomial(m)`, will be a collection
         of two `InternalAtomicMonomial`'s,
         `<A^{0,1,1}_{x=2,a=3}*C^{1,0,1}_{z=1,c=1}>` and `<C^{1,0,1}_{z=0,c=0}>`,
@@ -1091,7 +1090,7 @@ class InflationSDP(object):
         canonical form. Furthermore, each factor will be given a unique name,
         `'pAC(31|21)'` and `'pC(10|10)'`, respectively, given that they can be
         identified with a probability.
-         
+
         Parameters
         ----------
         array2d : np.ndarray
@@ -1249,7 +1248,7 @@ class InflationSDP(object):
     def _inflation_orbit_and_rep(self,
                                  monomial: np.ndarray
                                  ) -> Tuple[set, np.ndarray]:
-        """Given a monomial as a 2D array, it returns its representative 
+        """Given a monomial as a 2D array, it returns its representative
         under inflation symmetries and the orbit. Only source swaps up to the
         maximum index of the source that appears in the monomials are
         considered.
@@ -1289,11 +1288,11 @@ class InflationSDP(object):
         return seen_hashes, representative
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
-        """Return a `CompoundMonomial` built from `mon`, where `mon` can be 
+        """Return a `CompoundMonomial` built from `mon`, where `mon` can be
         either the name of a moment as a string, a SymPy variable, a monomial
         encoded as a 2D array or an integer, in case the moment is the unit
         moment or the zero moment.
-        
+
 
         Parameters
         ----------
@@ -1314,7 +1313,7 @@ class InflationSDP(object):
         Exception
             If the type of `mon` is not supported.
         """
-        
+
         if isinstance(mon, CompoundMonomial):
             return mon
         elif isinstance(mon, (sp.core.symbol.Symbol,
@@ -1757,8 +1756,8 @@ class InflationSDP(object):
 
     def _update_lowerbounds(self) -> None:
         """
-        Helper function to check that lowerbounds are consistent with the 
-        specified known values, and to keep only the lowest lowerbounds 
+        Helper function to check that lowerbounds are consistent with the
+        specified known values, and to keep only the lowest lowerbounds
         in case of redundancy.
         """
         for mon, lb in self.moment_lowerbounds.items():
@@ -1776,7 +1775,7 @@ class InflationSDP(object):
 
     def _update_upperbounds(self) -> None:
         """
-        Helper function to check that upperbounds are consistent with the 
+        Helper function to check that upperbounds are consistent with the
         specified known values.
         """
         for mon, value in self.known_moments.items():
@@ -1832,7 +1831,7 @@ class InflationSDP(object):
     def _from_2dndarray(self, array2d: np.ndarray) -> None:
         """Obtains the bytes representation of an array. The library uses this
         representation as hashes for the corresponding monomials.
-        
+
         Parameters
         ----------
         array2d : np.ndarray
@@ -1841,21 +1840,21 @@ class InflationSDP(object):
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
     def _prepare_solver_arguments(self) -> dict:
-        """Prepare arguments to pass to the solver. 
+        """Prepare arguments to pass to the solver.
 
-        The solver takes as input the following arguments, which are all 
+        The solver takes as input the following arguments, which are all
         dicts with keys as scalar SDP variables:
             * "mask_matrices": dict with values the coefficient of the key
-            variable in the SDP variable 
+            variable in the SDP variable
             * "objective": dict with values the coefficient of the key
             variable in the objective function
             * "known_vars": scalar variables that are fixed to be constant
-            * "semiknown_vars": if applicable, linear proportionality 
+            * "semiknown_vars": if applicable, linear proportionality
             constraints between scalar variables
             * "var_equalities": list of dicts where each dict gives the
-            coefficients of the keys in a linear equality constraint 
+            coefficients of the keys in a linear equality constraint
             * "inequalities": list of dicts where each dict gives the
-            coefficients of the keys in a linear inequality constraint 
+            coefficients of the keys in a linear inequality constraint
 
         Returns
         -------
@@ -1992,16 +1991,16 @@ class InflationSDP(object):
     def _to_canonical_memoized(self,
                                array2d: np.ndarray,
                                apply_only_commutations=False) -> np.ndarray:
-        """Cached function to convert a monomial to its canonical form. 
-        
+        """Cached function to convert a monomial to its canonical form.
+
         It checks whether the input monomial's canonical form has already been
         calculated and stored in the `self.canon_ndarray_from_hash`. If not, it
-        calculates it. 
+        calculates it.
 
         Parameters
         ----------
         array2d : np.ndarray
-            Moment encoded as a 2D array. 
+            Moment encoded as a 2D array.
         apply_only_commutations : bool, optional
             If True, skip the removal of projector squares and the test to see
             if the monomial is equal to zero, by default False.
