@@ -60,13 +60,8 @@ class InternalAtomicMonomial(object):
             self.is_physical = True
         elif self.is_knowable:
             self.is_physical = True
-        elif self.is_all_commuting and is_physical(self.as_ndarray):
-            self.is_physical = True
         else:
-            self.is_physical = False
-
-
-
+            self.is_physical = is_physical(self.as_ndarray)
 
     def __copy__(self):
         """Make a copy of the Monomial"""
