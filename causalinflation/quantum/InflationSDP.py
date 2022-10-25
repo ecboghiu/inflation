@@ -733,7 +733,8 @@ class InflationSDP(object):
                               chop_tol: float = 1e-10,
                               round_decimals: int = 3) -> str:
         """Give the certificate as a string with the notation of the operators
-        in the moment matrix.
+        in the moment matrix. The expression is in the form such that
+        satisfaction implies incompatibility.
 
         Parameters
         ----------
@@ -792,7 +793,7 @@ class InflationSDP(object):
                                                           prec=round_decimals)
                     else:
                         cert += f"{abs(coeff)}*{mon_name}"
-        cert += " >= 0"
+        cert += " < 0"
         return cert[1:] if cert[0] == "+" else cert
 
     ###########################################################################
