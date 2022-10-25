@@ -17,7 +17,7 @@ from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from causalinflation import InflationProblem
-from .fast_npa import (all_commuting_test,
+from .fast_npa import (nb_all_commuting,
                        apply_source_perm,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
@@ -277,9 +277,9 @@ class InflationSDP(object):
              for idx in representative_unsym_idxs.flat if idx >= 1}
         unsymidx_from_hash = {self._from_2dndarray(mon): idx for (idx, mon) in
                               unsymmetrized_corresp.items()
-                              if all_commuting_test(mon,
-                                                    self._lexorder,
-                                                    self._notcomm)}
+                              if nb_all_commuting(mon,
+                                                  self._lexorder,
+                                                  self._notcomm)}
         for (hash, idx) in unsymidx_from_hash.items():
             self.canonsym_ndarray_from_hash[hash] = \
                 self.symmetrized_corresp[self.orbits[idx]]
@@ -1129,7 +1129,7 @@ class InflationSDP(object):
             The canonical form of the conjugate of the input monomial under
             relabelling through the inflation symmetries.
         """
-        if all_commuting_test(mon, self._lexorder, self._notcomm):
+        if nb_all_commuting(mon, self._lexorder, self._notcomm):
             return mon
         else:
             return self._to_inflation_repr(reverse_mon(mon),

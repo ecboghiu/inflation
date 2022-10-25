@@ -4,7 +4,7 @@ from collections import Counter
 from functools import total_ordering
 from typing import Dict, List, Tuple
 
-from .fast_npa import all_commuting_test, mon_is_zero
+from .fast_npa import nb_all_commuting, mon_is_zero
 from .quantum_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atom_names,
@@ -48,9 +48,9 @@ class InternalAtomicMonomial(object):
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
-        self.is_all_commuting = all_commuting_test(self.as_ndarray,
-                                                   self.sdp._lexorder,
-                                                   self.sdp._notcomm)
+        self.is_all_commuting = nb_all_commuting(self.as_ndarray,
+                                                 self.sdp._lexorder,
+                                                 self.sdp._notcomm)
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
