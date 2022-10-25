@@ -1043,16 +1043,16 @@ class InflationSDP(object):
             input 2D array moment, brought to canonical form.
         """
         key = self._from_2dndarray(array2d)
-        if key in self.atomic_monomial_from_hash:
+        try:
             return self.atomic_monomial_from_hash[key]
-        else:
+        except KeyError:
             repr_array2d = self._to_inflation_repr(array2d)
             new_key      = self._from_2dndarray(repr_array2d)
-            if new_key in self.atomic_monomial_from_hash:
+            try:
                 mon = self.atomic_monomial_from_hash[new_key]
                 self.atomic_monomial_from_hash[key] = mon
                 return mon
-            else:
+            except KeyError:
                 mon = InternalAtomicMonomial(self, repr_array2d)
                 self.atomic_monomial_from_hash[key]     = mon
                 self.atomic_monomial_from_hash[new_key] = mon
@@ -2011,15 +2011,16 @@ class InflationSDP(object):
             Moment in canonical form.
         """
         key = self._from_2dndarray(array2d)
-        if key in self.canon_ndarray_from_hash:
+        try:
             return self.canon_ndarray_from_hash[key]
-        elif len(array2d) == 0 or np.array_equiv(array2d, 0):
-            self.canon_ndarray_from_hash[key] = array2d
-            return array2d
-        else:
-            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
-                                       self.commuting, apply_only_commutations)
-            new_key = self._from_2dndarray(new_array2d)
-            self.canon_ndarray_from_hash[key]     = new_array2d
-            self.canon_ndarray_from_hash[new_key] = new_array2d
-            return new_array2d
+        except KeyError:
+            if len(array2d) == 0 or np.array_equiv(array2d, 0):
+                self.canon_ndarray_from_hash[key] = array2d
+                return array2d
+            else:
+                new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
+                                           self.commuting, apply_only_commutations)
+                new_key = self._from_2dndarray(new_array2d)
+                self.canon_ndarray_from_hash[key]     = new_array2d
+                self.canon_ndarray_from_hash[new_key] = new_array2d
+                return new_array2d
