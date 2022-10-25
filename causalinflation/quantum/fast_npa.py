@@ -237,9 +237,9 @@ def to_name(monomial: np.ndarray,
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def all_commuting_test(mon: np.ndarray,
-                       lexorder: np.ndarray,
-                       notcomm: np.ndarray) -> bool_:
+def nb_all_commuting(mon: np.ndarray,
+                     lexorder: np.ndarray,
+                     notcomm: np.ndarray) -> bool_:
     """DOCUMENTATION NEEDED"""
     if len(mon) <= 1:
         return True

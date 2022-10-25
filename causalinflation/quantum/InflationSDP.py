@@ -10,14 +10,15 @@ import sympy as sp
 from collections import Counter, deque
 from functools import reduce
 from gc import collect
-from itertools import chain, count, product, permutations
+from itertools import chain, count, product, permutations, repeat
+from operator import itemgetter
 from numbers import Real
 from scipy.sparse import lil_matrix
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from causalinflation import InflationProblem
-from .fast_npa import (all_commuting_test,
+from .fast_npa import (nb_all_commuting,
                        apply_source_perm,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
@@ -277,9 +278,9 @@ class InflationSDP(object):
              for idx in representative_unsym_idxs.flat if idx >= 1}
         unsymidx_from_hash = {self._from_2dndarray(mon): idx for (idx, mon) in
                               unsymmetrized_corresp.items()
-                              if all_commuting_test(mon,
-                                                    self._lexorder,
-                                                    self._notcomm)}
+                              if nb_all_commuting(mon,
+                                                  self._lexorder,
+                                                  self._notcomm)}
         for (hash, idx) in unsymidx_from_hash.items():
             self.canonsym_ndarray_from_hash[hash] = \
                 self.symmetrized_corresp[self.orbits[idx]]
@@ -343,10 +344,9 @@ class InflationSDP(object):
 
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
-        if self.network_scenario:
-            self.moment_equalities = []
-        else:
-            self.column_level_equalities = self._discover_column_equalities()
+        self.moment_equalities = []
+        if not self.network_scenario:
+            self.column_level_equalities = self._discover_normalization_eqns()
             self.idx_level_equalities    = construct_normalization_eqs(
                                                 self.column_level_equalities,
                                                 self.momentmatrix,
@@ -354,9 +354,13 @@ class InflationSDP(object):
             if self.verbose > 1 and len(self.idx_level_equalities):
                 print("Number of normalization equalities:",
                       len(self.idx_level_equalities))
-            self.moment_equalities = [{self.compmonomial_from_idx[idx]: coeff
-                                       for idx, coeff in eq.items()}
-                                      for eq in self.idx_level_equalities]
+            for (norm_idx, summation_idxs) in self.idx_level_equalities:
+                eq_dict = {self.compmonomial_from_idx[norm_idx]: 1}
+                eq_dict.update(zip(
+                    itemgetter(*summation_idxs)(self.compmonomial_from_idx),
+                    repeat(-1)
+                ))
+                self.moment_equalities.append(eq_dict)
 
         self.moment_inequalities = []
         self.moment_upperbounds  = dict()
@@ -1040,16 +1044,16 @@ class InflationSDP(object):
             input 2D array moment, brought to canonical form.
         """
         key = self._from_2dndarray(array2d)
-        if key in self.atomic_monomial_from_hash:
+        try:
             return self.atomic_monomial_from_hash[key]
-        else:
+        except KeyError:
             repr_array2d = self._to_inflation_repr(array2d)
             new_key      = self._from_2dndarray(repr_array2d)
-            if new_key in self.atomic_monomial_from_hash:
+            try:
                 mon = self.atomic_monomial_from_hash[new_key]
                 self.atomic_monomial_from_hash[key] = mon
                 return mon
-            else:
+            except KeyError:
                 mon = InternalAtomicMonomial(self, repr_array2d)
                 self.atomic_monomial_from_hash[key]     = mon
                 self.atomic_monomial_from_hash[new_key] = mon
@@ -1130,7 +1134,7 @@ class InflationSDP(object):
             The canonical form of the conjugate of the input monomial under
             relabelling through the inflation symmetries.
         """
-        if all_commuting_test(mon, self._lexorder, self._notcomm):
+        if nb_all_commuting(mon, self._lexorder, self._notcomm):
             return mon
         else:
             return self._to_inflation_repr(reverse_mon(mon),
@@ -1505,12 +1509,20 @@ class InflationSDP(object):
         del canonical_mon_as_bytes_to_idx
         return problem_arr, idx_to_canonical_mon
 
-    def _discover_column_equalities(self) -> List[Tuple[int, Tuple[int]]]:
-        """Given the generating monomials, infer implicit equalities between
-        columns of the moment matrix. An equality is a dictionary with keys
-        being which column and values being coefficients.
-        
-        BETTER DOCUMENTATION NEEDED"""
+    def _discover_normalization_eqns(self) -> List[Tuple[int, List[int]]]:
+        """Given the generating monomials, infer implicit normalization
+        equalities between columns of the moment matrix. Each normalization
+        equality is a two element tuple; the first element is an integer
+        indicating a particular column of the moment matrix, the second element
+        is a list of integers indicating other columns of the moment matrix
+        such that the sum of the latter columns is equal to the former column.
+
+        Returns
+        -------
+        List[Tuple[int, List[int]]]
+            A list of normalization equalities between columns of the moment
+        matrix.
+        """
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
             for k, operator in enumerate(mon):
@@ -1541,8 +1553,7 @@ class InflationSDP(object):
                         try:
                             j = self.genmon_hash_to_index[
                                 self._from_2dndarray(normalization_mon)]
-                            column_level_equalities.append((j,
-                                                            tuple(positions)))
+                            column_level_equalities.append((j, positions))
                         except KeyError:
                             break
         return column_level_equalities
@@ -2001,15 +2012,16 @@ class InflationSDP(object):
             Moment in canonical form.
         """
         key = self._from_2dndarray(array2d)
-        if key in self.canon_ndarray_from_hash:
+        try:
             return self.canon_ndarray_from_hash[key]
-        elif len(array2d) == 0 or np.array_equiv(array2d, 0):
-            self.canon_ndarray_from_hash[key] = array2d
-            return array2d
-        else:
-            new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
-                                       self.commuting, apply_only_commutations)
-            new_key = self._from_2dndarray(new_array2d)
-            self.canon_ndarray_from_hash[key]     = new_array2d
-            self.canon_ndarray_from_hash[new_key] = new_array2d
-            return new_array2d
+        except KeyError:
+            if len(array2d) == 0 or np.array_equiv(array2d, 0):
+                self.canon_ndarray_from_hash[key] = array2d
+                return array2d
+            else:
+                new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
+                                           self.commuting, apply_only_commutations)
+                new_key = self._from_2dndarray(new_array2d)
+                self.canon_ndarray_from_hash[key]     = new_array2d
+                self.canon_ndarray_from_hash[new_key] = new_array2d
+                return new_array2d

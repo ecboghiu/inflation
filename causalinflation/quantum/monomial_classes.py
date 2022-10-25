@@ -4,7 +4,7 @@ from collections import Counter
 from functools import total_ordering
 from typing import Dict, List, Tuple
 
-from .fast_npa import all_commuting_test, mon_is_zero
+from .fast_npa import nb_all_commuting, mon_is_zero
 from .quantum_tools import is_physical
 from .monomial_utils import (compute_marginal,
                              name_from_atom_names,
@@ -28,9 +28,11 @@ class InternalAtomicMonomial(object):
 
     def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
         """
-        This uses methods from the InflationSDP instance, and so must be constructed with that passed as first argument.
+        This uses methods from the InflationSDP instance, and so must be
+        constructed with that passed as first argument.
 
-        DOCUMENTATION NEEDED: What is this object, what and where it is used for, and what it does.
+        DOCUMENTATION NEEDED: What is this object, what and where it is used
+        for, and what it does.
         """
         self.sdp        = inflation_sdp_instance
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
@@ -46,9 +48,9 @@ class InternalAtomicMonomial(object):
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
-        self.is_all_commuting = all_commuting_test(self.as_ndarray,
-                                                   self.sdp._lexorder,
-                                                   self.sdp._notcomm)
+        self.is_all_commuting = nb_all_commuting(self.as_ndarray,
+                                                 self.sdp._lexorder,
+                                                 self.sdp._notcomm)
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -60,13 +62,8 @@ class InternalAtomicMonomial(object):
             self.is_physical = True
         elif self.is_knowable:
             self.is_physical = True
-        elif self.is_all_commuting and is_physical(self.as_ndarray):
-            self.is_physical = True
         else:
-            self.is_physical = False
-
-
-
+            self.is_physical = is_physical(self.as_ndarray)
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -118,7 +115,7 @@ class InternalAtomicMonomial(object):
         """Whether the atomic monomial is equivalent to its conjugate
          under inflation symmetries and commutation.
         """
-        return (self == self.dagger)
+        return self == self.dagger
 
     @property
     def name(self):
@@ -138,7 +135,8 @@ class InternalAtomicMonomial(object):
             inputs  = [str(input) for input in self.rectified_ndarray[:, -2]]
             outputs = [str(output) for output in self.rectified_ndarray[:, -1]]
             p_divider = "" if all(len(p) == 1 for p in parties) else ","
-            # We will probably never have more than 1 digit cardinalities, but who knows...
+            # We will probably never have more than 1 digit cardinalities,
+            # but who knows...
             i_divider = "" if all(len(i) == 1 for i in inputs) else ","
             o_divider = "" if all(len(o) == 1 for o in outputs) else ","
             return ("p" + p_divider.join(parties) +
@@ -208,10 +206,11 @@ class CompoundMonomial(object):
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
         """
-        This class is designed to categorize monomials into known, semiknown, unknown, etc.
-        It also computes names for expectation values, and provides the ability to compare (in)equivalence.
-
-        DOCUMENTATION NEEDED. What is this object, what is the input, what it is supposed to do.
+        This class is designed to categorize monomials into known, semiknown,
+        unknown, etc. It also computes names for expectation values, and
+        provides the ability to compare (in)equivalence.
+        DOCUMENTATION NEEDED. What is this object, what is the input, what it
+        is supposed to do.
         """
         default_factors    = tuple(sorted(monomials))
         conjugate_factors  = tuple(sorted(factor.dagger

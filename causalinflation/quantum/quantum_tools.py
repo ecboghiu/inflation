@@ -8,7 +8,6 @@ import sympy
 
 from copy import deepcopy
 from itertools import permutations, product
-from scipy.sparse import dok_matrix
 from typing import Dict, Iterable, List, Tuple
 
 from .fast_npa import (apply_source_perm,
@@ -480,35 +479,33 @@ def commutation_relations(infSDP):
     return nonzero(data)
 
 
-def construct_normalization_eqs(column_equalities: List[Dict[int, float]],
+def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
                                 momentmatrix: np.ndarray,
                                 verbose=0,
-                                ) -> List[Dict[int, float]]:
-    """Given a list of column level equalities and the momentmatrix it computes
-    the implicit equalities between indices in the moment matrix.
-    BETTER DOCUMENTATION NEEDED"""
+                                ) -> List[Tuple[int, List[int]]]:
+    """Given a list of column level normalization equalities and the moment
+    matrix, this function computes the implicit normalization equalities
+    between matrix elements. Column-level and monomial-level equalities share
+    nearly the same format, they differ merely in whether integers pertain to
+    column indices or the indices that represent the unique moment matrix
+    elements.
+    """
     equalities = []
     seen_already = set()
+    nof_seen_already = len(seen_already)
     for equality in tqdm(column_equalities,
                          disable=not verbose,
                          desc="Imposing normalization   "):
         for i, row in enumerate(iter(momentmatrix)):
             (normalization_col, summation_cols) = equality
             norm_idx       = row[normalization_col]
-            summation_idxs = row.take(summation_cols)
-            summation_idxs.sort()
-            summation_idxs = summation_idxs[np.flatnonzero(summation_idxs)]
-            summation_idxs = tuple(summation_idxs.tolist())
-            if not ((len(summation_idxs) == 1
-                     and np.array_equiv(norm_idx, summation_idxs))
-                    or (len(summation_idxs) == 0 and norm_idx == 0)):
-                signature = (norm_idx, summation_idxs)
-                if signature not in seen_already:
-                    seen_already.add(signature)
-                    eq = {**{norm_idx: 1},
-                          **{idx: -1 for idx in summation_idxs}}
-                    equalities.append(eq)
-                    del signature, eq
+            summation_idxs = row[summation_cols]
+            if summation_idxs.all():
+                summation_idxs.sort()
+                seen_already.add(tuple(summation_idxs.flat))
+                if len(seen_already) > nof_seen_already:
+                    equalities.append((norm_idx, summation_idxs.tolist()))
+                    nof_seen_already += 1
     del seen_already
     return equalities
 
