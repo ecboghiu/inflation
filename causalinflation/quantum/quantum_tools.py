@@ -183,7 +183,7 @@ def is_knowable(monomial: np.ndarray) -> bool:
                     for source in monomial[:, 1:-2].T])
 
 
-def is_physical(monomial_in: Iterable[Iterable[int]],
+def is_physical(monomial_in: np.ndarray,
                 sandwich_positivity=True
                 ) -> bool:
     r"""Determines whether a monomial is physical, this is, if it always has a
@@ -203,7 +203,7 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
 
     Parameters
     ----------
-    monomial_in : Union[List[List[int]], numpy.ndarray]
+    monomial_in : numpy.ndarray
         Input monomial in 2d array format.
     sandwich_positivity : bool, optional
         Whether to consider sandwiching. By default ``True``.
@@ -213,12 +213,14 @@ def is_physical(monomial_in: Iterable[Iterable[int]],
     bool
         Whether the monomial has always non-negative expectation or not.
     """
-    if not len(monomial_in):
+    if len(monomial_in) <= 1:
         return True
     if sandwich_positivity:
         monomial = remove_sandwich(monomial_in)
+        if len(monomial) <= 1:
+            return True
     else:
-        monomial = monomial_in.copy()
+        monomial = monomial_in
     nonnegative = True
     parties = np.unique(monomial[:, 0])
     for party in parties:
