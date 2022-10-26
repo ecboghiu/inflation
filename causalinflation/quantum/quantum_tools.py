@@ -221,7 +221,6 @@ def is_physical(monomial_in: np.ndarray,
             return True
     else:
         monomial = monomial_in
-    nonnegative = True
     parties = np.unique(monomial[:, 0])
     for party in parties:
         party_monomial = monomial[monomial[:, 0] == party]
@@ -229,9 +228,8 @@ def is_physical(monomial_in: np.ndarray,
         if not n == 1:
             factors = factorize_monomial(party_monomial)
             if len(factors) != n:
-                nonnegative *= False
-                break
-    return nonnegative
+                return False
+    return True
 
 
 def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
