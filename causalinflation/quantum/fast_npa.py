@@ -392,23 +392,23 @@ def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
     bool
         Whether the monomial has always non-negative expectation or not.
     """
-    if not len(monomial_in):
+    if len(monomial_in) <= 1:
         return True
     if sandwich_positivity:
         monomial = nb_remove_sandwich(monomial_in)
+        if len(monomial) <= 1:
+            return True
     else:
-        monomial = monomial_in.copy()
-    nonnegative = True
+        monomial = monomial_in
     parties = np.unique(monomial[:, 0])
     for party in parties:
         party_monomial = monomial[monomial[:, 0] == party]
         n = len(party_monomial)
         if not n == 1:
             component_labels = nb_monomial_to_components(party_monomial)
-            if component_labels.max() + 1 != len(party_monomial):
-                nonnegative = False
-                break
-    return nonnegative
+            if np.max(component_labels) + 1 != n:
+                return False
+    return True
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
