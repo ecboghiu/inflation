@@ -4,8 +4,7 @@ from collections import Counter
 from functools import total_ordering
 from typing import Dict, List, Tuple
 
-from .fast_npa import all_commuting_test, mon_is_zero
-from .fast_npa import nb_is_physical as is_physical
+from .fast_npa import mon_is_zero, nb_remove_sandwich
 from .monomial_utils import (compute_marginal,
                              name_from_atom_names,
                              symbol_from_atom_name,
@@ -19,6 +18,7 @@ class InternalAtomicMonomial(object):
                  "is_zero",
                  "is_knowable",
                  "is_all_commuting",
+                 "is_physical",
                  "n_operators",
                  "op_length",
                  "rectified_ndarray",
@@ -45,9 +45,12 @@ class InternalAtomicMonomial(object):
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
-        self.is_all_commuting = all_commuting_test(self.as_ndarray,
-                                                   self.sdp._lexorder,
-                                                   self.sdp._notcomm)
+        self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
+        if self.is_all_commuting or self.n_operators <= 1:
+            self.is_physical = True
+        else:
+            self.is_physical = self.sdp.all_commuting_q(
+                nb_remove_sandwich(self.as_ndarray))
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -100,13 +103,6 @@ class InternalAtomicMonomial(object):
             return dagger
         else:
             return self
-
-    @property
-    def is_physical(self):
-        """Whether the expectation value of the monomial is non-negative for
-        any quantum state.
-        """
-        return self.is_knowable or is_physical(self.as_ndarray)
 
     @property
     def is_hermitian(self):

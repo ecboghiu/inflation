@@ -443,7 +443,7 @@ def nb_is_knowable(monomial: np.ndarray) -> bool_:
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def all_commuting_test(mon: np.ndarray,
+def nb_all_commuting_q(mon: np.ndarray,
                        lexorder: np.ndarray,
                        notcomm: np.ndarray) -> bool_:
     """DOCUMENTATION NEEDED"""
