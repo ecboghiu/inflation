@@ -612,8 +612,11 @@ def party_physical_monomials(hypergraph: np.ndarray,
     outputs_per_party : List[int]
         List containing the cardinality of the output/measurement outcome
         of each party.
-    DOCUMENTATION MISSING
-
+    lexorder : numpy.ndarray
+        A matrix storing the lexicographic order of operators. If an operator
+        has lexicographic rank `i`, then it is placed at the ``i``-th row of
+        lexorder.
+        
     Returns
     -------
     List[numpy.ndarray]
