@@ -240,7 +240,26 @@ def to_name(monomial: np.ndarray,
 def nb_all_commuting(mon: np.ndarray,
                      lexorder: np.ndarray,
                      notcomm: np.ndarray) -> bool_:
-    """DOCUMENTATION NEEDED"""
+    """Check if all operators in the monomial commute.
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Input monomial in 2d array format.
+    lexorder : numpy.ndarray
+        A matrix where each row is an operator, and the `i`-th row stores
+        the operator with lexicographic rank `i`.
+    notcomm : numpy.ndarray
+        Matrix of commutation relations. Each operator can be identified by
+        and integer `i` which also doubles as its lexicographic rank. Given
+        two operators with ranks `i`, `j`, `notcomm[i, j]` is 1 if the 
+        operators do not commute, and 0 if they do.
+
+    Returns
+    -------
+    bool
+        Return `True` if all operators commute, and `False` otherwise.
+    """
     if len(mon) <= 1:
         return True
     lexmon = nb_mon_to_lexrepr(mon, lexorder)
@@ -441,10 +460,17 @@ def to_canonical(mon: np.ndarray,
     Parameters
     ----------
     mon : numpy.ndarray
-        Input monomial in 2d array format.
-    DOCUMENTATION MISSING
+        Input monomial in 2D array format.
+    notcomm : numpy.ndarray
+        Matrix of commutation relations. Each operator can be identified by
+        and integer `i` which also doubles as its lexicographic rank. Given
+        two operators with ranks `i`, `j`, `notcomm[i, j]` is 1 if the 
+        operators do not commute, and 0 if they do.
+    lexorder : numpy.ndarray
+        A matrix where each row is an operator, and the `i`-th row stores
+        the operator with lexicographic rank `i`.
     commuting : bool, optional
-        Whether the variables in the problem commute or not. By default
+        Whether all the variables in the problem commute or not. By default
         ``False``.
     apply_only_commutations : bool, optional
         If ``True``, skip the removal of projector squares and the test to see
@@ -482,10 +508,19 @@ def order_via_commutation(mon: np.ndarray,
     Parameters
     ----------
     mon : numpy.ndarray
-        Input monomial in 2d array format.
-
-    DOCUMENTATION MISSING
-
+        Input monomial in 2D array format.
+    notcomm : numpy.ndarray
+        Matrix of commutation relations. Each operator can be identified by
+        and integer `i` which also doubles as its lexicographic rank. Given
+        two operators with ranks `i`, `j`, `notcomm[i, j]` is 1 if the 
+        operators do not commute, and 0 if they do.
+    lexorder : numpy.ndarray
+        A matrix where each row is an operator, and the `i`-th row stores
+        the operator with lexicographic rank `i`.
+    commuting : bool, optional
+        Whether all the variables in the problem commute or not. By default
+        ``False``.
+        
     Returns
     -------
     numpy.ndarray
