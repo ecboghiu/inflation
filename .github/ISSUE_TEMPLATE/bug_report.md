@@ -16,7 +16,6 @@ Steps to reproduce the behavior, hopefully a minimal example showcasing the bug.
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-
 **OS Information:**
 Please specify the platform and the package versions you are using. You can use the output from `causalinflation.about()`.
 
