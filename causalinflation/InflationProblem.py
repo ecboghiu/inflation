@@ -174,7 +174,7 @@ class InflationProblem(object):
              + f"{self.hypergraph.shape[1]} and from the specification of "
              + f"outcomes it is {self.nr_parties} instead.")
 
-        if len(inflation_level_per_source) == 0:
+        if not inflation_level_per_source:
             if self.verbose > 0:
                 warn("The inflation level per source must be a non-empty list."
                      + " Defaulting to 1 (no inflation, just NPA hierarchy).")
