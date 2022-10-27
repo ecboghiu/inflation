@@ -32,12 +32,13 @@ class InflationProblem(object):
     settings_per_party : List[int], optional
         Measurement setting cardinalities. By default ``1`` for all parties.
     inflation_level_per_source : [int, List[int]], optional
-        Number of copies per source in the inflated graph. If an integer is
-        provided, it is used as the inflation level for all sources. By default
-        ``1`` for all sources.
+        Number of copies per source in the inflated graph. Source order is the 
+        same as insertion order in `dag`. If an integer is provided, it is used
+        as the inflation level for all sources. By default ``1`` for all sources. 
     order : List[str], optional
-        Name of each party, default is alphabetical labels, e.g.,
-        ``['A', 'B', ...]``.
+        Name of each party. This also fixes the order in which party outcomes
+        and settings are to appear in a conditional probability distribution. 
+        Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
     verbose : int, optional
         Optional parameter for level of verbose:
 
