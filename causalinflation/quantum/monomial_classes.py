@@ -27,9 +27,11 @@ class InternalAtomicMonomial(object):
 
     def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
         """
-        This uses methods from the InflationSDP instance, and so must be constructed with that passed as first argument.
+        This uses methods from the InflationSDP instance, and so must be
+        constructed with that passed as first argument.
 
-        DOCUMENTATION NEEDED: What is this object, what and where it is used for, and what it does.
+        DOCUMENTATION NEEDED: What is this object, what and where it is used
+        for, and what it does.
         """
         self.sdp        = inflation_sdp_instance
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
@@ -109,7 +111,7 @@ class InternalAtomicMonomial(object):
         """Whether the atomic monomial is equivalent to its conjugate
          under inflation symmetries and commutation.
         """
-        return (self == self.dagger)
+        return self == self.dagger
 
     @property
     def name(self):
@@ -129,7 +131,8 @@ class InternalAtomicMonomial(object):
             inputs  = [str(input) for input in self.rectified_ndarray[:, -2]]
             outputs = [str(output) for output in self.rectified_ndarray[:, -1]]
             p_divider = "" if all(len(p) == 1 for p in parties) else ","
-            # We will probably never have more than 1 digit cardinalities, but who knows...
+            # We will probably never have more than 1 digit cardinalities,
+            # but who knows...
             i_divider = "" if all(len(i) == 1 for i in inputs) else ","
             o_divider = "" if all(len(o) == 1 for o in outputs) else ","
             return ("p" + p_divider.join(parties) +
@@ -181,6 +184,7 @@ class CompoundMonomial(object):
                  "is_zero",
                  "is_one",
                  "n_factors",
+                 "n_operators",
                  "knowable_factors",
                  "unknowable_factors",
                  "n_knowable_factors",
@@ -188,21 +192,28 @@ class CompoundMonomial(object):
                  "knowability_status",
                  "is_knowable",
                  "idx",
-                 "mask_matrix"
+                 "mask_matrix",
+                 "is_physical",
+                 "as_counter",
+                 "name",
+                 "symbol",
+                 "signature"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
         """
-        This class is designed to categorize monomials into known, semiknown, unknown, etc.
-        It also computes names for expectation values, and provides the ability to compare (in)equivalence.
-
-        DOCUMENTATION NEEDED. What is this object, what is the input, what it is supposed to do.
+        This class is designed to categorize monomials into known, semiknown,
+        unknown, etc. It also computes names for expectation values, and
+        provides the ability to compare (in)equivalence.
+        DOCUMENTATION NEEDED. What is this object, what is the input, what it
+        is supposed to do.
         """
         default_factors    = tuple(sorted(monomials))
         conjugate_factors  = tuple(sorted(factor.dagger
                                           for factor in monomials))
         self.factors       = min(default_factors, conjugate_factors)
         self.n_factors     = len(self.factors)
+        self.n_operators   = sum(factor.n_operators for factor in self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
         self.is_all_commuting = all(factor.is_all_commuting
@@ -227,6 +238,11 @@ class CompoundMonomial(object):
         self.is_zero = any(factor.is_zero for factor in self.factors)
         self.is_one  = (all(factor.is_one for factor in self.factors)
                         or (self.n_factors == 0))
+        self.is_physical = all(factor.is_physical for factor in self.factors)
+        self.as_counter  = Counter(self.factors)
+        self.name        = name_from_atom_names(self._names_of_factors)
+        self.symbol      = symbol_prod(self._symbols_of_factors)
+        self.signature   = tuple(sorted(self.factors))
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
@@ -257,48 +273,13 @@ class CompoundMonomial(object):
         return self.name
 
     @property
-    def as_counter(self):
-        """DOCUMENTATION NEEDED."""
-        return Counter(self.factors)
-
-    @property
-    def is_physical(self):
-        """Whether the expectation value of the monomial is non-negative for
-        any quantum state.
-        """
-        return all(factor.is_physical for factor in self.factors)
-
-    @property
-    def n_operators(self):
-        """Return the amount of operators in the Monomial."""
-        return sum(factor.n_operators for factor in self.factors)
-
-    @property
-    def name(self):
-        """A string representing the monomial. It merely combines the names of
-        the factors.
-        """
-        return name_from_atom_names(self._names_of_factors)
-
-    @property
-    def signature(self):
-        """DOCUMENTATION NEEDED."""
-        return tuple(sorted(self.factors))
-
-    @property
-    def symbol(self):
-        """Return a product of sympy Symbols representing all the factors in
-        the Monomial."""
-        return symbol_prod(self._symbols_of_factors)
-
-    @property
     def _names_of_factors(self):
         """Return the names of each of the factors in the Monomial."""
         return [factor.name for factor in self.factors]
 
     @property
     def _symbols_of_factors(self):
-        """Generate a sympy Symbol per factos in the Monomial."""
+        """Generate a sympy Symbol per factor in the Monomial."""
         return [factor.symbol for factor in self.factors]
 
     def attach_idx(self, idx: int):

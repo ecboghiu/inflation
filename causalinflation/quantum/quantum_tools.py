@@ -8,7 +8,6 @@ import sympy
 
 from copy import deepcopy
 from itertools import permutations, product
-from scipy.sparse import dok_matrix
 from typing import Dict, List, Tuple
 
 from .fast_npa import (apply_source_perm,
@@ -158,10 +157,8 @@ def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
 def calculate_momentmatrix(cols: List,
                            notcomm: np.ndarray,
                            lexorder: np.ndarray,
-                           verbose: int = 0,
                            commuting: bool = False,
-                           dtype: object = np.uint8
-                           ) -> Tuple[np.ndarray, Dict]:
+                           verbose: int = 0) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
@@ -189,8 +186,6 @@ def calculate_momentmatrix(cols: List,
         ``False``.
     verbose : int, optional
         How much information to print. By default ``0``.
-    dtype: np.dtype, optional
-        The dtype for constructing monomials when represented as numpy arrays.
 
     Returns
     -------
@@ -201,20 +196,21 @@ def calculate_momentmatrix(cols: List,
     """
     nrcols = len(cols)
     canonical_mon_to_idx = dict()
-    momentmatrix = dok_matrix((nrcols, nrcols), dtype=np.uint32)
+    momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i in tqdm(range(nrcols),
+    for i, mon1 in tqdm(enumerate(cols),
                   disable=not verbose,
-                  desc="Calculating moment matrix"):
+                  desc="Calculating moment matrix",
+                  total=nrcols):
         for j in range(i, nrcols):
-            mon1, mon2 = cols[i], cols[j]
-            mon_v1 = to_canonical(dot_mon(mon1, mon2).astype(dtype),
+            mon2 = cols[j]
+            mon_v1 = to_canonical(dot_mon(mon1, mon2),
                                   notcomm,
                                   lexorder,
                                   commuting=commuting)
             if not mon_is_zero(mon_v1):
                 if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1).astype(dtype),
+                    mon_v2 = to_canonical(dot_mon(mon2, mon1),
                                           notcomm,
                                           lexorder,
                                           commuting=commuting)
@@ -230,7 +226,7 @@ def calculate_momentmatrix(cols: List,
                     momentmatrix[i, j] = varidx
                     momentmatrix[j, i] = varidx
                     varidx += 1
-    return momentmatrix.toarray(), canonical_mon_to_idx
+    return momentmatrix, canonical_mon_to_idx
 
 
 ###############################################################################
@@ -349,35 +345,33 @@ def commutation_relations(infSDP):
     return nonzero(data)
 
 
-def construct_normalization_eqs(column_equalities: List[Dict[int, float]],
+def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
                                 momentmatrix: np.ndarray,
                                 verbose=0,
-                                ) -> List[Dict[int, float]]:
-    """Given a list of column level equalities and the momentmatrix it computes
-    the implicit equalities between indices in the moment matrix.
-    BETTER DOCUMENTATION NEEDED"""
+                                ) -> List[Tuple[int, List[int]]]:
+    """Given a list of column level normalization equalities and the moment
+    matrix, this function computes the implicit normalization equalities
+    between matrix elements. Column-level and monomial-level equalities share
+    nearly the same format, they differ merely in whether integers pertain to
+    column indices or the indices that represent the unique moment matrix
+    elements.
+    """
     equalities = []
     seen_already = set()
+    nof_seen_already = len(seen_already)
     for equality in tqdm(column_equalities,
-                        disable=not verbose,
+                         disable=not verbose,
                          desc="Imposing normalization   "):
         for i, row in enumerate(iter(momentmatrix)):
             (normalization_col, summation_cols) = equality
             norm_idx       = row[normalization_col]
-            summation_idxs = row.take(summation_cols)
-            summation_idxs.sort()
-            summation_idxs = summation_idxs[np.flatnonzero(summation_idxs)]
-            summation_idxs = tuple(summation_idxs.tolist())
-            if not ((len(summation_idxs) == 1
-                     and np.array_equiv(norm_idx, summation_idxs))
-                    or (len(summation_idxs) == 0 and norm_idx == 0)):
-                signature = (norm_idx, summation_idxs)
-                if signature not in seen_already:
-                    seen_already.add(signature)
-                    eq = {**{norm_idx: 1},
-                          **{idx: -1 for idx in summation_idxs}}
-                    equalities.append(eq)
-                    del signature, eq
+            summation_idxs = row[summation_cols]
+            if summation_idxs.all():
+                summation_idxs.sort()
+                seen_already.add(tuple(summation_idxs.flat))
+                if len(seen_already) > nof_seen_already:
+                    equalities.append((norm_idx, summation_idxs.tolist()))
+                    nof_seen_already += 1
     del seen_already
     return equalities
 
@@ -440,7 +434,7 @@ def lexicographic_order(infSDP) -> Dict[str, int]:
 
     Parameters
     ----------
-    infSDP : causalinflation.InflationProblem
+    infSDP : causalinflation.InflationSDP
         The SDP object for which the commutation relations are to be extracted.
 
     Returns

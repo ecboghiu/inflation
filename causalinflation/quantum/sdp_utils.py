@@ -25,7 +25,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
 
     Now follows an extended description of how the SDP is encoded. In general,
-    it is prefered to solve using the dual formulation, which is the default.
+    it is preferred to solve using the dual formulation, which is the default.
 
     The primal is written as follows:
 
@@ -242,8 +242,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
     if mask_matrices:
         # These indices seem to be more difficult to extract later.
-        ij_F0_nonzero = [(i, j) for (i, j) in zip(*F0.nonzero()) if j >= i]
-        ij_Fi_nonzero = {x: [(i, j)
+        ij_F0_nonzero = [(int(i), int(j)) for (i, j) in zip(*F0.nonzero()) if j >= i]
+        ij_Fi_nonzero = {x: [(int(i), int(j))
                              for (i, j) in zip(*Fi[x].nonzero()) if j >= i]
                          for x in Fi}
 
