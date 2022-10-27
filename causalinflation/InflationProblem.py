@@ -80,7 +80,7 @@ class InflationProblem(object):
         # Assign names to the visible variables
         names_have_been_set_yet = False
         if dag:
-            implicit_names = set(chain.from_iterable(dag.values()))
+            implicit_names = set(map(str, chain.from_iterable(dag.values())))
             assert len(implicit_names) == self.nr_parties, \
                 ("You must provide a number of outcomes for the following "
                  + f"{len(implicit_names)} variables: {implicit_names}")
@@ -105,7 +105,7 @@ class InflationProblem(object):
         if order and (not names_have_been_set_yet):
             sanity_check = (len(order) == self.nr_parties)
             if sanity_check:
-                self.names = order
+                self.names = tuple(map(str, order))
                 names_have_been_set_yet = True
             else:
                 if self.verbose > 0:
@@ -123,7 +123,8 @@ class InflationProblem(object):
                      + "Defaulting to one global source.")
             self.dag = {"h_global": self.names}
         else:
-            self.dag = dag
+            self.dag = {str(parent): tuple(map(str, children)) for
+                        parent, children in dag.items()}
 
         # Unpacking of visible nodes with children
         nodes_with_children = list(self.dag.keys())
