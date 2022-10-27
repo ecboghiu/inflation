@@ -384,9 +384,9 @@ class InflationSDP(object):
         """Set numerical lower or upper bounds on the moments generated in
         the SDP relaxation.
 
-        These bounds are at the level of the SDP variables without taking into
-        consideration non-convex constraints. E.g., two individual lower bounds
-        `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` are not equivalent to
+        Note: These bounds are at the level of the SDP variables without taking
+        into consideration non-convex constraints. E.g., two individual lower
+        bounds `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` do not imply
         `{'pA(0|0)*pB(0|0)': 0.01}`. The latter lower bound needs to be set
         manually. More complex bounds, e.g., in terms of other variables, should
         be set as inequality constraints.
@@ -394,9 +394,9 @@ class InflationSDP(object):
         Parameters
         ----------
         bounds : Union[dict, None]
-            A dictionary with keys as monomials and values being the bounds.
-            The keys can be either CompoundMonomial objects, or names (`str`)
-            of Monomial objects.
+            A dictionary with keys as monomials and values being the bounds. The
+            keys can be either CompoundMonomial objects, or names (`str`) of
+            Monomial objects.
         bound_type : str, optional
             Specifies whether we are setting upper ("up") or lower ("lo")
             bounds, by default "up".
@@ -1027,8 +1027,8 @@ class InflationSDP(object):
         """Construct an instance of the `InternalAtomicMonomial` class from
         a 2D array description of a monomial.
 
-        See the documentation of `InflationSDP.Monomial` for details on the
-        2D array encoding of a moment.
+        See the documentation of the `InternalAtomicMonomial` class for more
+        details.
 
         Parameters
         ----------
@@ -1060,36 +1060,13 @@ class InflationSDP(object):
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
         """Create an instance of the `CompoundMonomial` class from a 2D array.
+        
         An instance of `CompoundMonomial` is a collection of atomic moments,
         encoded as instances of `InternalAtomicMonomial`. An atomic moment is a
         moment that cannot be broken down into products of other moments.
 
-        An moment `M=<Op1*Op2*...*Opn>` can be specified by a 2D array with `n`
-        rows, one for each operator `Opk`. The order of the rows is the same as
-        the order in which the operators are multiplied in the monomial. There
-        are `3+nr_sources` columns, one for each property of the operator, where
-        `n_sources` is the number of sources in the DAG. The first column is an
-        index in `{1,...,nr_parties}` indicating the party, where where
-        `nr_parties` is the number of parties in the DAG. The second-to-last and
-        last columns encode the setting and the outcome of the operator,
-        respectively. The remaining columns in-between indicate on which copy of
-        the source `i` the operator is acting, with value `0` representing no
-        support on the `i`-th source.
-
-        For example, the moment
-        `<A^{0,2,1}_{x=2,a=3}*C^{2,0,1}_{z=1,c=1}*C^{1,0,2}_{z=0,c=0}>` can be
-        represented the following 2D array:
-        >>> m = np.array([[1, 0, 2, 1, 2, 3],
-                          [3, 2, 0, 1, 1, 1],
-                          [3, 1, 0, 2, 0, 0]])
-
-        The resulting monomial, `InflationSDP.Monomial(m)`, will be a collection
-        of two `InternalAtomicMonomial`'s,
-        `<A^{0,1,1}_{x=2,a=3}*C^{1,0,1}_{z=1,c=1}>` and `<C^{1,0,1}_{z=0,c=0}>`,
-        after factorizing the input monomial and reducing each factor to
-        canonical form. Furthermore, each factor will be given a unique name,
-        `'pAC(31|21)'` and `'pC(10|10)'`, respectively, given that they can be
-        identified with a probability.
+        The input 2D array is first factorised into a product of atomic moments,
+        and then each atomic moment is brought into canonical form.
 
         Parameters
         ----------
@@ -1105,6 +1082,24 @@ class InflationSDP(object):
         CompoundMonomial
             The monomial factorised into AtomicMonomials, all brought to
             representative form under inflation symmetries.
+            
+        Examples
+        --------
+        
+        The moment
+        `<A^{0,2,1}_{x=2,a=3}*C^{2,0,1}_{z=1,c=1}*C^{1,0,2}_{z=0,c=0}>` can be
+        represented the following 2D array: 
+        >>> m = np.array([[1, 0, 2, 1, 2, 3],
+                          [3, 2, 0, 1, 1, 1], 
+                          [3, 1, 0, 2, 0, 0]])
+
+        The resulting monomial, `InflationSDP.Monomial(m)`, will be a collection
+        of two `InternalAtomicMonomial`'s,
+        `<A^{0,1,1}_{x=2,a=3}*C^{1,0,1}_{z=1,c=1}>` and `<C^{1,0,1}_{z=0,c=0}>`,
+        after factorizing the input monomial and reducing each factor to
+        canonical form. Furthermore, each factor will be given a unique name,
+        `'pAC(31|21)'` and `'pC(10|10)'`, respectively, given that they can be
+        identified with a probability.
         """
         _factors = factorize_monomial(array2d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
@@ -1309,7 +1304,7 @@ class InflationSDP(object):
         Raises
         ------
         Exception
-            If `mon` is the constant monomial, it can only be numbers 0 or 1.
+            If `mon` is the constant monomial, it can only be numbers 0 or 1
         Exception
             If the type of `mon` is not supported.
         """
@@ -1360,9 +1355,6 @@ class InflationSDP(object):
                         ) -> np.ndarray:
         """Build a 2D array encoding of a monomial which can be passed either
         as a string, as a SymPy expression or as an integer.
-
-        See the documentation of `InflationSDP.Moment` for a description
-        of the 2D array encoding.
 
         Parameters
         ----------
@@ -1817,7 +1809,7 @@ class InflationSDP(object):
 
     def _dump_to_file(self, filename: str) -> None:
         """
-        Saves the whole object to a file using `pickle`.
+        Saves the whole object to file using `pickle`.
 
         Parameters
         ----------

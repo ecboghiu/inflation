@@ -28,11 +28,45 @@ class InternalAtomicMonomial(object):
 
     def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
         """
-        This uses methods from the InflationSDP instance, and so must be
-        constructed with that passed as first argument.
+        This class models a moment `<Op1*Op2*...*Opn>` on the inflated problem
+        which cannot be further decomposed into products of other moments. It is
+        used as a building block for the `CompoundMonomial` class. An atomic
+        moment is initialized with a 2D array representing a moment and an
+        an instance of `InflationSDP` used for methods that depend on the
+        scenario.
+        
+        2D Array encoding
+        -----------------
+        A moment `M=<Op1*Op2*...*Opn>` can be specified by a 2D array with `n`
+        rows, one for each operator `Opk`. Row `k` contains a list of integers
+        which encode information about the operator `Opk`. 
+         * The first integer is an index in `{1,...,nr_parties}` indicating the
+           party, where where `nr_parties` is the number of parties in the DAG. 
+         * The second-to-last and last integers encode the setting and the
+           outcome of the operator, respectively. 
+         * The remaining positions `i` in-between indicate on which copy of the
+           source `i-1` (-1 because the first index encodes the party) the
+           operator is acting, with value `0` representing no support on the
+           `i-1`-th source.
 
-        DOCUMENTATION NEEDED: What is this object, what and where it is used
-        for, and what it does.
+        For example, the moment
+        `<A^{0,2,1}_{x=2,a=3}*C^{2,0,1}_{z=4,c=5}>` where the complete list
+        of parties is `['A','B','C']` can be represented the following 2D array: 
+        >>> m = np.array([[1, 0, 2, 1, 2, 3],
+                          [3, 2, 0, 1, 4, 5]])
+
+        Given that this moment is knowable and can be associated with a 
+        probability, it is given the name `'pAC(35|24)'`.
+        
+        Parameters
+        ----------
+        inflation_sdp_instance : InflationSDP
+            An instance of the InflationSDP class. It is used to access methods
+            specific to the inflation problem. E.g., when instantiating an 
+            internal atomic moment, the `InflationSDP` instance is used to
+            check if it already contains such moment.
+        array2d : numpy.ndarray
+            A moment `<Op1*Op2*...*Opn>` encoded as a 2D array.
         """
         self.sdp        = inflation_sdp_instance
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
@@ -160,7 +194,8 @@ class InternalAtomicMonomial(object):
         return symbol_from_atom_name(self.name)
 
     def compute_marginal(self, prob_array: np.ndarray) -> float:
-        """Given a probability distribution, compute the value of the Monomial.
+        """Given a probability distribution, compute the numerical value of
+        the Monomial.
 
         Parameters
         ----------
@@ -205,12 +240,21 @@ class CompoundMonomial(object):
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
-        """
-        This class is designed to categorize monomials into known, semiknown,
-        unknown, etc. It also computes names for expectation values, and
-        provides the ability to compare (in)equivalence.
-        DOCUMENTATION NEEDED. What is this object, what is the input, what it
-        is supposed to do.
+        """This class models moments `<Op1*Op2*...*Opn>=<Op1···><O'p1···>` on 
+        the inflated problem that are products of other moments. It is built
+        from a tuple of instances of the `InternalAtomicMonomial` class.
+        
+        At intialisation, a moment is classified into known, semi-known or
+        unknown based on the knowability of each of the atomic moments (which in
+        turn is determined through methods of the `InternalAtomicMonomial`
+        class). This class also computes names for the moment, provides the
+        ability to compare (in)equivalence, and to assign numerical values
+        to a moment given a probability distribution.
+        
+        Parameters
+        ----------
+        monomials : tuple of InternalAtomicMonomial
+            The atomic moments that make up the compound moment.
         """
         default_factors    = tuple(sorted(monomials))
         conjugate_factors  = tuple(sorted(factor.dagger
@@ -293,7 +337,24 @@ class CompoundMonomial(object):
             self.idx = idx
 
     def compute_marginal(self, prob_array: np.ndarray) -> float:
-        """DOCUMENTATION NEEDED."""
+        """Given a probability array, evaluate all the knowable atomic moment
+        factors in the monomial and return the product of the resulting values.
+        
+        The whole moment needs to be knowable (`self.is_knowable == True`) else
+        this method will raise an error.
+        
+        Parameters
+        ----------
+        prob_array : np.ndarray
+            A conditional probability distribution over the non-inflated
+            scenario with dimensions `(da,db,...,dx,dy,...)` (i.e., first
+            outcomes and then settings for the parties).
+            
+        See also
+        --------
+        `CompoundMonomial.evaluate`
+            This function does not rely on the knowability of the monomial.
+        """
         assert self.is_knowable, ("Only marginals of knowable monomials can " +
                                   f"be computed, and {self} is not knowable.")
         value = 1.
@@ -304,9 +365,30 @@ class CompoundMonomial(object):
     def evaluate(self,
                  known_monomials: Dict[InternalAtomicMonomial, float],
                  use_lpi_constraints=True) -> Tuple[float, List, str]:
-        """Yields both a numeric value and a CompoundMonomial corresponding to
-        the unknown part.
-        DOCUMENTATION NEEDED."""
+        """Given a dictionary of values for known atomic monomials, 
+        substitute all factors of the compound moment that are specified in
+        the dictionary with their values and return the product of the values
+        and a remainder compound moment made of the remaining factors. 
+
+        Parameters
+        ----------
+        known_monomials : Dict[InternalAtomicMonomial, float]
+            A dictionary of known atomic monomials and their values.
+        use_lpi_constraints : bool, optional
+            Whether compound moments whose factors are partially present in
+            `known_monomials` are labelled as '`Semi`' or '`Unknowable`'. If
+            `True`, they are , by default True
+
+        Returns
+        -------
+        Tuple[float, List, str]
+            A tuple where the first element is the value of the knowable parts
+            of the compound moment, the second element is a compound monomial of
+            all the remaining factors not present in `known_monomials` and the
+            third element is a string describing whether all factors are present
+            in `known_monomials` (`'Known'`), some are (`'Semi'`), or none are
+            (`'Unknown'`).
+        """
         known_value     = 1.
         unknown_counter = Counter()
         for factor, power in self.as_counter.items():
