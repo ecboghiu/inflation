@@ -1108,7 +1108,7 @@ class InflationSDP(object):
             The monomial factorised into AtomicMonomials, all brought to
             representative form under inflation symmetries.
         """
-        _factors = factorize_monomial(array2d, canonical_order=False)
+        _factors = self.factorize_monomial(array2d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)

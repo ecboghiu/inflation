@@ -218,10 +218,8 @@ class InflationProblem(object):
         self._inflation_indices_position_by_hash = {
             op.tobytes(): i
             for i, op in enumerate(inflation_indices_patterns)}
-        print(self._inflation_indices_position_by_hash)
         self._adjmat_for_factorization = nb_inf_indxs_to_adjmat(
             inflation_indices_patterns)
-
 
     def __repr__(self):
         return ("InflationProblem with " + str(self.hypergraph.tolist()) +
