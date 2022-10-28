@@ -27,46 +27,49 @@ class InternalAtomicMonomial(object):
                  ]
 
     def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
-        """
-        This class models a moment `<Op1*Op2*...*Opn>` on the inflated problem
-        which cannot be further decomposed into products of other moments. It is
-        used as a building block for the `CompoundMonomial` class. An atomic
-        moment is initialized with a 2D array representing a moment and an
-        an instance of `InflationSDP` used for methods that depend on the
-        scenario.
-        
+        r"""This class models a moment
+        :math:`\langle Op_1 Op_2\dots Op_n\rangle` on the inflated problem,
+        which cannot be decomposed into products of other moments. It is used
+        as a building block for the ``CompoundMonomial`` class. It is
+        initialized with a 2D array representing a moment and an an instance of
+        ``InflationSDP``, used for methods that depend on the scenario.
+
         2D Array encoding
         -----------------
-        A moment `M=<Op1*Op2*...*Opn>` can be specified by a 2D array with `n`
-        rows, one for each operator `Opk`. Row `k` contains a list of integers
-        which encode information about the operator `Opk`. 
-         * The first integer is an index in `{1,...,nr_parties}` indicating the
-           party, where where `nr_parties` is the number of parties in the DAG. 
+        A moment :math:`M=\langle Op_1 Op_2\dots Op_n\rangle` can be specified
+        by a 2D array with `n` rows, one for each operator :math:`Op_k`.
+        Row `k` contains a list of integers which encode information about the
+        operator :math:`Opk`.
+         * The first integer is an index in ``{1,...,nr_parties}``, indicating
+           the party, where `nr_parties` is the number of parties in the DAG.
          * The second-to-last and last integers encode the setting and the
-           outcome of the operator, respectively. 
-         * The remaining positions `i` in-between indicate on which copy of the
-           source `i-1` (-1 because the first index encodes the party) the
-           operator is acting, with value `0` representing no support on the
-           `i-1`-th source.
+           outcome of the operator, respectively.
+         * The remaining positions ``i`` indicate on which copy of the source
+           ``i-1`` (-1 because the first index encodes the party) the operator
+           is acting, with value ``0`` representing no support on the
+           ``i-1``-th source.
 
         For example, the moment
-        `<A^{0,2,1}_{x=2,a=3}*C^{2,0,1}_{z=4,c=5}>` where the complete list
-        of parties is `['A','B','C']` can be represented the following 2D array: 
+        :math:`\langle A^{0,2,1}_{x=2,a=3} C^{2,0,1}_{z=4,c=5}\rangle`, where
+        the complete list of parties is ``["A","B","C"]`` corresponds to the
+        following array:
+
         >>> m = np.array([[1, 0, 2, 1, 2, 3],
                           [3, 2, 0, 1, 4, 5]])
 
-        Given that this moment is knowable and can be associated with a 
-        probability, it is given the name `'pAC(35|24)'`.
-        
+        Given that this moment is knowable and can be associated with a
+        probability, it is given the name ``"pAC(35|24)"``.
+
         Parameters
         ----------
         inflation_sdp_instance : InflationSDP
-            An instance of the InflationSDP class. It is used to access methods
-            specific to the inflation problem. E.g., when instantiating an 
-            internal atomic moment, the `InflationSDP` instance is used to
+            An instance of the ``InflationSDP`` class. It is used to access
+            methods specific to the inflation problem. E.g., when instantiating
+            an internal atomic moment, the ``InflationSDP`` instance is used to
             check if it already contains such moment.
         array2d : numpy.ndarray
-            A moment `<Op1*Op2*...*Opn>` encoded as a 2D array.
+            A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D
+            array.
         """
         self.sdp        = inflation_sdp_instance
         self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
@@ -201,7 +204,7 @@ class InternalAtomicMonomial(object):
         ----------
         prob_array : numpy.ndarray
             The target probability distribution. The dimensions of this array
-            are (*outcomes_per_party, *settings_per_party), where the settings
+            are (outcomes_per_party, settings_per_party), where the settings
             are explicitly 1 is there is only one measurement performed.
 
         Returns
@@ -217,40 +220,41 @@ class InternalAtomicMonomial(object):
 
 
 class CompoundMonomial(object):
-    __slots__ = ["factors",
-                 "is_atomic",
-                 "is_all_commuting",
-                 "is_zero",
-                 "is_one",
-                 "n_factors",
-                 "n_operators",
-                 "knowable_factors",
-                 "unknowable_factors",
-                 "n_knowable_factors",
-                 "n_unknowable_factors",
-                 "knowability_status",
-                 "is_knowable",
+    __slots__ = ["as_counter",
+                 "factors",
                  "idx",
-                 "mask_matrix",
+                 "is_all_commuting",
+                 "is_atomic",
+                 "is_knowable",
                  "is_physical",
-                 "as_counter",
+                 "is_one",
+                 "is_zero",
+                 "knowability_status",
+                 "knowable_factors",
+                 "mask_matrix",
+                 "n_factors",
+                 "n_knowable_factors",
+                 "n_operators",
+                 "n_unknowable_factors",
                  "name",
+                 "signature",
                  "symbol",
-                 "signature"
+                 "unknowable_factors"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
-        """This class models moments `<Op1*Op2*...*Opn>=<Op1···><O'p1···>` on 
-        the inflated problem that are products of other moments. It is built
-        from a tuple of instances of the `InternalAtomicMonomial` class.
-        
-        At intialisation, a moment is classified into known, semi-known or
-        unknown based on the knowability of each of the atomic moments (which in
-        turn is determined through methods of the `InternalAtomicMonomial`
-        class). This class also computes names for the moment, provides the
-        ability to compare (in)equivalence, and to assign numerical values
-        to a moment given a probability distribution.
-        
+        r"""This class models moments :math:`\langle Op_1 Op_2\dots Op_n\rangle
+        =\langle Op_i\dots\rangle\langle Op_{i'}\dots\rangle` on the inflated
+        problem that are products of other moments. It is built from a tuple of
+        instances of the ``InternalAtomicMonomial`` class.
+
+        At intialisation, a moment is classified into knowable, semi-knowable
+        or unknowable based on the knowability of each of the atomic moments
+        (which in turn is determined through methods of the
+        ``InternalAtomicMonomial`` class). This class also computes names for
+        the moment, provides the ability to compare (in)equivalence, and to
+        assign numerical values to a moment given a probability distribution.
+
         Parameters
         ----------
         monomials : tuple of InternalAtomicMonomial
@@ -339,21 +343,21 @@ class CompoundMonomial(object):
     def compute_marginal(self, prob_array: np.ndarray) -> float:
         """Given a probability array, evaluate all the knowable atomic moment
         factors in the monomial and return the product of the resulting values.
-        
-        The whole moment needs to be knowable (`self.is_knowable == True`) else
-        this method will raise an error.
-        
+
+        The whole moment needs to be knowable (``self.is_knowable = True``),
+        else this method will raise an error.
+
         Parameters
         ----------
         prob_array : np.ndarray
             A conditional probability distribution over the non-inflated
-            scenario with dimensions `(da,db,...,dx,dy,...)` (i.e., first
+            scenario with dimensions ``(da,db,...,dx,dy,...)`` (i.e., first
             outcomes and then settings for the parties).
-            
+
         See also
         --------
-        `CompoundMonomial.evaluate`
-            This function does not rely on the knowability of the monomial.
+        CompoundMonomial.evaluate : This function does not rely on the
+            knowability of the monomial.
         """
         assert self.is_knowable, ("Only marginals of knowable monomials can " +
                                   f"be computed, and {self} is not knowable.")
@@ -365,10 +369,10 @@ class CompoundMonomial(object):
     def evaluate(self,
                  known_monomials: Dict[InternalAtomicMonomial, float],
                  use_lpi_constraints=True) -> Tuple[float, List, str]:
-        """Given a dictionary of values for known atomic monomials, 
+        """Given a dictionary of values for known atomic monomials,
         substitute all factors of the compound moment that are specified in
         the dictionary with their values and return the product of the values
-        and a remainder compound moment made of the remaining factors. 
+        and a remainder compound moment made of the remaining factors.
 
         Parameters
         ----------

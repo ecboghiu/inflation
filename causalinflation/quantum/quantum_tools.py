@@ -28,24 +28,22 @@ except ImportError:
 ###############################################################################
 def factorize_monomial(raw_monomial: np.ndarray,
                        canonical_order=False) -> Tuple[np.ndarray]:
-    """This function splits a moment/expectation value into products of
-    moments according to the support of the operators within the moment.
+    """This function splits a moment/expectation value into products of moments
+    according to the support of the operators within the moment. The moment is
+    encoded as a 2d array where each row is an operator. If
+    ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is ``C``,
+    and row 4 is ``B``. In each row, the columns encode the following
+    information:
 
-    The moment is encoded as a 2d array where each row is an operator.
-    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
-    In each row, the columns encode the following information:
-
-    First column:       The party index, *starting from 1*.
-                        (1 for A, 2 for B, etc.)
-    Last two columns:   The input x, starting from zero and then the
-                        output a, starting from zero.
-    In between:         This encodes the support of the operator. There
-                        are as many columns as sources/quantum states.
-                        Column j represents source j-1 (-1 because the 1st
-                        col is the party). If the value is 0, then this
-                        operator does not measure this source. If the value
-                        is for e.g. 2, then this operator is acting on
-                        copy 2 of source j-1.
+      * First column: The party index, *starting from 1* (e.g., 1 for ``A``,
+        2 for ``B``, etc.)
+      * Last two columns: The input ``x`` starting from zero, and then the
+        output ``a`` starting from zero.
+      * In between: This encodes the support of the operator. There are as many
+        columns as sources/quantum states. Column `j` represents source `j-1`
+        (-1 because the 1stcol is the party). If the value is 0, then this
+        operator does not measure this source. If the value is for e.g. 2,
+        then this operator is acting on copy 2 of source `j-1`.
 
     The output is a tuple of ndarrays where each array represents another
     monomial s.t. their product is equal to the original monomial.
@@ -333,9 +331,9 @@ def calculate_momentmatrix(cols: List,
     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for i, mon1 in tqdm(enumerate(cols),
-                  disable=not verbose,
-                  desc="Calculating moment matrix",
-                  total=nrcols):
+                        disable=not verbose,
+                        desc="Calculating moment matrix",
+                        total=nrcols):
         for j in range(i, nrcols):
             mon2 = cols[j]
             mon_v1 = to_canonical(dot_mon(mon1, mon2),
@@ -489,6 +487,27 @@ def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
     nearly the same format, they differ merely in whether integers pertain to
     column indices or the indices that represent the unique moment matrix
     elements.
+
+    Parameters
+    ----------
+    column_equalities : List[Tuple[int, List[int]]]
+        The list of equalities between columns in the moment matrix, in the
+        form of tuples whose first element is the index of one of the columns,
+        and the second element is the list of indices of the columns whose
+        corresponding operators sum up to the operator corresponding to the
+        first element.
+    momentmatix : numpy.ndarray
+        The moment matrix of which the identification between variables shall
+        be computed.
+    verbose : int, optional
+        Verbosity level. By default 0.
+
+    Returns
+    -------
+    List[Tuple[int, List[int]]]
+        The equalities between variables. For each tuple, the first element is
+        the index of one of the variables in ``momentmatrix``, and the second
+        is the list of variables whose sum corresponds to the first.
     """
     equalities = []
     seen_already = set()
@@ -616,7 +635,7 @@ def party_physical_monomials(hypergraph: np.ndarray,
         A matrix storing the lexicographic order of operators. If an operator
         has lexicographic rank `i`, then it is placed at the ``i``-th row of
         lexorder.
-        
+
     Returns
     -------
     List[numpy.ndarray]

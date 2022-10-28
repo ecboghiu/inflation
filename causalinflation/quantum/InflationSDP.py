@@ -381,30 +381,27 @@ class InflationSDP(object):
     def set_bounds(self,
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
-        """Set numerical lower or upper bounds on the moments generated in
-        the SDP relaxation.
-
-        Note: These bounds are at the level of the SDP variables without taking
-        into consideration non-convex constraints. E.g., two individual lower
-        bounds `{'pA(0|0)': 0.1, 'pB(0|0)': 0.1}` do not imply
-        `{'pA(0|0)*pB(0|0)': 0.01}`. The latter lower bound needs to be set
-        manually. More complex bounds, e.g., in terms of other variables, should
-        be set as inequality constraints.
+        r"""Set numerical lower or upper bounds on the moments generated in the
+        SDP relaxation. The bounds are at the level of the SDP variables,
+        and do not take into consideration non-convex constraints. E.g., two
+        individual lower bounds, :math:`p_A(0|0) \geq 0.1` and
+        :math:`p_B(0|0) \geq 0.1` do not directly impose the constraint
+        :math:`p_A(0|0)*p_B(0|0) \geq 0.01`, which should be set manually if
+        needed.
 
         Parameters
         ----------
         bounds : Union[dict, None]
-            A dictionary with keys as monomials and values being the bounds. The
-            keys can be either CompoundMonomial objects, or names (`str`) of
-            Monomial objects.
+            A dictionary with keys as monomials and values being the bounds.
+            The keys can be either CompoundMonomial objects, or names (`str`)
+            of Monomial objects.
         bound_type : str, optional
-            Specifies whether we are setting upper ("up") or lower ("lo")
-            bounds, by default "up".
+            Specifies whether we are setting upper (``"up"``) or lower
+            (``"lo"``) bounds, by default "up".
 
         Examples
         --------
-        >>> set_bounds({'pAB(00|00)': 0.2}, 'lo')
-        True
+        >>> set_bounds({"pAB(00|00)": 0.2}, "lo")
         """
         assert bound_type in ["up", "lo"], \
             "The 'bound_type' argument should be either 'up' or 'lo'"
@@ -427,10 +424,10 @@ class InflationSDP(object):
                 called as ``prob_array[a,b,c,...,x,y,z,...]`` where
                 :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
                 inputs. Note: even if the inputs have cardinality 1 they must
-                be specified, and the corresponding axis dimensions are 1. 
+                be specified, and the corresponding axis dimensions are 1.
                 The parties' outcomes and measurements must be appear in the
-                same order as specified by the `order` parameter in the 
-                `InflationProblem` used to instantiate `InflationSDP`.
+                same order as specified by the ``order`` parameter in the
+                ``InflationProblem`` used to instantiate ``InflationSDP``.
 
             use_lpi_constraints : bool, optional
                 Specification whether linearized polynomial constraints (see,
@@ -1023,7 +1020,7 @@ class InflationSDP(object):
                             + " the extensions .csv, .dat-s and .mat.")
 
     ###########################################################################
-    # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES             #
+    # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
     ###########################################################################
     def _AtomicMonomial(self,
                         array2d: np.ndarray) -> InternalAtomicMonomial:
@@ -1035,15 +1032,15 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        array2d : np.ndarray
-            Moment encoded as a 2D array of integers, where each row encodes one
-            of the operators appearing in the moment.
+        array2d : numpy.ndarray
+            Monomial encoded as a 2D array of integers, where each row encodes
+            one of the operators appearing in the monomial.
 
         Returns
         -------
         InternalAtomicMonomial
             An instance of the `InternalAtomicMonomial` class representing the
-            input 2D array moment, brought to canonical form.
+            input 2D array monomial.
         """
         key = self._from_2dndarray(array2d)
         try:
@@ -1062,20 +1059,15 @@ class InflationSDP(object):
                 return mon
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
-        """Create an instance of the `CompoundMonomial` class from a 2D array.
-        
-        An instance of `CompoundMonomial` is a collection of atomic moments,
-        encoded as instances of `InternalAtomicMonomial`. An atomic moment is a
-        moment that cannot be broken down into products of other moments.
-
-        The input 2D array is first factorised into a product of atomic moments,
-        and then each atomic moment is brought into canonical form.
+        r"""Create an instance of the `CompoundMonomial` class from a 2D array.
+        An instance of `CompoundMonomial` is a collection of
+        `InternalAtomicMonomial`.
 
         Parameters
         ----------
-        array2d : np.ndarray
-            Moment encoded as a 2D array of integers, where each row encodes one
-            of the operators appearing in the moment.
+        array2d : numpy.ndarray
+            Moment encoded as a 2D array of integers, where each row encodes
+            one of the operators appearing in the moment.
         idx : int, optional
             Assigns an integer index to the resulting monomial, which can be
             used as an id, by default -1.
@@ -1085,24 +1077,23 @@ class InflationSDP(object):
         CompoundMonomial
             The monomial factorised into AtomicMonomials, all brought to
             representative form under inflation symmetries.
-            
+
         Examples
         --------
-        
+
         The moment
-        `<A^{0,2,1}_{x=2,a=3}*C^{2,0,1}_{z=1,c=1}*C^{1,0,2}_{z=0,c=0}>` can be
-        represented the following 2D array: 
+        :math:`\langle A^{0,2,1}_{x=2,a=3}C^{2,0,1}_{z=1,c=1}
+        C^{1,0,2}_{z=0,c=0}\rangle` corresponds to the following 2D array:
+
         >>> m = np.array([[1, 0, 2, 1, 2, 3],
-                          [3, 2, 0, 1, 1, 1], 
+                          [3, 2, 0, 1, 1, 1],
                           [3, 1, 0, 2, 0, 0]])
 
-        The resulting monomial, `InflationSDP.Monomial(m)`, will be a collection
-        of two `InternalAtomicMonomial`'s,
-        `<A^{0,1,1}_{x=2,a=3}*C^{1,0,1}_{z=1,c=1}>` and `<C^{1,0,1}_{z=0,c=0}>`,
-        after factorizing the input monomial and reducing each factor to
-        canonical form. Furthermore, each factor will be given a unique name,
-        `'pAC(31|21)'` and `'pC(10|10)'`, respectively, given that they can be
-        identified with a probability.
+        The resulting monomial, ``InflationSDP.Monomial(m)``, is a collection
+        of two ``InternalAtomicMonomial`` s,
+        :math:`\langle A^{0,1,1}_{x=2,a=3}C^{1,0,1}_{z=1,c=1}\rangle` and
+        :math:`\langle C^{1,0,1}_{z=0,c=0}\rangle`, after factorizing the input
+        monomial and reducing the inflation indices of each of the factors.
         """
         _factors = factorize_monomial(array2d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
@@ -1114,8 +1105,7 @@ class InflationSDP(object):
     def _conjugate_ndarray(self,
                            mon: np.ndarray,
                            apply_only_commutations=True) -> np.ndarray:
-        """
-        Compute the canonical form of the conjugate of a monomial.
+        """Compute the canonical form of the conjugate of a monomial.
 
         Parameters
         ----------
@@ -1136,6 +1126,146 @@ class InflationSDP(object):
         else:
             return self._to_inflation_repr(reverse_mon(mon),
                                            apply_only_commutations)
+
+    def _inflation_orbit_and_rep(self,
+                                 monomial: np.ndarray
+                                 ) -> Tuple[set, np.ndarray]:
+        """Given a monomial as a 2D array, return its representative under
+        inflation symmetries and its orbit. Only source swaps up to the maximum
+        index of the source that appears in the monomials are considered.
+
+        Parameters
+        ----------
+        monomial : numpy.ndarray
+            Monomial as a 2D array.
+
+        Returns
+        -------
+        Tuple[set, numpy.ndarray]
+            The orbit as a set of all monomials explored, and the
+            representative (i.e, the minimum over said set).
+        """
+        inf_levels = monomial[:, 1:-2].max(axis=0)
+        nr_sources = inf_levels.shape[0]
+        all_permutations_per_source = [
+            format_permutations(list(permutations(range(inflevel))))
+            for inflevel in inf_levels.flat]
+        seen_hashes = set()
+        for permutation in product(*all_permutations_per_source):
+            permuted = monomial.copy()
+            for source in range(nr_sources):
+                permuted = apply_source_perm(permuted,
+                                             source,
+                                             permutation[source])
+            permuted = self._to_canonical_memoized(permuted, True)
+            hash     = self._from_2dndarray(permuted)
+            seen_hashes.add(hash)
+            try:
+                representative = self.canonsym_ndarray_from_hash[hash]
+                return seen_hashes, representative
+            except KeyError:
+                pass
+        representative = self._to_2dndarray(min(seen_hashes))
+        return seen_hashes, representative
+
+    def _monomial_from_atoms(self,
+                             atoms: List[InternalAtomicMonomial]
+                             ) -> CompoundMonomial:
+        """Build an instance of `CompoundMonomial` from a list of instances
+        of `InternalAtomicMonomial`.
+
+        Parameters
+        ----------
+        atoms : List[InternalAtomicMonomial]
+            List of instances of `InternalAtomicMonomial`.
+
+        Returns
+        -------
+        CompoundMonomial
+            A `CompoundMonomial` with atomic factors given by `atoms`.
+        """
+        list_of_atoms = []
+        for factor in atoms:
+            if factor.is_zero:
+                list_of_atoms = [factor]
+                break
+            elif not factor.is_one:
+                list_of_atoms.append(factor)
+            else:
+                pass
+        tuple_of_atoms = tuple(sorted(list_of_atoms))
+        try:
+            mon = self.monomial_from_atoms[tuple_of_atoms]
+            return mon
+        except KeyError:
+            mon = CompoundMonomial(tuple_of_atoms)
+            self.monomial_from_atoms[tuple_of_atoms] = mon
+            self.monomial_from_name[mon.name]        = mon
+            return mon
+
+    def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
+        """Return a ``CompoundMonomial`` built from ``mon``, where ``mon`` can
+        be either the name of a moment as a string, a SymPy variable, a
+        monomial encoded as a 2D array, or an integer in case the moment is the
+        unit moment or the zero moment.
+
+
+        Parameters
+        ----------
+        mon : Any
+            The name of a moment as a string, a SymPy variable with the name of
+            a valid moment, a 2D array encoding of a moment or an integer in
+            case the moment is the unit moment or the zero moment.
+
+        Returns
+        -------
+        CompoundMonomial
+            Instance of ``CompoundMonomial`` built from ``mon``.
+
+        Raises
+        ------
+        Exception
+            If ``mon`` is the constant monomial, it can only be numbers 0 or 1
+        Exception
+            If the type of ``mon`` is not supported.
+        """
+        if isinstance(mon, CompoundMonomial):
+            return mon
+        elif isinstance(mon, (sp.core.symbol.Symbol,
+                              sp.core.power.Pow,
+                              sp.core.mul.Mul)):
+            symbols = flatten_symbolic_powers(mon)
+            if len(symbols) == 1:
+                try:
+                    return self.monomial_from_name[str(symbols[0])]
+                except KeyError:
+                    pass
+            array = np.concatenate([self._interpret_atomic_string(str(op))
+                                    for op in symbols])
+            return self._sanitise_monomial(array)
+        elif isinstance(mon, (tuple, list, np.ndarray)):
+            array = np.asarray(mon, dtype=self.np_dtype)
+            assert array.ndim == 2, \
+                "The monomial representations must be 2d arrays."
+            assert array.shape[-1] == self._nr_properties, \
+                "The input does not conform to the operator specification."
+            canon = self._to_canonical_memoized(array)
+            return self.Monomial(canon)
+        elif isinstance(mon, str):
+            try:
+                return self.monomial_from_name[mon]
+            except KeyError:
+                return self._sanitise_monomial(self._interpret_name(mon))
+        elif isinstance(mon, Real):
+            if np.isclose(float(mon), 1):
+                return self.One
+            elif np.isclose(float(mon), 0):
+                return self.Zero
+            else:
+                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
+        else:
+            raise Exception(f"sanitise_monomial: {mon} is of type " +
+                            f"{type(mon)} and is not supported.")
 
     def _to_inflation_repr(self,
                            mon: np.ndarray,
@@ -1208,148 +1338,6 @@ class InflationSDP(object):
             self.canonsym_ndarray_from_hash[key] = real_repr_mon
         return real_repr_mon
 
-    def _monomial_from_atoms(self,
-                             atoms: List[InternalAtomicMonomial]
-                             ) -> CompoundMonomial:
-        """Build an instance of `CompoundMonomial` from a list of instances
-        of `InternalAtomicMonomial`.
-
-        Parameters
-        ----------
-        atoms : List[InternalAtomicMonomial]
-            List of instances of `InternalAtomicMonomial`.
-
-        Returns
-        -------
-        CompoundMonomial
-            A `CompoundMonomial` with atomic factors given by `atoms`.
-        """
-        list_of_atoms = []
-        for factor in atoms:
-            if factor.is_zero:
-                list_of_atoms = [factor]
-                break
-            elif not factor.is_one:
-                list_of_atoms.append(factor)
-            else:
-                pass
-        tuple_of_atoms = tuple(sorted(list_of_atoms))
-        try:
-            mon = self.monomial_from_atoms[tuple_of_atoms]
-            return mon
-        except KeyError:
-            mon = CompoundMonomial(tuple_of_atoms)
-            self.monomial_from_atoms[tuple_of_atoms] = mon
-            self.monomial_from_name[mon.name]        = mon
-            return mon
-
-    def _inflation_orbit_and_rep(self,
-                                 monomial: np.ndarray
-                                 ) -> Tuple[set, np.ndarray]:
-        """Given a monomial as a 2D array, it returns its representative
-        under inflation symmetries and the orbit. Only source swaps up to the
-        maximum index of the source that appears in the monomials are
-        considered.
-
-        Parameters
-        ----------
-        monomial : np.ndarray
-            Monomial as a 2D array.
-
-        Returns
-        -------
-        Tuple[set, np.ndarray]
-            The orbit as a set of all monomials explored, and the
-            representative, the minimum over said set.
-        """
-        inf_levels = monomial[:, 1:-2].max(axis=0)
-        nr_sources = inf_levels.shape[0]
-        all_permutations_per_source = [
-            format_permutations(list(permutations(range(inflevel))))
-            for inflevel in inf_levels.flat]
-        seen_hashes = set()
-        for permutation in product(*all_permutations_per_source):
-            permuted = monomial.copy()
-            for source in range(nr_sources):
-                permuted = apply_source_perm(permuted,
-                                             source,
-                                             permutation[source])
-            permuted = self._to_canonical_memoized(permuted, True)
-            hash     = self._from_2dndarray(permuted)
-            seen_hashes.add(hash)
-            try:
-                representative = self.canonsym_ndarray_from_hash[hash]
-                return seen_hashes, representative
-            except KeyError:
-                pass
-        representative = self._to_2dndarray(min(seen_hashes))
-        return seen_hashes, representative
-
-    def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
-        """Return a `CompoundMonomial` built from `mon`, where `mon` can be
-        either the name of a moment as a string, a SymPy variable, a monomial
-        encoded as a 2D array or an integer, in case the moment is the unit
-        moment or the zero moment.
-
-
-        Parameters
-        ----------
-        mon : Any
-            The name of a moment as a string, a SymPy variable with the name of
-            a valid moment, a 2D array encoding of a moment or an integer in
-            case the moment is the unit moment or the zero moment.
-
-        Returns
-        -------
-        CompoundMonomial
-            Instance of `CompoundMonomial` built from `mon`.
-
-        Raises
-        ------
-        Exception
-            If `mon` is the constant monomial, it can only be numbers 0 or 1
-        Exception
-            If the type of `mon` is not supported.
-        """
-
-        if isinstance(mon, CompoundMonomial):
-            return mon
-        elif isinstance(mon, (sp.core.symbol.Symbol,
-                              sp.core.power.Pow,
-                              sp.core.mul.Mul)):
-            symbols = flatten_symbolic_powers(mon)
-            if len(symbols) == 1:
-                try:
-                    return self.monomial_from_name[str(symbols[0])]
-                except KeyError:
-                    pass
-            array = np.concatenate([self._interpret_atomic_string(str(op))
-                                    for op in symbols])
-            return self._sanitise_monomial(array)
-        elif isinstance(mon, (tuple, list, np.ndarray)):
-            array = np.asarray(mon, dtype=self.np_dtype)
-            assert array.ndim == 2, \
-                "The monomial representations must be 2d arrays."
-            assert array.shape[-1] == self._nr_properties, \
-                "The input does not conform to the operator specification."
-            canon = self._to_canonical_memoized(array)
-            return self.Monomial(canon)
-        elif isinstance(mon, str):
-            try:
-                return self.monomial_from_name[mon]
-            except KeyError:
-                return self._sanitise_monomial(self._interpret_name(mon))
-        elif isinstance(mon, Real):
-            if np.isclose(float(mon), 1):
-                return self.One
-            elif np.isclose(float(mon), 0):
-                return self.Zero
-            else:
-                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
-        else:
-            raise Exception(f"sanitise_monomial: {mon} is of type " +
-                            f"{type(mon)} and is not supported.")
-
     ###########################################################################
     # ROUTINES RELATED TO NAME PARSING                                        #
     ###########################################################################
@@ -1361,12 +1349,12 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        monomial : Union[str, sp.core.symbol.Expr, int]
+        monomial : Union[str, sympy.core.symbol.Expr, int]
             Input moment.
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             2D array encoding of the input moment.
         """
         if isinstance(monomial, sp.core.symbol.Expr):
@@ -1390,11 +1378,11 @@ class InflationSDP(object):
         ----------
         factor_string : str
             String representation of a moment in expected value notation, e.g.,
-            "<A_1_1_1_2*B_2_1_3_4>".
+            ``"<A_1_1_1_2*B_2_1_3_4>"``.
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             2D array encoding of the input atomic moment.
         """
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
@@ -1414,11 +1402,11 @@ class InflationSDP(object):
         Parameters
         ----------
         factor_string : str
-            String representation of an operator, e.g., "B_2_1_3_4".
+            String representation of an operator, e.g., ``"B_2_1_3_4"``.
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             2D array encoding of the operator.
         """
         components = op_string.split("_")
@@ -1751,8 +1739,7 @@ class InflationSDP(object):
         collect()
 
     def _update_lowerbounds(self) -> None:
-        """
-        Helper function to check that lowerbounds are consistent with the
+        """Helper function to check that lowerbounds are consistent with the
         specified known values, and to keep only the lowest lowerbounds
         in case of redundancy.
         """
@@ -1770,8 +1757,7 @@ class InflationSDP(object):
                 pass
 
     def _update_upperbounds(self) -> None:
-        """
-        Helper function to check that upperbounds are consistent with the
+        """Helper function to check that upperbounds are consistent with the
         specified known values.
         """
         for mon, value in self.known_moments.items():
@@ -1788,19 +1774,19 @@ class InflationSDP(object):
     # OTHER ROUTINES                                                          #
     ###########################################################################
     def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        """Returns `True` if the input monomial, encoded as a 2D array,
-        can be associated to a knowable value in the scenario, `False`
+        """Return ``True`` if the input monomial, encoded as a 2D array,
+        can be associated to a knowable value in the scenario, and ``False``
         otherwise.
 
         Parameters
         ----------
-        atomic_monarray : np.ndarray
+        atomic_monarray : numpy.ndarray
             Monomial encoded as a 2D array.
 
         Returns
         -------
         bool
-            `True` if the monomial is knowable, `False` otherwise.
+            Whether the monomial could be assigned a numerical value.
         """
         if not is_knowable(atomic_monarray):
             return False
@@ -1812,8 +1798,7 @@ class InflationSDP(object):
                                                     axis=1))
 
     def _dump_to_file(self, filename: str) -> None:
-        """
-        Saves the whole object to file using `pickle`.
+        """Saves the whole object to file using `pickle`.
 
         Parameters
         ----------
@@ -1830,7 +1815,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        array2d : np.ndarray
+        array2d : numpy.ndarray
             Monomial encoded as a 2D array.
         """
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
@@ -1840,17 +1825,17 @@ class InflationSDP(object):
 
         The solver takes as input the following arguments, which are all
         dicts with keys as scalar SDP variables:
-            * "mask_matrices": dict with values the coefficient of the key
-            variable in the SDP variable
+            * "mask_matrices": dict with values the binary matrices with the
+            positions of the keys in the moment matrix.
             * "objective": dict with values the coefficient of the key
-            variable in the objective function
-            * "known_vars": scalar variables that are fixed to be constant
+            variable in the objective function.
+            * "known_vars": scalar variables that are fixed to be constant.
             * "semiknown_vars": if applicable, linear proportionality
-            constraints between scalar variables
+            constraints between variables in the SDP.
             * "var_equalities": list of dicts where each dict gives the
-            coefficients of the keys in a linear equality constraint
+            coefficients of the keys in a linear equality constraint.
             * "inequalities": list of dicts where each dict gives the
-            coefficients of the keys in a linear inequality constraint
+            coefficients of the keys in a linear inequality constraint.
 
         Returns
         -------
@@ -1990,20 +1975,20 @@ class InflationSDP(object):
         """Cached function to convert a monomial to its canonical form.
 
         It checks whether the input monomial's canonical form has already been
-        calculated and stored in the `self.canon_ndarray_from_hash`. If not, it
-        calculates it.
+        calculated and stored in the ``InflationSDP.canon_ndarray_from_hash``.
+        If not, it calculates it.
 
         Parameters
         ----------
-        array2d : np.ndarray
+        array2d : numpy.ndarray
             Moment encoded as a 2D array.
         apply_only_commutations : bool, optional
-            If True, skip the removal of projector squares and the test to see
-            if the monomial is equal to zero, by default False.
+            If ``True``, skip the removal of projector squares and the test to
+            see if the monomial is equal to zero, by default ``False``.
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             Moment in canonical form.
         """
         key = self._from_2dndarray(array2d)
