@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InflationProblem Class &mdash; CausalInflation 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="InflationSDP Class" href="inflationsdp.html" />
+    <link rel="prev" title="API Reference" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="contents.html" class="icon icon-home"> CausalInflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">InflationProblem Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">CausalInflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">API Reference</a> &raquo;</li>
+      <li>InflationProblem Class</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/inflationproblem.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="inflationproblem-class">
+<h1>InflationProblem Class<a class="headerlink" href="#inflationproblem-class" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="causalinflation.InflationProblem">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition"></a></dt>
+<dd><p>Class for enconding relevant details concerning the causal compatibility
+scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dag</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Dictionary where each key is a parent node, and the corresponding value
+is a list of the corresponding children nodes. By default it is a
+single source connecting all the parties.</p></li>
+<li><p><strong>outcomes_per_party</strong> (<em>List</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Measurement outcome cardinalities. By default <code class="docutils literal notranslate"><span class="pre">2</span></code> for all parties.</p></li>
+<li><p><strong>settings_per_party</strong> (<em>List</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Measurement setting cardinalities. By default <code class="docutils literal notranslate"><span class="pre">1</span></code> for all parties.</p></li>
+<li><p><strong>inflation_level_per_source</strong> (<em>[</em><em>int</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Number of copies per source in the inflated graph. Source order is the
+same as insertion order in <cite>dag</cite>. If an integer is provided, it is used
+as the inflation level for all sources. By default <code class="docutils literal notranslate"><span class="pre">1</span></code> for all sources.</p></li>
+<li><p><strong>order</strong> (<em>List</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Name of each party. This also fixes the order in which party outcomes
+and settings are to appear in a conditional probability distribution.
+Default is alphabetical order and labels, e.g., <code class="docutils literal notranslate"><span class="pre">['A',</span> <span class="pre">'B',</span> <span class="pre">...]</span></code>.</p></li>
+<li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional parameter for level of verbose:</p>
+<ul>
+<li><p>0: quiet (default),</p></li>
+<li><p>1: monitor level: track program process and see warnings,</p></li>
+<li><p>2: debug level: show properties of objects created.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="causalinflation.InflationProblem.rectify_fake_setting">
+<span class="sig-name descname"><span class="pre">rectify_fake_setting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem.rectify_fake_setting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem.rectify_fake_setting" title="Permalink to this definition"></a></dt>
+<dd><p>When constructing the monomials in a non-network scenario, we rely
+on an internal representation of operators where the integer denoting
+the setting actually is an ‘effective setting’ that encodes, in
+addition to the ‘private setting’ that each party is free to choose,
+the values of all the parents of the variable in question, which also
+effectively act as settings. This function resets this ‘effective
+setting’ integer to the true ‘private setting’ integer. It is useful to
+relate knowable monomials to their meaning as conditional events in
+non-network scenarios. If the scenario is a network, this function does
+nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – An internal representation of a monomial as a 2d numpy array.
+Each row in the array corresponds to an operator. For each row,
+the zeroth element represents the party, the last element
+represents the outcome, the second-to-last element represents
+the setting, and the remaining elements represent inflation
+copies.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The monomial with the index of the setting representing only the
+private setting.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="inflationsdp.html" class="btn btn-neutral float-right" title="InflationSDP Class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
