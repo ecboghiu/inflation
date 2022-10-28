@@ -195,16 +195,16 @@ class InflationProblem(object):
                  f"{len(self.inflation_level_per_source)}, does not coincide.")
 
         # Determine if the inflation problem has a factorizing pair of parties.
-        common_sources_patterns = [np.all(np.vstack(pair), axis=0) for pair in
-                                   combinations_with_replacement(self.hypergraph.T, 2)]
-        inflation_levels_equal_one = (self.inflation_level_per_source == 1)
+        shared_sources = [np.all(np.vstack(pair), axis=0) for pair in
+                          combinations_with_replacement(self.hypergraph.T, 2)]
+        just_one_copy = (self.inflation_level_per_source == 1)
         self.ever_factorizes = False
-        for common_sources_pattern in common_sources_patterns:
+        for sources_are_shared in shared_sources:
             # If for some two parties, the sources that they share in common
             # can all have different inflation levels, then there exists the
             # potential for factorization.
-            if not np.any(common_sources_pattern) or not np.all(
-                    inflation_levels_equal_one[common_sources_pattern]):
+            if ((not np.any(sources_are_shared))
+                or (not np.all(just_one_copy[sources_are_shared]))):
                 self.ever_factorizes = True
                 break
         inflation_indices_patterns = list()
