@@ -240,20 +240,20 @@ def to_name(monomial: np.ndarray,
 def nb_all_commuting(mon: np.ndarray,
                      lexorder: np.ndarray,
                      notcomm: np.ndarray) -> bool_:
-    """Check if all operators in the monomial commute.
+    """Check if all operators in ``mon`` commute.
 
     Parameters
     ----------
     mon : numpy.ndarray
         Input monomial in 2d array format.
     lexorder : numpy.ndarray
-        A matrix where each row is an operator, and the `i`-th row stores
-        the operator with lexicographic rank `i`.
+        A matrix where each row is an operator, and the `i`-th row stores the
+        operator with lexicographic rank `i`.
     notcomm : numpy.ndarray
-        Matrix of commutation relations. Each operator can be identified by
-        and integer `i` which also doubles as its lexicographic rank. Given
-        two operators with ranks `i`, `j`, `notcomm[i, j]` is 1 if the 
-        operators do not commute, and 0 if they do.
+        Matrix of commutation relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        do not commute, and 0 if they do.
 
     Returns
     -------
@@ -462,10 +462,10 @@ def to_canonical(mon: np.ndarray,
     mon : numpy.ndarray
         Input monomial in 2D array format.
     notcomm : numpy.ndarray
-        Matrix of commutation relations. Each operator can be identified by
-        and integer `i` which also doubles as its lexicographic rank. Given
-        two operators with ranks `i`, `j`, `notcomm[i, j]` is 1 if the 
-        operators do not commute, and 0 if they do.
+        Matrix of commutation relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        do not commute, and 0 if they do.
     lexorder : numpy.ndarray
         A matrix where each row is an operator, and the `i`-th row stores
         the operator with lexicographic rank `i`.
@@ -510,17 +510,17 @@ def order_via_commutation(mon: np.ndarray,
     mon : numpy.ndarray
         Input monomial in 2D array format.
     notcomm : numpy.ndarray
-        Matrix of commutation relations. Each operator can be identified by
-        and integer `i` which also doubles as its lexicographic rank. Given
-        two operators with ranks `i`, `j`, `notcomm[i, j]` is 1 if the 
-        operators do not commute, and 0 if they do.
+        Matrix of commutation relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        do not commute, and 0 if they do.
     lexorder : numpy.ndarray
         A matrix where each row is an operator, and the `i`-th row stores
         the operator with lexicographic rank `i`.
     commuting : bool, optional
         Whether all the variables in the problem commute or not. By default
         ``False``.
-        
+
     Returns
     -------
     numpy.ndarray
