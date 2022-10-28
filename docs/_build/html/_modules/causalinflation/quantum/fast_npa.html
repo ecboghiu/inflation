@@ -1,37 +1,16 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>causalinflation.quantum.fast_npa &mdash; CausalInflation 0.1 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
@@ -40,37 +19,18 @@
         <script src="../../../_static/clipboard.min.js"></script>
         <script src="../../../_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
-    
+    <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../../../contents.html" class="icon icon-home"> CausalInflation
-          
-
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -78,18 +38,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
@@ -102,350 +51,77 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../contents.html">CausalInflation</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../../index.html">Module code</a> &raquo;</li>
-        
       <li>causalinflation.quantum.fast_npa</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for causalinflation.quantum.fast_npa</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">This file contains helper functions to manipulate monomials and generate moment</span>
 <span class="sd">matrices. The functions in this file can be accelerated by JIT compilation in</span>
 <span class="sd">numba.</span>
-<span class="sd">@authors: Alejandro Pozas-Kerstjens, Elie Wolfe and Emanuel-Cristian Boghiu</span>
+<span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">dok_matrix</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">numba</span>
     <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">jit</span>
     <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">bool_</span><span class="p">,</span> <span class="n">void</span>
-    <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">uint16</span> <span class="k">as</span> <span class="n">uint16_</span>
-    <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">int16</span> <span class="k">as</span> <span class="n">int16_</span>
-    <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">int64</span> <span class="k">as</span> <span class="n">int64_</span>
-    <span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">nb_Dict</span>
+    <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">uint8</span> <span class="k">as</span> <span class="n">uint8_</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">jit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span>
-    <span class="n">bool_</span> <span class="o">=</span> <span class="nb">bool</span>
-    <span class="n">uint16_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span>
-    <span class="n">int16_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span>
-    <span class="n">int64_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span>
-    <span class="n">nb_Dict</span> <span class="o">=</span> <span class="nb">dict</span>
-    <span class="n">void</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">bool_</span>  <span class="o">=</span> <span class="nb">bool</span>
+    <span class="n">uint8_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+    <span class="n">void</span>   <span class="o">=</span> <span class="kc">None</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">blank_tqdm</span> <span class="k">as</span> <span class="n">tqdm</span>
-
-<span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">cache</span>    <span class="o">=</span> <span class="kc">True</span>
 <span class="n">nopython</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">if</span> <span class="ow">not</span> <span class="n">nopython</span><span class="p">:</span>
-    <span class="n">bool_</span> <span class="o">=</span> <span class="nb">bool</span>
-    <span class="n">uint16_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span>
-    <span class="n">int64_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span>
-    <span class="n">nb_Dict</span> <span class="o">=</span> <span class="nb">dict</span>
+    <span class="n">bool_</span>  <span class="o">=</span> <span class="nb">bool</span>
+    <span class="n">uint8_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
 
 
-<span class="c1">################################################################################</span>
-<span class="c1"># FUNCTIONS WITH ARRAY OPERATIONS                                              #</span>
-<span class="c1">################################################################################</span>
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">nb_intarray_eq</span><span class="p">(</span><span class="n">intarray1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                   <span class="n">intarray2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if two arrays of integers are equal.</span>
-
-<span class="sd">    NOTE: There is no check for shape consistency. As this is</span>
-<span class="sd">    an internal function, it is assumed to be used carefully.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    intarray1 : np.ndarray</span>
-<span class="sd">        Array of integers.</span>
-<span class="sd">    intarray2 : np.ndarray</span>
-<span class="sd">        Array of integers.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    bool_</span>
-<span class="sd">        Whether the arrays are equal.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">intarray1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="n">intarray1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">intarray2</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">return</span> <span class="kc">True</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">nb_A_lessthan_B</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                    <span class="n">B</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Compare two arrays lexicographically using the in-built &#39;&lt;&#39; and &#39;!=&#39;.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    A : numpy.ndarray</span>
-<span class="sd">    B : numpy.ndarray</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    bool</span>
-<span class="sd">        Whether A is lexicographically smaller than B.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    <span class="k">return</span> <span class="kc">True</span>
-
-
-<span class="c1">################################################################################</span>
-<span class="c1"># ABSTRACT OPERATIONS ON MONOMIALS                                             #</span>
-<span class="c1">################################################################################</span>
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">mon_equal_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                  <span class="n">mon2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if two monomials are equal.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mon1 : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-<span class="sd">    mon2 : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    bool_</span>
-<span class="sd">        Returns True if the monomials are equal, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">mon1</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">mon2</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mon1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">nb_intarray_eq</span><span class="p">(</span><span class="n">mon1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mon2</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
-                <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">reverse_mon</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return the reversed monomial.</span>
-
-<span class="sd">    This represents the Hermitian conjugate of the monomial, assuming that</span>
-<span class="sd">    each operator is Hermitian.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mon : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Reversed monomial.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Simplify the monomial by removing operator powers. This is because we</span>
-<span class="sd">    assume projectors, P**2=P. This corresponds to removing duplicates of rows</span>
-<span class="sd">    which are adjacent.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mon : numpy.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    bool</span>
-<span class="sd">        Monomial with powers of operators removed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">to_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">bool_</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="n">nb_intarray_eq</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]):</span>
-            <span class="n">to_keep</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">to_keep</span><span class="p">]</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">mon_is_zero</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Function which checks if</span>
-<span class="sd">    1) there is a product of two orthogonal projectors,</span>
-<span class="sd">    2) or the monomial is equal to the canonical zero monomial</span>
-<span class="sd">    and returns True if so.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mon : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    bool</span>
-<span class="sd">        Whether the monomial evaluates to zero.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">ravel</span><span class="p">()):</span>
-        <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="p">((</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-                <span class="ow">and</span> <span class="n">nb_intarray_eq</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">return</span> <span class="kc">False</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">nb_op_lexorder</span><span class="p">(</span><span class="n">operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                   <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Map each operator to a unique integer for hashing and lexicographic</span>
-<span class="sd">    ordering comparison purposes.</span>
-
-<span class="sd">    Warning: if `operator` is not found in `lexorder`, the function will</span>
-<span class="sd">    not return any value.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    operator : np.ndarray</span>
-<span class="sd">        Array of integers representing the operator.</span>
-<span class="sd">    lexorder : np.ndarray</span>
-<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
-<span class="sd">        the lexicographic ordering.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    int</span>
-<span class="sd">        The index of the operator in the lexorder matrix.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="n">nb_intarray_eq</span><span class="p">(</span><span class="n">lexorder</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">operator</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">i</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                      <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Convert a monomial to its lexicographic representation, as an</span>
-<span class="sd">    array of integers representing the lex rank of each operator.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mon : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-<span class="sd">    lexorder : np.ndarray</span>
-<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
-<span class="sd">        the lexicographic order of the operator.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.array</span>
-<span class="sd">        Monomial as array of integers, where each integer is the hash</span>
-<span class="sd">        of the corresponding operator.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">lex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">mon</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="n">lex</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">nb_op_lexorder</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lexorder</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">lex</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">mon_lexsorted</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                  <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Sorts a monomial lexicographically.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mon : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-<span class="sd">    lexorder : np.ndarray</span>
-<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
-<span class="sd">        the lexicographic order of the operator.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Sorted monomial.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">mon_lexrepr</span> <span class="o">=</span> <span class="n">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mon_lexrepr</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;quicksort&quot;</span><span class="p">)]</span>
-
-
+<span class="c1">###############################################################################</span>
+<span class="c1"># ABSTRACT OPERATIONS ON MONOMIALS                                            #</span>
+<span class="c1">###############################################################################</span>
 <span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">dot_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="n">mon2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Returns ((mon1)^dagger)*mon2.</span>
 
-<span class="sd">    For hermitian operators this is the same as reversed(mon1)*mon2.</span>
-<span class="sd">    Since all parties commute, the output is ordered by parties. We do</span>
-<span class="sd">    not assume any other commutation rules.</span>
+<span class="sd">    For hermitian operators this is the same as reversed(mon1)*mon2. Since all</span>
+<span class="sd">    parties commute, the output is ordered by parties. We do not assume any</span>
+<span class="sd">    other commutation rules.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    mon1 : numpy.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
+<span class="sd">        Input monomial in 2d array format.</span>
 <span class="sd">    mon2 : numpy.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
+<span class="sd">        Input monomial in 2d array format.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -462,31 +138,157 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">reverse_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">),</span> <span class="n">mon2</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">to_hashable</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Hashes a monomial by converting it to Python bytes containing the</span>
-<span class="sd">    raw data bytes in the array</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">mon_is_zero</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Function which checks if a monomial is equivalent to the zero monomial.</span>
+<span class="sd">    This is the case if there is a product of two orthogonal projectors, or if</span>
+<span class="sd">    the monomial is equal to the canonical zero monomial.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    monomial : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    bytes</span>
-<span class="sd">        Monomial as bytes.</span>
+<span class="sd">    bool</span>
+<span class="sd">        Whether the monomial evaluates to zero.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">monomial</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">ravel</span><span class="p">()):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
 
 
-<div class="viewcode-block" id="to_name"><a class="viewcode-back" href="../../../causalinflation.html#causalinflation.quantum.fast_npa.to_name">[docs]</a><span class="k">def</span> <span class="nf">to_name</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">],</span>
-            <span class="n">names</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">mon_lexsorted</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                  <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Sorts a monomial lexicographically.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
+<span class="sd">        the lexicographic order of the operator.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Sorted monomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mon_lexrepr</span> <span class="o">=</span> <span class="n">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mon_lexrepr</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;quicksort&quot;</span><span class="p">)]</span>
+
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">nb_lexorder_idx</span><span class="p">(</span><span class="n">operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                    <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return the unique integer corresponding to the lexicographic ordering of</span>
+<span class="sd">    the operator. If ``operator`` is not found in ``lexorder``, no value is</span>
+<span class="sd">    returned.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    operator : numpy.ndarray</span>
+<span class="sd">        Array of integers representing the operator.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
+<span class="sd">        the lexicographic ordering.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">        The index of the operator in the lexorder matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">lexorder</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">operator</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">i</span>
+
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                      <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert a monomial to its lexicographic representation, in the form of</span>
+<span class="sd">    an array of integers representing the lexicographic rank of each operator.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
+<span class="sd">        the lexicographic order of the operator.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.array</span>
+<span class="sd">        Monomial as array of integers, where each integer is the hash</span>
+<span class="sd">        of the corresponding operator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">mon</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">lex</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">nb_lexorder_idx</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lexorder</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lex</span>
+
+
+<div class="viewcode-block" id="remove_projector_squares"><a class="viewcode-back" href="../../../operations.html#causalinflation.quantum.fast_npa.remove_projector_squares">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Simplify the monomial by removing operator powers. This is because we</span>
+<span class="sd">    assume projectors, P**2=P. This corresponds to removing duplicates of rows</span>
+<span class="sd">    which are adjacent.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        Monomial with powers of operators removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">to_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">bool_</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">mon</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mon</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]):</span>
+            <span class="n">to_keep</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="n">mon</span><span class="p">[</span><span class="n">to_keep</span><span class="p">]</span></div>
+
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">reverse_mon</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return the reversed monomial.</span>
+
+<span class="sd">    This represents the Hermitian conjugate of the monomial, assuming that</span>
+<span class="sd">    each operator is Hermitian.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Reversed monomial.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="to_name"><a class="viewcode-back" href="../../../operations.html#causalinflation.quantum.fast_npa.to_name">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">to_name</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Convert the 2d array representation of a monomial to a string.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    monomial : numpy.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
+<span class="sd">        Monomial as a matrix with each row being an integer array representing</span>
+<span class="sd">        an operators.</span>
 <span class="sd">    names : List[str]</span>
 <span class="sd">        List of party names.</span>
 
@@ -503,21 +305,143 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;1&quot;</span>
 
-    <span class="c1"># It is faster to convert to list of lists than to loop through numpy arrays</span>
     <span class="n">monomial</span> <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
     <span class="k">return</span> <span class="s2">&quot;*&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">names</span><span class="p">[</span><span class="n">letter</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]</span>
                               <span class="o">+</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">letter</span><span class="p">[</span><span class="mi">1</span><span class="p">:]])</span>
                      <span class="k">for</span> <span class="n">letter</span> <span class="ow">in</span> <span class="n">monomial</span><span class="p">])</span></div>
 
 
-<span class="c1">################################################################################</span>
-<span class="c1"># OPERATIONS ON MONOMIALS RELATED TO INFLATION                                 #</span>
-<span class="c1">################################################################################</span>
+<span class="c1">###############################################################################</span>
+<span class="c1"># OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #</span>
+<span class="c1">###############################################################################</span>
 <span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">nb_commuting</span><span class="p">(</span><span class="n">operator1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                 <span class="n">operator2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Determine if two operators commute. Currently, this only takes</span>
-<span class="sd">    into account commutation coming from inflation and settings.</span>
+<span class="k">def</span> <span class="nf">nb_all_commuting</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                     <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                     <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Check if all operators in ``mon`` commute.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        A matrix where each row is an operator, and the `i`-th row stores the</span>
+<span class="sd">        operator with lexicographic rank `i`.</span>
+<span class="sd">    notcomm : numpy.ndarray</span>
+<span class="sd">        Matrix of commutation relations. Each operator can be identified by an</span>
+<span class="sd">        integer `i` which also doubles as its lexicographic rank. Given two</span>
+<span class="sd">        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators</span>
+<span class="sd">        do not commute, and 0 if they do.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        Return `True` if all operators commute, and `False` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">lexmon</span> <span class="o">=</span> <span class="n">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
+    <span class="n">sub_notcomm</span> <span class="o">=</span> <span class="n">notcomm</span><span class="p">[</span><span class="n">lexmon</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">lexmon</span><span class="p">]</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">sub_notcomm</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="apply_source_perm"><a class="viewcode-back" href="../../../operations.html#causalinflation.quantum.fast_npa.apply_source_perm">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">apply_source_perm</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                      <span class="n">source</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                      <span class="n">permutation</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Apply a source swap to a monomial.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    monomial : numpy.ndarray</span>
+<span class="sd">        Input monomial in 2d array format.</span>
+<span class="sd">    source : int</span>
+<span class="sd">        The source that is being swapped.</span>
+<span class="sd">    permutation : numpy.ndarray</span>
+<span class="sd">        The permutation of the copies of the specified source. The format for</span>
+<span class="sd">        the permutation here is to use indexing starting at one, so the</span>
+<span class="sd">        permutation must be padded with a leading zero. The function</span>
+<span class="sd">        ``causalinflation.quantum.quantum_tools.format_permutations`` converts</span>
+<span class="sd">        a list of permutations to the necessary format.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Input monomial with the specified source swapped.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_factors</span> <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">new_factors</span><span class="p">[:,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">permutation</span><span class="p">[</span><span class="n">new_factors</span><span class="p">[:,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">new_factors</span></div>
+
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">commutation_matrix</span><span class="p">(</span><span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                       <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build a matrix encoding of which operators commute according to the</span>
+<span class="sd">    function ``nb_operators_commute``. Rows and columns are indexed by</span>
+<span class="sd">    operators, and each element is a 0 if the operators in the row and in the</span>
+<span class="sd">    column commute or 1 if they do not.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        Matrix with rows as operators where the index of the row gives the</span>
+<span class="sd">        lexicographic order of the operator.</span>
+
+<span class="sd">    commuting : bool</span>
+<span class="sd">        Whether all the monomials commute. In such a case, the trivial all-zero</span>
+<span class="sd">        array is returned.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Matrix whose entry :math:`(i,j)` has value 1 if the operators with</span>
+<span class="sd">        lexicographic ordering :math:`i` and :math:`j` do not commute, and</span>
+<span class="sd">        value 0 if they commute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">notcomm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">bool_</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">commuting</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">notcomm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">nb_operators_commute</span><span class="p">(</span><span class="n">lexorder</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                                         <span class="n">lexorder</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="n">notcomm</span> <span class="o">=</span> <span class="n">notcomm</span> <span class="o">+</span> <span class="n">notcomm</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">notcomm</span>
+
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">nb_inf_indices_refer_common_source</span><span class="p">(</span><span class="n">op1_inf_indxs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                       <span class="n">op2_inf_indxs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Determine if there is any common source referred to by two</span>
+<span class="sd">     specifications of inflation (a.k.a. &#39;copy&#39;) indices.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    op1_inf_indxs : numpy.ndarray</span>
+<span class="sd">        An array of integers indicating which copy index of each source is</span>
+<span class="sd">         being referenced.</span>
+<span class="sd">    op2_inf_indxs : numpy.ndarray</span>
+<span class="sd">        An array of integers indicating which copy index of each source is</span>
+<span class="sd">         being referenced.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        ``True`` if ``op1_inf_indxs`` and ``op2_inf_indxs`` share a source in</span>
+<span class="sd">        common, ``False`` if they do not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">common_active_source_types</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">op1_inf_indxs</span><span class="p">,</span> <span class="n">op2_inf_indxs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">common_active_source_types</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">op1_inf_indxs</span><span class="p">[</span><span class="n">common_active_source_types</span><span class="p">],</span>
+                           <span class="n">op2_inf_indxs</span><span class="p">[</span><span class="n">common_active_source_types</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">nb_operators_commute</span><span class="p">(</span><span class="n">operator1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                         <span class="n">operator2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Determine if two operators commute. Currently, this only takes into</span>
+<span class="sd">    account commutation coming from inflation and settings.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -529,154 +453,106 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    bool</span>
-<span class="sd">        True if they commute, False if they do not.</span>
+<span class="sd">        ``True`` if ``operator1`` and ``operator2`` commute, ``False`` if they</span>
+<span class="sd">        do not.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    A^11_00 commutes with A^22_00</span>
-<span class="sd">    &gt;&gt;&gt; nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 2, 2, 0, 0]))</span>
+<span class="sd">    &gt;&gt;&gt; nb_operators_commute(np.array([1, 1, 1, 0, 0]),</span>
+<span class="sd">                             np.array([1, 2, 2, 0, 0]))</span>
 <span class="sd">    True</span>
 
 <span class="sd">    A^11_00 does not commute with A^12_00 because they overlap on source 1.</span>
-<span class="sd">    &gt;&gt;&gt; nb_commuting(np.array([1, 1, 1, 0, 0]), np.array([1, 1, 2, 0, 0]))</span>
+<span class="sd">    &gt;&gt;&gt; nb_operators_commute(np.array([1, 1, 1, 0, 0]),</span>
+<span class="sd">                             np.array([1, 1, 2, 0, 0]))</span>
 <span class="sd">    False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">operator1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">operator2</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>  <span class="c1"># Different parties</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">operator1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">operator2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>  <span class="c1"># = sources &amp; settings</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">operator1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">operator2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>  <span class="c1"># sources &amp; settings</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">inf1</span><span class="p">,</span> <span class="n">inf2</span> <span class="o">=</span> <span class="n">operator1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">operator2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Compare just the sources</span>
-        <span class="n">inf1</span><span class="p">,</span> <span class="n">inf2</span> <span class="o">=</span> <span class="n">inf1</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">inf1</span><span class="p">)],</span> <span class="n">inf2</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">inf2</span><span class="p">)]</span>
-        <span class="c1"># If at least one in inf1-inf2 is 0, then there is one source in common</span>
-        <span class="c1"># and therefore the letters don&#39;t commute.</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">inf1</span> <span class="o">-</span> <span class="n">inf2</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">commutation_matrix</span><span class="p">(</span><span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Helper function that builds a matrix encoding which operators commute</span>
-<span class="sd">    according to the function `nb_commuting`. Rows and columns are indexed by</span>
-<span class="sd">    operators, and each element is a 0 if the operators in the row and in the</span>
-<span class="sd">    column commute or 1 if they do not.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    lexorder : np.ndarray</span>
-<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
-<span class="sd">        the lexicographic order of the operator.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Matrix whose (i,j) entry has value 1 if the operators with lexicographic</span>
-<span class="sd">        ordering i and j respectively do not commute, and value 0 if they</span>
-<span class="sd">        commute.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">notcomm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">commuting</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-                <span class="n">notcomm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">nb_commuting</span><span class="p">(</span><span class="n">lexorder</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lexorder</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-        <span class="n">notcomm</span> <span class="o">=</span> <span class="n">notcomm</span> <span class="o">+</span> <span class="n">notcomm</span><span class="o">.</span><span class="n">T</span>
-    <span class="k">return</span> <span class="n">notcomm</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">nb_inf_indices_refer_common_source</span><span class="p">(</span><span class="n">operator1</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span>
+                                                  <span class="n">operator2</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
 
 
 <span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">all_commuting_test</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                       <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                       <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span>
-    <span class="n">mon_lexorder</span> <span class="o">=</span> <span class="n">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
-    <span class="n">sub_notcomm</span> <span class="o">=</span> <span class="n">notcomm</span><span class="p">[</span><span class="n">mon_lexorder</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">mon_lexorder</span><span class="p">]</span>
-    <span class="k">return</span> <span class="ow">not</span> <span class="n">sub_notcomm</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">nb_to_canonical_lexinput</span><span class="p">(</span><span class="n">mon_lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                             <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Brings a monomial to canonical form with respect to commutations.</span>
-
-<span class="sd">    This function works recursively. Assume</span>
-<span class="sd">    `mon_lexorder=np.array([op0, op1, op2, op3, op4])`</span>
-<span class="sd">    where the operators are encoded as integers representing their lexicographic</span>
-<span class="sd">    ordering.</span>
-
-<span class="sd">    First it checks whether there is any operator `opX` with a &quot;commuting path&quot;</span>
-<span class="sd">    from that operator to `op0`. A commuting path from `opX` is a sequence of</span>
-<span class="sd">    operators from `op0` to `opX` such that all of them commute. Consider</span>
-<span class="sd">    the set of all operators that have a commuting path to `op0`. We take the</span>
-<span class="sd">    smallest operator in this set in lexicographic ordering and place it in</span>
-<span class="sd">    the first position, and displace `op0` to the second position. If `op0`</span>
-<span class="sd">    cannot be displaced, we do not move it. Then we call</span>
-<span class="sd">    `nb_to_canonical_lexinput` on the remaining 4 operators. If the smallest</span>
-<span class="sd">    operator is `op3` in the above example, then we return:</span>
-
-<span class="sd">    `[op0, op1, op2, op3, op4]` -&gt; `[op3, nb_to_canonical_lexinput([op0, op1, op2, op4])]`</span>
-
-<span class="sd">    This procedure is done recursively until it stops.</span>
+<span class="k">def</span> <span class="nf">nb_lexmon_to_canonical</span><span class="p">(</span><span class="n">lexmon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                           <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Brings a monomial, input as the indices of the operators in the</span>
+<span class="sd">    lexicographic ordering, to canonical form with respect to commutations.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    mon_lexorder : numpy.ndarray</span>
+<span class="sd">    lexmon : numpy.ndarray</span>
 <span class="sd">        Monomial as an array of integers, where each integer represents</span>
 <span class="sd">        the lexicographic order of an operator.</span>
 <span class="sd">    notcomm : numpy.ndarray</span>
-<span class="sd">        Matrix whose (i,j) entry has value 1 if the operators with lexicographic</span>
-<span class="sd">        ordering i and j respectively do not commute, and value 0 if they</span>
-<span class="sd">        commute.</span>
+<span class="sd">        Matrix of commutation relations, given in the format specified by</span>
+<span class="sd">        `causalinflation.quantum.fast_npa.commutation_matrix`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
+<span class="sd">    numpy.ndarray</span>
 <span class="sd">        Monomial in canonical form with respect to commutations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">mon_lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">mon_lexorder</span>
+    <span class="k">if</span> <span class="n">lexmon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">lexmon</span>
 
     <span class="c1"># Take only the rows and columns of notcomm that appear in the monomial,</span>
     <span class="c1"># in the correct order.</span>
-    <span class="n">sub_notcomm</span> <span class="o">=</span> <span class="n">notcomm</span><span class="p">[</span><span class="n">mon_lexorder</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">mon_lexorder</span><span class="p">]</span>
+    <span class="n">sub_notcomm</span> <span class="o">=</span> <span class="n">notcomm</span><span class="p">[</span><span class="n">lexmon</span><span class="p">,</span> <span class="p">:][:,</span> <span class="n">lexmon</span><span class="p">]</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">sub_notcomm</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">mon_lexorder</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">lexmon</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">sub_notcomm</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">mon_lexorder</span>
-    <span class="n">minimum</span> <span class="o">=</span> <span class="n">mon_lexorder</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">lexmon</span>
+    <span class="n">minimum</span> <span class="o">=</span> <span class="n">lexmon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">minimum_idx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mon_lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-        <span class="n">where</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sub_notcomm</span><span class="p">[</span><span class="n">op</span><span class="p">,</span> <span class="p">:</span><span class="n">op</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">where</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">mon_lexorder</span><span class="p">[</span><span class="n">op</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">minimum</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">lexmon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="c1"># Find the lowest position where we can move op</span>
+        <span class="n">nc_ops_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sub_notcomm</span><span class="p">[</span><span class="n">op</span><span class="p">,</span> <span class="p">:</span><span class="n">op</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">nc_ops_position</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lexmon</span><span class="p">[</span><span class="n">op</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">minimum</span><span class="p">:</span>
                 <span class="n">minimum_idx</span> <span class="o">=</span> <span class="n">op</span>
-                <span class="n">minimum</span> <span class="o">=</span> <span class="n">mon_lexorder</span><span class="p">[</span><span class="n">op</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">minimum</span> <span class="o">&lt;=</span> <span class="n">mon_lexorder</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-        <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mon_lexorder</span><span class="p">[</span><span class="n">minimum_idx</span><span class="p">]])</span>
-        <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">mon_lexorder</span><span class="p">[:</span><span class="n">minimum_idx</span><span class="p">],</span>
-                             <span class="n">mon_lexorder</span><span class="p">[</span><span class="n">minimum_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]))</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">m1</span><span class="p">,</span> <span class="n">nb_to_canonical_lexinput</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">)))</span>
+                <span class="n">minimum</span>     <span class="o">=</span> <span class="n">lexmon</span><span class="p">[</span><span class="n">op</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">minimum</span> <span class="o">&lt;=</span> <span class="n">lexmon</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lexmon</span><span class="p">[</span><span class="n">minimum_idx</span><span class="p">]])</span>
+        <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">lexmon</span><span class="p">[:</span><span class="n">minimum_idx</span><span class="p">],</span>
+                             <span class="n">lexmon</span><span class="p">[</span><span class="n">minimum_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">m1</span><span class="p">,</span> <span class="n">nb_lexmon_to_canonical</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mon_lexorder</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-        <span class="n">m2</span> <span class="o">=</span> <span class="n">mon_lexorder</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">m1</span><span class="p">,</span> <span class="n">nb_to_canonical_lexinput</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">)))</span>
+        <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lexmon</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="n">m2</span> <span class="o">=</span> <span class="n">lexmon</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">m1</span><span class="p">,</span> <span class="n">nb_lexmon_to_canonical</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">)))</span>
 
 
-<div class="viewcode-block" id="to_canonical"><a class="viewcode-back" href="../../../causalinflation.html#causalinflation.quantum.fast_npa.to_canonical">[docs]</a><span class="k">def</span> <span class="nf">to_canonical</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<div class="viewcode-block" id="to_canonical"><a class="viewcode-back" href="../../../operations.html#causalinflation.quantum.fast_npa.to_canonical">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">to_canonical</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                  <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">hasty</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+                 <span class="n">apply_only_commutations</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Brings a monomial to canonical form with respect to commutations,</span>
-<span class="sd">    and removes square projectors, and identifies orthogonality.</span>
+<span class="sd">    removing square projectors, and identifying orthogonality.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    mon : numpy.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
+<span class="sd">        Input monomial in 2D array format.</span>
+<span class="sd">    notcomm : numpy.ndarray</span>
+<span class="sd">        Matrix of commutation relations. Each operator can be identified by an</span>
+<span class="sd">        integer `i` which also doubles as its lexicographic rank. Given two</span>
+<span class="sd">        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators</span>
+<span class="sd">        do not commute, and 0 if they do.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        A matrix where each row is an operator, and the `i`-th row stores</span>
+<span class="sd">        the operator with lexicographic rank `i`.</span>
 <span class="sd">    commuting : bool, optional</span>
-<span class="sd">        Whether the variables in the problem commute or not. By default</span>
+<span class="sd">        Whether all the variables in the problem commute or not. By default</span>
 <span class="sd">        ``False``.</span>
-<span class="sd">    hasty : bool, optional</span>
-<span class="sd">        Whether to skip the removal of projector squares and the test to see if the monomial is equal to zero.</span>
+<span class="sd">    apply_only_commutations : bool, optional</span>
+<span class="sd">        If ``True``, skip the removal of projector squares and the test to see</span>
+<span class="sd">        if the monomial is equal to zero. By default ``False``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -684,31 +560,44 @@
 <span class="sd">        The monomial in canonical form with respect to some commutation</span>
 <span class="sd">        relationships.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">uint8_</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">mon</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">mon</span> <span class="o">=</span> <span class="n">hasty_to_canonical</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">,</span> <span class="n">commuting</span><span class="o">=</span><span class="n">commuting</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">hasty</span><span class="p">:</span>
+        <span class="n">mon</span> <span class="o">=</span> <span class="n">order_via_commutation</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">,</span> <span class="n">commuting</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">apply_only_commutations</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">mon</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">mon</span> <span class="o">=</span> <span class="n">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">mon_is_zero</span><span class="p">(</span><span class="n">mon</span><span class="p">):</span>
-                <span class="k">return</span> <span class="mi">0</span><span class="o">*</span><span class="n">mon</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mi">0</span><span class="o">*</span><span class="n">mon</span><span class="p">[:</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">uint8_</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">mon</span></div>
 
 
-<span class="k">def</span> <span class="nf">hasty_to_canonical</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                       <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                       <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                       <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Brings a monomial to canonical form with respect to commutations, but does</span>
-<span class="sd">    not check for squared projectors or orthogonality.</span>
+<div class="viewcode-block" id="order_via_commutation"><a class="viewcode-back" href="../../../operations.html#causalinflation.quantum.fast_npa.order_via_commutation">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">order_via_commutation</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                          <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                          <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                          <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Applies commutations between the operators forming a monomial until</span>
+<span class="sd">    finding the smallest lexicographic representation.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    mon : numpy.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
+<span class="sd">        Input monomial in 2D array format.</span>
+<span class="sd">    notcomm : numpy.ndarray</span>
+<span class="sd">        Matrix of commutation relations. Each operator can be identified by an</span>
+<span class="sd">        integer `i` which also doubles as its lexicographic rank. Given two</span>
+<span class="sd">        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators</span>
+<span class="sd">        do not commute, and 0 if they do.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        A matrix where each row is an operator, and the `i`-th row stores</span>
+<span class="sd">        the operator with lexicographic rank `i`.</span>
+<span class="sd">    commuting : bool, optional</span>
+<span class="sd">        Whether all the variables in the problem commute or not. By default</span>
+<span class="sd">        ``False``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -716,6 +605,7 @@
 <span class="sd">        The monomial in canonical form with respect to some commutation</span>
 <span class="sd">        relationships.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">uint8_</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">mon</span>
     <span class="k">else</span><span class="p">:</span>
@@ -723,265 +613,37 @@
             <span class="n">mon</span> <span class="o">=</span> <span class="n">mon_lexsorted</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">mon</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">mon_lexorder</span> <span class="o">=</span> <span class="n">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
-            <span class="n">mon</span> <span class="o">=</span> <span class="n">nb_to_canonical_lexinput</span><span class="p">(</span><span class="n">mon_lexorder</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">)</span>
+            <span class="n">lexmon</span> <span class="o">=</span> <span class="n">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">lexorder</span><span class="p">)</span>
+            <span class="n">mon</span> <span class="o">=</span> <span class="n">nb_lexmon_to_canonical</span><span class="p">(</span><span class="n">lexmon</span><span class="p">,</span> <span class="n">notcomm</span><span class="p">)</span>
             <span class="n">mon</span> <span class="o">=</span> <span class="n">lexorder</span><span class="p">[</span><span class="n">mon</span><span class="p">]</span>
-            <span class="k">return</span> <span class="n">mon</span>
-
-
-<div class="viewcode-block" id="factorize_monomial"><a class="viewcode-back" href="../../../causalinflation.html#causalinflation.quantum.fast_npa.factorize_monomial">[docs]</a><span class="k">def</span> <span class="nf">factorize_monomial</span><span class="p">(</span><span class="n">raw_monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                       <span class="n">canonical_order</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;This function splits a moment/expectation value into products of</span>
-<span class="sd">    moments according to the support of the operators within the moment.</span>
-
-<span class="sd">    The moment is encoded as a 2d array where each row is an operator.</span>
-<span class="sd">    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.</span>
-<span class="sd">    In each row, the columns encode the following information:</span>
-
-<span class="sd">    First column:       The party index, *starting from 1*.</span>
-<span class="sd">                        (1 for A, 2 for B, etc.)</span>
-<span class="sd">    Last two columns:   The input x, starting from zero and then the</span>
-<span class="sd">                        output a, starting from zero.</span>
-<span class="sd">    In between:         This encodes the support of the operator. There</span>
-<span class="sd">                        are as many columns as sources/quantum states.</span>
-<span class="sd">                        Column j represents source j-1 (-1 because the 1st</span>
-<span class="sd">                        col is the party). If the value is 0, then this</span>
-<span class="sd">                        operator does not measure this source. If the value</span>
-<span class="sd">                        is for e.g. 2, then this operator is acting on</span>
-<span class="sd">                        copy 2 of source j-1.</span>
-
-<span class="sd">    The output is a tuple of ndarrays where each array represents another</span>
-<span class="sd">    monomial s.t. their product is equal to the original monomial.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    raw_monomial : np.ndarray</span>
-<span class="sd">        Monomial as a matrix with rows as integer arrays representing operators.</span>
-<span class="sd">    canonical_order: bool, optional</span>
-<span class="sd">        Whether to return the different factors in a canonical order.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Tuple[np.ndarray]</span>
-<span class="sd">        A tuple of ndarrays, where each array represents an atomic monomial</span>
-<span class="sd">        factor.</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; monomial = np.array([[1, 0, 1, 1, 0, 0],</span>
-<span class="sd">                             [2, 1, 0, 2, 0, 0],</span>
-<span class="sd">                             [1, 0, 3, 3, 0, 0],</span>
-<span class="sd">                             [3, 3, 5, 0, 0, 0],</span>
-<span class="sd">                             [3, 1, 4, 0, 0, 0],</span>
-<span class="sd">                             [3, 6, 6, 0, 0, 0],</span>
-<span class="sd">                             [3, 4, 5, 0, 0, 0]])</span>
-<span class="sd">    &gt;&gt;&gt; factorised = factorize_monomial(monomial)</span>
-<span class="sd">    [array([[1, 0, 1, 1, 0, 0]]),</span>
-<span class="sd">     array([[1, 0, 3, 3, 0, 0]]),</span>
-<span class="sd">     array([[2, 1, 0, 2, 0, 0],</span>
-<span class="sd">            [3, 1, 4, 0, 0, 0]]),</span>
-<span class="sd">     array([[3, 3, 5, 0, 0, 0],</span>
-<span class="sd">            [3, 4, 5, 0, 0, 0]]),</span>
-<span class="sd">     array([[3, 6, 6, 0, 0, 0]])]</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw_monomial</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">raw_monomial</span><span class="p">,)</span>
-
-    <span class="n">monomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">raw_monomial</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span>
-    <span class="n">components_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">monomial</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span>
-    <span class="c1"># Add labels to see if the components have been used</span>
-    <span class="n">components_indices</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">monomial</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
-
-    <span class="n">inflation_indices</span> <span class="o">=</span> <span class="n">monomial</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">disconnected_components</span> <span class="o">=</span> <span class="p">[]</span>
-
-    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">while</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">monomial</span><span class="p">):</span>
-        <span class="n">component</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">components_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">component</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-            <span class="n">components_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="n">jdx</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="c1"># Iterate over all components that are connected</span>
-            <span class="k">while</span> <span class="n">jdx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">component</span><span class="p">):</span>
-                <span class="n">nonzero_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span>
-                    <span class="n">inflation_indices</span><span class="p">[</span><span class="n">component</span><span class="p">[</span><span class="n">jdx</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">nonzero_sources</span><span class="p">:</span>
-                    <span class="n">overlapping</span> <span class="o">=</span> <span class="p">(</span><span class="n">inflation_indices</span><span class="p">[:,</span> <span class="n">source</span><span class="p">]</span>
-                                   <span class="o">==</span> <span class="n">inflation_indices</span><span class="p">[</span><span class="n">component</span><span class="p">[</span><span class="n">jdx</span><span class="p">],</span> <span class="n">source</span><span class="p">])</span>
-                    <span class="c1"># Add the components that overlap to the lookup list</span>
-                    <span class="n">component</span> <span class="o">+=</span> <span class="n">components_indices</span><span class="p">[</span>
-                                     <span class="n">overlapping</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">components_indices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-                                                    <span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-                    <span class="c1"># Specify that the components that overlap have been used</span>
-                    <span class="n">components_indices</span><span class="p">[</span><span class="n">overlapping</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">jdx</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">component</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">disconnected_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
-        <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
-
-    <span class="n">disconnected_components</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-        <span class="n">monomial</span><span class="p">[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">component</span><span class="p">)]</span> <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">disconnected_components</span><span class="p">)</span>
-
-    <span class="c1"># We would like to have a canonical ordering of the factors.</span>
-    <span class="k">if</span> <span class="n">canonical_order</span><span class="p">:</span>
-        <span class="n">disconnected_components</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">disconnected_components</span><span class="p">,</span>
-                                               <span class="n">key</span><span class="o">=</span><span class="n">to_hashable</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">disconnected_components</span></div>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">apply_source_permplus_monomial</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                                   <span class="n">source</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                   <span class="n">permutation_plus</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;This applies a source swap to a monomial.</span>
-
-<span class="sd">    We assume in the monomial that all operators COMMUTE with each other.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    monomial : numpy.ndarray</span>
-<span class="sd">        Input monomial in 2d array format.</span>
-<span class="sd">    source : int</span>
-<span class="sd">        The source that is being swapped.</span>
-<span class="sd">    permutation_plus : numpy.ndarray</span>
-<span class="sd">        The permutation of the copies of the specified source.</span>
-<span class="sd">        The format for the permutation here is to use indexing starting at one, so the permutation must be</span>
-<span class="sd">        padded with a leading zero.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Input monomial with the specified source swapped.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">new_factors</span> <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">new_factors</span><span class="p">[:,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">permutation_plus</span><span class="p">[</span><span class="n">new_factors</span><span class="p">[:,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]]</span>
-    <span class="k">return</span> <span class="n">new_factors</span>
-
-
-<span class="c1">################################################################################</span>
-<span class="c1"># OPERATIONS ON MOMENT MATRICES                                                #</span>
-<span class="c1">################################################################################</span>
-<div class="viewcode-block" id="calculate_momentmatrix"><a class="viewcode-back" href="../../../causalinflation.html#causalinflation.quantum.fast_npa.calculate_momentmatrix">[docs]</a><span class="k">def</span> <span class="nf">calculate_momentmatrix</span><span class="p">(</span><span class="n">cols</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
-                           <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                           <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                           <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                           <span class="n">commuting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                           <span class="n">dtype</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the moment matrix. The function takes as input the generating</span>
-<span class="sd">    set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a</span>
-<span class="sd">    matrix where each row is an operator and the columns specify the operator</span>
-<span class="sd">    labels/indices. The moment matrix is the inner product between all possible</span>
-<span class="sd">    pairs of elements from the generating set. The program outputs the moment</span>
-<span class="sd">    matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the</span>
-<span class="sd">    index of the monomial that represents the result of the expectation value</span>
-<span class="sd">    :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state</span>
-<span class="sd">    :math:`\rho` after applying the substitutions. The program returns the</span>
-<span class="sd">    moment matrix and the dictionary mapping each monomial in string</span>
-<span class="sd">    representation to its integer representation.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    cols : List</span>
-<span class="sd">        List of numpy.ndarray representing the generating set.</span>
-<span class="sd">    notcomm : numpy.ndarray</span>
-<span class="sd">        Matrix whose (i,j) entry has value 1 if the operators with lexicographic</span>
-<span class="sd">        ordering i and j respectively do not commute, and value 0 if they</span>
-<span class="sd">        commute.</span>
-<span class="sd">    lexorder : numpy.ndarray</span>
-<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
-<span class="sd">        the lexicographic order of the operator.</span>
-<span class="sd">    commuting : bool, optional</span>
-<span class="sd">        Whether the variables in the problem commute or not. By default</span>
-<span class="sd">        ``False``.</span>
-<span class="sd">    verbose : int, optional</span>
-<span class="sd">        How much information to print. By default ``0``.</span>
-<span class="sd">    dtype: np.dtype, optional</span>
-<span class="sd">        The dtype for constructing monomials when represented as numpy arrays.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Tuple[numpy.ndarray, Dict]</span>
-<span class="sd">        The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores</span>
-<span class="sd">        the integer representation of a monomial. The Dict is a mapping from</span>
-<span class="sd">        string representation to integer representation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">nrcols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-    <span class="n">canonical_mon_to_idx_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="n">momentmatrix</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="n">nrcols</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">)</span>
-    <span class="n">varidx</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># We start from 1 because 0 is reserved for 0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nrcols</span><span class="p">),</span>
-                  <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
-                  <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Calculating moment matrix&quot;</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">):</span>
-            <span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span> <span class="o">=</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cols</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-            <span class="n">mon_v1</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">dot_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span>
-                                  <span class="n">notcomm</span><span class="p">,</span>
-                                  <span class="n">lexorder</span><span class="p">,</span>
-                                  <span class="n">commuting</span><span class="o">=</span><span class="n">commuting</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">mon_is_zero</span><span class="p">(</span><span class="n">mon_v1</span><span class="p">):</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">commuting</span><span class="p">:</span>
-                    <span class="n">mon_v2</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">dot_mon</span><span class="p">(</span><span class="n">mon2</span><span class="p">,</span> <span class="n">mon1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span>
-                                          <span class="n">notcomm</span><span class="p">,</span>
-                                          <span class="n">lexorder</span><span class="p">,</span>
-                                          <span class="n">commuting</span><span class="o">=</span><span class="n">commuting</span><span class="p">)</span>
-                    <span class="n">mon_hash</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">mon_v1</span><span class="o">.</span><span class="n">tobytes</span><span class="p">(),</span> <span class="n">mon_v2</span><span class="o">.</span><span class="n">tobytes</span><span class="p">())</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">mon_hash</span> <span class="o">=</span> <span class="n">mon_v1</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">known_varidx</span> <span class="o">=</span> <span class="n">canonical_mon_to_idx_dict</span><span class="p">[</span><span class="n">mon_hash</span><span class="p">]</span>
-                    <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">known_varidx</span>
-                    <span class="n">momentmatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">known_varidx</span>
-                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-                    <span class="n">canonical_mon_to_idx_dict</span><span class="p">[</span><span class="n">mon_hash</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
-                    <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
-                    <span class="n">momentmatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
-                    <span class="n">varidx</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="n">momentmatrix</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">canonical_mon_to_idx_dict</span></div>
+            <span class="k">return</span> <span class="n">mon</span></div>
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.
-
-    </p>
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
