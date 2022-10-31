@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Functions to operate on monomials &mdash; CausalInflation 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
+    <link rel="prev" title="Functions to build problem elements" href="build.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="contents.html" class="icon icon-home"> CausalInflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Functions to operate on monomials</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#monomial-properties">Monomial properties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#transformations-of-representation">Transformations of representation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#other-functions">Other functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">CausalInflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">API Reference</a> &raquo;</li>
+      <li>Functions to operate on monomials</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/operations.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="functions-to-operate-on-monomials">
+<h1>Functions to operate on monomials<a class="headerlink" href="#functions-to-operate-on-monomials" title="Permalink to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.apply_source_perm">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">apply_source_perm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#apply_source_perm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.apply_source_perm" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a source swap to a monomial.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial in 2d array format.</p></li>
+<li><p><strong>source</strong> (<em>int</em>) – The source that is being swapped.</p></li>
+<li><p><strong>permutation</strong> (<em>numpy.ndarray</em>) – The permutation of the copies of the specified source. The format for
+the permutation here is to use indexing starting at one, so the
+permutation must be padded with a leading zero. The function
+<code class="docutils literal notranslate"><span class="pre">causalinflation.quantum.quantum_tools.format_permutations</span></code> converts
+a list of permutations to the necessary format.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Input monomial with the specified source swapped.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.factorize_monomial">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">factorize_monomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canonical_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#factorize_monomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.factorize_monomial" title="Permalink to this definition"></a></dt>
+<dd><p>This function splits a moment/expectation value into products of moments
+according to the support of the operators within the moment. The moment is
+encoded as a 2d array where each row is an operator. If
+<code class="docutils literal notranslate"><span class="pre">monomial=A*B*C*B</span></code> then row 1 is <code class="docutils literal notranslate"><span class="pre">A</span></code>, row 2 is <code class="docutils literal notranslate"><span class="pre">B</span></code>, row 3 is <code class="docutils literal notranslate"><span class="pre">C</span></code>,
+and row 4 is <code class="docutils literal notranslate"><span class="pre">B</span></code>. In each row, the columns encode the following
+information:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>First column: The party index, <em>starting from 1</em> (e.g., 1 for <code class="docutils literal notranslate"><span class="pre">A</span></code>,
+2 for <code class="docutils literal notranslate"><span class="pre">B</span></code>, etc.)</p></li>
+<li><p>Last two columns: The input <code class="docutils literal notranslate"><span class="pre">x</span></code> starting from zero, and then the
+output <code class="docutils literal notranslate"><span class="pre">a</span></code> starting from zero.</p></li>
+<li><p>In between: This encodes the support of the operator. There are as many
+columns as sources/quantum states. Column <cite>j</cite> represents source <cite>j-1</cite>
+(-1 because the 1stcol is the party). If the value is 0, then this
+operator does not measure this source. If the value is for e.g. 2,
+then this operator is acting on copy 2 of source <cite>j-1</cite>.</p></li>
+</ul>
+</div></blockquote>
+<p>The output is a tuple of ndarrays where each array represents another
+monomial s.t. their product is equal to the original monomial.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>raw_monomial</strong> (<em>np.ndarray</em>) – Monomial in 2d array form.</p></li>
+<li><p><strong>canonical_order</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return the different factors in a canonical order.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of ndarrays, where each array represents an atomic monomial
+factor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[np.ndarray]</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">monomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="go">                         [2, 1, 0, 2, 0, 0],</span>
+<span class="go">                         [1, 0, 3, 3, 0, 0],</span>
+<span class="go">                         [3, 3, 5, 0, 0, 0],</span>
+<span class="go">                         [3, 1, 4, 0, 0, 0],</span>
+<span class="go">                         [3, 6, 6, 0, 0, 0],</span>
+<span class="go">                         [3, 4, 5, 0, 0, 0]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">factorised</span> <span class="o">=</span> <span class="n">factorize_monomial</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+<span class="go">[array([[1, 0, 1, 1, 0, 0]]),</span>
+<span class="go"> array([[1, 0, 3, 3, 0, 0]]),</span>
+<span class="go"> array([[2, 1, 0, 2, 0, 0],</span>
+<span class="go">        [3, 1, 4, 0, 0, 0]]),</span>
+<span class="go"> array([[3, 3, 5, 0, 0, 0],</span>
+<span class="go">        [3, 4, 5, 0, 0, 0]]),</span>
+<span class="go"> array([[3, 6, 6, 0, 0, 0]])]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<section id="monomial-properties">
+<h2>Monomial properties<a class="headerlink" href="#monomial-properties" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.is_knowable">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">is_knowable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#is_knowable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.is_knowable" title="Permalink to this definition"></a></dt>
+<dd><p>Determine whether a given atomic monomial admits an identification with
+a probability of the original scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>monomial</strong> (<em>np.ndarray</em>) – List of operators, denoted each by a list of indices</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Whether the monomial is knowable or not.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.is_physical">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">is_physical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandwich_positivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#is_physical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.is_physical" title="Permalink to this definition"></a></dt>
+<dd><p>Determines whether a monomial is physical, this is, if it always has a
+non-negative expectation value.</p>
+<p>This code also supports the detection of “sandwiches”, i.e., monomials
+of the form <span class="math notranslate nohighlight">\(\langle \psi | A_1 A_2 A_1 | \psi \rangle\)</span> where
+<span class="math notranslate nohighlight">\(A_1\)</span> and <span class="math notranslate nohighlight">\(A_2\)</span> do not commute. In principle we do not know the
+value of this term. However, note that <span class="math notranslate nohighlight">\(A_1\)</span> can be absorbed into
+<span class="math notranslate nohighlight">\(| \psi \rangle\)</span> forming an unnormalised quantum state
+<span class="math notranslate nohighlight">\(| \psi' \rangle\)</span>, thus <span class="math notranslate nohighlight">\(\langle\psi'|A_2|\psi'\rangle\)</span>.
+Note that while we know the value <span class="math notranslate nohighlight">\(\langle\psi |A_2| \psi\rangle\)</span>,
+we do not know <span class="math notranslate nohighlight">\(\langle \psi' | A_2 | \psi' \rangle\)</span> because of
+the unknown normalisation, however we know it must be non-negative,
+<span class="math notranslate nohighlight">\(\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0\)</span>.
+This simple example can be extended to various layers of sandwiching.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>monomial_in</strong> (<em>numpy.ndarray</em>) – Input monomial in 2d array format.</p></li>
+<li><p><strong>sandwich_positivity</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to consider sandwiching. By default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Whether the monomial has always non-negative expectation or not.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="transformations-of-representation">
+<h2>Transformations of representation<a class="headerlink" href="#transformations-of-representation" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.order_via_commutation">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">order_via_commutation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#order_via_commutation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.order_via_commutation" title="Permalink to this definition"></a></dt>
+<dd><p>Applies commutations between the operators forming a monomial until
+finding the smallest lexicographic representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial in 2D array format.</p></li>
+<li><p><strong>notcomm</strong> (<em>numpy.ndarray</em>) – Matrix of commutation relations. Each operator can be identified by an
+integer <cite>i</cite> which also doubles as its lexicographic rank. Given two
+operators with ranks <cite>i</cite>, <cite>j</cite>, <code class="docutils literal notranslate"><span class="pre">notcomm[i,</span> <span class="pre">j]</span></code> is 1 if the operators
+do not commute, and 0 if they do.</p></li>
+<li><p><strong>lexorder</strong> (<em>numpy.ndarray</em>) – A matrix where each row is an operator, and the <cite>i</cite>-th row stores
+the operator with lexicographic rank <cite>i</cite>.</p></li>
+<li><p><strong>commuting</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether all the variables in the problem commute or not. By default
+<code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The monomial in canonical form with respect to some commutation
+relationships.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.reduce_inflation_indices">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">reduce_inflation_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#reduce_inflation_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.reduce_inflation_indices" title="Permalink to this definition"></a></dt>
+<dd><p>Reduce the inflation indices of a monomial as much as possible. This
+procedure might not give the canonical form directly due to commutations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An equivalent monomial closer to its representative form.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.to_canonical">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_canonical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_only_commutations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_canonical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_canonical" title="Permalink to this definition"></a></dt>
+<dd><p>Brings a monomial to canonical form with respect to commutations,
+removing square projectors, and identifying orthogonality.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial in 2D array format.</p></li>
+<li><p><strong>notcomm</strong> (<em>numpy.ndarray</em>) – Matrix of commutation relations. Each operator can be identified by an
+integer <cite>i</cite> which also doubles as its lexicographic rank. Given two
+operators with ranks <cite>i</cite>, <cite>j</cite>, <code class="docutils literal notranslate"><span class="pre">notcomm[i,</span> <span class="pre">j]</span></code> is 1 if the operators
+do not commute, and 0 if they do.</p></li>
+<li><p><strong>lexorder</strong> (<em>numpy.ndarray</em>) – A matrix where each row is an operator, and the <cite>i</cite>-th row stores
+the operator with lexicographic rank <cite>i</cite>.</p></li>
+<li><p><strong>commuting</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether all the variables in the problem commute or not. By default
+<code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>apply_only_commutations</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, skip the removal of projector squares and the test to see
+if the monomial is equal to zero. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The monomial in canonical form with respect to some commutation
+relationships.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.to_name">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_name" title="Permalink to this definition"></a></dt>
+<dd><p>Convert the 2d array representation of a monomial to a string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Monomial as a matrix with each row being an integer array representing
+an operators.</p></li>
+<li><p><strong>names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – List of party names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The string representation of the monomial.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_name</span><span class="p">([[</span><span class="mi">1</span> <span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">6</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]],</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span><span class="s1">&#39;bb&#39;</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="s1">&#39;Z&#39;</span><span class="p">])</span>
+<span class="go">&#39;a_1_0_3*Z_1_2_6*bb_3_3_4&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="other-functions">
+<h2>Other functions<a class="headerlink" href="#other-functions" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.remove_projector_squares">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">remove_projector_squares</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#remove_projector_squares"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.remove_projector_squares" title="Permalink to this definition"></a></dt>
+<dd><p>Simplify the monomial by removing operator powers. This is because we
+assume projectors, P**2=P. This corresponds to removing duplicates of rows
+which are adjacent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial in 2d array format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Monomial with powers of operators removed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.remove_sandwich">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">remove_sandwich</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#remove_sandwich"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.remove_sandwich" title="Permalink to this definition"></a></dt>
+<dd><p>Removes sandwiching/pinching from a monomial. This is, it converts the
+monomial represented by <span class="math notranslate nohighlight">\(U A U^\dagger\)</span> into <span class="math notranslate nohighlight">\(A\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The monomial without sandwiches.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="build.html" class="btn btn-neutral float-left" title="Functions to build problem elements" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 API Reference
-===============
+=============
 
 .. toctree::
    :maxdepth: 4
@@ -9,6 +9,8 @@ API Reference
    inflationsdp
 
    solvers
+
+   monomials
 
    build
 
