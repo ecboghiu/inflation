@@ -328,7 +328,7 @@ class InflationSDP(object):
         if self.verbose > 1:
             print(f"The problem has {self.n_knowable} knowable monomials, " +
                   f"{self.n_something_knowable} semi-knowable monomials, " +
-                  f"and {self.n_unknowable} monomials.")
+                  f"and {self.n_unknowable} unknowable monomials.")
 
         if self.commuting:
             self.physical_monomials = self.monomials
