@@ -1,13 +1,14 @@
 """
-This file contains helper functions to write and export the problems into
-various formats.
-@authors: Alejandro Pozas-Kerstjens, Emanuel-Cristian Boghiu
+This file contains helper functions to write and export the problems to various
+formats.
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
+import pickle
 import numpy as np
+
 from copy import deepcopy
 from scipy.io import savemat
 from warnings import warn
-import pickle
 
 
 def convert_to_human_readable(problem):
@@ -20,30 +21,32 @@ def convert_to_human_readable(problem):
 
     Returns
     -------
-    Tuple[str, numpy.ndarray, List]
+    Tuple[str, numpy.ndarray, List, List]
         The first element is the objective function in a string, the second is
-        a matrix of strings as the symbolic representation of the moment matrix,
-        and the third is a list of variable upper and lower bounds.
+        a matrix of strings as the symbolic representation of the moment
+        matrix, the third is a list of variable upper and lower bounds, and the
+        fourth is a list of equality constraints of the form ``line = 0``.
     """
     matrix = deepcopy(problem.momentmatrix).astype(object)
     ### Process moment matrix
     # Replacer for constants
-    constant_dict = {moment.idx: str(value)
-                     for moment, value in problem.known_moments.items()}
-    constant_replacer = np.vectorize(lambda x: constant_dict.get(x, x))
+    constants = {moment.idx: str(value)
+                 for moment, value in problem.known_moments.items()}
+    constant_replacer = np.vectorize(lambda x: constants.get(x, x))
     # Replacer for semiknowns
-    semiknown_dict = dict()
+    semiknowns = dict()
     for key, val in problem.semiknown_moments.items():
         val_str = val[1].name.replace(", ", ";")
-        semiknown_dict[key.idx] = f"{val[0]}*{val_str}"
-    semiknown_replacer = np.vectorize(lambda x: semiknown_dict.get(x, str(x)))
+        semiknowns[key.idx] = f"{val[0]}*{val_str}"
+    semiknown_replacer = np.vectorize(lambda x: semiknowns.get(x, str(x)))
     # Replacer for remaining symbols
-    monomial_dict = dict()
-    for mon in problem.list_of_monomials:
-        monomial_dict[mon.idx] = mon.name.replace(", ", ";")
+    monomials = dict()
+    for mon in problem.monomials:
+        monomials[mon.idx] = mon.name.replace(", ", ";")
+
     def replace_known(monom):
         try:
-            replacement = monomial_dict.get(float(monom), monom)
+            replacement = monomials.get(float(monom), monom)
         except ValueError:
             replacement = monom
         return replacement
@@ -60,16 +63,16 @@ def convert_to_human_readable(problem):
             objective = str(independent_term)
             is_first = False
         else:
-            objective = ''
+            objective = ""
     except KeyError:
-        objective = ''
+        objective = ""
     for variable, coeff in problem.objective.items():
         if variable != problem.One:
             if (coeff < 0) or is_first:
                 objective += f"{float(coeff)}*{variable.name}"
             else:
                 objective += f"+{float(coeff)}*{variable.name}"
-                is_first = False
+            is_first = False
 
     ### Process bounds
     bounded_vars = sorted(list(set(problem.moment_upperbounds.keys()).union(
@@ -78,15 +81,24 @@ def convert_to_human_readable(problem):
     bounds = np.zeros((len(bounded_vars), 3), dtype=object)
     for idx, var in enumerate(bounded_vars):
         bounds[idx, 0] = var
-        try:
-            bounds[idx, 1] = problem.moment_lowerbounds[var]
-        except KeyError:
-            bounds[idx, 1] = None
-        try:
-            bounds[idx, 2] = problem.moment_upperbounds[var]
-        except KeyError:
-            bounds[idx, 2] = None
-    return objective, matrix, bounds.tolist()
+        bounds[idx, 1] = problem.moment_lowerbounds.get(var, None)
+        bounds[idx, 2] = problem.moment_upperbounds.get(var, None)
+
+    ### Process equalities
+    equalities = []
+    for eq in problem.moment_equalities:
+        equality = ""
+        for monom, coeff in eq.items():
+            equality += "+" if coeff > 0 else "-"
+            if monom == problem.One:
+                equality += str(abs(coeff))
+            else:
+                if np.isclose(abs(coeff), 1):
+                    equality += monom.name
+                else:
+                    equality += f"{abs(coeff)}*{monom.name}"
+        equalities.append(equality[1:] if equality[0] == "+" else equality)
+    return objective, matrix, bounds.tolist(), equalities
 
 
 def write_to_csv(problem, filename):
@@ -96,16 +108,21 @@ def write_to_csv(problem, filename):
     :type problem: :class:`causalinflation.InflationSDP`
     :type filename: str
     """
-    objective, matrix, bounds = convert_to_human_readable(problem)
+    objective, matrix, bounds, equalities = convert_to_human_readable(problem)
     f = open(filename, "w")
     f.write("Objective: " + objective + "\n")
     for matrix_line in matrix:
-        f.write(str(list(matrix_line))[1:-1].replace(" ", "").replace("\'", ""))
+        f.write(
+            str(list(matrix_line))[1:-1].replace(" ", "").replace("\'", ""))
         f.write("\n")
     f.write("Bounds:\n")
     f.write("Variable,lower,upper\n")
     for bound_line in bounds:
         f.write(str(bound_line)[1:-1].replace(" ", ""))
+        f.write("\n")
+    f.write("\nEqualities (format: line = 0):\n")
+    for equality in equalities:
+        f.write(equality)
         f.write("\n")
     f.close()
 
@@ -140,7 +157,11 @@ def write_to_mat(problem, filename):
     upperbounds = [[mon.idx + offset, bnd]
                    for mon, bnd in problem.moment_upperbounds.items()]
     names       = [[mon.idx + offset, mon.name]
-                   for mon in problem.list_of_monomials]
+                   for mon in problem.monomials]
+    equalities  = []
+    for eq in problem.moment_equalities:
+        equality = [[mon.idx + offset, coeff] for mon, coeff in eq.items()]
+        equalities.append(equality)
 
     savemat(filename,
             mdict={"Gamma":           final_positions_matrix,
@@ -149,9 +170,11 @@ def write_to_mat(problem, filename):
                    "obj":             objective,
                    "monomials_names": np.asarray(names, dtype=object),
                    "lowerbounds":     lowerbounds,
-                   "upperbounds":     upperbounds
-                  }
+                   "upperbounds":     upperbounds,
+                   "equalities":      equalities
+                   }
             )
+
 
 def write_to_sdpa(problem, filename):
     """Export the problem to a file in .dat-s format. See specifications at
@@ -179,13 +202,13 @@ def write_to_sdpa(problem, filename):
 
     known_moments_indices = {mon.idx: coeff
                              for mon, coeff in problem.known_moments.items()}
-    semiknown_dict = {mon.idx: (subs[0], subs[1].idx)
-                      for mon, subs in problem.semiknown_moments.items()}
-    lines        = []
-    new_var_dict = {}
-    new_var      = 1
-    block        = 1
-    blockstruct  = [str(problem.momentmatrix.shape[0])]
+    semiknowns  = {mon.idx: (subs[0], subs[1].idx)
+                   for mon, subs in problem.semiknown_moments.items()}
+    lines       = []
+    var_corresp = {}
+    new_var     = 1
+    block       = 1
+    blockstruct = [str(problem.momentmatrix.shape[0])]
     for ii, row in enumerate(problem.momentmatrix):
         for jj, var in enumerate(row):
             if jj >= ii:
@@ -195,26 +218,27 @@ def write_to_sdpa(problem, filename):
                     lines.append(f"0\t{block}\t{ii+1}\t{jj+1}\t-1.0\n")
                 elif var in known_moments_indices.keys():
                     coeff = known_moments_indices[var]
-                    lines.append(f"0\t{block}\t{ii+1}\t{jj+1}\t-{abs(coeff)}\n")
-                elif var in semiknown_dict.keys():
-                    coeff, subs = semiknown_dict[var]
+                    lines.append(
+                        f"0\t{block}\t{ii+1}\t{jj+1}\t-{abs(coeff)}\n")
+                elif var in semiknowns.keys():
+                    coeff, subs = semiknowns[var]
                     try:
-                        var = new_var_dict[subs]
+                        var = var_corresp[subs]
                         lines.append(
-                                   f"{var}\t{block}\t{ii+1}\t{jj+1}\t{coeff}\n")
+                            f"{var}\t{block}\t{ii+1}\t{jj+1}\t{coeff}\n")
                     except KeyError:
-                        new_var_dict[subs] = new_var
+                        var_corresp[subs] = new_var
                         lines.append(
-                               f"{new_var}\t{block}\t{ii+1}\t{jj+1}\t{coeff}\n")
+                            f"{new_var}\t{block}\t{ii+1}\t{jj+1}\t{coeff}\n")
                         new_var += 1
                 else:
                     try:
-                        var = new_var_dict[var]
+                        var = var_corresp[var]
                         lines.append(f"{var}\t{block}\t{ii+1}\t{jj+1}\t1.0\n")
                     except KeyError:
-                        new_var_dict[int(var)] = new_var
+                        var_corresp[int(var)] = new_var
                         lines.append(
-                                   f"{new_var}\t{block}\t{ii+1}\t{jj+1}\t1.0\n")
+                            f"{new_var}\t{block}\t{ii+1}\t{jj+1}\t1.0\n")
                         new_var += 1
 
     # Prepare objective
@@ -224,7 +248,7 @@ def write_to_sdpa(problem, filename):
             if abs(coeff) > 1e-8:
                 warn(f"Export removed the constant {coeff} from the objective")
         else:
-            objective[new_var_dict[variable.idx] - 1] = coeff
+            objective[var_corresp[variable.idx] - 1] = coeff
     objective = str(objective.tolist()).replace("[", "").replace("]", "")
     objective_constant = problem.objective[problem.One]
 
@@ -233,15 +257,15 @@ def write_to_sdpa(problem, filename):
         block += 1
         ii     = 1
         block_size = len([mon for mon in problem.moment_upperbounds.keys()
-                              if ((mon != problem.One)
-                            and (mon not in problem.known_moments.keys())
-                            and (mon not in problem.semiknown_moments.keys()))])
+                          if ((mon != problem.One)
+                          and (mon not in problem.known_moments.keys())
+                          and (mon not in problem.semiknown_moments.keys()))])
         blockstruct.append(str(-block_size))
     for var, ub in problem.moment_upperbounds.items():
         if ((var != problem.One)
             and (var not in problem.known_moments.keys())
             and (var not in problem.semiknown_moments.keys())):
-            var = new_var_dict[var.idx]
+            var = var_corresp[var.idx]
             lines.append(f"{var}\t{block}\t{ii}\t{ii}\t-1.0\n")
             if abs(ub) > 1e-8:
                 lines.append(f"0\t{block}\t{ii}\t{ii}\t-{ub}\n")
@@ -252,19 +276,36 @@ def write_to_sdpa(problem, filename):
         block += 1
         ii     = 1
         block_size = len([mon for mon in problem.moment_lowerbounds.keys()
-                              if ((mon != problem.One)
-                            and (mon not in problem.known_moments.keys())
-                            and (mon not in problem.semiknown_moments.keys()))])
+                          if ((mon != problem.One)
+                          and (mon not in problem.known_moments.keys())
+                          and (mon not in problem.semiknown_moments.keys()))])
         blockstruct.append(str(-block_size))
     for var, lb in problem.moment_lowerbounds.items():
         if ((var != problem.One)
             and (var not in problem.known_moments.keys())
             and (var not in problem.semiknown_moments.keys())):
-            var = new_var_dict[var.idx]
+            var = var_corresp[var.idx]
             lines.append(f"{var}\t{block}\t{ii}\t{ii}\t1.0\n")
             if abs(lb) > 1e-8:
                 lines.append(f"0\t{block}\t{ii}\t{ii}\t{lb}\n")
             ii += 1
+
+    # Prepare equalities
+    if len(problem.moment_equalities) > 0:
+        block += 1
+        ii     = 1
+        block_size = 2*len(problem.moment_equalities)
+        blockstruct.append(str(-block_size))
+    for equality in problem.moment_equalities:
+        for var, coeff in equality.items():
+            if var != problem.One:
+                var = var_corresp[var.idx]
+                lines.append(f"{var}\t{block}\t{ii}\t{ii}\t{coeff}\n")
+                lines.append(f"{var}\t{block}\t{ii+1}\t{ii+1}\t{-coeff}\n")
+            else:
+                lines.append(f"0\t{block}\t{ii}\t{ii}\t{-coeff}\n")
+                lines.append(f"0\t{block}\t{ii+1}\t{ii+1}\t{coeff}\n")
+        ii += 2
 
     file_ = open(filename, "w")
     file_.write("\"file " + filename + " generated by causalinflation\"\n")
@@ -283,5 +324,6 @@ def write_to_sdpa(problem, filename):
 
 
 def pickle_load(filename):
-    with open(filename, 'rb') as f:
+    """Load a file using pickle"""
+    with open(filename, "rb") as f:
         return pickle.load(f)

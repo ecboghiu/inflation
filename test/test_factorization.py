@@ -1,7 +1,8 @@
 import unittest
 import numpy as np
 
-from causalinflation.quantum.general_tools import factorize_monomial
+from causalinflation.quantum.quantum_tools import factorize_monomial
+
 
 class TestFactorization(unittest.TestCase):
     def test_factorizable_NC(self):
@@ -63,7 +64,7 @@ class TestFactorization(unittest.TestCase):
         # In the bilocal scenario A - B - C, both A1C1 and A1C2 factorize
         # (because A and C are not causally connected). This should be taken
         # into account because A1C1 = A1C2 in the bilocal scenario
-        # Input and output are set to 0 because of type specs but are irrelevant
+        # Input and output are set to 0 because they are irrelevant.
         A1C1 = np.array([[0, 1, 0, 0, 0],
                          [2, 0, 1, 0, 0]])
         A1C2 = np.array([[0, 1, 0, 0, 0],
@@ -92,5 +93,5 @@ class TestFactorization(unittest.TestCase):
         factorised = factorize_monomial(monomial)
 
         self.assertEqual(monomial.tolist(), factorised[0].tolist(),
-                         "Non-factorizable, non-commutative monomials are being"
-                         + " reordered as if they were commutative.")
+                         "Non-factorizable, non-commutative monomials are "
+                         + "being reordered as if they were commutative.")

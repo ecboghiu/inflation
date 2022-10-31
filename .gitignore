@@ -150,8 +150,12 @@ emi_arena/
 ncpol2sdpa
 emi_arena
 test/test_data
+*ptf
+*task.gz
+mosekconsole.py
 test/arena.py
 test/monomials.txt
+arena.py
 monomials.txt
 debug_monomials.txt
 solv_alex.m
@@ -160,9 +164,7 @@ matlab_primal_dual.m
 solv_alex.asv
 inflationMATLAB*
 MATLAB*
-monomials*
 studydiff
-mon*
 problemarr*
 
 # linear inflation
