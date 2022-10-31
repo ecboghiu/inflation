@@ -73,13 +73,16 @@ class InflationSDP(object):
                  inflationproblem: InflationProblem,
                  commuting: bool = False,
                  supports_problem: bool = False,
-                 verbose: int = 0) -> None:
+                 verbose=None) -> None:
         """Constructor for the InflationSDP class.
         """
         self.supports_problem = supports_problem
-        if inflationproblem.verbose > verbose:
-            print("Overriding the verbosity parameter from InflationProblem")
-        self.verbose = verbose
+        if verbose is not None:
+            if inflationproblem.verbose > verbose:
+                warn("Overriding the verbosity from InflationProblem")
+            self.verbose = verbose
+        else:
+            self.verbose = inflationproblem.verbose
         self.commuting = commuting
         self.InflationProblem = inflationproblem
         self.names = self.InflationProblem.names
