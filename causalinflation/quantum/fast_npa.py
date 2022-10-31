@@ -237,37 +237,6 @@ def to_name(monomial: np.ndarray,
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_all_commuting(mon: np.ndarray,
-                     lexorder: np.ndarray,
-                     notcomm: np.ndarray) -> bool_:
-    """Check if all operators in ``mon`` commute.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial in 2d array format.
-    lexorder : numpy.ndarray
-        A matrix where each row is an operator, and the `i`-th row stores the
-        operator with lexicographic rank `i`.
-    notcomm : numpy.ndarray
-        Matrix of commutation relations. Each operator can be identified by an
-        integer `i` which also doubles as its lexicographic rank. Given two
-        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
-        do not commute, and 0 if they do.
-
-    Returns
-    -------
-    bool
-        Return `True` if all operators commute, and `False` otherwise.
-    """
-    if len(mon) <= 1:
-        return True
-    lexmon = nb_mon_to_lexrepr(mon, lexorder)
-    sub_notcomm = notcomm[lexmon, :][:, lexmon]
-    return not sub_notcomm.any()
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def apply_source_perm(monomial: np.ndarray,
                       source: int,
                       permutation: np.ndarray) -> np.ndarray:
@@ -332,70 +301,62 @@ def commutation_matrix(lexorder: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_inf_indices_refer_common_source(op1_inf_indxs: np.ndarray,
-                                       op2_inf_indxs: np.ndarray) -> bool_:
+def nb_all_commuting(mon: np.ndarray,
+                     lexorder: np.ndarray,
+                     notcomm: np.ndarray) -> bool_:
+    """Check if all operators in ``mon`` commute.
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Input monomial in 2d array format.
+    lexorder : numpy.ndarray
+        A matrix where each row is an operator, and the `i`-th row stores the
+        operator with lexicographic rank `i`.
+    notcomm : numpy.ndarray
+        Matrix of commutation relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        do not commute, and 0 if they do.
+
+    Returns
+    -------
+    bool
+        Return ``True`` if all operators commute, and ``False`` otherwise.
+    """
+    if len(mon) <= 1:
+        return True
+    lexmon = nb_mon_to_lexrepr(mon, lexorder)
+    sub_notcomm = notcomm[lexmon, :][:, lexmon]
+    return not sub_notcomm.any()
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_exists_shared_source(inf_indices1: np.ndarray,
+                            inf_indices2: np.ndarray) -> bool_:
     """Determine if there is any common source referred to by two
      specifications of inflation (a.k.a. 'copy') indices.
 
     Parameters
     ----------
-    op1_inf_indxs : numpy.ndarray
+    inf_indices1 : numpy.ndarray
         An array of integers indicating which copy index of each source is
-         being referenced.
-    op2_inf_indxs : numpy.ndarray
+        being referenced.
+    inf_indices2 : numpy.ndarray
         An array of integers indicating which copy index of each source is
-         being referenced.
+        being referenced.
 
     Returns
     -------
     bool
-        ``True`` if ``op1_inf_indxs`` and ``op2_inf_indxs`` share a source in
+        ``True`` if ``inf_indices1`` and ``inf_indices2`` share a source in
         common, ``False`` if they do not.
     """
-    common_active_source_types = np.logical_and(op1_inf_indxs, op2_inf_indxs)
-    if not np.any(common_active_source_types):
+    common_sources = np.logical_and(inf_indices1, inf_indices2)
+    if not np.any(common_sources):
         return False
-    return not np.subtract(op1_inf_indxs[common_active_source_types],
-                           op2_inf_indxs[common_active_source_types]).all()
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_operators_commute(operator1: np.ndarray,
-                         operator2: np.ndarray) -> bool_:
-    """Determine if two operators commute. Currently, this only takes into
-    account commutation coming from inflation and settings.
-
-    Parameters
-    ----------
-    operator1 : numpy.ndarray
-        Operator as an array of integers.
-    operator2 : numpy.ndarray
-        Operator as an array of integers.
-
-    Returns
-    -------
-    bool
-        ``True`` if ``operator1`` and ``operator2`` commute, ``False`` if they
-        do not.
-
-    Examples
-    --------
-    A^11_00 commutes with A^22_00
-    >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
-                             np.array([1, 2, 2, 0, 0]))
-    True
-
-    A^11_00 does not commute with A^12_00 because they overlap on source 1.
-    >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
-                             np.array([1, 1, 2, 0, 0]))
-    False
-    """
-    if operator1[0] != operator2[0]:  # Different parties
-        return True
-    if np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources & settings
-        return True
-    return not nb_inf_indices_refer_common_source(operator1[1:-2],
-                                                  operator2[1:-2])
+    return not np.subtract(inf_indices1[common_sources],
+                           inf_indices2[common_sources]).all()
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -449,6 +410,88 @@ def nb_lexmon_to_canonical(lexmon: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_operators_commute(operator1: np.ndarray,
+                         operator2: np.ndarray) -> bool_:
+    """Determine if two operators commute. Currently, this only takes into
+    account commutation coming from inflation and settings.
+
+    Parameters
+    ----------
+    operator1 : numpy.ndarray
+        Operator as an array of integers.
+    operator2 : numpy.ndarray
+        Operator as an array of integers.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``operator1`` and ``operator2`` commute, ``False`` if they
+        do not.
+
+    Examples
+    --------
+    A^11_00 commutes with A^22_00
+    >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
+                             np.array([1, 2, 2, 0, 0]))
+    True
+
+    A^11_00 does not commute with A^12_00 because they overlap on source 1.
+    >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
+                             np.array([1, 1, 2, 0, 0]))
+    False
+    """
+    if operator1[0] != operator2[0]:  # Different parties
+        return True
+    if np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources & settings
+        return True
+    return not nb_exists_shared_source(operator1[1:-2], operator2[1:-2])
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def order_via_commutation(mon: np.ndarray,
+                          notcomm: np.ndarray,
+                          lexorder: np.ndarray,
+                          commuting=False) -> np.ndarray:
+    """Applies commutations between the operators forming a monomial until
+    finding the smallest lexicographic representation.
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Input monomial in 2D array format.
+    notcomm : numpy.ndarray
+        Matrix of commutation relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        do not commute, and 0 if they do.
+    lexorder : numpy.ndarray
+        A matrix where each row is an operator, and the `i`-th row stores
+        the operator with lexicographic rank `i`.
+    commuting : bool, optional
+        Whether all the variables in the problem commute or not. By default
+        ``False``.
+
+    Returns
+    -------
+    numpy.ndarray
+        The monomial in canonical form with respect to some commutation
+        relationships.
+    """
+    mon = np.asarray(mon, dtype=uint8_)
+    if len(mon) <= 1:
+        return mon
+    else:
+        if commuting:
+            mon = mon_lexsorted(mon, lexorder)
+            return mon
+        else:
+            lexmon = nb_mon_to_lexrepr(mon, lexorder)
+            mon = nb_lexmon_to_canonical(lexmon, notcomm)
+            mon = lexorder[mon]
+            return mon
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_canonical(mon: np.ndarray,
                  notcomm: np.ndarray,
                  lexorder: np.ndarray,
@@ -495,47 +538,3 @@ def to_canonical(mon: np.ndarray,
                 return np.asarray(0*mon[:1], dtype=uint8_)
             else:
                 return mon
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def order_via_commutation(mon: np.ndarray,
-                          notcomm: np.ndarray,
-                          lexorder: np.ndarray,
-                          commuting=False) -> np.ndarray:
-    """Applies commutations between the operators forming a monomial until
-    finding the smallest lexicographic representation.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial in 2D array format.
-    notcomm : numpy.ndarray
-        Matrix of commutation relations. Each operator can be identified by an
-        integer `i` which also doubles as its lexicographic rank. Given two
-        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
-        do not commute, and 0 if they do.
-    lexorder : numpy.ndarray
-        A matrix where each row is an operator, and the `i`-th row stores
-        the operator with lexicographic rank `i`.
-    commuting : bool, optional
-        Whether all the variables in the problem commute or not. By default
-        ``False``.
-
-    Returns
-    -------
-    numpy.ndarray
-        The monomial in canonical form with respect to some commutation
-        relationships.
-    """
-    mon = np.asarray(mon, dtype=uint8_)
-    if len(mon) <= 1:
-        return mon
-    else:
-        if commuting:
-            mon = mon_lexsorted(mon, lexorder)
-            return mon
-        else:
-            lexmon = nb_mon_to_lexrepr(mon, lexorder)
-            mon = nb_lexmon_to_canonical(lexmon, notcomm)
-            mon = lexorder[mon]
-            return mon
