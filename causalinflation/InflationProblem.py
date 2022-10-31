@@ -207,19 +207,29 @@ class InflationProblem(object):
                 or (not np.all(just_one_copy[sources_are_shared]))):
                 self.ever_factorizes = True
                 break
-        inflation_indices_patterns = list()
+        # We collect all the different possible patterns for inflation indices
+        inflation_idxs_patterns = list()
         for active_sources in np.unique(self.hypergraph.T, axis=0):
             nd_shape = np.multiply(active_sources,
-                                   self.inflation_level_per_source) + 1
-            for inflation_indices_pattern in np.ndindex(*nd_shape):
-                inflation_indices_patterns.append(inflation_indices_pattern)
-        inflation_indices_patterns = np.array(inflation_indices_patterns,
-                                              dtype=np.uint8)
+                                   self.inflation_level_per_source)
+            # Add one, as source not being inflated should still
+            # be taken to have inflation index equal to zero.
+            nd_shape = np.maximum(nd_shape, 1)
+            for raw_inflation_indxs_pattern in np.ndindex(*nd_shape):
+                inflation_indxs_pattern = np.array(
+                    raw_inflation_indxs_pattern,
+                    dtype=np.uint8) + active_sources
+                inflation_idxs_patterns.append(inflation_indxs_pattern)
+        # We associate each inflation pattern with an integer
         self._inflation_indices_position_by_hash = {
             op.tobytes(): i
-            for i, op in enumerate(inflation_indices_patterns)}
+            for i, op in enumerate(inflation_idxs_patterns)}
+        # And we record whether the patterns overlap in a boolean matrix
         self._adjmat_for_factorization = nb_inf_indxs_to_adjmat(
-            inflation_indices_patterns)
+            np.asarray(inflation_idxs_patterns, dtype=np.uint8))
+        assert len(self._inflation_indices_position_by_hash) == len(
+            inflation_idxs_patterns), "Critical error: " \
+                                      "inflation index pattern duplicated."
 
     def __repr__(self):
         return ("InflationProblem with " + str(self.hypergraph.tolist()) +
