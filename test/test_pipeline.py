@@ -551,8 +551,40 @@ class TestSymmetries(unittest.TestCase):
                                        [[0, 6, 2, 4, 3, 5, 1]]),
                         "The commutation relations of different copies are " +
                         "not applied properly after inflation symmetries.")
-
-
+        
+    def test_apply_symmetries(self):
+        from causalinflation.quantum.quantum_tools import \
+                                                apply_inflation_symmetries
+        G = np.array([[0,  1,  2,  3,  4,  5],
+                      [6,  7,  8,  9, 10, 11],
+                      [12, 13, 14, 15, 16, 17],
+                      [18, 19, 20, 21, 22, 23],
+                      [24, 25, 26, 27, 28, 29],
+                      [30, 31, 32, 33, 34, 35]])
+        # The symmetries are that equal variables are (1,2), (3, 4, 5), (8, 9)
+        sym_mm, orbits, repr_values = \
+            apply_inflation_symmetries(G, np.array([[0, 1, 2, 3, 5, 4],
+                                                    [0, 2, 3, 1, 4, 5]]))
+        sym_mm_good = np.array([[ 0,  1,  2,  1,  3,  3],
+                                [ 4,  5,  6,  7,  8,  8],
+                                [ 9, 10, 11, 12, 13, 13],
+                                [ 4,  6,  7,  5,  8,  8],
+                                [14, 15, 16, 15, 17, 18],
+                                [14, 15, 16, 15, 18, 17]])
+        self.assertTrue(np.allclose(sym_mm, sym_mm_good),
+                        "Symmetrized moment matrix is not correct.")
+        orbits_good = {0: 0, 1: 1, 2: 2, 3: 1, 4: 3, 5: 3, 6: 4, 7: 5, 8: 6,
+                       9: 7, 10: 8, 11: 8, 12: 9, 13: 10, 14: 11, 15: 12,
+                       16: 13, 17: 13, 18: 4, 19: 6, 20: 7, 21: 5, 22: 8,
+                       23: 8, 24: 14, 25: 15, 26: 16, 27: 15, 28: 17, 29: 18,
+                       30: 14, 31: 15, 32: 16, 33: 15, 34: 18, 35: 17}
+        self.assertTrue(orbits == orbits_good,
+                        "Orbits dictionary is not correct.")
+        repr_values_good = np.array([ 0,  1,  2,  4,  6,  7,  8,  9, 10,
+                                     12, 13, 14, 15, 16, 24, 25, 26, 28, 29])
+        self.assertTrue(np.allclose(repr_values, repr_values_good),
+                        "Representatives mapping is not correct.")
+ 
 class TestConstraintGeneration(unittest.TestCase):
     def test_norm_eqs_mon2index_mapping(self):
         sdp = InflationSDP(InflationProblem({'r':['A']}, (3,),(3,),(3,)))
