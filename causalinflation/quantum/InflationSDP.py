@@ -29,12 +29,12 @@ from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix,
                             clean_coefficients,
                             construct_normalization_eqs,
+                            expand_moment_normalisation,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
                             party_physical_monomials,
-                            reduce_inflation_indices,
-                            expand_moment_normalisation)
+                            reduce_inflation_indices)
 from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
@@ -1511,8 +1511,9 @@ class InflationSDP(object):
         skip_party = [not i for i in self.has_children]
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
-            eqs = expand_moment_normalisation(mon, self.outcome_cardinalities,
-                                            skip_party)
+            eqs = expand_moment_normalisation(mon,
+                                              self.outcome_cardinalities,
+                                              skip_party)
             for eq in eqs:
                 try:
                     eq_idxs = [self.genmon_hash_to_index[

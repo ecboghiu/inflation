@@ -274,52 +274,6 @@ def commutation_relations(infSDP):
                 data.append(op1 * op2 - op2 * op1)
     return nonzero(data)
 
-def expand_moment_normalisation(moment: np.ndarray,
-                                outcome_cardinalities: List[int],
-                                skip_party: List[int]):
-    """Helper function that identifies operators within the monomial that
-    correspond to the last outcome, and uses normalisation to produce
-    an equality constraint expressed as `(i, (i1, i2, i3, ...))` which is read as
-    follows: the moment corresponding to index `i` under the `dict_mon2int` 
-    mapping are equal to the sum of moments corresponding to indices 
-    `(i1, i2, i3, ...)`.
-
-    Parameters
-    ----------
-    moment : np.ndarray
-        Moment encoded as a 2D array.
-    dict_mon2int : dict
-        A dictionary with keys as byte representations of a 2D array and values
-        a corresponding index. 
-    only_expand_first : bool, optional
-        In a monomial with more than one operator which can be expanded,
-        if to only expand the first operator or all of them, by default True.
-    dtype : numpy dtype, optional
-        Whether to convert the array to a custom type, by default None.
-    """
-    eqs = []
-    for k, operator in enumerate(moment):
-        party = operator[0] - 1
-        # Operators that are involved in normalization equalities are
-        # those which are unpacked in non-network scenarios
-        if (not skip_party[party] 
-        and operator[-1] == outcome_cardinalities[party] - 2):
-            operator_2d = np.expand_dims(operator, axis=0)
-            prefix = moment[:k]
-            suffix = moment[(k + 1):]
-            moments = [moment]
-            true_cardinality = outcome_cardinalities[party] - 1
-            for outcome in range(true_cardinality - 1):
-                variant_operator        = operator_2d.copy()
-                variant_operator[0, -1] = outcome
-                variant_mon             = np.vstack((prefix,
-                                                     variant_operator,
-                                                     suffix))
-                moments.append(variant_mon)
-            if len(moments) == true_cardinality:
-                normalization_mon = np.vstack((prefix, suffix))
-                eqs.append((normalization_mon, moments))
-    return eqs
 
 def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
                                 momentmatrix: np.ndarray,
@@ -371,6 +325,50 @@ def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
                     nof_seen_already += 1
     del seen_already
     return equalities
+
+
+def expand_moment_normalisation(moment: np.ndarray,
+                                outcome_cardinalities: List[int],
+                                skip_party: List[bool]):
+    """Helper function that identifies operators within the monomial that
+    correspond to the last outcome, and uses normalisation to produce
+    an equality constraint with other monomials. The constraint is expressed as
+    `(i, (i1, i2, i3, ...))`, where the moment corresponding to index `i` is
+    equal to the sum of moments corresponding to indices
+    `(i1, i2, i3, ...)`.
+
+    Parameters
+    ----------
+    moment : numpy.ndarray
+        Moment encoded as a 2D array.
+    outcome_cardinalities : List[int]
+        List of the cardinalities for the outcomes of the parties.
+    skip_party : List[bool]
+        Whether each of the parties is considered for normalisation or not.
+    """
+    eqs = []
+    for k, operator in enumerate(moment):
+        party = operator[0] - 1
+        # Operators that are involved in normalization equalities are
+        # those which are unpacked in non-network scenarios
+        if (not skip_party[party]
+            and operator[-1] == outcome_cardinalities[party] - 2):
+            operator_2d = np.expand_dims(operator, axis=0)
+            prefix = moment[:k]
+            suffix = moment[(k + 1):]
+            moments = [moment]
+            true_cardinality = outcome_cardinalities[party] - 1
+            for outcome in range(true_cardinality - 1):
+                variant_operator        = operator_2d.copy()
+                variant_operator[0, -1] = outcome
+                variant_mon             = np.vstack((prefix,
+                                                     variant_operator,
+                                                     suffix))
+                moments.append(variant_mon)
+            if len(moments) == true_cardinality:
+                normalization_mon = np.vstack((prefix, suffix))
+                eqs.append((normalization_mon, moments))
+    return eqs
 
 
 def format_permutations(array: np.ndarray) -> np.ndarray:

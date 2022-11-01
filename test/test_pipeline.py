@@ -4,6 +4,13 @@ import warnings
 
 from causalinflation import InflationProblem, InflationSDP
 
+bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
+bilocality = InflationProblem(dag=bilocalDAG,
+                              settings_per_party=[1, 1, 1],
+                              outcomes_per_party=[2, 2, 2],
+                              inflation_level_per_source=[2, 2])
+bilocalSDP = InflationSDP(bilocality)
+
 trivial = InflationProblem({"h": ["v"]},
                            outcomes_per_party=[2],
                            settings_per_party=[2],
@@ -12,12 +19,6 @@ trivial = InflationProblem({"h": ["v"]},
 
 
 class TestMonomialGeneration(unittest.TestCase):
-    bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
-    bilocality = InflationProblem(dag=bilocalDAG,
-                                  settings_per_party=[1, 1, 1],
-                                  outcomes_per_party=[2, 2, 2],
-                                  inflation_level_per_source=[2, 2])
-    bilocalSDP           = InflationSDP(bilocality)
     bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
     # Column structure for the NPA level 2 in a tripartite scenario
     col_structure = [[],
@@ -60,73 +61,70 @@ class TestMonomialGeneration(unittest.TestCase):
 
     def test_generating_columns_nc(self):
         truth = 41
-        columns = self.bilocalSDP.build_columns(self.col_structure)
+        columns = bilocalSDP.build_columns(self.col_structure)
         self.assertEqual(len(columns), truth,
                          "With noncommuting variables, there are  " +
                          str(len(columns)) + " columns but " + str(truth) +
                          " were expected.")
 
     def test_generation_from_columns(self):
-        columns = self.bilocalSDP.build_columns(self.actual_cols)
+        columns = bilocalSDP.build_columns(self.actual_cols)
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal, "The direct copying of columns is failing.")
 
     def test_generation_from_lol(self):
-        columns = self.bilocalSDP.build_columns(self.col_structure)
+        columns = bilocalSDP.build_columns(self.col_structure)
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal,
                         "Parsing a list-of-list description of columns fails.")
 
     def test_generation_from_str(self):
-        columns = self.bilocalSDP.build_columns("npa2")
+        columns = bilocalSDP.build_columns("npa2")
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal,
                         "Parsing NPA levels with string description fails.")
-        columns = self.bilocalSDP.build_columns("local2",
-                                                max_monomial_length=2)
-        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+        columns = bilocalSDP.build_columns("local2", max_monomial_length=2)
+        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
                    ).difference(
-                       set(self.bilocalSDP._from_2dndarray(col)
+                       set(bilocalSDP._from_2dndarray(col)
                            for col in self.actual_cols))
         self.assertTrue(len(diff) == 0,
                         "Parsing local levels with string description fails.")
-        columns = self.bilocalSDP.build_columns("local221",
-                                                max_monomial_length=2)
-        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+        columns = bilocalSDP.build_columns("local221", max_monomial_length=2)
+        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
                    ).difference(
-                       set(self.bilocalSDP._from_2dndarray(col)
+                       set(bilocalSDP._from_2dndarray(col)
                            for col in self.actual_cols[:-1]))
         self.assertTrue(len(diff) == 0,
                         "Parsing local levels with individual string " +
                         "descriptions fails.")
-        columns = self.bilocalSDP.build_columns("physical2",
-                                                max_monomial_length=2)
+        columns = bilocalSDP.build_columns("physical2",
+                                           max_monomial_length=2)
         physical = (self.actual_cols[:22] + [self.actual_cols[24]]
                     + [self.actual_cols[26]] + self.actual_cols[32:])
-        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
                    ).difference(
-                       set(self.bilocalSDP._from_2dndarray(col)
+                       set(bilocalSDP._from_2dndarray(col)
                            for col in physical))
         self.assertTrue(len(diff) == 0,
                         "Parsing physical levels with global string " +
                         "description fails.")
-        columns = self.bilocalSDP.build_columns("physical",
-                                                max_monomial_length=2)
-        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+        columns = bilocalSDP.build_columns("physical", max_monomial_length=2)
+        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
                    ).difference(
-                       set(self.bilocalSDP._from_2dndarray(col)
+                       set(bilocalSDP._from_2dndarray(col)
                            for col in physical))
         self.assertTrue(len(diff) == 0,
                         "Parsing physical levels without further " +
                         "description fails.")
-        columns = self.bilocalSDP.build_columns("physical121",
-                                                max_monomial_length=2)
-        diff = set(self.bilocalSDP._from_2dndarray(col) for col in columns
+        columns = bilocalSDP.build_columns("physical121",
+                                           max_monomial_length=2)
+        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
                    ).difference(
-                       set(self.bilocalSDP._from_2dndarray(col)
+                       set(bilocalSDP._from_2dndarray(col)
                            for col in (self.actual_cols[:9]
                                        + self.actual_cols[10:22]
                                        + [self.actual_cols[24]]
@@ -152,33 +150,6 @@ class TestMonomialGeneration(unittest.TestCase):
                         "The column generation is not capable of handling " +
                         "monomials that reduce to the identity")
 
-    def test_detected_symmetries(self):
-        cols = self.bilocalSDP.build_columns('local1')
-        self.bilocalSDP.generating_monomials = cols
-        self.bilocalSDP.n_columns = len(cols)
-        self.bilocalSDP.genmon_hash_to_index = {
-                                self.bilocalSDP._from_2dndarray(op): i
-                                for i, op in enumerate(cols)}
-        syms = self.bilocalSDP._discover_inflation_symmetries()
-        # Make it a set so the order doesn't matter
-        syms = set(tuple(s) for s in syms)
-        # I simply copied the output at a time when we understand the code
-        # to be working; this test simply detects if the code changes
-        syms_good = set(((0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
-                          13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
-                          27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
-                          39, 38, 37, 44, 43, 42, 41),
-                         (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
-                          12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
-                          22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
-                          34, 35, 36, 29, 30, 31, 32),
-                         (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
-                          11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
-                          23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
-                          35, 34, 33, 32, 31, 30, 29)))
-        self.assertEqual(syms, syms_good, "The symmetries are not being " +
-                                          "detected correctly.")
-        
 
 class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
@@ -536,6 +507,39 @@ class TestSDPOutput(unittest.TestCase):
 
 
 class TestSymmetries(unittest.TestCase):
+    def test_apply_symmetries(self):
+        from causalinflation.quantum.quantum_tools import \
+                                                apply_inflation_symmetries
+        G = np.array([[0,  1,  2,  3,  4,  5],
+                      [6,  7,  8,  9, 10, 11],
+                      [12, 13, 14, 15, 16, 17],
+                      [18, 19, 20, 21, 22, 23],
+                      [24, 25, 26, 27, 28, 29],
+                      [30, 31, 32, 33, 34, 35]])
+        # The symmetries are that equal variables are (1,2), (3, 4, 5), (8, 9)
+        sym_mm, orbits, repr_values = \
+            apply_inflation_symmetries(G, np.array([[0, 1, 2, 3, 5, 4],
+                                                    [0, 2, 3, 1, 4, 5]]))
+        sym_mm_good = np.array([[0,  1,  2,  1,  3,  3],
+                                [4,  5,  6,  7,  8,  8],
+                                [9, 10, 11, 12, 13, 13],
+                                [4,  6,  7,  5,  8,  8],
+                                [14, 15, 16, 15, 17, 18],
+                                [14, 15, 16, 15, 18, 17]])
+        self.assertTrue(np.allclose(sym_mm, sym_mm_good),
+                        "Symmetrized moment matrix is not correct.")
+        orbits_good = {0: 0, 1: 1, 2: 2, 3: 1, 4: 3, 5: 3, 6: 4, 7: 5, 8: 6,
+                       9: 7, 10: 8, 11: 8, 12: 9, 13: 10, 14: 11, 15: 12,
+                       16: 13, 17: 13, 18: 4, 19: 6, 20: 7, 21: 5, 22: 8,
+                       23: 8, 24: 14, 25: 15, 26: 16, 27: 15, 28: 17, 29: 18,
+                       30: 14, 31: 15, 32: 16, 33: 15, 34: 18, 35: 17}
+        self.assertTrue(orbits == orbits_good,
+                        "Orbits dictionary is not correct.")
+        repr_values_good = np.array([0,  1,  2,  4,  6,  7,  8,  9, 10,
+                                     12, 13, 14, 15, 16, 24, 25, 26, 28, 29])
+        self.assertTrue(np.allclose(repr_values, repr_values_good),
+                        "Representatives mapping is not correct.")
+
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(trivial, commuting=True)
         col_structure = [[],
@@ -551,94 +555,89 @@ class TestSymmetries(unittest.TestCase):
                                        [[0, 6, 2, 4, 3, 5, 1]]),
                         "The commutation relations of different copies are " +
                         "not applied properly after inflation symmetries.")
-        
-    def test_apply_symmetries(self):
-        from causalinflation.quantum.quantum_tools import \
-                                                apply_inflation_symmetries
-        G = np.array([[0,  1,  2,  3,  4,  5],
-                      [6,  7,  8,  9, 10, 11],
-                      [12, 13, 14, 15, 16, 17],
-                      [18, 19, 20, 21, 22, 23],
-                      [24, 25, 26, 27, 28, 29],
-                      [30, 31, 32, 33, 34, 35]])
-        # The symmetries are that equal variables are (1,2), (3, 4, 5), (8, 9)
-        sym_mm, orbits, repr_values = \
-            apply_inflation_symmetries(G, np.array([[0, 1, 2, 3, 5, 4],
-                                                    [0, 2, 3, 1, 4, 5]]))
-        sym_mm_good = np.array([[ 0,  1,  2,  1,  3,  3],
-                                [ 4,  5,  6,  7,  8,  8],
-                                [ 9, 10, 11, 12, 13, 13],
-                                [ 4,  6,  7,  5,  8,  8],
-                                [14, 15, 16, 15, 17, 18],
-                                [14, 15, 16, 15, 18, 17]])
-        self.assertTrue(np.allclose(sym_mm, sym_mm_good),
-                        "Symmetrized moment matrix is not correct.")
-        orbits_good = {0: 0, 1: 1, 2: 2, 3: 1, 4: 3, 5: 3, 6: 4, 7: 5, 8: 6,
-                       9: 7, 10: 8, 11: 8, 12: 9, 13: 10, 14: 11, 15: 12,
-                       16: 13, 17: 13, 18: 4, 19: 6, 20: 7, 21: 5, 22: 8,
-                       23: 8, 24: 14, 25: 15, 26: 16, 27: 15, 28: 17, 29: 18,
-                       30: 14, 31: 15, 32: 16, 33: 15, 34: 18, 35: 17}
-        self.assertTrue(orbits == orbits_good,
-                        "Orbits dictionary is not correct.")
-        repr_values_good = np.array([ 0,  1,  2,  4,  6,  7,  8,  9, 10,
-                                     12, 13, 14, 15, 16, 24, 25, 26, 28, 29])
-        self.assertTrue(np.allclose(repr_values, repr_values_good),
-                        "Representatives mapping is not correct.")
- 
+
+    def test_detected_symmetries(self):
+        cols = bilocalSDP.build_columns('local1')
+        bilocalSDP.generating_monomials = cols
+        bilocalSDP.n_columns = len(cols)
+        bilocalSDP.genmon_hash_to_index = {
+                                bilocalSDP._from_2dndarray(op): i
+                                for i, op in enumerate(cols)}
+        syms = bilocalSDP._discover_inflation_symmetries()
+        # Make it a set so the order doesn't matter
+        syms = set(tuple(s) for s in syms)
+        # I simply copied the output at a time when we understand the code
+        # to be working; this test simply detects if the code changes
+        syms_good = set(((0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
+                          13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
+                          27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
+                          39, 38, 37, 44, 43, 42, 41),
+                         (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
+                          12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
+                          22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
+                          34, 35, 36, 29, 30, 31, 32),
+                         (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
+                          11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
+                          23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
+                          35, 34, 33, 32, 31, 30, 29)))
+        self.assertEqual(syms, syms_good, "The symmetries are not being " +
+                                          "detected correctly.")
+
+
 class TestConstraintGeneration(unittest.TestCase):
     def test_norm_eqs_mon2index_mapping(self):
-        sdp = InflationSDP(InflationProblem({'r':['A']}, (3,),(3,),(3,)))
+        sdp = InflationSDP(InflationProblem({'r': ['A']}, (3,), (3,), (3,)))
         sdp.generate_relaxation('npa2')
         for i, mon in enumerate(sdp.generating_monomials):
             self.assertTrue(i == sdp.genmon_hash_to_index[mon.tobytes()],
-                            "Monomials in the generating list must be mapped " +
-                            "to their index in the list under " +
-                            "InflationSDP.genmon_hash_to_index for " +
-                            "InflationSDP._discover_normalization_eqns() " +
-                            "to work correctly.")
-        
+                            "Monomials in the generating list must be mapped "
+                            + "to their index in the list under "
+                            + "InflationSDP.genmon_hash_to_index for "
+                            + "InflationSDP._discover_normalization_eqns() "
+                            + "to work correctly.")
+
     def test_norm_eqs_expansion(self):
         from causalinflation.quantum.quantum_tools import \
                                                 expand_moment_normalisation
-        
+
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1]]),
                                           [3],
                                           {i: False for i in range(3)})
-        out_good =  [(np.array([]).reshape((0, 4)),
-                     [np.array([[1, 1, 0, 1]]), np.array([[1, 1, 0, 0]])])]
+        out_good = [(np.array([]).reshape((0, 4)),
+                    [np.array([[1, 1, 0, 1]]), np.array([[1, 1, 0, 0]])])]
         for eq1, eq2 in zip(out, out_good):
-            self.assertTrue(np.allclose(eq1[0], eq2[0]) and \
-                            len(eq1[1]) == len(eq2[1]), 
+            self.assertTrue(np.allclose(eq1[0], eq2[0])
+                            and len(eq1[1]) == len(eq2[1]),
                             "Normalisation constraint is not" +
                             "being properly generated. ")
             for el1, el2 in zip(eq1[1], eq2[1]):
                 self.assertTrue(np.allclose(el1, el2),
                                 "Normalisation constraint is not" +
                                 "being properly generated. ")
-                
+
         # Note, currently if more than one operator has a last output,
         # several equalities will be generated, instead of a single one.
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1],
                                                     [2, 3, 1, 1],
                                                     [2, 3, 1, 0]]),
-                                          [3, 3, 2], # we 'lie' about cardinality
+                                          [3, 3, 2],  # we 'lie' about card.
                                           {i: False for i in range(3)})
-        out_good =  [(np.array([[2, 3, 1, 1], [2, 3, 1, 0]]),
-                     [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
-                      np.array([[1, 1, 0, 0], [2, 3, 1, 1], [2, 3, 1, 0]])]),
-                     (np.array([[1, 1, 0, 1], [2, 3, 1, 0]]),
-                     [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
-                      np.array([[1, 1, 0, 1], [2, 3, 1, 0], [2, 3, 1, 0]])])]
+        out_good = [(np.array([[2, 3, 1, 1], [2, 3, 1, 0]]),
+                    [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
+                     np.array([[1, 1, 0, 0], [2, 3, 1, 1], [2, 3, 1, 0]])]),
+                    (np.array([[1, 1, 0, 1], [2, 3, 1, 0]]),
+                    [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
+                     np.array([[1, 1, 0, 1], [2, 3, 1, 0], [2, 3, 1, 0]])])]
         for eq1, eq2 in zip(out, out_good):
-            self.assertTrue(np.allclose(eq1[0], eq2[0]) and \
-                            len(eq1[1]) == len(eq2[1]), 
+            self.assertTrue(np.allclose(eq1[0], eq2[0])
+                            and len(eq1[1]) == len(eq2[1]),
                             "Normalisation constraint is not" +
                             "being properly generated. ")
             for el1, el2 in zip(eq1[1], eq2[1]):
                 self.assertTrue(np.allclose(el1, el2),
                                 "Normalisation constraint is not" +
-                                f"being properly generated.")
-                
+                                "being properly generated.")
+
     def test_normeqs_colineq2momentineq(self):
         from causalinflation.quantum.quantum_tools import \
                                             construct_normalization_eqs
@@ -660,6 +659,7 @@ class TestConstraintGeneration(unittest.TestCase):
                     (7, [6, 8]),
                     (9, [1, 10]),
                     (1, [9, 11])]
-        
-        self.assertEqual(out, out_good, "Column equalities are not being " +
-                                    "properly lifted to moment inequalities.")
+        self.assertEqual(out,
+                         out_good,
+                         "Column equalities are not being " +
+                         "properly lifted to moment inequalities.")
