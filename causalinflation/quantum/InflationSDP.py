@@ -32,7 +32,6 @@ from .quantum_tools import (apply_inflation_symmetries,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
-                            is_knowable,
                             party_physical_monomials,
                             reduce_inflation_indices,
                             expand_moment_normalisation)
