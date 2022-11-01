@@ -335,8 +335,7 @@ def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
         inf_indices_i = inflation_indxs[i]
         for j in range(i):
             inf_indices_j = inflation_indxs[j]
-            if nb_inf_indices_refer_common_source(inf_indices_i,
-                                                  inf_indices_j):
+            if nb_exists_shared_source(inf_indices_i, inf_indices_j):
                 adj_mat[i, j] = True
     adj_mat = np.logical_or(adj_mat, adj_mat.T)
     return adj_mat
@@ -517,9 +516,9 @@ def commutation_matrix(lexorder: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_all_commuting(mon: np.ndarray,
-                     lexorder: np.ndarray,
-                     notcomm: np.ndarray) -> bool_:
+def nb_all_commuting_q(mon: np.ndarray,
+                       lexorder: np.ndarray,
+                       notcomm: np.ndarray) -> bool_:
     """Check if all operators in ``mon`` commute.
 
     Parameters
@@ -540,18 +539,6 @@ def nb_all_commuting(mon: np.ndarray,
     bool
         Return ``True`` if all operators commute, and ``False`` otherwise.
     """
-    if len(mon) <= 1:
-        return True
-    lexmon = nb_mon_to_lexrepr(mon, lexorder)
-    sub_notcomm = notcomm[lexmon, :][:, lexmon]
-    return not sub_notcomm.any()
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_all_commuting_q(mon: np.ndarray,
-                       lexorder: np.ndarray,
-                       notcomm: np.ndarray) -> bool_:
-    """DOCUMENTATION NEEDED"""
     if len(mon) <= 1:
         return True
     lexmon = nb_mon_to_lexrepr(mon, lexorder)
