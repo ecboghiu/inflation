@@ -15,3 +15,4 @@ Transformations of representation
 Other functions
 ---------------
 .. autofunction:: causalinflation.quantum.fast_npa.nb_remove_sandwich
+.. autofunction:: causalinflation.quantum.fast_npa.remove_projector_squares
