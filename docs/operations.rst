@@ -1,12 +1,11 @@
 Functions to operate on monomials
 =================================
 .. autofunction:: causalinflation.quantum.fast_npa.apply_source_perm
-.. autofunction:: causalinflation.quantum.quantum_tools.factorize_monomial
 
 Monomial properties
 -------------------
-.. autofunction:: causalinflation.quantum.quantum_tools.is_knowable
-.. autofunction:: causalinflation.quantum.quantum_tools.is_physical
+.. autofunction:: causalinflation.quantum.fast_npa.nb_is_knowable
+.. autofunction:: causalinflation.quantum.fast_npa.nb_is_physical
 
 Transformations of representation
 ---------------------------------
@@ -15,4 +14,4 @@ Transformations of representation
 
 Other functions
 ---------------
-.. autofunction:: causalinflation.quantum.quantum_tools.remove_sandwich
+.. autofunction:: causalinflation.quantum.fast_npa.nb_remove_sandwich
