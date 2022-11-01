@@ -289,6 +289,7 @@ class InflationProblem(object):
         ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is
         ``C``, and row 4 is ``B``. In each row, the columns encode the
         following information:
+
           * First column: The party index, *starting from 1* (e.g., 1 for
             ``A``, 2 for ``B``, etc.)
           * Last two columns: The input ``x`` starting from zero, and then the
@@ -299,14 +300,17 @@ class InflationProblem(object):
             the value is 0, then this operator does not measure this source. If
             the value is, e.g., 2, then this operator is acting on copy 2 of
             source `j-1`.
+
         The output is a tuple of ndarrays where each array represents another
         monomial s.t. their product is equal to the original monomial.
+
         Parameters
         ----------
-        raw_monomial : numpy.ndarray
+        monomial : numpy.ndarray
             Monomial in 2d array form.
         canonical_order: bool, optional
             Whether to return the different factors in a canonical order.
+
         Returns
         -------
         Tuple[numpy.ndarray]
