@@ -152,6 +152,33 @@ class TestMonomialGeneration(unittest.TestCase):
                         "The column generation is not capable of handling " +
                         "monomials that reduce to the identity")
 
+    def test_detected_symmetries(self):
+        cols = self.bilocalSDP.build_columns('local1')
+        self.bilocalSDP.generating_monomials = cols
+        self.bilocalSDP.n_columns = len(cols)
+        self.bilocalSDP.genmon_hash_to_index = {
+                                self.bilocalSDP._from_2dndarray(op): i
+                                for i, op in enumerate(cols)}
+        syms = self.bilocalSDP._discover_inflation_symmetries()
+        # Make it a set so the order doesn't matter
+        syms = set(tuple(s) for s in syms)
+        # I simply copied the output at a time when we understand the code
+        # to be working; this test simply detects if the code changes
+        syms_good = set(((0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
+                          13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
+                          27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
+                          39, 38, 37, 44, 43, 42, 41),
+                         (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
+                          12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
+                          22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
+                          34, 35, 36, 29, 30, 31, 32),
+                         (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
+                          11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
+                          23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
+                          35, 34, 33, 32, 31, 30, 29)))
+        self.assertEqual(syms, syms_good, "The symmetries are not being " +
+                                          "detected correctly.")
+        
 
 class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
