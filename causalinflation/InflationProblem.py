@@ -6,8 +6,11 @@ inflation.
 """
 import numpy as np
 
-from itertools import chain
+from itertools import chain, combinations_with_replacement
 from warnings import warn
+from .quantum.fast_npa import (nb_classify_disconnected_components,
+                               nb_overlap_matrix)
+from typing import Tuple
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -194,6 +197,38 @@ class InflationProblem(object):
                  "inflation levels specified, " +
                  f"{len(self.inflation_level_per_source)}, does not coincide.")
 
+        # Determine if the inflation problem has a factorizing pair of parties.
+        shared_sources = [np.all(np.vstack(pair), axis=0) for pair in
+                          combinations_with_replacement(self.hypergraph.T, 2)]
+        just_one_copy = (self.inflation_level_per_source == 1)
+        self.ever_factorizes = False
+        for sources_are_shared in shared_sources:
+            # If for some two parties, the sources that they share in common
+            # can all have different inflation levels, then there exists the
+            # potential for factorization.
+            if ((not np.any(sources_are_shared))
+                or (not np.all(just_one_copy[sources_are_shared]))):
+                self.ever_factorizes = True
+                break
+        # Create all the different possibilities for inflation indices
+        inflation_indices = list()
+        for active_sources in np.unique(self.hypergraph.T, axis=0):
+            num_copies = np.multiply(active_sources,
+                                     self.inflation_level_per_source)
+            # Put non-participating and non-inflated on equal footing
+            num_copies = np.maximum(num_copies, 1)
+            for increase_from_base in np.ndindex(*num_copies):
+                inflation_indxs = active_sources + np.array(increase_from_base,
+                                                            dtype=np.uint8)
+                inflation_indices.append(inflation_indxs)
+        # Create hashes and overlap matrix for quick reference
+        self._inflation_indices_hash = {op.tobytes(): i for i, op
+                                        in enumerate(inflation_indices)}
+        self._inflation_indices_overlap = nb_overlap_matrix(
+            np.asarray(inflation_indices, dtype=np.uint8))
+        assert len(self._inflation_indices_hash) == len(inflation_indices), \
+            "Error: duplicated inflation index pattern."
+
     def __repr__(self):
         return ("InflationProblem with " + str(self.hypergraph.tolist()) +
                 " as hypergraph, " + str(self.outcomes_per_party) +
@@ -244,6 +279,77 @@ class InflationProblem(object):
                     return False
         else:
             return True
+
+    def factorize_monomial(self,
+                           monomial: np.ndarray,
+                           canonical_order=False) -> Tuple[np.ndarray, ...]:
+        """Split a moment/expectation value into products of moments according
+        to the support of the operators within the moment. The moment is
+        encoded as a 2d array where each row is an operator. If
+        ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is
+        ``C``, and row 4 is ``B``. In each row, the columns encode the
+        following information:
+          * First column: The party index, *starting from 1* (e.g., 1 for
+            ``A``, 2 for ``B``, etc.)
+          * Last two columns: The input ``x`` starting from zero, and then the
+            output ``a`` starting from zero.
+          * In between: This encodes the support of the operator. There are as
+            many columns as sources/quantum states. Column `j` represents
+            source `j-1` (-1 because the first column represents the party). If
+            the value is 0, then this operator does not measure this source. If
+            the value is, e.g., 2, then this operator is acting on copy 2 of
+            source `j-1`.
+        The output is a tuple of ndarrays where each array represents another
+        monomial s.t. their product is equal to the original monomial.
+        Parameters
+        ----------
+        raw_monomial : numpy.ndarray
+            Monomial in 2d array form.
+        canonical_order: bool, optional
+            Whether to return the different factors in a canonical order.
+        Returns
+        -------
+        Tuple[numpy.ndarray]
+            A tuple of ndarrays, where each array represents an atomic monomial
+            factor.
+        Examples
+        --------
+        >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                                 [2, 1, 0, 2, 0, 0],
+                                 [1, 0, 3, 3, 0, 0],
+                                 [3, 3, 5, 0, 0, 0],
+                                 [3, 1, 4, 0, 0, 0],
+                                 [3, 6, 6, 0, 0, 0],
+                                 [3, 4, 5, 0, 0, 0]])
+        >>> factorised = factorize_monomial(monomial)
+        [array([[1, 0, 1, 1, 0, 0]]),
+         array([[1, 0, 3, 3, 0, 0]]),
+         array([[2, 1, 0, 2, 0, 0],
+                [3, 1, 4, 0, 0, 0]]),
+         array([[3, 3, 5, 0, 0, 0],
+                [3, 4, 5, 0, 0, 0]]),
+         array([[3, 6, 6, 0, 0, 0]])]
+        """
+        if not self.ever_factorizes:
+            return (monomial,)
+        n = len(monomial)
+        if n <= 1:
+            return (monomial,)
+
+        inflation_indices_position = [self._inflation_indices_hash[
+            op.tobytes()] for op in monomial.astype(np.uint8)[:, 1:-2]]
+        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
+            :, inflation_indices_position]
+
+        component_labels = nb_classify_disconnected_components(adj_mat)
+        disconnected_components = tuple(
+            monomial[component_labels == i]
+            for i in range(component_labels.max(initial=0) + 1))
+
+        if canonical_order:
+            disconnected_components = tuple(sorted(disconnected_components,
+                                                   key=lambda x: x.tobytes()))
+        return disconnected_components
 
     def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
         """When constructing the monomials in a non-network scenario, we rely

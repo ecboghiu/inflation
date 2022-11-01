@@ -2,4 +2,4 @@ InflationProblem Class
 ======================
 
 .. autoclass:: causalinflation.InflationProblem
-   :members: rectify_fake_setting
+   :members: factorize_monomial, rectify_fake_setting
