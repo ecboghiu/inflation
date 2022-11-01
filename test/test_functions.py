@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.quantum_tools import remove_sandwich
+from causalinflation.quantum.fast_npa import nb_remove_sandwich
 
 
 class TestFunctions(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestFunctions(unittest.TestCase):
                              [2, 0, 1, 1, 0, 0],
                              [2, 0, 1, 2, 0, 0]])
 
-        delayered = remove_sandwich(monomial)
+        delayered = nb_remove_sandwich(monomial)
         correct = np.array([[1, 1, 2, 1, 0, 0],
                             [1, 3, 4, 2, 0, 0],
                             [2, 0, 1, 1, 0, 0],

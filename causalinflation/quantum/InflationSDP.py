@@ -18,9 +18,9 @@ from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from causalinflation import InflationProblem
-from .fast_npa import (apply_source_perm,
+from .fast_npa import (nb_all_commuting_q,
+                       apply_source_perm,
                        commutation_matrix,
-                       nb_all_commuting,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical)
@@ -29,14 +29,14 @@ from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix,
                             clean_coefficients,
                             construct_normalization_eqs,
-                            factorize_monomial,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
                             is_knowable,
-                            expand_moment_normalisation,
                             party_physical_monomials,
-                            reduce_inflation_indices)
+                            reduce_inflation_indices,
+                            expand_moment_normalisation)
+from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 from ..utils import flatten
@@ -124,6 +124,7 @@ class InflationSDP(object):
         self._is_knowable_q_non_networks = \
             self.InflationProblem._is_knowable_q_non_networks
         self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
+        self.factorize_monomial = self.InflationProblem.factorize_monomial
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2
@@ -146,6 +147,9 @@ class InflationSDP(object):
         self._default_notcomm = commutation_matrix(self._lexorder,
                                                    self.commuting)
         self._notcomm = self._default_notcomm.copy()
+        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
+                                                              self._lexorder,
+                                                              self._notcomm)
 
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
@@ -279,9 +283,7 @@ class InflationSDP(object):
              for idx in representative_unsym_idxs.flat if idx >= 1}
         unsymidx_from_hash = {self._from_2dndarray(mon): idx for (idx, mon) in
                               unsymmetrized_corresp.items()
-                              if nb_all_commuting(mon,
-                                                  self._lexorder,
-                                                  self._notcomm)}
+                              if self.all_commuting_q(mon)}
         for (hash, idx) in unsymidx_from_hash.items():
             self.canonsym_ndarray_from_hash[hash] = \
                 self.symmetrized_corresp[self.orbits[idx]]
@@ -1096,7 +1098,7 @@ class InflationSDP(object):
         :math:`\langle C^{1,0,1}_{z=0,c=0}\rangle`, after factorizing the input
         monomial and reducing the inflation indices of each of the factors.
         """
-        _factors = factorize_monomial(array2d, canonical_order=False)
+        _factors = self.factorize_monomial(array2d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
@@ -1122,7 +1124,7 @@ class InflationSDP(object):
             The canonical form of the conjugate of the input monomial under
             relabelling through the inflation symmetries.
         """
-        if nb_all_commuting(mon, self._lexorder, self._notcomm):
+        if self.all_commuting_q(mon):
             return mon
         else:
             return self._to_inflation_repr(reverse_mon(mon),

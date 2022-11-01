@@ -4,8 +4,7 @@ from collections import Counter
 from functools import total_ordering
 from typing import Dict, List, Tuple
 
-from .fast_npa import nb_all_commuting, mon_is_zero
-from .quantum_tools import is_physical
+from .fast_npa import mon_is_zero, nb_remove_sandwich
 from .monomial_utils import (compute_marginal,
                              name_from_atom_names,
                              symbol_from_atom_name,
@@ -18,8 +17,8 @@ class InternalAtomicMonomial(object):
                  "is_one",
                  "is_zero",
                  "is_knowable",
-                 'is_physical',
                  "is_all_commuting",
+                 "is_physical",
                  "n_operators",
                  "op_length",
                  "rectified_ndarray",
@@ -85,9 +84,12 @@ class InternalAtomicMonomial(object):
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
-        self.is_all_commuting = nb_all_commuting(self.as_ndarray,
-                                                 self.sdp._lexorder,
-                                                 self.sdp._notcomm)
+        self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
+        if self.is_all_commuting or self.n_operators <= 1:
+            self.is_physical = True
+        else:
+            self.is_physical = self.sdp.all_commuting_q(
+                nb_remove_sandwich(self.as_ndarray))
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -95,12 +97,6 @@ class InternalAtomicMonomial(object):
                                                       [0, -2, -1],
                                                       axis=1)),
                 dtype=int)
-        if self.sdp.commuting:
-            self.is_physical = True
-        elif self.is_knowable:
-            self.is_physical = True
-        else:
-            self.is_physical = is_physical(self.as_ndarray)
 
     def __copy__(self):
         """Make a copy of the Monomial"""

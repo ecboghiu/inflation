@@ -8,7 +8,7 @@ import sympy
 
 from copy import deepcopy
 from itertools import permutations, product
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List, Tuple
 
 from .fast_npa import (apply_source_perm,
                        dot_mon,
@@ -26,106 +26,6 @@ except ImportError:
 ###############################################################################
 # FUNCTIONS FOR MONOMIALS                                                     #
 ###############################################################################
-def factorize_monomial(raw_monomial: np.ndarray,
-                       canonical_order=False) -> Tuple[np.ndarray]:
-    """This function splits a moment/expectation value into products of moments
-    according to the support of the operators within the moment. The moment is
-    encoded as a 2d array where each row is an operator. If
-    ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is ``C``,
-    and row 4 is ``B``. In each row, the columns encode the following
-    information:
-
-      * First column: The party index, *starting from 1* (e.g., 1 for ``A``,
-        2 for ``B``, etc.)
-      * Last two columns: The input ``x`` starting from zero, and then the
-        output ``a`` starting from zero.
-      * In between: This encodes the support of the operator. There are as many
-        columns as sources/quantum states. Column `j` represents source `j-1`
-        (-1 because the 1stcol is the party). If the value is 0, then this
-        operator does not measure this source. If the value is for e.g. 2,
-        then this operator is acting on copy 2 of source `j-1`.
-
-    The output is a tuple of ndarrays where each array represents another
-    monomial s.t. their product is equal to the original monomial.
-
-    Parameters
-    ----------
-    raw_monomial : np.ndarray
-        Monomial in 2d array form.
-    canonical_order: bool, optional
-        Whether to return the different factors in a canonical order.
-
-    Returns
-    -------
-    Tuple[np.ndarray]
-        A tuple of ndarrays, where each array represents an atomic monomial
-        factor.
-
-    Examples
-    --------
-    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
-                             [2, 1, 0, 2, 0, 0],
-                             [1, 0, 3, 3, 0, 0],
-                             [3, 3, 5, 0, 0, 0],
-                             [3, 1, 4, 0, 0, 0],
-                             [3, 6, 6, 0, 0, 0],
-                             [3, 4, 5, 0, 0, 0]])
-    >>> factorised = factorize_monomial(monomial)
-    [array([[1, 0, 1, 1, 0, 0]]),
-     array([[1, 0, 3, 3, 0, 0]]),
-     array([[2, 1, 0, 2, 0, 0],
-            [3, 1, 4, 0, 0, 0]]),
-     array([[3, 3, 5, 0, 0, 0],
-            [3, 4, 5, 0, 0, 0]]),
-     array([[3, 6, 6, 0, 0, 0]])]
-
-    """
-    if len(raw_monomial) == 0:
-        return (raw_monomial,)
-
-    monomial = np.asarray(raw_monomial, dtype=np.uint16)
-    components_indices = np.zeros((len(monomial), 2), dtype=np.uint16)
-    # Labels to see if the components have been used
-    components_indices[:, 0] = np.arange(0, len(monomial), 1)
-
-    inflation_indices = monomial[:, 1:-2]
-    disconnected_components = []
-
-    idx = 0
-    while idx < len(monomial):
-        component = []
-        if components_indices[idx, 1] == 0:
-            component.append(idx)
-            components_indices[idx, 1] = 1
-            jdx = 0
-            # Iterate over all components that are connected
-            while jdx < len(component):
-                nonzero_sources = np.nonzero(
-                    inflation_indices[component[jdx]])[0]
-                for source in nonzero_sources:
-                    overlapping = (inflation_indices[:, source]
-                                   == inflation_indices[component[jdx], source]
-                                   )
-                    # Add the components that overlap to the lookup list
-                    component += components_indices[
-                                  overlapping & (components_indices[:, 1] == 0)
-                                                    ][:, 0].tolist()
-                    # Specify that the components that overlap have been used
-                    components_indices[overlapping, 1] = 1
-                jdx += 1
-        if len(component) > 0:
-            disconnected_components.append(component)
-        idx += 1
-
-    disconnected_components = tuple(
-        monomial[sorted(component)] for component in disconnected_components)
-
-    if canonical_order:
-        disconnected_components = tuple(sorted(disconnected_components,
-                                               key=lambda x: x.tobytes()))
-    return disconnected_components
-
-
 def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
                             ) -> List[sympy.core.symbol.Symbol]:
     """If we have powers of a monomial, such as A**3, return a list with
@@ -154,82 +54,6 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     return factors
 
 
-def is_knowable(monomial: np.ndarray) -> bool:
-    """Determine whether a given atomic monomial admits an identification with
-    a probability of the original scenario.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        List of operators, denoted each by a list of indices
-
-    Returns
-    -------
-    bool
-        Whether the monomial is knowable or not.
-    """
-    assert monomial.ndim == 2, \
-        ("You must enter a list of operators. Hence, the number of dimensions "
-         + "of the monomial must be 2")
-    parties = monomial[:, 0].astype(int)
-    # Knowable monomials have at most one operator per party and one copy of
-    # each source in the DAG
-    if len(set(parties)) != len(parties):
-        return False
-    else:
-        return all([len(set(source[np.nonzero(source)])) <= 1
-                    for source in monomial[:, 1:-2].T])
-
-
-def is_physical(monomial_in: np.ndarray,
-                sandwich_positivity=True
-                ) -> bool:
-    r"""Determines whether a monomial is physical, this is, if it always has a
-    non-negative expectation value.
-
-    This code also supports the detection of "sandwiches", i.e., monomials
-    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
-    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
-    value of this term. However, note that :math:`A_1` can be absorbed into
-    :math:`| \psi \rangle` forming an unnormalised quantum state
-    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
-    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
-    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
-    the unknown normalisation, however we know it must be non-negative,
-    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
-    This simple example can be extended to various layers of sandwiching.
-
-    Parameters
-    ----------
-    monomial_in : numpy.ndarray
-        Input monomial in 2d array format.
-    sandwich_positivity : bool, optional
-        Whether to consider sandwiching. By default ``True``.
-
-    Returns
-    -------
-    bool
-        Whether the monomial has always non-negative expectation or not.
-    """
-    if len(monomial_in) <= 1:
-        return True
-    if sandwich_positivity:
-        monomial = remove_sandwich(monomial_in)
-        if len(monomial) <= 1:
-            return True
-    else:
-        monomial = monomial_in
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party]
-        n = len(party_monomial)
-        if not n == 1:
-            factors = factorize_monomial(party_monomial)
-            if len(factors) != n:
-                return False
-    return True
-
-
 def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
     """Reduce the inflation indices of a monomial as much as possible. This
     procedure might not give the canonical form directly due to commutations.
@@ -255,32 +79,6 @@ def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
         _, unique_positions = np.unique(copies_used, return_inverse=True)
         new_mon_padded_transposed[1 + source] = unique_positions
     return new_mon_padded_transposed.T[1:]
-
-
-def remove_sandwich(monomial: np.ndarray) -> np.ndarray:
-    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
-    monomial represented by :math:`U A U^\dagger` into :math:`A`.
-
-    Parameters
-    ----------
-    monomial : numpy.ndarray
-        Input monomial.
-
-    Returns
-    -------
-    numpy.ndarray
-        The monomial without sandwiches.
-    """
-    new_monomial = np.empty((0, monomial[0, :].shape[0]), dtype=int)
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party]
-        party_monomial_factorized = factorize_monomial(party_monomial)
-        for factor in party_monomial_factorized:
-            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
-                factor = factor[1:-1]
-            new_monomial = np.append(new_monomial, factor, axis=0)
-    return new_monomial
 
 
 ###############################################################################
