@@ -524,3 +524,83 @@ class TestSymmetries(unittest.TestCase):
                                        [[0, 6, 2, 4, 3, 5, 1]]),
                         "The commutation relations of different copies are " +
                         "not applied properly after inflation symmetries.")
+
+
+class TestConstraintGeneration(unittest.TestCase):
+    def test_norm_eqs_mon2index_mapping(self):
+        sdp = InflationSDP(InflationProblem({'r':['A']}, (3,),(3,),(3,)))
+        sdp.generate_relaxation('npa2')
+        for i, mon in enumerate(sdp.generating_monomials):
+            self.assertTrue(i == sdp.genmon_hash_to_index[mon.tobytes()],
+                            "Monomials in the generating list must be mapped " +
+                            "to their index in the list under " +
+                            "InflationSDP.genmon_hash_to_index for " +
+                            "InflationSDP._discover_normalization_eqns() " +
+                            "to work correctly.")
+        
+    def test_norm_eqs_expansion(self):
+        from causalinflation.quantum.quantum_tools import \
+                                                expand_moment_normalisation
+        
+        out = expand_moment_normalisation(np.array([[1, 1, 0, 1]]),
+                                          [3],
+                                          {i: False for i in range(3)})
+        out_good =  [(np.array([]).reshape((0, 4)),
+                     [np.array([[1, 1, 0, 1]]), np.array([[1, 1, 0, 0]])])]
+        for eq1, eq2 in zip(out, out_good):
+            self.assertTrue(np.allclose(eq1[0], eq2[0]) and \
+                            len(eq1[1]) == len(eq2[1]), 
+                            "Normalisation constraint is not" +
+                            "being properly generated. ")
+            for el1, el2 in zip(eq1[1], eq2[1]):
+                self.assertTrue(np.allclose(el1, el2),
+                                "Normalisation constraint is not" +
+                                "being properly generated. ")
+                
+        # Note, currently if more than one operator has a last output,
+        # several equalities will be generated, instead of a single one.
+        out = expand_moment_normalisation(np.array([[1, 1, 0, 1],
+                                                    [2, 3, 1, 1],
+                                                    [2, 3, 1, 0]]),
+                                          [3, 3, 2], # we 'lie' about cardinality
+                                          {i: False for i in range(3)})
+        out_good =  [(np.array([[2, 3, 1, 1], [2, 3, 1, 0]]),
+                     [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
+                      np.array([[1, 1, 0, 0], [2, 3, 1, 1], [2, 3, 1, 0]])]),
+                     (np.array([[1, 1, 0, 1], [2, 3, 1, 0]]),
+                     [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
+                      np.array([[1, 1, 0, 1], [2, 3, 1, 0], [2, 3, 1, 0]])])]
+        for eq1, eq2 in zip(out, out_good):
+            self.assertTrue(np.allclose(eq1[0], eq2[0]) and \
+                            len(eq1[1]) == len(eq2[1]), 
+                            "Normalisation constraint is not" +
+                            "being properly generated. ")
+            for el1, el2 in zip(eq1[1], eq2[1]):
+                self.assertTrue(np.allclose(el1, el2),
+                                "Normalisation constraint is not" +
+                                f"being properly generated.")
+                
+    def test_normeqs_colineq2momentineq(self):
+        from causalinflation.quantum.quantum_tools import \
+                                            construct_normalization_eqs
+        G = np.array([[1,  2,  3,  4,  5],
+                      [2,  1,  6,  7,  8],
+                      [3,  6,  1,  9, 10],
+                      [4,  7,  9,  1, 11],
+                      [5,  8, 10, 11,  1]])
+        # The following inequalities have random integers, they have no
+        # interpretation
+        column_inequalities = [(0, [1, 2, 3, 4]), (3, [2, 4])]
+        out = construct_normalization_eqs(column_inequalities, G)
+        out_good = [(1, [2, 3, 4, 5]),
+                    (2, [1, 6, 7, 8]),
+                    (3, [1, 6, 9, 10]),
+                    (4, [1, 7, 9, 11]),
+                    (5, [1, 8, 10, 11]),
+                    (4, [3, 5]),
+                    (7, [6, 8]),
+                    (9, [1, 10]),
+                    (1, [9, 11])]
+        
+        self.assertEqual(out, out_good, "Column equalities are not being " +
+                                    "properly lifted to moment inequalities.")

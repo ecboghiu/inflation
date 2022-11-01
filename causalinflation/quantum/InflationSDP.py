@@ -34,6 +34,7 @@ from .quantum_tools import (apply_inflation_symmetries,
                             format_permutations,
                             generate_operators,
                             is_knowable,
+                            expand_moment_normalisation,
                             party_physical_monomials,
                             reduce_inflation_indices)
 from .sdp_utils import solveSDP_MosekFUSION
@@ -1506,39 +1507,20 @@ class InflationSDP(object):
             A list of normalization equalities between columns of the moment
         matrix.
         """
+        skip_party = [not i for i in self.has_children]
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
-            for k, operator in enumerate(mon):
-                party = operator[0] - 1
-                # Operators that are involved in normalization equalities are
-                # those which are unpacked in non-network scenarios
-                if (self.has_children[party]
-                   and operator[-1] == self.outcome_cardinalities[party] - 2):
-                    operator_2d = np.expand_dims(operator, axis=0)
-                    prefix = mon[:k]
-                    suffix = mon[(k + 1):]
-                    positions = [i]
-                    true_cardinality = self.outcome_cardinalities[party] - 1
-                    for outcome in range(true_cardinality - 1):
-                        variant_operator        = operator_2d.copy()
-                        variant_operator[0, -1] = outcome
-                        variant_mon             = np.vstack((prefix,
-                                                             variant_operator,
-                                                             suffix))
-                        try:
-                            j = self.genmon_hash_to_index[
-                                self._from_2dndarray(variant_mon)]
-                            positions.append(j)
-                        except KeyError:
-                            break
-                    if len(positions) == true_cardinality:
-                        normalization_mon = np.vstack((prefix, suffix))
-                        try:
-                            j = self.genmon_hash_to_index[
-                                self._from_2dndarray(normalization_mon)]
-                            column_level_equalities.append((j, positions))
-                        except KeyError:
-                            break
+            eqs = expand_moment_normalisation(mon, self.outcome_cardinalities,
+                                            skip_party)
+            for eq in eqs:
+                try:
+                    eq_idxs = [self.genmon_hash_to_index[
+                                                self._from_2dndarray(eq[0])]]
+                    eq_idxs.append([self.genmon_hash_to_index[
+                                    self._from_2dndarray(m)] for m in eq[1]])
+                    column_level_equalities += [tuple(eq_idxs)]
+                except KeyError:
+                    break
         return column_level_equalities
 
     def _discover_inflation_symmetries(self) -> np.ndarray:
