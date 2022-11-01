@@ -105,8 +105,6 @@ class InflationSDP(object):
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
-        might_have_a_zero = np.any(self.outcome_cardinalities > 1)
-
         self.measurements = self._generate_parties()
         if self.verbose > 1:
             print("Number of single operator measurements per party:", end="")
@@ -140,9 +138,7 @@ class InflationSDP(object):
 
         # Define default lexicographic order through np.lexsort
         lexorder = self._interpret_name(flatten(self.measurements))
-        if might_have_a_zero:
-            lexorder = np.concatenate((self.zero_operator, lexorder))
-
+        lexorder = np.concatenate((self.zero_operator, lexorder))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
 
