@@ -30,30 +30,6 @@ if not nopython:
 # ABSTRACT OPERATIONS ON MONOMIALS                                            #
 ###############################################################################
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_adjmat_to_component_labels(adj_mat: np.ndarray) -> np.ndarray:
-    n = len(adj_mat)
-    if n <= 1 or adj_mat.all():
-        return np.zeros(n, dtype=np.uint8)
-    component_labels = np.zeros(n, dtype=np.uint8)
-    component_counter = 1
-    for i in range(n):
-        if not component_labels[i]:
-            old_component = np.logical_not(np.ones(n, dtype=np.uint8))
-            new_component = old_component.copy()
-            new_component[i] = True
-            search_next = np.logical_xor(new_component, old_component)
-            while search_next.any():
-                old_component = new_component.copy()
-                new_component = np.logical_or(
-                    new_component,
-                    adj_mat[search_next].sum(axis=0).astype(bool_))
-                search_next = np.logical_xor(new_component, old_component)
-            component_labels[new_component] = component_counter
-            component_counter += 1
-    return (component_labels-1).astype(np.uint8)
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def dot_mon(mon1: np.ndarray,
             mon2: np.ndarray) -> np.ndarray:
     """Returns ((mon1)^dagger)*mon2.
@@ -132,6 +108,125 @@ def mon_lexsorted(mon: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
+    """Given a boolean matrix where each cell indicates whether the supports of
+    the operator denoting the row and the operator denoting the column overlap,
+    generate a list determining to which disconnected component each operator
+    belongs to.
+
+    Parameters
+    ----------
+    adj_mat : numpy.ndarray
+        Boolean 2d array where each cell indicates whether the supports of the
+        operator denoting the row and the operator denoting the column overlap.
+
+    Returns
+    -------
+    numpy.ndarray
+        A list of integers of size the number of operators used for creating
+        adj_mat, where each integer indexes the disconnected component the
+        corresponding operator belongs to.
+    """
+    # See https://stackoverflow.com/a/9112588 for inspiration of the method
+    n = len(adj_mat)
+    if n <= 1 or adj_mat.all():
+        return np.zeros(n, dtype=np.uint8)
+    component_labels = np.zeros(n, dtype=np.uint8)
+    component_counter = 1
+    for i in range(n):
+        if not component_labels[i]:
+            old_component = np.logical_not(np.ones(n, dtype=np.uint8))
+            new_component = old_component.copy()
+            new_component[i] = True
+            search_next = np.logical_xor(new_component, old_component)
+            while search_next.any():
+                old_component = new_component.copy()
+                new_component = np.logical_or(
+                    new_component,
+                    adj_mat[search_next].sum(axis=0).astype(bool_))
+                search_next = np.logical_xor(new_component, old_component)
+            component_labels[new_component] = component_counter
+            component_counter += 1
+    return (component_labels-1).astype(np.uint8)
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_knowable(monomial: np.ndarray) -> bool_:
+    """Determine whether a given atomic monomial admits an identification with
+    a probability of the original scenario.
+
+    Parameters
+    ----------
+    monomial : np.ndarray
+        List of operators, denoted each by a list of indices
+
+    Returns
+    -------
+    bool
+        Whether the monomial is knowable or not.
+    """
+    if len(monomial) <= 1:
+        return True
+    # Knowable monomials have at most one operator per party and one copy of
+    # each source in the DAG
+    parties = monomial[:, 0]
+    if len(np.unique(parties)) != len(monomial):
+        return False
+    for source in monomial.T[1:-2]:
+        if len(np.unique(source[np.flatnonzero(source)])) > 1:
+            return False
+    return True
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
+    r"""Determines whether a monomial is physical, this is, if it always has a
+    non-negative expectation value.
+
+    This code also supports the detection of "sandwiches", i.e., monomials
+    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
+    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
+    value of this term. However, note that :math:`A_1` can be absorbed into
+    :math:`| \psi \rangle` forming an unnormalised quantum state
+    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
+    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
+    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
+    the unknown normalisation, however we know it must be non-negative,
+    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
+    This simple example can be extended to various layers of sandwiching.
+
+    Parameters
+    ----------
+    monomial_in : numpy.ndarray
+        Input monomial in 2d array format.
+    sandwich_positivity : bool, optional
+        Whether to consider sandwiching. By default ``True``.
+
+    Returns
+    -------
+    bool
+        Whether the monomial has always non-negative expectation or not.
+    """
+    if len(monomial_in) <= 1:
+        return True
+    if sandwich_positivity:
+        monomial = nb_remove_sandwich(monomial_in)
+        if len(monomial) <= 1:
+            return True
+    else:
+        monomial = monomial_in
+    parties = np.unique(monomial[:, 0])
+    for party in parties:
+        party_monomial = monomial[monomial[:, 0] == party]
+        n = len(party_monomial)
+        if not n == 1:
+            component_labels = nb_monomial_to_components(party_monomial)
+            if np.max(component_labels) + 1 != n:
+                return False
+    return True
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_lexorder_idx(operator: np.ndarray,
                     lexorder: np.ndarray) -> int:
     """Return the unique integer corresponding to the lexicographic ordering of
@@ -180,6 +275,103 @@ def nb_mon_to_lexrepr(mon: np.ndarray,
     for i in range(mon.shape[0]):
         lex[i] = nb_lexorder_idx(mon[i], lexorder)
     return lex
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
+    """Wrapper for obtaining the list of disconnected components of a monomial.
+
+    Parameters
+    ----------
+    monomial : numpy.ndarray
+        Monomial in 2d array form.
+
+    Returns
+    -------
+    numpy.ndarray
+        A vector where each integer gives the component associated with the
+        operator of that index.
+
+    Examples
+    --------
+    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                             [2, 1, 0, 2, 0, 0],
+                             [1, 0, 3, 3, 0, 0],
+                             [3, 3, 5, 0, 0, 0],
+                             [3, 1, 4, 0, 0, 0],
+                             [3, 6, 6, 0, 0, 0],
+                             [3, 4, 5, 0, 0, 0]])
+    >>> factorised = nb_monomial_to_components(monomial)
+    [0, 1, 2, 3, 1, 4, 3]
+    """
+    n = len(monomial)
+    if n <= 1:
+        return np.zeros(n, dtype=np.uint8)
+    return nb_classify_disconnected_components(nb_overlap_matrix(
+        monomial[:, 1:-2]))
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
+    """Given a list of inflation indices for a number of operators, generate
+    a boolean matrix whose entries denote whether the supports of the operator
+    indexed by the row and of the operator indexed by the column overlap.
+
+    Parameters
+    ----------
+    inflation_indxs : numpy.ndarray
+        A list of inflation indices for a collection of operators.
+
+    Returns
+    -------
+    numpy.ndarray
+        The "adjacency matrix" whose entries denote whether the supports of the
+        operator indexed by the row and of the operator indexed by the column
+        overlap.
+    """
+    n = len(inflation_indxs)
+    adj_mat = np.eye(n, dtype=np.bool_)
+    for i in range(1, n):
+        inf_indices_i = inflation_indxs[i]
+        for j in range(i):
+            inf_indices_j = inflation_indxs[j]
+            if nb_inf_indices_refer_common_source(inf_indices_i,
+                                                  inf_indices_j):
+                adj_mat[i, j] = True
+    adj_mat = np.logical_or(adj_mat, adj_mat.T)
+    return adj_mat
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
+    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
+    monomial represented by :math:`U A U^\dagger` into :math:`A`.
+
+    Parameters
+    ----------
+    monomial : numpy.ndarray
+        Input monomial.
+
+    Returns
+    -------
+    numpy.ndarray
+        The monomial without sandwiches.
+    """
+    picklist = np.logical_not(np.ones(len(monomial), dtype=np.uint8))
+    parties = np.unique(monomial[:, 0])
+    for party in parties:
+        indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
+        party_monomial = monomial[indices_for_this_party]
+        party_monomial_comp_labels = nb_monomial_to_components(party_monomial)
+        for i in range(party_monomial_comp_labels.max() + 1):
+            indices_for_this_factor = np.flatnonzero(
+                party_monomial_comp_labels == i)
+            factor = party_monomial[indices_for_this_factor]
+            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
+                indices_for_this_factor = indices_for_this_factor[1:-1]
+                factor = factor[1:-1]
+            picklist[indices_for_this_party[indices_for_this_factor]] = True
+    return monomial[picklist]
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -255,188 +447,6 @@ def to_name(monomial: np.ndarray,
     return "*".join(["_".join([names[letter[0] - 1]]
                               + [str(i) for i in letter[1:]])
                      for letter in monomial])
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_inf_indxs_to_adjmat(array_of_inflation_indxs: np.ndarray) -> np.ndarray:
-    """
-    Returns a matrix of the size of the monomial, where a 1 indicates a common
-    source.
-    """
-    n = len(array_of_inflation_indxs)
-    adj_mat = np.eye(n, dtype=np.bool_)
-    for i in range(1, n):
-        inf_indices_i = array_of_inflation_indxs[i]
-        for j in range(i):
-            inf_indices_j = array_of_inflation_indxs[j]
-            if nb_inf_indices_refer_common_source(inf_indices_i,
-                                                  inf_indices_j):
-                adj_mat[i, j] = True
-    adj_mat = np.logical_or(adj_mat, adj_mat.T)
-    return adj_mat
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
-    # See https://stackoverflow.com/a/9112588
-    """This function help split a moment/expectation value into products of
-    moments according to the support of the operators within the moment.
-
-    The moment is encoded as a 2d array where each row is an operator.
-    If monomial=A*B*C*B then row 1 is A, row 2 is B, row 3 is C and row 4 is B.
-    In each row, the columns encode the following information:
-
-    First column:       The party index, *starting from 1*.
-                        (1 for A, 2 for B, etc.)
-    Last two columns:   The input x, starting from zero and then the
-                        output a, starting from zero.
-    In between:         This encodes the support of the operator. There
-                        are as many columns as sources/quantum states.
-                        Column j represents source j-1 (-1 because the 1st
-                        col is the party). If the value is 0, then this
-                        operator does not measure this source. If the value
-                        is for e.g. 2, then this operator is acting on
-                        copy 2 of source j-1.
-
-    The output is a vector (numpy array) where each integer represents the
-    component the operator is associated with.
-
-    Parameters
-    ----------
-    raw_monomial : numpy.ndarray
-        Monomial in 2d array form.
-
-    Returns
-    -------
-    numpy.ndarray
-        A vector where each integer gives the component associated with the
-        operator of that index.
-
-    Examples
-    --------
-    >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
-                             [2, 1, 0, 2, 0, 0],
-                             [1, 0, 3, 3, 0, 0],
-                             [3, 3, 5, 0, 0, 0],
-                             [3, 1, 4, 0, 0, 0],
-                             [3, 6, 6, 0, 0, 0],
-                             [3, 4, 5, 0, 0, 0]])
-    >>> factorised = monomial_to_components(monomial)
-    [0, 1, 2, 3, 1, 4, 3]
-    """
-    n = len(monomial)
-    if n <= 1:
-        return np.zeros(n, dtype=np.uint8)
-    return nb_adjmat_to_component_labels(nb_inf_indxs_to_adjmat(
-        monomial[:, 1:-2]))
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
-    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
-    monomial represented by :math:`U A U^\dagger` into :math:`A`.
-
-    Parameters
-    ----------
-    monomial : numpy.ndarray
-        Input monomial.
-
-    Returns
-    -------
-    numpy.ndarray
-        The monomial without sandwiches.
-    """
-    picklist = np.logical_not(np.ones(len(monomial), dtype=np.uint8))
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
-        party_monomial = monomial[indices_for_this_party]
-        party_monomial_comp_labels = nb_monomial_to_components(party_monomial)
-        for i in range(party_monomial_comp_labels.max() + 1):
-            indices_for_this_factor = np.flatnonzero(
-                party_monomial_comp_labels == i)
-            factor = party_monomial[indices_for_this_factor]
-            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
-                indices_for_this_factor = indices_for_this_factor[1:-1]
-                factor = factor[1:-1]
-            picklist[indices_for_this_party[indices_for_this_factor]] = True
-    return monomial[picklist]
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
-    r"""Determines whether a monomial is physical, this is, if it always has a
-    non-negative expectation value.
-
-    This code also supports the detection of "sandwiches", i.e., monomials
-    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
-    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
-    value of this term. However, note that :math:`A_1` can be absorbed into
-    :math:`| \psi \rangle` forming an unnormalised quantum state
-    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
-    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
-    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
-    the unknown normalisation, however we know it must be non-negative,
-    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
-    This simple example can be extended to various layers of sandwiching.
-
-    Parameters
-    ----------
-    monomial_in : numpy.ndarray
-        Input monomial in 2d array format.
-    sandwich_positivity : bool, optional
-        Whether to consider sandwiching. By default ``True``.
-
-    Returns
-    -------
-    bool
-        Whether the monomial has always non-negative expectation or not.
-    """
-    if len(monomial_in) <= 1:
-        return True
-    if sandwich_positivity:
-        monomial = nb_remove_sandwich(monomial_in)
-        if len(monomial) <= 1:
-            return True
-    else:
-        monomial = monomial_in
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party]
-        n = len(party_monomial)
-        if not n == 1:
-            component_labels = nb_monomial_to_components(party_monomial)
-            if np.max(component_labels) + 1 != n:
-                return False
-    return True
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_is_knowable(monomial: np.ndarray) -> bool_:
-    """Determine whether a given atomic monomial admits an identification with
-    a probability of the original scenario.
-
-    Parameters
-    ----------
-    monomial : np.ndarray
-        List of operators, denoted each by a list of indices
-
-    Returns
-    -------
-    bool
-        Whether the monomial is knowable or not.
-    """
-    if len(monomial) <= 1:
-        return True
-    # Knowable monomials have at most one operator per party and one copy of
-    # each source in the DAG
-    parties = monomial[:, 0]
-    if len(np.unique(parties)) != len(monomial):
-        return False
-    for source in monomial.T[1:-2]:
-        if len(np.unique(source[np.flatnonzero(source)])) > 1:
-            return False
-    return True
 
 
 ###############################################################################

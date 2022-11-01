@@ -14,9 +14,9 @@ from .fast_npa import (apply_source_perm,
                        dot_mon,
                        mon_is_zero,
                        mon_lexsorted,
+                       nb_monomial_to_components,
                        to_canonical,
-                       to_name,
-                       nb_monomial_to_components)
+                       to_name)
 
 try:
     from tqdm import tqdm

@@ -8,8 +8,8 @@ import numpy as np
 
 from itertools import chain, combinations_with_replacement
 from warnings import warn
-from .quantum.fast_npa import (nb_inf_indxs_to_adjmat,
-                               nb_adjmat_to_component_labels)
+from .quantum.fast_npa import (nb_classify_disconnected_components,
+                               nb_overlap_matrix)
 from typing import Tuple
 
 # Force warnings.warn() to omit the source code line in the message
@@ -221,7 +221,7 @@ class InflationProblem(object):
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
                                         in enumerate(inflation_indices)}
-        self._inflation_indices_overlap = nb_inf_indxs_to_adjmat(
+        self._inflation_indices_overlap = nb_overlap_matrix(
             np.asarray(inflation_indices, dtype=np.uint8))
         assert len(self._inflation_indices_hash) == len(inflation_indices), \
             "Error: duplicated inflation index pattern."
@@ -276,44 +276,6 @@ class InflationProblem(object):
                     return False
         else:
             return True
-
-    def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
-        """When constructing the monomials in a non-network scenario, we rely
-        on an internal representation of operators where the integer denoting
-        the setting actually is an 'effective setting' that encodes, in
-        addition to the 'private setting' that each party is free to choose,
-        the values of all the parents of the variable in question, which also
-        effectively act as settings. This function resets this 'effective
-        setting' integer to the true 'private setting' integer. It is useful to
-        relate knowable monomials to their meaning as conditional events in
-        non-network scenarios. If the scenario is a network, this function does
-        nothing.
-
-        Parameters
-        ----------
-            monomial : numpy.ndarray
-                An internal representation of a monomial as a 2d numpy array.
-                Each row in the array corresponds to an operator. For each row,
-                the zeroth element represents the party, the last element
-                represents the outcome, the second-to-last element represents
-                the setting, and the remaining elements represent inflation
-                copies.
-
-        Returns
-        -------
-        numpy.ndarray
-            The monomial with the index of the setting representing only the
-            private setting.
-        """
-        new_mon = np.array(monomial, copy=False)
-        for o in new_mon:
-            party_index        = o[0] - 1     # Parties start at 1 our notation
-            effective_setting  = o[-2]
-            o_private_settings = \
-                self.effective_to_parent_settings[
-                                   party_index][effective_setting][0]
-            o[-2] = o_private_settings
-        return new_mon
 
     def factorize_monomial(self,
                            monomial: np.ndarray,
@@ -376,7 +338,7 @@ class InflationProblem(object):
         adj_mat = self._inflation_indices_overlap[inflation_indices_position][
             :, inflation_indices_position]
 
-        component_labels = nb_adjmat_to_component_labels(adj_mat)
+        component_labels = nb_classify_disconnected_components(adj_mat)
         disconnected_components = tuple(
             monomial[component_labels == i]
             for i in range(component_labels.max(initial=0) + 1))
@@ -385,3 +347,41 @@ class InflationProblem(object):
             disconnected_components = tuple(sorted(disconnected_components,
                                                    key=lambda x: x.tobytes()))
         return disconnected_components
+
+    def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
+        """When constructing the monomials in a non-network scenario, we rely
+        on an internal representation of operators where the integer denoting
+        the setting actually is an 'effective setting' that encodes, in
+        addition to the 'private setting' that each party is free to choose,
+        the values of all the parents of the variable in question, which also
+        effectively act as settings. This function resets this 'effective
+        setting' integer to the true 'private setting' integer. It is useful to
+        relate knowable monomials to their meaning as conditional events in
+        non-network scenarios. If the scenario is a network, this function does
+        nothing.
+
+        Parameters
+        ----------
+            monomial : numpy.ndarray
+                An internal representation of a monomial as a 2d numpy array.
+                Each row in the array corresponds to an operator. For each row,
+                the zeroth element represents the party, the last element
+                represents the outcome, the second-to-last element represents
+                the setting, and the remaining elements represent inflation
+                copies.
+
+        Returns
+        -------
+        numpy.ndarray
+            The monomial with the index of the setting representing only the
+            private setting.
+        """
+        new_mon = np.array(monomial, copy=False)
+        for o in new_mon:
+            party_index        = o[0] - 1     # Parties start at 1 our notation
+            effective_setting  = o[-2]
+            o_private_settings = \
+                self.effective_to_parent_settings[
+                                   party_index][effective_setting][0]
+            o[-2] = o_private_settings
+        return new_mon

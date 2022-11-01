@@ -100,7 +100,6 @@ class InflationSDP(object):
             self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
-        self.ever_factorizes = self.InflationProblem.ever_factorizes
 
         might_have_a_zero = np.any(self.outcome_cardinalities > 1)
 
