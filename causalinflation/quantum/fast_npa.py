@@ -517,7 +517,8 @@ def apply_source_perm(monomial: np.ndarray,
     return new_factors
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# Functions which are only used once or twice are not aggressively Numba-fied
+@jit(nopython=False, cache=cache, forceobj=not nopython)
 def commutation_matrix(lexorder: np.ndarray,
                        commuting=False) -> np.ndarray:
     """Build a matrix encoding of which operators commute according to the
