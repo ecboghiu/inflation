@@ -259,16 +259,16 @@ def commutation_relations(infSDP):
     from collections import namedtuple
     nonzero = namedtuple("NonZeroExpressions", "exprs")
     data = []
-    for i in range(infSDP._lexorder.shape[0]):
-        for j in range(i, infSDP._lexorder.shape[0]):
+    lexorder = infSDP._lexorder
+    lexorder_len = lexorder.shape[0]
+    for i in range(lexorder_len):
+        for j in range(i, lexorder_len):
             # Most operators commute as they belong to different parties,
             if infSDP._notcomm[i, j] != 0:
-                op1 = sympy.Symbol(to_name([infSDP._lexorder[i]],
-                                           infSDP.names),
-                                   commutative=False)
-                op2 = sympy.Symbol(to_name([infSDP._lexorder[i]],
-                                           infSDP.names),
-                                   commutative=False)
+                (op1_name, op2_name) = to_name(lexorder[[i, j]],
+                                               infSDP.names).split('*')
+                op1 = sympy.Symbol(op1_name, commutative=False)
+                op2 = sympy.Symbol(op2_name, commutative=False)
                 if infSDP.verbose > 0:
                     print(f"{str(op1 * op2 - op2 * op1)} ≠ 0.")
                 data.append(op1 * op2 - op2 * op1)
