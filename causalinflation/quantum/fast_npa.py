@@ -9,12 +9,13 @@ import numpy as np
 from typing import List
 
 try:
-    from numba import jit
+    from numba import jit, prange
     from numba.types import bool_, void
     from numba.types import uint8 as uint8_
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
+    prange = range
     bool_  = bool
     uint8_ = np.uint8
     void   = None
@@ -276,7 +277,8 @@ def nb_lexorder_idx(operator: np.ndarray,
             return i
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
 def nb_mon_to_lexrepr(mon: np.ndarray,
                       lexorder: np.ndarray) -> np.array:
     """Convert a monomial to its lexicographic representation, in the form of
@@ -296,8 +298,8 @@ def nb_mon_to_lexrepr(mon: np.ndarray,
         Monomial as array of integers, where each integer is the hash
         of the corresponding operator.
     """
-    lex = np.zeros_like(mon[:, 0])
-    for i in range(mon.shape[0]):
+    lex = np.zeros(mon.shape[0], dtype=lexorder.dtype)
+    for i in prange(mon.shape[0]):
         lex[i] = nb_lexorder_idx(mon[i], lexorder)
     return lex
 
@@ -336,7 +338,7 @@ def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
         monomial[:, 1:-2]))
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
 def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
     """Given a list of inflation indices for a number of operators, generate
     a boolean matrix whose entries denote whether the supports of the operator
@@ -356,7 +358,7 @@ def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
     """
     n = len(inflation_indxs)
     adj_mat = np.eye(n, dtype=np.bool_)
-    for i in range(1, n):
+    for i in prange(1, n):
         inf_indices_i = inflation_indxs[i]
         for j in range(i):
             inf_indices_j = inflation_indxs[j]
