@@ -107,47 +107,72 @@ def mon_lexsorted(mon: np.ndarray,
     return mon[np.argsort(mon_lexrepr, kind="quicksort")]
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
-    """Given a boolean matrix where each cell indicates whether the supports of
-    the operator denoting the row and the operator denoting the column overlap,
-    generate a list determining to which disconnected component each operator
-    belongs to.
+if nopython:
+    @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+    def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
+        """Given a boolean matrix where each cell indicates whether the supports of
+        the operator denoting the row and the operator denoting the column overlap,
+        generate a list determining to which disconnected component each operator
+        belongs to.
 
-    Parameters
-    ----------
-    adj_mat : numpy.ndarray
-        Boolean 2d array where each cell indicates whether the supports of the
-        operator denoting the row and the operator denoting the column overlap.
+        Parameters
+        ----------
+        adj_mat : numpy.ndarray
+            Boolean 2d array where each cell indicates whether the supports of the
+            operator denoting the row and the operator denoting the column overlap.
 
-    Returns
-    -------
-    numpy.ndarray
-        A list of integers of size the number of operators used for creating
-        adj_mat, where each integer indexes the disconnected component the
-        corresponding operator belongs to.
-    """
-    # See https://stackoverflow.com/a/9112588 for inspiration of the method
-    n = len(adj_mat)
-    if n <= 1 or adj_mat.all():
-        return np.zeros(n, dtype=np.uint8)
-    component_labels = np.zeros(n, dtype=np.uint8)
-    component_counter = 1
-    for i in range(n):
-        if not component_labels[i]:
-            old_component = np.logical_not(np.ones(n, dtype=np.uint8))
-            new_component = old_component.copy()
-            new_component[i] = True
-            search_next = np.logical_xor(new_component, old_component)
-            while search_next.any():
-                old_component = new_component.copy()
-                new_component = np.logical_or(
-                    new_component,
-                    adj_mat[search_next].sum(axis=0).astype(bool_))
+        Returns
+        -------
+        numpy.ndarray
+            A list of integers of size the number of operators used for creating
+            adj_mat, where each integer indexes the disconnected component the
+            corresponding operator belongs to.
+        """
+        # See https://stackoverflow.com/a/9112588 for inspiration of the method
+        n = len(adj_mat)
+        if n <= 1 or adj_mat.all():
+            return np.zeros(n, dtype=np.uint8)
+        component_labels = np.zeros(n, dtype=np.uint8)
+        component_counter = 1
+        for i in range(n):
+            if not component_labels[i]:
+                old_component = np.logical_not(np.ones(n, dtype=np.uint8))
+                new_component = old_component.copy()
+                new_component[i] = True
                 search_next = np.logical_xor(new_component, old_component)
-            component_labels[new_component] = component_counter
-            component_counter += 1
-    return (component_labels-1).astype(np.uint8)
+                while search_next.any():
+                    old_component = new_component.copy()
+                    new_component = np.logical_or(
+                        new_component,
+                        adj_mat[search_next].sum(axis=0).astype(bool_))
+                    search_next = np.logical_xor(new_component, old_component)
+                component_labels[new_component] = component_counter
+                component_counter += 1
+        return (component_labels-1).astype(np.uint8)
+else:
+    from scipy.sparse.csgraph import connected_components
+    def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
+        """Given a boolean matrix where each cell indicates whether the supports of
+        the operator denoting the row and the operator denoting the column overlap,
+        generate a list determining to which disconnected component each operator
+        belongs to.
+
+        Parameters
+        ----------
+        adj_mat : numpy.ndarray
+            Boolean 2d array where each cell indicates whether the supports of the
+            operator denoting the row and the operator denoting the column overlap.
+
+        Returns
+        -------
+        numpy.ndarray
+            A list of integers of size the number of operators used for creating
+            adj_mat, where each integer indexes the disconnected component the
+            corresponding operator belongs to.
+        """
+        return connected_components(adj_mat,
+                                    directed=False,
+                                    return_labels=True)[-1]
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
