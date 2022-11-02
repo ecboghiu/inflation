@@ -18,9 +18,9 @@ from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from causalinflation import InflationProblem
-from .fast_npa import (apply_source_perm,
+from .fast_npa import (nb_all_commuting_q,
+                       apply_source_perm,
                        commutation_matrix,
-                       nb_all_commuting,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical)
@@ -29,13 +29,13 @@ from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix,
                             clean_coefficients,
                             construct_normalization_eqs,
-                            factorize_monomial,
+                            expand_moment_normalisation,
                             flatten_symbolic_powers,
                             format_permutations,
                             generate_operators,
-                            is_knowable,
                             party_physical_monomials,
                             reduce_inflation_indices)
+from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 from ..utils import flatten
@@ -105,8 +105,6 @@ class InflationSDP(object):
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
-        might_have_a_zero = np.any(self.outcome_cardinalities > 1)
-
         self.measurements = self._generate_parties()
         if self.verbose > 1:
             print("Number of single operator measurements per party:", end="")
@@ -125,6 +123,7 @@ class InflationSDP(object):
         self._is_knowable_q_non_networks = \
             self.InflationProblem._is_knowable_q_non_networks
         self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
+        self.factorize_monomial = self.InflationProblem.factorize_monomial
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2
@@ -140,15 +139,16 @@ class InflationSDP(object):
 
         # Define default lexicographic order through np.lexsort
         lexorder = self._interpret_name(flatten(self.measurements))
-        if might_have_a_zero:
-            lexorder = np.concatenate((self.zero_operator, lexorder))
-
+        lexorder = np.concatenate((self.zero_operator, lexorder))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
 
         self._default_notcomm = commutation_matrix(self._lexorder,
                                                    self.commuting)
         self._notcomm = self._default_notcomm.copy()
+        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
+                                                              self._lexorder,
+                                                              self._notcomm)
 
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
@@ -282,9 +282,7 @@ class InflationSDP(object):
              for idx in representative_unsym_idxs.flat if idx >= 1}
         unsymidx_from_hash = {self._from_2dndarray(mon): idx for (idx, mon) in
                               unsymmetrized_corresp.items()
-                              if nb_all_commuting(mon,
-                                                  self._lexorder,
-                                                  self._notcomm)}
+                              if self.all_commuting_q(mon)}
         for (hash, idx) in unsymidx_from_hash.items():
             self.canonsym_ndarray_from_hash[hash] = \
                 self.symmetrized_corresp[self.orbits[idx]]
@@ -1099,7 +1097,7 @@ class InflationSDP(object):
         :math:`\langle C^{1,0,1}_{z=0,c=0}\rangle`, after factorizing the input
         monomial and reducing the inflation indices of each of the factors.
         """
-        _factors = factorize_monomial(array2d, canonical_order=False)
+        _factors = self.factorize_monomial(array2d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
@@ -1125,7 +1123,7 @@ class InflationSDP(object):
             The canonical form of the conjugate of the input monomial under
             relabelling through the inflation symmetries.
         """
-        if nb_all_commuting(mon, self._lexorder, self._notcomm):
+        if self.all_commuting_q(mon):
             return mon
         else:
             return self._to_inflation_repr(reverse_mon(mon),
@@ -1510,39 +1508,21 @@ class InflationSDP(object):
             A list of normalization equalities between columns of the moment
         matrix.
         """
+        skip_party = [not i for i in self.has_children]
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
-            for k, operator in enumerate(mon):
-                party = operator[0] - 1
-                # Operators that are involved in normalization equalities are
-                # those which are unpacked in non-network scenarios
-                if (self.has_children[party]
-                   and operator[-1] == self.outcome_cardinalities[party] - 2):
-                    operator_2d = np.expand_dims(operator, axis=0)
-                    prefix = mon[:k]
-                    suffix = mon[(k + 1):]
-                    positions = [i]
-                    true_cardinality = self.outcome_cardinalities[party] - 1
-                    for outcome in range(true_cardinality - 1):
-                        variant_operator        = operator_2d.copy()
-                        variant_operator[0, -1] = outcome
-                        variant_mon             = np.vstack((prefix,
-                                                             variant_operator,
-                                                             suffix))
-                        try:
-                            j = self.genmon_hash_to_index[
-                                self._from_2dndarray(variant_mon)]
-                            positions.append(j)
-                        except KeyError:
-                            break
-                    if len(positions) == true_cardinality:
-                        normalization_mon = np.vstack((prefix, suffix))
-                        try:
-                            j = self.genmon_hash_to_index[
-                                self._from_2dndarray(normalization_mon)]
-                            column_level_equalities.append((j, positions))
-                        except KeyError:
-                            break
+            eqs = expand_moment_normalisation(mon,
+                                              self.outcome_cardinalities,
+                                              skip_party)
+            for eq in eqs:
+                try:
+                    eq_idxs = [self.genmon_hash_to_index[
+                                                self._from_2dndarray(eq[0])]]
+                    eq_idxs.append([self.genmon_hash_to_index[
+                                    self._from_2dndarray(m)] for m in eq[1]])
+                    column_level_equalities += [tuple(eq_idxs)]
+                except KeyError:
+                    break
         return column_level_equalities
 
     def _discover_inflation_symmetries(self) -> np.ndarray:
