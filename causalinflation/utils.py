@@ -38,8 +38,9 @@ def flatten(nested):
 def bisect(f: Callable[[float], float],
            x0: float,
            x1: float,
-           eps=1e-4,
-           verbose=False) -> float:
+           eps: float=1e-4,
+           check_f_sign: bool=True,
+           verbose: bool=False) -> float:
     r"""Find a value :math:`x\in[x0, x1]` where :math:`f(x)=0` using the
     bisection method.
 
@@ -55,12 +56,18 @@ def bisect(f: Callable[[float], float],
     eps : float, optional
         The stopping criterion, expressed as the width of the interval centered
         in the output where the real solution is. By default ``1e-4``.
+    check_f_sign: bool, optional
+        If ``True``, it will be checked that  `f(x0)` and `f(x1)` have opposite
+        signs. By default ``True``. If `f` is expensive to evaluate but it is
+        known change sign in the interval `[x0, x1]`, it is recommended to set
+        this to ``False``.
     verbose: bool, optional
         Whether information about each iteration is printed. By default
         ``False``.
     """
-    assert f(x0)*f(x1) < 0., \
-        "The function should have different signs in x0 and x1."
+    if check_f_sign:
+        assert f(x0)*f(x1) < 0., \
+            "The function should have different signs in x0 and x1."
     x = (x0 + x1) / 2
     while abs(x1 - x0) > eps:
         fx = f(x)
