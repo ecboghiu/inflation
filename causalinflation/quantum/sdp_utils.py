@@ -6,7 +6,7 @@ import numpy as np
 
 from scipy.sparse import dok_matrix, eye, lil_matrix
 from sys import stdout
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 
 def solveSDP_MosekFUSION(mask_matrices: Dict = None,
@@ -20,7 +20,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                          verbose: int = 0,
                          solverparameters: Dict = {},
                          process_constraints: bool = True
-                         ) -> Tuple[Dict, float, str]:
+                         ) -> Dict[str, Any]:
     r"""Internal function to solve the SDP with the `MOSEK Fusion API
     <https://docs.mosek.com/latest/pythonfusion/index.html>`_.
 
