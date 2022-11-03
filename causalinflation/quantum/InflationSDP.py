@@ -37,7 +37,10 @@ from .quantum_tools import (apply_inflation_symmetries,
                             reduce_inflation_indices)
 from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
-from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa, pickle_dump
+from .writer_utils import (pickle_dump,
+                           write_to_csv,
+                           write_to_mat,
+                           write_to_sdpa)
 from ..utils import flatten
 
 try:
@@ -992,8 +995,8 @@ class InflationSDP(object):
         filename : str
             Name of the exported file. If no file format is specified, it
             defaults to sparse SDPA format. Supported formats are ``.mat``
-            (MATLAB), ``.dat-s`` (SDPA), ``.pkl`` (Python pickle)
-            and ``.csv`` (human-readable).
+            (MATLAB), ``.dat-s`` (SDPA), ``.pkl`` (Python pickle) and ``.csv``
+            (human-readable).
         """
         # Determine file extension
         parts = filename.split(".")
@@ -1015,8 +1018,9 @@ class InflationSDP(object):
         elif extension == 'pkl':
             pickle_dump(self, filename)
         else:
-            raise Exception("File format not supported. Please choose between"
-                       + " the extensions `.csv`, `.dat-s`, `.pkl` and `.mat`.")
+            raise Exception("File format not supported. Please choose between "
+                            + "the extensions `.csv`, `.dat-s`, `.pkl` and "
+                            + "`.mat`.")
 
     ###########################################################################
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
@@ -1125,6 +1129,20 @@ class InflationSDP(object):
         else:
             return self._to_inflation_repr(reverse_mon(mon),
                                            apply_only_commutations)
+
+    def _construct_mask_matrices(self) -> None:
+        """Helper a function to associate each monomial appearing in the moment
+        matrix with a unique mask matrix, as this is relevant to expressing an
+        SDP in dual form.
+        """
+        if self._relaxation_has_been_generated:
+            if self.n_columns > 0:
+                self.maskmatrices = {
+                    mon: lil_matrix(self.momentmatrix == mon.idx)
+                    for mon in tqdm(self.monomials,
+                                    disable=not self.verbose,
+                                    desc="Assigning mask matrices  ")
+                                     }
 
     def _inflation_orbit_and_rep(self,
                                  monomial: np.ndarray
@@ -1752,21 +1770,6 @@ class InflationSDP(object):
                 pass
 
 
-    def _construct_mask_matrices(self) -> None:
-        """Helper a function to associate each monomial appearing in the moment
-        matrix with a unique mask matrix, as this is relevant to expressing an
-        SDP in dual form.
-        """
-        if self._relaxation_has_been_generated:
-            if self.n_columns > 0:
-                if len(self.maskmatrices) == 0:
-                    self.maskmatrices = {
-                        mon: lil_matrix(self.momentmatrix == mon.idx)
-                        for mon in tqdm(self.monomials,
-                                        disable=not self.verbose,
-                                        desc="Assigning mask matrices  ")
-                    }
-
     ###########################################################################
     # OTHER ROUTINES                                                          #
     ###########################################################################
@@ -1840,7 +1843,8 @@ class InflationSDP(object):
             ("Error: Tried to assign known values outside of moment matrix: " +
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
-        self._construct_mask_matrices()
+        if len(self.maskmatrices) == 0:
+            self._construct_mask_matrices()
         solverargs = {"mask_matrices": {mon.name: mask_matrix
                                         for mon, mask_matrix
                                         in self.maskmatrices.items()},
