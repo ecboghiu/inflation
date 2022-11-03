@@ -371,13 +371,6 @@ class InflationSDP(object):
         self.set_objective(None)
         self.set_values(None)
 
-        # # Get mask matrices associated with each monomial
-        # for mon in tqdm(self.monomials,
-        #                 disable=not self.verbose,
-        #                 desc="Assigning mask matrices  "):
-        #     mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
-        # self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
-
         self._relaxation_has_been_generated = True
 
     def set_bounds(self,
