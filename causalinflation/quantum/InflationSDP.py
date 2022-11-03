@@ -37,7 +37,7 @@ from .quantum_tools import (apply_inflation_symmetries,
                             reduce_inflation_indices)
 from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
-from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa, pickle_dump
+from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 from ..utils import flatten
 
 try:
@@ -992,8 +992,7 @@ class InflationSDP(object):
         filename : str
             Name of the exported file. If no file format is specified, it
             defaults to sparse SDPA format. Supported formats are ``.mat``
-            (MATLAB), ``.dat-s`` (SDPA), ``.pkl`` (Python pickle)
-            and ``.csv`` (human-readable).
+            (MATLAB), ``.dat-s`` (SDPA) and ``.csv`` (human-readable).
         """
         # Determine file extension
         parts = filename.split(".")
@@ -1012,11 +1011,9 @@ class InflationSDP(object):
             write_to_csv(self, filename)
         elif extension == "mat":
             write_to_mat(self, filename)
-        elif extension == 'pkl':
-            pickle_dump(self, filename)
         else:
             raise Exception("File format not supported. Please choose between"
-                       + " the extensions `.csv`, `.dat-s`, `.pkl` and `.mat`.")
+                       + " the extensions `.csv`, `.dat-s` and `.mat`.")
 
     ###########################################################################
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
