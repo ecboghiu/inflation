@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import warnings
+from scipy.sparse import lil_matrix
 
 
 from causalinflation.quantum.sdp_utils import solveSDP_MosekFUSION
@@ -18,7 +19,7 @@ class TestMosek(unittest.TestCase):
                   [5,  8, 10, 11,  1]])
     mask_matrices = {}
     for i in np.unique(G):
-        mask_matrices.update({str(i): (G == i).astype(int)})
+        mask_matrices.update({str(i): lil_matrix(G == i)})
     simple_sdp = {"mask_matrices": mask_matrices,
                   "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                   "known_vars": {'1': 1}

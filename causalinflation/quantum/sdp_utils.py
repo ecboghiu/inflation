@@ -161,10 +161,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     if var_equalities is None:
         var_equalities = []
 
-    Fi = mask_matrices
-    if mask_matrices:
-        Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
-        mat_dim = Fi[next(iter(Fi))].shape[0] if Fi else 0
+    Fi = {k: v.asformat('lil', copy=True).astype(float, copy=False)
+          for k, v in mask_matrices.items()}
+    mat_dim = next(iter(Fi.values())).shape[0] if Fi else 0
 
     variables = set()
     variables.update(Fi.keys())
