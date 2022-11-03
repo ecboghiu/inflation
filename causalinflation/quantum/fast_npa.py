@@ -12,16 +12,18 @@ try:
     from numba import jit
     from numba.types import bool_, void
     from numba.types import uint8 as uint8_
+    nopython = True
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
-    bool_  = bool
-    uint8_ = np.uint8
-    void   = None
+    bool_    = bool
+    uint8_   = np.uint8
+    void     = None
+    nopython = False
 
 cache    = True
-nopython = True
 if not nopython:
+    from scipy.sparse.csgraph import connected_components
     bool_  = bool
     uint8_ = np.uint8
 
@@ -127,6 +129,10 @@ def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
         adj_mat, where each integer indexes the disconnected component the
         corresponding operator belongs to.
     """
+    if not nopython:
+        return connected_components(adj_mat,
+                                    directed=False,
+                                    return_labels=True)[-1]
     # See https://stackoverflow.com/a/9112588 for inspiration of the method
     n = len(adj_mat)
     if n <= 1 or adj_mat.all():
