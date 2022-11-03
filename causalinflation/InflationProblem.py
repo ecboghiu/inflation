@@ -21,7 +21,7 @@ warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
 
 
 class InflationProblem(object):
-    """Class for enconding relevant details concerning the causal compatibility
+    """Class for encoding relevant details concerning the causal compatibility
     scenario.
 
     Parameters
