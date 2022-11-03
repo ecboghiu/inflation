@@ -43,27 +43,26 @@ Below is a simple complete ready-to-run example that shows that the W distributi
 ```
 from causalinflation import InflationProblem, InflationSDP
 import numpy as np
-import itertools
 
 P_W = np.zeros((2, 2, 2, 1, 1, 1))
-x, y, z = 0, 0, 0
-for a, b, c in itertools.product([0, 1], repeat=3):
+for a, b, c, x, y, z in np.ndindex(*P_W.shape):
     if a + b + c == 1:
         P_W[a, b, c, x, y, z] = 1 / 3
 
-scenario = InflationProblem(dag={"rho_AB": ["A", "B"],
+triangle = InflationProblem(dag={"rho_AB": ["A", "B"],
                                  "rho_BC": ["B", "C"],
                                  "rho_AC": ["A", "C"]},
-                             outcomes_per_party=[2, 2, 2],
-                             settings_per_party=[1, 1, 1],
-                             inflation_level_per_source=[2, 2, 2])
+                             outcomes_per_party=(2, 2, 2),
+                             settings_per_party=(1, 1, 1),
+                             inflation_level_per_source=(2, 2, 2))
 
-sdprelax = InflationSDP(scenario)
-sdprelax.generate_relaxation('npa2')
-sdprelax.set_distribution(P_W)
-sdprelax.solve()
+sdp = InflationSDP(triangle, verbose=1)
+sdp.generate_relaxation('npa2')
+sdp.set_distribution(P_W)
+sdp.solve()
 
-print(sdprelax.status)
+print("Problem status:", sdp.status)
+print("Infeasibility certificate:", sdp.certificate_as_probs())
 ```
 
 For more information about the theory and other features, please visit the [documentation](https://ecboghiu.github.io/inflation/), and more specifically the [Tutorial](https://ecboghiu.github.io/inflation/_build/html/tutorial.html) and [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) pages.
