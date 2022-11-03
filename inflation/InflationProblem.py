@@ -241,7 +241,7 @@ class InflationProblem(object):
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
         the candidate monomial already passed the preliminary knowable test
-        from `causalinflation.quantum.quantum_tools.py`.
+        from `inflation.quantum.quantum_tools.py`.
         If the scenario is a network, this function always returns ``True``.
 
         Parameters

@@ -107,7 +107,7 @@ def calculate_momentmatrix(cols: List,
         List of numpy.ndarray representing the generating set.
     notcomm : numpy.ndarray
         Matrix of commutation relations, given in the format specified by
-        `causalinflation.quantum.fast_npa.commutation_matrix`.
+        `inflation.quantum.fast_npa.commutation_matrix`.
     lexorder : numpy.ndarray
         Matrix with rows as operators where the index of the row gives
         the lexicographic order of the operator.

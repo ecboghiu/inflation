@@ -4,7 +4,7 @@ with open("VERSION.txt", "r") as f:
     __version__ = f.read().strip()
 
 setup(
-    name = "causalinflation",
+    name = "inflation",
     version = "0.1",
     install_requires = ['numpy', 'sympy', 'scipy', 'numba', 'mosek'],
     extras_require = {

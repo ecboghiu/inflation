@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 
-from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.fast_npa import nb_is_knowable as is_knowable
-from causalinflation.quantum.fast_npa import nb_is_physical as is_physical
+from inflation import InflationProblem, InflationSDP
+from inflation.quantum.fast_npa import nb_is_knowable as is_knowable
+from inflation.quantum.fast_npa import nb_is_physical as is_physical
 
 
 scenario = InflationProblem({"lambda": ["A", "B"],

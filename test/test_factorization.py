@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from causalinflation import InflationProblem
+from inflation import InflationProblem
 
 
 class TestFactorization(unittest.TestCase):

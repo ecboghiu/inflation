@@ -5,7 +5,7 @@ from numpy import __version__ as numpy_version
 from scipy import __version__ as scipy_version
 from sympy import __version__ as sympy_version
 
-import causalinflation
+import inflation
 
 
 def about() -> None:
@@ -28,7 +28,7 @@ CausalInflation: Implementations of the Inflation Technique for Causal Inference
 ================================================================================
 Authored by: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 
-CausalInflation Version:\t{causalinflation.__version__}
+CausalInflation Version:\t{inflation.__version__}
 
 Core Dependencies
 -----------------

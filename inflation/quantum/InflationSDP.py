@@ -17,7 +17,7 @@ from scipy.sparse import lil_matrix
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
-from causalinflation import InflationProblem
+from inflation import InflationProblem
 from .fast_npa import (nb_all_commuting_q,
                        apply_source_perm,
                        commutation_matrix,
