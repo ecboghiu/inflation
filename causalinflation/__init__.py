@@ -8,8 +8,6 @@ Provides
     over probability distributions compatible with quantum causal scenarios.
 """
 
-__version__ = "0.1"
-
 from .InflationProblem import InflationProblem
 from .quantum.InflationSDP import InflationSDP
 from ._about import about
