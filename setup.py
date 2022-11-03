@@ -6,10 +6,8 @@ with open("VERSION.txt", "r") as f:
 setup(
     name = "causalinflation",
     version = "0.1",
-    install_requires = ['numpy', 'sympy', 'scipy'],
+    install_requires = ['numpy', 'sympy', 'scipy', 'numba', 'mosek'],
     extras_require = {
-        "jit": ['numba'],
-        "solver": ['mosek'],
         "docs": ['nbsphinx', 'm2r2', 'sphinx_rtd_theme', 'sphinx_copybutton']
     },
     author = "Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens",
