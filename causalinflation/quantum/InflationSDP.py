@@ -1822,7 +1822,7 @@ class InflationSDP(object):
         Exception
             If the SDP relaxation has not been calculated yet.
         """
-        if self.momentmatrix is None:
+        if not self._relaxation_has_been_generated:
             raise Exception("Relaxation is not generated yet. " +
                             "Call 'InflationSDP.get_relaxation()' first")
 
