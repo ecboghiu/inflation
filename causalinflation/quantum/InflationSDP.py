@@ -37,7 +37,7 @@ from .quantum_tools import (apply_inflation_symmetries,
                             reduce_inflation_indices)
 from .fast_npa import nb_is_knowable as is_knowable
 from .sdp_utils import solveSDP_MosekFUSION
-from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa
+from .writer_utils import write_to_csv, write_to_mat, write_to_sdpa, pickle_dump
 from ..utils import flatten
 
 try:
@@ -998,7 +998,8 @@ class InflationSDP(object):
         filename : str
             Name of the exported file. If no file format is specified, it
             defaults to sparse SDPA format. Supported formats are ``.mat``
-            (MATLAB), ``.dat-s`` (SDPA), and ``.csv`` (human-readable).
+            (MATLAB), ``.dat-s`` (SDPA), ``.pkl`` (Python pickle)
+            and ``.csv`` (human-readable).
         """
         # Determine file extension
         parts = filename.split(".")
@@ -1017,9 +1018,11 @@ class InflationSDP(object):
             write_to_csv(self, filename)
         elif extension == "mat":
             write_to_mat(self, filename)
+        elif extension == 'pkl':
+            pickle_dump(self, filename)
         else:
             raise Exception("File format not supported. Please choose between"
-                            + " the extensions .csv, .dat-s and .mat.")
+                       + " the extensions `.csv`, `.dat-s`, `.pkl` and `.mat`.")
 
     ###########################################################################
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
@@ -1780,18 +1783,6 @@ class InflationSDP(object):
             return self._is_knowable_q_non_networks(np.take(atomic_monarray,
                                                             [0, -2, -1],
                                                     axis=1))
-
-    def _dump_to_file(self, filename: str) -> None:
-        """Saves the whole object to file using `pickle`.
-
-        Parameters
-        ----------
-        filename : str
-            Name of the file.
-        """
-        import pickle
-        with open(filename, "w") as f:
-            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
     def _from_2dndarray(self, array2d: np.ndarray) -> None:
         """Obtains the bytes representation of an array. The library uses this

@@ -327,3 +327,15 @@ def pickle_load(filename):
     """Load a file using pickle"""
     with open(filename, "rb") as f:
         return pickle.load(f)
+
+def pickle_dump(obj, filename):
+    """Saves the whole object to file using `pickle`.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the file.
+    """
+    import pickle
+    with open(filename, "w") as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
