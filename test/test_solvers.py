@@ -16,10 +16,8 @@ class TestMosek(unittest.TestCase):
                   [3,  6,  1,  9, 10],
                   [4,  7,  9,  1, 11],
                   [5,  8, 10, 11,  1]])
-    mask_matrices = {}
-    for i in np.unique(G):
-        mask_matrices.update({str(i): (G == i).astype(int)})
-    simple_sdp = {"mask_matrices": mask_matrices,
+    simple_sdp = {"idx_matrix": G,
+                  "idx_dict": {i: str(i) for i in np.unique(G)},
                   "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                   "known_vars": {'1': 1}
                   }

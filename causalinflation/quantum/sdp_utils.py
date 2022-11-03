@@ -9,7 +9,8 @@ from sys import stdout
 from typing import List, Dict, Tuple
 
 
-def solveSDP_MosekFUSION(mask_matrices: Dict = None,
+def solveSDP_MosekFUSION(idx_matrix: np.ndarray = None,
+                         idx_dict: Dict = None,
                          objective: Dict = None,
                          known_vars: Dict = None,
                          semiknown_vars: Dict = None,
@@ -94,9 +95,12 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
     Parameters
     ----------
-    mask_matrices : dict
-        A dictionary with keys as monomials and values as scipy sparse arrays
-        indicating the locations of the monomial in the moment matrix.
+    idx_matrix: numpy.ndarray
+        Numpy array matrix with integer elements. The positions of each integer
+        denote the mask matrix associated with a particular monomial.
+    idx_dict: dict
+        Dictionary with values the names of monomials and keys the indices in
+        the idx_matrix.
     objective : dict, optional
         Dictionary with keys as monomials and as values the monomial's
         coefficient in the objective function.
@@ -148,8 +152,10 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         t0 = perf_counter()
         print("Starting pre-processing for the SDP solver.")
 
-    if mask_matrices is None:
-        mask_matrices = {}
+    if idx_matrix is None:
+        idx_matrix = np.empty((0, 0), dtype=int)
+    if idx_dict is None:
+        idx_dict = {}
     if objective is None:
         objective = {}
     if known_vars is None:
@@ -161,10 +167,10 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     if var_equalities is None:
         var_equalities = []
 
-    Fi = mask_matrices
-    if mask_matrices:
-        Fi = {k: lil_matrix(v, dtype=float) for k, v in Fi.items()}
-        mat_dim = Fi[next(iter(Fi))].shape[0] if Fi else 0
+    mat_dim = idx_matrix.shape[0]
+    Fi = {}
+    for k, v in idx_dict.items():
+        Fi[v] = lil_matrix(idx_matrix == k).astype(float)
 
     variables = set()
     variables.update(Fi.keys())
@@ -175,7 +181,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         variables.update(ineq.keys())
     variables.difference_update(known_vars.keys())
 
-    if feas_as_optim and mask_matrices:
+    if feas_as_optim and mat_dim:
         if verbose > 0:
             print("Feasibility as optimisation detected: overwriting objective"
                   + " to maximize the smallest eigenvalue of the matrix"
@@ -194,7 +200,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                          for x in set(objective).intersection(known_vars)]))
 
     # Calculate F0, the constant part of the matrix variable.
-    if mask_matrices:
+    if mat_dim:
         F0 = lil_matrix((mat_dim, mat_dim), dtype=float) + \
             sum([known_vars[x] * Fi[x]
                 for x in set(Fi).intersection(known_vars)])
@@ -240,7 +246,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         for x, (c, x2) in semiknown_vars.items():
             var_equalities.append({x: 1, x2: -c})
 
-    if mask_matrices:
+    if mat_dim:
         # These indices seem to be more difficult to extract later.
         ij_F0_nonzero = [(int(i), int(j)) for (i, j) in zip(*F0.nonzero()) if j >= i]
         ij_Fi_nonzero = {x: [(int(i), int(j))
@@ -258,7 +264,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     with Model("SDP") as M:
         if solve_dual:
             # Define variables
-            if mask_matrices:
+            if mat_dim:
                 Z = M.variable("Z", Domain.inPSDCone(mat_dim))
             if inequalities:
                 I = M.variable("I", len(inequalities), Domain.greaterThan(0))
@@ -288,7 +294,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             obj_mosek = 0.0
             if not feas_as_optim:
                 obj_mosek = float(c0)
-            if mask_matrices:
+            if mat_dim:
                 F0_mosek = Matrix.sparse(*F0.shape,
                                          *F0.nonzero(),
                                          F0[F0.nonzero()].A[0])
@@ -317,7 +323,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 if objective and x in objective:
                     ci  = float(objective[x])
                     lhs += ci
-                if mask_matrices and x in Fi:
+                if mat_dim and x in Fi:
                     F = Fi[x]
                     F = Matrix.sparse(*F.shape,
                                       *F.nonzero(),
@@ -366,7 +372,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                              Domain.equalsTo(0))
                 del d_mosek, C_mosek
 
-            if mask_matrices:
+            if mat_dim:
                 G = M.variable("G", Domain.inPSDCone(mat_dim))
 
                 F0_mosek = Matrix.sparse(*F0.shape,
@@ -430,13 +436,13 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if solve_dual:
                 x_values = {x: -ci_constraints[i].dual()[0]
                             for i, x in enumerate(variables)}
-                if mask_matrices:
+                if mat_dim:
                     ymat = Z.level().reshape([mat_dim, mat_dim])
                     xmat = F0 + sum([x_values[x] * Fi[x]
                                      for x in set(Fi).difference(known_vars)])
             else:
                 x_values = dict(zip(variables, x_mosek.level()))
-                if mask_matrices:
+                if mat_dim:
                     ymat = G.dual().reshape([mat_dim, mat_dim])
                     xmat = G.level().reshape([mat_dim, mat_dim])
 
@@ -488,7 +494,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                     certificate[x] += objective[x]
 
             # + Tr[Z*F0(P(a...|x...))]=\sum_i*x_{kn_i}(P(a...|x...))*F_{kn_i}
-            if mask_matrices:
+            if mat_dim:
                 for x in set(Fi).intersection(known_vars):
                     support = Fi[x].nonzero()
                     certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])

@@ -227,7 +227,6 @@ class CompoundMonomial(object):
                  "is_zero",
                  "knowability_status",
                  "knowable_factors",
-                 "mask_matrix",
                  "n_factors",
                  "n_knowable_factors",
                  "n_operators",

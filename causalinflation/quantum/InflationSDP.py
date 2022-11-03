@@ -371,12 +371,12 @@ class InflationSDP(object):
         self.set_objective(None)
         self.set_values(None)
 
-        # Get mask matrices associated with each monomial
-        for mon in tqdm(self.monomials,
-                        disable=not self.verbose,
-                        desc="Assigning mask matrices  "):
-            mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
-        self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
+        # # Get mask matrices associated with each monomial
+        # for mon in tqdm(self.monomials,
+        #                 disable=not self.verbose,
+        #                 desc="Assigning mask matrices  "):
+        #     mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
+        # self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
 
         self._relaxation_has_been_generated = True
 
@@ -1809,8 +1809,11 @@ class InflationSDP(object):
 
         The solver takes as input the following arguments, which are all
         dicts with keys as scalar SDP variables:
-            * "mask_matrices": dict with values the binary matrices with the
-            positions of the keys in the moment matrix.
+            * "idx_matrix": numpy array matrix with integer elements. The
+            positions of each integer denote the mask matrix associated with a
+            particular monomial.
+            * "idx_dict": dict with values the names of monomials and keys the
+             indices in the idx_matrix.
             * "objective": dict with values the coefficient of the key
             variable in the objective function.
             * "known_vars": scalar variables that are fixed to be constant.
@@ -1840,7 +1843,8 @@ class InflationSDP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
-        solverargs = {"mask_matrices": {mon.name: mon.mask_matrix
+        solverargs = {"idx_matrix": self.momentmatrix,
+                      "idx_dict": {mon.idx: mon.name
                                         for mon in self.monomials},
                       "objective": {mon.name: coeff for mon, coeff
                                     in self._processed_objective.items()},
@@ -1868,8 +1872,6 @@ class InflationSDP(object):
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
             solverargs["inequalities"].append(ub)
-        solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
-            (self.n_columns, self.n_columns))
         return solverargs
 
     def _reset_solution(self) -> None:
