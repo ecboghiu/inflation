@@ -1,4 +1,4 @@
-"""CausalInflation
+"""Inflation
 ==================
 Provides
  1. A tool for describing causal scenarios and reducing them to network form

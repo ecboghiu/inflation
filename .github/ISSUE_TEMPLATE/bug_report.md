@@ -17,7 +17,7 @@ Steps to reproduce the behavior, hopefully a minimal example showcasing the bug.
 A clear and concise description of what you expected to happen.
 
 **OS Information:**
-Please specify the platform and the package versions you are using. You can use the output from `causalinflation.about()`.
+Please specify the platform and the package versions you are using. You can use the output from `inflation.about()`.
 
 **Additional context**
 Add any other context about the problem here.

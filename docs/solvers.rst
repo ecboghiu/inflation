@@ -1,3 +1,3 @@
 Interfaces with solvers
 =======================
-.. autofunction:: causalinflation.quantum.sdp_utils.solveSDP_MosekFUSION
+.. autofunction:: inflation.quantum.sdp_utils.solveSDP_MosekFUSION

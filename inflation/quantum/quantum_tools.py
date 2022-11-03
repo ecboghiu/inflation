@@ -248,7 +248,7 @@ def commutation_relations(infSDP):
 
     Parameters
     ----------
-    infSDP : causalinflation.InflationSDP
+    infSDP : inflation.InflationSDP
         The SDP object for which the commutation relations are to be extracted.
 
     Returns
@@ -429,7 +429,7 @@ def lexicographic_order(infSDP) -> Dict[str, int]:
 
     Parameters
     ----------
-    infSDP : causalinflation.InflationSDP
+    infSDP : inflation.InflationSDP
         The SDP object for which the commutation relations are to be extracted.
 
     Returns

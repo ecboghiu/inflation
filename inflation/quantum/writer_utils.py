@@ -16,7 +16,7 @@ def convert_to_human_readable(problem):
 
     Parameters
     ----------
-    problem : :class:`causalinflation.InflationSDP`
+    problem : :class:`inflation.InflationSDP`
         The SDP relaxation to write.
 
     Returns
@@ -105,7 +105,7 @@ def write_to_csv(problem, filename):
     """Export the problem in a human-readable form in a CSV table.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`causalinflation.InflationSDP`
+    :type problem: :class:`inflation.InflationSDP`
     :type filename: str
     """
     objective, matrix, bounds, equalities = convert_to_human_readable(problem)
@@ -131,7 +131,7 @@ def write_to_mat(problem, filename):
     """Export the problem to MATLAB .mat file.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`causalinflation.InflationSDP`
+    :type problem: :class:`inflation.InflationSDP`
     :type filename: str
     """
     # MATLAB does not like 0s, so we shift all by 1 if the variable 0 exists
@@ -181,7 +181,7 @@ def write_to_sdpa(problem, filename):
     http://euler.nmt.edu/~brian/sdplib/FORMAT.
 
     :param problem: The SDP relaxation to write.
-    :type problem: :class:`causalinflation.InflationSDP`
+    :type problem: :class:`inflation.InflationSDP`
     :type filename: str
     """
     # Compute actual number of variables: all in the moment matrix, minus those

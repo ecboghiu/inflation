@@ -9,7 +9,7 @@ import inflation
 
 
 def about() -> None:
-    """Displays information about CausalInflation, core/optional packages, and
+    """Displays information about Inflation, core/optional packages, and
     Python version/platform information.
     """
     try:
@@ -24,11 +24,11 @@ def about() -> None:
         mosek_version = "Not installed"
 
     about_str = f"""
-CausalInflation: Implementations of the Inflation Technique for Causal Inference
-================================================================================
+Inflation: Implementations of the Inflation Technique for Causal Inference
+==============================================================================
 Authored by: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 
-CausalInflation Version:\t{inflation.__version__}
+Inflation Version:\t{inflation.__version__}
 
 Core Dependencies
 -----------------

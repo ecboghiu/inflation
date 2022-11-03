@@ -1,10 +1,10 @@
-This is the contribution guide for CausalInflation, a Python package for implementations of the inflation technique for causal inference. Contributions are very welcome and appreciated!
+This is the contribution guide for Inflation, a Python package for implementations of the inflation technique for causal inference. Contributions are very welcome and appreciated!
 
 You can begin contributing by opening an issue on the [GitHub repository](https://github.com/ecboghiu/inflation) to report bugs, request features, etc. Now we will outline some guidelines for contributing to the code, and for contributing to the documentation.
 
 # Style guidelines
 
-CausalInflation code is developed according standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions.
+Inflation code is developed according standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions.
 - In general, try to follow [PEP 8](https://peps.python.org/pep-0008/) (code) and [PEP 257](https://peps.python.org/pep-0257/) (docstrings) guidelines.
 - Avoid going over 80 characters per line.
 - Write docstrings in [numpy style](https://numpydoc.readthedocs.io/en/latest/format.html), or else Sphinx automatic documentation generation will be buggy.
@@ -72,16 +72,6 @@ The following are the extensions added to Sphinx to generate the documentation, 
 These extensions and other specifications are found in the `conf.py` file. They allow for two important quality of life improvements in maintaining the documentation, namely, the ability to have Markdown documents and Jupyter notebooks as sections of the documentation. Future plans are to migrate everything to MyST serialisation.
 
 **Note**: currently Sphinx expects all files to be placed under the source directors (`docs/`), so it seems difficult to include notebooks from other folders (such as `CONTRIBUTE.MD`) into the documentation. The current workaround is to copy the notebooks to the `docs/` folder, however one needs to remember to update the other file when one of them is modified.
-
-## Update the API documentation
-
-If you want the API documentation to reflect the latest changes in the code, you can run the following command in the terminal in the `docs/` directory:
-
-```
-sphinx-apidoc -f -o . ../causalinflation
-```
-
-which will update the `.rst` files containing the module description. Note that after running this command, the title of the `modules.rst` will change back to `causalinflation`. Currently, the best solution seems to be to manually change it to `API Reference`. The structure of API reference page will also be overwritten, thus it is recommended to manually change it back to the original structure by comparing to a previous version of the file.
 
 ## Build the HTML documentation
 

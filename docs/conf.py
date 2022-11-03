@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = "CausalInflation"
+project = "Inflation"
 author = "Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens"
 copyright = "2022, " + author
 
