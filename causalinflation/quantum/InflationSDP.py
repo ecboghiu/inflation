@@ -155,6 +155,7 @@ class InflationSDP(object):
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
+        self.maskmatrices               = dict()
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
@@ -370,13 +371,6 @@ class InflationSDP(object):
         self._set_upperbounds(None)
         self.set_objective(None)
         self.set_values(None)
-
-        # Get mask matrices associated with each monomial
-        for mon in tqdm(self.monomials,
-                        disable=not self.verbose,
-                        desc="Assigning mask matrices  "):
-            mon.mask_matrix = lil_matrix(self.momentmatrix == mon.idx)
-        self.maskmatrices   = {mon: mon.mask_matrix for mon in self.monomials}
 
         self._relaxation_has_been_generated = True
 
@@ -1757,6 +1751,22 @@ class InflationSDP(object):
             except KeyError:
                 pass
 
+
+    def _construct_mask_matrices(self) -> None:
+        """Helper a function to associate each monomial appearing in the moment
+        matrix with a unique mask matrix, as this is relevant to expressing an
+        SDP in dual form.
+        """
+        if self._relaxation_has_been_generated:
+            if self.n_columns > 0:
+                if len(self.maskmatrices) == 0:
+                    self.maskmatrices = {
+                        mon: lil_matrix(self.momentmatrix == mon.idx)
+                        for mon in tqdm(self.monomials,
+                                        disable=not self.verbose,
+                                        desc="Assigning mask matrices  ")
+                    }
+
     ###########################################################################
     # OTHER ROUTINES                                                          #
     ###########################################################################
@@ -1830,9 +1840,10 @@ class InflationSDP(object):
             ("Error: Tried to assign known values outside of moment matrix: " +
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
-
-        solverargs = {"mask_matrices": {mon.name: mon.mask_matrix
-                                        for mon in self.monomials},
+        self._construct_mask_matrices()
+        solverargs = {"mask_matrices": {mon.name: mask_matrix
+                                        for mon, mask_matrix
+                                        in self.maskmatrices.items()},
                       "objective": {mon.name: coeff for mon, coeff
                                     in self._processed_objective.items()},
                       "known_vars": {mon.name: val for mon, val
