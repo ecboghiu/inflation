@@ -100,7 +100,7 @@ class TestMosek(unittest.TestCase):
                         "Max CHSH over local strategies is not 2.")
         # Check that some of the constraints are satisfied
         vals = dual_sol['x']
-        for idx in range(4):
+        for i in range(4):
             for j in range(4):
                 self.assertTrue(vals[q[i, j]] >= -1e-9,
                                 f"q[{i}, {j}] is negative.")
