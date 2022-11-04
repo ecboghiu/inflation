@@ -57,14 +57,14 @@ def bisect(f: Callable,
     step_size = up - lo
     while (step_size > precision) and (lo <= x <= up):
         fx = f(x)
+        if verbose:
+            print(f"Parameter = {x:<6.4g}   " +
+                  f"Maximum smallest eigenvalue: {fx:10.4g}")
         if fx >= threshold:
             x += step_size
         else:
             x -= step_size
         step_size /= 2
-        if verbose:
-            print(f'Maximum smallest eigenvalue: {fx:10.4g}   '
-                  + f'Visibility = {x:.4g}')
     if x < lo:
         return -np.inf
     if x > up:
