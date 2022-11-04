@@ -4,8 +4,7 @@ import warnings
 
 from sympy import Symbol
 
-from inflation import InflationProblem, InflationSDP
-from inflation.quantum.optimization_utils import max_within_feasible
+from inflation import InflationProblem, InflationSDP, max_within_feasible
 
 
 class TestOptimize(unittest.TestCase):
@@ -27,7 +26,7 @@ class TestOptimize(unittest.TestCase):
                                     inflation_level_per_source=[1])
     sdp = InflationSDP(bellScenario)
     sdp.generate_relaxation("npa1")
-    sdp.set_distribution(PRbox(Symbol('v')))
+    sdp.set_distribution(PRbox(Symbol("v")))
     symbolic_values = sdp.known_moments
 
     def test_bisect(self):
