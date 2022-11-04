@@ -392,11 +392,10 @@ class CompoundMonomial(object):
         known_value     = 1.
         unknown_counter = Counter()
         for factor, power in self.as_counter.items():
-            temp_value = known_monomials.get(factor, np.nan)
-            if np.isnan(temp_value):
+            try:
+                known_value *= (known_monomials[factor] ** power)
+            except KeyError:
                 unknown_counter[factor] = power
-            else:
-                known_value *= (temp_value ** power)
         unknown_factors = list(unknown_counter.elements())
         if ((len(unknown_factors) == 0)
             or (np.isclose(known_value, 0) and use_lpi_constraints)):

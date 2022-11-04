@@ -8,8 +8,8 @@ distribution for which quantum inflation (at specific hierarchy levels) is
 import numpy as np
 import sympy as sp
 
+from numbers import Real
 from scipy.optimize import bisect, minimize, Bounds
-from sympy import Float
 from sympy.utilities.lambdify import lambdify
 from typing import Callable, Dict, Tuple, Union
 
@@ -70,7 +70,7 @@ def max_within_feasible(sdp: InflationSDP,
         "Unknown optimization method. Please use \"bisection\" or \"dual\"."
     variables = set()
     for expr in symbolic_values.values():
-        if type(expr) not in [Float, float]:
+        if not isinstance(expr, Real):
             variables.update(expr.free_symbols)
     assert len(variables) == 1, \
         "Only optimization of a single variable is supported"
