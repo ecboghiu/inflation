@@ -3,7 +3,6 @@ This file contains helper functions to write and export the problems to various
 formats.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import pickle
 import numpy as np
 
 from copy import deepcopy
@@ -322,20 +321,3 @@ def write_to_sdpa(problem, filename):
         file_.write(line)
     file_.close()
 
-
-def pickle_dump(obj, filename):
-    """Saves the whole object to file using `pickle`.
-
-    Parameters
-    ----------
-    filename : str
-        Name of the file.
-    """
-    with open(filename, "w") as f:
-        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
-
-
-def pickle_load(filename):
-    """Load a file using pickle"""
-    with open(filename, "rb") as f:
-        return pickle.load(f)
