@@ -3,7 +3,7 @@ This file contains helper functions to optimize (functions of) symbolic
 variables under the constraint that the InflationSDP instance they implicitly
 define must be feasible. Useful for exploring the set of parametrically-defined
 distribution for which quantum inflation (at specific hierarchy levels) is
-@authors: Alejandro Pozas-Kerstjens, Elie Wolfe, Emanuel-Cristian Boghiu
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
 import sympy as sp
@@ -22,8 +22,49 @@ def max_within_feasible(sdp: InflationSDP,
                         symbolic_values: Dict[CompoundMonomial, Callable],
                         method: str,
                         return_last_certificate=False,
-                        **kwargs):
-    """Docs
+                        **kwargs) -> Union[float,
+                                           Tuple[float, sp.core.add.Add]]:
+    """Maximize a single real variable within the set of feasible moment
+    matrices determined by an `InflationSDP`. The dependence of the moment
+    matrices in the variable is specified by an assignment of monomials in the
+    moment matrix to arbitrary expressions of the variable. This is useful for
+    finding (bounds for) critical visibilities of distributions beyond which
+    they are impossible to generate in a given quantum causal scenario.
+
+    Parameters
+    ----------
+    sdp : InflationSDP
+        The SDP problem under which to carry the optimization.
+    symbolic_values : Dict[CompoundMonomial, Callable]
+        The correspondence between monomials in the SDP problem and symbolic
+        expressions depending on the variable to be optimized.
+    method : str
+        Technique used for optimization. Currently supported: ``"bisection"``
+        for bisection algorithms, and ``"dual"`` for exploitation of the
+        certificates of infeasibility (typically much fewer iteration steps).
+    return_last_certificate : bool, optional
+        Whether to return, along with the maximum value of the parameter, a
+        separating surface that leaves the set of positive-semidefinite moment
+        matrices in its positive side and evaluates to 0 in the maximum value
+        reported.
+
+    **kwargs
+        Instructions on which extra symbolic values to assign numbers and
+        options to be passed to the optimization routines (bounds, precision,
+        tolerance, ...).
+
+    Returns
+    -------
+    float
+        The maximum value that the parameter can take under the set of
+        positive-semidefinite moment matrices. This is the output when
+        ``return_last_certificate=False``.
+    Tuple[float, sympy.core.add.Add]
+        The maximum value that the parameter can take under the set of
+        positive-semidefinite moment matrices, and a corresponding separating
+        surface (a root of the function corresponds to the critical feasible
+        value of the parameter reported). This is the output when
+        ``return_last_certificate=True``.
     """
     assert method in ["bisection", "dual"], \
         "Unknown optimization method. Please use \"bisection\" or \"dual\"."
@@ -50,24 +91,36 @@ def _maximize_via_bisect(sdp: InflationSDP,
                          param: sp.core.symbol.Symbol,
                          **kwargs) -> Union[float,
                                             Tuple[float, sp.core.add.Add]]:
-    """Maximizes a single symbolic variable such that the distribution (resulting
-    from applying a function to the value of the variable) makes the SDP
-    feasible under set_distribution() and solve(). Internally uses a bisection
-    algorithm, increasing the value if the SDP is feasible and decreasing
-    the value if the SDP is infeasible. Keyword arguments are passed forward to
-    the 'bisect' function.
+    """Implement the maximization of a variable within the feasible set of
+    moment matrices using SciPy's bisection algorithm.
+
 
     Parameters
     ----------
-    sdp: InflationSDP
-    dist_as_func: function
-        A function which, given a scalar value, return a numpy array suitable
-        for passing as an argument to sdp.set_distribution.
+    sdp : InflationSDP
+        The SDP problem under which to carry the optimization.
+    symbolic_values : Dict[CompoundMonomial, Callable]
+        The correspondence between monomials in the SDP problem and symbolic
+        expressions depending on the variable to be optimized.
+    param : sympy.core.symbol.Symbol
+        The variable to be optimized.
+
+    **kwargs
+        Additional arguments to ``sdp.set_values()`` and
+        ``scipy.optimize.bisect()``.
 
     Returns
     -------
-    The largest value (within the given range) which makes the SDP feasible, or
-    negative infinity if the SDP cannot be made feasible in that range.
+    float
+        The maximum value that the parameter can take under the set of
+        positive-semidefinite moment matrices. This is the output when
+        ``return_last_certificate=False``.
+    Tuple[float, sympy.core.add.Add]
+        The maximum value that the parameter can take under the set of
+        positive-semidefinite moment matrices, and a corresponding separating
+        surface (a root of the function corresponds to the critical feasible
+        value of the parameter reported). This is the output when
+        ``return_last_certificate=True``.
     """
     bounds         = kwargs.get("bounds", np.array([0.0, 1.0]))
     only_specified = kwargs.get("only_specified_values", False)
@@ -106,35 +159,40 @@ def _maximize_via_dual(sdp: InflationSDP,
                        param: sp.core.symbol.Symbol,
                        **kwargs) -> Union[float,
                                           Tuple[float, sp.core.add.Add]]:
-    """Maximizes visibility such that the distribution (resulting
-    from applying a function to the value of the visibility) makes the SDP
-    feasible under set_distribution() and solve(). Internally uses certificates
-    from the dual solutions to reject as large a swath as possible.
+    """Implement the maximization of a variable within the feasible set of
+    moment matrices exploiting the certificates of infeasibility. For a given
+    value of the parameter, a separating surface that leaves the set of
+    positive-semidefinite moment matrices in its positive side is extracted.
+    The next value of the parameter used is that which evaluates the surface to
+    0.
 
     Parameters
     ----------
-    sdp: InflationSDP
-    dist_as_func: function
-        A function which, given a scalar value for the visibility, returns a
-        numpy array suitable for passing as an argument to `set_distribution`.
-    bounds: numpy.ndarray, optional
-        An array of two values, indicating respectively the upper and lower
-        numerical values to be considered for the visibility.
-        When unspecified, defaults to a numerical range between 0 and 1.
-    precision: float, optional
-        The iterative exploration of numerical values for the visibility
-        ceases if the rejected visibility range does not
-        shrink by at least this value between iterations. If unspecified, the
-        precision is set to 1e-4. May be set to zero.
-    verbose: bool, optional
-        If True, displays the updated numerical value of visibility every time
-         `solve()` is called for the InflationSDP.
+    sdp : InflationSDP
+        The SDP problem under which to carry the optimization.
+    symbolic_values : Dict[CompoundMonomial, Callable]
+        The correspondence between monomials in the SDP problem and symbolic
+        expressions depending on the variable to be optimized.
+    param : sympy.core.symbol.Symbol
+        The variable to be optimized.
+
+    **kwargs
+        Additional arguments to ``sdp.set_values()``, bounds of the
+        optimization interval, precision of the optimization, verbosity and
+        whether returning the last computed separating surface.
 
     Returns
     -------
-    A tuple where index 0 gives the largest visibility value that makes the
-    SDP feasible, and index 1 gives the certificates as a symbolic polynomial
-    expression.
+    float
+        The maximum value that the parameter can take under the set of
+        positive-semidefinite moment matrices. This is the output when
+        ``return_last_certificate=False``.
+    Tuple[float, sympy.core.add.Add]
+        The maximum value that the parameter can take under the set of
+        positive-semidefinite moment matrices, and a corresponding separating
+        surface (a root of the function corresponds to the critical feasible
+        value of the parameter reported). This is the output when
+        ``return_last_certificate=True``.
     """
     bounds         = kwargs.get("bounds", np.array([0.0, 1.0]))
     only_specified = kwargs.get("only_specified_values", False)

@@ -535,6 +535,22 @@ def generate_operators(outs_per_input: List[int],
 def make_numerical(symbolic_expressions: Dict[Any, sympy.core.expr.Expr],
                    symbols_to_values: Dict[sympy.core.symbol.Symbol, float]
                    ) -> Dict[Any, float]:
+    """Replace the symbols in the values of a dictionary by the corresponding
+    numerical values.
+
+    Parameters
+    ----------
+    symbolic_expressions : Dict[Any, sympy.core.expr.Expr]
+        Dictionary where the values are symbolic expressions of some variables.
+    symbols_to_values : Dict[sympy.core.symbol.Symbol, float]
+        Correspondence of the variables in the expressions and their associated
+        numerical values.
+
+    Returns
+    -------
+    Dict[Any, float]
+        The dictionary with samy keys and evaluated expressions as values.
+    """
     numeric_values = dict()
     for k, v in symbolic_expressions.items():
         try:
