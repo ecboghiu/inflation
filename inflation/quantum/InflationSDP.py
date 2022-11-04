@@ -502,10 +502,23 @@ class InflationSDP(object):
             self.objective = objective_dict
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
-            assert len(surprising_objective_terms) == 0, \
-                ("When interpreting the objective we have encountered at " +
-                 "least one monomial that does not appear in the original " +
-                 f"moment matrix:\n\t{surprising_objective_terms}")
+            if len(surprising_objective_terms) != 0 and self.verbose > 0:
+                mons_in_constraints = set()
+                mons_in_constraints.update(self.known_moments)
+                mons_in_constraints.update(self.moment_upperbounds)
+                mons_in_constraints.update(self.moment_lowerbounds)
+                for eq in self.moment_equalities:
+                    mons_in_constraints.update(eq)
+                for ineq in self.moment_inequalities:
+                    mons_in_constraints.update(ineq)
+                if len(surprising_objective_terms.intersection(
+                                                    mons_in_constraints
+                                                    )) != 0:
+                    warn("In the objective there are variables not present " +
+                         "in the moment matrix nor in any constraint. This " +
+                         "can lead to an unbounded problem. Consider adding "
+                         "appropriate constraints for the terms " + 
+                         str(surprising_objective_terms))
             self._update_objective()
 
     def set_values(self,
