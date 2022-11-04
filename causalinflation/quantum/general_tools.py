@@ -5,7 +5,7 @@ matrices.
 """
 from copy import deepcopy
 from itertools import chain, permutations, product
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import numpy as np
 import sympy
@@ -531,12 +531,14 @@ def generate_operators(outs_per_input: List[int],
         ops_per_input.append(ops_per_output_per_input)
     return ops_per_input
 
-def make_numerical(dictionary_with_values_as_symbolic_expressions: Dict[str, sympy.core.expr.Expr],
-                   symbolic_variables_to_numerical_values: Dict[sympy.core.symbol.Symbol, float]) -> Dict[str, float]:
+
+def make_numerical(symbolic_expressions: Dict[Any, sympy.core.expr.Expr],
+                   symbols_to_values: Dict[sympy.core.symbol.Symbol, float]
+                   ) -> Dict[Any, float]:
     numeric_values = dict()
-    for k, v in dictionary_with_values_as_symbolic_expressions.items():
+    for k, v in symbolic_expressions.items():
         try:
-            numeric_values[k] = float(v.evalf(subs=symbolic_variables_to_numerical_values))
+            numeric_values[k] = float(v.evalf(subs=symbols_to_values))
         except AttributeError:
             numeric_values[k] = float(v)
     return numeric_values
