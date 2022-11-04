@@ -19,9 +19,9 @@ from causalinflation.quantum.monomial_classes import CompoundMonomial
 def bisect(f: Callable,
            bounds=(0.0, 1.0),
            precision=1e-4,
-           verbose=True,
+           verbose=False,
            tolerance=0) -> float:
-    """ Applies a bisection algorithm in order to find the largest value of a
+    """Applies a bisection algorithm in order to find the largest value of a
     variable --- within some bounds --- which makes a function of the variable
     nonnegative. Its intended use is to maximize VISIBILITY, such that the
     function which should be nonnegative is the maximum value of the smallest
@@ -51,13 +51,13 @@ def bisect(f: Callable,
         precision) which makes the function nonnegative (within the tolerance),
         or negative infinity if the lower bound makes the function negative.
     """
-    threshhold = -np.abs(tolerance)
-    (lo, up) = bounds
+    threshold = -np.abs(tolerance)
+    (lo, up)  = bounds
     x = lo
     step_size = up - lo
-    while step_size > precision and lo <= x <= up:
+    while (step_size > precision) and (lo <= x <= up):
         fx = f(x)
-        if fx >= threshhold:
+        if fx >= threshold:
             x += step_size
         else:
             x -= step_size
@@ -67,7 +67,7 @@ def bisect(f: Callable,
                   + f'Visibility = {x:.4g}')
     if x < lo:
         return -np.inf
-    if x < up:
+    if x > up:
         return up
     return x
 
