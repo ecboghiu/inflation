@@ -167,7 +167,7 @@ class InternalAtomicMonomial(object):
             parties       = np.take(self.sdp.names, party_indices.tolist())
             inputs  = [str(input) for input in self.rectified_ndarray[:, -2]]
             outputs = [str(output) for output in self.rectified_ndarray[:, -1]]
-            p_divider = "" if all(len(p) == 1 for p in parties) else ","
+            p_divider = ""
             # We will probably never have more than 1 digit cardinalities,
             # but who knows...
             i_divider = "" if all(len(i) == 1 for i in inputs) else ","
