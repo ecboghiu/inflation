@@ -158,7 +158,6 @@ class InflationSDP(object):
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
-        self.maskmatrices               = dict()
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
@@ -375,6 +374,7 @@ class InflationSDP(object):
         self.set_objective(None)
         self.set_values(None)
 
+        self.maskmatrices = dict()
         self._relaxation_has_been_generated = True
 
     def set_bounds(self,
