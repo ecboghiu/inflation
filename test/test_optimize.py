@@ -34,7 +34,7 @@ class TestOptimize(unittest.TestCase):
         v_crit = max_within_feasible(self.sdp,
                                      self.symbolic_values,
                                      "bisection",
-                                     precision=self.precision, verbose=True)
+                                     precision=self.precision)
         self.assertTrue(np.isclose(v_crit, 1/np.sqrt(2), self.precision),
                         "Bisection of the quantum critical visibility for the "
                         + "PR box is not achieving 1/sqrt(2).")

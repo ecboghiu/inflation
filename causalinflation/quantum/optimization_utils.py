@@ -18,6 +18,33 @@ from causalinflation.quantum.general_tools import make_numerical
 from causalinflation.quantum.monomial_classes import CompoundMonomial
 
 
+def max_within_feasible(sdp: InflationSDP,
+                        symbolic_values: Dict[CompoundMonomial, Callable],
+                        method: str,
+                        return_last_certificate=False,
+                        **kwargs):
+    """Docs
+    """
+    assert method in ["bisection", "dual"], \
+        "Unknown optimization method. Please use \"bisection\" or \"dual\"."
+    variables = set()
+    for expr in symbolic_values.values():
+        if type(expr) not in [Float, float]:
+            variables.update(expr.free_symbols)
+    assert len(variables) == 1, \
+        "Only optimization of a single variable is supported"
+    param = variables.pop()
+    kwargs.update({"return_last_certificate": return_last_certificate})
+
+    if method == "bisection":
+        return _maximize_via_bisect(sdp, symbolic_values, param, **kwargs)
+    elif method == "dual":
+        return _maximize_via_dual(sdp, symbolic_values, param, **kwargs)
+
+
+###############################################################################
+# HELPER FUNCTIONS                                                            #
+###############################################################################
 def bisect(f: Callable,
            bounds=(0.0, 1.0),
            precision=1e-4,
@@ -73,30 +100,6 @@ def bisect(f: Callable,
     if x > up:
         return up
     return x
-
-
-def max_within_feasible(sdp: InflationSDP,
-                        symbolic_values: Dict[CompoundMonomial, Callable],
-                        method: str,
-                        return_last_certificate=False,
-                        **kwargs):
-    """Docs
-    """
-    assert method in ["bisection", "dual"], \
-        "Unknown optimization method. Please use \"bisection\" or \"dual\"."
-    variables = set()
-    for expr in symbolic_values.values():
-        if type(expr) not in [Float, float]:
-            variables.update(expr.free_symbols)
-    assert len(variables) == 1, \
-        "Only optimization of a single variable is supported"
-    param = variables.pop()
-    kwargs.update({"return_last_certificate": return_last_certificate})
-
-    if method == "bisection":
-        return _maximize_via_bisect(sdp, symbolic_values, param, **kwargs)
-    elif method == "dual":
-        return _maximize_via_dual(sdp, symbolic_values, param, **kwargs)
 
 
 def _maximize_via_bisect(sdp: InflationSDP,
