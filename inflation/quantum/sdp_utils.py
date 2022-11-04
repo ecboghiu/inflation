@@ -2,11 +2,13 @@
 This file contains the functions to send the problems to SDP solvers.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
+from __future__ import annotations
 import numpy as np
+from gc import collect
 
 from scipy.sparse import dok_matrix, eye, lil_matrix
 from sys import stdout
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Iterator
 
 
 def solveSDP_MosekFUSION(mask_matrices: Dict = None,
@@ -161,7 +163,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     if var_equalities is None:
         var_equalities = []
 
-    Fi = {k: v.asformat('lil', copy=True).astype(float, copy=False)
+    Fi = {k: v.asformat('lil', copy=False).astype(float, copy=False)
           for k, v in mask_matrices.items()}
     mat_dim = next(iter(Fi.values())).shape[0] if Fi else 0
 
@@ -195,8 +197,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     # Calculate F0, the constant part of the matrix variable.
     if mask_matrices:
         F0 = lil_matrix((mat_dim, mat_dim), dtype=float) + \
-            sum([known_vars[x] * Fi[x]
-                for x in set(Fi).intersection(known_vars)])
+            sum(known_vars[x] * Fi[x]
+                for x in set(Fi).intersection(known_vars))
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
@@ -222,30 +224,31 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         # For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j
         # the expression a_i*(Fi of x_i).
         for x, (c, x2) in semiknown_vars.items():
-            Fi[x2] += c * Fi[x]
-            variables.remove(x)
-            del Fi[x]
+            try:  # There may not be any mask matrix defined for x2 yet
+                val = Fi.pop(x, 0)
+                Fi[x2] += c * val
+            except KeyError:
+                Fi[x2] = c * Fi[x]
 
-            if x in objective:
-                objective[x2] = objective.get(x2, 0) + c * objective[x]
+            val = objective.pop(x, 0)
+            objective[x2] = objective.get(x2, 0) + c * val
+
             for equality in var_equalities:
-                if x in equality:
-                    equality[x2] = equality.get(x2, 0) + c * equality[x]
+                val = equality.get(x, 0)
+                equality[x2] = equality.get(x2, 0) + c * val
+
             for inequality in inequalities:
-                if x in inequality:
-                    inequality[x2] = inequality.get(x2, 0) + c * inequality[x]
+                val = inequality.get(x, 0)
+                inequality[x2] = inequality.get(x2, 0) + c * val
+
+            variables.remove(x)
+
     else:
         # Just add semiknown constraints as equality constraints.
         for x, (c, x2) in semiknown_vars.items():
             var_equalities.append({x: 1, x2: -c})
 
-    if mask_matrices:
-        # These indices seem to be more difficult to extract later.
-        ij_F0_nonzero = [(int(i), int(j)) for (i, j) in zip(*F0.nonzero()) if j >= i]
-        ij_Fi_nonzero = {x: [(int(i), int(j))
-                             for (i, j) in zip(*Fi[x].nonzero()) if j >= i]
-                         for x in Fi}
-
+    collect()
     if verbose > 1:
         print("Pre-processing took",
               format(perf_counter() - t0, ".4f"),
@@ -316,13 +319,17 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 if objective and x in objective:
                     ci  = float(objective[x])
                     lhs += ci
-                if mask_matrices and x in Fi:
-                    F = Fi[x]
-                    F = Matrix.sparse(*F.shape,
-                                      *F.nonzero(),
-                                      F[F.nonzero()].A[0])
-                    lhs = Expr.add(lhs, Expr.dot(Z, F))
-                    del F
+                try:
+                    F = Fi.pop(x)
+                    lhs = Expr.add(lhs,
+                                   Expr.dot(Z,
+                                            Matrix.sparse(
+                                                *F.shape,
+                                                *F.nonzero(),
+                                                F[F.nonzero()].A[
+                                                    0])))
+                except KeyError:
+                    pass
                 if inequalities:
                     lhs = Expr.add(lhs, AtI[i])
                     AtI[i] = None
@@ -381,11 +388,11 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 for i in range(mat_dim):
                     for j in range(i, mat_dim):
                         constraints[i, j] = G.index(i, j)
-                for i, j in ij_F0_nonzero:
+                for i, j in triu_indices(F0):
                     constraints[i, j] = Expr.sub(constraints[i, j],
                                                  F0_mosek.get(i, j))
-                for i, xi in enumerate(variables.intersection(Fi)):
-                    for i_, j_ in ij_Fi_nonzero[xi]:
+                for i, xi in enumerate(variables.intersection(Fi.keys())):
+                    for i_, j_ in triu_indices(Fi[xi]):
                         constraints[i_, j_] = \
                             Expr.sub(constraints[i_, j_],
                                      Expr.mul(Fi_mosek[xi].get(i_, j_),
@@ -406,6 +413,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
             M.objective(ObjectiveSense.Maximize, mosek_obj)
 
+        collect()
         if verbose > 1:
             print("Model built in",
                   format(perf_counter() - t0, ".4f"),
@@ -546,3 +554,12 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             return vars_of_interest
         else:
             return {"status": status_str}
+
+
+def triu_indices(A: lil_matrix) -> Iterator[tuple[int, int]]:
+    """Helper functions to extract the upper triangular (i,j) matrix indices
+     of the nonzero elements of a symmetric sparse matrix."""
+    A_coo = A.asformat('coo', copy=False)
+    mask = np.logical_and(A_coo.data != 0, A_coo.row <= A_coo.col)
+    return zip(A_coo.row[mask].astype(int).flat,
+               A_coo.col[mask].astype(int).flat)
