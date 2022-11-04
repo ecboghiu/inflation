@@ -376,18 +376,18 @@ class CompoundMonomial(object):
             A dictionary of known atomic monomials and their values.
         use_lpi_constraints : bool, optional
             Whether compound moments whose factors are partially present in
-            `known_monomials` are labelled as '`Semi`' or '`Unknowable`'. If
-            `True`, they are , by default True
+            ``known_monomials`` are labelled as ``"Semi"`` or ``"Unknowable"``.
+            If ``True``, they are labelled as ``"Semi"``. By default ``True``.
 
         Returns
         -------
         Tuple[float, List, str]
             A tuple where the first element is the value of the knowable parts
-            of the compound moment, the second element is a compound monomial of
-            all the remaining factors not present in `known_monomials` and the
-            third element is a string describing whether all factors are present
-            in `known_monomials` (`'Known'`), some are (`'Semi'`), or none are
-            (`'Unknown'`).
+            of the compound moment, the second element is a compound monomial
+            of all the remaining factors not present in ``known_monomials`` and
+            the third element is a string describing whether all factors are
+            present in ``known_monomials`` (``"Known"``), some are
+            (``"Semi"``), or none are (``"Unknown"``).
         """
         known_value     = 1.
         unknown_counter = Counter()

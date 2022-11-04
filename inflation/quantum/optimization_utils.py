@@ -25,7 +25,7 @@ def max_within_feasible(sdp: InflationSDP,
                         **kwargs) -> Union[float,
                                            Tuple[float, sp.core.add.Add]]:
     """Maximize a single real variable within the set of feasible moment
-    matrices determined by an `InflationSDP`. The dependence of the moment
+    matrices determined by an ``InflationSDP``. The dependence of the moment
     matrices in the variable is specified by an assignment of monomials in the
     moment matrix to arbitrary expressions of the variable. This is useful for
     finding (bounds for) critical visibilities of distributions beyond which

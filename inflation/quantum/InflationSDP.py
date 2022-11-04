@@ -655,7 +655,7 @@ class InflationSDP(object):
         """
         if not self._relaxation_has_been_generated:
             raise Exception("Relaxation is not generated yet. " +
-                            "Call 'InflationSDP.get_relaxation()' first")
+                            "Call \"InflationSDP.get_relaxation()\" first")
         if feas_as_optim and len(self._processed_objective) > 1:
             warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
@@ -714,7 +714,7 @@ class InflationSDP(object):
             dual = self.solution_object["dual_certificate"]
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve()' first.")
+                            "a problem. Call \"InflationSDP.solve()\" first.")
         if len(self.semiknown_moments) > 0:
             warn("Beware that, because the problem contains linearized " +
                  "polynomial constraints, the certificate is not guaranteed " +
@@ -761,7 +761,7 @@ class InflationSDP(object):
             dual = self.solution_object["dual_certificate"]
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call 'InflationSDP.solve()' first.")
+                            "a problem. Call \"InflationSDP.solve()\" first.")
         if len(self.semiknown_moments) > 0:
             if self.verbose > 0:
                 warn("Beware that, because the problem contains linearized " +
@@ -1838,7 +1838,7 @@ class InflationSDP(object):
         """
         if not self._relaxation_has_been_generated:
             raise Exception("Relaxation is not generated yet. " +
-                            "Call 'InflationSDP.get_relaxation()' first")
+                            "Call \"InflationSDP.get_relaxation()\" first")
 
         assert set(self.known_moments.keys()).issubset(self.monomials),\
             ("Error: Tried to assign known values outside of moment matrix: " +
