@@ -224,11 +224,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         # For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j
         # the expression a_i*(Fi of x_i).
         for x, (c, x2) in semiknown_vars.items():
-            try:  # There may not be any mask matrix defined for x2 yet
-                val = Fi.pop(x, 0)
-                Fi[x2] += c * val
-            except KeyError:
-                Fi[x2] = c * Fi[x]
+            val = Fi.pop(x, 0)
+            Fi[x2] = Fi.get(x2, 0) + c * val
 
             val = objective.pop(x, 0)
             objective[x2] = objective.get(x2, 0) + c * val
