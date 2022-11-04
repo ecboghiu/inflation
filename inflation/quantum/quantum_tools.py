@@ -7,7 +7,7 @@ import numpy as np
 import sympy
 
 from copy import deepcopy
-from itertools import permutations, product
+from itertools import permutations, product, combinations_with_replacement
 from typing import Any, Dict, List, Tuple
 
 from .fast_npa import (apply_source_perm,
@@ -128,34 +128,34 @@ def calculate_momentmatrix(cols: List,
     canonical_mon_to_idx = dict()
     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
-    for i, mon1 in tqdm(enumerate(cols),
-                        disable=not verbose,
-                        desc="Calculating moment matrix",
-                        total=nrcols):
-        for j in range(i, nrcols):
-            mon2 = cols[j]
-            mon_v1 = to_canonical(dot_mon(mon1, mon2),
-                                  notcomm,
-                                  lexorder,
-                                  commuting=commuting)
-            if not mon_is_zero(mon_v1):
-                if not commuting:
-                    mon_v2 = to_canonical(dot_mon(mon2, mon1),
-                                          notcomm,
-                                          lexorder,
-                                          commuting=commuting)
-                    mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
-                else:
-                    mon_hash = mon_v1.tobytes()
-                try:
-                    known_varidx = canonical_mon_to_idx[mon_hash]
-                    momentmatrix[i, j] = known_varidx
-                    momentmatrix[j, i] = known_varidx
-                except KeyError:
-                    canonical_mon_to_idx[mon_hash] = varidx
-                    momentmatrix[i, j] = varidx
-                    momentmatrix[j, i] = varidx
-                    varidx += 1
+    for (i, mon1), (j, mon2) in tqdm(
+                            combinations_with_replacement(enumerate(cols), 2),
+                            disable=not verbose,
+                            desc="Calculating moment matrix",
+                            total=int(nrcols*(nrcols+1)/2),
+                                    ):
+        mon_v1 = to_canonical(dot_mon(mon1, mon2),
+                                notcomm,
+                                lexorder,
+                                commuting=commuting)
+        if not mon_is_zero(mon_v1):
+            if not commuting:
+                mon_v2 = to_canonical(dot_mon(mon2, mon1),
+                                        notcomm,
+                                        lexorder,
+                                        commuting=commuting)
+                mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
+            else:
+                mon_hash = mon_v1.tobytes()
+            try:
+                known_varidx = canonical_mon_to_idx[mon_hash]
+                momentmatrix[i, j] = known_varidx
+                momentmatrix[j, i] = known_varidx
+            except KeyError:
+                canonical_mon_to_idx[mon_hash] = varidx
+                momentmatrix[i, j] = varidx
+                momentmatrix[j, i] = varidx
+                varidx += 1
     return momentmatrix, canonical_mon_to_idx
 
 
