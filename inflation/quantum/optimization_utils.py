@@ -8,7 +8,7 @@ distribution for which quantum inflation (at specific hierarchy levels) is
 import numpy as np
 import sympy as sp
 
-from scipy.optimize import minimize, Bounds
+from scipy.optimize import bisect, minimize, Bounds
 from sympy import Float
 from sympy.utilities.lambdify import lambdify
 from typing import Callable, Dict, Tuple, Union
@@ -43,65 +43,8 @@ def max_within_feasible(sdp: InflationSDP,
 
 
 ###############################################################################
-# HELPER FUNCTIONS                                                            #
+# OPTIMIZATION METHODS                                                        #
 ###############################################################################
-def bisect(f: Callable,
-           bounds=(0.0, 1.0),
-           precision=1e-4,
-           verbose=False,
-           tolerance=0,
-           **kwargs) -> float:
-    """Applies a bisection algorithm in order to find the largest value of a
-    variable --- within some bounds --- which makes a function of the variable
-    nonnegative. Its intended use is to maximize VISIBILITY, such that the
-    function which should be nonnegative is the maximum value of the smallest
-    eigenvalue of the moment matrix that can be realized with the given
-    visibility is specified.
-
-
-    Parameters
-    ----------
-    f: function
-        A function of a single variable whose negativity indicates the
-        rejection of the input value
-    bounds: tuple, optional
-        A specification of the range to explore for the target variable.
-    precision: float, optional
-        The bisection algorithm terminates if the step size drops below this
-        value. By default, 1e-4; always set a strictly positive value.
-    verbose: bool, optional
-        If True (default), it will print the visibility and max of min
-        eigenvalue at every iteration.
-    tolerance: float, optional
-        Treats the function as nonnegative so long as it returns a value
-        greater than -abs(tolerance).
-    Returns
-    -------
-        The largest scalar value in the specified range (up to the specified
-        precision) which makes the function nonnegative (within the tolerance),
-        or negative infinity if the lower bound makes the function negative.
-    """
-    threshold = -np.abs(tolerance)
-    (lo, up)  = bounds
-    x = lo
-    step_size = up - lo
-    while (step_size > precision) and (lo <= x <= up):
-        fx = f(x)
-        if verbose:
-            print(f"Parameter = {x:<6.4g}   " +
-                  f"Maximum smallest eigenvalue: {fx:10.4g}")
-        if fx >= threshold:
-            x += step_size
-        else:
-            x -= step_size
-        step_size /= 2
-    if x < lo:
-        return -np.inf
-    if x > up:
-        return up
-    return x
-
-
 def _maximize_via_bisect(sdp: InflationSDP,
                          symbolic_values: Dict[CompoundMonomial, Callable],
                          param: sp.core.symbol.Symbol,
@@ -126,16 +69,32 @@ def _maximize_via_bisect(sdp: InflationSDP,
     The largest value (within the given range) which makes the SDP feasible, or
     negative infinity if the SDP cannot be made feasible in that range.
     """
+    bounds         = kwargs.get("bounds", np.array([0.0, 1.0]))
     only_specified = kwargs.get("only_specified_values", False)
     return_last    = kwargs.get("return_last_certificate", False)
     use_lpi        = kwargs.get("use_lpi_constraints", False)
+    verbose        = kwargs.get("verbose", False)
+    # Prepare bisect kwargs
+    bisect_kwargs = {}
+    for kwarg in ["args", "rtol", "maxiter", "full_output", "disp"]:
+        try:
+            bisect_kwargs[kwarg] = kwargs[kwarg]
+        except Exception:
+            pass
+    try:
+        bisect_kwargs["xtol"] = kwargs["xtol"]
+    except Exception:
+        bisect_kwargs["xtol"] = kwargs.get("precision", 1e-4)
 
     def f(value):
         evaluated_values = make_numerical(symbolic_values, {param: value})
         sdp.set_values(evaluated_values, use_lpi, only_specified)
         sdp.solve(feas_as_optim=True)
+        if verbose:
+            print(f"Parameter = {value:<6.4g}   " +
+                  f"Maximum smallest eigenvalue: {sdp.objective_value:10.4g}")
         return sdp.objective_value
-    crit_param = bisect(f=f, **kwargs)
+    crit_param = bisect(f, bounds[0], bounds[1], **bisect_kwargs)
     if return_last:
         return crit_param, sdp.certificate_as_probs()
     else:
