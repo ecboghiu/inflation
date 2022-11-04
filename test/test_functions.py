@@ -120,3 +120,19 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(sdp._sanitise_monomial(mon), truth,
                          f"Sanitization of {mon} is giving " +
                          f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+
+    def test_to_symbol(self):
+        from sympy import Symbol
+        sdp = InflationSDP(InflationProblem({}, (2, 2), (2, 2)))
+        truth = Symbol('A_1_0_0', commutative=False) * \
+                Symbol('B_1_1_0', commutative=False)
+                
+        self.assertEqual(sdp.to_symbol('<A_1_0_0 B_1_1_0>'), truth,
+                         "to_symbol is not working as expected.")
+        self.assertEqual(sdp.to_symbol(np.array([[1, 1, 0, 0], [2, 1, 1, 0]])),
+                                       truth,
+                         "to_symbol is not working as expected.")
+        self.assertEqual(sdp.to_symbol(sdp.Monomial(np.array([[1, 1, 0, 0],
+                                                              [2, 1, 1, 0]]))),
+                                       Symbol('pAB(00|01)', commutative=True),
+                         "to_symbol is not working as expected.")

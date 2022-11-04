@@ -804,7 +804,8 @@ class InflationSDP(object):
                       column_specification: Union[str,
                                                   List[List[int]],
                                                   List[sp.core.symbol.Symbol]],
-                      max_monomial_length: int = 0) -> List[np.ndarray]:
+                      max_monomial_length: int = 0,
+                      symbolic: bool = False) -> List[np.ndarray]:
         r"""Creates the objects indexing the columns of the moment matrix from
         a specification.
 
@@ -819,6 +820,9 @@ class InflationSDP(object):
             ABC\}`. If we set ``max_monomial_length=2``, the generating set is
             instead :math:`\{1, A, B, C, AB, AC, BC\}`. By default ``0`` (no
             limit).
+        symbolic: bool, optional
+            If True, it returns the columns as a list of sympy symbols 
+            parsable by `InflationSDP.generate_relaxation()`. By default False.
         """
         columns = None
         if type(column_specification) == list:
@@ -954,6 +958,8 @@ class InflationSDP(object):
                             dtype=self.np_dtype).reshape((-1,
                                                           self._nr_properties))
                    for col in columns]
+        if symbolic:
+            columns = [self.to_symbol(col) for col in columns]
         return columns
 
     def reset(self, which: Union[str, List[str]]) -> None:
@@ -1402,10 +1408,8 @@ class InflationSDP(object):
         numpy.ndarray
             2D array encoding of the input atomic moment.
         """
-        assert ((factor_string[0] == "<" and factor_string[-1] == ">")
-                or set(factor_string).isdisjoint(set("| "))), \
-            ("Monomial names must be between < > signs, or in conditional " +
-             "probability form.")
+        assert factor_string[0] == "<" and factor_string[-1] == ">", \
+            ("Monomial names must be between < > signs.")
         if factor_string[0] == "<":
             operators = factor_string[1:-1].split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
@@ -1428,9 +1432,62 @@ class InflationSDP(object):
         """
         components = op_string.split("_")
         assert len(components) == self._nr_properties, \
-            "Cannot interpret string of this format."
+            f"There need to be {self._nr_properties} properties to match " + \
+             "the scenario."
         components[0] = self.names_to_ints[components[0]]
         return np.array([int(s) for s in components], dtype=self.np_dtype)
+
+    def to_symbol(self, mon: Union[np.ndarray, str,
+                                   CompoundMonomial,
+                                   InternalAtomicMonomial],
+                  commutative: bool=False
+                  ) -> sp.core.symbol.Symbol:
+        """Convert a monomial to a SymPy expression.
+
+        Parameters
+        ----------
+        mon : np.ndarray or str or CompoundMonomial or InternalAtomicMonomial
+            Monomial written either as a 2D array, as a string
+            in expectation value notation (e.g., `'<A_1_x_a B_1_y_b>'`),
+            as a `CompoundMonomial` or as an `InternalAtomicMonomial`.
+        commutative : bool, optional
+            If the resulting symbol are commutative. Default is ``False``.
+        
+        Returns
+        -------
+        sp.core.symbol.Symbol
+            The monomial as a SymPy expression.
+            
+        Examples
+        --------
+        >>> sdp = InflationSDP(InflationProblem({}, (3, 3), (3, 3)))
+        >>> sdp.to_symbol('<A_1_0_1 B_1_1_0>')
+        A_1_0_1*B_1_1_0
+        >>> sdp.to_symbol(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]))
+        A_1_0_1*B_1_1_2
+        >>> sdp.to_symbol(sdp.Monomial(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]))))
+        """
+        if isinstance(mon, np.ndarray):
+            if mon.shape[0] == 0:
+                return sp.S.One
+            res = sp.S.One
+            for mon in mon:
+                name =  '_'.join([self.names[mon[0]-1]] +
+                                 [str(i) for i in mon.tolist()][1:])
+                res *= sp.Symbol(name, commutative=commutative)
+            return res
+        elif isinstance(mon, InternalAtomicMonomial) or \
+             isinstance(mon, CompoundMonomial):
+            return mon.symbol
+        elif isinstance(mon, str):
+            try:
+                name = self._interpret_name(mon)
+                return self.to_symbol(name, commutative=commutative)
+            except ValueError or AssertionError:
+                return sp.Symbol(mon, commutative=commutative)
+        else:
+            warn(f"Cannot convert monomial {str(mon)} to symbol.")
+
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
