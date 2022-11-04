@@ -25,20 +25,19 @@ To install the package, run the following command:
 pip install inflation
 ```
 
-You can also install the latest developed version with:
+You can also install directly from GitHub with:
 
 `pip install git+https://github.com/ecboghiu/inflation.git@main`
 
-or download the repository on your computer and run `python setup.py install` in the repository folder.
+or download the repository on your computer and run `pip install .` in the repository folder. Install the `devel` branch for the latest features and bugfixes.
 
 Tests are written outside the Python module, therefore they are not installed together with the package. To test the installation, clone the repository and run, in a Unix terminal,
 ```python -m unittest -v```
-
 inside the repository folder.
 
 ## Example
 
-Below is a simple complete ready-to-run example that shows that the W distribution is incompatible with the triangle scenario with quantum sources by showing that a specific semidefinite programming relaxation is infeasible:
+The following example shows that the W distribution is incompatible with the triangle scenario with quantum sources by showing that a specific semidefinite programming relaxation is infeasible:
 
 ```
 from inflation import InflationProblem, InflationSDP
@@ -74,7 +73,7 @@ Contributions are welcome and appreciated. If you want to contribute, you can re
 
 ## License
 
-CasualInflation is free open-source software released under [GNU GPL v. 3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
+Inflation is free open-source software released under [GNU GPL v. 3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
 ## Citing Inflation
 
