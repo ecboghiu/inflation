@@ -559,12 +559,10 @@ class InflationSDP(object):
         # not commute with each other, so we display a warning.
         non_all_commuting_monomials = set()
         for mon, value in values.items():
-            if not np.isnan(value):
-                mon = self._sanitise_monomial(mon)
-                self.known_moments[mon] = value
-                if (self.verbose > 0) and (not mon.is_all_commuting):
-                    non_all_commuting_monomials.add(mon)
-                self.known_moments[mon] = v
+            mon = self._sanitise_monomial(mon)
+            self.known_moments[mon] = value
+            if (self.verbose > 0) and (not mon.is_all_commuting):
+                non_all_commuting_monomials.add(mon)
         if (len(non_all_commuting_monomials) >= 1) and (self.verbose > 0):
             warn("When setting values, we encountered at least one monomial " +
                  "with noncommuting operators:\n\t" +
@@ -1748,29 +1746,30 @@ class InflationSDP(object):
             self._processed_moment_lowerbounds[mon] = \
                 max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
         for mon, value in self.known_moments.items():
-            try:
-                lb = self._processed_moment_lowerbounds[mon]
-                assert lb <= value, (f"Value {value} assigned for monomial " +
-                                     f"{mon} contradicts the assigned lower " +
-                                     f"bound of {lb}")
-                del self._processed_moment_lowerbounds[mon]
-            except KeyError:
-                pass
+            if isinstance(value, Real):
+                try:
+                    lb = self._processed_moment_lowerbounds[mon]
+                    assert lb <= value, (f"Value {value} assigned for " +
+                                         f"monomial {mon} contradicts the " +
+                                         f"assigned lower bound of {lb}.")
+                    del self._processed_moment_lowerbounds[mon]
+                except KeyError:
+                    pass
 
     def _update_upperbounds(self) -> None:
         """Helper function to check that upperbounds are consistent with the
         specified known values.
         """
         for mon, value in self.known_moments.items():
-            try:
-                ub = self._processed_moment_upperbounds[mon]
-                assert ub >= value, (f"Value {value} assigned for monomial " +
-                                     f"{mon} contradicts the assigned upper " +
-                                     f"bound of {ub}")
-                del self._processed_moment_upperbounds[mon]
-            except KeyError:
-                pass
-
+            if isinstance(value, Real):
+                try:
+                    ub = self._processed_moment_upperbounds[mon]
+                    assert ub >= value, (f"Value {value} assigned for " +
+                                         f"monomial {mon} contradicts the " +
+                                         f"assigned upper bound of {ub}.")
+                    del self._processed_moment_upperbounds[mon]
+                except KeyError:
+                    pass
 
     ###########################################################################
     # OTHER ROUTINES                                                          #

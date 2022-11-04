@@ -4,8 +4,8 @@ import warnings
 
 from sympy import Symbol
 
-from causalinflation import InflationProblem, InflationSDP
-from causalinflation.quantum.optimization_utils import max_within_feasible
+from inflation import InflationProblem, InflationSDP
+from inflation.quantum.optimization_utils import max_within_feasible
 
 
 class TestOptimize(unittest.TestCase):
