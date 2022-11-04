@@ -1403,8 +1403,10 @@ class InflationSDP(object):
         numpy.ndarray
             2D array encoding of the input atomic moment.
         """
-        assert factor_string[0] == "<" and factor_string[-1] == ">", \
-            ("Monomial names must be between < > signs.")
+        assert ((factor_string[0] == "<" and factor_string[-1] == ">")
+                or set(factor_string).isdisjoint(set("| "))), \
+            ("Monomial names must be between < > signs, or in conditional " +
+             "probability form.")
         if factor_string[0] == "<":
             operators = factor_string[1:-1].split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
