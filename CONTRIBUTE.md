@@ -71,8 +71,6 @@ The following are the extensions added to Sphinx to generate the documentation, 
 
 These extensions and other specifications are found in the `conf.py` file. They allow for two important quality of life improvements in maintaining the documentation, namely, the ability to have Markdown documents and Jupyter notebooks as sections of the documentation. Future plans are to migrate everything to MyST serialisation.
 
-**Note**: currently Sphinx expects all files to be placed under the source directors (`docs/`), so it seems difficult to include notebooks from other folders (such as `CONTRIBUTE.MD`) into the documentation. The current workaround is to copy the notebooks to the `docs/` folder, however one needs to remember to update the other file when one of them is modified.
-
 ## Build the HTML documentation
 
 Once you have done all your modifications, you can build the documentation by running the following command in the terminal on the `docs/` directory:
