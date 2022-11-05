@@ -92,6 +92,11 @@ class InflationSDP(object):
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
         if self.verbose > 1:
             print(self.InflationProblem)
+        if self.verbose > 0:
+            try:
+                import tqdm
+            except ImportError:
+                warn("Install the tqdm package to see progress bars.")
 
         self.nr_parties = len(self.names)
         self.nr_sources = self.InflationProblem.nr_sources
