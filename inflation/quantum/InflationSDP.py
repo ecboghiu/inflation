@@ -24,6 +24,7 @@ from .fast_npa import (nb_all_commuting_q,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical)
+from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix,
@@ -34,8 +35,8 @@ from .quantum_tools import (apply_inflation_symmetries,
                             format_permutations,
                             generate_operators,
                             party_physical_monomials,
-                            reduce_inflation_indices)
-from .fast_npa import nb_is_knowable as is_knowable
+                            reduce_inflation_indices,
+                            to_symbol)
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
@@ -517,7 +518,7 @@ class InflationSDP(object):
                     warn("In the objective there are variables not present " +
                          "in the moment matrix nor in any constraint. This " +
                          "can lead to an unbounded problem. Consider adding "
-                         "appropriate constraints for the terms " + 
+                         "appropriate constraints for the terms " +
                          str(surprising_objective_terms))
             self._update_objective()
 
@@ -833,8 +834,9 @@ class InflationSDP(object):
             instead :math:`\{1, A, B, C, AB, AC, BC\}`. By default ``0`` (no
             limit).
         symbolic: bool, optional
-            If True, it returns the columns as a list of sympy symbols 
-            parsable by `InflationSDP.generate_relaxation()`. By default False.
+            If ``True``, it returns the columns as a list of sympy symbols
+            parsable by `InflationSDP.generate_relaxation()`. By default
+            ``False``.
         """
         columns = None
         if type(column_specification) == list:
@@ -971,7 +973,7 @@ class InflationSDP(object):
                                                           self._nr_properties))
                    for col in columns]
         if symbolic:
-            columns = [self.to_symbol(col) for col in columns]
+            columns = [to_symbol(col, self.names) for col in columns]
         return columns
 
     def reset(self, which: Union[str, List[str]]) -> None:
@@ -1443,61 +1445,9 @@ class InflationSDP(object):
         components = op_string.split("_")
         assert len(components) == self._nr_properties, \
             f"There need to be {self._nr_properties} properties to match " + \
-             "the scenario."
+            "the scenario."
         components[0] = self.names_to_ints[components[0]]
         return np.array([int(s) for s in components], dtype=self.np_dtype)
-
-    def to_symbol(self, mon: Union[np.ndarray, str,
-                                   CompoundMonomial,
-                                   InternalAtomicMonomial],
-                  commutative: bool=False
-                  ) -> sp.core.symbol.Symbol:
-        """Convert a monomial to a SymPy expression.
-
-        Parameters
-        ----------
-        mon : np.ndarray or str or CompoundMonomial or InternalAtomicMonomial
-            Monomial written either as a 2D array, as a string
-            in expectation value notation (e.g., `'<A_1_x_a B_1_y_b>'`),
-            as a `CompoundMonomial` or as an `InternalAtomicMonomial`.
-        commutative : bool, optional
-            If the resulting symbol are commutative. Default is ``False``.
-        
-        Returns
-        -------
-        sp.core.symbol.Symbol
-            The monomial as a SymPy expression.
-            
-        Examples
-        --------
-        >>> sdp = InflationSDP(InflationProblem({}, (3, 3), (3, 3)))
-        >>> sdp.to_symbol('<A_1_0_1 B_1_1_0>')
-        A_1_0_1*B_1_1_0
-        >>> sdp.to_symbol(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]))
-        A_1_0_1*B_1_1_2
-        >>> sdp.to_symbol(sdp.Monomial(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]))))
-        """
-        if isinstance(mon, np.ndarray):
-            if mon.shape[0] == 0:
-                return sp.S.One
-            res = sp.S.One
-            for mon in mon:
-                name =  '_'.join([self.names[mon[0]-1]] +
-                                 [str(i) for i in mon.tolist()][1:])
-                res *= sp.Symbol(name, commutative=commutative)
-            return res
-        elif isinstance(mon, InternalAtomicMonomial) or \
-             isinstance(mon, CompoundMonomial):
-            return mon.symbol
-        elif isinstance(mon, str):
-            try:
-                name = self._interpret_name(mon)
-                return self.to_symbol(name, commutative=commutative)
-            except ValueError or AssertionError:
-                return sp.Symbol(mon, commutative=commutative)
-        else:
-            warn(f"Cannot convert monomial {str(mon)} to symbol.")
-
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #

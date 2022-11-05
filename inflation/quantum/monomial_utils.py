@@ -2,7 +2,7 @@
 This file contains auxiliary functions for the Monomial classes defined in
 monomial_classes.py.
 
-@authors: Emanuel-Cristian Boghiu, Elie Wolfe, and Alejandro Pozas-Kerstjens
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
 import sympy

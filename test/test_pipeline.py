@@ -468,7 +468,6 @@ class TestSDPOutput(unittest.TestCase):
                                  A10, A11, A20, A21,
                                  A10*A11, A10*A21, A11*A20, A20*A21])
         sdp.set_distribution(np.array([[0.14873, 0.85168]]))
-        sdp.set_objective(A10*A11*A20*A21) # Setting mon not in moment matrix
         sdp.set_objective(A11*A10*A20*A21)
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 0.0918999),

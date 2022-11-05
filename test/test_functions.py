@@ -1,8 +1,11 @@
 import unittest
 import numpy as np
 
+from sympy import Symbol
+
 from inflation import InflationProblem, InflationSDP
 from inflation.quantum.fast_npa import nb_remove_sandwich
+from inflation.quantum.quantum_tools import to_symbol
 
 
 class TestFunctions(unittest.TestCase):
@@ -122,17 +125,10 @@ class TestFunctions(unittest.TestCase):
                          f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
 
     def test_to_symbol(self):
-        from sympy import Symbol
-        sdp = InflationSDP(InflationProblem({}, (2, 2), (2, 2)))
-        truth = Symbol('A_1_0_0', commutative=False) * \
-                Symbol('B_1_1_0', commutative=False)
-                
-        self.assertEqual(sdp.to_symbol('<A_1_0_0 B_1_1_0>'), truth,
-                         "to_symbol is not working as expected.")
-        self.assertEqual(sdp.to_symbol(np.array([[1, 1, 0, 0], [2, 1, 1, 0]])),
-                                       truth,
-                         "to_symbol is not working as expected.")
-        self.assertEqual(sdp.to_symbol(sdp.Monomial(np.array([[1, 1, 0, 0],
-                                                              [2, 1, 1, 0]]))),
-                                       Symbol('pAB(00|01)', commutative=True),
+        truth = (Symbol("A_1_0_0", commutative=False)
+                 * Symbol("B_1_1_0", commutative=False))
+
+        self.assertEqual(to_symbol(np.array([[1, 1, 0, 0], [2, 1, 1, 0]]),
+                                   ["A", "B"]),
+                         truth,
                          "to_symbol is not working as expected.")

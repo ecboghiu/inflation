@@ -135,15 +135,15 @@ def calculate_momentmatrix(cols: List,
                             total=int(nrcols*(nrcols+1)/2),
                                     ):
         mon_v1 = to_canonical(dot_mon(mon1, mon2),
-                                notcomm,
-                                lexorder,
-                                commuting=commuting)
+                              notcomm,
+                              lexorder,
+                              commuting=commuting)
         if not mon_is_zero(mon_v1):
             if not commuting:
                 mon_v2 = to_canonical(dot_mon(mon2, mon1),
-                                        notcomm,
-                                        lexorder,
-                                        commuting=commuting)
+                                      notcomm,
+                                      lexorder,
+                                      commuting=commuting)
                 mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
             else:
                 mon_hash = mon_v1.tobytes()
@@ -157,6 +157,42 @@ def calculate_momentmatrix(cols: List,
                 momentmatrix[j, i] = varidx
                 varidx += 1
     return momentmatrix, canonical_mon_to_idx
+
+
+def to_symbol(mon: np.ndarray,
+              names: np.ndarray,
+              commutative=False) -> sympy.core.symbol.Symbol:
+    """Convert a monomial to a SymPy expression.
+
+    Parameters
+    ----------
+    mon : numpy.ndarray
+        Monomial written as a 2D array.
+    names : numpy.ndarray
+        The names of the parties in the monomial.
+    commutative : bool, optional
+        If the operators in the monomial are commutative. By default
+        ``False``.
+
+    Returns
+    -------
+    sp.core.symbol.Symbol
+        The monomial as a SymPy expression.
+
+    Examples
+    --------
+    >>> to_symbol(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]), ["A", "B"])
+    A_1_0_1*B_1_1_2
+    """
+    if isinstance(mon, np.ndarray):
+        if mon.shape[0] == 0:
+            return sympy.S.One
+        res = sympy.S.One
+        for mon in mon:
+            name = '_'.join([names[mon[0]-1]] +
+                            [str(i) for i in mon.tolist()][1:])
+            res *= sympy.Symbol(name, commutative=commutative)
+        return res
 
 
 ###############################################################################
@@ -253,7 +289,7 @@ def commutation_relations(infSDP):
 
     Returns
     -------
-    Tuple[sympy.Expr]
+    Tuple[sympy.core.expr.Expr]
         The list of commutators (given as sympy Expressions) that are nonzero.
     """
     from collections import namedtuple

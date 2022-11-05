@@ -1,3 +1,8 @@
+"""
+This file contains classes for defining the monomials inside a moment matrix.
+
+@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
+"""
 import numpy as np
 
 from collections import Counter
