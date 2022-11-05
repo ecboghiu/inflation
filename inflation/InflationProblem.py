@@ -230,8 +230,8 @@ class InflationProblem(object):
             "Error: duplicated inflation index pattern."
 
     def __repr__(self):
-        return ("InflationProblem with " + str(self.hypergraph.tolist()) +
-                " as hypergraph, " + str(self.outcomes_per_party) +
+        return ("InflationProblem with " + str(self.dag) +
+                " as DAG, " + str(self.outcomes_per_party) +
                 " outcomes per party, " + str(self.settings_per_party) +
                 " settings per party and " +
                 str(self.inflation_level_per_source) +

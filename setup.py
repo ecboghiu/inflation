@@ -19,7 +19,7 @@ setup(
     packages = find_packages(exclude=['test', 'doc*', 'example*']),
     license = "GNU GPL v. 3.0",
     url = "https://github.com/ecboghiu/inflation",
-    project_urls = {'Documentation': 'https://ecboghiu.github.io/inflation/_build/html/index.html',  #TODO update this on realease
+    project_urls = {'Documentation': 'https://ecboghiu.github.io/inflation/_build/html/index.html',
                     'Source': 'https://github.com/ecboghiu/inflation',
                     'Issue Tracker': 'https://github.com/ecboghiu/inflation/issues'},
     zip_safe = False,  # To avoid problems with Numba, https://github.com/numba/numba/issues/4908

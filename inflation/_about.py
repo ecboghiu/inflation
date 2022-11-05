@@ -34,7 +34,7 @@ Core Dependencies
 -----------------
 NumPy Version:\t{numpy_version}
 SciPy Version:\t{scipy_version}
-SymPY Version:\t{sympy_version}
+SymPy Version:\t{sympy_version}
 Numba Version:\t{numba_version}
 Mosek Version:\t{mosek_version}
 
