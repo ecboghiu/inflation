@@ -152,39 +152,9 @@ def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
                     new_component,
                     adj_mat[search_next].sum(axis=0).astype(bool_))
                 search_next = np.logical_xor(new_component, old_component)
-                while search_next.any():
-                    old_component = new_component.copy()
-                    new_component = np.logical_or(
-                        new_component,
-                        adj_mat[search_next].sum(axis=0).astype(bool_))
-                    search_next = np.logical_xor(new_component, old_component)
-                component_labels[new_component] = component_counter
-                component_counter += 1
-        return (component_labels-1).astype(np.uint8)
-else:
-    from scipy.sparse.csgraph import connected_components
-    def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
-        """Given a boolean matrix where each cell indicates whether the supports of
-        the operator denoting the row and the operator denoting the column overlap,
-        generate a list determining to which disconnected component each operator
-        belongs to.
-
-        Parameters
-        ----------
-        adj_mat : numpy.ndarray
-            Boolean 2d array where each cell indicates whether the supports of the
-            operator denoting the row and the operator denoting the column overlap.
-
-        Returns
-        -------
-        numpy.ndarray
-            A list of integers of size the number of operators used for creating
-            adj_mat, where each integer indexes the disconnected component the
-            corresponding operator belongs to.
-        """
-        return connected_components(adj_mat,
-                                    directed=False,
-                                    return_labels=True)[-1]
+            component_labels[new_component] = component_counter
+            component_counter += 1
+    return (component_labels-1).astype(np.uint8)
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -518,8 +488,7 @@ def apply_source_perm(monomial: np.ndarray,
     return new_factors
 
 
-# Functions which are only used once or twice are not aggressively Numba-fied
-@jit(nopython=False, cache=cache, forceobj=not nopython)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def commutation_matrix(lexorder: np.ndarray,
                        commuting=False) -> np.ndarray:
     """Build a matrix encoding of which operators commute according to the
