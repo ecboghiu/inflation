@@ -7,6 +7,7 @@ import numpy as np
 
 from collections import Counter
 from functools import total_ordering
+from numbers import Real
 from typing import Dict, List, Tuple
 
 from .fast_npa import mon_is_zero, nb_remove_sandwich
@@ -402,12 +403,14 @@ class CompoundMonomial(object):
             except KeyError:
                 unknown_counter[factor] = power
         unknown_factors = list(unknown_counter.elements())
-        if ((len(unknown_factors) == 0)
-            or (np.isclose(known_value, 0) and use_lpi_constraints)):
+        if (len(unknown_factors) == 0):
             known_status = "Known"
         elif ((len(unknown_factors) == self.n_factors)
               or (not use_lpi_constraints)):
             known_status = "Unknown"
         else:
             known_status = "Semi"
+            if use_lpi_constraints and isinstance(known_value, Real):
+                if np.isclose(known_value, 0):
+                    known_status = "Known"
         return known_value, unknown_factors, known_status
