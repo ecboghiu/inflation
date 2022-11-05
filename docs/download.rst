@@ -18,6 +18,12 @@ Follow the standard procedure for installing Python modules:
 
     $ pip install inflation
 
+or
+
+::
+
+    $ pip install git+https://github.com/ecboghiu/inflation.git@main
+
 If you use the development version, you can download the source code from the `GitHub repository <https://github.com/ecboghiu/inflation>`_ and run
 
 ::

@@ -61,13 +61,15 @@ The main file is `docs/index.rst`, which outlines the structure of the documenta
 
 The following are the extensions added to Sphinx to generate the documentation, and you will need to have them installed if you want to locally build the documentation:
 
-* `sphinx.ext.autodoc`: This extension is used to create `.rst` files from the class and method code docstrings.
-* `sphinx.ext.napoleon`: This extension enables the correct identification of numpy-style docstrings.
-* `sphinx.ext.githubpages`: This extension creates `.nojekyll` file on generated HTML directory to publish the document on GitHub Pages.
-* `sphinx-rtd-theme`: for the Read the docs theme.
-* `nbsphinx`: to have Jupyter notebooks as pages.
-* `sphinx.ext.autodoc.typehints`: to have typehints in the documentation.
-* `m2r2`: this allows for the conversion of Markdown files to reStructuredText files.
+* `m2r2`: For the conversion of Markdown files to reStructuredText files.
+* `nbsphinx`: To have Jupyter notebooks as pages.
+* `sphinx.ext.autodoc`: To create `.rst` files from the class and method code docstrings.
+* `sphinx.ext.autodoc.typehints`: To have typehints in the documentation.
+* `sphinx.ext.githubpages`: To create the `.nojekyll` file on generated HTML directory to publish the document on GitHub Pages.
+* `sphinx.ext.napoleon`: To correctly identify numpy-style docstrings.
+* `sphinx.ext.viewcode`: To add links to highlighted source code.
+* `sphinx-rtd-theme`: For the Read the docs theme.
+* `sphinx_copybutton`: For allowing to copy code snippets.
 
 These extensions and other specifications are found in the `conf.py` file. They allow for two important quality of life improvements in maintaining the documentation, namely, the ability to have Markdown documents and Jupyter notebooks as sections of the documentation. Future plans are to migrate everything to MyST serialisation.
 

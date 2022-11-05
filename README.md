@@ -27,7 +27,9 @@ pip install inflation
 
 You can also install directly from GitHub with:
 
-`pip install git+https://github.com/ecboghiu/inflation.git@main`
+```
+pip install git+https://github.com/ecboghiu/inflation.git@main
+```
 
 or download the repository on your computer and run `pip install .` in the repository folder. Install the `devel` branch for the latest features and bugfixes.
 
