@@ -353,7 +353,7 @@ class InflationSDP(object):
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
         self.moment_equalities = []
-        if not self.network_scenario:
+        if not self.network_scenario or self.supports_problem:
             self.column_level_equalities = self._discover_normalization_eqns()
             self.idx_level_equalities    = construct_normalization_eqs(
                                                 self.column_level_equalities,
