@@ -6,7 +6,7 @@ You can begin contributing by opening an issue on the [GitHub repository](https:
 
 Inflation code is developed according standard practices in Python development. We do not have strict style guidelines, but we do have some suggestions.
 - In general, try to follow [PEP 8](https://peps.python.org/pep-0008/) (code) and [PEP 257](https://peps.python.org/pep-0257/) (docstrings) guidelines.
-- Avoid going over 80 characters per line.
+- Avoid going over 79 characters per line.
 - Write docstrings in [numpy style](https://numpydoc.readthedocs.io/en/latest/format.html), or else Sphinx automatic documentation generation will be buggy.
 - Use annotations for [type hints](https://docs.python.org/3/library/typing.html) in the objects’ signature.
 

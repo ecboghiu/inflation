@@ -107,6 +107,7 @@ class InflationSDP(object):
         self.outcome_cardinalities = \
             self.InflationProblem.outcomes_per_party.copy()
         if self.supports_problem:
+            # Support problems must not use Collins-Gisin notation
             self.has_children = np.ones(self.nr_parties, dtype=int)
         else:
             self.has_children = self.InflationProblem.has_children
@@ -1664,7 +1665,7 @@ class InflationSDP(object):
         """Helper function to reset or make consistent class attributes after
         setting values."""
         if self.supports_problem:
-            # Convert positive known values into lower bounds.
+            # Add lower bounds to monomials inside the support
             nonzero_known_monomials = [mon for
                                        mon, value in self.known_moments.items()
                                        if not np.isclose(value, 0)]

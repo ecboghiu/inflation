@@ -41,7 +41,7 @@ inside the repository folder.
 
 The following example shows that the W distribution is incompatible with the triangle scenario with quantum sources by showing that a specific semidefinite programming relaxation is infeasible:
 
-```
+```python
 from inflation import InflationProblem, InflationSDP
 import numpy as np
 
