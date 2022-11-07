@@ -337,20 +337,24 @@ class TestSDPOutput(unittest.TestCase):
                          "A feasible distribution for the instrumental " +
                          "scenario is not being recognized as such.")
 
-    def test_instrumental_supports(self):
-        sdp = InflationSDP(self.instrumental, supports_problem=True)
-        sdp.generate_relaxation('local1')
-        sdp.set_distribution(self.incompatible_dist)
+    def test_supports(self):
+        sdp = InflationSDP(self.bellScenario, supports_problem=True)
+        sdp.generate_relaxation("local1")
+        pr_support = np.zeros((2, 2, 2, 2))
+        for a, b, x, y in np.ndindex(*pr_support.shape):
+            if x*y == (a + b) % 2:
+                pr_support[a, b, x, y] = np.random.randn()
+        sdp.set_distribution(pr_support)
         sdp.solve(feas_as_optim=False)
         self.assertEqual(sdp.status, "infeasible",
                          "Failing to detect the infeasibility of a support "
                          + "known to be incompatible.")
-        compatible_support = np.ones((2, 2, 3, 1), dtype=float)
+        compatible_support = np.ones((2, 2, 2, 2), dtype=float)
         sdp.set_distribution(compatible_support)
         sdp.solve(feas_as_optim=False)
         self.assertEqual(sdp.status, "feasible",
-                         "A feasible support for the instrumental scenario " +
-                         "is not being recognized as such.")
+                         "A feasible support for the Bell scenario is not " +
+                         "being recognized as such.")
 
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
