@@ -152,25 +152,33 @@ def write_to_mat(problem, filename):
                    for mon, coeff in problem.objective.items()
                    if abs(coeff) > 1e-8]
     lowerbounds = [[mon.idx + offset, bnd]
-                   for mon, bnd in problem.moment_lowerbounds.items()]
+                   for mon, bnd in problem._processed_moment_lowerbounds.items()]
     upperbounds = [[mon.idx + offset, bnd]
-                   for mon, bnd in problem.moment_upperbounds.items()]
-    names       = [[mon.idx + offset, mon.name]
-                   for mon in problem.monomials]
+                   for mon, bnd in problem._processed_moment_upperbounds.items()]
+    names       = np.array([[mon.idx + offset, mon.name]
+                             for mon in problem.monomials], dtype=object)
     equalities  = []
     for eq in problem.moment_equalities:
-        equality = [[mon.idx + offset, coeff] for mon, coeff in eq.items()]
+        equality = {'moments': np.array([mon.idx + offset for mon in eq]),
+                    'coeffs':  np.array(list(eq.values()))}
         equalities.append(equality)
+  
+    inequalities  = []
+    for ineq in problem.moment_inequalities:
+        inequality = {'moments': np.array([mon.idx + offset for mon in ineq]),
+                      'coeffs':  np.array(list(ineq.values()))}
+        inequalities.append(inequality)
 
     savemat(filename,
-            mdict={"Gamma":           final_positions_matrix,
-                   "known_moments":   known_moments,
-                   "semiknown":       semiknown_moments,
-                   "obj":             objective,
-                   "monomials_names": np.asarray(names, dtype=object),
-                   "lowerbounds":     lowerbounds,
-                   "upperbounds":     upperbounds,
-                   "equalities":      equalities
+            mdict={"moments_idx2name":    names,
+                   "momentmatrix":        final_positions_matrix,
+                   "objective":           objective,
+                   "known_moments":       known_moments,
+                   "semiknown_moments":   semiknown_moments,
+                   "moment_lowerbounds":  lowerbounds,
+                   "moment_upperbounds":  upperbounds,
+                   "moment_equalities":   equalities,
+                   "moment_inequalities": inequalities
                    }
             )
 
