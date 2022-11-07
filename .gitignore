@@ -2,11 +2,10 @@
 
 docs/_static
 docs/_templates
-docts/_build/doctrees
+docs/_build/doctrees
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-test/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -75,14 +74,11 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/doctrees
-
 # PyBuilder
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # IPython
 profile_default/
@@ -138,41 +134,12 @@ dmypy.json
 # PyCharm IDE project files
 .idea/
 
-# quantum inflation
-*.dat-s
-*.mat
-*.pkl
-examples/monomials.txt
-examples/ncpol2sdpa
-examples/npa*
+# inflation
 .vscode
-emi_arena/
-ncpol2sdpa
-emi_arena
-test/test_data
 *ptf
 *task.gz
-mosekconsole.py
-test/arena.py
-test/monomials.txt
-arena.py
-monomials.txt
-debug_monomials.txt
-solv_alex.m
-result_matlab.txt
-matlab_primal_dual.m
-solv_alex.asv
-inflationMATLAB*
-MATLAB*
-studydiff
-problemarr*
-
-# linear inflation
 *.jtask
 *.json
-result_matlab_svetlichny.txt
-examples/debug.py
-examples/triangle_W.py
 
 #Visual Studio IDE
 .vs/
