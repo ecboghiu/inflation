@@ -4,8 +4,8 @@ with open("VERSION.txt", "r") as f:
     __version__ = f.read().strip()
 
 setup(
-    name = "inflation",
-    version = "0.1",
+    name="inflation",
+    version=__version__,
     install_requires=["numpy", "sympy", "scipy", "numba", "mosek"],
     extras_require={
         "docs": ["nbsphinx", "m2r2", "sphinx_rtd_theme", "sphinx_copybutton"]
