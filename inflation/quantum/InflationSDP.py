@@ -1765,6 +1765,7 @@ class InflationSDP(object):
                     del self._processed_moment_lowerbounds[mon]
                 except KeyError:
                     pass
+        self.moment_lowerbounds = self._processed_moment_lowerbounds
 
     def _update_upperbounds(self) -> None:
         """Helper function to check that upperbounds are consistent with the
@@ -1780,6 +1781,8 @@ class InflationSDP(object):
                     del self._processed_moment_upperbounds[mon]
                 except KeyError:
                     pass
+        self.moment_upperbounds = self._processed_moment_upperbounds
+                
 
     ###########################################################################
     # OTHER ROUTINES                                                          #
