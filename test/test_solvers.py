@@ -33,7 +33,7 @@ class TestMosek(unittest.TestCase):
                               {'y': -1, '1': 5},    # 5 - y >= 0
                               {'z': -1, '1': 1/2},  # 1/2 - z >= 0
                               {'w': 1,  '1': 1}],   # w >= -1
-            "var_equalities": [{'x': 1/2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
+            "equalities": [{'x': 1/2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
         }
         primal_sol   = solveSDP_MosekFUSION(**problem, solve_dual=False)
         dual_sol     = solveSDP_MosekFUSION(**problem, solve_dual=True)
@@ -43,6 +43,67 @@ class TestMosek(unittest.TestCase):
                         "The dual and primal solutions in LP are not equal.")
         self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2),
                         "The solution to a simple LP is not correct.")
+
+    def test_LP_process_constraints(self):
+        """Check that semiknown_moments are correctly processed."""
+        problem = {
+            "objective":  {'x': -1, 'y': -2, 'z': -1},
+            "known_vars": {'1': 1},
+            "inequalities":  [{'x': 1, 'y': 1, 'z': 1, '1': -26}, 
+                              {'x': 1, '1': -3},
+                              {'y': 1, '1': -4},
+                              {'z': 1, '1': -1}],
+            "equalities": [{'x': -5, 'y': 1, 'z': -2, '1': -7}]
+        }
+        p   = solveSDP_MosekFUSION(**problem,
+                                   semiknown_vars={},
+                                   solve_dual=False,
+                                   process_constraints=False)
+        p_lpi  = solveSDP_MosekFUSION(**problem,
+                                      semiknown_vars={'z': (0.5, 'x')},
+                                      solve_dual=False,
+                                      process_constraints=False)
+        p_lpi_process = solveSDP_MosekFUSION(**problem,
+                                             semiknown_vars={'z': (0.5, 'x')},
+                                             solve_dual=False,
+                                             process_constraints=True)
+        d   = solveSDP_MosekFUSION(**problem, 
+                                   semiknown_vars={},
+                                   solve_dual=True,
+                                   process_constraints=False)
+        d_lpi  = solveSDP_MosekFUSION(**problem,
+                                      semiknown_vars={'z': (0.5, 'x')},
+                                      solve_dual=True,
+                                      process_constraints=False)
+        d_lpi_process = solveSDP_MosekFUSION(**problem,
+                                             semiknown_vars={'z': (0.5, 'x')},
+                                             solve_dual=True, 
+                                             process_constraints=True)
+        truth_obj, truth_obj_lpi = -52, -109/2
+        truth_x =     {'x': 3, 'y': 24, 'z': 1}
+        truth_x_lpi = {'x': 3, 'y': 25, 'z': 3/2}
+        
+        msg = "The dual and primal solutions are not equal when " + \
+              "processing semiknown constraints."
+
+        check = lambda x: np.isclose(x, truth_obj)
+        self.assertTrue(all(map(check, [p['primal_value'],
+                                        d['primal_value']])), msg)
+        
+        check = lambda x: np.isclose(x, truth_obj_lpi)
+        self.assertTrue(all(map(check, [p_lpi['primal_value'],
+                                        d_lpi['primal_value'],
+                                        p_lpi_process['primal_value'],
+                                        d_lpi_process['primal_value']])), msg)
+        
+        check = lambda x: all([np.isclose(v, truth_x[k]) 
+                                for k, v in x.items()])
+        self.assertTrue(all(map(check, [p["x"], d["x"]])), msg)
+        
+        check = lambda x: all([np.isclose(v, truth_x_lpi[k]) 
+                                for k, v in x.items()])
+        self.assertTrue(all(map(check, [p_lpi["x"], p_lpi_process['x'],
+                                        d_lpi["x"], d_lpi_process['x']])), msg)
 
     def test_SDP(self):
         # Maximization of CHSH on NPA level 1+AB
@@ -78,7 +139,7 @@ class TestMosek(unittest.TestCase):
         problem = {**self.simple_sdp,
                    **{"inequalities": [*[{q[idx]: 1}    # Positivity
                                        for idx in np.ndindex(4, 4)]],
-                      "var_equalities": [
+                      "equalities": [
                         # Normalization
                         {**{q[idx]: 1 for idx in np.ndindex(4, 4)}, '1': -1},
                         # LHV

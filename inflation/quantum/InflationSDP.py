@@ -1834,7 +1834,7 @@ class InflationSDP(object):
             * "known_vars": scalar variables that are fixed to be constant.
             * "semiknown_vars": if applicable, linear proportionality
             constraints between variables in the SDP.
-            * "var_equalities": list of dicts where each dict gives the
+            * "equalities": list of dicts where each dict gives the
             coefficients of the keys in a linear equality constraint.
             * "inequalities": list of dicts where each dict gives the
             coefficients of the keys in a linear inequality constraint.
@@ -1869,7 +1869,7 @@ class InflationSDP(object):
                       "semiknown_vars": {mon.name: (coeff, subs.name)
                                          for mon, (coeff, subs)
                                          in self.semiknown_moments.items()},
-                      "var_equalities": [{mon.name: coeff
+                      "equalities": [{mon.name: coeff
                                           for mon, coeff in eq.items()}
                                          for eq in self.moment_equalities],
                       "inequalities": [{mon.name: coeff
