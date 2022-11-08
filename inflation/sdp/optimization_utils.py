@@ -11,7 +11,7 @@ import sympy as sp
 from numbers import Real
 from scipy.optimize import bisect, minimize, Bounds
 from sympy.utilities.lambdify import lambdify
-from typing import Callable, Dict, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from inflation import InflationSDP
 from inflation.sdp.quantum_tools import make_numerical
@@ -19,7 +19,8 @@ from inflation.sdp.monomial_classes import CompoundMonomial
 
 
 def max_within_feasible(sdp: InflationSDP,
-                        symbolic_values: Dict[CompoundMonomial, Callable],
+                        symbolic_values: Dict[CompoundMonomial,
+                                              sp.core.expr.Expr],
                         method: str,
                         return_last_certificate=False,
                         **kwargs) -> Union[float,
@@ -74,7 +75,7 @@ def max_within_feasible(sdp: InflationSDP,
             variables.update(expr.free_symbols)
     assert len(variables) == 1, \
         "Only optimization of a single variable is supported"
-    param = variables.pop()
+    param = sp.Symbol(variables.pop())
     kwargs.update({"return_last_certificate": return_last_certificate})
 
     if method == "bisection":
@@ -87,7 +88,8 @@ def max_within_feasible(sdp: InflationSDP,
 # OPTIMIZATION METHODS                                                        #
 ###############################################################################
 def _maximize_via_bisect(sdp: InflationSDP,
-                         symbolic_values: Dict[CompoundMonomial, Callable],
+                         symbolic_values: Dict[CompoundMonomial,
+                                               sp.core.expr.Expr],
                          param: sp.core.symbol.Symbol,
                          **kwargs) -> Union[float,
                                             Tuple[float, sp.core.add.Add]]:
@@ -132,11 +134,11 @@ def _maximize_via_bisect(sdp: InflationSDP,
     for kwarg in ["args", "rtol", "maxiter", "full_output", "disp"]:
         try:
             bisect_kwargs[kwarg] = kwargs[kwarg]
-        except Exception:
+        except KeyError:
             pass
     try:
         bisect_kwargs["xtol"] = kwargs["xtol"]
-    except Exception:
+    except KeyError:
         bisect_kwargs["xtol"] = kwargs.get("precision", 1e-4)
 
     def f(value):
@@ -155,7 +157,8 @@ def _maximize_via_bisect(sdp: InflationSDP,
 
 
 def _maximize_via_dual(sdp: InflationSDP,
-                       symbolic_values: Dict[CompoundMonomial, Callable],
+                       symbolic_values: Dict[CompoundMonomial,
+                                             sp.core.expr.Expr],
                        param: sp.core.symbol.Symbol,
                        **kwargs) -> Union[float,
                                           Tuple[float, sp.core.add.Add]]:
