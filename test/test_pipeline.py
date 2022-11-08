@@ -285,77 +285,6 @@ class TestSDPOutput(unittest.TestCase):
                         f"result obtained for [min x s.t. x >= {lb}] is " +
                         f"{sdp.objective_value}.")
 
-    def test_equalities(self):
-        prob = InflationProblem(dag={"U_AB": ["A", "B"],
-                                     "U_AC": ["A", "C"],
-                                     "U_AD": ["A", "D"],
-                                     "C": ["D"],
-                                     "A": ["B", "C", "D"]},
-                                outcomes_per_party=(2, 2, 2, 2),
-                                settings_per_party=(1, 1, 1, 1),
-                                inflation_level_per_source=(1, 1, 1),
-                                order=("A", "B", "C", "D"))
-        sdp = InflationSDP(prob)
-        sdp.generate_relaxation("npa2")
-        equalities = sdp.moment_equalities
-
-        self.assertEqual(len(equalities), 738,
-                         "Failing to obtain the correct number of implicit " +
-                         "equalities in a non-network scenario.")
-
-        # TODO: When we add support for user-specifiable equalities, modify
-        # this test to only check implicit equalities.
-        self.assertTrue(all(set(equality.values()) == {-1, 1}
-                            for equality in equalities),
-                        "Some implicit equalities lack a nontrivial left-hand"
-                        + "or right-hand side.")
-
-        self.assertTrue(all(sdp.Zero.name not in equality.keys()
-                            for equality in equalities),
-                        "Some implicit equalities are wrongly assigning " +
-                        "coefficients to the zero monomial.")
-
-    def test_instrumental(self):
-        sdp = InflationSDP(self.instrumental)
-        sdp.generate_relaxation("local1")
-        sdp.set_distribution(self.incompatible_dist)
-        sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "infeasible",
-                         "Failing to detect the infeasibility of the " +
-                         "distribution that maximally violates Bonet's " +
-                         "inequalty.")
-        unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
-        sdp.set_distribution(unnormalized_dist)
-        sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "infeasible",
-                         "Failing to detect the infeasibility of an " +
-                         "distribution that violates normalization.")
-        compat_dist = unnormalized_dist / 4
-        sdp.set_distribution(compat_dist)
-        sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "feasible",
-                         "A feasible distribution for the instrumental " +
-                         "scenario is not being recognized as such.")
-
-    def test_supports(self):
-        sdp = InflationSDP(self.bellScenario, supports_problem=True)
-        sdp.generate_relaxation("local1")
-        pr_support = np.zeros((2, 2, 2, 2))
-        for a, b, x, y in np.ndindex(*pr_support.shape):
-            if x*y == (a + b) % 2:
-                pr_support[a, b, x, y] = np.random.randn()
-        sdp.set_distribution(pr_support)
-        sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "infeasible",
-                         "Failing to detect the infeasibility of a support "
-                         + "known to be incompatible.")
-        compatible_support = np.ones((2, 2, 2, 2), dtype=float)
-        sdp.set_distribution(compatible_support)
-        sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "feasible",
-                         "A feasible support for the Bell scenario is not " +
-                         "being recognized as such.")
-
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation("npa1")
@@ -400,6 +329,36 @@ class TestSDPOutput(unittest.TestCase):
         self.assertTrue(np.isclose(sdp.objective_value, biased_chsh),
                         "The SDP is not re-setting the objective correctly " +
                         "after re-setting known values.")
+
+    def test_equalities(self):
+        prob = InflationProblem(dag={"U_AB": ["A", "B"],
+                                     "U_AC": ["A", "C"],
+                                     "U_AD": ["A", "D"],
+                                     "C": ["D"],
+                                     "A": ["B", "C", "D"]},
+                                outcomes_per_party=(2, 2, 2, 2),
+                                settings_per_party=(1, 1, 1, 1),
+                                inflation_level_per_source=(1, 1, 1),
+                                order=("A", "B", "C", "D"))
+        sdp = InflationSDP(prob)
+        sdp.generate_relaxation("npa2")
+        equalities = sdp.moment_equalities
+
+        self.assertEqual(len(equalities), 738,
+                         "Failing to obtain the correct number of implicit " +
+                         "equalities in a non-network scenario.")
+
+        # TODO: When we add support for user-specifiable equalities, modify
+        # this test to only check implicit equalities.
+        self.assertTrue(all(set(equality.values()) == {-1, 1}
+                            for equality in equalities),
+                        "Some implicit equalities lack a nontrivial left-hand"
+                        + "or right-hand side.")
+
+        self.assertTrue(all(sdp.Zero.name not in equality.keys()
+                            for equality in equalities),
+                        "Some implicit equalities are wrongly assigning " +
+                        "coefficients to the zero monomial.")
 
     def test_GHZ_commuting(self):
         sdp = InflationSDP(self.cutInflation, commuting=True)
@@ -465,6 +424,28 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "recognizing compatible distributions.")
 
+    def test_instrumental(self):
+        sdp = InflationSDP(self.instrumental)
+        sdp.generate_relaxation("local1")
+        sdp.set_distribution(self.incompatible_dist)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, "infeasible",
+                         "Failing to detect the infeasibility of the " +
+                         "distribution that maximally violates Bonet's " +
+                         "inequalty.")
+        unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
+        sdp.set_distribution(unnormalized_dist)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, "infeasible",
+                         "Failing to detect the infeasibility of an " +
+                         "distribution that violates normalization.")
+        compat_dist = unnormalized_dist / 4
+        sdp.set_distribution(compat_dist)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, "feasible",
+                         "A feasible distribution for the instrumental " +
+                         "scenario is not being recognized as such.")
+
     def test_lpi(self):
         sdp = InflationSDP(trivial)
         [[[[A10], [A11]], [[A20], [A21]]]] = sdp.measurements
@@ -507,6 +488,25 @@ class TestSDPOutput(unittest.TestCase):
                         "Semiknown moments need to be of the form " +
                         "mon_index1 = (number<=1) * mon_index2, this is " +
                         "failing.")
+
+    def test_supports(self):
+        sdp = InflationSDP(self.bellScenario, supports_problem=True)
+        sdp.generate_relaxation("local1")
+        pr_support = np.zeros((2, 2, 2, 2))
+        for a, b, x, y in np.ndindex(*pr_support.shape):
+            if x*y == (a + b) % 2:
+                pr_support[a, b, x, y] = np.random.randn()
+        sdp.set_distribution(pr_support)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, "infeasible",
+                         "Failing to detect the infeasibility of a support "
+                         + "known to be incompatible.")
+        compatible_support = np.ones((2, 2, 2, 2), dtype=float)
+        sdp.set_distribution(compatible_support)
+        sdp.solve(feas_as_optim=False)
+        self.assertEqual(sdp.status, "feasible",
+                         "A feasible support for the Bell scenario is not " +
+                         "being recognized as such.")
 
 
 class TestSymmetries(unittest.TestCase):
