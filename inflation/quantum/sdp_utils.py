@@ -188,7 +188,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         Fi[lam] = -1 * eye(mat_dim).tolil()
         objective = {lam: 1}
 
-    var2index = {x: i for i, x in enumerate(variables)}
 
     # Calculate c0, the constant part of the objective.
     c0 = 0. + float(sum([objective[x] * known_vars[x]
@@ -199,6 +198,35 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         F0 = lil_matrix((mat_dim, mat_dim), dtype=float) + \
             sum(known_vars[x] * Fi[x]
                 for x in set(Fi).intersection(known_vars))
+
+    if process_constraints:
+        # For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j
+        # the expression a_i*(Fi of x_i).
+        for x, (c, x2) in semiknown_vars.items():
+            val = Fi.pop(x, 0)
+            Fi[x2] = Fi.get(x2, 0) + c * val
+
+            val = objective.pop(x, 0)
+            objective[x2] = objective.get(x2, 0) + c * val
+
+            for equality in var_equalities:
+                val = equality.pop(x, 0)
+                equality[x2] = equality.get(x2, 0) + c * val
+
+            for inequality in inequalities:
+                val = inequality.pop(x, 0)
+                inequality[x2] = inequality.get(x2, 0) + c * val
+
+            variables.remove(x)
+
+    else:
+        # Just add semiknown constraints as equality constraints.
+        for x, (c, x2) in semiknown_vars.items():
+            var_equalities.append({x: 1, x2: -c})
+
+    # 'var2index' should be computed after there is no more further modification
+    # to 'variables'.
+    var2index = {x: i for i, x in enumerate(variables)}
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
@@ -219,31 +247,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             C[i, var2index[x]] = equality[x]
         d[i, 0] = float(sum([equality[x] * known_vars[x]
                              for x in eq_vars.intersection(known_vars)]))
-
-    if process_constraints:
-        # For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j
-        # the expression a_i*(Fi of x_i).
-        for x, (c, x2) in semiknown_vars.items():
-            val = Fi.pop(x, 0)
-            Fi[x2] = Fi.get(x2, 0) + c * val
-
-            val = objective.pop(x, 0)
-            objective[x2] = objective.get(x2, 0) + c * val
-
-            for equality in var_equalities:
-                val = equality.get(x, 0)
-                equality[x2] = equality.get(x2, 0) + c * val
-
-            for inequality in inequalities:
-                val = inequality.get(x, 0)
-                inequality[x2] = inequality.get(x2, 0) + c * val
-
-            variables.remove(x)
-
-    else:
-        # Just add semiknown constraints as equality constraints.
-        for x, (c, x2) in semiknown_vars.items():
-            var_equalities.append({x: 1, x2: -c})
 
     collect()
     if verbose > 1:
