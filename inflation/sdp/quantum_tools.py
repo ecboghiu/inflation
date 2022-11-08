@@ -541,16 +541,15 @@ def party_physical_monomials(hypergraph: np.ndarray,
 
     inflation_equivalents = {initial_monomial.tobytes(): initial_monomial}
 
-
     all_permutations_per_relevant_source = [
         format_permutations(list(permutations(range(inflevel))))
         for inflevel in inflevels_for_this_party.flat]
     for permutation in product(*all_permutations_per_relevant_source):
         permuted = initial_monomial.copy()
-        for which_perm, which_source in enumerate(relevant_sources.flat):
+        for perm_idx, source in enumerate(relevant_sources.flat):
             permuted = mon_lexsorted(apply_source_perm(permuted,
-                                                       which_source,
-                                                       permutation[which_perm]),
+                                                       source,
+                                                       permutation[perm_idx]),
                                      lexorder)
         inflation_equivalents[permuted.tobytes()] = permuted
     inflation_equivalents = list(inflation_equivalents.values())
