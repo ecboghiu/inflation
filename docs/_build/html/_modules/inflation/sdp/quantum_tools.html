@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>inflation.sdp.quantum_tools &mdash; Inflation 0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../contents.html" class="icon icon-home"> Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>inflation.sdp.quantum_tools</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for inflation.sdp.quantum_tools</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains helper functions to manipulate monomials and generate moment</span>
+<span class="sd">matrices.</span>
+<span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sympy</span>
+
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">permutations</span><span class="p">,</span> <span class="n">product</span><span class="p">,</span> <span class="n">combinations_with_replacement</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">.fast_npa</span> <span class="kn">import</span> <span class="p">(</span><span class="n">apply_source_perm</span><span class="p">,</span>
+                       <span class="n">dot_mon</span><span class="p">,</span>
+                       <span class="n">mon_is_zero</span><span class="p">,</span>
+                       <span class="n">mon_lexsorted</span><span class="p">,</span>
+                       <span class="n">to_canonical</span><span class="p">,</span>
+                       <span class="n">to_name</span><span class="p">)</span>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># FUNCTIONS FOR MONOMIALS                                                     #</span>
+<span class="c1">###############################################################################</span>
+<span class="k">def</span> <span class="nf">flatten_symbolic_powers</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span>
+                            <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;If we have powers of a monomial, such as A**3, return a list with</span>
+<span class="sd">    the factors, [A, A, A].</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    monomial : sympy.core.symbol.Symbol</span>
+<span class="sd">        Symbolic monomial, possible with powers.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[sympy.core.symbol.Symbol]</span>
+<span class="sd">        List of all the symbolic factors, with the powers expanded.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">factors</span>          <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">as_ordered_factors</span><span class="p">()</span>
+    <span class="n">factors_expanded</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">:</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">exp</span> <span class="o">=</span> <span class="n">factor</span><span class="o">.</span><span class="n">as_base_exp</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">exp</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">factors_expanded</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">exp</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+                <span class="n">factors_expanded</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">factors</span> <span class="o">=</span> <span class="n">factors_expanded</span>
+    <span class="k">return</span> <span class="n">factors</span>
+
+
+<div class="viewcode-block" id="reduce_inflation_indices"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.quantum_tools.reduce_inflation_indices">[docs]</a><span class="k">def</span> <span class="nf">reduce_inflation_indices</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Reduce the inflation indices of a monomial as much as possible. This</span>
+<span class="sd">    procedure might not give the canonical form directly due to commutations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    monomial : numpy.ndarray</span>
+<span class="sd">        Input monomial.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        An equivalent monomial closer to its representative form.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_mon</span>    <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">nr_sources</span> <span class="o">=</span> <span class="n">monomial</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">3</span>
+    <span class="c1"># Pad the monomial with a row a zeros at the front so as to have the</span>
+    <span class="c1"># relevant inflation indices to begin at 1</span>
+    <span class="n">new_mon_padded_transposed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">new_mon</span><span class="p">[:</span><span class="mi">1</span><span class="p">]),</span>
+                                                <span class="n">new_mon</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_sources</span><span class="p">):</span>
+        <span class="n">copies_used</span> <span class="o">=</span> <span class="n">new_mon_padded_transposed</span><span class="p">[</span><span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">unique_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">copies_used</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">new_mon_padded_transposed</span><span class="p">[</span><span class="mi">1</span> <span class="o">+</span> <span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">unique_positions</span>
+    <span class="k">return</span> <span class="n">new_mon_padded_transposed</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span></div>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># FUNCTIONS FOR MOMENT MATRICES                                               #</span>
+<span class="c1">###############################################################################</span>
+<div class="viewcode-block" id="calculate_momentmatrix"><a class="viewcode-back" href="../../../build.html#inflation.sdp.quantum_tools.calculate_momentmatrix">[docs]</a><span class="k">def</span> <span class="nf">calculate_momentmatrix</span><span class="p">(</span><span class="n">cols</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
+                           <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                           <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                           <span class="n">commuting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                           <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the moment matrix. The function takes as input the generating</span>
+<span class="sd">    set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a</span>
+<span class="sd">    matrix where each row is an operator and the columns specify the operator</span>
+<span class="sd">    labels/indices. The moment matrix is the inner product between all possible</span>
+<span class="sd">    pairs of elements from the generating set. The program outputs the moment</span>
+<span class="sd">    matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the</span>
+<span class="sd">    index of the monomial that represents the result of the expectation value</span>
+<span class="sd">    :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state</span>
+<span class="sd">    :math:`\rho` after applying the substitutions. The program returns the</span>
+<span class="sd">    moment matrix and the dictionary mapping each monomial in string</span>
+<span class="sd">    representation to its integer representation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cols : List</span>
+<span class="sd">        List of numpy.ndarray representing the generating set.</span>
+<span class="sd">    notcomm : numpy.ndarray</span>
+<span class="sd">        Matrix of commutation relations, given in the format specified by</span>
+<span class="sd">        `inflation.sdp.fast_npa.commutation_matrix`.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        Matrix with rows as operators where the index of the row gives</span>
+<span class="sd">        the lexicographic order of the operator.</span>
+<span class="sd">    commuting : bool, optional</span>
+<span class="sd">        Whether the variables in the problem commute or not. By default</span>
+<span class="sd">        ``False``.</span>
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        How much information to print. By default ``0``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[numpy.ndarray, Dict]</span>
+<span class="sd">        The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores</span>
+<span class="sd">        the integer representation of a monomial. The Dict is a mapping from</span>
+<span class="sd">        string representation to integer representation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nrcols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="n">canonical_mon_to_idx</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">momentmatrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nrcols</span><span class="p">,</span> <span class="n">nrcols</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">)</span>
+    <span class="n">varidx</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># We start from 1 because 0 is reserved for 0</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">mon1</span><span class="p">),</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">mon2</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+                            <span class="n">combinations_with_replacement</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Calculating moment matrix&quot;</span><span class="p">,</span>
+                            <span class="n">total</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">nrcols</span><span class="o">*</span><span class="p">(</span><span class="n">nrcols</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>
+                                    <span class="p">):</span>
+        <span class="n">mon_v1</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">dot_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">,</span> <span class="n">mon2</span><span class="p">),</span>
+                              <span class="n">notcomm</span><span class="p">,</span>
+                              <span class="n">lexorder</span><span class="p">,</span>
+                              <span class="n">commuting</span><span class="o">=</span><span class="n">commuting</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mon_is_zero</span><span class="p">(</span><span class="n">mon_v1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">commuting</span><span class="p">:</span>
+                <span class="n">mon_v2</span> <span class="o">=</span> <span class="n">to_canonical</span><span class="p">(</span><span class="n">dot_mon</span><span class="p">(</span><span class="n">mon2</span><span class="p">,</span> <span class="n">mon1</span><span class="p">),</span>
+                                      <span class="n">notcomm</span><span class="p">,</span>
+                                      <span class="n">lexorder</span><span class="p">,</span>
+                                      <span class="n">commuting</span><span class="o">=</span><span class="n">commuting</span><span class="p">)</span>
+                <span class="n">mon_hash</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">mon_v1</span><span class="o">.</span><span class="n">tobytes</span><span class="p">(),</span> <span class="n">mon_v2</span><span class="o">.</span><span class="n">tobytes</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mon_hash</span> <span class="o">=</span> <span class="n">mon_v1</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">known_varidx</span> <span class="o">=</span> <span class="n">canonical_mon_to_idx</span><span class="p">[</span><span class="n">mon_hash</span><span class="p">]</span>
+                <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">known_varidx</span>
+                <span class="n">momentmatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">known_varidx</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">canonical_mon_to_idx</span><span class="p">[</span><span class="n">mon_hash</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                <span class="n">momentmatrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                <span class="n">momentmatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">varidx</span>
+                <span class="n">varidx</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">momentmatrix</span><span class="p">,</span> <span class="n">canonical_mon_to_idx</span></div>
+
+
+<span class="k">def</span> <span class="nf">to_symbol</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+              <span class="n">names</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+              <span class="n">commutative</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert a monomial to a SymPy expression.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mon : numpy.ndarray</span>
+<span class="sd">        Monomial written as a 2D array.</span>
+<span class="sd">    names : numpy.ndarray</span>
+<span class="sd">        The names of the parties in the monomial.</span>
+<span class="sd">    commutative : bool, optional</span>
+<span class="sd">        If the operators in the monomial are commutative. By default</span>
+<span class="sd">        ``False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sp.core.symbol.Symbol</span>
+<span class="sd">        The monomial as a SymPy expression.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; to_symbol(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]), [&quot;A&quot;, &quot;B&quot;])</span>
+<span class="sd">    A_1_0_1*B_1_1_2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">mon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sympy</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">One</span>
+        <span class="k">for</span> <span class="n">mon</span> <span class="ow">in</span> <span class="n">mon</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">names</span><span class="p">[</span><span class="n">mon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">+</span>
+                            <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mon</span><span class="o">.</span><span class="n">tolist</span><span class="p">()][</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="n">res</span> <span class="o">*=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">commutative</span><span class="o">=</span><span class="n">commutative</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># FUNCTIONS FOR INFLATIONS                                                    #</span>
+<span class="c1">###############################################################################</span>
+<div class="viewcode-block" id="apply_inflation_symmetries"><a class="viewcode-back" href="../../../build.html#inflation.sdp.quantum_tools.apply_inflation_symmetries">[docs]</a><span class="k">def</span> <span class="nf">apply_inflation_symmetries</span><span class="p">(</span><span class="n">momentmatrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                               <span class="n">inflation_symmetries</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                               <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+                               <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                          <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+                                          <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Applies the inflation symmetries, in the form of permutations of the</span>
+<span class="sd">    rows and colums of a moment matrix, to the moment matrix.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    momentmatrix : numpy.ndarray</span>
+<span class="sd">        The moment matrix.</span>
+<span class="sd">    inflation_symmetries : numpy.ndarray</span>
+<span class="sd">        Two-dimensional array where each row represents a permutation of</span>
+<span class="sd">        the rows and columns of the moment matrix.</span>
+<span class="sd">    verbose : bool</span>
+<span class="sd">        Whether information about progress is printed out.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sym_mm : numpy.ndarray</span>
+<span class="sd">        The symmetrized version of the moment matrix, where each cell is</span>
+<span class="sd">        the lowest index of all the Monomials that are equivalent to that</span>
+<span class="sd">        in the corresponding cell in momentmatrix.</span>
+<span class="sd">    orbits : Dict[int, int]</span>
+<span class="sd">        The map from unsymmetrized indices in momentmatrix to their</span>
+<span class="sd">        symmetrized counterparts in sym_mm.</span>
+<span class="sd">    repr_values: numpy.ndarray</span>
+<span class="sd">        An array of unique representative former (unsymmetrized) indices.</span>
+<span class="sd">        This is later used for hashing indices and making sanitization much</span>
+<span class="sd">        faster.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">max_value</span> <span class="o">=</span> <span class="n">momentmatrix</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">inflation_symmetries</span><span class="p">):</span>
+        <span class="n">repr_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">max_value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">orbits</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">repr_values</span><span class="p">,</span> <span class="n">repr_values</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">momentmatrix</span><span class="p">,</span> <span class="n">orbits</span><span class="p">,</span> <span class="n">repr_values</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">old_indices</span><span class="p">,</span> <span class="n">flat_pos</span><span class="p">,</span> <span class="n">inverse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">momentmatrix</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+                                                   <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                   <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">inverse</span>           <span class="o">=</span> <span class="n">inverse</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">momentmatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">prev_unique_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">new_unique_count</span>  <span class="o">=</span> <span class="n">old_indices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">new_indices</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">new_unique_count</span><span class="p">)</span>
+        <span class="n">inversion_tracker</span> <span class="o">=</span> <span class="n">new_indices</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">repr_values</span> <span class="o">=</span> <span class="n">old_indices</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1"># We minimize under every element of the inflation symmetry group.</span>
+        <span class="k">for</span> <span class="n">permutation</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">inflation_symmetries</span><span class="p">,</span>
+                                <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Applying symmetries      &quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">prev_unique_count</span> <span class="o">&gt;</span> <span class="n">new_unique_count</span><span class="p">:</span>
+                <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">flat_pos</span><span class="p">,</span> <span class="n">momentmatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">prev_unique_count</span> <span class="o">=</span> <span class="n">new_unique_count</span>
+            <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">new_indices</span><span class="p">,</span> <span class="n">inverse</span><span class="p">[(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)]),</span> \
+                <span class="p">(</span><span class="s2">&quot;The representatives of the symmetrized indices are &quot;</span> <span class="o">+</span>
+                 <span class="s2">&quot;not minimal.&quot;</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">new_indices</span><span class="p">,</span>
+                       <span class="n">inverse</span><span class="p">[(</span><span class="n">permutation</span><span class="p">[</span><span class="n">rows</span><span class="p">],</span> <span class="n">permutation</span><span class="p">[</span><span class="n">cols</span><span class="p">])],</span>
+                       <span class="n">out</span><span class="o">=</span><span class="n">new_indices</span><span class="p">)</span>
+            <span class="n">unique_values</span><span class="p">,</span> <span class="n">unique_values_pos</span><span class="p">,</span> <span class="n">unique_values_inv</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">new_indices</span><span class="p">,</span>
+                          <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">new_unique_count</span> <span class="o">=</span> <span class="n">unique_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">prev_unique_count</span> <span class="o">&gt;</span> <span class="n">new_unique_count</span><span class="p">:</span>
+                <span class="n">inverse</span>           <span class="o">=</span> <span class="n">unique_values_inv</span><span class="p">[</span><span class="n">inverse</span><span class="p">]</span>
+                <span class="n">flat_pos</span>          <span class="o">=</span> <span class="n">flat_pos</span><span class="p">[</span><span class="n">unique_values_pos</span><span class="p">]</span>
+                <span class="n">repr_values</span>       <span class="o">=</span> <span class="n">repr_values</span><span class="p">[</span><span class="n">unique_values_pos</span><span class="p">]</span>
+                <span class="n">inversion_tracker</span> <span class="o">=</span> <span class="n">unique_values_inv</span><span class="p">[</span><span class="n">inversion_tracker</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">unique_values_pos</span><span class="p">,</span> <span class="n">unique_values_inv</span>
+                <span class="n">new_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">new_unique_count</span><span class="p">)</span>
+        <span class="n">prior_min_value</span> <span class="o">=</span> <span class="n">old_indices</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">old_indices</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">new_indices</span> <span class="o">+=</span> <span class="n">prior_min_value</span>
+        <span class="n">orbits</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">old_indices</span><span class="p">,</span> <span class="n">new_indices</span><span class="p">[</span><span class="n">inversion_tracker</span><span class="p">]))</span>
+        <span class="n">sym_mm</span> <span class="o">=</span> <span class="n">new_indices</span><span class="p">[</span><span class="n">inverse</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">sym_mm</span><span class="p">,</span> <span class="n">orbits</span><span class="p">,</span> <span class="n">repr_values</span></div>
+
+
+<span class="k">def</span> <span class="nf">commutation_relations</span><span class="p">(</span><span class="n">infSDP</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a user-friendly representation of the commutation relations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    infSDP : inflation.InflationSDP</span>
+<span class="sd">        The SDP object for which the commutation relations are to be extracted.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[sympy.core.expr.Expr]</span>
+<span class="sd">        The list of commutators (given as sympy Expressions) that are nonzero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+    <span class="n">nonzero</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;NonZeroExpressions&quot;</span><span class="p">,</span> <span class="s2">&quot;exprs&quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lexorder</span> <span class="o">=</span> <span class="n">infSDP</span><span class="o">.</span><span class="n">_lexorder</span>
+    <span class="n">lexorder_len</span> <span class="o">=</span> <span class="n">lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lexorder_len</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">lexorder_len</span><span class="p">):</span>
+            <span class="c1"># Most operators commute as they belong to different parties,</span>
+            <span class="k">if</span> <span class="n">infSDP</span><span class="o">.</span><span class="n">_notcomm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">op1_name</span><span class="p">,</span> <span class="n">op2_name</span><span class="p">)</span> <span class="o">=</span> <span class="n">to_name</span><span class="p">(</span><span class="n">lexorder</span><span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]],</span>
+                                               <span class="n">infSDP</span><span class="o">.</span><span class="n">names</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+                <span class="n">op1</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">op1_name</span><span class="p">,</span> <span class="n">commutative</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">op2</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">op2_name</span><span class="p">,</span> <span class="n">commutative</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">infSDP</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">op1</span> <span class="o">*</span> <span class="n">op2</span> <span class="o">-</span> <span class="n">op2</span> <span class="o">*</span> <span class="n">op1</span><span class="p">)</span><span class="si">}</span><span class="s2"> ≠ 0.&quot;</span><span class="p">)</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op1</span> <span class="o">*</span> <span class="n">op2</span> <span class="o">-</span> <span class="n">op2</span> <span class="o">*</span> <span class="n">op1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">nonzero</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="construct_normalization_eqs"><a class="viewcode-back" href="../../../build.html#inflation.sdp.quantum_tools.construct_normalization_eqs">[docs]</a><span class="k">def</span> <span class="nf">construct_normalization_eqs</span><span class="p">(</span><span class="n">column_equalities</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]],</span>
+                                <span class="n">momentmatrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]:</span>
+    <span class="sd">&quot;&quot;&quot;Given a list of column level normalization equalities and the moment</span>
+<span class="sd">    matrix, this function computes the implicit normalization equalities</span>
+<span class="sd">    between matrix elements. Column-level and monomial-level equalities share</span>
+<span class="sd">    nearly the same format, they differ merely in whether integers pertain to</span>
+<span class="sd">    column indices or the indices that represent the unique moment matrix</span>
+<span class="sd">    elements.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    column_equalities : List[Tuple[int, List[int]]]</span>
+<span class="sd">        The list of equalities between columns in the moment matrix, in the</span>
+<span class="sd">        form of tuples whose first element is the index of one of the columns,</span>
+<span class="sd">        and the second element is the list of indices of the columns whose</span>
+<span class="sd">        corresponding operators sum up to the operator corresponding to the</span>
+<span class="sd">        first element.</span>
+<span class="sd">    momentmatrix : numpy.ndarray</span>
+<span class="sd">        The moment matrix of which the identification between variables shall</span>
+<span class="sd">        be computed.</span>
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        Verbosity level. By default 0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[Tuple[int, List[int]]]</span>
+<span class="sd">        The equalities between variables. For each tuple, the first element is</span>
+<span class="sd">        the index of one of the variables in ``momentmatrix``, and the second</span>
+<span class="sd">        is the list of variables whose sum corresponds to the first.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">equalities</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">seen_already</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">nof_seen_already</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seen_already</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">equality</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">column_equalities</span><span class="p">,</span>
+                         <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">,</span>
+                         <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Imposing normalization   &quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">momentmatrix</span><span class="p">)):</span>
+            <span class="p">(</span><span class="n">normalization_col</span><span class="p">,</span> <span class="n">summation_cols</span><span class="p">)</span> <span class="o">=</span> <span class="n">equality</span>
+            <span class="n">norm_idx</span>       <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">normalization_col</span><span class="p">]</span>
+            <span class="n">summation_idxs</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">summation_cols</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">summation_idxs</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="n">summation_idxs</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+                <span class="n">seen_already</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">summation_idxs</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seen_already</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">nof_seen_already</span><span class="p">:</span>
+                    <span class="n">equalities</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">norm_idx</span><span class="p">,</span> <span class="n">summation_idxs</span><span class="o">.</span><span class="n">tolist</span><span class="p">()))</span>
+                    <span class="n">nof_seen_already</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">del</span> <span class="n">seen_already</span>
+    <span class="k">return</span> <span class="n">equalities</span></div>
+
+
+<span class="k">def</span> <span class="nf">expand_moment_normalisation</span><span class="p">(</span><span class="n">moment</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">outcome_cardinalities</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                                <span class="n">skip_party</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Helper function that identifies operators within the monomial that</span>
+<span class="sd">    correspond to the last outcome, and uses normalisation to produce</span>
+<span class="sd">    an equality constraint with other monomials. The constraint is expressed as</span>
+<span class="sd">    `(i, (i1, i2, i3, ...))`, where the moment corresponding to index `i` is</span>
+<span class="sd">    equal to the sum of moments corresponding to indices</span>
+<span class="sd">    `(i1, i2, i3, ...)`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    moment : numpy.ndarray</span>
+<span class="sd">        Moment encoded as a 2D array.</span>
+<span class="sd">    outcome_cardinalities : List[int]</span>
+<span class="sd">        List of the cardinalities for the outcomes of the parties.</span>
+<span class="sd">    skip_party : List[bool]</span>
+<span class="sd">        Whether each of the parties is considered for normalisation or not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">eqs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">operator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">moment</span><span class="p">):</span>
+        <span class="n">party</span> <span class="o">=</span> <span class="n">operator</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="c1"># Operators that are involved in normalization equalities are</span>
+        <span class="c1"># those which are unpacked in non-network scenarios</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">skip_party</span><span class="p">[</span><span class="n">party</span><span class="p">]</span>
+            <span class="ow">and</span> <span class="n">operator</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">outcome_cardinalities</span><span class="p">[</span><span class="n">party</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">operator_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="n">moment</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="n">moment</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):]</span>
+            <span class="n">moments</span> <span class="o">=</span> <span class="p">[</span><span class="n">moment</span><span class="p">]</span>
+            <span class="n">true_cardinality</span> <span class="o">=</span> <span class="n">outcome_cardinalities</span><span class="p">[</span><span class="n">party</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">outcome</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">true_cardinality</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">variant_operator</span>        <span class="o">=</span> <span class="n">operator_2d</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">variant_operator</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">outcome</span>
+                <span class="n">variant_mon</span>             <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">prefix</span><span class="p">,</span>
+                                                     <span class="n">variant_operator</span><span class="p">,</span>
+                                                     <span class="n">suffix</span><span class="p">))</span>
+                <span class="n">moments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant_mon</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span> <span class="o">==</span> <span class="n">true_cardinality</span><span class="p">:</span>
+                <span class="n">normalization_mon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">prefix</span><span class="p">,</span> <span class="n">suffix</span><span class="p">))</span>
+                <span class="n">eqs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">normalization_mon</span><span class="p">,</span> <span class="n">moments</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">eqs</span>
+
+
+<div class="viewcode-block" id="format_permutations"><a class="viewcode-back" href="../../../build.html#inflation.sdp.quantum_tools.format_permutations">[docs]</a><span class="k">def</span> <span class="nf">format_permutations</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Permutations of inflation indices must leave the integers 0,</span>
+<span class="sd">    corresponding to sources not being measured by the operator, invariant.</span>
+<span class="sd">    In order to achieve this, this function shifts a permutation of sources</span>
+<span class="sd">    by 1 and prepends it with the integer 0.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array : numpy.ndarray</span>
+<span class="sd">        2-d array where each row is a permutations.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        The processed list of permutations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">source_permutation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">padding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">source_permutation</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">padding</span><span class="p">,</span> <span class="n">source_permutation</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="generate_operators"><a class="viewcode-back" href="../../../build.html#inflation.sdp.quantum_tools.generate_operators">[docs]</a><span class="k">def</span> <span class="nf">generate_operators</span><span class="p">(</span><span class="n">outs_per_input</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                       <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">]]]:</span>
+    <span class="sd">&quot;&quot;&quot;Generates the list of ``sympy.core.symbol.Symbol`` variables</span>
+<span class="sd">    representing the measurements for a given party. The variables are treated</span>
+<span class="sd">    as non-commuting. This code is adapted from `ncpol2sdpa</span>
+<span class="sd">    &lt;https://github.com/peterwittek/ncpol2sdpa/&gt;`_.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    outs_per_input : List[int]</span>
+<span class="sd">        The number of outcomes of each measurement for a given party</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name to be associated to the party</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        The list of Sympy operators</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ops_per_input</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">outs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">outs_per_input</span><span class="p">):</span>
+        <span class="n">ops_per_output_per_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">outs</span><span class="p">):</span>
+            <span class="n">ops_per_output_per_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">o</span><span class="p">),</span>
+                             <span class="n">commutative</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">ops_per_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ops_per_output_per_input</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ops_per_input</span></div>
+
+
+<span class="k">def</span> <span class="nf">lexicographic_order</span><span class="p">(</span><span class="n">infSDP</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return a user-friendly representation of the lexicographic order.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    infSDP : inflation.InflationSDP</span>
+<span class="sd">        The SDP object for which the commutation relations are to be extracted.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict[str, int]</span>
+<span class="sd">        The lexicographic order as a dictionary where keys are the monomials in</span>
+<span class="sd">        the problem and the values are their positions in the lexicographic</span>
+<span class="sd">        ordering.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lexorder</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">infSDP</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">):</span>
+        <span class="n">lexorder</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="n">to_name</span><span class="p">([</span><span class="n">op</span><span class="p">],</span> <span class="n">infSDP</span><span class="o">.</span><span class="n">names</span><span class="p">),</span>
+                              <span class="n">commutative</span><span class="o">=</span><span class="kc">False</span><span class="p">)]</span> <span class="o">=</span> <span class="n">i</span>
+    <span class="k">return</span> <span class="n">lexorder</span>
+
+
+<span class="k">def</span> <span class="nf">party_physical_monomials</span><span class="p">(</span><span class="n">hypergraph</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                             <span class="n">inflevels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                             <span class="n">party</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                             <span class="n">max_monomial_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                             <span class="n">settings_per_party</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                             <span class="n">outputs_per_party</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                             <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+                             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Generate all possible non-negative monomials for a given party composed</span>
+<span class="sd">    of at most ``max_monomial_length`` operators.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypergraph : numpy.ndarray</span>
+<span class="sd">         Hypergraph of the scenario.</span>
+<span class="sd">    inflevels : np.ndarray</span>
+<span class="sd">        The number of copies of each source in the inflated scenario.</span>
+<span class="sd">    party : int</span>
+<span class="sd">        Party index. NOTE: starting from 0</span>
+<span class="sd">    max_monomial_length : int</span>
+<span class="sd">        The maximum number of operators in the monomial.</span>
+<span class="sd">    settings_per_party : List[int]</span>
+<span class="sd">        List containing the cardinality of the input/measurement setting</span>
+<span class="sd">        of each party.</span>
+<span class="sd">    outputs_per_party : List[int]</span>
+<span class="sd">        List containing the cardinality of the output/measurement outcome</span>
+<span class="sd">        of each party.</span>
+<span class="sd">    lexorder : numpy.ndarray</span>
+<span class="sd">        A matrix storing the lexicographic order of operators. If an operator</span>
+<span class="sd">        has lexicographic rank `i`, then it is placed at the ``i``-th row of</span>
+<span class="sd">        lexorder.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[numpy.ndarray]</span>
+<span class="sd">        An array containing all possible positive monomials of the given</span>
+<span class="sd">        length.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">hypergraph</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypergraph</span><span class="p">)</span>
+    <span class="n">nr_sources</span> <span class="o">=</span> <span class="n">hypergraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">relevant_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">hypergraph</span><span class="p">[:,</span> <span class="n">party</span><span class="p">])</span>
+    <span class="n">relevant_inflevels</span> <span class="o">=</span> <span class="n">inflevels</span><span class="p">[</span><span class="n">relevant_sources</span><span class="p">]</span>
+
+    <span class="k">assert</span> <span class="n">max_monomial_length</span> <span class="o">&lt;=</span> <span class="nb">min</span><span class="p">(</span><span class="n">relevant_inflevels</span><span class="p">),</span> \
+        <span class="p">(</span><span class="s2">&quot;You cannot have a longer list of commuting operators&quot;</span> <span class="o">+</span>
+         <span class="s2">&quot; than the minimum inflation level of said part.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># The strategy is building an initial non-negative monomial and apply all</span>
+    <span class="c1"># inflation symmetries</span>
+    <span class="n">initial_monomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">max_monomial_length</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">nr_sources</span> <span class="o">+</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">mon_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_monomial_length</span><span class="p">):</span>
+        <span class="n">initial_monomial</span><span class="p">[</span><span class="n">mon_idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>    <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">party</span>
+        <span class="n">initial_monomial</span><span class="p">[</span><span class="n">mon_idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypergraph</span><span class="p">[:,</span> <span class="n">party</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">mon_idx</span><span class="p">)</span>
+
+    <span class="n">inflation_equivalents</span> <span class="o">=</span> <span class="p">{</span><span class="n">initial_monomial</span><span class="o">.</span><span class="n">tobytes</span><span class="p">():</span> <span class="n">initial_monomial</span><span class="p">}</span>
+
+    <span class="n">all_permutations_per_relevant_source</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">format_permutations</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">permutations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">inflevel</span><span class="p">))))</span>
+        <span class="k">for</span> <span class="n">inflevel</span> <span class="ow">in</span> <span class="n">relevant_inflevels</span><span class="o">.</span><span class="n">flat</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">permutation</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">all_permutations_per_relevant_source</span><span class="p">):</span>
+        <span class="n">permuted</span> <span class="o">=</span> <span class="n">initial_monomial</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">perm_idx</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">relevant_sources</span><span class="o">.</span><span class="n">flat</span><span class="p">):</span>
+            <span class="n">permuted</span> <span class="o">=</span> <span class="n">mon_lexsorted</span><span class="p">(</span><span class="n">apply_source_perm</span><span class="p">(</span><span class="n">permuted</span><span class="p">,</span>
+                                                       <span class="n">source</span><span class="p">,</span>
+                                                       <span class="n">permutation</span><span class="p">[</span><span class="n">perm_idx</span><span class="p">]),</span>
+                                     <span class="n">lexorder</span><span class="p">)</span>
+        <span class="n">inflation_equivalents</span><span class="p">[</span><span class="n">permuted</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()]</span> <span class="o">=</span> <span class="n">permuted</span>
+    <span class="n">inflation_equivalents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">inflation_equivalents</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+    <span class="n">new_monomials</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Insert all combinations of inputs and outputs</span>
+    <span class="k">for</span> <span class="n">input_slice</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">settings_per_party</span><span class="p">[</span><span class="n">party</span><span class="p">])</span>
+                                 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_monomial_length</span><span class="p">)]):</span>
+        <span class="k">for</span> <span class="n">output_slice</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">outputs_per_party</span><span class="p">[</span><span class="n">party</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                                      <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_monomial_length</span><span class="p">)]):</span>
+            <span class="k">for</span> <span class="n">new_mon_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inflation_equivalents</span><span class="p">)):</span>
+                <span class="n">new_monomial</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">inflation_equivalents</span><span class="p">[</span><span class="n">new_mon_idx</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">mon_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_monomial_length</span><span class="p">):</span>
+                    <span class="n">new_monomial</span><span class="p">[</span><span class="n">mon_idx</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_slice</span><span class="p">[</span><span class="n">mon_idx</span><span class="p">]</span>
+                    <span class="n">new_monomial</span><span class="p">[</span><span class="n">mon_idx</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_slice</span><span class="p">[</span><span class="n">mon_idx</span><span class="p">]</span>
+                <span class="n">new_monomials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_monomial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_monomials</span>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># OTHER FUNCTIONS                                                             #</span>
+<span class="c1">###############################################################################</span>
+<span class="k">def</span> <span class="nf">clean_coefficients</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+                       <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
+                       <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Clean the list of coefficients in a certificate.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cert : Dict[str, float]</span>
+<span class="sd">      A dictionary containing as keys the monomials associated to the elements</span>
+<span class="sd">      of the certificate and as values the corresponding coefficients.</span>
+<span class="sd">    chop_tol : float, optional</span>
+<span class="sd">      Coefficients in the dual certificate smaller in absolute value are</span>
+<span class="sd">      set to zero. Defaults to ``1e-10``.</span>
+<span class="sd">    round_decimals : int, optional</span>
+<span class="sd">      Coefficients that are not set to zero are rounded to the number</span>
+<span class="sd">      of decimals specified. Defaults to ``3``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">      The cleaned-up coefficients.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">processed_cert</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">cert</span><span class="p">)</span>
+    <span class="nb">vars</span> <span class="o">=</span> <span class="n">processed_cert</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">processed_cert</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="c1"># Take the biggest one and make it 1</span>
+    <span class="n">normalising_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">chop_tol</span><span class="p">]))</span>
+    <span class="n">coeffs</span> <span class="o">/=</span> <span class="n">normalising_factor</span>
+    <span class="c1"># Set to zero very small coefficients</span>
+    <span class="n">coeffs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">chop_tol</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Round</span>
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">vars</span><span class="p">,</span> <span class="n">coeffs</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">make_numerical</span><span class="p">(</span><span class="n">symbolic_expressions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">Expr</span><span class="p">],</span>
+                   <span class="n">symbols_to_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Replace the symbols in the values of a dictionary by the corresponding</span>
+<span class="sd">    numerical values.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    symbolic_expressions : Dict[Any, sympy.core.expr.Expr]</span>
+<span class="sd">        Dictionary where the values are symbolic expressions of some variables.</span>
+<span class="sd">    symbols_to_values : Dict[sympy.core.symbol.Symbol, float]</span>
+<span class="sd">        Correspondence of the variables in the expressions and their associated</span>
+<span class="sd">        numerical values.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict[Any, float]</span>
+<span class="sd">        The dictionary with samy keys and evaluated expressions as values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">numeric_values</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">symbolic_expressions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">numeric_values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="n">subs</span><span class="o">=</span><span class="n">symbols_to_values</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">numeric_values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numeric_values</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

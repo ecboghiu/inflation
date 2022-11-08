@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial &mdash; CausalInflation 0.1 documentation</title>
+  <title>Tutorial &mdash; Inflation 0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
@@ -34,7 +34,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -77,7 +77,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -375,8 +375,8 @@ div.rendered_html tbody tr:hover {
 </style>
 <section id="Tutorial">
 <h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this heading"></a></h1>
-<p>The CausalInflation package contains implementations of the inflation technique for causal compatibility. Currently it only supports the quantum inflation method of [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>]. In the future, we plan adding support to the inflation hierarchy for classical causal compatibility of [<a class="reference external" href="https://www.arxiv.org/abs/1609.00672">2</a>] and dedicated parts for analysing theory-independent correlations. The implementation of CausalInflation follows an object-oriented
-design. The workflow comprises of three main steps:</p>
+<p>The Inflation package contains implementations of the inflation technique for causal compatibility. Currently it only supports the quantum inflation method of [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>]. In the future, we plan adding support to the inflation hierarchy for classical causal compatibility of [<a class="reference external" href="https://www.arxiv.org/abs/1609.00672">2</a>] and dedicated parts for analysing theory-independent correlations. The implementation of Inflation follows an object-oriented design. The
+workflow comprises of three main steps:</p>
 <ul class="simple">
 <li><p>Encode the causal scenario and desired inflation as an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>.</p></li>
 <li><p>Generate the associated optimization problem for classical, quantum, or theory-independent inflation (currently, only <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code> is available).</p></li>
@@ -389,14 +389,14 @@ design. The workflow comprises of three main steps:</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">inflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 </pre></div>
 </div>
 </div>
 <section id="Encoding-the-inflation-problem">
 <h2>Encoding the inflation problem<a class="headerlink" href="#Encoding-the-inflation-problem" title="Permalink to this heading"></a></h2>
-<p>The first object of interest is <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationproblem.html#causalinflation.InflationProblem">InflationProblem</a>. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform.</p>
+<p>The first object of interest is <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationproblem.html#inflation.InflationProblem">InflationProblem</a>. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform.</p>
 <section id="Basics-of-causal-diagrams">
 <h3>Basics of causal diagrams<a class="headerlink" href="#Basics-of-causal-diagrams" title="Permalink to this heading"></a></h3>
 <p>Causal relationships are encoded through a Bayesian Directed Acyclic Graph, or DAG for short. The nodes of the graph represent random variables, which can be either observable (visible) or unobservable (hidden). Directed arrows encode causal influences between nodes. Arrows point from parent nodes to the nodes causally influenced by them, called children nodes. The acyclicity property avoids the presence of causal loops.</p>
@@ -407,7 +407,7 @@ systems. Arrows going into a quantum node represent controlling the correspondin
 <h3>The quantum tripartite line and an inflation<a class="headerlink" href="#The-quantum-tripartite-line-and-an-inflation" title="Permalink to this heading"></a></h3>
 <p>As an example, let us consider the quantum tripartite line, or “quantum bilocality scenario” [<a class="reference external" href="https://arxiv.org/abs/1112.4502">3</a>], which corresponds to the scenario where three space-like separated parties (<span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>) measure two quantum systems <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> that never interacted in the past. The subindex of the quantum states indicates which parties have access to and can measure that state. This is a simple scenario where entanglement
 swapping [<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">4</a>] can be performed, which is at the heart of the quantum teleportation protocol [<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">5</a>]. The corresponding DAG is:</p>
-<center><p><img alt="f7a8cad7c6564423a21361ccccfac4ba" class="no-scaled-link" src="_images/bilocal.png" style="width: 400px;" /></p>
+<center><p><img alt="a8b19d4dd3154496a41a6c2f456d8fe4" class="no-scaled-link" src="_images/bilocal.png" style="width: 400px;" /></p>
 </center><p>We have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two hidden quantum variables <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> of unbounded dimension denoting the physical systems sent to the parties, and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>. We assume all observed variables have cardinality 2, i.e., <span class="math notranslate nohighlight">\(a,b,c,x,y,z \in \{0, 1\}\)</span>, where lower case denotes specific values that the random variables (in upper case) can take. In this causal scenario,
 correlations are generated by measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span>. Notice that the probability distribution is not conditioned on <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> as they are hidden variables.</p>
 </section>
@@ -415,12 +415,12 @@ correlations are generated by measuring the quantum systems conditioned on the v
 <h3>Quantum causal compatibility and an inflation<a class="headerlink" href="#Quantum-causal-compatibility-and-an-inflation" title="Permalink to this heading"></a></h3>
 <p>One of the fundamental questions to ask is whether a given a probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the quantum sources <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The quantum inflation technique is one technique that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario
 where we take two copies of each source, as in the following figure:</p>
-<center><p><img alt="02b39b8ea22941bfb2102ff19c6c98bf" class="no-scaled-link" src="_images/bilocalityinflation.png" style="width: 400px;" /></p>
+<center><p><img alt="4130d4ce6a0741229c8ab64a9799cd24" class="no-scaled-link" src="_images/bilocalityinflation.png" style="width: 400px;" /></p>
 </center><p>Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the NPA hierarchy [<a class="reference external" href="https://arxiv.org/abs/0803.4290">6</a>]. The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., <span class="math notranslate nohighlight">\(\rho_{AB}{=}\rho_{AB}^1{=}\rho_{AB}^2\)</span>. If the SDP is infeasible, then we can conclude that
 the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>].</p>
 <section id="Creating-an-instance-of-InflationProblem">
 <h4>Creating an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code><a class="headerlink" href="#Creating-an-instance-of-InflationProblem" title="Permalink to this heading"></a></h4>
-<p>The first step in using CausalInflation is encoding the scenario to be analyzed. This is done by providing a description of the target DAG, as well as the cardinalities of its visible variables (and optionally a number of possible measurement settings for each one). Also, one must specify the inflation that shall be constructed, by providing the amount of copies of each of the latent variables in the DAG that the inflation will contain. All this information is passed to an instance of
+<p>The first step in using Inflation is encoding the scenario to be analyzed. This is done by providing a description of the target DAG, as well as the cardinalities of its visible variables (and optionally a number of possible measurement settings for each one). Also, one must specify the inflation that shall be constructed, by providing the amount of copies of each of the latent variables in the DAG that the inflation will contain. All this information is passed to an instance of
 <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> as follows:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -434,15 +434,14 @@ the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</
 </pre></div>
 </div>
 </div>
-<p>The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the corresponding children nodes. In <code class="docutils literal notranslate"><span class="pre">outcomes_per_party</span></code> and <code class="docutils literal notranslate"><span class="pre">settings_per_party</span></code> we specify the cardinalities of visible nodes. The paremeter <code class="docutils literal notranslate"><span class="pre">inflation_level_per_source</span></code> determines how many copies of the quantum sources we consider in the inflated graph.</p>
-<p>Internally, CausalInflation handles scenarios as networks, which are bipartite DAGs with one layer of visible nodes (the outcomes) and another layer of both visible (the settings) and latent (the sources) nodes. If the DAG contains visible-to-visible connections (such as in the instrumental scenario [<a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">7</a>]), <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> automatically finds an equivalent network and keeps track of the correspondence when setting values and bounds.</p>
+<p>The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the corresponding children nodes. In <code class="docutils literal notranslate"><span class="pre">outcomes_per_party</span></code> and <code class="docutils literal notranslate"><span class="pre">settings_per_party</span></code> we specify the cardinalities of visible nodes. The parameter <code class="docutils literal notranslate"><span class="pre">inflation_level_per_source</span></code> determines how many copies of the quantum sources we consider in the inflated graph.</p>
+<p>Internally, Inflation handles scenarios as networks, which are bipartite DAGs with one layer of visible nodes (the outcomes) and another layer of both visible (the settings) and latent (the sources) nodes. If the DAG contains visible-to-visible connections (such as in the instrumental scenario [<a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">7</a>]), <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> automatically finds an equivalent network and keeps track of the correspondence when setting values and bounds.</p>
 </section>
 </section>
 </section>
 <section id="Generating-the-SDP-relaxation">
 <h2>Generating the SDP relaxation<a class="headerlink" href="#Generating-the-SDP-relaxation" title="Permalink to this heading"></a></h2>
-<p>Once the scenario is set up, the next step is generating the associated characterization of distributions admitting a realization in the inflation. Currently CausalInflation supports the characterization of classical and quantum probability distributions via <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP">InflationSDP</a>, which generates the characterizations as semidefinite programs. It is an object that takes as input an instance of
-<code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
+<p>Once the scenario is set up, the next step is generating the associated characterization of distributions admitting a realization in the inflation. Currently Inflation supports the characterization of classical and quantum probability distributions via <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP">InflationSDP</a>, which generates the characterizations as semidefinite programs. It is an object that takes as input an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -452,7 +451,7 @@ the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</
 </div>
 </div>
 <p>By default, the characterization is assumed to be of quantum correlations. Restricting to classical correlations is possible by passing the argument <code class="docutils literal notranslate"><span class="pre">commuting=True</span></code> to <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>.</p>
-<p>The first main method, <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.generate_relaxation">InflationSDP.generate_relaxation()</a> generates the SDP relaxation of the chosen inflation.</p>
+<p>The first main method, <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.generate_relaxation">InflationSDP.generate_relaxation()</a> generates the SDP relaxation of the chosen inflation.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -469,7 +468,7 @@ resources).</p>
 <p>If we have a specific distribution in mind, we can test whether such distribution can be generated in a certain causal structure. We can consider for the example the 2PR distribution, which is defined as</p>
 <div class="math notranslate nohighlight">
 \[P_{\text{2PR}}(abc|xyz) := \frac{1+ (-1)^{a+b+c+xy+yz}}{8}\]</div>
-<p>and it is known to be incompatible with the quantum tripartite line scenario. We impose the corresponding constraints on the semidefinite program with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.set_distribution">InflationSDP.set_distribution</a> and then we attempt to solve the program:</p>
+<p>and it is known to be incompatible with the quantum tripartite line scenario. We impose the corresponding constraints on the semidefinite program with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.set_distribution">InflationSDP.set_distribution</a> and then we attempt to solve the program:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -495,11 +494,11 @@ resources).</p>
 </pre></div></div>
 </div>
 <p>The problem status is reported as infeasible, therefore this serves as a proof that the 2PR distribution cannot be generated by measuring two independent quantum states, <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>, in the tripartite line scenario.</p>
-<p>We can also export the problem with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.write_to_file">InflationSDP.write_to_file()</a> method and run it with another solver. Currently, supported formats are <code class="docutils literal notranslate"><span class="pre">.mat</span></code> for MATLAB, <code class="docutils literal notranslate"><span class="pre">.dat-s</span></code> for various solvers and platforms (for instance, <a class="reference external" href="https://yalmip.github.io">Yalmip</a>), and <code class="docutils literal notranslate"><span class="pre">.csv</span></code> for a human-readable output.</p>
+<p>We can also export the problem with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.write_to_file">InflationSDP.write_to_file()</a> method and run it with another solver. Currently, supported formats are <code class="docutils literal notranslate"><span class="pre">.mat</span></code> for MATLAB, <code class="docutils literal notranslate"><span class="pre">.dat-s</span></code> for various solvers and platforms (for instance, <a class="reference external" href="https://yalmip.github.io">Yalmip</a>), and <code class="docutils literal notranslate"><span class="pre">.csv</span></code> for a human-readable output.</p>
 </section>
 <section id="Running-an-optimisation-problem">
 <h2>Running an optimisation problem<a class="headerlink" href="#Running-an-optimisation-problem" title="Permalink to this heading"></a></h2>
-<p>CausalInflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:</p>
+<p>Inflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:</p>
 <div class="math notranslate nohighlight">
 \[\text{Mermin} = \langle A_1 B_0 C_0 \rangle +  \langle A_0 B_1 C_0 \rangle +  \langle A_0 B_0 C_1 \rangle -  \langle A_1 B_1 C_1 \rangle\]</div>
 <p>over the tripartite line scenario:</p>
