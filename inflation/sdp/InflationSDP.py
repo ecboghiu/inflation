@@ -1820,7 +1820,7 @@ class InflationSDP(object):
                                                             [0, -2, -1],
                                                     axis=1))
 
-    def _from_2dndarray(self, array2d: np.ndarray) -> None:
+    def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
         """Obtains the bytes representation of an array. The library uses this
         representation as hashes for the corresponding monomials.
 
