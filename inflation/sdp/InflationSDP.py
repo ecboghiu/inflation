@@ -14,6 +14,7 @@ from itertools import chain, count, product, permutations, repeat
 from operator import itemgetter
 from numbers import Real
 from scipy.sparse import lil_matrix
+from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
@@ -42,11 +43,6 @@ from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
 from ..utils import flatten
-
-try:
-    from tqdm import tqdm
-except ImportError:
-    from ..utils import blank_tqdm as tqdm
 
 
 class InflationSDP(object):
@@ -92,11 +88,6 @@ class InflationSDP(object):
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
         if self.verbose > 1:
             print(self.InflationProblem)
-        if self.verbose > 0:
-            try:
-                import tqdm
-            except ImportError:
-                warn("Install the tqdm package to see progress bars.")
 
         self.nr_parties = len(self.names)
         self.nr_sources = self.InflationProblem.nr_sources

@@ -6,7 +6,7 @@ with open("VERSION.txt", "r") as f:
 setup(
     name="inflation",
     version=__version__,
-    install_requires=["numpy", "sympy", "scipy", "numba", "mosek"],
+    install_requires=["numpy", "sympy", "scipy", "numba", "mosek", "tqdm"],
     extras_require={
         "docs": ["nbsphinx", "m2r2", "sphinx_rtd_theme", "sphinx_copybutton"]
     },

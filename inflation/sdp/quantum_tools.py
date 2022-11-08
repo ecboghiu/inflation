@@ -8,6 +8,7 @@ import sympy
 
 from copy import deepcopy
 from itertools import permutations, product, combinations_with_replacement
+from tqdm import tqdm
 from typing import Any, Dict, List, Tuple
 
 from .fast_npa import (apply_source_perm,
@@ -16,11 +17,6 @@ from .fast_npa import (apply_source_perm,
                        mon_lexsorted,
                        to_canonical,
                        to_name)
-
-try:
-    from tqdm import tqdm
-except ImportError:
-    from ..utils import blank_tqdm as tqdm
 
 
 ###############################################################################
