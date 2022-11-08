@@ -524,9 +524,12 @@ def party_physical_monomials(hypergraph: np.ndarray,
     hypergraph = np.asarray(hypergraph)
     nr_sources = hypergraph.shape[0]
 
-    assert max_monomial_length <= min(inflevels), \
+    relevant_sources = np.flatnonzero(hypergraph[:, party])
+    inflevels_for_this_party = inflevels[relevant_sources]
+
+    assert max_monomial_length <= min(inflevels_for_this_party), \
         ("You cannot have a longer list of commuting operators" +
-         " than the inflation level.")
+         " than the minimum inflation level of said part.")
 
     # The strategy is building an initial non-negative monomial and apply all
     # inflation symmetries
@@ -538,15 +541,15 @@ def party_physical_monomials(hypergraph: np.ndarray,
 
     inflation_equivalents = {initial_monomial.tobytes(): initial_monomial}
 
-    all_permutations_per_source = [
+    all_permutations_per_relevant_source = [
         format_permutations(list(permutations(range(inflevel))))
-        for inflevel in inflevels.flat]
-    for permutation in product(*all_permutations_per_source):
+        for inflevel in inflevels_for_this_party.flat]
+    for permutation in product(*all_permutations_per_relevant_source):
         permuted = initial_monomial.copy()
-        for source in range(nr_sources):
+        for perm_idx, source in enumerate(relevant_sources.flat):
             permuted = mon_lexsorted(apply_source_perm(permuted,
                                                        source,
-                                                       permutation[source]),
+                                                       permutation[perm_idx]),
                                      lexorder)
         inflation_equivalents[permuted.tobytes()] = permuted
     inflation_equivalents = list(inflation_equivalents.values())
