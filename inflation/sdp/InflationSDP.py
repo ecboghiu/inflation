@@ -1436,7 +1436,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        factor_string : str
+        op_string : str
             String representation of an operator, e.g., ``"B_2_1_3_4"``.
 
         Returns
@@ -1945,7 +1945,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        upperbounds : Union[dict, None]
+        lowerbounds : Union[dict, None]
             Dictionary with keys as moments and values as upper bounds. The
             keys can be either strings, instances of `CompoundMonomial` or
             moments encoded as 2D arrays.
