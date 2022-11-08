@@ -238,7 +238,6 @@ class InflationSDP(object):
               list needs to have the identity ``sympy.S.One`` as the first
               element.
         """
-
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
@@ -315,10 +314,10 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_zero:
             self.compmonomial_from_idx[0] = self.Zero
         for (idx, mon) in tqdm(self.symmetrized_corresp.items(),
-                           disable=not self.verbose,
-                           desc="Initializing monomials   "):
+                               disable=not self.verbose,
+                               desc="Initializing monomials   "):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
-        self.idx_for_new_mon = max(self.compmonomial_from_idx.keys()) + 1
+        self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
         self.monomials = list(self.compmonomial_from_idx.values())
         assert all(v == 1 for v in Counter(self.monomials).values()), \
@@ -1221,23 +1220,22 @@ class InflationSDP(object):
                 list_of_atoms.append(factor)
             else:
                 pass
-        raw_tuple_of_atoms = tuple(sorted(list_of_atoms))
-        conjugate_tuple_of_atoms  = tuple(sorted(factor.dagger
-                                          for factor in list_of_atoms))
-        tuple_of_atoms = min(raw_tuple_of_atoms, conjugate_tuple_of_atoms)
-        del raw_tuple_of_atoms, conjugate_tuple_of_atoms
+        atoms = tuple(sorted(list_of_atoms))
+        conjugate = tuple(sorted(factor.dagger for factor in atoms))
+        atoms = min(atoms, conjugate)
+        del conjugate
         try:
-            mon = self.monomial_from_atoms[tuple_of_atoms]
+            mon = self.monomial_from_atoms[atoms]
             return mon
         except KeyError:
-            mon = CompoundMonomial(tuple_of_atoms)
+            mon = CompoundMonomial(atoms)
             try:
-                mon.idx = self.idx_for_new_mon
-                self.idx_for_new_mon += 1
+                mon.idx = self.first_free_idx
+                self.first_free_idx += 1
             except AttributeError:
                 pass
-            self.monomial_from_atoms[tuple_of_atoms] = mon
-            self.monomial_from_name[mon.name]        = mon
+            self.monomial_from_atoms[atoms]   = mon
+            self.monomial_from_name[mon.name] = mon
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
@@ -1793,7 +1791,7 @@ class InflationSDP(object):
                 except KeyError:
                     pass
         self.moment_upperbounds = self._processed_moment_upperbounds
-                
+
 
     ###########################################################################
     # OTHER ROUTINES                                                          #

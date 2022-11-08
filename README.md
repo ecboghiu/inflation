@@ -72,7 +72,6 @@ For more information about the theory and other features, please visit the [docu
 
 Contributions are welcome and appreciated. If you want to contribute, you can read the [contribution guidelines](https://github.com/ecboghiu/inflation/blob/main/CONTRIBUTE.md). You can also read the [documentation](https://ecboghiu.github.io/inflation/) to learn more about how the package works.
 
-
 ## License
 
 Inflation is free open-source software released under [GNU GPL v. 3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).

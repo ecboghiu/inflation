@@ -521,9 +521,9 @@ def party_physical_monomials(hypergraph: np.ndarray,
     nr_sources = hypergraph.shape[0]
 
     relevant_sources = np.flatnonzero(hypergraph[:, party])
-    inflevels_for_this_party = inflevels[relevant_sources]
+    relevant_inflevels = inflevels[relevant_sources]
 
-    assert max_monomial_length <= min(inflevels_for_this_party), \
+    assert max_monomial_length <= min(relevant_inflevels), \
         ("You cannot have a longer list of commuting operators" +
          " than the minimum inflation level of said part.")
 
@@ -539,7 +539,7 @@ def party_physical_monomials(hypergraph: np.ndarray,
 
     all_permutations_per_relevant_source = [
         format_permutations(list(permutations(range(inflevel))))
-        for inflevel in inflevels_for_this_party.flat]
+        for inflevel in relevant_inflevels.flat]
     for permutation in product(*all_permutations_per_relevant_source):
         permuted = initial_monomial.copy()
         for perm_idx, source in enumerate(relevant_sources.flat):

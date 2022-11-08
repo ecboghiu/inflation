@@ -4,11 +4,12 @@ This file contains the functions to send the problems to SDP solvers.
 """
 from __future__ import annotations
 import numpy as np
-from gc import collect
 
+from copy import deepcopy
+from gc import collect
 from scipy.sparse import dok_matrix, eye, lil_matrix
 from sys import stdout
-from typing import List, Dict, Tuple, Any, Iterator
+from typing import List, Dict, Any, Iterator
 
 
 def solveSDP_MosekFUSION(mask_matrices: Dict = None,
@@ -157,8 +158,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     if semiknown_vars is None:
         semiknown_vars = {}
     var_objective = {} if objective is None else objective.copy()
-    var_inequalities = [] if inequalities is None else [i.copy() for i in inequalities]
-    var_equalities   = [] if equalities   is None else [e.copy() for e in equalities]
+    var_inequalities = [] if inequalities is None else deepcopy(inequalities)
+    var_equalities   = [] if equalities   is None else deepcopy(equalities)
 
     Fi = {k: v.asformat('lil', copy=False).astype(float, copy=False)
           for k, v in mask_matrices.items()}
@@ -185,10 +186,10 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         Fi[lam] = -1 * eye(mat_dim).tolil()
         var_objective = {lam: 1}
 
-
     # Calculate c0, the constant part of the var_objective.
     c0 = 0. + float(sum([var_objective[x] * known_vars[x]
-                         for x in set(var_objective).intersection(known_vars)]))
+                         for x in set(var_objective).intersection(known_vars)])
+                    )
 
     # Calculate F0, the constant part of the matrix variable.
     if mask_matrices:
@@ -264,7 +265,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if mask_matrices:
                 Z = M.variable("Z", Domain.inPSDCone(mat_dim))
             if var_inequalities:
-                I = M.variable("I", len(var_inequalities), Domain.greaterThan(0))
+                I = M.variable("I",
+                               len(var_inequalities),
+                               Domain.greaterThan(0))
                 # It seems MOSEK Fusion API does not allow to pick index i
                 # of an expression (A^T I)_i, so we do it manually row by row.
                 A = A.tocsr()
