@@ -4,7 +4,7 @@ import warnings
 from scipy.sparse import lil_matrix
 
 
-from inflation.quantum.sdp_utils import solveSDP_MosekFUSION
+from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
 
 
 class TestMosek(unittest.TestCase):

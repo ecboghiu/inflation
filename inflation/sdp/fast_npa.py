@@ -475,7 +475,7 @@ def apply_source_perm(monomial: np.ndarray,
         The permutation of the copies of the specified source. The format for
         the permutation here is to use indexing starting at one, so the
         permutation must be padded with a leading zero. The function
-        ``inflation.quantum.quantum_tools.format_permutations`` converts
+        ``inflation.sdp.quantum_tools.format_permutations`` converts
         a list of permutations to the necessary format.
 
     Returns
@@ -595,7 +595,7 @@ def nb_lexmon_to_canonical(lexmon: np.ndarray,
         the lexicographic order of an operator.
     notcomm : numpy.ndarray
         Matrix of commutation relations, given in the format specified by
-        `inflation.quantum.fast_npa.commutation_matrix`.
+        `inflation.sdp.fast_npa.commutation_matrix`.
 
     Returns
     -------

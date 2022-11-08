@@ -511,7 +511,7 @@ class TestSDPOutput(unittest.TestCase):
 
 class TestSymmetries(unittest.TestCase):
     def test_apply_symmetries(self):
-        from inflation.quantum.quantum_tools import \
+        from inflation.sdp.quantum_tools import \
                                                 apply_inflation_symmetries
         G = np.array([[0,  1,  2,  3,  4,  5],
                       [6,  7,  8,  9, 10, 11],
@@ -600,7 +600,7 @@ class TestConstraintGeneration(unittest.TestCase):
                             + "to work correctly.")
 
     def test_norm_eqs_expansion(self):
-        from inflation.quantum.quantum_tools import \
+        from inflation.sdp.quantum_tools import \
                                                 expand_moment_normalisation
 
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1]]),
@@ -642,7 +642,7 @@ class TestConstraintGeneration(unittest.TestCase):
                                 "being properly generated.")
 
     def test_normeqs_colineq2momentineq(self):
-        from inflation.quantum.quantum_tools import \
+        from inflation.sdp.quantum_tools import \
                                             construct_normalization_eqs
         G = np.array([[1,  2,  3,  4,  5],
                       [2,  1,  6,  7,  8],

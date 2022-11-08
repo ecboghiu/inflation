@@ -4,8 +4,8 @@ import numpy as np
 from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP
-from inflation.quantum.fast_npa import nb_remove_sandwich
-from inflation.quantum.quantum_tools import to_symbol
+from inflation.sdp.fast_npa import nb_remove_sandwich
+from inflation.sdp.quantum_tools import to_symbol
 
 
 class TestFunctions(unittest.TestCase):

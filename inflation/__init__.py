@@ -9,8 +9,8 @@ Provides
 """
 
 from .InflationProblem import InflationProblem
-from .quantum.InflationSDP import InflationSDP
-from .quantum.optimization_utils import max_within_feasible
+from .sdp.InflationSDP import InflationSDP
+from .sdp.optimization_utils import max_within_feasible
 from ._about import about
 from ._version import __version__
 

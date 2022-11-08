@@ -8,8 +8,8 @@ import numpy as np
 
 from itertools import chain, combinations_with_replacement
 from warnings import warn
-from .quantum.fast_npa import (nb_classify_disconnected_components,
-                               nb_overlap_matrix)
+from .sdp.fast_npa import (nb_classify_disconnected_components,
+                           nb_overlap_matrix)
 from typing import Tuple
 
 # Force warnings.warn() to omit the source code line in the message
@@ -241,7 +241,7 @@ class InflationProblem(object):
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
         the candidate monomial already passed the preliminary knowable test
-        from `inflation.quantum.quantum_tools.py`.
+        from `inflation.sdp.quantum_tools.py`.
         If the scenario is a network, this function always returns ``True``.
 
         Parameters

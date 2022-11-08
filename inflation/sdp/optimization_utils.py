@@ -14,8 +14,8 @@ from sympy.utilities.lambdify import lambdify
 from typing import Callable, Dict, Tuple, Union
 
 from inflation import InflationSDP
-from inflation.quantum.quantum_tools import make_numerical
-from inflation.quantum.monomial_classes import CompoundMonomial
+from inflation.sdp.quantum_tools import make_numerical
+from inflation.sdp.monomial_classes import CompoundMonomial
 
 
 def max_within_feasible(sdp: InflationSDP,
