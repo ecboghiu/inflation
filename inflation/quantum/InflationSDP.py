@@ -1219,7 +1219,11 @@ class InflationSDP(object):
                 list_of_atoms.append(factor)
             else:
                 pass
-        tuple_of_atoms = tuple(sorted(list_of_atoms))
+        raw_tuple_of_atoms = tuple(sorted(list_of_atoms))
+        conjugate_tuple_of_atoms  = tuple(sorted(factor.dagger
+                                          for factor in list_of_atoms))
+        tuple_of_atoms = min(raw_tuple_of_atoms, conjugate_tuple_of_atoms)
+        del raw_tuple_of_atoms, conjugate_tuple_of_atoms
         try:
             mon = self.monomial_from_atoms[tuple_of_atoms]
             return mon
