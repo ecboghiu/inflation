@@ -161,6 +161,9 @@ class InflationSDP(object):
 
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
+        # These next properties are reset during generate_relaxation, but
+        # are needed in init so as to be able to test the Monomial constructor
+        # function without generate_relaxation.
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
@@ -244,6 +247,13 @@ class InflationSDP(object):
               list needs to have the identity ``sympy.S.One`` as the first
               element.
         """
+
+        self.atomic_monomial_from_hash  = dict()
+        self.monomial_from_atoms        = dict()
+        self.monomial_from_name         = dict()
+        self.Zero = self.Monomial(self.zero_operator, idx=0)
+        self.One  = self.Monomial(self.identity_operator, idx=1)
+
         generating_monomials = self.build_columns(column_specification)
         # Generate dictionary to indices (used in dealing with symmetries and
         # column-level equalities)
@@ -317,6 +327,7 @@ class InflationSDP(object):
                            disable=not self.verbose,
                            desc="Initializing monomials   "):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
+        self.idx_for_new_mon = max(self.compmonomial_from_idx.keys()) + 1
 
         self.monomials = list(self.compmonomial_from_idx.values())
         assert all(v == 1 for v in Counter(self.monomials).values()), \
@@ -1229,6 +1240,11 @@ class InflationSDP(object):
             return mon
         except KeyError:
             mon = CompoundMonomial(tuple_of_atoms)
+            try:
+                mon.idx = self.idx_for_new_mon
+                self.idx_for_new_mon += 1
+            except AttributeError:
+                pass
             self.monomial_from_atoms[tuple_of_atoms] = mon
             self.monomial_from_name[mon.name]        = mon
             return mon
