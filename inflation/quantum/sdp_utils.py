@@ -375,13 +375,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if mask_matrices:
                 G = M.variable("G", Domain.inPSDCone(mat_dim))
 
-                F0_mosek = Matrix.sparse(*F0.shape,
-                                         *F0.nonzero(),
-                                         F0[F0.nonzero()].A[0])
-                Fi_mosek = {x: Matrix.sparse(*F.shape,
-                                             *F.nonzero(),
-                                             F[F.nonzero()].A[0])
-                            for x, F in Fi.items()}
 
                 # Add matrix constraints
                 constraints = np.empty((mat_dim, mat_dim), dtype=object)
@@ -389,21 +382,19 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                     for j in range(i, mat_dim):
                         constraints[i, j] = G.index(i, j)
                 for i, j in triu_indices(F0):
-                    constraints[i, j] = Expr.sub(constraints[i, j],
-                                                 F0_mosek.get(i, j))
+                    constraints[i, j] = Expr.sub(constraints[i, j], F0[i, j])
                 for i, xi in enumerate(variables.intersection(Fi.keys())):
                     for i_, j_ in triu_indices(Fi[xi]):
                         constraints[i_, j_] = \
                             Expr.sub(constraints[i_, j_],
-                                     Expr.mul(Fi_mosek[xi].get(i_, j_),
-                                              x_mosek.index(i)))
+                                    Expr.mul(Fi[xi][i_, j_],
+                                              x_mosek.index(var2index[xi])))
 
                 for i in range(mat_dim):
                     for j in range(i, mat_dim):
                         # G(i,j) - F0(i,j) - sum_i xi Fi(i,j) = 0
                         M.constraint(constraints[i, j], Domain.equalsTo(0))
 
-                del F0_mosek, Fi_mosek
 
             mosek_obj = c0
             for x in set(objective).difference(known_vars):
