@@ -9,7 +9,7 @@ import sympy
 from copy import deepcopy
 from itertools import permutations, product, combinations_with_replacement
 from tqdm import tqdm
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from .fast_npa import (apply_source_perm,
                        dot_mon,
@@ -156,7 +156,7 @@ def calculate_momentmatrix(cols: List,
 
 
 def to_symbol(mon: np.ndarray,
-              names: np.ndarray,
+              names: Union[np.ndarray, List[str]],
               commutative=False) -> sympy.core.symbol.Symbol:
     """Convert a monomial to a SymPy expression.
 
@@ -403,7 +403,7 @@ def expand_moment_normalisation(moment: np.ndarray,
     return eqs
 
 
-def format_permutations(array: np.ndarray) -> np.ndarray:
+def format_permutations(array: Union[np.ndarray, List[int]]) -> np.ndarray:
     """Permutations of inflation indices must leave the integers 0,
     corresponding to sources not being measured by the operator, invariant.
     In order to achieve this, this function shifts a permutation of sources
