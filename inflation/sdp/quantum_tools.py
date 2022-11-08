@@ -330,7 +330,7 @@ def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
         and the second element is the list of indices of the columns whose
         corresponding operators sum up to the operator corresponding to the
         first element.
-    momentmatix : numpy.ndarray
+    momentmatrix : numpy.ndarray
         The moment matrix of which the identification between variables shall
         be computed.
     verbose : int, optional
