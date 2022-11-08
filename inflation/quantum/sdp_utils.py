@@ -218,11 +218,13 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 inequality[x2] = inequality.get(x2, 0) + c * val
 
             variables.remove(x)
+            variables.add(x2)
 
     else:
         # Just add semiknown constraints as equality constraints.
         for x, (c, x2) in semiknown_vars.items():
             var_equalities.append({x: 1, x2: -c})
+            variables.add(x2)
 
     # 'var2index' should be computed after there is no more further modification
     # to 'variables'.
