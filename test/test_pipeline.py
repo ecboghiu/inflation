@@ -489,6 +489,21 @@ class TestSDPOutput(unittest.TestCase):
                         "mon_index1 = (number<=1) * mon_index2, this is " +
                         "failing.")
 
+    def test_new_indices(self):
+        sdp  = InflationSDP(trivial)
+        cols = [[],
+                [[1, 1, 0, 0],
+                 [1, 2, 0, 0],
+                 [1, 2, 1, 0]]]
+        sdp.generate_relaxation(cols)
+        sdp.set_distribution(np.ones((2, 1)) / 2,
+                             use_lpi_constraints=True)
+        new_mon_indices = np.array([semi[1][1].idx
+                                    for semi in sdp.semiknown_moments.items()])
+        self.assertTrue(np.all(new_mon_indices > len(sdp.monomials)),
+                        "The new unknown monomials that appear when applying" +
+                        " LPI constraints are not assigned correct indices.")
+
     def test_supports(self):
         sdp = InflationSDP(self.bellScenario, supports_problem=True)
         sdp.generate_relaxation("local1")
