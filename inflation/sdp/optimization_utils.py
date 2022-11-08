@@ -72,10 +72,10 @@ def max_within_feasible(sdp: InflationSDP,
     variables = set()
     for expr in symbolic_values.values():
         if not isinstance(expr, Real):
-            variables.update(expr.free_symbols)
+            variables.update(expr.atoms(sp.Symbol))
     assert len(variables) == 1, \
         "Only optimization of a single variable is supported"
-    param = sp.Symbol(variables.pop())
+    param = variables.pop()
     kwargs.update({"return_last_certificate": return_last_certificate})
 
     if method == "bisection":
