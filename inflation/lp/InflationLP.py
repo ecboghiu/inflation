@@ -10,8 +10,7 @@ import sympy as sp
 from collections import Counter, deque
 from functools import reduce
 from gc import collect
-from itertools import chain, count, product, permutations, repeat
-from more_itertools import powerset
+from itertools import chain, count, product, permutations, repeat, groupby
 from operator import itemgetter
 from numbers import Real
 from tqdm import tqdm
@@ -140,7 +139,6 @@ class InflationLP(object):
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
                                                               self._notcomm)
-        self.nonzero_op_q = lambda mon: not mon_is_zero(mon)
 
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
@@ -620,10 +618,14 @@ class InflationLP(object):
             parsable by `InflationSDP.generate_relaxation()`. By default
             ``False``.
         """
-        nontriv_cols = powerset(self._lexorder)
-        nontriv_cols = map(self._to_canonical_memoized, nontriv_cols)
-        nontriv_cols = filter(self.nonzero_op_q, nontriv_cols)
+        hash_except_outcome = lambda mon: mon[:-1].tobytes()
+        _, groups = groupby(self._lexorder, key=hash_except_outcome)
+        non_orthogonal_choices = [
+            (self.identity_operator, ) + tuple(ortho_group)
+            for ortho_group in groups]
+        nontriv_cols = map(np.vstack, product(*non_orthogonal_choices))
         if self.nonfanout:
+            # TODO: Improve performance by checking commutation before product
             nontriv_cols = filter(self.all_commuting_q, nontriv_cols)
         generating_monomials = [self.identity_operator]
         generating_monomials.extend(nontriv_cols)
