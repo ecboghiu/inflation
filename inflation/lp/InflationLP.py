@@ -617,17 +617,35 @@ class InflationLP(object):
             parsable by `InflationSDP.generate_relaxation()`. By default
             ``False``.
         """
-        hash_except_outcome = lambda mon: mon[:-1].tobytes()
-        _, groups = groupby(self._lexorder, key=hash_except_outcome)
-        non_orthogonal_choices = [
-            (self.identity_operator, ) + tuple(ortho_group)
-            for ortho_group in groups]
-        nontriv_cols = map(np.vstack, product(*non_orthogonal_choices))
-        if self.nonfanout:
-            # TODO: Improve performance by checking commutation before product
-            nontriv_cols = filter(self.all_commuting_q, nontriv_cols)
-        generating_monomials = [self.identity_operator]
-        generating_monomials.extend(nontriv_cols)
+        if not self.nonfanout:
+            hash_except_outcome = lambda mon: mon[:-1].tobytes()
+            _, groups = groupby(self._lexorder, key=hash_except_outcome)
+            non_orthogonal_choices = [
+                (self.identity_operator, ) + tuple(ortho_group)
+                for ortho_group in groups]
+            nontriv_cols = map(np.vstack, product(*non_orthogonal_choices))
+            # generating_monomials = [self.identity_operator]
+        else:
+            commuting_seqs_per_party = []
+            for party in range(self.nr_parties):
+                relevant_sources = np.flatnonzero(self.hypergraph[:, party])
+                relevant_inflevels = self.inflation_levels[relevant_sources]
+                max_mon_length = min(relevant_inflevels)
+                commuting_seqs_per_party.append([party_physical_monomials(
+                    hypergraph=self.hypergraph,
+                    inflevels=self.inflation_levels,
+                    party=party,
+                    max_monomial_length=i,
+                    settings_per_party=self.setting_cardinalities,
+                    outputs_per_party=self.outcome_cardinalities,
+                    lexorder=self._lexorder)
+                    for i in range(max_mon_length+1)])
+            nontriv_cols = map(np.vstack, product(*commuting_seqs_per_party))
+        generating_monomials = list(nontriv_cols)
+
+
+
+
 
         # party_freqs = sorted((list(pfreq)
         #                       for pfreq in product(
