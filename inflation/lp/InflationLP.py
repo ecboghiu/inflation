@@ -27,8 +27,7 @@ from ..sdp.fast_npa import (nb_all_commuting_q,
                             to_canonical)
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
-from ..sdp.quantum_tools import (calculate_momentmatrix,
-                                 clean_coefficients,
+from ..sdp.quantum_tools import (clean_coefficients,
                                  expand_moment_normalisation,
                                  flatten_symbolic_powers,
                                  format_permutations,
@@ -195,9 +194,6 @@ class InflationLP(object):
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
                   self.n_columns)
-
-        # Calculate the moment matrix without the inflation symmetries
-
         symmetrization_required = np.any(self.inflation_levels - 1)
 
         # Calculate the inflation symmetries
@@ -206,8 +202,7 @@ class InflationLP(object):
         self.column_level_equalities = self._discover_normalization_eqns()
         # TODO: merge the above into once consistent concept...
 
-        # Associate Monomials to the remaining entries. The zero monomial is
-        # not stored during calculate_momentmatrix
+        # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
         for (idx, mon) in tqdm(enumerate(self.generating_monomials),
                                disable=not self.verbose,
@@ -396,7 +391,7 @@ class InflationLP(object):
             assert len(surprising_objective_terms) == 0, \
                 ("When interpreting the objective we have encountered at " +
                  "least one monomial that does not appear in the original " +
-                 f"moment matrix:\n\t{surprising_objective_terms}")
+                 f"generating set:\n\t{surprising_objective_terms}")
             self._update_objective()
 
     def set_values(self,
@@ -408,10 +403,10 @@ class InflationLP(object):
                                  None],
                    use_lpi_constraints: bool = False,
                    only_specified_values: bool = False) -> None:
-        """Directly assign numerical values to variables in the moment matrix.
+        """Directly assign numerical values to variables in the generating set.
         This is done via a dictionary where keys are the variables to have
         numerical values assigned (either in their operator form, in string
-        form, or directly referring to the variable in the moment matrix), and
+        form, or directly referring to the variable in the generating set), and
         the values are the corresponding numerical quantities.
 
         Parameters
@@ -491,7 +486,7 @@ class InflationLP(object):
             if (len(surprising_semiknowns) >= 1) and (self.verbose > 0):
                 warn("When processing LPI constraints we encountered at " +
                      "least one monomial that does not appear in the " +
-                     f"original moment matrix:\n\t{surprising_semiknowns}")
+                     f"generating set:\n\t{surprising_semiknowns}")
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
 
@@ -606,81 +601,18 @@ class InflationLP(object):
             polynomial += coeff * self.names_to_symbols[mon_name]
         return polynomial
 
-    def certificate_as_string(self,
-                              clean: bool = True,
-                              chop_tol: float = 1e-10,
-                              round_decimals: int = 3) -> str:
-        """Give the certificate as a string with the notation of the operators
-        in the moment matrix. The expression is in the form such that
-        satisfaction implies incompatibility.
-
-        Parameters
-        ----------
-        clean : bool, optional
-            If ``True``, eliminate all coefficients that are smaller than
-            ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``True``.
-        chop_tol : float, optional
-            Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-10``.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are rounded to the number of
-            decimals specified. By default ``3``.
-
-        Returns
-        -------
-        str
-            The certificate in terms of symbols representing the monomials in
-            the moment matrix. The certificate of incompatibility is
-            ``cert < 0``.
-        """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            if self.verbose > 0:
-                warn("Beware that, because the problem contains linearized " +
-                     "polynomial constraints, the certificate is not " +
-                     "guaranteed to apply to other distributions.")
-
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
-
-        rest_of_dual = dual.copy()
-        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
-        constant_value += rest_of_dual.pop(self.One.name, 0)
-        if constant_value:
-            if clean:
-                cert = "{0:.{prec}f}".format(constant_value,
-                                             prec=round_decimals)
-            else:
-                cert = str(constant_value)
-        else:
-            cert = ""
-        for mon_name, coeff in rest_of_dual.items():
-            if mon_name != "0":
-                cert += "+" if coeff >= 0 else "-"
-                if np.isclose(abs(coeff), 1):
-                    cert += mon_name
-                else:
-                    if clean:
-                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
-                                                          mon_name,
-                                                          prec=round_decimals)
-                    else:
-                        cert += f"{abs(coeff)}*{mon_name}"
-        cert += " < 0"
-        return cert[1:] if cert[0] == "+" else cert
+    # TODO: Restore
+    # def certificate_as_string(self,
+    #                           clean: bool = True,
+    #                           chop_tol: float = 1e-10,
+    #                           round_decimals: int = 3) -> str:
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ###########################################################################
     def build_columns(self,
                       symbolic: bool = False) -> List[np.ndarray]:
-        r"""Creates the objects indexing the columns of the moment matrix from
-        a specification.
+        r"""Creates the generating set of monomials.
 
         Parameters
         ----------
@@ -1146,93 +1078,17 @@ class InflationLP(object):
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
     ###########################################################################
-    def _build_cols_from_specs(self, col_specs: List[List[int]]) -> List:
-        """Build the generating set for the moment matrix taking as input a
-        block specified only the number of parties.
-
-        For example, with ``col_specs=[[], [0], [2], [0, 2]]`` as input, we
-        generate the generating set S={1, A_{inf}_xa, C_{inf'}_zc,
-        A_{inf''}_x'a' * C{inf'''}_{z'c'}} where inf, inf', inf'' and inf'''
-        represent all possible inflation copies indices compatible with the
-        network structure, and x, a, z, c, x', a', z', c' are all possible
-        input and output indices compatible with the cardinalities. As further
-        examples, NPA level 2 for three parties is built from
-        ``[[], [0], [1], [2], [0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]``
-        and "local level 1" for three parties is built from
-        ``[[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]]``.
-
-        Parameters
-        ----------
-        col_specs : List[List[int]]
-            The column specification as specified in the method description.
-
-        Returns
-        -------
-        List[numpy.ndarray]
-            The list of operators indexing the columns, in array form.
-        """
-        if self.verbose > 1:
-            # Display col_specs in a readable way
-            to_print = []
-            for specs in col_specs:
-                to_print.append("1" if specs == []
-                                else "".join([self.names[p] for p in specs]))
-            print("Column structure:", "+".join(to_print))
-
-        columns      = []
-        seen_columns = set()
-        for block in col_specs:
-            if len(block) == 0:
-                columns.append(self.identity_operator)
-                seen_columns.add(self._from_2dndarray(self.identity_operator))
-            else:
-                meas_ops = []
-                for party in block:
-                    meas_ops.append(flatten(self.measurements[party]))
-                for monomial_factors in product(*meas_ops):
-                    mon   = self._interpret_name(monomial_factors)
-                    canon = self._to_canonical_memoized(mon)
-                    if not np.array_equal(canon, 0):
-                        # If the block is [0, 0], and we have the monomial
-                        # A**2 which simplifies to A, then A could be included
-                        # in the block [0]. We use the convention that [0, 0]
-                        # represents all monomials of length 2 AFTER
-                        # simplifications, so we omit monomials of length 1.
-                        if canon.shape[0] == len(monomial_factors):
-                            key = self._from_2dndarray(canon)
-                            if key not in seen_columns:
-                                seen_columns.add(key)
-                                columns.append(canon)
-
-        return columns
-
-    def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
-        """Wrapper method for building the moment matrix."""
-        problem_arr, canonical_mon_as_bytes_to_idx = \
-            calculate_momentmatrix(self.generating_monomials,
-                                   self._notcomm,
-                                   self._lexorder,
-                                   commuting=self.commuting,
-                                   verbose=self.verbose)
-        idx_to_canonical_mon = {idx: self._to_2dndarray(mon_as_bytes)
-                                for (mon_as_bytes, idx) in
-                                canonical_mon_as_bytes_to_idx.items()}
-        del canonical_mon_as_bytes_to_idx
-        return problem_arr, idx_to_canonical_mon
-
     def _discover_normalization_eqns(self) -> List[Tuple[int, List[int]]]:
         """Given the generating monomials, infer implicit normalization
-        equalities between columns of the moment matrix. Each normalization
-        equality is a two element tuple; the first element is an integer
-        indicating a particular column of the moment matrix, the second element
-        is a list of integers indicating other columns of the moment matrix
-        such that the sum of the latter columns is equal to the former column.
+        equalities between them. Each normalization equality is a two element
+        tuple; the first element is an integer indicating a particular column,
+        the second element is a list of integers indicating other columns such
+        that the sum of the latter columns is equal to the former column.
 
         Returns
         -------
         List[Tuple[int, List[int]]]
-            A list of normalization equalities between columns of the moment
-        matrix.
+            A list of normalization equalities between columns.
         """
         skip_party = [not i for i in self.has_children]
         column_level_equalities = []
@@ -1252,10 +1108,9 @@ class InflationLP(object):
         return column_level_equalities
 
     def _discover_inflation_symmetries(self) -> np.ndarray:
-        """Calculates all the symmetries and applies them to the set of
-        operators used to define the moment matrix. The new set of operators
-        is a permutation of the old. The function outputs a list of all
-        permutations.
+        """Calculates all the symmetries pertaining to the set of generating
+        monomials. The new set of operators is a permutation of the old. The
+        function outputs a list of all permutations.
 
         Returns
         -------
@@ -1379,13 +1234,9 @@ class InflationLP(object):
         self._update_upperbounds()
         self._update_objective()
         num_nontrivial_known = len(self.known_moments)
-        if self.momentmatrix_has_a_zero:
-            num_nontrivial_known -= 1
-        if self.momentmatrix_has_a_one:
-            num_nontrivial_known -= 1
         if self.verbose > 1 and num_nontrivial_known > 0:
             print("Number of variables with fixed numeric value:",
-                  len(self.known_moments))
+                  num_nontrivial_known)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
@@ -1418,8 +1269,6 @@ class InflationLP(object):
         self._reset_solution()
         self.known_moments     = dict()
         self.semiknown_moments = dict()
-        if self.momentmatrix_has_a_zero:
-            self.known_moments[self.Zero] = 0.
         self.known_moments[self.One] = 1.
         collect()
 
@@ -1528,8 +1377,6 @@ class InflationLP(object):
 
         The solver takes as input the following arguments, which are all
         dicts with keys as scalar SDP variables:
-            * "mask_matrices": dict with values the binary matrices with the
-            positions of the keys in the moment matrix.
             * "objective": dict with values the coefficient of the key
             variable in the objective function.
             * "known_vars": scalar variables that are fixed to be constant.
@@ -1555,7 +1402,7 @@ class InflationLP(object):
                             "Call \"InflationSDP.get_relaxation()\" first")
 
         assert set(self.known_moments.keys()).issubset(self.monomials),\
-            ("Error: Tried to assign known values outside of moment matrix: " +
+            ("Error: Tried to assign known values outside of the variables: " +
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
@@ -1585,8 +1432,6 @@ class InflationLP(object):
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
             solverargs["inequalities"].append(ub)
-        solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
-            (self.n_columns, self.n_columns))
         return solverargs
 
     def _reset_solution(self) -> None:
