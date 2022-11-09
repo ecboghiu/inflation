@@ -1638,7 +1638,7 @@ class InflationSDP(object):
             # Generate all possible copy indices for a party
             all_inflation_indices = product(
                 *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.nonzero(self.hypergraph[:, pos])[0]])
+                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
             # Include zeros in the positions of states not feeding the party
             all_indices = []
             for inflation_indices in all_inflation_indices:
