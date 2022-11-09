@@ -1330,7 +1330,7 @@ class InflationLP(object):
             # Generate all possible copy indices for a party
             all_inflation_indices = product(
                 *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.nonzero(self.hypergraph[:, pos])[0]])
+                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
             # Include zeros in the positions of states not feeding the party
             all_indices = []
             for inflation_indices in all_inflation_indices:
@@ -1633,7 +1633,7 @@ class InflationLP(object):
 
         Parameters
         ----------
-        upperbounds : Union[dict, None]
+        lowerbounds : Union[dict, None]
             Dictionary with keys as moments and values as upper bounds. The
             keys can be either strings, instances of `CompoundMonomial` or
             moments encoded as 2D arrays.
