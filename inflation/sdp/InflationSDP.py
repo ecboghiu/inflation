@@ -1436,7 +1436,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        factor_string : str
+        op_string : str
             String representation of an operator, e.g., ``"B_2_1_3_4"``.
 
         Returns
@@ -1638,7 +1638,7 @@ class InflationSDP(object):
             # Generate all possible copy indices for a party
             all_inflation_indices = product(
                 *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.nonzero(self.hypergraph[:, pos])[0]])
+                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
             # Include zeros in the positions of states not feeding the party
             all_indices = []
             for inflation_indices in all_inflation_indices:
@@ -1820,7 +1820,7 @@ class InflationSDP(object):
                                                             [0, -2, -1],
                                                     axis=1))
 
-    def _from_2dndarray(self, array2d: np.ndarray) -> None:
+    def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
         """Obtains the bytes representation of an array. The library uses this
         representation as hashes for the corresponding monomials.
 
@@ -1945,7 +1945,7 @@ class InflationSDP(object):
 
         Parameters
         ----------
-        upperbounds : Union[dict, None]
+        lowerbounds : Union[dict, None]
             Dictionary with keys as moments and values as upper bounds. The
             keys can be either strings, instances of `CompoundMonomial` or
             moments encoded as 2D arrays.

@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/500850617.svg)](https://zenodo.org/badge/latestdoi/500850617)
+
 # Inflation
 Inflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatibility between some observed data and a given causal relationship.
 

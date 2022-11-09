@@ -485,7 +485,7 @@ def party_physical_monomials(hypergraph: np.ndarray,
                              settings_per_party: Tuple[int],
                              outputs_per_party: Tuple[int],
                              lexorder: np.ndarray
-                             ) -> List[np.ndarray]:
+                             ) -> np.ndarray:
     """Generate all possible non-negative monomials for a given party composed
     of at most ``max_monomial_length`` operators.
 
@@ -516,10 +516,9 @@ def party_physical_monomials(hypergraph: np.ndarray,
         An array containing all possible positive monomials of the given
         length.
     """
-
     hypergraph = np.asarray(hypergraph)
     nr_sources = hypergraph.shape[0]
-
+    nr_properties = 1 + nr_sources + 2
     relevant_sources = np.flatnonzero(hypergraph[:, party])
     relevant_inflevels = inflevels[relevant_sources]
 
@@ -530,13 +529,14 @@ def party_physical_monomials(hypergraph: np.ndarray,
     # The strategy is building an initial non-negative monomial and apply all
     # inflation symmetries
     initial_monomial = np.zeros(
-        (max_monomial_length, 1 + nr_sources + 2), dtype=np.uint16)
+        (max_monomial_length, nr_properties), dtype=np.uint8)
+    if max_monomial_length == 0:
+        return [initial_monomial]
+    initial_monomial[:, 0] = 1 + party
     for mon_idx in range(max_monomial_length):
-        initial_monomial[mon_idx, 0]    = 1 + party
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
 
     inflation_equivalents = {initial_monomial.tobytes(): initial_monomial}
-
     all_permutations_per_relevant_source = [
         format_permutations(list(permutations(range(inflevel))))
         for inflevel in relevant_inflevels.flat]
@@ -548,21 +548,26 @@ def party_physical_monomials(hypergraph: np.ndarray,
                                                        permutation[perm_idx]),
                                      lexorder)
         inflation_equivalents[permuted.tobytes()] = permuted
-    inflation_equivalents = list(inflation_equivalents.values())
 
-    new_monomials = []
     # Insert all combinations of inputs and outputs
-    for input_slice in product(*[range(settings_per_party[party])
-                                 for _ in range(max_monomial_length)]):
-        for output_slice in product(*[range(outputs_per_party[party] - 1)
-                                      for _ in range(max_monomial_length)]):
-            for new_mon_idx in range(len(inflation_equivalents)):
-                new_monomial = deepcopy(inflation_equivalents[new_mon_idx])
-                for mon_idx in range(max_monomial_length):
-                    new_monomial[mon_idx, -2] = input_slice[mon_idx]
-                    new_monomial[mon_idx, -1] = output_slice[mon_idx]
-                new_monomials.append(new_monomial)
-    return new_monomials
+    template_mon = np.stack(tuple(inflation_equivalents.values()))
+    del inflation_equivalents
+    nr_possible_in = settings_per_party[party] - 1
+    nr_possible_out = outputs_per_party[party] - 1
+    new_monomials = np.broadcast_to(
+        template_mon,
+        (nr_possible_in ** max_monomial_length,
+         nr_possible_out ** max_monomial_length) + template_mon.shape).copy()
+    del template_mon
+    for i, input_slice in enumerate(product(range(nr_possible_in),
+                                            repeat=max_monomial_length)):
+        new_monomials[i, :, :, :, -2] = input_slice
+        for o, output_slice in enumerate(product(range(nr_possible_out),
+                                                 repeat=max_monomial_length)):
+            new_monomials[i, o, :, :, -1] = output_slice
+    return new_monomials.transpose(
+        (2, 0, 1, 3, 4)
+    ).reshape((-1, max_monomial_length, nr_properties))
 
 
 ###############################################################################
