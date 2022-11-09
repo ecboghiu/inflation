@@ -21,7 +21,6 @@ from inflation import InflationProblem
 from ..sdp.fast_npa import (nb_all_commuting_q,
                             apply_source_perm,
                             commutation_matrix,
-                            mon_is_zero,
                             to_canonical)
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
@@ -313,7 +312,7 @@ class InflationLP(object):
             use_lpi_constraints : bool, optional
                 Specification whether linearized polynomial constraints (see,
                 e.g., Eq. (D6) in `arXiv:2203.16543
-                <http://www.arxiv.org/abs/2203.16543/>`_) will be imposed or
+                <https://www.arxiv.org/abs/2203.16543/>`_) will be imposed or
                 not. By default ``False``.
             shared_randomness : bool, optional
                 Specification whether higher order monomials may be calculated.
@@ -1333,7 +1332,6 @@ class InflationLP(object):
                 except KeyError:
                     pass
         self.moment_upperbounds = self._processed_moment_upperbounds
-
 
     ###########################################################################
     # OTHER ROUTINES                                                          #
