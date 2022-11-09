@@ -14,7 +14,6 @@ from itertools import chain, count, product, permutations, repeat
 from more_itertools import powerset
 from operator import itemgetter
 from numbers import Real
-from scipy.sparse import lil_matrix
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
