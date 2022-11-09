@@ -11,6 +11,7 @@ from collections import Counter, deque
 from functools import reduce
 from gc import collect
 from itertools import chain, count, product, permutations, repeat
+from more_itertools import powerset
 from operator import itemgetter
 from numbers import Real
 from scipy.sparse import lil_matrix
@@ -22,7 +23,7 @@ from inflation import InflationProblem
 from ..sdp.fast_npa import (nb_all_commuting_q,
                             apply_source_perm,
                             commutation_matrix,
-                            nb_mon_to_lexrepr,
+                            mon_is_zero,
                             to_canonical)
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
@@ -131,7 +132,7 @@ class InflationLP(object):
 
         # Define default lexicographic order through np.lexsort
         lexorder = self._interpret_name(flatten(self.measurements))
-        lexorder = np.concatenate((self.zero_operator, lexorder))
+        # lexorder = np.concatenate((self.zero_operator, lexorder))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
 
@@ -141,6 +142,7 @@ class InflationLP(object):
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
                                                               self._notcomm)
+        self.nonzero_op_q = lambda mon: not mon_is_zero(mon)
 
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
@@ -676,167 +678,58 @@ class InflationLP(object):
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ###########################################################################
     def build_columns(self,
-                      column_specification: Union[str,
-                                                  List[List[int]],
-                                                  List[sp.core.symbol.Symbol]],
-                      max_monomial_length: int = 0,
                       symbolic: bool = False) -> List[np.ndarray]:
         r"""Creates the objects indexing the columns of the moment matrix from
         a specification.
 
         Parameters
         ----------
-        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
-            See description in the ``self.generate_relaxation()`` method.
-        max_monomial_length : int, optional
-            Maximum number of letters in a monomial in the generating set,
-            By default ``0``. Example: if we choose ``"local1"`` for
-            three parties, it gives the set :math:`\{1, A, B, C, AB, AC, BC,
-            ABC\}`. If we set ``max_monomial_length=2``, the generating set is
-            instead :math:`\{1, A, B, C, AB, AC, BC\}`. By default ``0`` (no
-            limit).
         symbolic: bool, optional
             If ``True``, it returns the columns as a list of sympy symbols
             parsable by `InflationSDP.generate_relaxation()`. By default
             ``False``.
         """
-        columns = None
-        if type(column_specification) == list:
-            # There are two possibilities: list of lists, or list of symbols
-            if type(column_specification[0]) in {list, np.ndarray}:
-                if len(np.array(column_specification[1]).shape) == 2:
-                    # This is the format that is later parsed by the program
-                    columns = [np.array(mon, dtype=self.np_dtype)
-                               for mon in column_specification]
-                elif len(np.array(column_specification[1]).shape) == 1:
-                    # This is the standard specification for the helper
-                    columns = self._build_cols_from_specs(column_specification)
-                else:
-                    raise Exception("The generating columns are not specified "
-                                    + "in a valid format.")
-            elif type(column_specification[0]) in [int, sp.core.symbol.Symbol,
-                                                   sp.core.power.Pow,
-                                                   sp.core.mul.Mul,
-                                                   sp.core.numbers.One]:
-                columns = []
-                for col in column_specification:
-                    if type(col) in [int, sp.core.numbers.One]:
-                        if not np.isclose(float(col), 1):
-                            raise Exception(f"Column {col} is just a number. "
-                                            + "Please use a valid format.")
-                        else:
-                            columns.append(self.identity_operator)
-                    elif type(col) in [sp.core.symbol.Symbol,
-                                       sp.core.power.Pow,
-                                       sp.core.mul.Mul]:
-                        columns.append(self._interpret_name(col))
-                    else:
-                        raise Exception(f"The column {col} is not specified " +
-                                        "in a valid format.")
-            else:
-                raise Exception("The generating columns are not specified " +
-                                "in a valid format.")
-        elif type(column_specification) == str:
-            if "npa" in column_specification.lower():
-                npa_level = int(column_specification[3:])
-                col_specs = [[]]
-                if ((max_monomial_length > 0)
-                        and (max_monomial_length < npa_level)):
-                    max_length = max_monomial_length
-                else:
-                    max_length = npa_level
-                for length in range(1, max_length + 1):
-                    for number_tuple in product(
-                            *[range(self.nr_parties)] * length
-                                                ):
-                        a = np.array(number_tuple)
-                        # Add only if tuple is in increasing order
-                        if np.all(a[:-1] <= a[1:]):
-                            col_specs += [a.tolist()]
-                columns = self._build_cols_from_specs(col_specs)
+        nontriv_cols = powerset(self._lexorder)
+        nontriv_cols = map(self._to_canonical_memoized, nontriv_cols)
+        nontriv_cols = filter(self.nonzero_op_q, nontriv_cols)
+        if self.nonfanout:
+            nontriv_cols = filter(self.all_commuting_q, nontriv_cols)
+        generating_monomials = [self.identity_operator]
+        generating_monomials.extend(nontriv_cols)
 
-            elif (("local" in column_specification.lower())
-                  or ("physical" in column_specification.lower())):
-                lengths_init = (5 if "local" in column_specification.lower()
-                                else 8)
-                spec    = column_specification[:lengths_init]
-                lengths = column_specification[lengths_init:]
-                if len(lengths) == 0:
-                    if spec == "local":
-                        raise Exception("Please specify a precise local level")
-                    else:
-                        lengths = [min(self.inflation_levels[party])
-                                   for party in self.hypergraph.T]
-                elif len(lengths) == self.nr_parties:
-                    lengths = [int(level) for level in lengths]
-                else:
-                    lengths = [int(lengths)] * self.nr_parties
-                max_length = sum(lengths)
-                # Determine maximum length
-                if ((max_monomial_length > 0)
-                        and (max_monomial_length < max_length)):
-                    max_length = max_monomial_length
+        # party_freqs = sorted((list(pfreq)
+        #                       for pfreq in product(
+        #                        *[range(level + 1) for level in lengths]
+        #                                            )
+        #                       if sum(pfreq) <= max_length),
+        #                      key=lambda x: (sum(x), [-p for p in x]))
+        #
+        # physical_monomials = []
+        # for freqs in party_freqs:
+        #     if freqs == [0] * self.nr_parties:
+        #         physical_monomials.append(self.identity_operator)
+        #     else:
+        #         physmons_per_party = []
+        #         for party, freq in enumerate(freqs):
+        #             if freq > 0:
+        #                 physmons = party_physical_monomials(
+        #                     self.hypergraph,
+        #                     self.inflation_levels,
+        #                     party, freq,
+        #                     self.setting_cardinalities,
+        #                     self.outcome_cardinalities,
+        #                     self._lexorder)
+        #                 physmons_per_party.append(physmons)
+        #         for monomial_parts in product(
+        #                 *physmons_per_party):
+        #             physical_monomials.append(
+        #                 self._to_canonical_memoized(
+        #                     np.concatenate(monomial_parts)))
 
-                party_freqs = sorted((list(pfreq)
-                                      for pfreq in product(
-                                       *[range(level + 1) for level in lengths]
-                                                           )
-                                      if sum(pfreq) <= max_length),
-                                     key=lambda x: (sum(x), [-p for p in x]))
-                if spec == "local":
-                    col_specs = []
-                    for pfreq in party_freqs:
-                        operators = []
-                        for party in range(self.nr_parties):
-                            operators += [party] * pfreq[party]
-                        col_specs += [operators]
-                    columns = self._build_cols_from_specs(col_specs)
-                else:
-                    physical_monomials = []
-                    for freqs in party_freqs:
-                        if freqs == [0] * self.nr_parties:
-                            physical_monomials.append(self.identity_operator)
-                        else:
-                            physmons_per_party = []
-                            for party, freq in enumerate(freqs):
-                                if freq > 0:
-                                    physmons = party_physical_monomials(
-                                        self.hypergraph,
-                                        self.inflation_levels,
-                                        party, freq,
-                                        self.setting_cardinalities,
-                                        self.outcome_cardinalities,
-                                        self._lexorder)
-                                    physmons_per_party.append(physmons)
-                            for monomial_parts in product(
-                                    *physmons_per_party):
-                                physical_monomials.append(
-                                    self._to_canonical_memoized(
-                                        np.concatenate(monomial_parts)))
-                    columns = physical_monomials
-            else:
-                raise Exception("I have not understood the format of the "
-                                + "column specification")
-        else:
-            raise Exception("I have not understood the format of the "
-                            + "column specification")
-
-        if not np.array_equal(self._lexorder, self._default_lexorder):
-            res_lexrepr = [nb_mon_to_lexrepr(mon, self._lexorder).tolist()
-                           if (len(mon) or mon.shape[-1] == 1) else []
-                           for mon in columns]
-            sorted_mons = sorted(res_lexrepr, key=lambda x: (len(x), x))
-            columns = [self._lexorder[lexrepr]
-                       if lexrepr != [] else self.identity_operator
-                       for lexrepr in sorted_mons]
-
-        columns = [np.array(col,
-                            dtype=self.np_dtype).reshape((-1,
-                                                          self._nr_properties))
-                   for col in columns]
         if symbolic:
-            columns = [to_symbol(col, self.names) for col in columns]
-        return columns
+            generating_monomials = [to_symbol(col, self.names)
+                                    for col in generating_monomials]
+        return generating_monomials
 
     def reset(self, which: Union[str, List[str]]) -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
