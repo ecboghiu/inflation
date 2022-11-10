@@ -80,6 +80,18 @@ Inflation is free open-source software released under [GNU GPL v. 3.0](https://w
 
 ## Citing Inflation
 
-If you use Inflation in your work, please cite [Inflation's paper](https://www.arxiv.org/abs/2209.xxxxx):
+If you use Inflation in your work, please cite [Inflation's paper](https://www.arxiv.org/abs/2211.04483):
 
-- Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "Inflation: a Python package for classical and quantum causal compatibility", arXiv:2209.xxxxx
+- Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "Inflation: a Python package for classical and quantum causal compatibility", arXiv:2211.04483
+
+```
+@misc{2211.04483,
+  doi = {10.48550/arXiv.2211.04483},
+  url = {https://arxiv.org/abs/2211.04483},
+  author = {Boghiu, Emanuel-Cristian and Wolfe, Elie and Pozas-Kerstjens, Alejandro},
+  title = {{Inflation}: a {Python} package for classical and quantum causal compatibility},
+  publisher = {arXiv},
+  year = {2022},
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+```
