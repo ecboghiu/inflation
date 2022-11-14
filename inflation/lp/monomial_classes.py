@@ -10,11 +10,11 @@ from functools import total_ordering
 from numbers import Real
 from typing import Dict, List, Tuple
 
-from .fast_npa import mon_is_zero, nb_remove_sandwich
-from .monomial_utils import (compute_marginal,
-                             name_from_atom_names,
-                             symbol_from_atom_name,
-                             symbol_prod)
+from ..sdp.fast_npa import mon_is_zero
+from ..sdp.monomial_utils import (compute_marginal,
+                                  name_from_atom_names,
+                                  symbol_from_atom_name,
+                                  symbol_prod)
 
 
 @total_ordering
@@ -67,8 +67,8 @@ class InternalAtomicMonomial(object):
 
         Parameters
         ----------
-        inflation_sdp_instance : InflationSDP
-            An instance of the ``InflationSDP`` class. It is used to access
+        inflation_lp_instance : InflationLP
+            An instance of the ``InflationLP`` class. It is used to access
             methods specific to the inflation problem. E.g., when instantiating
             an internal atomic moment, the ``InflationSDP`` instance is used to
             check if it already contains such moment.
@@ -93,9 +93,9 @@ class InternalAtomicMonomial(object):
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
-                self.sdp.rectify_fake_setting(np.take(self.as_ndarray,
-                                                      [0, -2, -1],
-                                                      axis=1)),
+                self.lp.rectify_fake_setting(np.take(self.as_ndarray,
+                                                     [0, -2, -1],
+                                                     axis=1)),
                 dtype=int)
 
     def __copy__(self):
