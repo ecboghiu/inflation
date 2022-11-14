@@ -202,7 +202,8 @@ class InflationLP(object):
         self.compmonomial_from_idx = dict()
         for (idx, mon) in tqdm(enumerate(self.generating_monomials),
                                disable=not self.verbose,
-                               desc="Initializing monomials   "):
+                               desc="Initializing monomials   ",
+                               total=len(self.generating_monomials)):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
