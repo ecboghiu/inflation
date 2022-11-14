@@ -630,20 +630,14 @@ class InflationLP(object):
         if not self.nonfanout:
             hash_except_outcome = lambda mon: mon[:-1].tobytes()
 
-            non_orthogonal_choices = [
+            choices_to_combine = [
                 (self.identity_operator, ) + tuple(ortho_group)
                 for _, ortho_group in groupby(self._lexorder,
                                               key=hash_except_outcome)]
-            lengths = list(map(len, non_orthogonal_choices))
-            nontriv_cols = map(np.vstack,
-                               tqdm(product(*non_orthogonal_choices),
-                                    disable=not self.verbose,
-                                    desc="Building columns         ",
-                                    total=np.prod(lengths),
-                                    leave=True,
-                                    position=0))
+            lengths = list(map(len, choices_to_combine))
         else:
-            commuting_seqs_per_party = []
+            choices_to_combine = []
+            lengths = []
             for party in range(self.nr_parties):
                 relevant_sources = np.flatnonzero(self.hypergraph[:, party])
                 relevant_inflevels = self.inflation_levels[relevant_sources]
@@ -657,8 +651,15 @@ class InflationLP(object):
                     outputs_per_party=self.outcome_cardinalities,
                     lexorder=self._lexorder)
                     for i in range(max_mon_length+1)]
-                commuting_seqs_per_party.append(chain.from_iterable(phys_mon))
-            nontriv_cols = map(np.vstack, product(*commuting_seqs_per_party))
+                lengths.append(sum(map(len, phys_mon)))
+                choices_to_combine.append(chain.from_iterable(phys_mon))
+        nontriv_cols = map(np.vstack,
+                           tqdm(product(*choices_to_combine),
+                                disable=not self.verbose,
+                                desc="Building columns         ",
+                                total=np.prod(lengths),
+                                leave=True,
+                                position=0))
         generating_monomials = list(nontriv_cols)
 
         if symbolic:
