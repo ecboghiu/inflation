@@ -531,11 +531,10 @@ def party_physical_monomials(hypergraph: np.ndarray,
     initial_monomial = np.zeros(
         (max_monomial_length, nr_properties), dtype=np.uint8)
     if max_monomial_length == 0:
-        return [initial_monomial]
+        return initial_monomial[np.newaxis]
     initial_monomial[:, 0] = 1 + party
     for mon_idx in range(max_monomial_length):
         initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
-
     inflation_equivalents = {initial_monomial.tobytes(): initial_monomial}
     all_permutations_per_relevant_source = [
         format_permutations(list(permutations(range(inflevel))))
@@ -552,8 +551,8 @@ def party_physical_monomials(hypergraph: np.ndarray,
     # Insert all combinations of inputs and outputs
     template_mon = np.stack(tuple(inflation_equivalents.values()))
     del inflation_equivalents
-    nr_possible_in = settings_per_party[party] - 1
-    nr_possible_out = outputs_per_party[party] - 1
+    nr_possible_in = settings_per_party[party]
+    nr_possible_out = outputs_per_party[party] - 1 # We always use one less
     new_monomials = np.broadcast_to(
         template_mon,
         (nr_possible_in ** max_monomial_length,
