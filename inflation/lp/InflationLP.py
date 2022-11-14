@@ -635,7 +635,6 @@ class InflationLP(object):
                 for _, ortho_group in groupby(self._lexorder,
                                               key=hash_except_outcome)]
             lengths = list(map(len, non_orthogonal_choices))
-            # nontriv_cols = map(np.vstack, product(*non_orthogonal_choices))
             nontriv_cols = map(np.vstack,
                                tqdm(product(*non_orthogonal_choices),
                                     disable=not self.verbose,
@@ -643,14 +642,13 @@ class InflationLP(object):
                                     total=np.prod(lengths),
                                     leave=True,
                                     position=0))
-            # generating_monomials = [self.identity_operator]
         else:
             commuting_seqs_per_party = []
             for party in range(self.nr_parties):
                 relevant_sources = np.flatnonzero(self.hypergraph[:, party])
                 relevant_inflevels = self.inflation_levels[relevant_sources]
                 max_mon_length = min(relevant_inflevels)
-                commuting_seqs_per_party.append([party_physical_monomials(
+                phys_mon = [party_physical_monomials(
                     hypergraph=self.hypergraph,
                     inflevels=self.inflation_levels,
                     party=party,
@@ -658,42 +656,10 @@ class InflationLP(object):
                     settings_per_party=self.setting_cardinalities,
                     outputs_per_party=self.outcome_cardinalities,
                     lexorder=self._lexorder)
-                    for i in range(max_mon_length+1)])
+                    for i in range(max_mon_length+1)]
+                commuting_seqs_per_party.append(chain.from_iterable(phys_mon))
             nontriv_cols = map(np.vstack, product(*commuting_seqs_per_party))
         generating_monomials = list(nontriv_cols)
-
-
-
-
-
-        # party_freqs = sorted((list(pfreq)
-        #                       for pfreq in product(
-        #                        *[range(level + 1) for level in lengths]
-        #                                            )
-        #                       if sum(pfreq) <= max_length),
-        #                      key=lambda x: (sum(x), [-p for p in x]))
-        #
-        # physical_monomials = []
-        # for freqs in party_freqs:
-        #     if freqs == [0] * self.nr_parties:
-        #         physical_monomials.append(self.identity_operator)
-        #     else:
-        #         physmons_per_party = []
-        #         for party, freq in enumerate(freqs):
-        #             if freq > 0:
-        #                 physmons = party_physical_monomials(
-        #                     self.hypergraph,
-        #                     self.inflation_levels,
-        #                     party, freq,
-        #                     self.setting_cardinalities,
-        #                     self.outcome_cardinalities,
-        #                     self._lexorder)
-        #                 physmons_per_party.append(physmons)
-        #         for monomial_parts in product(
-        #                 *physmons_per_party):
-        #             physical_monomials.append(
-        #                 self._to_canonical_memoized(
-        #                     np.concatenate(monomial_parts)))
 
         if symbolic:
             generating_monomials = [to_symbol(col, self.names)
