@@ -614,16 +614,25 @@ class InflationLP(object):
         ----------
         symbolic: bool, optional
             If ``True``, it returns the columns as a list of sympy symbols
-            parsable by `InflationSDP.generate_relaxation()`. By default
+            parsable by `InflationLP.generate_lp()`. By default
             ``False``.
         """
         if not self.nonfanout:
             hash_except_outcome = lambda mon: mon[:-1].tobytes()
-            _, groups = groupby(self._lexorder, key=hash_except_outcome)
+
             non_orthogonal_choices = [
                 (self.identity_operator, ) + tuple(ortho_group)
-                for ortho_group in groups]
-            nontriv_cols = map(np.vstack, product(*non_orthogonal_choices))
+                for _, ortho_group in groupby(self._lexorder,
+                                              key=hash_except_outcome)]
+            lengths = list(map(len, non_orthogonal_choices))
+            # nontriv_cols = map(np.vstack, product(*non_orthogonal_choices))
+            nontriv_cols = map(np.vstack,
+                               tqdm(product(*non_orthogonal_choices),
+                                    disable=not self.verbose,
+                                    desc="Building columns         ",
+                                    total=np.prod(lengths),
+                                    leave=True,
+                                    position=0))
             # generating_monomials = [self.identity_operator]
         else:
             commuting_seqs_per_party = []
