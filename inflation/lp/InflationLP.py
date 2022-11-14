@@ -160,13 +160,11 @@ class InflationLP(object):
         under swaps of the copied sources, which are used to remove variables
         from the LP.
         """
+        # Note that there IS NO POSSIBILITY OF ORTHOGONALITY in the LP
+        # and hence we start indices from zero, always.
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
-        self.Zero = self.Monomial(self.zero_operator, idx=0)
-        self.One  = self.Monomial(self.identity_operator, idx=1)
-
-        # TODO: Overhual build_columns
         generating_monomials = self.build_columns()
         # Generate dictionary to indices (used in dealing with symmetries and
         # column-level equalities)
@@ -186,33 +184,41 @@ class InflationLP(object):
         self.generating_monomials = generating_monomials
         del generating_monomials, genmon_hash_to_index
         collect()
+
+        symmetrization_required = np.any(self.inflation_levels - 1)
+        if symmetrization_required:
+            # Calculate the inflation symmetries
+            self.inflation_symmetries = self._discover_inflation_symmetries()
+            old_reps = np.unique(
+                np.amin(np.vstack((np.arange(self.n_columns),
+                                   self.inflation_symmetries)),
+                        axis=0))
+            old_reps_set = set(old_reps.ravel().tolist())
+            # Reset generating monomials
+            self.generating_monomials = [self.generating_monomials[i] for i
+                                         in old_reps_set]
+            self.n_columns = len(self.generating_monomials)
+            self.genmon_hash_to_index = {mon_hash: old_i for mon_hash, old_i
+                                         in self.genmon_hash_to_index.items()
+                                         if old_i in old_reps_set}
+            self.genmon_hash_to_index = {mon_hash: new_i for new_i, mon_hash in
+                                         enumerate(
+                                             self.genmon_hash_to_index.items()
+                                         )}
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
                   self.n_columns)
-        symmetrization_required = np.any(self.inflation_levels - 1)
 
-        # Calculate the inflation symmetries
-        self.inflation_symmetries = self._discover_inflation_symmetries()
-        self.old_reps, orbits = np.unique(
-            np.amin(np.vstack((np.arange(self.n_columns),
-                               self.inflation_symmetries)),
-                    axis=0),
-            return_inverse=True)
-        old_min = min(self.old_reps)
-        self.orbits = orbits + min(self.old_reps)
-        self.after_sym_n_columns = len(self.old_reps)
-        self.new_reps = np.arange(self.after_sym_n_columns) + old_min
         # Calculate normalization equalities
         self.column_level_equalities = self._discover_normalization_eqns()
         # TODO: merge the above into once consistent concept...
 
         # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
-        for idx, old_idx in tqdm(zip(self.new_reps.flat, self.old_reps.flat),
+        for idx, mon in tqdm(enumerate(self.generating_monomials),
                                disable=not self.verbose,
                                desc="Initializing monomials   ",
                                total=len(self.generating_monomials)):
-            mon = self.generating_monomials[old_idx]
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
@@ -244,11 +250,9 @@ class InflationLP(object):
         # some variables, so there exist normalization constraints between them
         self.moment_equalities = []
         for (norm_idx, summation_idxs) in self.column_level_equalities:
-            new_norm_idx = self.orbits[norm_idx]
-            new_summation_idx = self.orbits[list(summation_idxs)]
-            eq_dict = {self.compmonomial_from_idx[new_norm_idx]: 1}
+            eq_dict = {self.compmonomial_from_idx[norm_idx]: 1}
             summation_mons = [self.compmonomial_from_idx[idx] for idx
-                              in new_summation_idx.flat]
+                              in summation_idxs]
             extra_dict = dict(zip(summation_mons, repeat(-1)))
             eq_dict.update(extra_dict)
             self.moment_equalities.append(eq_dict)
