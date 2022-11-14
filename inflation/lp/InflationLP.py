@@ -11,7 +11,6 @@ from collections import Counter, deque
 from functools import reduce
 from gc import collect
 from itertools import chain, count, product, permutations, repeat, groupby
-from operator import itemgetter
 from numbers import Real
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
@@ -194,16 +193,26 @@ class InflationLP(object):
 
         # Calculate the inflation symmetries
         self.inflation_symmetries = self._discover_inflation_symmetries()
+        self.old_reps, orbits = np.unique(
+            np.amin(np.vstack((np.arange(self.n_columns),
+                               self.inflation_symmetries)),
+                    axis=0),
+            return_inverse=True)
+        old_min = min(self.old_reps)
+        self.orbits = orbits + min(self.old_reps)
+        self.after_sym_n_columns = len(self.old_reps)
+        self.new_reps = np.arange(self.after_sym_n_columns) + old_min
         # Calculate normalization equalities
         self.column_level_equalities = self._discover_normalization_eqns()
         # TODO: merge the above into once consistent concept...
 
         # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
-        for (idx, mon) in tqdm(enumerate(self.generating_monomials),
+        for idx, old_idx in tqdm(zip(self.new_reps.flat, self.old_reps.flat),
                                disable=not self.verbose,
                                desc="Initializing monomials   ",
                                total=len(self.generating_monomials)):
+            mon = self.generating_monomials[old_idx]
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
@@ -234,18 +243,14 @@ class InflationLP(object):
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
         self.moment_equalities = []
-        for (i, j), v in np.ndenumerate(self.inflation_symmetries):
-            if j < v:
-                eq_dict = {self.compmonomial_from_idx[j]: 1,
-                           self.compmonomial_from_idx[v]: -1}
-                self.moment_equalities.append(eq_dict)
-
         for (norm_idx, summation_idxs) in self.column_level_equalities:
-            eq_dict = {self.compmonomial_from_idx[norm_idx]: 1}
-            eq_dict.update(zip(
-                itemgetter(*summation_idxs)(self.compmonomial_from_idx),
-                repeat(-1)
-            ))
+            new_norm_idx = self.orbits[norm_idx]
+            new_summation_idx = self.orbits[list(summation_idxs)]
+            eq_dict = {self.compmonomial_from_idx[new_norm_idx]: 1}
+            summation_mons = [self.compmonomial_from_idx[idx] for idx
+                              in new_summation_idx.flat]
+            extra_dict = dict(zip(summation_mons, repeat(-1)))
+            eq_dict.update(extra_dict)
             self.moment_equalities.append(eq_dict)
 
         self.moment_inequalities = []
