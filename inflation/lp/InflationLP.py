@@ -1162,6 +1162,119 @@ class InflationLP(object):
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
 
+
+    # def _from_lexorder_perm_to_columns_orbits(self,
+    #                                         lexorder_perms: np.ndarray) -> np.ndarray:
+    #     orbits = np.zeros(self.n_columns, dtype=int) - 1
+    #     mon_lexorders = list(map(self.mon_to_lexrepr,
+    #                              self.generating_monomials))
+    #     mon_lexorders_lookup = {self._from_2dndarray(np.sort(lexorder)): i for
+    #                             i, lexorder in enumerate(mon_lexorders)}
+    #     for i, default_lex_order in enumerate(mon_lexorders):
+    #         if orbits[i] == -1:
+    #             alternative_lex_orders = lexorder_perms[:, default_lex_order]
+    #             alternative_lex_orders.sort(axis=1)
+    #             discovered_positions = np.fromiter((
+    #                 mon_lexorders_lookup[self._from_2dndarray(lexorder)] for
+    #                 lexorder in alternative_lex_orders), dtype=int)
+    #             orbits[discovered_positions] = np.min(discovered_positions)
+    #     return orbits
+    def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
+        """Given the action of a group on the original scenario, calculates
+        the action of the group on the set of generating monomials. The
+        function outputs a list of all permutations.
+
+        Parameters
+        ----------
+        dist_syms : List
+            Each symmetry of the original distribution is encoded as a pair of
+            lists, indicating events before and after the symmetry. The final
+            elements of each list is the permutation of sources.
+        Returns
+        -------
+        numpy.ndarray[int]
+            The list of all permutations of the generating columns implied by
+            the inflation symmetries.
+        """
+        inflation_indices_per_party = []
+        for party in range(self.nr_parties):
+            active_sources = self.hypergraph[:, party]
+            num_copies = np.multiply(active_sources,
+                                     self.inflation_levels)
+            # Put non-participating and non-inflated on equal footing
+            num_copies = np.maximum(num_copies, 1)
+            inflation_indices = []
+            for increase_from_base in np.ndindex(*num_copies):
+                inflation_indxs = active_sources + np.array(increase_from_base,
+                                                            dtype=np.uint8)
+                inflation_indices.append(inflation_indxs)
+            inflation_indices_per_party.append(np.vstack(inflation_indices))
+        # print("Inf ind per party: ", inflation_indices_per_party)
+
+        inflation_event_symmetries = []
+        for sym_pair in dist_syms:
+            # print("Sym pair:", sym_pair)
+            elevated_sym_pair = []
+            for sym in sym_pair:
+                # print("Sym:", sym)
+                elevated_sym = []
+                for event in sym[:-1]:
+                    print("Event :", event)
+                    (party, input, output) = event
+                    middle = inflation_indices_per_party[party - 1]
+                    middle = middle[np.lexsort(np.rot90(middle[:, sym[-1]]))]
+                    length = len(middle)
+                    elevated_events = np.hstack((
+                        np.broadcast_to(party, (length, 1)),
+                        middle,
+                        np.broadcast_to([input, output], (length, 2))
+                    ))
+                    elevated_sym.extend(elevated_events)
+                print("Elevated sym: ", elevated_sym)
+                elevated_sym_pair.append(elevated_sym)
+            inflation_event_symmetries.append(elevated_sym_pair)
+        inflation_event_symmetries = np.array(inflation_event_symmetries)
+        print("Inflation event symmetries: ", inflation_event_symmetries)
+
+        lexorder_symmetries = [self._lexorder]
+        for pre_action, post_action in inflation_event_symmetries:
+            new_lexorder = self._lexorder.copy()
+            print("Pre action: ", post_action)
+            pre=self.mon_to_lexrepr(pre_action)
+            print("Post action: ", post_action)
+            post=self.mon_to_lexrepr(post_action)
+            new_lexorder[pre] = new_lexorder[post]
+            lexorder_symmetries.append(new_lexorder)
+        lexorder_symmetries = np.vstack(lexorder_symmetries)
+        # assert np.array_equal(lexorder_symmetries[0],
+        #                       np.arange(len(self._lexorder))), \
+        #     "First symmetry should be identity."
+        # lexorder_symmetries = np.array(
+        #     lexorder_symmetries).reshape((-1, len(self._lexorder)))
+        # column_permutations = []
+        monomials_as_lexboolvecs = np.vstack([
+            nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
+            for mon in self.generating_monomials]).astype(bool)
+        orbits = nb_apply_lexorder_perm_to_lexboolvecs(
+            monomials_as_lexboolvecs,
+            lexorder_perms=lexorder_symmetries)
+        # orbits = np.zeros(self.n_columns, dtype=int) - 1
+        # mon_lexorders = list(map(self.mon_to_lexrepr,
+        #                          self.generating_monomials))
+        # mon_lexorders_lookup = {self._from_2dndarray(np.sort(lexorder)): i for
+        #                         i, lexorder in enumerate(mon_lexorders)}
+        # for i, default_lex_order in enumerate(mon_lexorders):
+        #     if orbits[i] == -1:
+        #         alternative_lex_orders = lexorder_symmetries[:, default_lex_order]
+        #         alternative_lex_orders.sort(axis=1)
+        #         discovered_positions = np.fromiter((
+        #             mon_lexorders_lookup[self._from_2dndarray(lexorder)] for
+        #             lexorder in alternative_lex_orders
+        #         ), dtype=int)
+        #         orbits[discovered_positions] = np.min(discovered_positions)
+        return orbits
+
+
     def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
         """Generates all the party operators in the quantum inflation.
 
