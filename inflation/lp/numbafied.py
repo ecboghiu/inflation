@@ -54,7 +54,7 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
         for op in mon:
             if np.array_equal(op, standard_op):
                 in_lex[i] = True
-            break
+                break
     return in_lex
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
