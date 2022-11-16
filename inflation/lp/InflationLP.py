@@ -192,10 +192,12 @@ class InflationLP(object):
         if symmetrization_required:
             # Calculate the inflation symmetries
             self.inflation_symmetries = self._discover_inflation_symmetries()
-            old_reps = np.unique(
+            old_reps_old_style = np.unique(
                 np.amin(np.vstack((np.arange(self.n_columns),
                                    self.inflation_symmetries)),
                         axis=0))
+            old_reps = np.unique(self._discover_inflation_orbits())
+            assert np.array_equal(old_reps, old_reps_old_style), "New algorithm failing."
             old_reps_set = set(old_reps.ravel().tolist())
             # Reset generating monomials
             self.generating_monomials = [self.generating_monomials[i] for i
@@ -1164,6 +1166,64 @@ class InflationLP(object):
             return np.unique(inflation_symmetries[1:], axis=0)
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
+
+    def _discover_inflation_orbits(self) -> np.ndarray:
+        """Calculates all the symmetries pertaining to the set of generating
+        monomials. The new set of operators is a permutation of the old. The
+        function outputs a list of all permutations.
+
+        Returns
+        -------
+        numpy.ndarray[int]
+            The orbits of the generating columns implied by the inflation
+            symmetries.
+        """
+        sources_with_copies = [source for source, inf_level
+                               in enumerate(self.inflation_levels)
+                               if inf_level > 1]
+        if len(sources_with_copies):
+            lexorder_symmetries = []
+            identity_perm        = np.arange(len(self._lexorder), dtype=int)
+            for source in tqdm(sources_with_copies,
+                               disable=not self.verbose,
+                               desc="Calculating symmetries   ",
+                               leave=True,
+                               position=0):
+                one_source_symmetries = [identity_perm]
+                inf_level = self.inflation_levels[source]
+                perms = format_permutations(list(
+                    permutations(range(inf_level)))[1:])
+                permutation_failed = False
+                for permutation in perms:
+                    adjusted_mons = apply_source_perm(self._lexorder,
+                                                       source,
+                                                       permutation)
+                    try:
+                        one_source_symmetries.append(
+                            self.mon_to_lexrepr(adjusted_mons))
+                    except SystemError:
+                        permutation_failed = True
+                        pass
+                lexorder_symmetries.append(one_source_symmetries)
+            if permutation_failed and (self.verbose > 0):
+                warn("The generating set is not closed under source swaps."
+                     + " Some symmetries will not be implemented.")
+            lexorder_symmetries = np.vstack([reduce(np.take, perms)
+                                             for perms in
+                                    product(*lexorder_symmetries)])
+            if len(lexorder_symmetries):
+                monomials_as_lexboolvecs = np.vstack([
+                    nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
+                    for mon in self.generating_monomials]).astype(bool)
+                orbits = nb_apply_lexorder_perm_to_lexboolvecs(
+                    monomials_as_lexboolvecs,
+                    lexorder_perms=lexorder_symmetries)
+                return orbits
+            else:
+                pass
+        else:
+            pass
+        return np.arange(self.n_columns, dtype=int)
 
 
     # def _from_lexorder_perm_to_columns_orbits(self,
