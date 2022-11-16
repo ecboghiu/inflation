@@ -196,7 +196,10 @@ class InflationLP(object):
                 np.amin(np.vstack((np.arange(self.n_columns),
                                    self.inflation_symmetries)),
                         axis=0))
+            # print(self._discover_inflation_orbits())
             old_reps = np.unique(self._discover_inflation_orbits())
+            # print("New version orbits: ", old_reps)
+            # print("Old version orbits: ", old_reps_old_style)
             assert np.array_equal(old_reps, old_reps_old_style), "New algorithm failing."
             old_reps_set = set(old_reps.ravel().tolist())
             # Reset generating monomials
@@ -665,6 +668,9 @@ class InflationLP(object):
                                 total=np.prod(lengths),
                                 leave=True,
                                 position=0))
+        # THERE ARE DUPLICATE?!?
+        # generating_monomials = [col[np.lexsort(np.rot90(col))]
+        #                         for col in nontriv_cols]
         generating_monomials = list(nontriv_cols)
 
         if symbolic:
@@ -1210,15 +1216,35 @@ class InflationLP(object):
                      + " Some symmetries will not be implemented.")
             lexorder_symmetries = np.vstack([reduce(np.take, perms)
                                              for perms in
-                                    product(*lexorder_symmetries)])
+                                             product(*lexorder_symmetries)])
+            print("Lexorder symmetries: ", lexorder_symmetries)
             if len(lexorder_symmetries):
-                monomials_as_lexboolvecs = np.vstack([
+                monomials_as_lexboolvecs = np.array([
                     nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
-                    for mon in self.generating_monomials]).astype(bool)
+                    for mon in self.generating_monomials], dtype=bool)
+                compressed, idxs, counts = np.unique(monomials_as_lexboolvecs,
+                                               axis=0,
+                                               return_inverse=True,
+                                               return_counts=True)
+                for i, count in enumerate(counts):
+                    if count > 1:
+                        duplicate_positions = np.flatnonzero(idxs==i)
+                        print([self.generating_monomials[k] for k in duplicate_positions.flat])
+                        break
+                assert len(compressed)==len(monomials_as_lexboolvecs), "Monomials as lex bool vecs are not unique."
                 orbits = nb_apply_lexorder_perm_to_lexboolvecs(
                     monomials_as_lexboolvecs,
                     lexorder_perms=lexorder_symmetries)
+                print("Num columns: ", self.n_columns)
+                reps, counts = np.unique(orbits, return_counts=True)
+                print("Unique reps: ", reps)
+                print("Counts: ", counts)
+                print("Lexorder: ", self._lexorder)
+                print("Example mons: ", [self.generating_monomials[i] for i in
+                                         np.flatnonzero( orbits==reps[5] )])
+
                 return orbits
+
             else:
                 pass
         else:

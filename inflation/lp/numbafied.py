@@ -67,9 +67,11 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
             equivalent_monomial_positions = nb_mon_to_lexrepr_bool(
                 mon=alternative_lexboolvecs,
                 lexorder=monomials_as_lexboolvecs)
-            equivalent_monomial_positions = np.flatnonzero(
-                equivalent_monomial_positions)
-            if len(equivalent_monomial_positions):  # SHOULD ALWAYS HAPPEN!
+            equivalent_monomial_positions = np.unique(np.flatnonzero(
+                equivalent_monomial_positions))
+            if i in equivalent_monomial_positions.flat:  # SHOULD ALWAYS HAPPEN!
                 orbits[equivalent_monomial_positions] = \
                     equivalent_monomial_positions[0]
+            else:
+                print("Failure: ", alternative_lexboolvecs.astype(int))
     return orbits
