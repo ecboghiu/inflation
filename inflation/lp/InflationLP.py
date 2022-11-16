@@ -1214,9 +1214,9 @@ class InflationLP(object):
                                              for perms in
                                              product(*lexorder_symmetries)])
             if len(lexorder_symmetries):
-                monomials_as_lexboolvecs = np.array([
+                monomials_as_lexboolvecs = np.vstack([
                     nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
-                    for mon in self.generating_monomials], dtype=bool)
+                    for mon in self.generating_monomials])
                 orbits = nb_apply_lexorder_perm_to_lexboolvecs(
                     monomials_as_lexboolvecs,
                     lexorder_perms=lexorder_symmetries)

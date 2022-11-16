@@ -6,7 +6,8 @@ compilation in numba.
 import numpy as np
 
 try:
-    from numba import jit, prange, bool_, int_
+    from numba import jit, prange, bool_
+    from numba.types import int as int_
     nopython = True
 except ImportError:
     def jit(*args, **kwargs):
