@@ -20,7 +20,9 @@ from inflation import InflationProblem
 from ..sdp.fast_npa import (nb_all_commuting_q,
                             apply_source_perm,
                             commutation_matrix,
-                            to_canonical)
+                            to_canonical,
+                            nb_mon_to_lexrepr)
+from .numbafied import nb_mon_to_lexrepr_bool, nb_apply_lexorder_perm_to_lexboolvecs
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (clean_coefficients,
@@ -130,7 +132,8 @@ class InflationLP(object):
         # lexorder = np.concatenate((self.zero_operator, lexorder))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
-
+        self.mon_to_lexrepr = lambda mon: nb_mon_to_lexrepr(mon,
+                                                            self._lexorder)
         self._default_notcomm = commutation_matrix(self._lexorder,
                                                    self.commuting)
         self._notcomm = self._default_notcomm.copy()
@@ -174,7 +177,7 @@ class InflationLP(object):
         if len(genmon_hash_to_index) < len(generating_monomials):
             generating_monomials = [generating_monomials[i]
                                     for i in genmon_hash_to_index.values()]
-            genmon_hash_to_index = {hash: i for i, hash
+            genmon_hash_to_index = {mon_hash: i for i, mon_hash
                                     in enumerate(genmon_hash_to_index.keys())}
             if self.verbose > 0:
                 warn("Duplicates were detected in the list of generating " +
@@ -1131,7 +1134,7 @@ class InflationLP(object):
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
-                               leave=False,
+                               leave=True,
                                position=0):
                 one_source_symmetries = [identity_perm]
                 inf_level = self.inflation_levels[source]
@@ -1236,9 +1239,11 @@ class InflationLP(object):
         inflation_event_symmetries = np.array(inflation_event_symmetries)
         print("Inflation event symmetries: ", inflation_event_symmetries)
 
-        lexorder_symmetries = [self._lexorder]
+        default_order = np.arange(len(self._lexorder))
+        lexorder_symmetries = [default_order]
+
         for pre_action, post_action in inflation_event_symmetries:
-            new_lexorder = self._lexorder.copy()
+            new_lexorder = default_order.copy()
             print("Pre action: ", post_action)
             pre=self.mon_to_lexrepr(pre_action)
             print("Post action: ", post_action)
@@ -1246,32 +1251,13 @@ class InflationLP(object):
             new_lexorder[pre] = new_lexorder[post]
             lexorder_symmetries.append(new_lexorder)
         lexorder_symmetries = np.vstack(lexorder_symmetries)
-        # assert np.array_equal(lexorder_symmetries[0],
-        #                       np.arange(len(self._lexorder))), \
-        #     "First symmetry should be identity."
-        # lexorder_symmetries = np.array(
-        #     lexorder_symmetries).reshape((-1, len(self._lexorder)))
-        # column_permutations = []
+
         monomials_as_lexboolvecs = np.vstack([
             nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
             for mon in self.generating_monomials]).astype(bool)
         orbits = nb_apply_lexorder_perm_to_lexboolvecs(
             monomials_as_lexboolvecs,
             lexorder_perms=lexorder_symmetries)
-        # orbits = np.zeros(self.n_columns, dtype=int) - 1
-        # mon_lexorders = list(map(self.mon_to_lexrepr,
-        #                          self.generating_monomials))
-        # mon_lexorders_lookup = {self._from_2dndarray(np.sort(lexorder)): i for
-        #                         i, lexorder in enumerate(mon_lexorders)}
-        # for i, default_lex_order in enumerate(mon_lexorders):
-        #     if orbits[i] == -1:
-        #         alternative_lex_orders = lexorder_symmetries[:, default_lex_order]
-        #         alternative_lex_orders.sort(axis=1)
-        #         discovered_positions = np.fromiter((
-        #             mon_lexorders_lookup[self._from_2dndarray(lexorder)] for
-        #             lexorder in alternative_lex_orders
-        #         ), dtype=int)
-        #         orbits[discovered_positions] = np.min(discovered_positions)
         return orbits
 
 
