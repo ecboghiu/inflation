@@ -22,7 +22,9 @@ from ..sdp.fast_npa import (nb_all_commuting_q,
                             commutation_matrix,
                             to_canonical,
                             nb_mon_to_lexrepr)
-from .numbafied import nb_mon_to_lexrepr_bool, nb_apply_lexorder_perm_to_lexboolvecs
+from .numbafied import (nb_mon_to_lexrepr_bool,
+                        nb_apply_lexorder_perm_to_lexboolvecs)
+
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (clean_coefficients,
@@ -76,7 +78,7 @@ class InflationLP(object):
         else:
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
-        self.commuting = self.nonfanout # Legacy terminology.
+        self.commuting = self.nonfanout  # Legacy terminology.
         self.InflationProblem = inflationproblem
         self.names = self.InflationProblem.names
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
@@ -128,7 +130,8 @@ class InflationLP(object):
                                       dtype=self.np_dtype)
 
         # Define default lexicographic order through np.lexsort
-        lexorder = self._interpret_name(flatten(self.measurements))
+        lexorder = self._interpret_name(flatten(self.measurements)).astype(
+            self.np_dtype)
         # lexorder = np.concatenate((self.zero_operator, lexorder))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
@@ -215,9 +218,9 @@ class InflationLP(object):
         # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
         for idx, mon in tqdm(enumerate(self.generating_monomials),
-                               disable=not self.verbose,
-                               desc="Initializing monomials   ",
-                               total=len(self.generating_monomials)):
+                             disable=not self.verbose,
+                             desc="Initializing monomials   ",
+                             total=len(self.generating_monomials)):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
@@ -790,6 +793,8 @@ class InflationLP(object):
     def _inflation_orbit_and_rep(self,
                                  monomial: np.ndarray
                                  ) -> Tuple[set, np.ndarray]:
+        #TODO: CONVERT TO ACCEPTING SYMMETRIES ON LEXORDER
+        #TODO: RETURN MULTIPLICITY UNDER NON-INFLATION SYMMETRIES
         """Given a monomial as a 2D array, return its representative under
         inflation symmetries and its orbit. Only source swaps up to the maximum
         index of the source that appears in the monomials are considered.
@@ -1208,7 +1213,6 @@ class InflationLP(object):
             lexorder_symmetries = np.vstack([reduce(np.take, perms)
                                              for perms in
                                              product(*lexorder_symmetries)])
-            # print("Lexorder symmetries: ", lexorder_symmetries)
             if len(lexorder_symmetries):
                 monomials_as_lexboolvecs = np.array([
                     nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
@@ -1223,23 +1227,6 @@ class InflationLP(object):
             pass
         return np.arange(self.n_columns, dtype=int)
 
-
-    # def _from_lexorder_perm_to_columns_orbits(self,
-    #                                         lexorder_perms: np.ndarray) -> np.ndarray:
-    #     orbits = np.zeros(self.n_columns, dtype=int) - 1
-    #     mon_lexorders = list(map(self.mon_to_lexrepr,
-    #                              self.generating_monomials))
-    #     mon_lexorders_lookup = {self._from_2dndarray(np.sort(lexorder)): i for
-    #                             i, lexorder in enumerate(mon_lexorders)}
-    #     for i, default_lex_order in enumerate(mon_lexorders):
-    #         if orbits[i] == -1:
-    #             alternative_lex_orders = lexorder_perms[:, default_lex_order]
-    #             alternative_lex_orders.sort(axis=1)
-    #             discovered_positions = np.fromiter((
-    #                 mon_lexorders_lookup[self._from_2dndarray(lexorder)] for
-    #                 lexorder in alternative_lex_orders), dtype=int)
-    #             orbits[discovered_positions] = np.min(discovered_positions)
-    #     return orbits
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates
         the action of the group on the set of generating monomials. The
@@ -1303,7 +1290,6 @@ class InflationLP(object):
             new_lexorder[pre] = new_lexorder[post]
             lexorder_symmetries.append(new_lexorder)
         lexorder_symmetries = np.vstack(lexorder_symmetries)
-
         monomials_as_lexboolvecs = np.vstack([
             nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
             for mon in self.generating_monomials]).astype(bool)
@@ -1311,7 +1297,6 @@ class InflationLP(object):
             monomials_as_lexboolvecs,
             lexorder_perms=lexorder_symmetries)
         return orbits
-
 
     def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
         """Generates all the party operators in the quantum inflation.

@@ -6,25 +6,19 @@ compilation in numba.
 import numpy as np
 
 try:
-    from numba import jit, prange
-    from numba.types import bool_, void
-    from numba.types import uint8 as uint8_
-    from numba.types import int as int_
+    from numba import jit, prange, bool_, int_
     nopython = True
 except ImportError:
     def jit(*args, **kwargs):
         return lambda f: f
     bool_    = bool
+    int_     = int
     nopython = False
     prange   = range
-    uint8_   = np.uint8
-    void     = None
 
 cache    = True
 if not nopython:
-    from scipy.sparse.csgraph import connected_components
     bool_  = bool
-    uint8_ = np.uint8
     int_ = int
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
@@ -57,29 +51,24 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
+@jit(nopython=True, cache=cache, forceobj=False, parallel=False)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
+    # Note: dictionary creation seems wasteful,
+    # but this function is not called within loops.
     lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                    enumerate(monomials_as_lexboolvecs)}
-    # print(monomials_as_lexboolvecs.astype(int_))
-    # print(lookup_dict)
     orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int_) - 1
     for i, default_lexboolvec in enumerate(monomials_as_lexboolvecs):
         if orbits[i] == -1:
             alternative_lexboolvecs = default_lexboolvec[lexorder_perms]
-            # equivalent_monomial_positions = nb_mon_to_lexrepr_bool(
-            #     mon=alternative_lexboolvecs,
-            #     lexorder=monomials_as_lexboolvecs)
-            # equivalent_monomial_positions = np.unique(np.flatnonzero(
-            #     equivalent_monomial_positions))
             equivalent_monomial_positions = list()
             for bitvec in alternative_lexboolvecs:
                 try:
                     equivalent_monomial_positions.append(lookup_dict[bitvec.tobytes()])
                 except KeyError:
                     pass
-            equivalent_monomial_positions = np.sort(equivalent_monomial_positions)
+            # equivalent_monomial_positions = np.sort(equivalent_monomial_positions)
             # if i in equivalent_monomial_positions.flat:  # SHOULD ALWAYS HAPPEN!
-            orbits[equivalent_monomial_positions] = equivalent_monomial_positions[0]
+            orbits[equivalent_monomial_positions] = i
     return orbits
