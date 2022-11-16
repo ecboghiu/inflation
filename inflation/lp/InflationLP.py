@@ -1553,8 +1553,8 @@ class InflationLP(object):
                                          for mon, (coeff, subs)
                                          in self.semiknown_moments.items()},
                       "equalities": [{mon.name: coeff
-                                          for mon, coeff in eq.items()}
-                                         for eq in self.moment_equalities],
+                                      for mon, coeff in eq.items()}
+                                     for eq in self.moment_equalities],
                       "inequalities": [{mon.name: coeff
                                         for mon, coeff in ineq.items()}
                                        for ineq in self.moment_inequalities]
