@@ -191,16 +191,7 @@ class InflationLP(object):
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
-            self.inflation_symmetries = self._discover_inflation_symmetries()
-            old_reps_old_style = np.unique(
-                np.amin(np.vstack((np.arange(self.n_columns),
-                                   self.inflation_symmetries)),
-                        axis=0))
-            # print(self._discover_inflation_orbits())
             old_reps = np.unique(self._discover_inflation_orbits())
-            # print("New version orbits: ", old_reps)
-            # print("Old version orbits: ", old_reps_old_style)
-            assert np.array_equal(old_reps, old_reps_old_style), "New algorithm failing."
             old_reps_set = set(old_reps.ravel().tolist())
             # Reset generating monomials
             self.generating_monomials = [self.generating_monomials[i] for i
@@ -639,7 +630,7 @@ class InflationLP(object):
             hash_except_outcome = lambda mon: mon[:-1].tobytes()
 
             choices_to_combine = [
-                (self.identity_operator, ) + tuple(ortho_group)
+                tuple(ortho_group) + (self.identity_operator, )
                 for _, ortho_group in groupby(self._lexorder,
                                               key=hash_except_outcome)]
             lengths = list(map(len, choices_to_combine))
@@ -671,7 +662,7 @@ class InflationLP(object):
         # THERE ARE DUPLICATE?!?
         # generating_monomials = [col[np.lexsort(np.rot90(col))]
         #                         for col in nontriv_cols]
-        generating_monomials = list(nontriv_cols)
+        generating_monomials = sorted(nontriv_cols, key=len)
 
         if symbolic:
             generating_monomials = [to_symbol(col, self.names)
@@ -1217,34 +1208,15 @@ class InflationLP(object):
             lexorder_symmetries = np.vstack([reduce(np.take, perms)
                                              for perms in
                                              product(*lexorder_symmetries)])
-            print("Lexorder symmetries: ", lexorder_symmetries)
+            # print("Lexorder symmetries: ", lexorder_symmetries)
             if len(lexorder_symmetries):
                 monomials_as_lexboolvecs = np.array([
                     nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
                     for mon in self.generating_monomials], dtype=bool)
-                compressed, idxs, counts = np.unique(monomials_as_lexboolvecs,
-                                               axis=0,
-                                               return_inverse=True,
-                                               return_counts=True)
-                for i, count in enumerate(counts):
-                    if count > 1:
-                        duplicate_positions = np.flatnonzero(idxs==i)
-                        print([self.generating_monomials[k] for k in duplicate_positions.flat])
-                        break
-                assert len(compressed)==len(monomials_as_lexboolvecs), "Monomials as lex bool vecs are not unique."
                 orbits = nb_apply_lexorder_perm_to_lexboolvecs(
                     monomials_as_lexboolvecs,
                     lexorder_perms=lexorder_symmetries)
-                print("Num columns: ", self.n_columns)
-                reps, counts = np.unique(orbits, return_counts=True)
-                print("Unique reps: ", reps)
-                print("Counts: ", counts)
-                print("Lexorder: ", self._lexorder)
-                print("Example mons: ", [self.generating_monomials[i] for i in
-                                         np.flatnonzero( orbits==reps[5] )])
-
                 return orbits
-
             else:
                 pass
         else:
@@ -1308,7 +1280,6 @@ class InflationLP(object):
                 # print("Sym:", sym)
                 elevated_sym = []
                 for event in sym[:-1]:
-                    print("Event :", event)
                     (party, input, output) = event
                     middle = inflation_indices_per_party[party - 1]
                     middle = middle[np.lexsort(np.rot90(middle[:, sym[-1]]))]
@@ -1319,20 +1290,15 @@ class InflationLP(object):
                         np.broadcast_to([input, output], (length, 2))
                     ))
                     elevated_sym.extend(elevated_events)
-                print("Elevated sym: ", elevated_sym)
                 elevated_sym_pair.append(elevated_sym)
             inflation_event_symmetries.append(elevated_sym_pair)
         inflation_event_symmetries = np.array(inflation_event_symmetries)
-        print("Inflation event symmetries: ", inflation_event_symmetries)
 
         default_order = np.arange(len(self._lexorder))
         lexorder_symmetries = [default_order]
-
         for pre_action, post_action in inflation_event_symmetries:
             new_lexorder = default_order.copy()
-            print("Pre action: ", post_action)
             pre=self.mon_to_lexrepr(pre_action)
-            print("Post action: ", post_action)
             post=self.mon_to_lexrepr(post_action)
             new_lexorder[pre] = new_lexorder[post]
             lexorder_symmetries.append(new_lexorder)

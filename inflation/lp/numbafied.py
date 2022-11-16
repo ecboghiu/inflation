@@ -60,18 +60,26 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
 @jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
+    lookup_dict = {bitvec.tobytes(): i for i, bitvec in
+                   enumerate(monomials_as_lexboolvecs)}
+    # print(monomials_as_lexboolvecs.astype(int_))
+    # print(lookup_dict)
     orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int_) - 1
     for i, default_lexboolvec in enumerate(monomials_as_lexboolvecs):
         if orbits[i] == -1:
             alternative_lexboolvecs = default_lexboolvec[lexorder_perms]
-            equivalent_monomial_positions = nb_mon_to_lexrepr_bool(
-                mon=alternative_lexboolvecs,
-                lexorder=monomials_as_lexboolvecs)
-            equivalent_monomial_positions = np.unique(np.flatnonzero(
-                equivalent_monomial_positions))
-            if i in equivalent_monomial_positions.flat:  # SHOULD ALWAYS HAPPEN!
-                orbits[equivalent_monomial_positions] = \
-                    equivalent_monomial_positions[0]
-            else:
-                print("Failure: ", alternative_lexboolvecs.astype(int))
+            # equivalent_monomial_positions = nb_mon_to_lexrepr_bool(
+            #     mon=alternative_lexboolvecs,
+            #     lexorder=monomials_as_lexboolvecs)
+            # equivalent_monomial_positions = np.unique(np.flatnonzero(
+            #     equivalent_monomial_positions))
+            equivalent_monomial_positions = list()
+            for bitvec in alternative_lexboolvecs:
+                try:
+                    equivalent_monomial_positions.append(lookup_dict[bitvec.tobytes()])
+                except KeyError:
+                    pass
+            equivalent_monomial_positions = np.sort(equivalent_monomial_positions)
+            # if i in equivalent_monomial_positions.flat:  # SHOULD ALWAYS HAPPEN!
+            orbits[equivalent_monomial_positions] = equivalent_monomial_positions[0]
     return orbits
