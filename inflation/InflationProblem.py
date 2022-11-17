@@ -211,8 +211,11 @@ class InflationProblem(object):
                 self.ever_factorizes = True
                 break
         # Create all the different possibilities for inflation indices
-        inflation_indices = list()
-        for active_sources in np.unique(self.hypergraph.T, axis=0):
+
+        self.inflation_indices_per_party = list()
+        for party in range(self.nr_parties):
+            inflation_indices = list()
+            active_sources =self.hypergraph[:, party]
             num_copies = np.multiply(active_sources,
                                      self.inflation_level_per_source)
             # Put non-participating and non-inflated on equal footing
@@ -221,13 +224,46 @@ class InflationProblem(object):
                 inflation_indxs = active_sources + np.array(increase_from_base,
                                                             dtype=np.uint8)
                 inflation_indices.append(inflation_indxs)
+            self.inflation_indices_per_party.append(
+                np.vstack(inflation_indices))
+
+        all_unique_inflation_indices = np.unique(
+            np.vstack(self.inflation_indices_per_party),
+            axis=0)
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
-                                        in enumerate(inflation_indices)}
+                                        in enumerate(
+                all_unique_inflation_indices)}
         self._inflation_indices_overlap = nb_overlap_matrix(
-            np.asarray(inflation_indices, dtype=np.uint8))
-        assert len(self._inflation_indices_hash) == len(inflation_indices), \
-            "Error: duplicated inflation index pattern."
+            np.asarray(all_unique_inflation_indices, dtype=np.uint8))
+
+        # Create the measurements (formerly generate_parties)
+        self._nr_properties = 1 + self.nr_sources + 2
+        self.measurements = list()
+        for p in range(self.nr_parties):
+            O_vals = np.arange(self.outcomes_per_party[p], dtype=np.uint8)
+            S_vals = np.arange(self.settings_per_party[p], dtype=np.uint8)
+            I_vals = self.inflation_indices_per_party[p]
+            # TODO: Use broadcasting instead of nested for loops
+            measurements_per_party = np.empty(
+                (len(I_vals), len(S_vals), len(O_vals), self._nr_properties),
+                dtype=np.uint8)
+            measurements_per_party[:, :, :, 0] = p + 1
+            for i, inf_idxs in enumerate(I_vals):
+                measurements_per_party[i, :, :, 1:(self.nr_sources +1)] = inf_idxs
+                for s in S_vals.flat:
+                    measurements_per_party[i, s, :, -2] = s
+                    for o in O_vals.flat:
+                        measurements_per_party[i, s, o, -1] = o
+            self.measurements.append(measurements_per_party)
+        self.ortho_groups = list() # Useful for LP
+        for p, measurements_per_party in enumerate(self.measurements):
+            O_card = self.outcomes_per_party[p]
+            self.ortho_groups.extend(
+                measurements_per_party.reshape(
+                    (-1, O_card, self._nr_properties)))
+        self.lexorder = np.vstack(self.ortho_groups)
+
 
     def __repr__(self):
         return ("InflationProblem with " + str(self.dag) +
