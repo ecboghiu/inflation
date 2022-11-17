@@ -279,7 +279,7 @@ def nb_mon_to_lexrepr(mon: np.ndarray,
         Monomial as array of integers, where each integer is the hash
         of the corresponding operator.
     """
-    lex = np.zeros(mon.shape[0], dtype=lexorder.dtype)
+    lex = np.empty(mon.shape[0], dtype=lexorder.dtype)
     for i in prange(mon.shape[0]):
         lex[i] = nb_lexorder_idx(mon[i], lexorder)
     return lex
