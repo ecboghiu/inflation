@@ -6,11 +6,20 @@ inflation.
 """
 import numpy as np
 
-from itertools import chain, combinations_with_replacement
+from itertools import (chain,
+                       combinations_with_replacement,
+                       product,
+                       permutations)
 from warnings import warn
 from .sdp.fast_npa import (nb_classify_disconnected_components,
-                           nb_overlap_matrix)
+                           nb_overlap_matrix,
+                           apply_source_perm)
+
+from .utils import format_permutations
 from typing import Tuple
+
+from functools import reduce
+from tqdm import tqdm
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -256,13 +265,20 @@ class InflationProblem(object):
                     for o in O_vals.flat:
                         measurements_per_party[i, s, o, -1] = o
             self.measurements.append(measurements_per_party)
-        self.ortho_groups = list() # Useful for LP
+        self._ortho_groups = list() # Useful for LP
         for p, measurements_per_party in enumerate(self.measurements):
             O_card = self.outcomes_per_party[p]
-            self.ortho_groups.extend(
+            self._ortho_groups.extend(
                 measurements_per_party.reshape(
                     (-1, O_card, self._nr_properties)))
-        self.lexorder = np.vstack(self.ortho_groups)
+        self._lexorder = np.vstack(self._ortho_groups)
+        self._lexorder_lookup = {op.tobytes(): i for i, op in
+                                 enumerate(self._lexorder)}
+        self._nr_measurements = len(self._lexorder)
+
+        # Discover the inflation symmetries
+        self.inf_symmetries = self.lexorder_perms_from_inflation()
+
 
 
     def __repr__(self):
@@ -428,3 +444,55 @@ class InflationProblem(object):
                                    party_index][effective_setting][0]
             o[-2] = o_private_settings
         return new_mon
+
+    def lexorder_perms_from_inflation(self) -> np.ndarray:
+        """Calculates all the symmetries pertaining to the set of generating
+        monomials. The new set of operators is a permutation of the old. The
+        function outputs a list of all permutations.
+
+        Returns
+        -------
+        numpy.ndarray[int]
+            The permutations of the lexicographic order implied by the inflation
+            symmetries.
+        """
+        sources_with_copies = [source for source, inf_level
+                               in enumerate(self.inflation_level_per_source)
+                               if inf_level > 1]
+        if len(sources_with_copies):
+            permutation_failed = False
+            lexorder_symmetries = []
+            identity_perm        = np.arange(self._nr_measurements, dtype=int)
+            for source in tqdm(sources_with_copies,
+                               disable=not self.verbose,
+                               desc="Calculating symmetries   ",
+                               leave=True,
+                               position=0):
+                one_source_symmetries = [identity_perm]
+                inf_level = self.inflation_level_per_source[source]
+                perms = format_permutations(list(
+                    permutations(range(inf_level)))[1:])
+                for permutation in perms:
+                    adjusted_ops = apply_source_perm(self._lexorder,
+                                                       source,
+                                                       permutation)
+                    try:
+                        new_order = np.fromiter(
+                            (self._lexorder_lookup[op.tobytes()]
+                             for op in adjusted_ops),
+                            dtype=int
+                        )
+                        one_source_symmetries.append(new_order)
+                    except KeyError:
+                        permutation_failed = True
+                        pass
+                lexorder_symmetries.append(one_source_symmetries)
+            if permutation_failed and (self.verbose > 0):
+                warn("The generating set is not closed under source swaps."
+                     + " Some symmetries will not be implemented.")
+            lexorder_symmetries = np.vstack([reduce(np.take, perms)
+                                             for perms in
+                                             product(*lexorder_symmetries)])
+            return lexorder_symmetries
+        else:
+            return np.arange(self._nr_measurements, dtype=int)
