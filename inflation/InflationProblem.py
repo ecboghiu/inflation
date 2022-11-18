@@ -274,7 +274,7 @@ class InflationProblem(object):
         self._lexorder = np.vstack(self._ortho_groups)
         self._lexorder_lookup = {op.tobytes(): i for i, op in
                                  enumerate(self._lexorder)}
-        self._nr_measurements = len(self._lexorder)
+        self._nr_operators = len(self._lexorder)
 
         # Discover the inflation symmetries
         self.inf_symmetries = self.lexorder_perms_from_inflation()
@@ -462,7 +462,7 @@ class InflationProblem(object):
         if len(sources_with_copies):
             permutation_failed = False
             lexorder_symmetries = []
-            identity_perm        = np.arange(self._nr_measurements, dtype=int)
+            identity_perm        = np.arange(self._nr_operators, dtype=int)
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
@@ -474,8 +474,8 @@ class InflationProblem(object):
                     permutations(range(inf_level)))[1:])
                 for permutation in perms:
                     adjusted_ops = apply_source_perm(self._lexorder,
-                                                       source,
-                                                       permutation)
+                                                     source,
+                                                     permutation)
                     try:
                         new_order = np.fromiter(
                             (self._lexorder_lookup[op.tobytes()]
@@ -495,4 +495,4 @@ class InflationProblem(object):
                                              product(*lexorder_symmetries)])
             return lexorder_symmetries
         else:
-            return np.arange(self._nr_measurements, dtype=int)
+            return np.arange(self._nr_operators, dtype=int)
