@@ -7,21 +7,17 @@ instance (see arXiv:1909.10519).
 import numpy as np
 import sympy as sp
 
-from collections import Counter, deque
-from functools import reduce
+from collections import Counter
 from gc import collect
-from itertools import chain, count, product, permutations, repeat, groupby
+from itertools import chain, product
 from numbers import Real
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from inflation import InflationProblem
-from ..sdp.fast_npa import (nb_all_commuting_q,
-                            apply_source_perm,
-                            commutation_matrix,
-                            to_canonical,
-                            nb_mon_to_lexrepr)
+from ..sdp.fast_npa import nb_mon_to_lexrepr #TODO: Remove after getting rid of
+                                             # elevate_symmetries
 from .numbafied import (nb_mon_to_lexrepr_bool,
                         nb_apply_lexorder_perm_to_lexboolvecs)
 
@@ -30,13 +26,9 @@ from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (clean_coefficients,
                                  expand_moment_normalisation,
                                  flatten_symbolic_powers,
-                                 format_permutations,
-                                 generate_operators,
                                  party_physical_monomials,
-                                 reduce_inflation_indices,
                                  to_symbol)
 from ..sdp.sdp_utils import solveSDP_MosekFUSION
-from ..utils import flatten
 
 
 class InflationLP(object):
@@ -79,46 +71,51 @@ class InflationLP(object):
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
         self.commuting = self.nonfanout  # Legacy terminology.
-        self.InflationProblem = inflationproblem
-        self.names = self.InflationProblem.names
-        self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
+
         if self.verbose > 1:
-            print(self.InflationProblem)
+            print(inflationproblem)
 
-        self.nr_parties = len(self.names)
-        self.nr_sources = self.InflationProblem.nr_sources
-        self.hypergraph = self.InflationProblem.hypergraph
-        self.inflation_levels = \
-            self.InflationProblem.inflation_level_per_source
-        self.outcome_cardinalities = \
-            np.array(self.InflationProblem.outcomes_per_party,
-                     copy=True) + 1
-        # We consider all outcomes of all parties in LP inflation.
-        self.has_children = np.ones(self.nr_parties, dtype=int)
-        self.setting_cardinalities = self.InflationProblem.settings_per_party
+        # Inheritance
+        self.InflationProblem = inflationproblem
+        self.names = inflationproblem.names
+        self.nr_sources = inflationproblem.nr_sources
+        self.nr_parties = inflationproblem.nr_parties
+        self.hypergraph = inflationproblem.hypergraph
+        self.network_scenario = inflationproblem.is_network
+        self.inflation_levels = inflationproblem.inflation_level_per_source
+        self.setting_cardinalities = inflationproblem.settings_per_party
+        self.rectify_fake_setting = inflationproblem.rectify_fake_setting
+        self.factorize_monomial = inflationproblem.factorize_monomial
+        self._is_knowable_q_non_networks = \
+            inflationproblem._is_knowable_q_non_networks
+        self._nr_properties = inflationproblem._nr_properties
 
-        self.measurements = self._generate_parties()
+
+        #The following depends on the form of CG notation
+        self.outcome_cardinalities = inflationproblem.outcomes_per_party + 1
+        self._lexorder = inflationproblem._lexorder
+        self._nr_operators = inflationproblem._nr_operators
+        self.lexorder_symmetries = inflationproblem.inf_symmetries
+        self._lexorder_lookup = inflationproblem._lexorder_lookup
+        self._ortho_groups = inflationproblem._ortho_groups
+        self.has_children = np.ones(self.nr_parties, dtype=bool)
+
+        self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
+
         if self.verbose > 1:
             print("Number of single operator measurements per party:", end="")
             prefix = " "
-            for i, measures in enumerate(self.measurements):
-                counter = count()
-                deque(zip(chain.from_iterable(
-                    chain.from_iterable(measures)),
-                          counter),
-                      maxlen=0)
-                print(prefix + f"{self.names[i]}={next(counter)}", end="")
+            for i, measures in enumerate(inflationproblem.measurements):
+                op_count = np.prod(measures.shape[:2])
+                print(prefix + f"{self.names[i]}={op_count}", end="")
                 prefix = ", "
             print()
         self.use_lpi_constraints = False
+
         self.network_scenario    = self.InflationProblem.is_network
         self._is_knowable_q_non_networks = \
             self.InflationProblem._is_knowable_q_non_networks
-        self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
-        self.factorize_monomial = self.InflationProblem.factorize_monomial
 
-        self._nr_operators = len(flatten(self.measurements))
-        self._nr_properties = 1 + self.nr_sources + 2
         self.np_dtype = np.find_common_type([
             np.min_scalar_type(np.max(self.setting_cardinalities)),
             np.min_scalar_type(np.max(self.outcome_cardinalities)),
@@ -129,23 +126,9 @@ class InflationLP(object):
         self.zero_operator = np.zeros((1, self._nr_properties),
                                       dtype=self.np_dtype)
 
-        # Define default lexicographic order through np.lexsort
-        lexorder = self._interpret_name(flatten(self.measurements)).astype(
-            self.np_dtype)
-        # lexorder = np.concatenate((self.zero_operator, lexorder))
-        self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
-        self._lexorder = self._default_lexorder.copy()
         self.mon_to_lexrepr = lambda mon: nb_mon_to_lexrepr(mon,
                                                             self._lexorder)
-        self._default_notcomm = commutation_matrix(self._lexorder,
-                                                   self.commuting)
-        self._notcomm = self._default_notcomm.copy()
-        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
-                                                              self._lexorder,
-                                                              self._notcomm)
 
-        self.canon_ndarray_from_hash    = dict()
-        self.canonsym_ndarray_from_hash = dict()
         # These next properties are reset during generate_lp, but are needed in
         # init so as to be able to test the Monomial constructor function
         # without generate_lp.
@@ -171,30 +154,22 @@ class InflationLP(object):
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
-        generating_monomials = self.build_columns()
+        self.generating_monomials = self.build_columns()
         # Generate dictionary to indices (used in dealing with symmetries and
         # column-level equalities)
-        genmon_hash_to_index = {self._from_2dndarray(op): i
-                                for i, op in enumerate(generating_monomials)}
-        # Check for duplicates
-        if len(genmon_hash_to_index) < len(generating_monomials):
-            generating_monomials = [generating_monomials[i]
-                                    for i in genmon_hash_to_index.values()]
-            genmon_hash_to_index = {mon_hash: i for i, mon_hash
-                                    in enumerate(genmon_hash_to_index.keys())}
-            if self.verbose > 0:
-                warn("Duplicates were detected in the list of generating " +
-                     "monomials and automatically removed.")
-        self.genmon_hash_to_index = genmon_hash_to_index
-        self.n_columns            = len(generating_monomials)
-        self.generating_monomials = generating_monomials
-        del generating_monomials, genmon_hash_to_index
+        self.genmon_hash_to_index = {self._from_2dndarray(op): i
+                                     for i, op in
+                                     enumerate(self.generating_monomials)}
+        self.n_columns            = len(self.generating_monomials)
         collect()
+        # Calculate normalization equalities
+        self.column_level_equalities = self._discover_normalization_eqns()
 
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
-            old_reps = np.unique(self._discover_inflation_orbits())
+            old_reps, self.inverse = np.unique(self._discover_inflation_orbits(),
+                                          return_inverse=True)
             old_reps_set = set(old_reps.ravel().tolist())
             # Reset generating monomials
             self.generating_monomials = [self.generating_monomials[i] for i
@@ -207,12 +182,13 @@ class InflationLP(object):
                                          enumerate(
                                              self.genmon_hash_to_index.items()
                                          )}
+        else:
+            self.inverse = np.arange(self.n_columns)
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
                   self.n_columns)
 
-        # Calculate normalization equalities
-        self.column_level_equalities = self._discover_normalization_eqns()
+
         # TODO: merge the above into once consistent concept...
 
         # Associate Monomials to the remaining entries.
@@ -252,11 +228,13 @@ class InflationLP(object):
         # some variables, so there exist normalization constraints between them
         self.moment_equalities = []
         for (norm_idx, summation_idxs) in self.column_level_equalities:
-            eq_dict = {self.compmonomial_from_idx[norm_idx]: 1}
-            summation_mons = [self.compmonomial_from_idx[idx] for idx
-                              in summation_idxs]
-            extra_dict = dict(zip(summation_mons, repeat(-1)))
-            eq_dict.update(extra_dict)
+            norm_idx_after_sym = self.inverse[norm_idx]
+            norm_mon = self.compmonomial_from_idx[norm_idx_after_sym]
+            eq_dict = {norm_mon: 1}
+            for idx in summation_idxs:
+                idx_after_sym = self.inverse[idx]
+                mon = self.compmonomial_from_idx[idx_after_sym]
+                eq_dict[mon] = eq_dict.get(mon, 0) - 1
             self.moment_equalities.append(eq_dict)
 
         self.moment_inequalities = []
@@ -630,12 +608,9 @@ class InflationLP(object):
             ``False``.
         """
         if not self.nonfanout:
-            hash_except_outcome = lambda mon: mon[:-1].tobytes()
-
             choices_to_combine = [
                 tuple(ortho_group) + (self.identity_operator, )
-                for _, ortho_group in groupby(self._lexorder,
-                                              key=hash_except_outcome)]
+                for ortho_group in self._ortho_groups]
             lengths = list(map(len, choices_to_combine))
         else:
             choices_to_combine = []
@@ -662,9 +637,6 @@ class InflationLP(object):
                                 total=np.prod(lengths),
                                 leave=True,
                                 position=0))
-        # THERE ARE DUPLICATE?!?
-        # generating_monomials = [col[np.lexsort(np.rot90(col))]
-        #                         for col in nontriv_cols]
         generating_monomials = sorted(nontriv_cols, key=len)
 
         if symbolic:
@@ -734,17 +706,26 @@ class InflationLP(object):
         try:
             return self.atomic_monomial_from_hash[key]
         except KeyError:
-            repr_array2d = self._to_inflation_repr(array2d)
-            new_key      = self._from_2dndarray(repr_array2d)
-            try:
-                mon = self.atomic_monomial_from_hash[new_key]
-                self.atomic_monomial_from_hash[key] = mon
-                return mon
-            except KeyError:
-                mon = InternalAtomicMonomial(self, repr_array2d)
+            if len(self.lexorder_symmetries) == 1:
+                mon = InternalAtomicMonomial(self, array2d)
                 self.atomic_monomial_from_hash[key]     = mon
-                self.atomic_monomial_from_hash[new_key] = mon
                 return mon
+            else:
+                mon_as_boolvec = nb_mon_to_lexrepr_bool(mon=array2d,
+                                                        lexorder=self._lexorder)
+                mon_as_symboolvec = mon_as_boolvec[self.lexorder_symmetries]
+                mon_as_symboolvec = mon_as_symboolvec[
+                    np.lexsort(np.rot90(mon_as_symboolvec))]
+                mon_as_boolvec = mon_as_symboolvec[0]
+                repr_array2d = self._lexorder[mon_as_boolvec]
+                mon = InternalAtomicMonomial(self, repr_array2d)
+                for mon_as_boolvec in mon_as_symboolvec:
+                    repr_array2d = self._lexorder[mon_as_boolvec]
+                    key = repr_array2d.tobytes()
+                    self.atomic_monomial_from_hash[key] = mon
+                return mon
+
+
 
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
         r"""Create an instance of the `CompoundMonomial` class from a 2D array.
@@ -789,49 +770,6 @@ class InflationLP(object):
         mon = self._monomial_from_atoms(list_of_atoms)
         mon.attach_idx(idx)
         return mon
-
-    def _inflation_orbit_and_rep(self,
-                                 monomial: np.ndarray
-                                 ) -> Tuple[set, np.ndarray]:
-        #TODO: CONVERT TO ACCEPTING SYMMETRIES ON LEXORDER
-        #TODO: RETURN MULTIPLICITY UNDER NON-INFLATION SYMMETRIES
-        """Given a monomial as a 2D array, return its representative under
-        inflation symmetries and its orbit. Only source swaps up to the maximum
-        index of the source that appears in the monomials are considered.
-
-        Parameters
-        ----------
-        monomial : numpy.ndarray
-            Monomial as a 2D array.
-
-        Returns
-        -------
-        Tuple[set, numpy.ndarray]
-            The orbit as a set of all monomials explored, and the
-            representative (i.e, the minimum over said set).
-        """
-        inf_levels = monomial[:, 1:-2].max(axis=0)
-        nr_sources = inf_levels.shape[0]
-        all_permutations_per_source = [
-            format_permutations(list(permutations(range(inflevel))))
-            for inflevel in inf_levels.flat]
-        seen_hashes = set()
-        for permutation in product(*all_permutations_per_source):
-            permuted = monomial.copy()
-            for source in range(nr_sources):
-                permuted = apply_source_perm(permuted,
-                                             source,
-                                             permutation[source])
-            permuted = self._to_canonical_memoized(permuted, True)
-            hash     = self._from_2dndarray(permuted)
-            seen_hashes.add(hash)
-            try:
-                representative = self.canonsym_ndarray_from_hash[hash]
-                return seen_hashes, representative
-            except KeyError:
-                pass
-        representative = self._to_2dndarray(min(seen_hashes))
-        return seen_hashes, representative
 
     def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomial]
@@ -919,8 +857,8 @@ class InflationLP(object):
                 "The monomial representations must be 2d arrays."
             assert array.shape[-1] == self._nr_properties, \
                 "The input does not conform to the operator specification."
-            canon = self._to_canonical_memoized(array)
-            return self.Monomial(canon)
+            # canon = self._to_canonical_memoized(array)
+            return self.Monomial(array)
         elif isinstance(mon, str):
             try:
                 return self.monomial_from_name[mon]
@@ -936,77 +874,6 @@ class InflationLP(object):
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type " +
                             f"{type(mon)} and is not supported.")
-
-    def _to_inflation_repr(self,
-                           mon: np.ndarray,
-                           apply_only_commutations=False) -> np.ndarray:
-        r"""Apply inflation symmetries to a monomial in order to bring it to
-        its canonical form.
-
-        Example: Assume the monomial is :math:`\langle D^{350}_{00}D^{450}_{00}
-        D^{150}_{00}E^{401}_{00}F^{031}_{00}\rangle`. In array form, the
-        information about inflation copies is:
-
-        ::
-
-            [[3 5 0],
-             [4 5 0],
-             [1 5 0],
-             [4 0 1],
-             [0 3 1]]
-
-        For each column the function assigns to the first row index 1. Then,
-        the next different one will be 2, and so on. Therefore, the
-        representative of the monomial above is :math:`\langle D^{110}_{00}
-        D^{210}_{00} D^{310}_{00} E^{201}_{00} F^{021}_{00} \rangle`.
-
-        Parameters
-        ----------
-        mon : numpy.ndarray
-            Input monomial that cannot be further factorised.
-        apply_only_commutations : bool, optional
-            If ``True``, skip checking if monomial is zero and if there are
-            multiple same projectors that square to just one of them.
-
-        Returns
-        -------
-        numpy.ndarray
-            The canonical form of the input monomial under relabelling through
-            the inflation symmetries.
-        """
-        key = self._from_2dndarray(mon)
-        if len(mon) == 0 or np.array_equiv(mon, 0):
-            self.canonsym_ndarray_from_hash[key] = mon
-            return mon
-        else:
-            pass
-        try:
-            return self.canonsym_ndarray_from_hash[key]
-        except KeyError:
-            pass
-        canonical_mon = self._to_canonical_memoized(mon,
-                                                    apply_only_commutations)
-        canonical_key = self._from_2dndarray(canonical_mon)
-        try:
-            repr_mon = self.canonsym_ndarray_from_hash[canonical_key]
-            self.canonsym_ndarray_from_hash[key] = repr_mon
-            return repr_mon
-        except KeyError:
-            pass
-        repr_mon = reduce_inflation_indices(mon)
-        repr_key = self._from_2dndarray(repr_mon)
-        try:
-            real_repr_mon = self.canonsym_ndarray_from_hash[repr_key]
-            self.canonsym_ndarray_from_hash[key]           = real_repr_mon
-            self.canonsym_ndarray_from_hash[canonical_key] = real_repr_mon
-            return real_repr_mon
-        except KeyError:
-            pass
-        other_keys, real_repr_mon = self._inflation_orbit_and_rep(repr_mon)
-        other_keys.update({key, canonical_key, repr_key})
-        for key in other_keys:
-            self.canonsym_ndarray_from_hash[key] = real_repr_mon
-        return real_repr_mon
 
     ###########################################################################
     # ROUTINES RELATED TO NAME PARSING                                        #
@@ -1118,56 +985,56 @@ class InflationLP(object):
                     break
         return column_level_equalities
 
-    def _discover_inflation_symmetries(self) -> np.ndarray:
-        """Calculates all the symmetries pertaining to the set of generating
-        monomials. The new set of operators is a permutation of the old. The
-        function outputs a list of all permutations.
-
-        Returns
-        -------
-        numpy.ndarray[int]
-            The list of all permutations of the generating columns implied by
-            the inflation symmetries.
-        """
-        sources_with_copies = [source for source, inf_level
-                               in enumerate(self.inflation_levels)
-                               if inf_level > 1]
-        if len(sources_with_copies):
-            inflation_symmetries = []
-            identity_perm        = np.arange(self.n_columns, dtype=int)
-            for source in tqdm(sources_with_copies,
-                               disable=not self.verbose,
-                               desc="Calculating symmetries   ",
-                               leave=True,
-                               position=0):
-                one_source_symmetries = [identity_perm]
-                inf_level = self.inflation_levels[source]
-                perms = format_permutations(list(
-                    permutations(range(inf_level)))[1:])
-                permutation_failed = False
-                for permutation in perms:
-                    try:
-                        total_perm = np.empty(self.n_columns, dtype=int)
-                        for i, mon in enumerate(self.generating_monomials):
-                            new_mon = apply_source_perm(mon,
-                                                        source,
-                                                        permutation)
-                            new_mon = self._to_canonical_memoized(new_mon,
-                                                                  True)
-                            total_perm[i] = self.genmon_hash_to_index[
-                                                self._from_2dndarray(new_mon)]
-                        one_source_symmetries.append(total_perm)
-                    except KeyError:
-                        permutation_failed = True
-                inflation_symmetries.append(one_source_symmetries)
-            if permutation_failed and (self.verbose > 0):
-                warn("The generating set is not closed under source swaps."
-                     + " Some symmetries will not be implemented.")
-            inflation_symmetries = [reduce(np.take, perms) for perms in
-                                    product(*inflation_symmetries)]
-            return np.unique(inflation_symmetries[1:], axis=0)
-        else:
-            return np.empty((0, len(self.generating_monomials)), dtype=int)
+    # def _discover_inflation_symmetries(self) -> np.ndarray:
+    #     """Calculates all the symmetries pertaining to the set of generating
+    #     monomials. The new set of operators is a permutation of the old. The
+    #     function outputs a list of all permutations.
+    #
+    #     Returns
+    #     -------
+    #     numpy.ndarray[int]
+    #         The list of all permutations of the generating columns implied by
+    #         the inflation symmetries.
+    #     """
+    #     sources_with_copies = [source for source, inf_level
+    #                            in enumerate(self.inflation_levels)
+    #                            if inf_level > 1]
+    #     if len(sources_with_copies):
+    #         inflation_symmetries = []
+    #         identity_perm        = np.arange(self.n_columns, dtype=int)
+    #         for source in tqdm(sources_with_copies,
+    #                            disable=not self.verbose,
+    #                            desc="Calculating symmetries   ",
+    #                            leave=True,
+    #                            position=0):
+    #             one_source_symmetries = [identity_perm]
+    #             inf_level = self.inflation_levels[source]
+    #             perms = format_permutations(list(
+    #                 permutations(range(inf_level)))[1:])
+    #             permutation_failed = False
+    #             for permutation in perms:
+    #                 try:
+    #                     total_perm = np.empty(self.n_columns, dtype=int)
+    #                     for i, mon in enumerate(self.generating_monomials):
+    #                         new_mon = apply_source_perm(mon,
+    #                                                     source,
+    #                                                     permutation)
+    #                         new_mon = self._to_canonical_memoized(new_mon,
+    #                                                               True)
+    #                         total_perm[i] = self.genmon_hash_to_index[
+    #                                             self._from_2dndarray(new_mon)]
+    #                     one_source_symmetries.append(total_perm)
+    #                 except KeyError:
+    #                     permutation_failed = True
+    #             inflation_symmetries.append(one_source_symmetries)
+    #         if permutation_failed and (self.verbose > 0):
+    #             warn("The generating set is not closed under source swaps."
+    #                  + " Some symmetries will not be implemented.")
+    #         inflation_symmetries = [reduce(np.take, perms) for perms in
+    #                                 product(*inflation_symmetries)]
+    #         return np.unique(inflation_symmetries[1:], axis=0)
+    #     else:
+    #         return np.empty((0, len(self.generating_monomials)), dtype=int)
 
     def _discover_inflation_orbits(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
@@ -1180,52 +1047,16 @@ class InflationLP(object):
             The orbits of the generating columns implied by the inflation
             symmetries.
         """
-        sources_with_copies = [source for source, inf_level
-                               in enumerate(self.inflation_levels)
-                               if inf_level > 1]
-        if len(sources_with_copies):
-            lexorder_symmetries = []
-            identity_perm        = np.arange(len(self._lexorder), dtype=int)
-            for source in tqdm(sources_with_copies,
-                               disable=not self.verbose,
-                               desc="Calculating symmetries   ",
-                               leave=True,
-                               position=0):
-                one_source_symmetries = [identity_perm]
-                inf_level = self.inflation_levels[source]
-                perms = format_permutations(list(
-                    permutations(range(inf_level)))[1:])
-                permutation_failed = False
-                for permutation in perms:
-                    adjusted_mons = apply_source_perm(self._lexorder,
-                                                       source,
-                                                       permutation)
-                    try:
-                        one_source_symmetries.append(
-                            self.mon_to_lexrepr(adjusted_mons))
-                    except SystemError:
-                        permutation_failed = True
-                        pass
-                lexorder_symmetries.append(one_source_symmetries)
-            if permutation_failed and (self.verbose > 0):
-                warn("The generating set is not closed under source swaps."
-                     + " Some symmetries will not be implemented.")
-            lexorder_symmetries = np.vstack([reduce(np.take, perms)
-                                             for perms in
-                                             product(*lexorder_symmetries)])
-            if len(lexorder_symmetries):
-                monomials_as_lexboolvecs = np.vstack([
-                    nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
-                    for mon in self.generating_monomials])
-                orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-                    monomials_as_lexboolvecs,
-                    lexorder_perms=lexorder_symmetries)
-                return orbits
-            else:
-                pass
+        if len(self.lexorder_symmetries) > 1:
+            monomials_as_lexboolvecs = np.vstack([
+                nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
+                for mon in self.generating_monomials])
+            orbits = nb_apply_lexorder_perm_to_lexboolvecs(
+                monomials_as_lexboolvecs,
+                lexorder_perms=self.lexorder_symmetries)
+            return orbits
         else:
-            pass
-        return np.arange(self.n_columns, dtype=int)
+            return np.arange(self.n_columns, dtype=int)
 
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates
@@ -1297,62 +1128,6 @@ class InflationLP(object):
             monomials_as_lexboolvecs,
             lexorder_perms=lexorder_symmetries)
         return orbits
-
-    def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
-        """Generates all the party operators in the quantum inflation.
-
-        Returns
-        -------
-        List[List[List[List[sympy.Symbol]]]]
-            The measurement operators as symbols. The array is indexed as
-            measurements[p][c][i][o] for party p, inflation copies c, input i,
-            and output o.
-        """
-        settings = self.setting_cardinalities
-        outcomes = self.outcome_cardinalities
-
-        assert len(settings) == len(outcomes), \
-            "There\'s a different number of settings and outcomes"
-        assert len(settings) == self.hypergraph.shape[1], \
-            "The hypergraph does not have as many columns as parties"
-        measurements = []
-        parties = self.names
-        n_states = self.hypergraph.shape[0]
-        for pos, [party, ins, outs] in enumerate(zip(parties,
-                                                     settings,
-                                                     outcomes)):
-            party_meas = []
-            # Generate all possible copy indices for a party
-            all_inflation_indices = product(
-                *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
-            # Include zeros in the positions of states not feeding the party
-            all_indices = []
-            for inflation_indices in all_inflation_indices:
-                indices = []
-                i = 0
-                for idx in range(n_states):
-                    if self.hypergraph[idx, pos] == 0:
-                        indices.append("0")
-                    elif self.hypergraph[idx, pos] == 1:
-                        # The +1 is just to begin at 1
-                        indices.append(str(inflation_indices[i] + 1))
-                        i += 1
-                    else:
-                        raise Exception("You don\'t have a proper hypergraph")
-                all_indices.append(indices)
-            # Generate measurements for every combination of indices.
-            # The -1 in outs - 1 is because the use of Collins-Gisin notation
-            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
-            # understood to be written as the identity minus the rest.
-            for indices in all_indices:
-                meas = generate_operators(
-                    [outs - 1 for _ in range(ins)],
-                    party + "_" + "_".join(indices)
-                )
-                party_meas.append(meas)
-            measurements.append(party_meas)
-        return measurements
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
@@ -1653,44 +1428,3 @@ class InflationLP(object):
         """
         array = np.frombuffer(bytestream, dtype=self.np_dtype)
         return array.reshape((-1, self._nr_properties))
-
-    def _to_canonical_memoized(self,
-                               array2d: np.ndarray,
-                               apply_only_commutations=False) -> np.ndarray:
-        """Cached function to convert a monomial to its canonical form.
-
-        It checks whether the input monomial's canonical form has already been
-        calculated and stored in the ``InflationSDP.canon_ndarray_from_hash``.
-        If not, it calculates it.
-
-        Parameters
-        ----------
-        array2d : numpy.ndarray
-            Moment encoded as a 2D array.
-        apply_only_commutations : bool, optional
-            If ``True``, skip the removal of projector squares and the test to
-            see if the monomial is equal to zero, by default ``False``.
-
-        Returns
-        -------
-        numpy.ndarray
-            Moment in canonical form.
-        """
-        key = self._from_2dndarray(array2d)
-        try:
-            return self.canon_ndarray_from_hash[key]
-        except KeyError:
-            if len(array2d) == 0 or np.array_equiv(array2d, 0):
-                self.canon_ndarray_from_hash[key] = array2d
-                return array2d
-            else:
-                # This is a fancy way of just sorting lexicographically.
-                new_array2d = to_canonical(array2d,
-                                           self._notcomm,
-                                           self._lexorder,
-                                           commuting=True,
-                                           apply_only_commutations=True)
-                new_key = self._from_2dndarray(new_array2d)
-                self.canon_ndarray_from_hash[key]     = new_array2d
-                self.canon_ndarray_from_hash[new_key] = new_array2d
-                return new_array2d
