@@ -88,6 +88,7 @@ class InflationLP(object):
         self._is_knowable_q_non_networks = \
             inflationproblem._is_knowable_q_non_networks
         self._nr_properties = inflationproblem._nr_properties
+        self.np_dtype = inflationproblem._np_dtype
 
 
         #The following depends on the form of CG notation
@@ -111,15 +112,6 @@ class InflationLP(object):
             print()
         self.use_lpi_constraints = False
 
-        self.network_scenario    = self.InflationProblem.is_network
-        self._is_knowable_q_non_networks = \
-            self.InflationProblem._is_knowable_q_non_networks
-
-        self.np_dtype = np.find_common_type([
-            np.min_scalar_type(np.max(self.setting_cardinalities)),
-            np.min_scalar_type(np.max(self.outcome_cardinalities)),
-            np.min_scalar_type(self.nr_parties + 1),
-            np.min_scalar_type(np.max(self.inflation_levels) + 1)], [])
         self.identity_operator = np.empty((0, self._nr_properties),
                                           dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties),

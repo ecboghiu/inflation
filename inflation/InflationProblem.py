@@ -146,7 +146,7 @@ class InflationProblem(object):
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties),
-                                    dtype=np.uint8)
+                                    dtype=int)
         for parent in nodes_with_children:
             if parent in self.names:
                 ii = names_to_integers[parent]
@@ -219,8 +219,16 @@ class InflationProblem(object):
                 or (not np.all(just_one_copy[sources_are_shared]))):
                 self.ever_factorizes = True
                 break
-        # Create all the different possibilities for inflation indices
 
+        #Establish internal dtype
+        self._np_dtype = np.find_common_type([
+            np.min_scalar_type(np.max(self.settings_per_party)),
+            np.min_scalar_type(np.max(self.outcomes_per_party)),
+            np.min_scalar_type(self.nr_parties + 1),
+            np.min_scalar_type(np.max(self.inflation_level_per_source) + 1)],
+            [])
+
+        # Create all the different possibilities for inflation indices
         self.inflation_indices_per_party = list()
         for party in range(self.nr_parties):
             inflation_indices = list()
@@ -230,8 +238,8 @@ class InflationProblem(object):
             # Put non-participating and non-inflated on equal footing
             num_copies = np.maximum(num_copies, 1)
             for increase_from_base in np.ndindex(*num_copies):
-                inflation_indxs = active_sources + np.array(increase_from_base,
-                                                            dtype=np.uint8)
+                inflation_indxs = active_sources + np.array(
+                    increase_from_base, dtype=self._np_dtype)
                 inflation_indices.append(inflation_indxs)
             self.inflation_indices_per_party.append(
                 np.vstack(inflation_indices))
@@ -244,22 +252,25 @@ class InflationProblem(object):
                                         in enumerate(
                 all_unique_inflation_indices)}
         self._inflation_indices_overlap = nb_overlap_matrix(
-            np.asarray(all_unique_inflation_indices, dtype=np.uint8))
+            np.asarray(all_unique_inflation_indices, dtype=self._np_dtype))
 
         # Create the measurements (formerly generate_parties)
         self._nr_properties = 1 + self.nr_sources + 2
         self.measurements = list()
         for p in range(self.nr_parties):
-            O_vals = np.arange(self.outcomes_per_party[p], dtype=np.uint8)
-            S_vals = np.arange(self.settings_per_party[p], dtype=np.uint8)
+            O_vals = np.arange(self.outcomes_per_party[p],
+                               dtype=self._np_dtype)
+            S_vals = np.arange(self.settings_per_party[p],
+                               dtype=self._np_dtype)
             I_vals = self.inflation_indices_per_party[p]
             # TODO: Use broadcasting instead of nested for loops
             measurements_per_party = np.empty(
                 (len(I_vals), len(S_vals), len(O_vals), self._nr_properties),
-                dtype=np.uint8)
+                dtype=self._np_dtype)
             measurements_per_party[:, :, :, 0] = p + 1
             for i, inf_idxs in enumerate(I_vals):
-                measurements_per_party[i, :, :, 1:(self.nr_sources +1)] = inf_idxs
+                measurements_per_party[i, :, :, 1:(self.nr_sources + 1)] = \
+                    inf_idxs
                 for s in S_vals.flat:
                     measurements_per_party[i, s, :, -2] = s
                     for o in O_vals.flat:
@@ -393,7 +404,7 @@ class InflationProblem(object):
             return (monomial,)
 
         inflation_indices_position = [self._inflation_indices_hash[
-            op.tobytes()] for op in monomial.astype(np.uint8)[:, 1:-2]]
+            op.tobytes()] for op in monomial.astype(self._np_dtype)[:, 1:-2]]
         adj_mat = self._inflation_indices_overlap[inflation_indices_position][
             :, inflation_indices_position]
 
@@ -531,12 +542,11 @@ class InflationProblem(object):
                     ))
                     elevated_sym.extend(elevated_events)
                 elevated_sym_pair.append(elevated_sym)
-            inflation_event_symmetries.append(elevated_sym_pair)
-        inflation_event_symmetries = np.array(inflation_event_symmetries)
+            inflation_event_symmetries.append(np.array(elevated_sym_pair,
+                                                       dtype=self._np_dtype))
         default_order = np.arange(len(self._lexorder))
         lexorder_symmetries = [default_order]
-        for pre_action, post_action in inflation_event_symmetries.astype(
-                np.uint8):
+        for pre_action, post_action in inflation_event_symmetries:
             new_lexorder = default_order.copy()
             pre = [self._lexorder_lookup[event.tobytes()]
                    for event in pre_action]
