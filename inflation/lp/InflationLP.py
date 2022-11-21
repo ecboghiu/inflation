@@ -16,8 +16,7 @@ from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from inflation import InflationProblem
-from ..sdp.fast_npa import nb_mon_to_lexrepr #TODO: Remove after getting rid of
-                                             # elevate_symmetries
+
 from .numbafied import (nb_mon_to_lexrepr_bool,
                         nb_apply_lexorder_perm_to_lexboolvecs)
 
@@ -125,9 +124,6 @@ class InflationLP(object):
                                           dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties),
                                       dtype=self.np_dtype)
-
-        self.mon_to_lexrepr = lambda mon: nb_mon_to_lexrepr(mon,
-                                                            self._lexorder)
 
         # These next properties are reset during generate_lp, but are needed in
         # init so as to be able to test the Monomial constructor function
@@ -985,57 +981,6 @@ class InflationLP(object):
                     break
         return column_level_equalities
 
-    # def _discover_inflation_symmetries(self) -> np.ndarray:
-    #     """Calculates all the symmetries pertaining to the set of generating
-    #     monomials. The new set of operators is a permutation of the old. The
-    #     function outputs a list of all permutations.
-    #
-    #     Returns
-    #     -------
-    #     numpy.ndarray[int]
-    #         The list of all permutations of the generating columns implied by
-    #         the inflation symmetries.
-    #     """
-    #     sources_with_copies = [source for source, inf_level
-    #                            in enumerate(self.inflation_levels)
-    #                            if inf_level > 1]
-    #     if len(sources_with_copies):
-    #         inflation_symmetries = []
-    #         identity_perm        = np.arange(self.n_columns, dtype=int)
-    #         for source in tqdm(sources_with_copies,
-    #                            disable=not self.verbose,
-    #                            desc="Calculating symmetries   ",
-    #                            leave=True,
-    #                            position=0):
-    #             one_source_symmetries = [identity_perm]
-    #             inf_level = self.inflation_levels[source]
-    #             perms = format_permutations(list(
-    #                 permutations(range(inf_level)))[1:])
-    #             permutation_failed = False
-    #             for permutation in perms:
-    #                 try:
-    #                     total_perm = np.empty(self.n_columns, dtype=int)
-    #                     for i, mon in enumerate(self.generating_monomials):
-    #                         new_mon = apply_source_perm(mon,
-    #                                                     source,
-    #                                                     permutation)
-    #                         new_mon = self._to_canonical_memoized(new_mon,
-    #                                                               True)
-    #                         total_perm[i] = self.genmon_hash_to_index[
-    #                                             self._from_2dndarray(new_mon)]
-    #                     one_source_symmetries.append(total_perm)
-    #                 except KeyError:
-    #                     permutation_failed = True
-    #             inflation_symmetries.append(one_source_symmetries)
-    #         if permutation_failed and (self.verbose > 0):
-    #             warn("The generating set is not closed under source swaps."
-    #                  + " Some symmetries will not be implemented.")
-    #         inflation_symmetries = [reduce(np.take, perms) for perms in
-    #                                 product(*inflation_symmetries)]
-    #         return np.unique(inflation_symmetries[1:], axis=0)
-    #     else:
-    #         return np.empty((0, len(self.generating_monomials)), dtype=int)
-
     def _discover_inflation_orbits(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
@@ -1057,77 +1002,6 @@ class InflationLP(object):
             return orbits
         else:
             return np.arange(self.n_columns, dtype=int)
-
-    def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
-        """Given the action of a group on the original scenario, calculates
-        the action of the group on the set of generating monomials. The
-        function outputs a list of all permutations.
-
-        Parameters
-        ----------
-        dist_syms : List
-            Each symmetry of the original distribution is encoded as a pair of
-            lists, indicating events before and after the symmetry. The final
-            elements of each list is the permutation of sources.
-        Returns
-        -------
-        numpy.ndarray[int]
-            The list of all permutations of the generating columns implied by
-            the inflation symmetries.
-        """
-        inflation_indices_per_party = []
-        for party in range(self.nr_parties):
-            active_sources = self.hypergraph[:, party]
-            num_copies = np.multiply(active_sources,
-                                     self.inflation_levels)
-            # Put non-participating and non-inflated on equal footing
-            num_copies = np.maximum(num_copies, 1)
-            inflation_indices = []
-            for increase_from_base in np.ndindex(*num_copies):
-                inflation_indxs = active_sources + np.array(increase_from_base,
-                                                            dtype=np.uint8)
-                inflation_indices.append(inflation_indxs)
-            inflation_indices_per_party.append(np.vstack(inflation_indices))
-        # print("Inf ind per party: ", inflation_indices_per_party)
-
-        inflation_event_symmetries = []
-        for sym_pair in dist_syms:
-            # print("Sym pair:", sym_pair)
-            elevated_sym_pair = []
-            for sym in sym_pair:
-                # print("Sym:", sym)
-                elevated_sym = []
-                for event in sym[:-1]:
-                    (party, input, output) = event
-                    middle = inflation_indices_per_party[party - 1]
-                    middle = middle[np.lexsort(np.rot90(middle[:, sym[-1]]))]
-                    length = len(middle)
-                    elevated_events = np.hstack((
-                        np.broadcast_to(party, (length, 1)),
-                        middle,
-                        np.broadcast_to([input, output], (length, 2))
-                    ))
-                    elevated_sym.extend(elevated_events)
-                elevated_sym_pair.append(elevated_sym)
-            inflation_event_symmetries.append(elevated_sym_pair)
-        inflation_event_symmetries = np.array(inflation_event_symmetries)
-
-        default_order = np.arange(len(self._lexorder))
-        lexorder_symmetries = [default_order]
-        for pre_action, post_action in inflation_event_symmetries:
-            new_lexorder = default_order.copy()
-            pre=self.mon_to_lexrepr(pre_action)
-            post=self.mon_to_lexrepr(post_action)
-            new_lexorder[pre] = new_lexorder[post]
-            lexorder_symmetries.append(new_lexorder)
-        lexorder_symmetries = np.vstack(lexorder_symmetries)
-        monomials_as_lexboolvecs = np.vstack([
-            nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
-            for mon in self.generating_monomials]).astype(bool)
-        orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-            monomials_as_lexboolvecs,
-            lexorder_perms=lexorder_symmetries)
-        return orbits
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #

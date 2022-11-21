@@ -16,7 +16,7 @@ from .sdp.fast_npa import (nb_classify_disconnected_components,
                            apply_source_perm)
 
 from .utils import format_permutations
-from typing import Tuple
+from typing import Tuple, List
 
 from functools import reduce
 from tqdm import tqdm
@@ -496,3 +496,53 @@ class InflationProblem(object):
             return lexorder_symmetries
         else:
             return np.arange(self._nr_operators, dtype=int)
+
+    def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
+        """Given the action of a group on the original scenario, calculates
+        the action of the group on the set of generating monomials. The
+        function outputs a list of all permutations.
+
+        Parameters
+        ----------
+        dist_syms : List
+            Each symmetry of the original distribution is encoded as a pair of
+            lists, indicating events before and after the symmetry. The final
+            elements of each list is the permutation of sources.
+        Returns
+        -------
+        numpy.ndarray[int]
+            The list of all permutations of the generating columns implied by
+            the inflation symmetries.
+        """
+        inflation_event_symmetries = []
+        for sym_pair in dist_syms:
+            elevated_sym_pair = []
+            for sym in sym_pair:
+                elevated_sym = []
+                for event in sym[:-1]:
+                    (party, input, output) = event
+                    middle = self.inflation_indices_per_party[party - 1]
+                    middle = middle[np.lexsort(np.rot90(middle[:, sym[-1]]))]
+                    length = len(middle)
+                    elevated_events = np.hstack((
+                        np.broadcast_to(party, (length, 1)),
+                        middle,
+                        np.broadcast_to([input, output], (length, 2))
+                    ))
+                    elevated_sym.extend(elevated_events)
+                elevated_sym_pair.append(elevated_sym)
+            inflation_event_symmetries.append(elevated_sym_pair)
+        inflation_event_symmetries = np.array(inflation_event_symmetries)
+        default_order = np.arange(len(self._lexorder))
+        lexorder_symmetries = [default_order]
+        for pre_action, post_action in inflation_event_symmetries.astype(
+                np.uint8):
+            new_lexorder = default_order.copy()
+            pre = [self._lexorder_lookup[event.tobytes()]
+                   for event in pre_action]
+            post = [self._lexorder_lookup[event.tobytes()]
+                   for event in post_action]
+            new_lexorder[pre] = new_lexorder[post]
+            lexorder_symmetries.append(new_lexorder)
+        lexorder_symmetries = np.vstack(lexorder_symmetries)
+        return lexorder_symmetries
