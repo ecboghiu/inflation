@@ -556,3 +556,47 @@ class InflationProblem(object):
             lexorder_symmetries.append(new_lexorder)
         lexorder_symmetries = np.vstack(lexorder_symmetries)
         return lexorder_symmetries
+
+    def _discover_graph_automorphism(self):
+        nr_sources = self.nr_sources
+        import networkx as nx
+        from networkx.algorithms import isomorphism
+        g1 = nx.DiGraph()
+        g1.add_nodes_from(range(self.nr_parties+nr_sources))
+        for s, bool_children in enumerate(self.hypergraph):
+            for child in np.flatnonzero(bool_children):
+                g1.add_edge(s, child+self.nr_sources)
+        for c, parents in enumerate(self.parents_per_party):
+            for p in parents:
+                g1.add_edge(p+self.nr_sources, c + nr_sources)
+        GMgen = isomorphism.GraphMatcher(g1, g1)
+        discovered_automorphisms = list()
+        for mapping in GMgen.isomorphisms_iter():
+            valid_automorphism = True
+            for s, inf_level in enumerate(
+                    self.inflation_level_per_source.flat):
+                if not valid_automorphism:
+                    break
+                new_s = mapping[s]
+                valid_automorphism = (
+                        self.inflation_level_per_source[new_s] == inf_level)
+            for p, (card_in, card_out) in enumerate(zip(
+                    self.settings_per_party.flat,
+                    self.outcomes_per_party.flat)):
+                if not valid_automorphism:
+                    break
+                new_p = mapping[p + self.nr_sources] - nr_sources
+                valid_automorphism = (
+                        (self.settings_per_party[new_p] == card_in)
+                    and (self.outcomes_per_party[new_p] == card_out))
+            if valid_automorphism:
+                discovered_automorphisms.append((
+                    np.fromiter((mapping[i] for i in
+                                 range(nr_sources)),
+                                dtype=int),
+                     np.fromiter((mapping[i + nr_sources] - nr_sources
+                                  for i in
+                                  range(self.nr_parties)),
+                                 dtype=int),
+                     ))
+        return discovered_automorphisms
