@@ -227,6 +227,8 @@ class InflationProblem(object):
             np.min_scalar_type(self.nr_parties + 1),
             np.min_scalar_type(np.max(self.inflation_level_per_source) + 1)],
             [])
+        #Get some original graph properties
+        self.original_dag_events = self._original_DAG_event_list()
 
         # Create all the different possibilities for inflation indices
         self.inflation_indices_per_party = list()
@@ -613,3 +615,91 @@ class InflationProblem(object):
                                  dtype=int),
                      ))
         return discovered_automorphisms
+
+    def _original_DAG_event_list(self) -> np.ndarray:
+        """
+        Creates the analog of a lexorder for the original DAG.
+        """
+        original_dag_events = []
+        for p in range(self.nr_parties):
+            O_vals = np.arange(self.outcomes_per_party[p],
+                               dtype=self._np_dtype)
+            S_vals = np.arange(self.private_settings_per_party[p],
+                               dtype=self._np_dtype)
+            events_per_party = np.empty(
+                (len(S_vals), len(O_vals), 3),
+                dtype=self._np_dtype)
+            events_per_party[::, :, 0] = p + 1
+            for s in S_vals.flat:
+                events_per_party[s, :, -2] = s
+                for o in O_vals.flat:
+                    events_per_party[s, o, -1] = o
+            original_dag_events.extend(
+                events_per_party.reshape((-1, 3)))
+        return np.vstack(original_dag_events).astype(self._np_dtype)
+
+
+    #TASK: Obtain a list of all setting relabellings,
+    # and all outcome-per-setting relabellings.
+    def _possible_input_output_symmetries(self) -> List[np.ndarray]:
+        """
+        Yields all possible setting relabellings paired with all possible
+        setting-dependant outcome relabellings as
+        permutations of the events on the original graph. Seperated by party,
+        so that iteration will involve itertools.product.
+        """
+        nr_original_events = len(self.original_dag_events)
+        default_events_order = np.arange(nr_original_events)
+        original_dag_lookup = {op.tobytes(): i
+                               for i, op in enumerate(self.original_dag_events)}
+        empty_perm = np.empty((0, nr_original_events), dtype=int)
+        possible_syms_per_party = []
+        for p, (card_in, card_out) in enumerate(zip(
+            self.settings_per_party.flat,
+            self.outcomes_per_party.flat)):
+            possible_syms = set()
+            # TEMPORARY BYPASS OF COMPLICATED STUFF: skip symmetry if party `p`
+            # has a nontrivial parent, or has children.
+            if self.has_children[p] or any(
+                    self.outcomes_per_party[parent] > 1 for
+                    parent in self.parents_per_party[p]):
+                possible_syms_per_party.append(empty_perm)
+                continue
+            ops = np.empty((card_in, card_out, 3), dtype=self._np_dtype)
+            ops[:,:, 0 ] = p + 1
+            for i in range(card_in):
+                ops[i, :, 1] = i
+            for o in range(card_out):
+                ops[:, o, 2] = o
+            ops_flatish = ops.reshape((card_in * card_out, 3))
+            for i_perm in permutations(range(card_in)):
+                ops_copy = ops.copy()
+                for old_i, new_i in enumerate(i_perm):
+                    ops_copy[old_i, :, 1] = new_i
+                    for o_perm in permutations(range(card_out)):
+                        ops_copy[old_i, :, 2] = o_perm
+                        sym = []
+                        for ops_pair in zip(ops_flatish,
+                                ops_copy.reshape((card_in * card_out, 3))):
+                            if not np.array_equal(*ops_pair):
+                                sym.append(ops_pair)
+                        if len(sym) >= 2:
+                            discovered_sym = frozenset((
+                                (op1.tobytes(),
+                                 op2.tobytes()) for op1, op2 in sym))
+                            possible_syms.add(discovered_sym)
+            possible_syms_as_permutations = []
+            for sym in possible_syms:
+                events_order = default_events_order.copy()
+                for evnt1_hash, evnt2_hash in sym:
+                    events_order[original_dag_lookup[evnt1_hash]] = \
+                        original_dag_lookup[evnt2_hash]
+                possible_syms_as_permutations.append(events_order)
+            if len(possible_syms_as_permutations):
+                possible_syms_as_permutations = np.vstack(
+                    possible_syms_as_permutations).astype(int).reshape(
+                    (-1, nr_original_events))
+            else:
+                possible_syms_as_permutations = empty_perm
+            possible_syms_per_party.append(possible_syms_as_permutations)
+        return possible_syms_per_party
