@@ -557,7 +557,20 @@ class InflationProblem(object):
         lexorder_symmetries = np.vstack(lexorder_symmetries)
         return lexorder_symmetries
 
-    def _discover_graph_automorphism(self):
+    def _discover_graph_automorphisms(self) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Return a list of all party relabelling symmetries (each preceeded by
+        its associated source relabelling symmetry) consistent with the
+        graphical symmetries of the original DAG, subject to matching
+        cardinalities of inputs and outputs for all exchanged parties, and
+        subject to matching inflation levels for all exchanged sources.
+
+        Returns
+        -------
+        List[Tuple[numpy.ndarray, numpy.ndarray]]
+            A list of all two-element tuples. The first element in each tuple
+            corresponds to a permutation of the sources, the second element
+            to the permutation of parties.
+        """
         nr_sources = self.nr_sources
         import networkx as nx
         from networkx.algorithms import isomorphism
