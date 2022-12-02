@@ -17,13 +17,11 @@ from warnings import warn
 
 from inflation import InflationProblem
 
-from .numbafied import (nb_mon_to_lexrepr_bool,
-                        nb_apply_lexorder_perm_to_lexboolvecs)
+from .numbafied import nb_apply_lexorder_perm_to_lexboolvecs
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (clean_coefficients,
-                                 expand_moment_normalisation,
                                  flatten_symbolic_powers,
                                  party_physical_monomials,
                                  to_symbol)
@@ -96,6 +94,7 @@ class InflationLP(object):
         self._nr_operators = inflationproblem._nr_operators
         self.lexorder_symmetries = inflationproblem.inf_symmetries
         self._lexorder_lookup = inflationproblem._lexorder_lookup
+        self.blank_bool_vec = np.zeros(len(self._lexorder), dtype=bool)
         self._ortho_groups = inflationproblem._ortho_groups
         self.has_children = np.ones(self.nr_parties, dtype=bool)
 
@@ -150,13 +149,36 @@ class InflationLP(object):
         self.n_columns            = len(self.generating_monomials)
         collect()
         # Calculate normalization equalities
+
+        self._monomials_as_lexreprs = [
+            [self._lexorder_lookup[op.tobytes()] for op in mon]
+            for mon in tqdm(self.generating_monomials,
+                            disable=not self.verbose,
+                            desc="Obtaining boolvecs   ")
+        ]
+        monomials_as_lexboolvecs = np.zeros((self.n_columns,
+                                             len(self._lexorder)),
+                                            dtype=bool)
+        for i, lexrepr in enumerate(self._monomials_as_lexreprs):
+            monomials_as_lexboolvecs[i, lexrepr] = True
+        self._monomials_as_lexboolvecs = monomials_as_lexboolvecs
+        del monomials_as_lexboolvecs
+        self._lookup_dict = {bitvec.tobytes(): i for i, bitvec in
+                             enumerate(self._monomials_as_lexboolvecs)}
+
         self.column_level_equalities = self._discover_normalization_eqns()
+        if self.verbose > 0:
+            print("Number of equality constraints in the LP:",
+                  len(self.column_level_equalities))
 
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
-            old_reps, self.inverse = np.unique(self._discover_inflation_orbits(),
-                                          return_inverse=True)
+            print("Initiating symmetry calculation...")
+            old_reps, self.inverse = np.unique(
+                self._discover_inflation_orbits(),
+                return_inverse=True)
+            print(f"Orbits discovered! {len(old_reps)} unique monomials.")
             old_reps_set = set(old_reps.ravel().tolist())
             # Reset generating monomials
             self.generating_monomials = [self.generating_monomials[i] for i
@@ -182,7 +204,7 @@ class InflationLP(object):
         for idx, mon in tqdm(enumerate(self.generating_monomials),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
-                             total=len(self.generating_monomials)):
+                             total=self.n_columns):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
@@ -418,8 +440,6 @@ class InflationLP(object):
             atomic_knowns = {mon.knowable_factors[0]: val
                              for mon, val in self.known_moments.items()
                              if len(mon) == 1}
-            atomic_knowns.update({atom.dagger: val
-                                  for atom, val in atomic_knowns.items()})
             monomials_not_present = set(self.known_moments.keys()
                                         ).difference(self.monomials)
             for mon in monomials_not_present:
@@ -666,7 +686,6 @@ class InflationLP(object):
     # TODO: Restore export functionality
     # def write_to_file(self, filename: str) -> None:
 
-
     ###########################################################################
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
     ###########################################################################
@@ -699,8 +718,7 @@ class InflationLP(object):
                 self.atomic_monomial_from_hash[key] = mon
                 return mon
             else:
-                mon_as_boolvec = nb_mon_to_lexrepr_bool(mon=array2d,
-                                                        lexorder=self._lexorder)
+                mon_as_boolvec = self.mon_to_boolvec(mon=array2d)
                 mon_as_symboolvec = mon_as_boolvec[self.lexorder_symmetries]
                 mon_as_symboolvec = mon_as_symboolvec[
                     np.lexsort(np.rot90(mon_as_symboolvec))]
@@ -944,7 +962,8 @@ class InflationLP(object):
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
     ###########################################################################
-    def _discover_normalization_eqns(self) -> List[Tuple[int, List[int]]]:
+    def _discover_normalization_eqns(self) -> List[
+        Tuple[int, Tuple[int, ...]]]:
         """Given the generating monomials, infer implicit normalization
         equalities between them. Each normalization equality is a two element
         tuple; the first element is an integer indicating a particular column,
@@ -956,21 +975,41 @@ class InflationLP(object):
         List[Tuple[int, List[int]]]
             A list of normalization equalities between columns.
         """
-        skip_party = [not i for i in self.has_children]
+        # skip_party = [not i for i in self.has_children]
+        ortho_groups_as_lexreprs = [self.mon_to_lexrepr(ortho_group)
+                                    for ortho_group in self._ortho_groups]
+        alternatives = {g[-1]: g[:-2] for g in ortho_groups_as_lexreprs
+                        if len(g) > 1}
+        critical_values = set(alternatives.keys())
+
         column_level_equalities = []
-        for i, mon in enumerate(self.generating_monomials):
-            eqs = expand_moment_normalisation(mon,
-                                              self.outcome_cardinalities,
-                                              skip_party)
-            for eq in eqs:
+        for i, (lexrepr, bool_vec) in tqdm(enumerate(zip(
+                self._monomials_as_lexreprs,
+                self._monomials_as_lexboolvecs)),
+                disable=not self.verbose,
+                desc="Discovering equalities   ",
+                total=self.n_columns):
+            critical_values_in_boovec = critical_values.intersection(lexrepr)
+            for c in critical_values_in_boovec:
                 try:
-                    eq_idxs = [self.genmon_hash_to_index[
-                                                self._from_2dndarray(eq[0])]]
-                    eq_idxs.append([self.genmon_hash_to_index[
-                                    self._from_2dndarray(m)] for m in eq[1]])
-                    column_level_equalities += [tuple(eq_idxs)]
+                    summands = [i]
+                    absent_c_boolvec = bool_vec.copy()
+                    absent_c_boolvec[c] = False
+                    norm_i = self._lookup_dict[absent_c_boolvec.tobytes()]
+                    for a in alternatives[c]:
+                        alt_c_boolvec = absent_c_boolvec.copy()
+                        alt_c_boolvec[a] = True
+                        summands.append(
+                            self._lookup_dict[alt_c_boolvec.tobytes()])
+                    column_level_equalities.append((norm_i,
+                                                    tuple(sorted(summands))))
                 except KeyError:
-                    break
+                    pass
+        # before_duplicate_removal = len(column_level_equalities)
+        # column_level_equalities = set(column_level_equalities)
+        # after_duplicate_removal = len(column_level_equalities)
+        # assert before_duplicate_removal == after_duplicate_removal, \
+        #     "Generating equalities with repetition."
         return column_level_equalities
 
     def _discover_inflation_orbits(self) -> np.ndarray:
@@ -985,11 +1024,8 @@ class InflationLP(object):
             symmetries.
         """
         if len(self.lexorder_symmetries) > 1:
-            monomials_as_lexboolvecs = np.vstack([
-                nb_mon_to_lexrepr_bool(mon=mon, lexorder=self._lexorder)
-                for mon in self.generating_monomials])
             orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-                monomials_as_lexboolvecs,
+                self._monomials_as_lexboolvecs,
                 lexorder_perms=self.lexorder_symmetries)
             return orbits
         else:
@@ -1294,3 +1330,15 @@ class InflationLP(object):
         """
         array = np.frombuffer(bytestream, dtype=self.np_dtype)
         return array.reshape((-1, self._nr_properties))
+
+    def mon_to_lexrepr(self, mon: np.ndarray) -> List[int]:
+        try:
+            return [self._lexorder_lookup[self._from_2dndarray(op)] for op in
+                    mon]
+        except KeyError:
+            return []
+
+    def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
+        boolvec = self.blank_bool_vec.copy()
+        boolvec[self.mon_to_lexrepr(mon)] = True
+        return boolvec
