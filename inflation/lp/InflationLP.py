@@ -411,7 +411,9 @@ class InflationLP(object):
             warn("You have an objective function set. Be aware that imposing "
                  + "linearized polynomial constraints will constrain the "
                  + "optimization to distributions with fixed marginals.")
-
+        for mon, value in values.items():
+            mon = self._sanitise_monomial(mon)
+            self.known_moments[mon] = value
         if not only_specified_values:
             atomic_knowns = {mon.knowable_factors[0]: val
                              for mon, val in self.known_moments.items()
