@@ -731,8 +731,6 @@ class InflationLP(object):
                     self.atomic_monomial_from_hash[key] = mon
                 return mon
 
-
-
     def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
         r"""Create an instance of the `CompoundMonomial` class from a 2D array.
         An instance of `CompoundMonomial` is a collection of
