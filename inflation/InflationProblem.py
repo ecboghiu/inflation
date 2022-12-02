@@ -508,7 +508,7 @@ class InflationProblem(object):
                                              product(*lexorder_symmetries)])
             return lexorder_symmetries
         else:
-            return np.arange(self._nr_operators, dtype=int)
+            return np.arange(self._nr_operators, dtype=int)[np.newaxis]
 
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates
