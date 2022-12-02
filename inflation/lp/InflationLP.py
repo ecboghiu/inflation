@@ -90,8 +90,7 @@ class InflationLP(object):
         self._nr_properties = inflationproblem._nr_properties
         self.np_dtype = inflationproblem._np_dtype
 
-
-        #The following depends on the form of CG notation
+        # The following depends on the form of CG notation
         self.outcome_cardinalities = inflationproblem.outcomes_per_party + 1
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
@@ -175,7 +174,6 @@ class InflationLP(object):
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
                   self.n_columns)
-
 
         # TODO: merge the above into once consistent concept...
 
@@ -597,7 +595,7 @@ class InflationLP(object):
         """
         if not self.nonfanout:
             choices_to_combine = [
-                tuple(ortho_group) + (self.identity_operator, )
+                tuple(ortho_group) + (self.identity_operator,)
                 for ortho_group in self._ortho_groups]
             lengths = list(map(len, choices_to_combine))
         else:
@@ -615,7 +613,7 @@ class InflationLP(object):
                     settings_per_party=self.setting_cardinalities,
                     outputs_per_party=self.outcome_cardinalities,
                     lexorder=self._lexorder)
-                    for i in range(max_mon_length+1)]
+                    for i in range(max_mon_length + 1)]
                 lengths.append(sum(map(len, phys_mon)))
                 choices_to_combine.append(chain.from_iterable(phys_mon))
         nontriv_cols = map(np.vstack,
@@ -696,7 +694,7 @@ class InflationLP(object):
         except KeyError:
             if len(self.lexorder_symmetries) == 1:
                 mon = InternalAtomicMonomial(self, array2d)
-                self.atomic_monomial_from_hash[key]     = mon
+                self.atomic_monomial_from_hash[key] = mon
                 return mon
             else:
                 mon_as_boolvec = nb_mon_to_lexrepr_bool(mon=array2d,
@@ -1060,7 +1058,7 @@ class InflationLP(object):
         self._processed_objective = self.objective.copy()
         knowns_to_process = set(self.known_moments.keys()
                                 ).intersection(
-                                    self._processed_objective.keys())
+            self._processed_objective.keys())
         knowns_to_process.discard(self.One)
         for m in knowns_to_process:
             value = self.known_moments[m]
@@ -1069,7 +1067,7 @@ class InflationLP(object):
             del self._processed_objective[m]
         semiknowns_to_process = set(self.semiknown_moments.keys()
                                     ).intersection(
-                                        self._processed_objective.keys())
+            self._processed_objective.keys())
         for mon in semiknowns_to_process:
             coeff = self._processed_objective[mon]
             for (subs_coeff, subs) in self.semiknown_moments[mon]:
@@ -1139,7 +1137,7 @@ class InflationLP(object):
         else:
             return self._is_knowable_q_non_networks(np.take(atomic_monarray,
                                                             [0, -2, -1],
-                                                    axis=1))
+                                                            axis=1))
 
     def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
         """Obtains the bytes representation of an array. The library uses this
@@ -1181,7 +1179,7 @@ class InflationLP(object):
             raise Exception("Relaxation is not generated yet. " +
                             "Call \"InflationSDP.get_relaxation()\" first")
 
-        assert set(self.known_moments.keys()).issubset(self.monomials),\
+        assert set(self.known_moments.keys()).issubset(self.monomials), \
             ("Error: Tried to assign known values outside of the variables: " +
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
