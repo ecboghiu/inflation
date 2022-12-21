@@ -151,161 +151,7 @@ class BaseSDP(object):
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
-
-    def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
-        """Generates all the party operators in the quantum inflation.
-
-        Returns
-        -------
-        List[List[List[List[sympy.Symbol]]]]
-            The measurement operators as symbols. The array is indexed as
-            measurements[p][c][i][o] for party p, inflation copies c, input i,
-            and output o.
-        """
-        settings = self.setting_cardinalities
-        outcomes = self.outcome_cardinalities
-
-        assert len(settings) == len(outcomes), \
-            "There\'s a different number of settings and outcomes"
-        assert len(settings) == self.hypergraph.shape[1], \
-            "The hypergraph does not have as many columns as parties"
-        measurements = []
-        parties = self.names
-        n_states = self.hypergraph.shape[0]
-        for pos, [party, ins, outs] in enumerate(zip(parties,
-                                                     settings,
-                                                     outcomes)):
-            party_meas = []
-            # Generate all possible copy indices for a party
-            all_inflation_indices = product(
-                *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
-            # Include zeros in the positions of states not feeding the party
-            all_indices = []
-            for inflation_indices in all_inflation_indices:
-                indices = []
-                i = 0
-                for idx in range(n_states):
-                    if self.hypergraph[idx, pos] == 0:
-                        indices.append("0")
-                    elif self.hypergraph[idx, pos] == 1:
-                        # The +1 is just to begin at 1
-                        indices.append(str(inflation_indices[i] + 1))
-                        i += 1
-                    else:
-                        raise Exception("You don\'t have a proper hypergraph")
-                all_indices.append(indices)
-            # Generate measurements for every combination of indices.
-            # The -1 in outs - 1 is because the use of Collins-Gisin notation
-            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
-            # understood to be written as the identity minus the rest.
-            for indices in all_indices:
-                meas = generate_operators(
-                    [outs - 1 for _ in range(ins)],
-                    party + "_" + "_".join(indices)
-                )
-                party_meas.append(meas)
-            measurements.append(party_meas)
-        return measurements
-
-        """
-
-
-class InflationSDP(BaseSDP):
-    """
-    Class for generating and solving an SDP relaxation for quantum inflation,
-    testing (or optimizing over) probability distributions.
-    """
-    constant_term_name = "constant_term"
-
-    def __init__(self,
-                 inflationproblem: InflationProblem,
-                 commuting: bool = False,
-                 verbose=None) -> None:
-        """Constructor for the InflationSDP class.
-        """
-        super(InflationSDP, self).__init__(inflationproblem, commuting, verbose)
-        if verbose is not None:
-            if inflationproblem.verbose > verbose:
-                warn("Overriding the verbosity from InflationProblem")
-            self.verbose = verbose
-        else:
-            self.verbose = inflationproblem.verbose
-        self.commuting = commuting
-        self.InflationProblem = inflationproblem
-        self.names = self.InflationProblem.names
-        self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
-        if self.verbose > 1:
-            print(self.InflationProblem)
-
-        self.nr_parties = len(self.names)
-        self.nr_sources = self.InflationProblem.nr_sources
-        self.hypergraph = self.InflationProblem.hypergraph
-        self.inflation_levels = \
-            self.InflationProblem.inflation_level_per_source
-        self.has_children = self.InflationProblem.has_children
-        self.outcome_cardinalities = \
-            self.InflationProblem.outcomes_per_party.copy()
-        self.has_children = self.InflationProblem.has_children
-        self.outcome_cardinalities += self.has_children
-        self.setting_cardinalities = self.InflationProblem.settings_per_party
-
-        self.measurements = self._generate_parties()
-        if self.verbose > 1:
-            print("Number of single operator measurements per party:", end="")
-            prefix = " "
-            for i, measures in enumerate(self.measurements):
-                counter = count()
-                deque(zip(chain.from_iterable(
-                    chain.from_iterable(measures)),
-                          counter),
-                      maxlen=0)
-                print(prefix + f"{self.names[i]}={next(counter)}", end="")
-                prefix = ", "
-            print()
-        self.use_lpi_constraints = False
-        self.network_scenario    = self.InflationProblem.is_network
-        self._is_knowable_q_non_networks = \
-            self.InflationProblem._is_knowable_q_non_networks
-        self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
-        self.factorize_monomial = self.InflationProblem.factorize_monomial
-
-        self._nr_operators = len(flatten(self.measurements))
-        self._nr_properties = 1 + self.nr_sources + 2
-        self.np_dtype = np.find_common_type([
-            np.min_scalar_type(np.max(self.setting_cardinalities)),
-            np.min_scalar_type(np.max(self.outcome_cardinalities)),
-            np.min_scalar_type(self.nr_parties + 1),
-            np.min_scalar_type(np.max(self.inflation_levels) + 1)], [])
-        self.identity_operator = np.empty((0, self._nr_properties),
-                                          dtype=self.np_dtype)
-        self.zero_operator = np.zeros((1, self._nr_properties),
-                                      dtype=self.np_dtype)
-
-        # Define default lexicographic order through np.lexsort
-        lexorder = self._interpret_name(flatten(self.measurements))
-        lexorder = np.concatenate((self.zero_operator, lexorder))
-        self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
-        self._lexorder = self._default_lexorder.copy()
-
-        self._default_notcomm = commutation_matrix(self._lexorder,
-                                                   self.commuting)
-        self._notcomm = self._default_notcomm.copy()
-        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
-                                                              self._lexorder,
-                                                              self._notcomm)
-
-        self.canon_ndarray_from_hash    = dict()
-        self.canonsym_ndarray_from_hash = dict()
-        # These next properties are reset during generate_relaxation, but
-        # are needed in init so as to be able to test the Monomial constructor
-        # function without generate_relaxation.
-        self.atomic_monomial_from_hash  = dict()
-        self.monomial_from_atoms        = dict()
-        self.monomial_from_name         = dict()
-        self.Zero = self.Monomial(self.zero_operator, idx=0)
-        self.One  = self.Monomial(self.identity_operator, idx=1)
-        self._relaxation_has_been_generated = False
+        self.maximize = True
 
     ###########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                       #
@@ -314,7 +160,7 @@ class InflationSDP(BaseSDP):
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = "npa1"
+                                  List[sp.core.symbol.Symbol]]
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -497,10 +343,13 @@ class InflationSDP(BaseSDP):
                                  for mon in self.monomials}
         self.names_to_symbols[self.constant_term_name] = sp.S.One
 
-        # In non-network scenarios we do not use Collins-Gisin notation for
-        # some variables, so there exist normalization constraints between them
         self.moment_equalities = []
-        if not self.network_scenario or self.supports_problem:
+        # If for a party we are using more outcomes (this is the case of
+        # visible nodes with children or supports problems) we do not use
+        # Collins-Gisin notation for some variables, and there exist
+        # normalization constraints between them
+        if not np.all(self.outcome_cardinalities
+                      == self.InflationProblem.outcomes_per_party):
             self.column_level_equalities = self._discover_normalization_eqns()
             self.idx_level_equalities    = construct_normalization_eqs(
                                                 self.column_level_equalities,
@@ -522,8 +371,6 @@ class InflationSDP(BaseSDP):
         self.moment_lowerbounds  = {m: 0. for m in self.physical_monomials}
 
         self._set_lowerbounds(None)
-        self._set_upperbounds(None)
-        self.set_objective(None)
         self.set_values(None)
 
         self.maskmatrices = dict()
@@ -600,67 +447,6 @@ class InflationSDP(BaseSDP):
                         use_lpi_constraints=use_lpi_constraints,
                         only_specified_values=shared_randomness)
 
-    def set_objective(self,
-                      objective: Union[sp.core.expr.Expr,
-                                       dict,
-                                       None],
-                      direction: str = "max") -> None:
-        """Set or change the objective function of the polynomial optimization
-        problem.
-
-        Parameters
-        ----------
-        objective : Union[sp.core.expr.Expr, dict, None]
-            The objective function, either as a combination of sympy symbols,
-            as a dictionary with keys the monomials or their names, and as
-            values the corresponding coefficients, or ``None`` for clearing
-            a previous objective.
-        direction : str, optional
-            Direction of the optimization (``"max"``/``"min"``). By default
-            ``"max"``.
-        """
-        assert (not self.supports_problem) or (objective is None), \
-            "Supports problems do not support specifying objective functions."
-        assert direction in ["max", "min"], ("The 'direction' argument should "
-                                             + " be either 'max' or 'min'")
-
-        self._reset_objective()
-        if direction == "max":
-            self.maximize = True
-        else:
-            self.maximize = False
-        if objective is None:
-            return
-        elif isinstance(objective, sp.core.expr.Expr):
-            if objective.free_symbols:
-                objective_raw = sp.expand(objective).as_coefficients_dict()
-                objective_raw = {k: float(v)
-                                 for k, v in objective_raw.items()}
-            else:
-                objective_raw = {self.One: float(objective)}
-            return self.set_objective(objective_raw, direction)
-        else:
-            if self.use_lpi_constraints and self.verbose > 0:
-                warn("You have the flag `use_lpi_constraints` set to True. Be "
-                     + "aware that imposing linearized polynomial constraints "
-                     + "will constrain the optimization to distributions with "
-                     + "fixed marginals.")
-            sign = (1 if self.maximize else -1)
-            objective_dict = {self.One: 0}
-            for mon, coeff in objective.items():
-                if not np.isclose(coeff, 0):
-                    mon = self._sanitise_monomial(mon)
-                    objective_dict[mon] = \
-                        objective_dict.get(mon, 0) + (sign * coeff)
-            self.objective = objective_dict
-            surprising_objective_terms = {mon for mon in self.objective.keys()
-                                          if mon not in self.monomials}
-            assert len(surprising_objective_terms) == 0, \
-                ("When interpreting the objective we have encountered at " +
-                 "least one monomial that does not appear in the original " +
-                 f"moment matrix:\n\t{surprising_objective_terms}")
-            self._update_objective()
-
     def set_values(self,
                    values: Union[Dict[Union[CompoundMonomial,
                                             InternalAtomicMonomial,
@@ -701,11 +487,6 @@ class InflationSDP(BaseSDP):
             return
 
         self.use_lpi_constraints = use_lpi_constraints
-
-        if (len(self.objective) > 1) and self.use_lpi_constraints:
-            warn("You have an objective function set. Be aware that imposing "
-                 + "linearized polynomial constraints will constrain the "
-                 + "optimization to distributions with fixed marginals.")
 
         # It is funny to set values to monomials created from operators that do
         # not commute with each other, so we display a warning.
@@ -1687,7 +1468,9 @@ class InflationSDP(BaseSDP):
             A list of normalization equalities between columns of the moment
         matrix.
         """
-        skip_party = [not i for i in self.has_children]
+        skip_party = [orig == current for orig, current
+                      in zip(self.outcome_cardinalities,
+                             self.InflationProblem.outcomes_per_party)]
         column_level_equalities = []
         for i, mon in enumerate(self.generating_monomials):
             eqs = expand_moment_normalisation(mon,
@@ -1756,6 +1539,61 @@ class InflationSDP(BaseSDP):
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
 
+    def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
+        """Generates all the party operators in the quantum inflation.
+
+        Returns
+        -------
+        List[List[List[List[sympy.Symbol]]]]
+            The measurement operators as symbols. The array is indexed as
+            measurements[p][c][i][o] for party p, inflation copies c, input i,
+            and output o.
+        """
+        settings = self.setting_cardinalities
+        outcomes = self.outcome_cardinalities
+
+        assert len(settings) == len(outcomes), \
+            "There\'s a different number of settings and outcomes"
+        assert len(settings) == self.hypergraph.shape[1], \
+            "The hypergraph does not have as many columns as parties"
+        measurements = []
+        parties = self.names
+        n_states = self.hypergraph.shape[0]
+        for pos, [party, ins, outs] in enumerate(zip(parties,
+                                                     settings,
+                                                     outcomes)):
+            party_meas = []
+            # Generate all possible copy indices for a party
+            all_inflation_indices = product(
+                *[list(range(self.inflation_levels[p_idx]))
+                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
+            # Include zeros in the positions of states not feeding the party
+            all_indices = []
+            for inflation_indices in all_inflation_indices:
+                indices = []
+                i = 0
+                for idx in range(n_states):
+                    if self.hypergraph[idx, pos] == 0:
+                        indices.append("0")
+                    elif self.hypergraph[idx, pos] == 1:
+                        # The +1 is just to begin at 1
+                        indices.append(str(inflation_indices[i] + 1))
+                        i += 1
+                    else:
+                        raise Exception("You don\'t have a proper hypergraph")
+                all_indices.append(indices)
+            # Generate measurements for every combination of indices.
+            # The -1 in outs - 1 is because the use of Collins-Gisin notation
+            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
+            # understood to be written as the identity minus the rest.
+            for indices in all_indices:
+                meas = generate_operators(
+                    [outs - 1 for _ in range(ins)],
+                    party + "_" + "_".join(indices)
+                )
+                party_meas.append(meas)
+            measurements.append(party_meas)
+        return measurements
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
@@ -1763,19 +1601,7 @@ class InflationSDP(BaseSDP):
     def _cleanup_after_set_values(self) -> None:
         """Helper function to reset or make consistent class attributes after
         setting values."""
-        if self.supports_problem:
-            # Add lower bounds to monomials inside the support
-            nonzero_known_monomials = [mon for
-                                       mon, value in self.known_moments.items()
-                                       if not np.isclose(value, 0)]
-            for mon in nonzero_known_monomials:
-                self._processed_moment_lowerbounds[mon] = 1.
-                del self.known_moments[mon]
-            self.semiknown_moments = dict()
-
         self._update_lowerbounds()
-        self._update_upperbounds()
-        self._update_objective()
         num_nontrivial_known = len(self.known_moments)
         if self.momentmatrix_has_a_zero:
             num_nontrivial_known -= 1
@@ -1882,7 +1708,6 @@ class InflationSDP(BaseSDP):
                     pass
         self.moment_upperbounds = self._processed_moment_upperbounds
 
-
     ###########################################################################
     # OTHER ROUTINES                                                          #
     ###########################################################################
@@ -1961,16 +1786,15 @@ class InflationSDP(BaseSDP):
         solverargs = {"mask_matrices": {mon.name: mask_matrix
                                         for mon, mask_matrix
                                         in self.maskmatrices.items()},
-                      "objective": {mon.name: coeff for mon, coeff
-                                    in self._processed_objective.items()},
+                      "objective": {'1': 0.},
                       "known_vars": {mon.name: val for mon, val
                                      in self.known_moments.items()},
                       "semiknown_vars": {mon.name: (coeff, subs.name)
                                          for mon, (coeff, subs)
                                          in self.semiknown_moments.items()},
                       "equalities": [{mon.name: coeff
-                                          for mon, coeff in eq.items()}
-                                         for eq in self.moment_equalities],
+                                      for mon, coeff in eq.items()}
+                                     for eq in self.moment_equalities],
                       "inequalities": [{mon.name: coeff
                                         for mon, coeff in ineq.items()}
                                        for ineq in self.moment_inequalities]
@@ -1982,11 +1806,6 @@ class InflationSDP(BaseSDP):
             if not np.isclose(bnd, 0):
                 lb[self.constant_term_name] = -bnd
             solverargs["inequalities"].append(lb)
-        for mon, bnd in self._processed_moment_upperbounds.items():
-            ub = {mon.name: -1}
-            if not np.isclose(bnd, 0):
-                ub[self.constant_term_name] = bnd
-            solverargs["inequalities"].append(ub)
         solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
             (self.n_columns, self.n_columns))
         return solverargs
@@ -2110,19 +1929,492 @@ class InflationSDP(BaseSDP):
                 return new_array2d
 
 
+class InflationSDP(BaseSDP):
+    """
+    Class for generating and solving an SDP relaxation for quantum inflation,
+    testing (or optimizing over) probability distributions.
+    """
+    def __init__(self, inflationproblem, commuting=False, verbose=0):
+        super(InflationSDP, self).__init__(inflationproblem, commuting, verbose)
+
+    def generate_relaxation(self, column_specification):
+        self._set_lowerbounds(None)
+        self._set_upperbounds(None)
+        self.set_objective(None)
+        super(InflationSDP, self).generate_relaxation(column_specification)
+
+    def set_bounds(self,
+                   bounds: Union[dict, None],
+                   bound_type: str = "up") -> None:
+        r"""Set numerical lower or upper bounds on the moments generated in the
+        SDP relaxation. The bounds are at the level of the SDP variables,
+        and do not take into consideration non-convex constraints. E.g., two
+        individual lower bounds, :math:`p_A(0|0) \geq 0.1` and
+        :math:`p_B(0|0) \geq 0.1` do not directly impose the constraint
+        :math:`p_A(0|0)*p_B(0|0) \geq 0.01`, which should be set manually if
+        needed.
+
+        Parameters
+        ----------
+        bounds : Union[dict, None]
+            A dictionary with keys as monomials and values being the bounds.
+            The keys can be either CompoundMonomial objects, or names (`str`)
+            of Monomial objects.
+        bound_type : str, optional
+            Specifies whether we are setting upper (``"up"``) or lower
+            (``"lo"``) bounds, by default "up".
+
+        Examples
+        --------
+        >>> set_bounds({"pAB(00|00)": 0.2}, "lo")
+        """
+        assert bound_type in ["up", "lo"], \
+            "The 'bound_type' argument should be either 'up' or 'lo'"
+        if bound_type == "up":
+            self._set_upperbounds(bounds)
+        else:
+            self._set_lowerbounds(bounds)
+
+    def set_objective(self,
+                      objective: Union[sp.core.expr.Expr,
+                                       dict,
+                                       None],
+                      direction: str = "max") -> None:
+        """Set or change the objective function of the polynomial optimization
+        problem.
+
+        Parameters
+        ----------
+        objective : Union[sp.core.expr.Expr, dict, None]
+            The objective function, either as a combination of sympy symbols,
+            as a dictionary with keys the monomials or their names, and as
+            values the corresponding coefficients, or ``None`` for clearing
+            a previous objective.
+        direction : str, optional
+            Direction of the optimization (``"max"``/``"min"``). By default
+            ``"max"``.
+        """
+        assert direction in ["max", "min"], ("The 'direction' argument should "
+                                             + " be either 'max' or 'min'")
+
+        self._reset_objective()
+        if direction == "max":
+            self.maximize = True
+        else:
+            self.maximize = False
+        if objective is None:
+            return
+        elif isinstance(objective, sp.core.expr.Expr):
+            if objective.free_symbols:
+                objective_raw = sp.expand(objective).as_coefficients_dict()
+                objective_raw = {k: float(v)
+                                 for k, v in objective_raw.items()}
+            else:
+                objective_raw = {self.One: float(objective)}
+            return self.set_objective(objective_raw, direction)
+        else:
+            if self.use_lpi_constraints and self.verbose > 0:
+                warn("You have the flag `use_lpi_constraints` set to True. Be "
+                     + "aware that imposing linearized polynomial constraints "
+                     + "will constrain the optimization to distributions with "
+                     + "fixed marginals.")
+            sign = (1 if self.maximize else -1)
+            objective_dict = {self.One: 0}
+            for mon, coeff in objective.items():
+                if not np.isclose(coeff, 0):
+                    mon = self._sanitise_monomial(mon)
+                    objective_dict[mon] = \
+                        objective_dict.get(mon, 0) + (sign * coeff)
+            self.objective = objective_dict
+            surprising_objective_terms = {mon for mon in self.objective.keys()
+                                          if mon not in self.monomials}
+            assert len(surprising_objective_terms) == 0, \
+                ("When interpreting the objective we have encountered at " +
+                 "least one monomial that does not appear in the original " +
+                 f"moment matrix:\n\t{surprising_objective_terms}")
+            self._update_objective()
+
+    def set_values(self,
+                   values,
+                   use_lpi_constraints=False,
+                   only_specified_values=False):
+        if (len(self.objective) > 1) and use_lpi_constraints:
+            warn("You have an objective function set. Be aware that imposing "
+                 + "linearized polynomial constraints will constrain the "
+                 + "optimization to distributions with fixed marginals.")
+
+        super(InflationSDP, self).set_values(values,
+                                             use_lpi_constraints,
+                                             only_specified_values)
+
+    ###########################################################################
+    # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES               #
+    ###########################################################################
+    def certificate_as_probs(self,
+                             clean: bool = True,
+                             chop_tol: float = 1e-10,
+                             round_decimals: int = 3) -> sp.core.add.Add:
+        """Give certificate as symbolic sum of probabilities. The certificate
+        of incompatibility is ``cert < 0``.
+
+        Parameters
+        ----------
+        clean : bool, optional
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals
+            specified by ``round_decimals``. By default ``True``.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. By default ``1e-10``.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number of
+            decimals specified. By default ``3``.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the certificate in terms or probabilities and
+            marginals. The certificate of incompatibility is ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationSDP.solve()\" first.")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions.")
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
+
+        polynomial = sp.S.Zero
+        for mon_name, coeff in dual.items():
+            if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
+                coeff = int(coeff)
+            polynomial += coeff * self.names_to_symbols[mon_name]
+        return polynomial
+
+    def certificate_as_string(self,
+                              clean: bool = True,
+                              chop_tol: float = 1e-10,
+                              round_decimals: int = 3) -> str:
+        """Give the certificate as a string with the notation of the operators
+        in the moment matrix. The expression is in the form such that
+        satisfaction implies incompatibility.
+
+        Parameters
+        ----------
+        clean : bool, optional
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals
+            specified by ``round_decimals``. By default ``True``.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. By default ``1e-10``.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number of
+            decimals specified. By default ``3``.
+
+        Returns
+        -------
+        str
+            The certificate in terms of symbols representing the monomials in
+            the moment matrix. The certificate of incompatibility is
+            ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationSDP.solve()\" first.")
+        if len(self.semiknown_moments) > 0:
+            if self.verbose > 0:
+                warn("Beware that, because the problem contains linearized " +
+                     "polynomial constraints, the certificate is not " +
+                     "guaranteed to apply to other distributions.")
+
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
+
+        rest_of_dual = dual.copy()
+        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
+        constant_value += rest_of_dual.pop(self.One.name, 0)
+        if constant_value:
+            if clean:
+                cert = "{0:.{prec}f}".format(constant_value,
+                                             prec=round_decimals)
+            else:
+                cert = str(constant_value)
+        else:
+            cert = ""
+        for mon_name, coeff in rest_of_dual.items():
+            if mon_name != "0":
+                cert += "+" if coeff >= 0 else "-"
+                if np.isclose(abs(coeff), 1):
+                    cert += mon_name
+                else:
+                    if clean:
+                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
+                                                          mon_name,
+                                                          prec=round_decimals)
+                    else:
+                        cert += f"{abs(coeff)}*{mon_name}"
+        cert += " < 0"
+        return cert[1:] if cert[0] == "+" else cert
+
+    def reset(self, which: Union[str, List[str]]) -> None:
+        """Reset the various user-specifiable objects in the inflation SDP.
+
+        Parameters
+        ----------
+        which : Union[str, List[str]]
+            The objects to be reset. It can be fed as a single string or a list
+            of them. Options include ``"bounds"``, ``"lowerbounds"``,
+            ``"upperbounds"``, ``"objective"``, ``"values"``, and ``"all"``.
+        """
+        if type(which) == str:
+            if which == "all":
+                self.reset(["bounds", "objective", "values"])
+            elif which == "bounds":
+                self._reset_bounds()
+            elif which == "lowerbounds":
+                self._reset_lowerbounds()
+            elif which == "upperbounds":
+                self._reset_upperbounds()
+            elif which == "objective":
+                self._reset_objective()
+            elif which == "values":
+                self._reset_values()
+            else:
+                raise Exception(f"The attribute {which} is not part of " +
+                                "InflationSDP.")
+        else:
+            for attr in which:
+                self.reset(attr)
+        collect()
+
+    ###########################################################################
+    # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
+    ###########################################################################
+    def _cleanup_after_set_values(self) -> None:
+        self._update_upperbounds()
+        self._update_objective()
+        super(InflationSDP, self)._cleanup_after_set_values()
+
+    def _reset_bounds(self) -> None:
+        """Reset the lists of bounds."""
+        self._reset_lowerbounds()
+        self._reset_upperbounds()
+        collect()
+
+    def _reset_lowerbounds(self) -> None:
+        """Reset the list of lower bounds."""
+        self._reset_solution()
+        self._processed_moment_lowerbounds = dict()
+
+    def _reset_upperbounds(self) -> None:
+        """Reset the list of upper bounds."""
+        self._reset_solution()
+        self._processed_moment_upperbounds = dict()
+
+    def _reset_objective(self) -> None:
+        """Reset the objective function."""
+        self._reset_solution()
+        self.objective = {self.One: 0.}
+        self._processed_objective = self.objective
+        self.maximize = True  # Direction of the optimization
+
+    def _reset_values(self) -> None:
+        """Reset the known values."""
+        self._reset_solution()
+        self.known_moments     = dict()
+        self.semiknown_moments = dict()
+        if self.momentmatrix_has_a_zero:
+            self.known_moments[self.Zero] = 0.
+        self.known_moments[self.One] = 1.
+        collect()
+
+    def _update_objective(self) -> None:
+        """Process the objective with the information from known_moments
+        and semiknown_moments.
+        """
+        self._processed_objective = self.objective.copy()
+        knowns_to_process = set(self.known_moments.keys()
+                                ).intersection(
+                                    self._processed_objective.keys())
+        knowns_to_process.discard(self.One)
+        for m in knowns_to_process:
+            value = self.known_moments[m]
+            self._processed_objective[self.One] += \
+                self._processed_objective[m] * value
+            del self._processed_objective[m]
+        semiknowns_to_process = set(self.semiknown_moments.keys()
+                                    ).intersection(
+                                        self._processed_objective.keys())
+        for mon in semiknowns_to_process:
+            coeff = self._processed_objective[mon]
+            for (subs_coeff, subs) in self.semiknown_moments[mon]:
+                self._processed_objective[subs] = \
+                    self._processed_objective.get(subs, 0) + coeff * subs_coeff
+                del self._processed_objective[mon]
+        collect()
+
+    def _update_lowerbounds(self) -> None:
+        """Helper function to check that lowerbounds are consistent with the
+        specified known values, and to keep only the lowest lowerbounds
+        in case of redundancy.
+        """
+        for mon, lb in self.moment_lowerbounds.items():
+            self._processed_moment_lowerbounds[mon] = \
+                max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
+        for mon, value in self.known_moments.items():
+            if isinstance(value, Real):
+                try:
+                    lb = self._processed_moment_lowerbounds[mon]
+                    assert lb <= value, (f"Value {value} assigned for " +
+                                         f"monomial {mon} contradicts the " +
+                                         f"assigned lower bound of {lb}.")
+                    del self._processed_moment_lowerbounds[mon]
+                except KeyError:
+                    pass
+        self.moment_lowerbounds = self._processed_moment_lowerbounds
+
+    def _update_upperbounds(self) -> None:
+        """Helper function to check that upperbounds are consistent with the
+        specified known values.
+        """
+        for mon, value in self.known_moments.items():
+            if isinstance(value, Real):
+                try:
+                    ub = self._processed_moment_upperbounds[mon]
+                    assert ub >= value, (f"Value {value} assigned for " +
+                                         f"monomial {mon} contradicts the " +
+                                         f"assigned upper bound of {ub}.")
+                    del self._processed_moment_upperbounds[mon]
+                except KeyError:
+                    pass
+        self.moment_upperbounds = self._processed_moment_upperbounds
+
+    def _prepare_solver_arguments(self):
+        solverargs = super(InflationSDP, self)._prepare_solver_arguments()
+
+        solverargs["objective"] = {mon.name: coeff for mon, coeff
+                                   in self._processed_objective.items()}
+        for mon, bnd in self._processed_moment_upperbounds.items():
+            ub = {mon.name: -1}
+            if not np.isclose(bnd, 0):
+                ub[self.constant_term_name] = bnd
+            solverargs["inequalities"].append(ub)
+        return solverargs
+
+    def _reset_solution(self) -> None:
+        """Resets class attributes storing the solution to the SDP
+        relaxation."""
+        for attribute in {"primal_objective",
+                          "objective_value",
+                          "solution_object"}:
+            try:
+                delattr(self, attribute)
+            except AttributeError:
+                pass
+        self.status = "Not yet solved"
+
+    def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
+        """Set upper bounds for variables in the SDP relaxation.
+
+        Parameters
+        ----------
+        upperbounds : Union[dict, None]
+            Dictionary with keys as moments and values as upper bounds. The
+            keys can be either strings, instances of `CompoundMonomial` or
+            moments encoded as 2D arrays.
+        """
+        self._reset_upperbounds()
+        if upperbounds is None:
+            return
+        sanitized_upperbounds = dict()
+        for mon, upperbound in upperbounds.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_upperbounds.keys():
+                sanitized_upperbounds[mon] = upperbound
+            else:
+                old_bound = sanitized_upperbounds[mon]
+                assert np.isclose(old_bound,
+                                  upperbound), \
+                    (f"Contradiction: Cannot set the same monomial {mon} to " +
+                     "have different upper bounds.")
+        self._processed_moment_upperbounds = sanitized_upperbounds
+        self._update_upperbounds()
+
+    def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
+        """Set lower bounds for variables in the SDP relaxation.
+
+        Parameters
+        ----------
+        lowerbounds : Union[dict, None]
+            Dictionary with keys as moments and values as upper bounds. The
+            keys can be either strings, instances of `CompoundMonomial` or
+            moments encoded as 2D arrays.
+        """
+        self._reset_lowerbounds()
+        if lowerbounds is None:
+            return
+        sanitized_lowerbounds = dict()
+        for mon, lowerbound in lowerbounds.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_lowerbounds.keys():
+                sanitized_lowerbounds[mon] = lowerbound
+            else:
+                old_bound = sanitized_lowerbounds[mon]
+                assert np.isclose(old_bound, lowerbound), \
+                    (f"Contradiction: Cannot set the same monomial {mon} to " +
+                     "have different lower bounds.")
+        self._processed_moment_lowerbounds = sanitized_lowerbounds
+        self._update_lowerbounds()
+
+
 class SupportsSDP(BaseSDP):
     """
     Class for generating and solving an SDP relaxation for quantum inflation,
     testing for the support of a distribution.
     """
-    def __init__(self,
-                 inflationproblem: InflationProblem,
-                 commuting: bool = False,
-                 verbose=None) -> None:
-
+    def __init__(self, inflationproblem, commuting=False, verbose=0):
         super(SupportsSDP, self).__init__(inflationproblem, commuting, verbose)
+        # Support problems do not use Collins-Gisin notation
         self.outcome_cardinalities = \
             self.InflationProblem.outcomes_per_party.copy() + 1
+
+    def reset(self, which: Union[str, List[str]]) -> None:
+        """Reset the various user-specifiable objects in the inflation SDP.
+
+        Parameters
+        ----------
+        which : Union[str, List[str]]
+            The objects to be reset. It can be fed as a single string or a list
+            of them. Options include ``"bounds"``, ``"lowerbounds"``,
+            ``"upperbounds"``, ``"objective"``, ``"values"``, and ``"all"``.
+        """
+        if type(which) == str:
+            if which == "all":
+                self.reset(["bounds", "objective", "values"])
+            elif which == "bounds":
+                self._reset_bounds()
+            elif which == "lowerbounds":
+                self._reset_lowerbounds()
+            elif which == "upperbounds":
+                self._reset_upperbounds()
+            elif which == "objective":
+                self._reset_objective()
+            elif which == "values":
+                self._reset_values()
+            else:
+                raise Exception(f"The attribute {which} is not part of " +
+                                "InflationSDP.")
+        else:
+            for attr in which:
+                self.reset(attr)
+        collect()
 
     def _generate_parties(self):
         # Support problems do not use Collins-Gisin notation
@@ -2131,3 +2423,13 @@ class SupportsSDP(BaseSDP):
         measurements = super(SupportsSDP, self)._generate_parties()
         return measurements
 
+    def _cleanup_after_set_values(self):
+        # Add lower bounds to monomials inside the support
+        nonzero_known_monomials = [mon for
+                                   mon, value in self.known_moments.items()
+                                   if not np.isclose(value, 0)]
+        for mon in nonzero_known_monomials:
+            self._processed_moment_lowerbounds[mon] = 1.
+            del self.known_moments[mon]
+        self.semiknown_moments = dict()
+        super(SupportsSDP, self)._cleanup_after_set_values()
