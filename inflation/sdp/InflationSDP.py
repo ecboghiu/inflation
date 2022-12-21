@@ -45,7 +45,7 @@ from .writer_utils import (write_to_csv,
 from ..utils import flatten
 
 
-class InflationSDP(object):
+class BaseSDP(object):
     """
     Class for generating and solving an SDP relaxation for quantum inflation.
 
@@ -56,9 +56,6 @@ class InflationSDP(object):
     commuting : bool, optional
         Whether variables in the problem are going to be commuting (classical
         problem) or non-commuting (quantum problem). By default ``False``.
-    supports_problem : bool, optional
-        Whether to consider feasibility problems with distributions, or just
-        with the distribution's support. By default ``False``.
     verbose : int, optional
         Optional parameter for level of verbose:
 
@@ -71,11 +68,21 @@ class InflationSDP(object):
     def __init__(self,
                  inflationproblem: InflationProblem,
                  commuting: bool = False,
-                 supports_problem: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
         """
-        self.supports_problem = supports_problem
+        pass
+
+
+class InflationSDP(BaseSDP):
+    constant_term_name = "constant_term"
+
+    def __init__(self,
+                 inflationproblem: InflationProblem,
+                 commuting: bool = False,
+                 supports_problem: bool = False,
+                 verbose=None) -> None:
+        super(InflationSDP, self).__init__(inflationproblem, commuting, verbose)
         if verbose is not None:
             if inflationproblem.verbose > verbose:
                 warn("Overriding the verbosity from InflationProblem")
@@ -2018,3 +2025,17 @@ class InflationSDP(object):
                 self.canon_ndarray_from_hash[key]     = new_array2d
                 self.canon_ndarray_from_hash[new_key] = new_array2d
                 return new_array2d
+
+
+class SupportsSDP(BaseSDP):
+    """
+    Class for generating and solving an SDP relaxation for quantum inflation
+    that tests whether the support of a distribution could be generated or not.
+
+    """
+    def __init__(self,
+                 inflationproblem: InflationProblem,
+                 commuting: bool = False,
+                 verbose=None) -> None:
+
+        super(SupportsSDP, self).__init__(inflationproblem, commuting, verbose)
