@@ -2039,3 +2039,11 @@ class SupportsSDP(BaseSDP):
                  verbose=None) -> None:
 
         super(SupportsSDP, self).__init__(inflationproblem, commuting, verbose)
+
+    def _generate_parties(self):
+        # Support problems do not use Collins-Gisin notation
+        self.outcome_cardinalities = \
+            self.InflationProblem.outcomes_per_party + 1
+        measurements = super(SupportsSDP, self)._generate_parties()
+        return measurements
+
