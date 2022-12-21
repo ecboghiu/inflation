@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import warnings
 
-from inflation import InflationProblem, InflationSDP
+from inflation import InflationProblem, InflationSDP, SupportsSDP
 
 bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
 bilocality = InflationProblem(dag=bilocalDAG,
@@ -432,7 +432,7 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.status, "infeasible",
                          "Failing to detect the infeasibility of the " +
                          "distribution that maximally violates Bonet's " +
-                         "inequalty.")
+                         "inequality.")
         unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
         sdp.set_distribution(unnormalized_dist)
         sdp.solve(feas_as_optim=False)
@@ -505,7 +505,7 @@ class TestSDPOutput(unittest.TestCase):
                         " LPI constraints are not assigned correct indices.")
 
     def test_supports(self):
-        sdp = InflationSDP(self.bellScenario, supports_problem=True)
+        sdp = SupportsSDP(self.bellScenario)
         sdp.generate_relaxation("local1")
         pr_support = np.zeros((2, 2, 2, 2))
         for a, b, x, y in np.ndindex(*pr_support.shape):
