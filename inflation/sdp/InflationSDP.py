@@ -69,19 +69,161 @@ class BaseSDP(object):
                  inflationproblem: InflationProblem,
                  commuting: bool = False,
                  verbose=None) -> None:
-        """Constructor for the InflationSDP class.
+        """Constructor for the BaseSDP class.
         """
-        pass
+        if verbose is not None:
+            if inflationproblem.verbose > verbose:
+                warn("Overriding the verbosity from InflationProblem")
+            self.verbose = verbose
+        else:
+            self.verbose = inflationproblem.verbose
+        self.commuting = commuting
+        self.InflationProblem = inflationproblem
+        self.names = self.InflationProblem.names
+        self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
+        if self.verbose > 1:
+            print(self.InflationProblem)
+
+        self.nr_parties = len(self.names)
+        self.nr_sources = self.InflationProblem.nr_sources
+        self.hypergraph = self.InflationProblem.hypergraph
+        self.inflation_levels = \
+            self.InflationProblem.inflation_level_per_source
+        self.has_children = self.InflationProblem.has_children
+        self.outcome_cardinalities = \
+            self.InflationProblem.outcomes_per_party.copy()
+        self.outcome_cardinalities += self.has_children
+        self.setting_cardinalities = self.InflationProblem.settings_per_party
+
+        self.measurements = self._generate_parties()
+        if self.verbose > 1:
+            print("Number of single operator measurements per party:", end="")
+            prefix = " "
+            for i, measures in enumerate(self.measurements):
+                counter = count()
+                deque(zip(chain.from_iterable(
+                    chain.from_iterable(measures)),
+                          counter),
+                      maxlen=0)
+                print(prefix + f"{self.names[i]}={next(counter)}", end="")
+                prefix = ", "
+            print()
+        self.use_lpi_constraints = False
+        self.network_scenario    = self.InflationProblem.is_network
+        self._is_knowable_q_non_networks = \
+            self.InflationProblem._is_knowable_q_non_networks
+        self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
+        self.factorize_monomial = self.InflationProblem.factorize_monomial
+
+        self._nr_operators = len(flatten(self.measurements))
+        self._nr_properties = 1 + self.nr_sources + 2
+        self.np_dtype = np.find_common_type([
+            np.min_scalar_type(np.max(self.setting_cardinalities)),
+            np.min_scalar_type(np.max(self.outcome_cardinalities)),
+            np.min_scalar_type(self.nr_parties + 1),
+            np.min_scalar_type(np.max(self.inflation_levels) + 1)], [])
+        self.identity_operator = np.empty((0, self._nr_properties),
+                                          dtype=self.np_dtype)
+        self.zero_operator = np.zeros((1, self._nr_properties),
+                                      dtype=self.np_dtype)
+
+        # Define default lexicographic order through np.lexsort
+        lexorder = self._interpret_name(flatten(self.measurements))
+        lexorder = np.concatenate((self.zero_operator, lexorder))
+        self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
+        self._lexorder = self._default_lexorder.copy()
+
+        self._default_notcomm = commutation_matrix(self._lexorder,
+                                                   self.commuting)
+        self._notcomm = self._default_notcomm.copy()
+        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
+                                                              self._lexorder,
+                                                              self._notcomm)
+
+        self.canon_ndarray_from_hash    = dict()
+        self.canonsym_ndarray_from_hash = dict()
+        # These next properties are reset during generate_relaxation, but
+        # are needed in init so as to be able to test the Monomial constructor
+        # function without generate_relaxation.
+        self.atomic_monomial_from_hash  = dict()
+        self.monomial_from_atoms        = dict()
+        self.monomial_from_name         = dict()
+        self.Zero = self.Monomial(self.zero_operator, idx=0)
+        self.One  = self.Monomial(self.identity_operator, idx=1)
+        self._relaxation_has_been_generated = False
+
+    def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
+        """Generates all the party operators in the quantum inflation.
+
+        Returns
+        -------
+        List[List[List[List[sympy.Symbol]]]]
+            The measurement operators as symbols. The array is indexed as
+            measurements[p][c][i][o] for party p, inflation copies c, input i,
+            and output o.
+        """
+        settings = self.setting_cardinalities
+        outcomes = self.outcome_cardinalities
+
+        assert len(settings) == len(outcomes), \
+            "There\'s a different number of settings and outcomes"
+        assert len(settings) == self.hypergraph.shape[1], \
+            "The hypergraph does not have as many columns as parties"
+        measurements = []
+        parties = self.names
+        n_states = self.hypergraph.shape[0]
+        for pos, [party, ins, outs] in enumerate(zip(parties,
+                                                     settings,
+                                                     outcomes)):
+            party_meas = []
+            # Generate all possible copy indices for a party
+            all_inflation_indices = product(
+                *[list(range(self.inflation_levels[p_idx]))
+                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
+            # Include zeros in the positions of states not feeding the party
+            all_indices = []
+            for inflation_indices in all_inflation_indices:
+                indices = []
+                i = 0
+                for idx in range(n_states):
+                    if self.hypergraph[idx, pos] == 0:
+                        indices.append("0")
+                    elif self.hypergraph[idx, pos] == 1:
+                        # The +1 is just to begin at 1
+                        indices.append(str(inflation_indices[i] + 1))
+                        i += 1
+                    else:
+                        raise Exception("You don\'t have a proper hypergraph")
+                all_indices.append(indices)
+            # Generate measurements for every combination of indices.
+            # The -1 in outs - 1 is because the use of Collins-Gisin notation
+            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
+            # understood to be written as the identity minus the rest.
+            for indices in all_indices:
+                meas = generate_operators(
+                    [outs - 1 for _ in range(ins)],
+                    party + "_" + "_".join(indices)
+                )
+                party_meas.append(meas)
+            measurements.append(party_meas)
+        return measurements
+
+        """
 
 
 class InflationSDP(BaseSDP):
+    """
+    Class for generating and solving an SDP relaxation for quantum inflation,
+    testing (or optimizing over) probability distributions.
+    """
     constant_term_name = "constant_term"
 
     def __init__(self,
                  inflationproblem: InflationProblem,
                  commuting: bool = False,
-                 supports_problem: bool = False,
                  verbose=None) -> None:
+        """Constructor for the InflationSDP class.
+        """
         super(InflationSDP, self).__init__(inflationproblem, commuting, verbose)
         if verbose is not None:
             if inflationproblem.verbose > verbose:
@@ -104,11 +246,7 @@ class InflationSDP(BaseSDP):
         self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities = \
             self.InflationProblem.outcomes_per_party.copy()
-        if self.supports_problem:
-            # Support problems must not use Collins-Gisin notation
-            self.has_children = np.ones(self.nr_parties, dtype=int)
-        else:
-            self.has_children = self.InflationProblem.has_children
+        self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
 
@@ -1618,61 +1756,6 @@ class InflationSDP(BaseSDP):
         else:
             return np.empty((0, len(self.generating_monomials)), dtype=int)
 
-    def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
-        """Generates all the party operators in the quantum inflation.
-
-        Returns
-        -------
-        List[List[List[List[sympy.Symbol]]]]
-            The measurement operators as symbols. The array is indexed as
-            measurements[p][c][i][o] for party p, inflation copies c, input i,
-            and output o.
-        """
-        settings = self.setting_cardinalities
-        outcomes = self.outcome_cardinalities
-
-        assert len(settings) == len(outcomes), \
-            "There\'s a different number of settings and outcomes"
-        assert len(settings) == self.hypergraph.shape[1], \
-            "The hypergraph does not have as many columns as parties"
-        measurements = []
-        parties = self.names
-        n_states = self.hypergraph.shape[0]
-        for pos, [party, ins, outs] in enumerate(zip(parties,
-                                                     settings,
-                                                     outcomes)):
-            party_meas = []
-            # Generate all possible copy indices for a party
-            all_inflation_indices = product(
-                *[list(range(self.inflation_levels[p_idx]))
-                  for p_idx in np.flatnonzero(self.hypergraph[:, pos])])
-            # Include zeros in the positions of states not feeding the party
-            all_indices = []
-            for inflation_indices in all_inflation_indices:
-                indices = []
-                i = 0
-                for idx in range(n_states):
-                    if self.hypergraph[idx, pos] == 0:
-                        indices.append("0")
-                    elif self.hypergraph[idx, pos] == 1:
-                        # The +1 is just to begin at 1
-                        indices.append(str(inflation_indices[i] + 1))
-                        i += 1
-                    else:
-                        raise Exception("You don\'t have a proper hypergraph")
-                all_indices.append(indices)
-            # Generate measurements for every combination of indices.
-            # The -1 in outs - 1 is because the use of Collins-Gisin notation
-            # (see [arXiv:quant-ph/0306129]), whereby the last operator is
-            # understood to be written as the identity minus the rest.
-            for indices in all_indices:
-                meas = generate_operators(
-                    [outs - 1 for _ in range(ins)],
-                    party + "_" + "_".join(indices)
-                )
-                party_meas.append(meas)
-            measurements.append(party_meas)
-        return measurements
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
@@ -2029,9 +2112,8 @@ class InflationSDP(BaseSDP):
 
 class SupportsSDP(BaseSDP):
     """
-    Class for generating and solving an SDP relaxation for quantum inflation
-    that tests whether the support of a distribution could be generated or not.
-
+    Class for generating and solving an SDP relaxation for quantum inflation,
+    testing for the support of a distribution.
     """
     def __init__(self,
                  inflationproblem: InflationProblem,
@@ -2039,11 +2121,13 @@ class SupportsSDP(BaseSDP):
                  verbose=None) -> None:
 
         super(SupportsSDP, self).__init__(inflationproblem, commuting, verbose)
+        self.outcome_cardinalities = \
+            self.InflationProblem.outcomes_per_party.copy() + 1
 
     def _generate_parties(self):
         # Support problems do not use Collins-Gisin notation
         self.outcome_cardinalities = \
-            self.InflationProblem.outcomes_per_party + 1
+            self.InflationProblem.outcomes_per_party.copy() + 1
         measurements = super(SupportsSDP, self)._generate_parties()
         return measurements
 
