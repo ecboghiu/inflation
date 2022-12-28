@@ -984,7 +984,8 @@ class InflationSDP(object):
             if which == "all":
                 self.reset(["bounds", "objective", "values"])
             elif which == "bounds":
-                self._reset_bounds()
+                self._reset_lowerbounds()
+                self._reset_upperbounds()
             elif which == "lowerbounds":
                 self._reset_lowerbounds()
             elif which == "upperbounds":
@@ -1697,12 +1698,6 @@ class InflationSDP(object):
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
-
-    def _reset_bounds(self) -> None:
-        """Reset the lists of bounds."""
-        self._reset_lowerbounds()
-        self._reset_upperbounds()
-        collect()
 
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
