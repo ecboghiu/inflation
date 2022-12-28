@@ -67,7 +67,7 @@ class BaseSDP(object):
 
     def __init__(self,
                  inflationproblem: InflationProblem,
-                 commuting: bool = False,
+                 commuting=False,
                  verbose=None) -> None:
         """Constructor for the BaseSDP class.
         """
@@ -366,47 +366,15 @@ class BaseSDP(object):
                 ))
                 self.moment_equalities.append(eq_dict)
 
+        self.known_moments = dict()
         self.moment_inequalities = []
         self.moment_upperbounds  = dict()
         self.moment_lowerbounds  = {m: 0. for m in self.physical_monomials}
-
-        self._set_lowerbounds(None)
+        self._set_lowerbounds(self.moment_lowerbounds)
         self.set_values(None)
 
         self.maskmatrices = dict()
         self._relaxation_has_been_generated = True
-
-    def set_bounds(self,
-                   bounds: Union[dict, None],
-                   bound_type: str = "up") -> None:
-        r"""Set numerical lower or upper bounds on the moments generated in the
-        SDP relaxation. The bounds are at the level of the SDP variables,
-        and do not take into consideration non-convex constraints. E.g., two
-        individual lower bounds, :math:`p_A(0|0) \geq 0.1` and
-        :math:`p_B(0|0) \geq 0.1` do not directly impose the constraint
-        :math:`p_A(0|0)*p_B(0|0) \geq 0.01`, which should be set manually if
-        needed.
-
-        Parameters
-        ----------
-        bounds : Union[dict, None]
-            A dictionary with keys as monomials and values being the bounds.
-            The keys can be either CompoundMonomial objects, or names (`str`)
-            of Monomial objects.
-        bound_type : str, optional
-            Specifies whether we are setting upper (``"up"``) or lower
-            (``"lo"``) bounds, by default "up".
-
-        Examples
-        --------
-        >>> set_bounds({"pAB(00|00)": 0.2}, "lo")
-        """
-        assert bound_type in ["up", "lo"], \
-            "The 'bound_type' argument should be either 'up' or 'lo'"
-        if bound_type == "up":
-            self._set_upperbounds(bounds)
-        else:
-            self._set_lowerbounds(bounds)
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -613,122 +581,6 @@ class BaseSDP(object):
             self.primal_objective = self.status
             self.objective_value  = self.status
         collect()
-
-    ###########################################################################
-    # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES               #
-    ###########################################################################
-    def certificate_as_probs(self,
-                             clean: bool = True,
-                             chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
-        """Give certificate as symbolic sum of probabilities. The certificate
-        of incompatibility is ``cert < 0``.
-
-        Parameters
-        ----------
-        clean : bool, optional
-            If ``True``, eliminate all coefficients that are smaller than
-            ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``True``.
-        chop_tol : float, optional
-            Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-10``.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are rounded to the number of
-            decimals specified. By default ``3``.
-
-        Returns
-        -------
-        sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
-            marginals. The certificate of incompatibility is ``cert < 0``.
-        """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
-
-        polynomial = sp.S.Zero
-        for mon_name, coeff in dual.items():
-            if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
-                coeff = int(coeff)
-            polynomial += coeff * self.names_to_symbols[mon_name]
-        return polynomial
-
-    def certificate_as_string(self,
-                              clean: bool = True,
-                              chop_tol: float = 1e-10,
-                              round_decimals: int = 3) -> str:
-        """Give the certificate as a string with the notation of the operators
-        in the moment matrix. The expression is in the form such that
-        satisfaction implies incompatibility.
-
-        Parameters
-        ----------
-        clean : bool, optional
-            If ``True``, eliminate all coefficients that are smaller than
-            ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``True``.
-        chop_tol : float, optional
-            Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-10``.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are rounded to the number of
-            decimals specified. By default ``3``.
-
-        Returns
-        -------
-        str
-            The certificate in terms of symbols representing the monomials in
-            the moment matrix. The certificate of incompatibility is
-            ``cert < 0``.
-        """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            if self.verbose > 0:
-                warn("Beware that, because the problem contains linearized " +
-                     "polynomial constraints, the certificate is not " +
-                     "guaranteed to apply to other distributions.")
-
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
-
-        rest_of_dual = dual.copy()
-        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
-        constant_value += rest_of_dual.pop(self.One.name, 0)
-        if constant_value:
-            if clean:
-                cert = "{0:.{prec}f}".format(constant_value,
-                                             prec=round_decimals)
-            else:
-                cert = str(constant_value)
-        else:
-            cert = ""
-        for mon_name, coeff in rest_of_dual.items():
-            if mon_name != "0":
-                cert += "+" if coeff >= 0 else "-"
-                if np.isclose(abs(coeff), 1):
-                    cert += mon_name
-                else:
-                    if clean:
-                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
-                                                          mon_name,
-                                                          prec=round_decimals)
-                    else:
-                        cert += f"{abs(coeff)}*{mon_name}"
-        cert += " < 0"
-        return cert[1:] if cert[0] == "+" else cert
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
@@ -1614,28 +1466,10 @@ class BaseSDP(object):
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
 
-    def _reset_bounds(self) -> None:
-        """Reset the lists of bounds."""
-        self._reset_lowerbounds()
-        self._reset_upperbounds()
-        collect()
-
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
         self._processed_moment_lowerbounds = dict()
-
-    def _reset_upperbounds(self) -> None:
-        """Reset the list of upper bounds."""
-        self._reset_solution()
-        self._processed_moment_upperbounds = dict()
-
-    def _reset_objective(self) -> None:
-        """Reset the objective function."""
-        self._reset_solution()
-        self.objective = {self.One: 0.}
-        self._processed_objective = self.objective
-        self.maximize = True  # Direction of the optimization
 
     def _reset_values(self) -> None:
         """Reset the known values."""
@@ -1645,31 +1479,6 @@ class BaseSDP(object):
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
         self.known_moments[self.One] = 1.
-        collect()
-
-    def _update_objective(self) -> None:
-        """Process the objective with the information from known_moments
-        and semiknown_moments.
-        """
-        self._processed_objective = self.objective.copy()
-        knowns_to_process = set(self.known_moments.keys()
-                                ).intersection(
-                                    self._processed_objective.keys())
-        knowns_to_process.discard(self.One)
-        for m in knowns_to_process:
-            value = self.known_moments[m]
-            self._processed_objective[self.One] += \
-                self._processed_objective[m] * value
-            del self._processed_objective[m]
-        semiknowns_to_process = set(self.semiknown_moments.keys()
-                                    ).intersection(
-                                        self._processed_objective.keys())
-        for mon in semiknowns_to_process:
-            coeff = self._processed_objective[mon]
-            for (subs_coeff, subs) in self.semiknown_moments[mon]:
-                self._processed_objective[subs] = \
-                    self._processed_objective.get(subs, 0) + coeff * subs_coeff
-                del self._processed_objective[mon]
         collect()
 
     def _update_lowerbounds(self) -> None:
@@ -1691,22 +1500,6 @@ class BaseSDP(object):
                 except KeyError:
                     pass
         self.moment_lowerbounds = self._processed_moment_lowerbounds
-
-    def _update_upperbounds(self) -> None:
-        """Helper function to check that upperbounds are consistent with the
-        specified known values.
-        """
-        for mon, value in self.known_moments.items():
-            if isinstance(value, Real):
-                try:
-                    ub = self._processed_moment_upperbounds[mon]
-                    assert ub >= value, (f"Value {value} assigned for " +
-                                         f"monomial {mon} contradicts the " +
-                                         f"assigned upper bound of {ub}.")
-                    del self._processed_moment_upperbounds[mon]
-                except KeyError:
-                    pass
-        self.moment_upperbounds = self._processed_moment_upperbounds
 
     ###########################################################################
     # OTHER ROUTINES                                                          #
@@ -1821,33 +1614,6 @@ class BaseSDP(object):
             except AttributeError:
                 pass
         self.status = "Not yet solved"
-
-    def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
-        """Set upper bounds for variables in the SDP relaxation.
-
-        Parameters
-        ----------
-        upperbounds : Union[dict, None]
-            Dictionary with keys as moments and values as upper bounds. The
-            keys can be either strings, instances of `CompoundMonomial` or
-            moments encoded as 2D arrays.
-        """
-        self._reset_upperbounds()
-        if upperbounds is None:
-            return
-        sanitized_upperbounds = dict()
-        for mon, upperbound in upperbounds.items():
-            mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_upperbounds.keys():
-                sanitized_upperbounds[mon] = upperbound
-            else:
-                old_bound = sanitized_upperbounds[mon]
-                assert np.isclose(old_bound,
-                                  upperbound), \
-                    (f"Contradiction: Cannot set the same monomial {mon} to " +
-                     "have different upper bounds.")
-        self._processed_moment_upperbounds = sanitized_upperbounds
-        self._update_upperbounds()
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
         """Set lower bounds for variables in the SDP relaxation.
@@ -2208,11 +1974,6 @@ class InflationSDP(BaseSDP):
         self._reset_upperbounds()
         collect()
 
-    def _reset_lowerbounds(self) -> None:
-        """Reset the list of lower bounds."""
-        self._reset_solution()
-        self._processed_moment_lowerbounds = dict()
-
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
         self._reset_solution()
@@ -2224,16 +1985,6 @@ class InflationSDP(BaseSDP):
         self.objective = {self.One: 0.}
         self._processed_objective = self.objective
         self.maximize = True  # Direction of the optimization
-
-    def _reset_values(self) -> None:
-        """Reset the known values."""
-        self._reset_solution()
-        self.known_moments     = dict()
-        self.semiknown_moments = dict()
-        if self.momentmatrix_has_a_zero:
-            self.known_moments[self.Zero] = 0.
-        self.known_moments[self.One] = 1.
-        collect()
 
     def _update_objective(self) -> None:
         """Process the objective with the information from known_moments
@@ -2259,26 +2010,6 @@ class InflationSDP(BaseSDP):
                     self._processed_objective.get(subs, 0) + coeff * subs_coeff
                 del self._processed_objective[mon]
         collect()
-
-    def _update_lowerbounds(self) -> None:
-        """Helper function to check that lowerbounds are consistent with the
-        specified known values, and to keep only the lowest lowerbounds
-        in case of redundancy.
-        """
-        for mon, lb in self.moment_lowerbounds.items():
-            self._processed_moment_lowerbounds[mon] = \
-                max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
-        for mon, value in self.known_moments.items():
-            if isinstance(value, Real):
-                try:
-                    lb = self._processed_moment_lowerbounds[mon]
-                    assert lb <= value, (f"Value {value} assigned for " +
-                                         f"monomial {mon} contradicts the " +
-                                         f"assigned lower bound of {lb}.")
-                    del self._processed_moment_lowerbounds[mon]
-                except KeyError:
-                    pass
-        self.moment_lowerbounds = self._processed_moment_lowerbounds
 
     def _update_upperbounds(self) -> None:
         """Helper function to check that upperbounds are consistent with the
@@ -2308,18 +2039,6 @@ class InflationSDP(BaseSDP):
             solverargs["inequalities"].append(ub)
         return solverargs
 
-    def _reset_solution(self) -> None:
-        """Resets class attributes storing the solution to the SDP
-        relaxation."""
-        for attribute in {"primal_objective",
-                          "objective_value",
-                          "solution_object"}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
-        self.status = "Not yet solved"
-
     def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
         """Set upper bounds for variables in the SDP relaxation.
 
@@ -2346,32 +2065,6 @@ class InflationSDP(BaseSDP):
                      "have different upper bounds.")
         self._processed_moment_upperbounds = sanitized_upperbounds
         self._update_upperbounds()
-
-    def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
-        """Set lower bounds for variables in the SDP relaxation.
-
-        Parameters
-        ----------
-        lowerbounds : Union[dict, None]
-            Dictionary with keys as moments and values as upper bounds. The
-            keys can be either strings, instances of `CompoundMonomial` or
-            moments encoded as 2D arrays.
-        """
-        self._reset_lowerbounds()
-        if lowerbounds is None:
-            return
-        sanitized_lowerbounds = dict()
-        for mon, lowerbound in lowerbounds.items():
-            mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_lowerbounds.keys():
-                sanitized_lowerbounds[mon] = lowerbound
-            else:
-                old_bound = sanitized_lowerbounds[mon]
-                assert np.isclose(old_bound, lowerbound), \
-                    (f"Contradiction: Cannot set the same monomial {mon} to " +
-                     "have different lower bounds.")
-        self._processed_moment_lowerbounds = sanitized_lowerbounds
-        self._update_lowerbounds()
 
 
 class SupportsSDP(BaseSDP):
