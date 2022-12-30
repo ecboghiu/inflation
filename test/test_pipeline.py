@@ -155,6 +155,7 @@ class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
     sdp.generate_relaxation("npa1")
     physical_bounds = {m: 0. for m in sdp.physical_monomials}
+    del physical_bounds[sdp.One]
 
     def prepare_objects(self, infSDP):
         var1 = infSDP.measurements[0][0][0][0]
@@ -183,9 +184,11 @@ class TestReset(unittest.TestCase):
 
     def test_reset_bounds(self):
         self.prepare_objects(self.sdp)
+        correct = {key: val for key, val in self.physical_bounds.items()
+                   if key not in self.sdp.known_moments}
         self.sdp.reset("bounds")
         self.assertEqual(self.sdp.moment_lowerbounds,
-                         self.physical_bounds,
+                         correct,
                          "Resetting lower bounds fails.")
         self.assertEqual(self.sdp.moment_upperbounds, dict(),
                          "Resetting upper bounds fails.")
