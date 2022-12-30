@@ -376,8 +376,6 @@ class InflationSDP(object):
         self.moment_upperbounds  = dict()
         self.moment_lowerbounds  = {m: 0. for m in self.physical_monomials}
 
-        self._set_lowerbounds(None)
-        self._set_upperbounds(None)
         self.set_objective(None)
         self.set_values(None)
 
