@@ -409,10 +409,26 @@ class InflationSDP(object):
         """
         assert bound_type in ["up", "lo"], \
             "The 'bound_type' argument should be either 'up' or 'lo'"
+        if bounds is None:
+            return
+        # Sanitize list of bounds
+        sanitized_bounds = dict()
+        for mon, bound in bounds.items():
+            mon = self._sanitise_monomial(mon)
+            if mon not in sanitized_bounds.keys():
+                sanitized_bounds[mon] = bound
+            else:
+                old_bound = sanitized_bounds[mon]
+                assert np.isclose(old_bound, bound), \
+                    (f"Contradiction: Cannot set the same monomial {mon} to " +
+                     "have different upper bounds.")
         if bound_type == "up":
-            self._set_upperbounds(bounds)
+            self._reset_upperbounds()
+            self.moment_upperbounds = sanitized_bounds
         else:
-            self._set_lowerbounds(bounds)
+            self._reset_lowerbounds()
+            self.moment_lowerbounds.update(sanitized_bounds)
+        self._update_bounds(bound_type)
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -1899,59 +1915,6 @@ class InflationSDP(object):
             except AttributeError:
                 pass
         self.status = "Not yet solved"
-
-    def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
-        """Set upper bounds for variables in the SDP relaxation.
-
-        Parameters
-        ----------
-        upperbounds : Union[dict, None]
-            Dictionary with keys as moments and values as upper bounds. The
-            keys can be either strings, instances of `CompoundMonomial` or
-            moments encoded as 2D arrays.
-        """
-        self._reset_upperbounds()
-        if upperbounds is None:
-            return
-        sanitized_upperbounds = dict()
-        for mon, upperbound in upperbounds.items():
-            mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_upperbounds.keys():
-                sanitized_upperbounds[mon] = upperbound
-            else:
-                old_bound = sanitized_upperbounds[mon]
-                assert np.isclose(old_bound,
-                                  upperbound), \
-                    (f"Contradiction: Cannot set the same monomial {mon} to " +
-                     "have different upper bounds.")
-        self.moment_upperbounds = sanitized_upperbounds
-        self._update_bounds("up")
-
-    def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
-        """Set lower bounds for variables in the SDP relaxation.
-
-        Parameters
-        ----------
-        lowerbounds : Union[dict, None]
-            Dictionary with keys as moments and values as upper bounds. The
-            keys can be either strings, instances of `CompoundMonomial` or
-            moments encoded as 2D arrays.
-        """
-        self._reset_lowerbounds()
-        if lowerbounds is None:
-            return
-        sanitized_lowerbounds = dict()
-        for mon, lowerbound in lowerbounds.items():
-            mon = self._sanitise_monomial(mon)
-            if mon not in sanitized_lowerbounds.keys():
-                sanitized_lowerbounds[mon] = lowerbound
-            else:
-                old_bound = sanitized_lowerbounds[mon]
-                assert np.isclose(old_bound, lowerbound), \
-                    (f"Contradiction: Cannot set the same monomial {mon} to " +
-                     "have different lower bounds.")
-        self.moment_lowerbounds.update(sanitized_lowerbounds)
-        self._update_bounds("lo")
 
     def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:
         """Create a monomial array from its corresponding stream of bytes.
