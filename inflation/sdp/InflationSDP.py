@@ -1680,7 +1680,7 @@ class InflationSDP(object):
                                        mon, value in self.known_moments.items()
                                        if not np.isclose(value, 0)]
             for mon in nonzero_known_monomials:
-                self._processed_moment_lowerbounds[mon] = 1.
+                self.moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
             self.semiknown_moments = dict()
 
@@ -1702,12 +1702,11 @@ class InflationSDP(object):
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
-        self._processed_moment_lowerbounds = dict()
 
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
         self._reset_solution()
-        self._processed_moment_upperbounds = dict()
+        self.moment_upperbounds = dict()
 
     def _reset_objective(self) -> None:
         """Reset the objective function."""
@@ -1756,20 +1755,16 @@ class InflationSDP(object):
         specified known values, and to keep only the lowest lowerbounds
         in case of redundancy.
         """
-        for mon, lb in self.moment_lowerbounds.items():
-            self._processed_moment_lowerbounds[mon] = \
-                max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
         for mon, value in self.known_moments.items():
             if isinstance(value, Real):
                 try:
-                    lb = self._processed_moment_lowerbounds[mon]
+                    lb = self.moment_lowerbounds[mon]
                     assert lb <= value, (f"Value {value} assigned for " +
                                          f"monomial {mon} contradicts the " +
                                          f"assigned lower bound of {lb}.")
-                    del self._processed_moment_lowerbounds[mon]
+                    del self.moment_lowerbounds[mon]
                 except KeyError:
                     pass
-        self.moment_lowerbounds = self._processed_moment_lowerbounds
 
     def _update_upperbounds(self) -> None:
         """Helper function to check that upperbounds are consistent with the
@@ -1778,14 +1773,13 @@ class InflationSDP(object):
         for mon, value in self.known_moments.items():
             if isinstance(value, Real):
                 try:
-                    ub = self._processed_moment_upperbounds[mon]
+                    ub = self.moment_upperbounds[mon]
                     assert ub >= value, (f"Value {value} assigned for " +
                                          f"monomial {mon} contradicts the " +
                                          f"assigned upper bound of {ub}.")
-                    del self._processed_moment_upperbounds[mon]
+                    del self.moment_upperbounds[mon]
                 except KeyError:
                     pass
-        self.moment_upperbounds = self._processed_moment_upperbounds
 
 
     ###########################################################################
@@ -1882,12 +1876,12 @@ class InflationSDP(object):
                       }
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
-        for mon, bnd in self._processed_moment_lowerbounds.items():
+        for mon, bnd in self.moment_lowerbounds.items():
             lb = {mon.name: 1}
             if not np.isclose(bnd, 0):
                 lb[self.constant_term_name] = -bnd
             solverargs["inequalities"].append(lb)
-        for mon, bnd in self._processed_moment_upperbounds.items():
+        for mon, bnd in self.moment_upperbounds.items():
             ub = {mon.name: -1}
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
@@ -1932,7 +1926,7 @@ class InflationSDP(object):
                                   upperbound), \
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different upper bounds.")
-        self._processed_moment_upperbounds = sanitized_upperbounds
+        self.moment_upperbounds = sanitized_upperbounds
         self._update_upperbounds()
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
@@ -1958,7 +1952,7 @@ class InflationSDP(object):
                 assert np.isclose(old_bound, lowerbound), \
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different lower bounds.")
-        self._processed_moment_lowerbounds = sanitized_lowerbounds
+        self.moment_lowerbounds.update(sanitized_lowerbounds)
         self._update_lowerbounds()
 
     def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:

@@ -170,12 +170,7 @@ class TestReset(unittest.TestCase):
         self.assertEqual(self.sdp.moment_lowerbounds,
                          self.physical_bounds,
                          "Resetting lower bounds fails.")
-        self.assertEqual(self.sdp._processed_moment_lowerbounds,
-                         self.physical_bounds,
-                         "Resetting processed lower bounds fails.")
         self.assertEqual(self.sdp.moment_upperbounds, dict(),
-                         "Resetting processed upper bounds fails.")
-        self.assertEqual(self.sdp._processed_moment_upperbounds, dict(),
                          "Resetting processed upper bounds fails.")
         self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
                          "Resetting the objective function fails.")
@@ -192,13 +187,8 @@ class TestReset(unittest.TestCase):
         self.assertEqual(self.sdp.moment_lowerbounds,
                          self.physical_bounds,
                          "Resetting lower bounds fails.")
-        self.assertEqual(self.sdp._processed_moment_lowerbounds,
-                         self.physical_bounds,
-                         "Resetting processed lower bounds fails.")
         self.assertEqual(self.sdp.moment_upperbounds, dict(),
                          "Resetting upper bounds fails.")
-        self.assertEqual(self.sdp._processed_moment_upperbounds, dict(),
-                         "Resetting processed upper bounds fails.")
         self.assertTrue(len(self.sdp.objective) == 2,
                         "Resetting the bounds resets the objective function.")
         self.assertTrue(len(self.sdp.known_moments) == 3,
@@ -217,14 +207,8 @@ class TestReset(unittest.TestCase):
                          "known_moments.")
         self.assertTrue(len(self.sdp.moment_lowerbounds) == 4,
                         "Lower bounds are being reset when they should not.")
-        self.assertTrue(len(self.sdp._processed_moment_lowerbounds) == 4,
-                        "Processed lowerbounds are being reset when they " +
-                        "should not.")
         self.assertTrue(len(self.sdp.moment_upperbounds) == 1,
                         "Upper bounds are being reset when they should not.")
-        self.assertTrue(len(self.sdp._processed_moment_upperbounds) == 1,
-                        "Processed upperbounds are being reset when they " +
-                        "should not.")
 
     def test_reset_objective(self):
         self.prepare_objects(self.sdp)
@@ -235,14 +219,8 @@ class TestReset(unittest.TestCase):
                         "Resetting the objective resets the known moments.")
         self.assertTrue(len(self.sdp.moment_lowerbounds) == 4,
                         "Resetting the objective resets the lower bounds.")
-        self.assertTrue(len(self.sdp._processed_moment_lowerbounds) == 4,
-                        "Resetting the objective resets the processed " +
-                        "lower bounds.")
         self.assertTrue(len(self.sdp.moment_upperbounds) == 1,
                         "Resetting the objective resets the upper bounds.")
-        self.assertTrue(len(self.sdp._processed_moment_upperbounds) == 1,
-                        "Resetting the objective resets the processed " +
-                        "upper bounds.")
 
     def test_reset_values(self):
         self.prepare_objects(self.sdp)
@@ -255,14 +233,8 @@ class TestReset(unittest.TestCase):
                          "known_moments.")
         self.assertTrue(len(self.sdp.moment_lowerbounds) == 4,
                         "Resetting the objective resets the lower bounds.")
-        self.assertTrue(len(self.sdp._processed_moment_lowerbounds) == 4,
-                        "Resetting the objective resets the processed " +
-                        "lower bounds.")
         self.assertTrue(len(self.sdp.moment_upperbounds) == 1,
                         "Resetting the objective resets the upper bounds.")
-        self.assertTrue(len(self.sdp._processed_moment_upperbounds) == 1,
-                        "Resetting the objective resets the processed " +
-                        "upper bounds.")
         self.assertTrue(len(self.sdp.objective) == 2,
                         "Resetting the bounds resets the objective function.")
 
