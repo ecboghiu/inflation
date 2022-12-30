@@ -1682,8 +1682,8 @@ class InflationSDP(object):
                 del self.known_moments[mon]
             self.semiknown_moments = dict()
 
-        self._update_lowerbounds()
-        self._update_upperbounds()
+        self._update_bounds("lo")
+        self._update_bounds("up")
         self._update_objective()
         num_nontrivial_known = len(self.known_moments)
         if self.momentmatrix_has_a_zero:
@@ -1701,7 +1701,7 @@ class InflationSDP(object):
         """Reset the list of lower bounds."""
         self._reset_solution()
         self.moment_lowerbounds = {m: 0. for m in self.physical_monomials}
-        self._update_lowerbounds()
+        self._update_bounds("lo")
 
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
@@ -1750,37 +1750,35 @@ class InflationSDP(object):
                 del self._processed_objective[mon]
         collect()
 
-    def _update_lowerbounds(self) -> None:
-        """Helper function to check that lowerbounds are consistent with the
-        specified known values, and to keep only the lowest lowerbounds
-        in case of redundancy.
-        """
-        for mon, value in self.known_moments.items():
-            if isinstance(value, Real):
-                try:
-                    lb = self.moment_lowerbounds[mon]
-                    assert lb <= value, (f"Value {value} assigned for " +
-                                         f"monomial {mon} contradicts the " +
-                                         f"assigned lower bound of {lb}.")
-                    del self.moment_lowerbounds[mon]
-                except KeyError:
-                    pass
-
-    def _update_upperbounds(self) -> None:
-        """Helper function to check that upperbounds are consistent with the
+    def _update_bounds(self, typ: str) -> None:
+        """Helper function to check that bounds are consistent with the
         specified known values.
+
+        Parameters
+        ----------
+        typ : str
+            Specification of upper (`"up"`) or lower (`"lo"`) bounds.
         """
+        if typ == "up":
+            bounds = self.moment_upperbounds
+            dir = "upp"
+        elif typ == "lo":
+            bounds = self.moment_lowerbounds
+            dir = "low"
+        else:
+            raise Exception(f"The bound type was {typ}, but it must be " +
+                            "either \"up\" or \"lo\".")
         for mon, value in self.known_moments.items():
             if isinstance(value, Real):
                 try:
-                    ub = self.moment_upperbounds[mon]
-                    assert ub >= value, (f"Value {value} assigned for " +
-                                         f"monomial {mon} contradicts the " +
-                                         f"assigned upper bound of {ub}.")
-                    del self.moment_upperbounds[mon]
+                    b = bounds[mon]
+                    condition = (b >= value) if typ == "up" else (b <= value)
+                    assert condition, (f"Value {value} assigned for " +
+                                       f"monomial {mon} contradicts the " +
+                                       f"assigned {dir}er bound of {b}.")
+                    del bounds[mon]
                 except KeyError:
                     pass
-
 
     ###########################################################################
     # OTHER ROUTINES                                                          #
@@ -1927,7 +1925,7 @@ class InflationSDP(object):
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different upper bounds.")
         self.moment_upperbounds = sanitized_upperbounds
-        self._update_upperbounds()
+        self._update_bounds("up")
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
         """Set lower bounds for variables in the SDP relaxation.
@@ -1953,7 +1951,7 @@ class InflationSDP(object):
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different lower bounds.")
         self.moment_lowerbounds.update(sanitized_lowerbounds)
-        self._update_lowerbounds()
+        self._update_bounds("lo")
 
     def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:
         """Create a monomial array from its corresponding stream of bytes.
