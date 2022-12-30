@@ -682,15 +682,15 @@ class TestConstraintGeneration(unittest.TestCase):
         # several equalities will be generated, instead of a single one.
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1],
                                                     [2, 3, 1, 1],
-                                                    [2, 3, 1, 0]]),
+                                                    [2, 3, 2, 0]]),
                                           [3, 3, 2],  # we 'lie' about card.
                                           {i: False for i in range(3)})
-        out_good = [(np.array([[2, 3, 1, 1], [2, 3, 1, 0]]),
-                    [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
-                     np.array([[1, 1, 0, 0], [2, 3, 1, 1], [2, 3, 1, 0]])]),
-                    (np.array([[1, 1, 0, 1], [2, 3, 1, 0]]),
-                    [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 1, 0]]),
-                     np.array([[1, 1, 0, 1], [2, 3, 1, 0], [2, 3, 1, 0]])])]
+        out_good = [(np.array([[2, 3, 1, 1], [2, 3, 2, 0]]),
+                    [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 2, 0]]),
+                     np.array([[1, 1, 0, 0], [2, 3, 1, 1], [2, 3, 2, 0]])]),
+                    (np.array([[1, 1, 0, 1], [2, 3, 2, 0]]),
+                    [np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 2, 0]]),
+                     np.array([[1, 1, 0, 1], [2, 3, 1, 0], [2, 3, 2, 0]])])]
         for eq1, eq2 in zip(out, out_good):
             self.assertTrue(np.allclose(eq1[0], eq2[0])
                             and len(eq1[1]) == len(eq2[1]),
@@ -726,3 +726,4 @@ class TestConstraintGeneration(unittest.TestCase):
                          out_good,
                          "Column equalities are not being " +
                          "properly lifted to moment inequalities.")
+        
