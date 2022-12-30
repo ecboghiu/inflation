@@ -982,7 +982,7 @@ class InflationSDP(object):
         """
         if type(which) == str:
             if which == "all":
-                self.reset(["bounds", "objective", "values"])
+                self.reset(["values", "bounds", "objective"])
             elif which == "bounds":
                 self._reset_lowerbounds()
                 self._reset_upperbounds()
