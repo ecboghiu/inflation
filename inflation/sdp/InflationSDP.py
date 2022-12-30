@@ -1702,6 +1702,8 @@ class InflationSDP(object):
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
+        self.moment_lowerbounds = {m: 0. for m in self.physical_monomials}
+        self._update_lowerbounds()
 
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
