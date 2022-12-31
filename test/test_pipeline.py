@@ -700,6 +700,62 @@ class TestConstraintGeneration(unittest.TestCase):
                 self.assertTrue(np.allclose(el1, el2),
                                 "Normalisation constraint is not" +
                                 "being properly generated.")
+    
+    def test_norm_eqs_full_expansion_full(self):
+        from inflation.sdp.quantum_tools import \
+                                                expand_moment_normalisation
+     
+        out = expand_moment_normalisation(np.array([[1, 1, 0, 1],
+                                                    [2, 3, 1, 1],
+                                                    [2, 3, 2, 0]]),
+                                          [3, 3, 2],  # we 'lie' about card.
+                                          {i: False for i in range(3)},
+                                          full_expansion=True,
+                                          exclude_input_in_output=False)
+        out_good =  ([np.array([[1, 1, 0, 1], [2, 3, 1, 1], [2, 3, 2, 0]]),
+                     np.array([[1, 1, 0, 0], [2, 3, 2, 0]]),
+                     np.array([[2, 3, 1, 0], [2, 3, 2, 0]])],
+                    [np.array([[1, 1, 0, 0], [2, 3, 1, 0], [2, 3, 2, 0]]),
+                     np.array([[2, 3, 2, 0]])])
+        for list_mons1, list_mons2 in zip(out, out_good):
+            self.assertTrue(len(list_mons1) == len(list_mons2), 
+                        "The incorrect number of moments is being generated.")
+            for moment1, moment2 in zip(list_mons1, list_mons2):
+                self.assertTrue(np.allclose(moment1, moment2),
+                    "The moments are not the same or not in the same order.")
+                
+        # A2B1b1 = 1 - B0 - b0 + B0b0 + A0B0 + A1B0 + A0b0 + A1b0 
+        #          - A0B0b0 - A1B0b0 - A0 - A1
+        # --> lhs=(A2B1b1 + A0B0b0 + A1B0b0 + B0 + b0 + A0 + A1)
+        #     rhs=(1 + B0b0 + A0B0 + A1B0 + A0b0 + A1b0)
+        out = expand_moment_normalisation(np.array([[1, 1, 0, 2],
+                                                    [2, 3, 1, 1],
+                                                    [2, 3, 2, 1]]),
+                                          [4, 3, 3],  # we 'lie' about card.
+                                          {i: False for i in range(3)},
+                                          full_expansion=True,
+                                          exclude_input_in_output=False)
+        out_good =  ([np.array([[1, 1, 0, 2], [2, 3, 1, 1], [2, 3, 2, 1]]), # A2B1b1
+                      np.array([[1, 1, 0, 0], [2, 3, 1, 0], [2, 3, 2, 0]]), # A0B0b0
+                      np.array([[1, 1, 0, 1], [2, 3, 1, 0], [2, 3, 2, 0]]), # A1B0b0
+                      np.array([[1, 1, 0, 0]]), # A0
+                      np.array([[1, 1, 0, 1]]), # A1
+                      np.array([[2, 3, 1, 0]]), # B0
+                      np.array([[2, 3, 2, 0]])], # b0
+                     [np.array([[1, 1, 0, 0], [2, 3, 1, 0]]), # A0B0
+                      np.array([[1, 1, 0, 1], [2, 3, 1, 0]]), # A1B0
+                      np.array([[1, 1, 0, 0], [2, 3, 2, 0]]), # A0b0
+                      np.array([[1, 1, 0, 1], [2, 3, 2, 0]]), # A1b0
+                      np.array([[2, 3, 1, 0], [2, 3, 2, 0]]), # B0b0
+                      np.empty(shape=(0, 4))] # 1
+                     )
+        for list_mons1, list_mons2 in zip(out, out_good):
+            self.assertTrue(len(list_mons1) == len(list_mons2), 
+                        "The incorrect number of moments is being generated.")
+            for moment1, moment2 in zip(list_mons1, list_mons2):
+                self.assertTrue(np.allclose(moment1, moment2),
+                    "The moments are not the same or not in the same order.")
+
 
     def test_normeqs_colineq2momentineq(self):
         from inflation.sdp.quantum_tools import \

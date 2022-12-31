@@ -361,13 +361,15 @@ def construct_normalization_eqs(column_equalities: List[Tuple[int, List[int]]],
 
 def expand_moment_normalisation(moment: np.ndarray,
                                 outcome_cardinalities: List[int],
-                                skip_party: List[bool]):
+                                skip_party: List[bool],
+                                full_expansion: bool = False,
+                                exclude_input_in_output: bool = False):
     """Helper function that identifies operators within the monomial that
     correspond to the last outcome, and uses normalisation to produce
     an equality constraint with other monomials. The constraint is expressed as
-    `(i, (i1, i2, i3, ...))`, where the moment corresponding to index `i` is
-    equal to the sum of moments corresponding to indices
-    `(i1, i2, i3, ...)`.
+    `((i1, i2, i3, ...), (j1, j2, j3, ...))`, where the sum of moments 
+    corresponding to indices `i` are equal to the sum of moments corresponding
+    to indices `j`.
 
     Parameters
     ----------
@@ -377,30 +379,87 @@ def expand_moment_normalisation(moment: np.ndarray,
         List of the cardinalities for the outcomes of the parties.
     skip_party : List[bool]
         Whether each of the parties is considered for normalisation or not.
+    full_expansion : bool, optional
+        Whether to expand the moment completely into one single constraint
+        (``True``) or whether to create a set of constraints equal in number
+        to the number of operators in `moment` that have the last outcome.
+    exclude_input_in_output : bool, optional
+       Whether in the output, of the form `((i1, i2, i3, ...), (j1, j2, j3, ...))`,
+       the indices `i` should include the input `moment` or not. It is useful
+       to exclude the input moment when we want to use the output for symbolic
+       substitution, and not for linear constraint generation. By default
+       ``False``.
     """
-    eqs = []
-    for k, operator in enumerate(moment):
-        party = operator[0] - 1
-        # Operators that are involved in normalization equalities are
-        # those which are unpacked in non-network scenarios
-        if (not skip_party[party]
-            and operator[-1] == outcome_cardinalities[party] - 2):
-            operator_2d = np.expand_dims(operator, axis=0)
-            prefix = moment[:k]
-            suffix = moment[(k + 1):]
-            moments = [moment]
-            true_cardinality = outcome_cardinalities[party] - 1
-            for outcome in range(true_cardinality - 1):
-                variant_operator        = operator_2d.copy()
-                variant_operator[0, -1] = outcome
-                variant_mon             = np.vstack((prefix,
-                                                     variant_operator,
-                                                     suffix))
-                moments.append(variant_mon)
-            if len(moments) == true_cardinality:
-                normalization_mon = np.vstack((prefix, suffix))
-                eqs.append((normalization_mon, moments))
-    return eqs
+    if full_expansion:
+        true_cards = np.array([c-1 for c in outcome_cardinalities])  # TODO change the input format
+        lhs, rhs = [], []
+        if not exclude_input_in_output:
+            lhs.append(moment)
+        ops_w_last_outcome = [k for k, op in enumerate(moment) 
+                              if op[-1] == true_cards[op[0] - 1] - 1]
+        if ops_w_last_outcome == []:
+            return moment
+        for if_ops_present in product([True, False],
+                                      repeat=len(ops_w_last_outcome)):
+            # The expansion is done by having operators with last outcomes 
+            # substituted by 1 - \sum_{other outcomes} Operator_{other outcomes}
+            # E.g. A2B0 -> B0 - (A0+A1)*B0
+            # We are constructing all the possible combinations of operators.
+            # In this loop, `if_ops_present` is a boolean list that indicates
+            # whether an operator that is expanded is present in the term or
+            # not. E.g, above, whether we are considering B0 or (A0+A1)*B0.
+            # If we consider B0, then `if_ops_present` for A is `False`,
+            # and B0 is added to the lhs, as it has a positive coeff. 
+            # If A is present (`if_ops_present` for A is `True`) then
+            # we are considering the term (A0+A1)*B0 and we must construct
+            # the variant operators A0*B0, A1*B0 and add them to `rhs` as
+            # they have negative coefficients.
+            present_ops = [op for present, op in zip(if_ops_present, 
+                                                     ops_w_last_outcome)
+                           if present]
+            missing_ops = [op for present, op in zip(if_ops_present, 
+                                                     ops_w_last_outcome)
+                           if not present]
+            present_ops_cards = [true_cards[moment[op][0] - 1]
+                                 for op in present_ops]
+            sign = (-1)**sum(if_ops_present)
+            for outs in product(*[range(c - 1) for c in present_ops_cards]):
+                variant_moment = moment.copy()
+                for a, op in zip(outs, present_ops):
+                    variant_moment[op][-1] = a
+                # Remove the rows corresponding to the operators that are 
+                # not present
+                variant_moment = np.delete(variant_moment, missing_ops, axis=0)
+                sign = (-1)**sum(if_ops_present)
+                if sign > 0:
+                    rhs.append(variant_moment)
+                else:
+                    lhs.append(variant_moment)
+        return lhs, rhs
+    else:
+        eqs = []
+        for k, operator in enumerate(moment):
+            party = operator[0] - 1
+            # Operators that are involved in normalization equalities are
+            # those which are unpacked in non-network scenarios
+            if (not skip_party[party]
+                and operator[-1] == outcome_cardinalities[party] - 2):
+                operator_2d = np.expand_dims(operator, axis=0)
+                prefix = moment[:k]
+                suffix = moment[(k + 1):]
+                moments = [moment]
+                true_cardinality = outcome_cardinalities[party] - 1
+                for outcome in range(true_cardinality - 1):
+                    variant_operator        = operator_2d.copy()
+                    variant_operator[0, -1] = outcome
+                    variant_mon             = np.vstack((prefix,
+                                                        variant_operator,
+                                                        suffix))
+                    moments.append(variant_mon)
+                if len(moments) == true_cardinality:
+                    normalization_mon = np.vstack((prefix, suffix))
+                    eqs.append((normalization_mon, moments))
+        return eqs
 
 
 def format_permutations(array: Union[np.ndarray, List[int]]) -> np.ndarray:
