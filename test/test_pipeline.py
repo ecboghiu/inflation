@@ -663,6 +663,7 @@ class TestConstraintGeneration(unittest.TestCase):
         from inflation.sdp.quantum_tools import \
                                                 expand_moment_normalisation
 
+        # A1 -> 1 - A0 which becomes (1, (A1, A0))
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1]]),
                                           [3],
                                           {i: False for i in range(3)})
@@ -678,8 +679,10 @@ class TestConstraintGeneration(unittest.TestCase):
                                 "Normalisation constraint is not" +
                                 "being properly generated. ")
 
-        # Note, currently if more than one operator has a last output,
-        # several equalities will be generated, instead of a single one.
+        # Example without full expansion, where several constraints are 
+        # generated
+        # A1B1b0 -> (B1b0 - A0B1b0, A1b0 - A1B0b0) both of these encoded
+        # in the (i, (i...)) notation.
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1],
                                                     [2, 3, 1, 1],
                                                     [2, 3, 2, 0]]),
@@ -700,11 +703,10 @@ class TestConstraintGeneration(unittest.TestCase):
                 self.assertTrue(np.allclose(el1, el2),
                                 "Normalisation constraint is not" +
                                 "being properly generated.")
-    
-    def test_norm_eqs_full_expansion_full(self):
-        from inflation.sdp.quantum_tools import \
-                                                expand_moment_normalisation
-     
+        
+        # The same as the previous, but the full expansion is used.
+        # A1B1b0 = b0 - A0b0 - B0b0 + A0B0b0 -> 
+        # -> lhs=(A1B1b0, A0b0, B0b0), rhs=(b0, A0B0b0)
         out = expand_moment_normalisation(np.array([[1, 1, 0, 1],
                                                     [2, 3, 1, 1],
                                                     [2, 3, 2, 0]]),
@@ -724,6 +726,7 @@ class TestConstraintGeneration(unittest.TestCase):
                 self.assertTrue(np.allclose(moment1, moment2),
                     "The moments are not the same or not in the same order.")
                 
+        # Another example that has a more complicated expression
         # A2B1b1 = 1 - B0 - b0 + B0b0 + A0B0 + A1B0 + A0b0 + A1b0 
         #          - A0B0b0 - A1B0b0 - A0 - A1
         # --> lhs=(A2B1b1 + A0B0b0 + A1B0b0 + B0 + b0 + A0 + A1)
@@ -755,8 +758,7 @@ class TestConstraintGeneration(unittest.TestCase):
             for moment1, moment2 in zip(list_mons1, list_mons2):
                 self.assertTrue(np.allclose(moment1, moment2),
                     "The moments are not the same or not in the same order.")
-
-
+        
     def test_normeqs_colineq2momentineq(self):
         from inflation.sdp.quantum_tools import \
                                             construct_normalization_eqs
