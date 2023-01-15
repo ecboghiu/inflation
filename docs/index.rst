@@ -29,7 +29,7 @@ How to cite
 ===========
 If you use Inflation in your work, please cite `Inflation's paper <https://www.arxiv.org/abs/2211.04483>`_:
 
-  Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "Inflation: a Python package for classical and quantum causal compatibility", arXiv:2209.xxxxx
+  Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "Inflation: a Python package for classical and quantum causal compatibility", arXiv:2211.04483
 
 .. code-block:: html
 
