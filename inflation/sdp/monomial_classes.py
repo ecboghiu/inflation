@@ -414,27 +414,4 @@ class CompoundMonomial(object):
                 if np.isclose(known_value, 0):
                     known_status = "Known"
         return known_value, unknown_factors, known_status
-
-    def as_ndarray(self) -> np.ndarray:
-        """Generate a `np.ndarray` such that when passed as input to
-        `self.Monomial`, it produces the same CompoundMonomial.
-        
-        Returns
-        -------
-        np.ndarray
-            2d-array enconding of an operator which when passed as input
-            to `self.Monomial` produces the same CompoundMonomial.
-        """
-        # TODO: Consider ways of genering a simpler matrix, without going 
-        # to higher inflation levels.
-        arr = self.factors[0].as_ndarray
-        largest_copy_idx = arr[:, 1:-2].max()
-        for i in range(1, self.n_factors):
-            next_factor = self.factors[i].as_ndarray.copy()
-            infl_indices = next_factor[:, 1:-2]
-            infl_indices[infl_indices > 0] += largest_copy_idx
-            next_factor[:, 1: -2] = infl_indices
-            arr = np.concatenate((arr,  next_factor))
-            largest_copy_idx = arr[:, 1:-2].max()
-        return arr
             

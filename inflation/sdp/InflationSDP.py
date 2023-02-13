@@ -318,6 +318,9 @@ class InflationSDP(object):
                                desc="Initializing monomials   "):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
+        
+        self.compmonomial_to_ndarray = {m: self.symmetrized_corresp[idx] 
+                                        for idx, m in self.compmonomial_from_idx.items()}
 
         self.monomials = list(self.compmonomial_from_idx.values())
         assert all(v == 1 for v in Counter(self.monomials).values()), \
