@@ -384,6 +384,34 @@ class InflationSDP(object):
         self.maskmatrices = dict()
         self._relaxation_has_been_generated = True
 
+    def relax_nonlinear_constraints(self,
+                                use_higherorder_inflation_terms: bool = False
+                                    ) -> None:
+        # We use self.known_moments to identify the potentially nonlinear constraints
+        products_of_unknown_moments = [m for m in self.monomials
+                            if m not in self.known_moments and m.n_factors > 1]
+        if self.use_lpi_constraints:
+            # If we use LPI constraints, then we are exactly implementing 
+            # part of the constraints. We filter and remove all atomic moments
+            # that are in self.known_moments from semiknown_and_unknown_moments.
+            # This gives us a smaller list of nonlinear constraints.
+            
+            # Note: we need to call _monomial_from_atoms in order for the 
+            # hashes to work correctly and to be able to find the single factors
+            # in self.known_moments.
+            products_of_unknown_moments = [
+                self._monomial_from_atoms([f for f in m.factors 
+                  if self._monomial_from_atoms([f]) not in self.known_moments])
+                    for m in products_of_unknown_moments]
+            
+            # We remove all monomials with a single unknowable factor
+            products_of_unknown_moments = [m
+                                           for m in products_of_unknown_moments 
+                                           if m.n_factors > 1]
+            
+        
+        print(products_of_unknown_moments[0].as_ndarray())
+
     def set_bounds(self,
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
