@@ -256,8 +256,7 @@ def nb_lexorder_idx(operator: np.ndarray,
     for i in range(lexorder.shape[0]):
         if np.array_equal(lexorder[i, :], operator):
             return i
-    print("nb_lexorder_idx: Operator not found in lexorder.")
-
+    return -1.0  # Return a float to trigger an error if result used as index
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
 def nb_mon_to_lexrepr(mon: np.ndarray,

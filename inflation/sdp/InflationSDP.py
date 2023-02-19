@@ -24,7 +24,8 @@ from .fast_npa import (nb_all_commuting_q,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
                        reverse_mon,
-                       to_canonical)
+                       to_canonical,
+                       nb_lexorder_idx)
 from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
@@ -388,32 +389,75 @@ class InflationSDP(object):
         self._relaxation_has_been_generated = True
 
     def relax_nonlinear_constraints(self,
-                                use_higherorder_inflation_terms: bool = False
+                                use_higherorder_inflation_terms: bool = True
                                     ) -> None:
-        # We use self.known_moments to identify the potentially nonlinear constraints
+        # We use self.known_moments to identify the potentially nonlinear 
+        # constraints
         products_of_unknown_moments = [m for m in self.monomials
-                            if m not in self.known_moments and m.n_factors > 1]
+                                        if (m.n_factors > 1 and
+                                            m not in self.known_moments)]
         if self.use_lpi_constraints:
             # If we use LPI constraints, then we are exactly implementing 
             # part of the constraints. We filter and remove all atomic moments
-            # that are in self.known_moments from semiknown_and_unknown_moments.
+            # that are in self.known_moments from products_of_unknown_moments.
             # This gives us a smaller list of nonlinear constraints.
             
             # Note: we need to call _monomial_from_atoms in order for the 
-            # hashes to work correctly and to be able to find the single factors
-            # in self.known_moments.
-            products_of_unknown_moments = [
-                self._monomial_from_atoms([f for f in m.factors 
-                  if self._monomial_from_atoms([f]) not in self.known_moments])
-                    for m in products_of_unknown_moments]
+            # hashes to work correctly and to be able to find the single
+            # factors in self.known_moments.
+            products_of_unknown_moments = [self._monomial_from_atoms(
+                 [f for f in m.factors 
+                  if self._monomial_from_atoms([f]) not in self.known_moments]
+                                                                    )
+                                        for m in products_of_unknown_moments]
             
             # We remove all monomials with a single unknowable factor
             products_of_unknown_moments = [m
                                            for m in products_of_unknown_moments 
                                            if m.n_factors > 1]
             
+        if use_higherorder_inflation_terms:
+            extra_monomials_generating_set = []
+            _highest_inflation_index = max(self.inflation_levels)
+            new_ops = []
+            for m in products_of_unknown_moments:
+                for i in range(1, m.n_factors):
+                    scalar = self.compmonomial_to_ndarray[
+                                self._monomial_from_atoms([m.factors[i-1]])
+                                ].copy()
+                    infl_indices = scalar[:, 1:-2]
+                    infl_indices[infl_indices > 0] += _highest_inflation_index 
+                    _highest_inflation_index = infl_indices.max()
+                    scalar[:, 1:-2] = infl_indices 
+                    
+                    for op in scalar:
+                        idx = nb_lexorder_idx(op, self._default_lexorder)
+                        if idx < 0:
+                            new_ops += [op]
+                    
+                    operator = self.compmonomial_to_ndarray[
+                                self._monomial_from_atoms(m.factors[i:])] 
+                    
+                    extra_monomials_generating_set += \
+                                        [np.concatenate((scalar, operator))]
+        else:
+            #TODO Implement
+            ...
+            
         
-        print(products_of_unknown_moments[0].as_ndarray())
+        lexorder = np.concatenate((self._default_lexorder,
+                                                 new_ops))
+        self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
+        self._lexorder = self._default_lexorder.copy()
+
+        self._default_notcomm = commutation_matrix(self._lexorder,
+                                                   self.commuting)
+        self._notcomm = self._default_notcomm.copy()
+        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
+                                                              self._lexorder,
+                                                              self._notcomm)
+                
+        self.generate_relaxation(self.generating_monomials + extra_monomials_generating_set)
 
     def set_bounds(self,
                    bounds: Union[dict, None],
