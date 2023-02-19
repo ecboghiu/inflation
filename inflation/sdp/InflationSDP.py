@@ -25,7 +25,8 @@ from .fast_npa import (nb_all_commuting_q,
                        nb_mon_to_lexrepr,
                        reverse_mon,
                        to_canonical,
-                       nb_lexorder_idx)
+                       nb_lexorder_idx,
+                       nb_overlap_matrix)
 from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
@@ -391,11 +392,42 @@ class InflationSDP(object):
     def relax_nonlinear_constraints(self,
                                 use_higherorder_inflation_terms: bool = True
                                     ) -> None:
-        # We use self.known_moments to identify the potentially nonlinear 
-        # constraints
+        """Regenerates the moment matrix to include extra columns that
+        relax nonlinear constraints in the problem. This uses variations of 
+        the scalar extension technique introduced in
+        Phys. Rev. Lett. 123, 140503 (2019).
+        
+        The specific nonlinear constraints depend on `self.known_moments`, 
+        that is, which moments are fixed numerically by the user. 
+        If `self.use_lpi_constraints` is True, then proportionality 
+        constraints are relaxed via scalar extension. This allows for the
+        extraction of certificates, whereas imposing the LPI constraints
+        directly does not allow for the extraction of certificates.
+
+        *Warning*: If `use_higherorder_inflation_terms=True`, this method
+        will modify the instance of `InflationProblem` to add new operators
+        belonging to a higher order inflation.
+
+        Parameters
+        ----------
+        use_higherorder_inflation_terms : bool, optional
+            Whether to implement true scalars, or include them as operators
+            with disjoint support, modeled as elements from a higher
+            order inflation, by default True.
+        """
+        
         products_of_unknown_moments = [m for m in self.monomials
                                         if (m.n_factors > 1 and
                                             m not in self.known_moments)]
+        
+        # If some of these products are the expectation value of one of
+        # the monomials from the generating set, remove them, as this 
+        # will simpy lead to duplicated columns.
+        generating_monomials_compmons = \
+                    [self.Monomial(m) for m in self.generating_monomials]
+        products_of_unknown_moments = [m for m in products_of_unknown_moments
+                                    if m not in generating_monomials_compmons]
+        
         if self.use_lpi_constraints:
             # If we use LPI constraints, then we are exactly implementing 
             # part of the constraints. We filter and remove all atomic moments
@@ -440,11 +472,16 @@ class InflationSDP(object):
                     
                     extra_monomials_generating_set += \
                                         [np.concatenate((scalar, operator))]
+            
+            # Sort the new operators
+            new_ops = [np.array(o, dtype=np.uint8) 
+                              for o in sorted([tuple(op) for op in new_ops])]
         else:
-            #TODO Implement
+            #TODO Implement using scalars
             ...
             
-        
+        # extra_monomials_generating_set might contain operators that
+        # are not included in lexorder
         lexorder = np.concatenate((self._default_lexorder,
                                                  new_ops))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
@@ -456,8 +493,19 @@ class InflationSDP(object):
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
                                                               self._notcomm)
-                
-        self.generate_relaxation(self.generating_monomials + extra_monomials_generating_set)
+        
+        inflation_indices = [np.frombuffer(op, dtype=np.uint8)
+                for op in self.InflationProblem._inflation_indices_hash.keys()]
+        for op in new_ops:
+            inflation_indices.append(op[1: -2])
+            
+        self.InflationProblem._inflation_indices_hash = {op.tobytes(): i for i, op
+                                        in enumerate(inflation_indices)}
+        self.InflationProblem._inflation_indices_overlap = nb_overlap_matrix(
+            np.asarray(inflation_indices, dtype=np.uint8))
+         
+        self.generate_relaxation(self.generating_monomials + 
+                                 extra_monomials_generating_set)
 
     def set_bounds(self,
                    bounds: Union[dict, None],
