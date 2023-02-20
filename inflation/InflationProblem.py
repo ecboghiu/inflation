@@ -55,6 +55,7 @@ class InflationProblem(object):
                  outcomes_per_party=tuple(),
                  settings_per_party=tuple(),
                  inflation_level_per_source=tuple(),
+                 classical_sources=tuple(),
                  order=tuple(),
                  verbose=0):
         """Initialize the InflationProblem class.
@@ -171,9 +172,19 @@ class InflationProblem(object):
         self.nr_sources = len(actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
+        self._quantum_sources, self._classical_sources = [], []
         for ii, source in enumerate(actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
+            if classical_sources:
+                if source in classical_sources:
+                    self._classical_sources += [ii]
+                else:
+                    self._quantum_sources += [ii]
+            else:
+                self._quantum_sources += [ii]
+        self._quantum_sources   = 1 + np.array(self._quantum_sources)
+        self._classical_sources = 1 + np.array(self._classical_sources)
 
         assert self.hypergraph.shape[1] == self.nr_parties, \
             ("The number of parties derived from the DAG is "

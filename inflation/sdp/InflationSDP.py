@@ -104,6 +104,7 @@ class InflationSDP(object):
             self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
+        self._quantum_sources = self.InflationProblem._quantum_sources
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
@@ -143,13 +144,18 @@ class InflationSDP(object):
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
 
+        if self._quantum_sources.size == 0:
+            self.commuting = True
+            self._quantum_sources = np.array([0])  # Dummy value, numba does
+                                                   # not like empty arrays
         self._default_notcomm = commutation_matrix(self._lexorder,
+                                                   self._quantum_sources,
                                                    self.commuting)
         self._notcomm = self._default_notcomm.copy()
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
                                                               self._notcomm)
-
+        print(self._lexorder, "\n", 1*self._notcomm)
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
         # These next properties are reset during generate_relaxation, but
