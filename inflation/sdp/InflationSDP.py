@@ -321,12 +321,39 @@ class InflationSDP(object):
             self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
         
-        self.compmonomial_to_ndarray = {m: self.symmetrized_corresp[idx] 
-                                        for idx, m in self.compmonomial_from_idx.items()}
-
         self.monomials = list(self.compmonomial_from_idx.values())
-        assert all(v == 1 for v in Counter(self.monomials).values()), \
-            "Multiple indices are being associated to the same monomial"
+        if not all(v == 1 for v in Counter(self.monomials).values()):
+            # When using higher order inflation terms, the method
+            # _discover_inflation_symmetries might not correctly symmetrise
+            # the arrays of some of the terms. As such, when calling 
+            # self.Monomial on the arrays, we might get new symmetries 
+            # (i.e., various indices mapped to the same compound monomial). 
+            # We take this into account now, and update the moment matrix 
+            # and dictionary accordingly.
+            if self.verbose > 1:
+                warn("Processing extra symmetries.")
+            
+            # Map all unique CompountMonomials to new integers.
+            new_mon2idx = {mon: i for i, mon in enumerate(self.monomials)}
+            oldidx2newidx = \
+                    {**{oldidx: new_mon2idx[mon] 
+                        for oldidx, mon in self.compmonomial_from_idx.items()},
+                     **{0: 0}}
+                
+            for mon in self.monomials:
+                mon.idx = new_mon2idx[mon]
+                
+            self.orbits = {i: oldidx2newidx[j] for i, j in self.orbits.items()}
+            self.compmonomial_from_idx = \
+                            {oldidx2newidx[i]: mon 
+                            for i, mon in self.compmonomial_from_idx.items()}
+            
+            # Updating moment matrix with new orbits
+            for i in range(len(self.generating_monomials)):
+                for j in range(i, len(self.generating_monomials)):
+                    self.momentmatrix[i, j] = self.orbits[self.momentmatrix[i, j]]
+                    self.momentmatrix[j, i] = self.momentmatrix[i, j]
+                
         knowable_atoms = set()
         for mon in self.monomials:
             knowable_atoms.update(mon.knowable_factors)
@@ -399,7 +426,7 @@ class InflationSDP(object):
         
         The specific nonlinear constraints depend on `self.known_moments`, 
         that is, which moments are fixed numerically by the user. 
-        If `self.use_lpi_constraints` is True, then proportionality 
+        If `self.use_lpi_constraints=False`, then proportionality 
         constraints are relaxed via scalar extension. This allows for the
         extraction of certificates, whereas imposing the LPI constraints
         directly does not allow for the extraction of certificates.
@@ -414,7 +441,11 @@ class InflationSDP(object):
             Whether to implement true scalars, or include them as operators
             with disjoint support, modeled as elements from a higher
             order inflation, by default True.
-        """
+        """        
+        # Map compound monomials to their 2dndarray
+        self.compmonomial_to_ndarray = \
+            {m: self.symmetrized_corresp[idx] 
+                for idx, m in self.compmonomial_from_idx.items()}
         
         products_of_unknown_moments = [m for m in self.monomials
                                         if (m.n_factors > 1 and
@@ -425,8 +456,9 @@ class InflationSDP(object):
         # will simpy lead to duplicated columns.
         generating_monomials_compmons = \
                     [self.Monomial(m) for m in self.generating_monomials]
-        products_of_unknown_moments = [m for m in products_of_unknown_moments
-                                    if m not in generating_monomials_compmons]
+        products_of_unknown_moments = \
+                            [m for m in products_of_unknown_moments 
+                            if m not in generating_monomials_compmons]
         
         if self.use_lpi_constraints:
             # If we use LPI constraints, then we are exactly implementing 
@@ -437,22 +469,37 @@ class InflationSDP(object):
             # Note: we need to call _monomial_from_atoms in order for the 
             # hashes to work correctly and to be able to find the single
             # factors in self.known_moments.
-            products_of_unknown_moments = [self._monomial_from_atoms(
-                 [f for f in m.factors 
-                  if self._monomial_from_atoms([f]) not in self.known_moments]
-                                                                    )
-                                        for m in products_of_unknown_moments]
+            products_of_unknown_moments = \
+                [self._monomial_from_atoms([f for f in m.factors 
+                                            if self._monomial_from_atoms([f])
+                                            not in self.known_moments])
+                 for m in products_of_unknown_moments]
             
             # We remove all monomials with a single unknowable factor
             products_of_unknown_moments = [m
                                            for m in products_of_unknown_moments 
                                            if m.n_factors > 1]
             
+        # Assume we have  <x>*<y>*<z> as a nonlinear constraint. With scalar
+        # extension we can add the operators <x>*y*z where y*z is an 
+        # operator and not an expected value. This relaxes the product
+        # between <x> and the variable <y>*<z>. To further relax the product
+        # <y>*<z>, we can add the operators <y>*z. Therefore we need to add
+        # two extra columns: [<x>*y*z, <y>*z]. We do this recursively.
+        # In the language of CompoundMonomials, we can model this by
+        # using the first atomic monomial as "scalar" and all the rest
+        # we can extract their 2dndarray using self.compmonomial_to_ndarray
+        # and use the 2dndarray as "operator". This is done later in the 
+        # code.
+        scalar_times_operator = [self._monomial_from_atoms(m.factors[i:]) 
+                                    for m in products_of_unknown_moments
+                                    for i in range(m.n_factors - 1)]
+           
         if use_higherorder_inflation_terms:
             extra_monomials_generating_set = []
             _highest_inflation_index = max(self.inflation_levels)
             new_ops = []
-            for m in products_of_unknown_moments:
+            for m in scalar_times_operator:
                 for i in range(1, m.n_factors):
                     scalar = self.compmonomial_to_ndarray[
                                 self._monomial_from_atoms([m.factors[i-1]])
@@ -477,33 +524,33 @@ class InflationSDP(object):
             new_ops = [np.array(o, dtype=np.uint8) 
                               for o in sorted([tuple(op) for op in new_ops])]
         else:
-            #TODO Implement using scalars
+            #TODO Implement using "true" scalars
             ...
             
         # extra_monomials_generating_set might contain operators that
-        # are not included in lexorder
-        lexorder = np.concatenate((self._default_lexorder,
-                                                 new_ops))
+        # are not included in lexorder, add them
+        lexorder = np.concatenate((self._default_lexorder, new_ops))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
-
-        self._default_notcomm = commutation_matrix(self._lexorder,
+        self._default_notcomm = commutation_matrix(self._lexorder, 
                                                    self.commuting)
         self._notcomm = self._default_notcomm.copy()
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
                                                               self._notcomm)
         
+        # InflationProblem might not have high enough inflation index to cover
+        # all the extra operators we add, modify the instance to include them.
         inflation_indices = [np.frombuffer(op, dtype=np.uint8)
                 for op in self.InflationProblem._inflation_indices_hash.keys()]
         for op in new_ops:
             inflation_indices.append(op[1: -2])
-            
         self.InflationProblem._inflation_indices_hash = {op.tobytes(): i for i, op
                                         in enumerate(inflation_indices)}
         self.InflationProblem._inflation_indices_overlap = nb_overlap_matrix(
             np.asarray(inflation_indices, dtype=np.uint8))
          
+        # Generate the SDP again with the extra generating monomials
         self.generate_relaxation(self.generating_monomials + 
                                  extra_monomials_generating_set)
 
