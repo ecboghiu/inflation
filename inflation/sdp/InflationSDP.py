@@ -485,74 +485,158 @@ class InflationSDP(object):
         # operator and not an expected value. This relaxes the product
         # between <x> and the variable <y>*<z>. To further relax the product
         # <y>*<z>, we can add the operators <y>*z. Therefore we need to add
-        # two extra columns: [<x>*y*z, <y>*z]. We do this recursively.
+        # two extra columns: [<x>*y*z, <y>*z, <z>*Id]. We do this recursively.
         # In the language of CompoundMonomials, we can model this by
         # using the first atomic monomial as "scalar" and all the rest
         # we can extract their 2dndarray using self.compmonomial_to_ndarray
         # and use the 2dndarray as "operator". This is done later in the 
         # code.
-        scalar_times_operator = [self._monomial_from_atoms(m.factors[i:]) 
-                                    for m in products_of_unknown_moments
-                                    for i in range(m.n_factors - 1)]
-           
+        _pre_scalar_times_operator = list(set([
+                                      self._monomial_from_atoms(m.factors[i:]) 
+                                      for m in products_of_unknown_moments
+                                      for i in range(m.n_factors)]))
+        
         if use_higherorder_inflation_terms:
             extra_monomials_generating_set = []
             _highest_inflation_index = max(self.inflation_levels)
             new_ops = []
-            for m in scalar_times_operator:
-                for i in range(1, m.n_factors):
-                    scalar = self.compmonomial_to_ndarray[
-                                self._monomial_from_atoms([m.factors[i-1]])
-                                ].copy()
-                    infl_indices = scalar[:, 1:-2]
-                    infl_indices[infl_indices > 0] += _highest_inflation_index 
-                    _highest_inflation_index = infl_indices.max()
-                    scalar[:, 1:-2] = infl_indices 
-                    
-                    for op in scalar:
-                        idx = nb_lexorder_idx(op, self._default_lexorder)
-                        if idx < 0:
-                            new_ops += [op]
-                    
-                    operator = self.compmonomial_to_ndarray[
-                                self._monomial_from_atoms(m.factors[i:])] 
-                    
-                    extra_monomials_generating_set += \
-                                        [np.concatenate((scalar, operator))]
+            for m in _pre_scalar_times_operator:
+                scalar = self.compmonomial_to_ndarray[
+                            self._monomial_from_atoms([m.factors[0]])
+                            ].copy()
+
+                infl_indices = scalar[:, 1:-2]
+                infl_indices[infl_indices > 0] += _highest_inflation_index 
+                _highest_inflation_index = infl_indices.max()
+                scalar[:, 1:-2] = infl_indices 
+                
+                for op in scalar:
+                    idx = nb_lexorder_idx(op, self._default_lexorder)
+                    if idx < 0:
+                        new_ops += [op]
+                
+                operator = self.compmonomial_to_ndarray[
+                            self._monomial_from_atoms(m.factors[1:])] 
+                
+                extra_monomials_generating_set += \
+                                    [np.concatenate((scalar, operator))]
             
-            # Sort the new operators
+            # Sort the new operators, and remove duplicates
             new_ops = [np.array(o, dtype=np.uint8) 
-                              for o in sorted([tuple(op) for op in new_ops])]
-        else:
-            #TODO Implement using "true" scalars
-            ...
+                    for o in sorted(list(set([tuple(op) for op in new_ops])))]
             
-        # extra_monomials_generating_set might contain operators that
-        # are not included in lexorder, add them
-        lexorder = np.concatenate((self._default_lexorder, new_ops))
-        self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
-        self._lexorder = self._default_lexorder.copy()
-        self._default_notcomm = commutation_matrix(self._lexorder, 
-                                                   self.commuting)
-        self._notcomm = self._default_notcomm.copy()
-        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
-                                                              self._lexorder,
-                                                              self._notcomm)
-        
-        # InflationProblem might not have high enough inflation index to cover
-        # all the extra operators we add, modify the instance to include them.
-        inflation_indices = [np.frombuffer(op, dtype=np.uint8)
-                for op in self.InflationProblem._inflation_indices_hash.keys()]
-        for op in new_ops:
-            inflation_indices.append(op[1: -2])
-        self.InflationProblem._inflation_indices_hash = {op.tobytes(): i for i, op
-                                        in enumerate(inflation_indices)}
-        self.InflationProblem._inflation_indices_overlap = nb_overlap_matrix(
-            np.asarray(inflation_indices, dtype=np.uint8))
+            # extra_monomials_generating_set might contain operators that
+            # are not included in lexorder, add them
+            lexorder = np.concatenate((self._default_lexorder, new_ops))
+            self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
+            self._lexorder = self._default_lexorder.copy()
+            self._default_notcomm = commutation_matrix(self._lexorder, 
+                                                    self.commuting)
+            self._notcomm = self._default_notcomm.copy()
+            self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
+                                                                self._lexorder,
+                                                                self._notcomm)
+            
+            # InflationProblem might not have high enough inflation index to 
+            # cover all the extra operators we add, modify the instance to 
+            # include them.
+            inflation_indices = \
+                [np.frombuffer(op, dtype=np.uint8)
+                 for op in self.InflationProblem._inflation_indices_hash.keys()]
+            for op in new_ops:
+                inflation_indices.append(op[1: -2])
+            self.InflationProblem._inflation_indices_hash = \
+                    {op.tobytes(): i for i, op in enumerate(inflation_indices)}
+            self.InflationProblem._inflation_indices_overlap = \
+                nb_overlap_matrix(np.asarray(inflation_indices, dtype=np.uint8))
+            
+            print(extra_monomials_generating_set)
+            # Generate the SDP again with the extra generating monomials
+            self.generate_relaxation(self.generating_monomials + 
+                                        extra_monomials_generating_set)
+        else:
+            new_momentmatrix = self.momentmatrix.copy()
+            generating_mon_to_col_idx = {m.tobytes(): col_idx 
+                 for col_idx, m in enumerate(self.generating_monomials)}
+            idx_to_monomial = {m.idx: m for m in self.monomials}
+            
+            # Write the extra monomials to add to the generating set
+            scalar_times_operator = []
+            for m in _pre_scalar_times_operator:
+                scalar = m.factors[0]
+                try:
+                    operator = self.compmonomial_to_ndarray[
+                                self._monomial_from_atoms(m.factors[1:])] 
+                    col_idx_of_operator = \
+                        generating_mon_to_col_idx[operator.tobytes()]
+                    scalar_times_operator += [(scalar, operator)]
+                except KeyError:
+                    # If col_idx_of_operator fails to be generated
+                    if self.verbose > 0:
+                        warn(f"Operator {operator} not in generating set. " + 
+                              "This operator will be ignored for scalar " + 
+                              "extension.")
+            
+            # Build the new columns corresponding to the product of the 
+            # new monomials with old monomials, but not with themselves
+            columns_old_dot_new = []
+            for s, op in scalar_times_operator:
+                col_idx_of_op = generating_mon_to_col_idx[op.tobytes()]
+                col_of_op = new_momentmatrix[:, col_idx_of_op]
+                mons_in_colum = [idx_to_monomial[i] for i in col_of_op]
+                mons_in_new_column = []
+                for _m in mons_in_colum:
+                    new_mon = self._monomial_from_atoms([s, *_m.factors])
+                    if new_mon not in self.monomials:
+                        new_mon.attach_idx(self.first_free_idx)
+                        self.first_free_idx += 1
+                        self.monomials += [new_mon]
+                    mons_in_new_column += [new_mon.idx]
+                columns_old_dot_new += [mons_in_new_column]
+                
+            # Build the inner products between the new monomials
+            nr_new_mons = len(scalar_times_operator)
+            corner_matrix = np.zeros((nr_new_mons, nr_new_mons), dtype=int)
+            for i in range(nr_new_mons):
+                for j in range(i, nr_new_mons):
+                    s1, op1 = scalar_times_operator[i]
+                    s2, op2 = scalar_times_operator[j]
+                    # Find <op1.dagger() * op2> by looking in the moment matrix
+                    op1_idx = generating_mon_to_col_idx[op1.tobytes()]
+                    op2_idx = generating_mon_to_col_idx[op2.tobytes()]
+                    op1_times_op2 = idx_to_monomial[
+                                        self.momentmatrix[op1_idx, op2_idx]]
+                    s1_times_s2 = [s1.dagger, s2]
+                    new_mon = self._monomial_from_atoms(
+                                        [*s1_times_s2, *op1_times_op2.factors])
+                    # Check if its a new monomial (most likely)
+                    if new_mon not in self.monomials:
+                        new_mon.attach_idx(self.first_free_idx)
+                        self.first_free_idx += 1
+                        self.monomials += [new_mon]
+                    
+                    corner_matrix[i, j] = new_mon.idx
+                    corner_matrix[j, i] = new_mon.idx
+                    
+            # Now add the new columns to the moment matrix
+            # [[Old       , New_cols]]
+            #  [New_cols.T, cornet_matrix]]]           
+            columns_old_dot_new = np.array(columns_old_dot_new).T
+            new_momentmatrix = np.concatenate((new_momentmatrix,
+                                               columns_old_dot_new), axis=1)
+            # Add the corner matrix to the new row
+            rows_old_dot_new = np.concatenate((columns_old_dot_new.T,
+                                               corner_matrix), axis=1)
+            new_momentmatrix = np.concatenate((new_momentmatrix,
+                                               rows_old_dot_new), axis=0)
+
+            self.momentmatrix = new_momentmatrix
+            self.n_columns = self.momentmatrix.shape[1]
          
-        # Generate the SDP again with the extra generating monomials
-        self.generate_relaxation(self.generating_monomials + 
-                                 extra_monomials_generating_set)
+        # In order to update the values or semiknowns that can involve new
+        # monomials
+        self.set_values(self.known_moments, 
+                        use_lpi_constraints=self.use_lpi_constraints)
 
     def set_bounds(self,
                    bounds: Union[dict, None],
