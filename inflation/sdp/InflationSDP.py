@@ -1003,6 +1003,50 @@ class InflationSDP(object):
 
     def write_to_file(self, filename: str) -> None:
         """Exports the problem to a file.
+        
+        If the file format is `.mat`, the following variables are included in
+        the file:
+        
+            - `momentmatrix`: the moment matrix, as a matrix of integers, where
+              each integer indexes a different variable
+            - `moments_idx2name`: a cell array where the :math:`i`-th cell
+              stores the index :math:`i` of a variable :math:`x_i` and its name
+              as a string
+            - `objective`: the objective function :math:`\\sum_i c_i x_i` as a
+              an array where the first column encodes the indices :math:`i` of
+              the variables :math:`x_i` with non-zero coefficient :math:`c_i`,
+              and the second column encodes the coefficients :math:`c_i` 
+            - `known_moments`: constant variable constraints, :math:`x_i = c_i`,
+              encoded as an array where the first column stores the index
+              :math:`i` of the variable that is equal to the constant
+              :math:`c_i`, and the second column stores the constant
+              :math:`c_i`; note that the `'1'` is another variable whose value
+              is `1.0` and should be included in `known_moments`
+            - `semiknown_moments`: semiknown constraints, namely, linear
+              proportionality constraints of the form :math:`x_i = c_i x_j`,
+              encoded as an array where the first column stores the index
+              :math:`i` of the variable, the second column stores the
+              coefficient :math:`c_i` of the constraint, and the third column
+              stores the index :math:`j` of the variable
+            - `moment_lowerbounds`: lower bounds on the moments, :math:`x_i \geq
+              c_i`, encoded as an array where the first column stores the index
+              :math:`i` of the variable, and the second column stores the lower
+              bound :math:`c_i`
+            - `moment_upperbounds`: upper bounds on the moments, :math:`x_i \leq
+              c_i`, encoded as an array where the first column stores the index
+              :math:`i` of the variable, and the second column stores the upper
+              bound :math:`c_i`
+            - `moment_equalities`: linear equality constraints, :math:`\\sum_j
+              A_{ij} x_j = 0` (note that the `'1'` is treated as any variable
+              :math:`x_j` whose value is `1.0` and it must be included in
+              `known_moments`), as a cell where the :math:`i`-th cell stores the
+              constraint as a structure with fields `moments` and `coeffs`,
+              where `moments` is an array of indices :math:`j` of the variables
+              :math:`x_j` and `coeffs` is an array of coefficients
+              :math:`A_{ij}` of the variables :math:`x_j`
+            - `moment_inequalities`: linear inequality constraints
+              :math:`\\sum_j A_{ij} x_j \geq 0`, with the same convention as for
+              `moment_equalities`
 
         Parameters
         ----------
