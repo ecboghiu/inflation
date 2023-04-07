@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Functions to operate on monomials &mdash; Inflation 1.0.0 documentation</title>
@@ -126,7 +126,7 @@
 <span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">apply_source_perm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#apply_source_perm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.apply_source_perm" title="Permalink to this definition"></a></dt>
 <dd><p>Apply a source swap to a monomial.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial in 2d array format.</p></li>
 <li><p><strong>source</strong> (<em>int</em>) – The source that is being swapped.</p></li>
@@ -137,10 +137,10 @@ permutation must be padded with a leading zero. The function
 a list of permutations to the necessary format.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Input monomial with the specified source swapped.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -154,13 +154,13 @@ a list of permutations to the necessary format.</p></li>
 <dd><p>Determine whether a given atomic monomial admits an identification with
 a probability of the original scenario.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>monomial</strong> (<em>np.ndarray</em>) – List of operators, denoted each by a list of indices</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Whether the monomial is knowable or not.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
@@ -183,16 +183,16 @@ the unknown normalisation, however we know it must be non-negative,
 <span class="math notranslate nohighlight">\(\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0\)</span>.
 This simple example can be extended to various layers of sandwiching.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>monomial_in</strong> (<em>numpy.ndarray</em>) – Input monomial in 2d array format.</p></li>
 <li><p><strong>sandwich_positivity</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to consider sandwiching. By default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Whether the monomial has always non-negative expectation or not.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
@@ -207,7 +207,7 @@ This simple example can be extended to various layers of sandwiching.</p>
 <dd><p>Applies commutations between the operators forming a monomial until
 finding the smallest lexicographic representation.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial in 2D array format.</p></li>
 <li><p><strong>notcomm</strong> (<em>numpy.ndarray</em>) – Matrix of commutation relations. Each operator can be identified by an
@@ -220,11 +220,11 @@ the operator with lexicographic rank <cite>i</cite>.</p></li>
 <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The monomial in canonical form with respect to some commutation
 relationships.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -236,13 +236,13 @@ relationships.</p>
 <dd><p>Reduce the inflation indices of a monomial as much as possible. This
 procedure might not give the canonical form directly due to commutations.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>An equivalent monomial closer to its representative form.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -254,7 +254,7 @@ procedure might not give the canonical form directly due to commutations.</p>
 <dd><p>Brings a monomial to canonical form with respect to commutations,
 removing square projectors, and identifying orthogonality.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial in 2D array format.</p></li>
 <li><p><strong>notcomm</strong> (<em>numpy.ndarray</em>) – Matrix of commutation relations. Each operator can be identified by an
@@ -269,11 +269,11 @@ the operator with lexicographic rank <cite>i</cite>.</p></li>
 if the monomial is equal to zero. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The monomial in canonical form with respect to some commutation
 relationships.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -284,17 +284,17 @@ relationships.</p>
 <span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#to_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.to_name" title="Permalink to this definition"></a></dt>
 <dd><p>Convert the 2d array representation of a monomial to a string.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Monomial as a matrix with each row being an integer array representing
 an operators.</p></li>
 <li><p><strong>names</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – List of party names.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The string representation of the monomial.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -314,13 +314,13 @@ an operators.</p></li>
 <dd><p>Removes sandwiching/pinching from a monomial. This is, it converts the
 monomial represented by <span class="math notranslate nohighlight">\(U A U^\dagger\)</span> into <span class="math notranslate nohighlight">\(A\)</span>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The monomial without sandwiches.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -333,13 +333,13 @@ monomial represented by <span class="math notranslate nohighlight">\(U A U^\dagg
 assume projectors, P**2=P. This corresponds to removing duplicates of rows
 which are adjacent.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>mon</strong> (<em>numpy.ndarray</em>) – Input monomial in 2d array format.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Monomial with powers of operators removed.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>

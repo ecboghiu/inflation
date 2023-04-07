@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Functions to build problem elements &mdash; Inflation 1.0.0 documentation</title>
@@ -134,7 +134,7 @@ index of the monomial that represents the result of the expectation value
 moment matrix and the dictionary mapping each monomial in string
 representation to its integer representation.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>cols</strong> (<em>List</em>) – List of numpy.ndarray representing the generating set.</p></li>
 <li><p><strong>notcomm</strong> (<em>numpy.ndarray</em>) – Matrix of commutation relations, given in the format specified by
@@ -146,12 +146,12 @@ the lexicographic order of the operator.</p></li>
 <li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – How much information to print. By default <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The moment matrix <span class="math notranslate nohighlight">\(\Gamma\)</span>, where each entry <span class="math notranslate nohighlight">\((i,j)\)</span> stores
 the integer representation of a monomial. The Dict is a mapping from
 string representation to integer representation.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Tuple[numpy.ndarray, Dict]</p>
 </dd>
 </dl>
@@ -167,7 +167,7 @@ nearly the same format, they differ merely in whether integers pertain to
 column indices or the indices that represent the unique moment matrix
 elements.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>column_equalities</strong> (<em>List</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>]</em>) – The list of equalities between columns in the moment matrix, in the
 form of tuples whose first element is the index of one of the columns,
@@ -179,12 +179,12 @@ be computed.</p></li>
 <li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – Verbosity level. By default 0.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The equalities between variables. For each tuple, the first element is
 the index of one of the variables in <code class="docutils literal notranslate"><span class="pre">momentmatrix</span></code>, and the second
 is the list of variables whose sum corresponds to the first.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>List[Tuple[int, List[int]]]</p>
 </dd>
 </dl>
@@ -197,16 +197,16 @@ is the list of variables whose sum corresponds to the first.</p>
 representing the measurements for a given party. The variables are treated
 as non-commuting. This code is adapted from <a class="reference external" href="https://github.com/peterwittek/ncpol2sdpa/">ncpol2sdpa</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>outs_per_input</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – The number of outcomes of each measurement for a given party</p></li>
 <li><p><strong>name</strong> (<em>str</em>) – The name to be associated to the party</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The list of Sympy operators</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>list</p>
 </dd>
 </dl>
@@ -220,7 +220,7 @@ as non-commuting. This code is adapted from <a class="reference external" href="
 <dd><p>Applies the inflation symmetries, in the form of permutations of the
 rows and colums of a moment matrix, to the moment matrix.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>momentmatrix</strong> (<em>numpy.ndarray</em>) – The moment matrix.</p></li>
 <li><p><strong>inflation_symmetries</strong> (<em>numpy.ndarray</em>) – Two-dimensional array where each row represents a permutation of
@@ -228,7 +228,7 @@ the rows and columns of the moment matrix.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – Whether information about progress is printed out.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>sym_mm</strong> (<em>numpy.ndarray</em>) – The symmetrized version of the moment matrix, where each cell is
 the lowest index of all the Monomials that are equivalent to that
@@ -252,13 +252,13 @@ corresponding to sources not being measured by the operator, invariant.
 In order to achieve this, this function shifts a permutation of sources
 by 1 and prepends it with the integer 0.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>array</strong> (<em>numpy.ndarray</em>) – 2-d array where each row is a permutations.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The processed list of permutations.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>

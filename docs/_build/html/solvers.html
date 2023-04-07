@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interfaces with solvers &mdash; Inflation 1.0.0 documentation</title>
@@ -169,7 +169,7 @@ follows:</p>
 &amp; Z \succeq 0,\,L \geq 0,\,U \geq 0.\end{split}\]</div>
 <p>The relaxed feasibility problems change accordingly.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>mask_matrices</strong> (<em>dict</em>) – A dictionary with keys as monomials and values as scipy sparse arrays
 indicating the locations of the monomial in the moment matrix.</p></li>
@@ -193,7 +193,7 @@ or pass them to the solver as equality constraints (False). By
 default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The first element of the tuple is a dictionary containing the
 optimisation information such as the 1) primal objective value,
 2) the moment matrix, 3) the dual values, 4) the certificate and
@@ -202,7 +202,7 @@ the same order: 1) <code class="docutils literal notranslate"><span class="pre">
 <code class="docutils literal notranslate"><span class="pre">dual_certificate</span></code>, 5) <code class="docutils literal notranslate"><span class="pre">xi</span></code>. The second element is the objective
 value and the last is the problem status.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Tuple[Dict, float, str]</p>
 </dd>
 </dl>

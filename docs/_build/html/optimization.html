@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Optimization helpers &mdash; Inflation 1.0.0 documentation</title>
@@ -124,7 +124,7 @@ moment matrix to arbitrary expressions of the variable. This is useful for
 finding (bounds for) critical visibilities of distributions beyond which
 they are impossible to generate in a given quantum causal scenario.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sdp</strong> (<a class="reference internal" href="inflationsdp.html#inflation.InflationSDP" title="inflation.InflationSDP"><em>InflationSDP</em></a>) – The SDP problem under which to carry the optimization.</p></li>
 <li><p><strong>symbolic_values</strong> (<em>Dict</em><em>[</em><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.CompoundMonomial" title="inflation.sdp.monomial_classes.CompoundMonomial"><em>CompoundMonomial</em></a><em>, </em><em>Callable</em><em>]</em>) – The correspondence between monomials in the SDP problem and symbolic
@@ -141,7 +141,7 @@ options to be passed to the optimization routines (bounds, precision,
 tolerance, …).</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><em>float</em> – The maximum value that the parameter can take under the set of
 positive-semidefinite moment matrices. This is the output when

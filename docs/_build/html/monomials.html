@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Monomial classes and functions &mdash; Inflation 1.0.0 documentation</title>
@@ -131,16 +131,16 @@
 <dd><p>Given a probability distribution, compute the numerical value of
 the Monomial.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>prob_array</strong> (<em>numpy.ndarray</em>) – The target probability distribution. The dimensions of this array
 are (outcomes_per_party, settings_per_party), where the settings
 are explicitly 1 is there is only one measurement performed.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The value of the corresponding probability (which can be a marginal
 involving only a few parties)</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
 </dd>
 </dl>
@@ -193,7 +193,7 @@ factors in the monomial and return the product of the resulting values.</p>
 <p>The whole moment needs to be knowable (<code class="docutils literal notranslate"><span class="pre">self.is_knowable</span> <span class="pre">=</span> <span class="pre">True</span></code>),
 else this method will raise an error.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>prob_array</strong> (<em>np.ndarray</em>) – A conditional probability distribution over the non-inflated
 scenario with dimensions <code class="docutils literal notranslate"><span class="pre">(da,db,...,dx,dy,...)</span></code> (i.e., first
 outcomes and then settings for the parties).</p>
@@ -216,7 +216,7 @@ substitute all factors of the compound moment that are specified in
 the dictionary with their values and return the product of the values
 and a remainder compound moment made of the remaining factors.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>known_monomials</strong> (<em>Dict</em><em>[</em><a class="reference internal" href="#inflation.sdp.monomial_classes.InternalAtomicMonomial" title="inflation.sdp.monomial_classes.InternalAtomicMonomial"><em>InternalAtomicMonomial</em></a><em>, </em><em>float</em><em>]</em>) – A dictionary of known atomic monomials and their values.</p></li>
 <li><p><strong>use_lpi_constraints</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether compound moments whose factors are partially present in
@@ -224,7 +224,7 @@ and a remainder compound moment made of the remaining factors.</p>
 If <code class="docutils literal notranslate"><span class="pre">True</span></code>, they are labelled as <code class="docutils literal notranslate"><span class="pre">&quot;Semi&quot;</span></code>. By default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A tuple where the first element is the value of the knowable parts
 of the compound moment, the second element is a compound monomial
 of all the remaining factors not present in <code class="docutils literal notranslate"><span class="pre">known_monomials</span></code> and
@@ -232,7 +232,7 @@ the third element is a string describing whether all factors are
 present in <code class="docutils literal notranslate"><span class="pre">known_monomials</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;Known&quot;</span></code>), some are
 (<code class="docutils literal notranslate"><span class="pre">&quot;Semi&quot;</span></code>), or none are (<code class="docutils literal notranslate"><span class="pre">&quot;Unknown&quot;</span></code>).</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Tuple[float, List, str]</p>
 </dd>
 </dl>
@@ -250,7 +250,7 @@ present in <code class="docutils literal notranslate"><span class="pre">known_mo
 An instance of <cite>CompoundMonomial</cite> is a collection of
 <cite>InternalAtomicMonomial</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>array2d</strong> (<em>numpy.ndarray</em>) – Moment encoded as a 2D array of integers, where each row encodes
 one of the operators appearing in the moment.</p></li>
@@ -258,11 +258,11 @@ one of the operators appearing in the moment.</p></li>
 used as an id, by default -1.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The monomial factorised into AtomicMonomials, all brought to
 representative form under inflation symmetries.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#inflation.sdp.monomial_classes.CompoundMonomial" title="inflation.sdp.monomial_classes.CompoundMonomial">CompoundMonomial</a></p>
 </dd>
 </dl>

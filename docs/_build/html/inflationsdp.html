@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>InflationSDP Class &mdash; Inflation 1.0.0 documentation</title>
@@ -121,7 +121,7 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.</span></span><span class="sig-name descname"><span class="pre">InflationSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inflationproblem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem" title="inflation.InflationProblem.InflationProblem"><span class="pre">InflationProblem</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supports_problem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/sdp/InflationSDP.html#InflationSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationSDP" title="Permalink to this definition"></a></dt>
 <dd><p>Class for generating and solving an SDP relaxation for quantum inflation.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>inflationproblem</strong> (<a class="reference internal" href="inflationproblem.html#inflation.InflationProblem" title="inflation.InflationProblem"><em>InflationProblem</em></a>) – Details of the scenario.</p></li>
 <li><p><strong>commuting</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether variables in the problem are going to be commuting (classical
@@ -146,7 +146,7 @@ with the distribution’s support. By default <code class="docutils literal notr
 <dd><p>Creates the objects indexing the columns of the moment matrix from
 a specification.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>sympy.core.symbol.Symbol</em><em>]</em><em>]</em>) – See description in the <code class="docutils literal notranslate"><span class="pre">self.generate_relaxation()</span></code> method.</p></li>
 <li><p><strong>max_monomial_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of letters in a monomial in the generating set,
@@ -169,7 +169,7 @@ parsable by <cite>InflationSDP.generate_relaxation()</cite>. By default
 <dd><p>Give certificate as symbolic sum of probabilities. The certificate
 of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
 <code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
@@ -180,11 +180,11 @@ set to zero. By default <code class="docutils literal notranslate"><span class="
 decimals specified. By default <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The expression of the certificate in terms or probabilities and
 marginals. The certificate of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>sympy.core.add.Add</p>
 </dd>
 </dl>
@@ -197,7 +197,7 @@ marginals. The certificate of incompatibility is <code class="docutils literal n
 in the moment matrix. The expression is in the form such that
 satisfaction implies incompatibility.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
 <code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
@@ -208,12 +208,12 @@ set to zero. By default <code class="docutils literal notranslate"><span class="
 decimals specified. By default <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The certificate in terms of symbols representing the monomials in
 the moment matrix. The certificate of incompatibility is
 <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>str</p>
 </dd>
 </dl>
@@ -236,7 +236,7 @@ products between these monomials:</p>
 under swaps of the copied sources, which are used to remove variables
 in the moment matrix.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>column_specification</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>List</em><em>[</em><em>sympy.core.symbol.Symbol</em><em>]</em><em>]</em>) – <p>Describes the generating set of monomials <span class="math notranslate nohighlight">\(\{M_i\}_i\)</span>.</p>
 <ul class="simple">
 <li><p><cite>(str)</cite> <code class="docutils literal notranslate"><span class="pre">&quot;npaN&quot;</span></code>: where N is an integer. This represents level
@@ -287,7 +287,7 @@ element.</p></li>
 <span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/sdp/InflationSDP.html#InflationSDP.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationSDP.reset" title="Permalink to this definition"></a></dt>
 <dd><p>Reset the various user-specifiable objects in the inflation SDP.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>which</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – The objects to be reset. It can be fed as a single string or a list
 of them. Options include <code class="docutils literal notranslate"><span class="pre">&quot;bounds&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;lowerbounds&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;upperbounds&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;objective&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;values&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;all&quot;</span></code>.</p>
@@ -306,7 +306,7 @@ individual lower bounds, <span class="math notranslate nohighlight">\(p_A(0|0) \
 <span class="math notranslate nohighlight">\(p_A(0|0)*p_B(0|0) \geq 0.01\)</span>, which should be set manually if
 needed.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bounds</strong> (<em>Union</em><em>[</em><em>dict</em><em>, </em><em>None</em><em>]</em>) – A dictionary with keys as monomials and values being the bounds.
 The keys can be either CompoundMonomial objects, or names (<cite>str</cite>)
@@ -328,7 +328,7 @@ of Monomial objects.</p></li>
 <dd><p>Set numerically all the knowable (and optionally semiknowable)
 moments according to the probability distribution specified.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>prob_array</strong> (<em>numpy.ndarray</em>) – Multidimensional array encoding the distribution, which is
 called as <code class="docutils literal notranslate"><span class="pre">prob_array[a,b,c,...,x,y,z,...]</span></code> where
@@ -355,7 +355,7 @@ If universal shared randomness is present (i.e., the flag is
 <dd><p>Set or change the objective function of the polynomial optimization
 problem.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>objective</strong> (<em>Union</em><em>[</em><em>sp.core.expr.Expr</em><em>, </em><em>dict</em><em>, </em><em>None</em><em>]</em>) – The objective function, either as a combination of sympy symbols,
 as a dictionary with keys the monomials or their names, and as
@@ -377,7 +377,7 @@ numerical values assigned (either in their operator form, in string
 form, or directly referring to the variable in the moment matrix), and
 the values are the corresponding numerical quantities.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>values</strong> (<em>Union</em><em>[</em><em>None</em><em>, </em><em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.CompoundMonomial" title="inflation.sdp.monomial_classes.CompoundMonomial"><em>CompoundMonomial</em></a><em>, </em><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.InternalAtomicMonomial" title="inflation.sdp.monomial_classes.InternalAtomicMonomial"><em>InternalAtomicMonomial</em></a><em>, </em><em>sympy.core.symbol.Symbol</em><em>, </em><em>str</em><em>]</em><em>, </em><em>float</em><em>]</em><em>]</em>) – The description of the variables to be assigned numerical values
 and the corresponding values. The keys can be either of the
@@ -401,7 +401,7 @@ variables can also be fixed.</p></li>
 returns the primal and dual objective values along with the solution
 matrices.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>interpreter</strong> (<em>str</em><em>, </em><em>optional</em>) – The solver to be called. By default <code class="docutils literal notranslate"><span class="pre">&quot;MOSEKFusion&quot;</span></code>.</p></li>
 <li><p><strong>feas_as_optim</strong> (<em>bool</em><em>, </em><em>optional</em>) – <p>Instead of solving the feasibility problem</p>
@@ -477,7 +477,7 @@ where <cite>moments</cite> is an array of indices <span class="math notranslate 
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Name of the exported file. If no file format is specified, it
 defaults to sparse SDPA format. Supported formats are <code class="docutils literal notranslate"><span class="pre">.mat</span></code>
 (MATLAB), <code class="docutils literal notranslate"><span class="pre">.dat-s</span></code> (SDPA), and <code class="docutils literal notranslate"><span class="pre">.csv</span></code> (human-readable).</p>
