@@ -430,6 +430,52 @@ manually override these arguments by passing their own here.</p></li>
 <dt class="sig sig-object py" id="inflation.InflationSDP.write_to_file">
 <span class="sig-name descname"><span class="pre">write_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/sdp/InflationSDP.html#InflationSDP.write_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationSDP.write_to_file" title="Permalink to this definition"></a></dt>
 <dd><p>Exports the problem to a file.</p>
+<p>If the file format is <cite>.mat</cite>, the following variables are included in
+the file:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>momentmatrix</cite>: the moment matrix, as a matrix of integers, where
+each integer indexes a different variable</p></li>
+<li><p><cite>moments_idx2name</cite>: a cell array where the <span class="math notranslate nohighlight">\(i\)</span>-th cell
+stores the index <span class="math notranslate nohighlight">\(i\)</span> of a variable <span class="math notranslate nohighlight">\(x_i\)</span> and its name
+as a string</p></li>
+<li><p><cite>objective</cite>: the objective function <span class="math notranslate nohighlight">\(\sum_i c_i x_i\)</span> as a
+an array where the first column encodes the indices <span class="math notranslate nohighlight">\(i\)</span> of
+the variables <span class="math notranslate nohighlight">\(x_i\)</span> with non-zero coefficient <span class="math notranslate nohighlight">\(c_i\)</span>,
+and the second column encodes the coefficients <span class="math notranslate nohighlight">\(c_i\)</span></p></li>
+<li><p><cite>known_moments</cite>: constant variable constraints, <span class="math notranslate nohighlight">\(x_i = c_i\)</span>,
+encoded as an array where the first column stores the index
+<span class="math notranslate nohighlight">\(i\)</span> of the variable that is equal to the constant
+<span class="math notranslate nohighlight">\(c_i\)</span>, and the second column stores the constant
+<span class="math notranslate nohighlight">\(c_i\)</span>; note that the <cite>‘1’</cite> is another variable whose value
+is <cite>1.0</cite> and should be included in <cite>known_moments</cite></p></li>
+<li><p><cite>semiknown_moments</cite>: semiknown constraints, namely, linear
+proportionality constraints of the form <span class="math notranslate nohighlight">\(x_i = c_i x_j\)</span>,
+encoded as an array where the first column stores the index
+<span class="math notranslate nohighlight">\(i\)</span> of the variable, the second column stores the
+coefficient <span class="math notranslate nohighlight">\(c_i\)</span> of the constraint, and the third column
+stores the index <span class="math notranslate nohighlight">\(j\)</span> of the variable</p></li>
+<li><p><cite>moment_lowerbounds</cite>: lower bounds on the moments, <span class="math notranslate nohighlight">\(x_i \geq
+c_i\)</span>, encoded as an array where the first column stores the index
+<span class="math notranslate nohighlight">\(i\)</span> of the variable, and the second column stores the lower
+bound <span class="math notranslate nohighlight">\(c_i\)</span></p></li>
+<li><p><cite>moment_upperbounds</cite>: upper bounds on the moments, <span class="math notranslate nohighlight">\(x_i \leq
+c_i\)</span>, encoded as an array where the first column stores the index
+<span class="math notranslate nohighlight">\(i\)</span> of the variable, and the second column stores the upper
+bound <span class="math notranslate nohighlight">\(c_i\)</span></p></li>
+<li><p><cite>moment_equalities</cite>: linear equality constraints, <span class="math notranslate nohighlight">\(\sum_j
+A_{ij} x_j = 0\)</span> (note that the <cite>‘1’</cite> is treated as any variable
+<span class="math notranslate nohighlight">\(x_j\)</span> whose value is <cite>1.0</cite> and it must be included in
+<cite>known_moments</cite>), as a cell where the <span class="math notranslate nohighlight">\(i\)</span>-th cell stores the
+constraint as a structure with fields <cite>moments</cite> and <cite>coeffs</cite>,
+where <cite>moments</cite> is an array of indices <span class="math notranslate nohighlight">\(j\)</span> of the variables
+<span class="math notranslate nohighlight">\(x_j\)</span> and <cite>coeffs</cite> is an array of coefficients
+<span class="math notranslate nohighlight">\(A_{ij}\)</span> of the variables <span class="math notranslate nohighlight">\(x_j\)</span></p></li>
+<li><p><cite>moment_inequalities</cite>: linear inequality constraints
+<span class="math notranslate nohighlight">\(\sum_j A_{ij} x_j \geq 0\)</span>, with the same convention as for
+<cite>moment_equalities</cite></p></li>
+</ul>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Name of the exported file. If no file format is specified, it

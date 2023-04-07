@@ -1081,6 +1081,50 @@
 
 <div class="viewcode-block" id="InflationSDP.write_to_file"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.write_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Exports the problem to a file.</span>
+<span class="sd">        </span>
+<span class="sd">        If the file format is `.mat`, the following variables are included in</span>
+<span class="sd">        the file:</span>
+<span class="sd">        </span>
+<span class="sd">            - `momentmatrix`: the moment matrix, as a matrix of integers, where</span>
+<span class="sd">              each integer indexes a different variable</span>
+<span class="sd">            - `moments_idx2name`: a cell array where the :math:`i`-th cell</span>
+<span class="sd">              stores the index :math:`i` of a variable :math:`x_i` and its name</span>
+<span class="sd">              as a string</span>
+<span class="sd">            - `objective`: the objective function :math:`\\sum_i c_i x_i` as a</span>
+<span class="sd">              an array where the first column encodes the indices :math:`i` of</span>
+<span class="sd">              the variables :math:`x_i` with non-zero coefficient :math:`c_i`,</span>
+<span class="sd">              and the second column encodes the coefficients :math:`c_i` </span>
+<span class="sd">            - `known_moments`: constant variable constraints, :math:`x_i = c_i`,</span>
+<span class="sd">              encoded as an array where the first column stores the index</span>
+<span class="sd">              :math:`i` of the variable that is equal to the constant</span>
+<span class="sd">              :math:`c_i`, and the second column stores the constant</span>
+<span class="sd">              :math:`c_i`; note that the `&#39;1&#39;` is another variable whose value</span>
+<span class="sd">              is `1.0` and should be included in `known_moments`</span>
+<span class="sd">            - `semiknown_moments`: semiknown constraints, namely, linear</span>
+<span class="sd">              proportionality constraints of the form :math:`x_i = c_i x_j`,</span>
+<span class="sd">              encoded as an array where the first column stores the index</span>
+<span class="sd">              :math:`i` of the variable, the second column stores the</span>
+<span class="sd">              coefficient :math:`c_i` of the constraint, and the third column</span>
+<span class="sd">              stores the index :math:`j` of the variable</span>
+<span class="sd">            - `moment_lowerbounds`: lower bounds on the moments, :math:`x_i \geq</span>
+<span class="sd">              c_i`, encoded as an array where the first column stores the index</span>
+<span class="sd">              :math:`i` of the variable, and the second column stores the lower</span>
+<span class="sd">              bound :math:`c_i`</span>
+<span class="sd">            - `moment_upperbounds`: upper bounds on the moments, :math:`x_i \leq</span>
+<span class="sd">              c_i`, encoded as an array where the first column stores the index</span>
+<span class="sd">              :math:`i` of the variable, and the second column stores the upper</span>
+<span class="sd">              bound :math:`c_i`</span>
+<span class="sd">            - `moment_equalities`: linear equality constraints, :math:`\\sum_j</span>
+<span class="sd">              A_{ij} x_j = 0` (note that the `&#39;1&#39;` is treated as any variable</span>
+<span class="sd">              :math:`x_j` whose value is `1.0` and it must be included in</span>
+<span class="sd">              `known_moments`), as a cell where the :math:`i`-th cell stores the</span>
+<span class="sd">              constraint as a structure with fields `moments` and `coeffs`,</span>
+<span class="sd">              where `moments` is an array of indices :math:`j` of the variables</span>
+<span class="sd">              :math:`x_j` and `coeffs` is an array of coefficients</span>
+<span class="sd">              :math:`A_{ij}` of the variables :math:`x_j`</span>
+<span class="sd">            - `moment_inequalities`: linear inequality constraints</span>
+<span class="sd">              :math:`\\sum_j A_{ij} x_j \geq 0`, with the same convention as for</span>
+<span class="sd">              `moment_equalities`</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
