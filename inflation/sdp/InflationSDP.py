@@ -759,21 +759,24 @@ class BaseSDP(object):
             ``"upperbounds"``, ``"objective"``, ``"values"``, and ``"all"``.
         """
         if type(which) == str:
-            if which == "all":
-                self.reset(["bounds", "objective", "values"])
-            elif which == "bounds":
-                self._reset_bounds()
-            elif which == "lowerbounds":
-                self._reset_lowerbounds()
-            elif which == "upperbounds":
-                self._reset_upperbounds()
-            elif which == "objective":
-                self._reset_objective()
-            elif which == "values":
-                self._reset_values()
-            else:
-                raise Exception(f"The attribute {which} is not part of " +
-                                "InflationSDP.")
+            try:
+                if which == "all":
+                    self.reset(["bounds", "objective", "values"])
+                elif which == "bounds":
+                    self._reset_bounds()
+                elif which == "lowerbounds":
+                    self._reset_lowerbounds()
+                elif which == "upperbounds":
+                    self._reset_upperbounds()
+                elif which == "objective":
+                    self._reset_objective()
+                elif which == "values":
+                    self._reset_values()
+                else:
+                    raise Exception(f"The attribute {which} is not part of " +
+                                    "InflationSDP.")
+            except BaseException:
+                pass
         else:
             for attr in which:
                 self.reset(attr)
@@ -1929,37 +1932,6 @@ class InflationSDP(BaseSDP):
         cert += " < 0"
         return cert[1:] if cert[0] == "+" else cert
 
-    def reset(self, which: Union[str, List[str]]) -> None:
-        """Reset the various user-specifiable objects in the inflation SDP.
-
-        Parameters
-        ----------
-        which : Union[str, List[str]]
-            The objects to be reset. It can be fed as a single string or a list
-            of them. Options include ``"bounds"``, ``"lowerbounds"``,
-            ``"upperbounds"``, ``"objective"``, ``"values"``, and ``"all"``.
-        """
-        if type(which) == str:
-            if which == "all":
-                self.reset(["bounds", "objective", "values"])
-            elif which == "bounds":
-                self._reset_bounds()
-            elif which == "lowerbounds":
-                self._reset_lowerbounds()
-            elif which == "upperbounds":
-                self._reset_upperbounds()
-            elif which == "objective":
-                self._reset_objective()
-            elif which == "values":
-                self._reset_values()
-            else:
-                raise Exception(f"The attribute {which} is not part of " +
-                                "InflationSDP.")
-        else:
-            for attr in which:
-                self.reset(attr)
-        collect()
-
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
     ###########################################################################
@@ -2077,37 +2049,6 @@ class SupportsSDP(BaseSDP):
         # Support problems do not use Collins-Gisin notation
         self.outcome_cardinalities = \
             self.InflationProblem.outcomes_per_party.copy() + 1
-
-    def reset(self, which: Union[str, List[str]]) -> None:
-        """Reset the various user-specifiable objects in the inflation SDP.
-
-        Parameters
-        ----------
-        which : Union[str, List[str]]
-            The objects to be reset. It can be fed as a single string or a list
-            of them. Options include ``"bounds"``, ``"lowerbounds"``,
-            ``"upperbounds"``, ``"objective"``, ``"values"``, and ``"all"``.
-        """
-        if type(which) == str:
-            if which == "all":
-                self.reset(["bounds", "objective", "values"])
-            elif which == "bounds":
-                self._reset_bounds()
-            elif which == "lowerbounds":
-                self._reset_lowerbounds()
-            elif which == "upperbounds":
-                self._reset_upperbounds()
-            elif which == "objective":
-                self._reset_objective()
-            elif which == "values":
-                self._reset_values()
-            else:
-                raise Exception(f"The attribute {which} is not part of " +
-                                "InflationSDP.")
-        else:
-            for attr in which:
-                self.reset(attr)
-        collect()
 
     def _generate_parties(self):
         # Support problems do not use Collins-Gisin notation
