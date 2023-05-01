@@ -48,6 +48,9 @@ from ..utils import flatten
 class BaseSDP(object):
     """
     Class for generating and solving an SDP relaxation for quantum inflation.
+    This is the base class with all of the common functionality to the
+    user-intended classes, namely :class:`InflationSDP` and
+    :class:`SupportsSDP`.
 
     Parameters
     ----------

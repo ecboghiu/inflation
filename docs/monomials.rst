@@ -10,4 +10,4 @@ Abstract monomial classes
 
 InflationSDP internal monomials
 -------------------------------
-.. autofunction:: inflation.InflationSDP.Monomial
+.. autofunction:: inflation.sdp.InflationSDP.BaseSDP.Monomial
