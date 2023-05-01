@@ -2049,6 +2049,7 @@ class SupportsSDP(BaseSDP):
         # Support problems do not use Collins-Gisin notation
         self.outcome_cardinalities = \
             self.InflationProblem.outcomes_per_party.copy() + 1
+        self.objective = {self.One: 0.}
 
     def _generate_parties(self):
         # Support problems do not use Collins-Gisin notation
