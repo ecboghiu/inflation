@@ -1690,8 +1690,10 @@ class BaseSDP(object):
                 self.canon_ndarray_from_hash[key] = array2d
                 return array2d
             else:
-                new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
-                                           self.commuting, apply_only_commutations)
+                new_array2d = to_canonical(array2d, self._notcomm,
+                                           self._lexorder,
+                                           self.commuting,
+                                           apply_only_commutations)
                 new_key = self._from_2dndarray(new_array2d)
                 self.canon_ndarray_from_hash[key]     = new_array2d
                 self.canon_ndarray_from_hash[new_key] = new_array2d
