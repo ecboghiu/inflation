@@ -31,7 +31,6 @@ def convert_to_human_readable(problem):
     # Replacer for constants
     constants = {moment.idx: str(value)
                  for moment, value in problem.known_moments.items()}
-    constant_replacer = np.vectorize(lambda x: constants.get(x, x))
     # Replacer for semiknowns
     semiknowns = dict()
     for key, val in problem.semiknown_moments.items():
@@ -50,7 +49,9 @@ def convert_to_human_readable(problem):
             replacement = monom
         return replacement
     known_replacer = np.vectorize(replace_known)
-    matrix = constant_replacer(matrix)
+    for ii, row in enumerate(matrix):
+        for jj, col in enumerate(row):
+            matrix[ii,jj] = constants.get(col, col)
     matrix = semiknown_replacer(matrix)
     matrix = np.triu(known_replacer(matrix).astype(object))
 
