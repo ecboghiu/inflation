@@ -152,9 +152,9 @@ def write_to_mat(problem, filename):
                    for mon, coeff in problem.objective.items()
                    if abs(coeff) > 1e-8]
     lowerbounds = [[mon.idx + offset, bnd]
-                   for mon, bnd in problem._processed_moment_lowerbounds.items()]
+                   for mon, bnd in problem.moment_lowerbounds.items()]
     upperbounds = [[mon.idx + offset, bnd]
-                   for mon, bnd in problem._processed_moment_upperbounds.items()]
+                   for mon, bnd in problem.moment_upperbounds.items()]
     names       = np.array([[mon.idx + offset, mon.name]
                              for mon in problem.monomials], dtype=object)
     equalities  = []
