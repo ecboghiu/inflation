@@ -306,13 +306,14 @@ def write_to_sdpa(problem, filename):
         blockstruct.append(str(-block_size))
     for equality in problem.moment_equalities:
         for var, coeff in equality.items():
-            if var != problem.One:
-                var = var_corresp[var.idx]
-                lines.append(f"{var}\t{block}\t{ii}\t{ii}\t{coeff}\n")
-                lines.append(f"{var}\t{block}\t{ii+1}\t{ii+1}\t{-coeff}\n")
-            else:
-                lines.append(f"0\t{block}\t{ii}\t{ii}\t{-coeff}\n")
-                lines.append(f"0\t{block}\t{ii+1}\t{ii+1}\t{coeff}\n")
+            if problem.known_moments.get(var, None) not in [0]:
+                if var != problem.One:
+                    var = var_corresp[var.idx]
+                    lines.append(f"{var}\t{block}\t{ii}\t{ii}\t{coeff}\n")
+                    lines.append(f"{var}\t{block}\t{ii+1}\t{ii+1}\t{-coeff}\n")
+                else:
+                    lines.append(f"0\t{block}\t{ii}\t{ii}\t{-coeff}\n")
+                    lines.append(f"0\t{block}\t{ii+1}\t{ii+1}\t{coeff}\n")
         ii += 2
 
     file_ = open(filename, "w")
