@@ -1476,7 +1476,8 @@ class BaseSDP(object):
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
-        self._processed_moment_lowerbounds = dict()
+        self.moment_lowerbounds = {m: 0. for m in self.physical_monomials}
+        self._update_bounds("lo")
 
     def _reset_values(self) -> None:
         """Reset the known values."""
@@ -1601,7 +1602,7 @@ class BaseSDP(object):
                       }
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
-        for mon, bnd in self._processed_moment_lowerbounds.items():
+        for mon, bnd in self.moment_lowerbounds.items():
             lb = {mon.name: 1}
             if not np.isclose(bnd, 0):
                 lb[self.constant_term_name] = -bnd
