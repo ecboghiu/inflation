@@ -9,11 +9,12 @@ Provides
 """
 
 from .InflationProblem import InflationProblem
-from .sdp.InflationSDP import InflationSDP
+from .sdp.InflationSDP import InflationSDP, SupportsSDP
 from .sdp.optimization_utils import max_within_feasible
 from ._about import about
 from ._version import __version__
 
 __all__ = ["InflationProblem",
            "InflationSDP",
+           "SupportsSDP",
            "max_within_feasible"]
