@@ -10,6 +10,8 @@ API Reference
 
    solvers
 
+   optimization
+
    monomials
 
    build

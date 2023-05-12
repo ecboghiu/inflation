@@ -21,7 +21,9 @@ author = "Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens"
 copyright = "2022, " + author
 
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+with open('../inflation/_version.py') as f:
+    exec(f.read())
+    release = __version__
 
 # -- General configuration ---------------------------------------------------
 

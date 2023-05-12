@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>inflation.InflationProblem &mdash; Inflation 1.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../contents.html" class="icon icon-home"> Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>inflation.InflationProblem</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for inflation.InflationProblem</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The module creates the inflation scenario associated to a causal structure. See</span>
+<span class="sd">arXiv:1609.00672 and arXiv:1707.06476 for the original description of</span>
+<span class="sd">inflation.</span>
+<span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations_with_replacement</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">from</span> <span class="nn">.sdp.fast_npa</span> <span class="kn">import</span> <span class="p">(</span><span class="n">nb_classify_disconnected_components</span><span class="p">,</span>
+                           <span class="n">nb_overlap_matrix</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="c1"># Force warnings.warn() to omit the source code line in the message</span>
+<span class="c1"># https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">formatwarning_orig</span> <span class="o">=</span> <span class="n">warnings</span><span class="o">.</span><span class="n">formatwarning</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">formatwarning</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">msg</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="kc">None</span><span class="p">:</span> \
+    <span class="n">formatwarning_orig</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="InflationProblem"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem">[docs]</a><span class="k">class</span> <span class="nc">InflationProblem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class for encoding relevant details concerning the causal compatibility</span>
+<span class="sd">    scenario.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dag : Dict[str, List[str]], optional</span>
+<span class="sd">        Dictionary where each key is a parent node, and the corresponding value</span>
+<span class="sd">        is a list of the corresponding children nodes. By default it is a</span>
+<span class="sd">        single source connecting all the parties.</span>
+<span class="sd">    outcomes_per_party : List[int]</span>
+<span class="sd">        Measurement outcome cardinalities.</span>
+<span class="sd">    settings_per_party : List[int], optional</span>
+<span class="sd">        Measurement setting cardinalities. By default ``1`` for all parties.</span>
+<span class="sd">    inflation_level_per_source : [int, List[int]], optional</span>
+<span class="sd">        Number of copies per source in the inflated graph. Source order is the</span>
+<span class="sd">        same as insertion order in `dag`. If an integer is provided, it is used</span>
+<span class="sd">        as the inflation level for all sources. By default ``1`` for all</span>
+<span class="sd">        sources.</span>
+<span class="sd">    order : List[str], optional</span>
+<span class="sd">        Name of each party. This also fixes the order in which party outcomes</span>
+<span class="sd">        and settings are to appear in a conditional probability distribution.</span>
+<span class="sd">        Default is alphabetical order and labels, e.g., ``[&#39;A&#39;, &#39;B&#39;, ...]``.</span>
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        Optional parameter for level of verbose:</span>
+
+<span class="sd">        * 0: quiet (default),</span>
+<span class="sd">        * 1: monitor level: track program process and show warnings,</span>
+<span class="sd">        * 2: debug level: show properties of objects created.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">dag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">outcomes_per_party</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(),</span>
+                 <span class="n">settings_per_party</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(),</span>
+                 <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(),</span>
+                 <span class="n">order</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(),</span>
+                 <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the InflationProblem class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="c1"># Read settings and outcomes</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">outcomes_per_party</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please provide outcomes per party.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcomes_per_party</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">outcomes_per_party</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span>         <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outcomes_per_party</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">settings_per_party</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No settings per party provided, &quot;</span> <span class="o">+</span>
+                     <span class="s2">&quot;assuming all parties have one setting.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">private_settings_per_party</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">,</span>
+                                                      <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">private_settings_per_party</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">settings_per_party</span><span class="p">,</span>
+                                                         <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">private_settings_per_party</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">,</span> \
+                <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You have specified a list of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">outcomes_per_party</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;outcomes and a list of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">settings_per_party</span><span class="p">)</span><span class="si">}</span><span class="s2"> inputs. &quot;</span>
+                 <span class="o">+</span> <span class="s2">&quot;These lists must have the same length and equal to the &quot;</span>
+                 <span class="o">+</span> <span class="s2">&quot;number of visible variables in the scenario.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Assign names to the visible variables</span>
+        <span class="n">names_have_been_set_yet</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">dag</span><span class="p">:</span>
+            <span class="n">implicit_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">dag</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">implicit_names</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">,</span> \
+                <span class="p">(</span><span class="s2">&quot;You must provide a number of outcomes for the following &quot;</span>
+                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">implicit_names</span><span class="p">)</span><span class="si">}</span><span class="s2"> variables: </span><span class="si">{</span><span class="n">implicit_names</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">order</span><span class="p">:</span>
+                <span class="n">sanity_check</span> <span class="o">=</span> <span class="p">(</span><span class="n">implicit_names</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+                                <span class="ow">and</span> <span class="n">implicit_names</span><span class="o">.</span><span class="n">issuperset</span><span class="p">(</span><span class="n">order</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">sanity_check</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">order</span>
+                    <span class="n">names_have_been_set_yet</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The names read from the DAG do not match those &quot;</span>
+                             <span class="o">+</span> <span class="s2">&quot;read from the `order` argument. The names used&quot;</span>
+                             <span class="o">+</span> <span class="s2">&quot; are those read from the DAG.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">names_have_been_set_yet</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">implicit_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The order of variables is inferred by the DAG &quot;</span>
+                             <span class="o">+</span> <span class="s2">&quot;according to lexicographic order.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">implicit_names</span><span class="p">)</span>
+                <span class="n">names_have_been_set_yet</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">names_have_been_set_yet</span><span class="p">):</span>
+            <span class="n">sanity_check</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sanity_check</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">order</span><span class="p">))</span>
+                <span class="n">names_have_been_set_yet</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The number of names provided does not match the &quot;</span>
+                         <span class="o">+</span> <span class="s2">&quot;number of variables that need a name. The names &quot;</span>
+                         <span class="o">+</span> <span class="s2">&quot;used are determined by the list of variables &quot;</span>
+                         <span class="o">+</span> <span class="s2">&quot;with outcomes.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names_have_been_set_yet</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dag</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The DAG must be a non-empty dictionary with parent &quot;</span>
+                     <span class="o">+</span> <span class="s2">&quot;variables as keys and lists of children as values. &quot;</span>
+                     <span class="o">+</span> <span class="s2">&quot;Defaulting to one global source.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dag</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;h_global&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dag</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">parent</span><span class="p">):</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">children</span><span class="p">))</span> <span class="k">for</span>
+                        <span class="n">parent</span><span class="p">,</span> <span class="n">children</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="c1"># Unpacking of visible nodes with children</span>
+        <span class="n">nodes_with_children</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_children</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_network</span>     <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">nodes_with_children</span><span class="p">)</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+        <span class="n">names_to_integers</span> <span class="o">=</span> <span class="p">{</span><span class="n">party</span><span class="p">:</span> <span class="n">position</span>
+                             <span class="k">for</span> <span class="n">position</span><span class="p">,</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)}</span>
+        <span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">),</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">nodes_with_children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">parent</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                <span class="n">ii</span> <span class="o">=</span> <span class="n">names_to_integers</span><span class="p">[</span><span class="n">parent</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">has_children</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">dag</span><span class="p">[</span><span class="n">parent</span><span class="p">]:</span>
+                    <span class="n">jj</span> <span class="o">=</span> <span class="n">names_to_integers</span><span class="p">[</span><span class="n">child</span><span class="p">]</span>
+                    <span class="n">adjacency_matrix</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># Compute number of settings for the unpacked variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parents_per_party</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+        <span class="n">settings_per_party_lst</span> <span class="o">=</span> <span class="p">[[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">private_settings_per_party</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">party_idx</span><span class="p">,</span> <span class="n">party_parents_idxs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parents_per_party</span><span class="p">):</span>
+            <span class="n">settings_per_party_lst</span><span class="p">[</span><span class="n">party_idx</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outcomes_per_party</span><span class="p">,</span> <span class="n">party_parents_idxs</span><span class="p">)</span>
+                                                     <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">settings_per_party</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">multisetting</span><span class="p">)</span> <span class="k">for</span> <span class="n">multisetting</span> <span class="ow">in</span> <span class="n">settings_per_party_lst</span><span class="p">],</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># Build the correspondence between effective settings and the true</span>
+        <span class="c1"># tuple of setting values of all parents.</span>
+        <span class="n">effective_to_parent_settings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">):</span>
+            <span class="n">effective_to_parent_settings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings_per_party</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">settings_per_party_lst</span><span class="p">[</span><span class="n">i</span><span class="p">]))))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effective_to_parent_settings</span> <span class="o">=</span> <span class="n">effective_to_parent_settings</span>
+
+        <span class="c1"># Create network corresponding to the unpacked scenario</span>
+        <span class="n">actual_sources</span>  <span class="o">=</span> <span class="p">[</span><span class="n">source</span> <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">nodes_with_children</span>
+                           <span class="k">if</span> <span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_sources</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">),</span>
+                                   <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">actual_sources</span><span class="p">):</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="p">[</span><span class="n">names_to_integers</span><span class="p">[</span><span class="n">party</span><span class="p">]</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="p">[</span><span class="n">source</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="p">,</span> \
+            <span class="p">(</span><span class="s2">&quot;The number of parties derived from the DAG is &quot;</span>
+             <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> and from the specification of &quot;</span>
+             <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;outcomes it is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span><span class="si">}</span><span class="s2"> instead.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inflation_level_per_source</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The inflation level per source must be a non-empty list.&quot;</span>
+                     <span class="o">+</span> <span class="s2">&quot; Defaulting to 1 (no inflation, just NPA hierarchy).&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">inflation_level_per_source</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">inflation_level_per_source</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">inflation_level_per_source</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span><span class="p">),</span> \
+                <span class="p">(</span><span class="s2">&quot;The number of sources as described by the unpacked &quot;</span> <span class="o">+</span>
+                 <span class="sa">f</span><span class="s2">&quot;hypergraph, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="si">}</span><span class="s2">, and by the list of &quot;</span> <span class="o">+</span>
+                 <span class="s2">&quot;inflation levels specified, &quot;</span> <span class="o">+</span>
+                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span><span class="p">)</span><span class="si">}</span><span class="s2">, does not coincide.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Determine if the inflation problem has a factorizing pair of parties.</span>
+        <span class="n">shared_sources</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">pair</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span>
+                          <span class="n">combinations_with_replacement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">just_one_copy</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ever_factorizes</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">sources_are_shared</span> <span class="ow">in</span> <span class="n">shared_sources</span><span class="p">:</span>
+            <span class="c1"># If for some two parties, the sources that they share in common</span>
+            <span class="c1"># can all have different inflation levels, then there exists the</span>
+            <span class="c1"># potential for factorization.</span>
+            <span class="k">if</span> <span class="p">((</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">sources_are_shared</span><span class="p">))</span>
+                <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">just_one_copy</span><span class="p">[</span><span class="n">sources_are_shared</span><span class="p">]))):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ever_factorizes</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="c1"># Create all the different possibilities for inflation indices</span>
+        <span class="n">inflation_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">active_sources</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypergraph</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">num_copies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">active_sources</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span><span class="p">)</span>
+            <span class="c1"># Put non-participating and non-inflated on equal footing</span>
+            <span class="n">num_copies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">num_copies</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">increase_from_base</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="o">*</span><span class="n">num_copies</span><span class="p">):</span>
+                <span class="n">inflation_indxs</span> <span class="o">=</span> <span class="n">active_sources</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">increase_from_base</span><span class="p">,</span>
+                                                            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="n">inflation_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inflation_indxs</span><span class="p">)</span>
+        <span class="c1"># Create hashes and overlap matrix for quick reference</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inflation_indices_hash</span> <span class="o">=</span> <span class="p">{</span><span class="n">op</span><span class="o">.</span><span class="n">tobytes</span><span class="p">():</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">op</span>
+                                        <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inflation_indices</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inflation_indices_overlap</span> <span class="o">=</span> <span class="n">nb_overlap_matrix</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inflation_indices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inflation_indices_hash</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">inflation_indices</span><span class="p">),</span> \
+            <span class="s2">&quot;Error: duplicated inflation index pattern.&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;InflationProblem with &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s2">&quot; as DAG, &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outcomes_per_party</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s2">&quot; outcomes per party, &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings_per_party</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s2">&quot; settings per party and &quot;</span> <span class="o">+</span>
+                <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s2">&quot; inflation copies per source.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_is_knowable_q_non_networks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks if a monomial (written as a sequence of operators in 2d array</span>
+<span class="sd">        form) corresponds to a knowable probability. The function assumes that</span>
+<span class="sd">        the candidate monomial already passed the preliminary knowable test</span>
+<span class="sd">        from `inflation.sdp.quantum_tools.py`.</span>
+<span class="sd">        If the scenario is a network, this function always returns ``True``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        monomial : numpy.ndarray</span>
+<span class="sd">            An internal representation of a monomial as a 2d numpy array. Each</span>
+<span class="sd">            row in the array corresponds to an operator. For each row, the</span>
+<span class="sd">            zeroth element represents the party, the last element represents</span>
+<span class="sd">            the outcome, the second-to-last element represents the setting, and</span>
+<span class="sd">            the remaining elements represent inflation copies.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            Whether the monomial can be assigned a knowable probability.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Parties start at 1 in our notation</span>
+        <span class="n">parties_in_play</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">monomial</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">parents_referenced</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parties_in_play</span><span class="p">:</span>
+            <span class="n">parents_referenced</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parents_per_party</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parents_referenced</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">parties_in_play</span><span class="p">):</span>
+            <span class="c1"># Case of not an ancestrally closed set</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># Parties start at 1 in our notation</span>
+        <span class="n">outcomes_by_party</span> <span class="o">=</span> <span class="p">{(</span><span class="n">o</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span> <span class="n">o</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">monomial</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">monomial</span><span class="p">:</span>
+            <span class="n">party_index</span>           <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">effective_setting</span>     <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">o_nonprivate_settings</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">effective_to_parent_settings</span><span class="p">[</span>
+                                  <span class="n">party_index</span><span class="p">][</span><span class="n">effective_setting</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p_o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parents_per_party</span><span class="p">[</span><span class="n">party_index</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">o_nonprivate_settings</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">outcomes_by_party</span><span class="p">[</span><span class="n">p_o</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="InflationProblem.factorize_monomial"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem.factorize_monomial">[docs]</a>    <span class="k">def</span> <span class="nf">factorize_monomial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                           <span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                           <span class="n">canonical_order</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Split a moment/expectation value into products of moments according</span>
+<span class="sd">        to the support of the operators within the moment. The moment is</span>
+<span class="sd">        encoded as a 2d array where each row is an operator. If</span>
+<span class="sd">        ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is</span>
+<span class="sd">        ``C``, and row 4 is ``B``. In each row, the columns encode the</span>
+<span class="sd">        following information:</span>
+
+<span class="sd">          * First column: The party index, *starting from 1* (e.g., 1 for</span>
+<span class="sd">            ``A``, 2 for ``B``, etc.)</span>
+<span class="sd">          * Last two columns: The input ``x`` starting from zero, and then the</span>
+<span class="sd">            output ``a`` starting from zero.</span>
+<span class="sd">          * In between: This encodes the support of the operator. There are as</span>
+<span class="sd">            many columns as sources/quantum states. Column `j` represents</span>
+<span class="sd">            source `j-1` (-1 because the first column represents the party). If</span>
+<span class="sd">            the value is 0, then this operator does not measure this source. If</span>
+<span class="sd">            the value is, e.g., 2, then this operator is acting on copy 2 of</span>
+<span class="sd">            source `j-1`.</span>
+
+<span class="sd">        The output is a tuple of ndarrays where each array represents another</span>
+<span class="sd">        monomial s.t. their product is equal to the original monomial.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        monomial : numpy.ndarray</span>
+<span class="sd">            Monomial in 2d array form.</span>
+<span class="sd">        canonical_order: bool, optional</span>
+<span class="sd">            Whether to return the different factors in a canonical order.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Tuple[numpy.ndarray]</span>
+<span class="sd">            A tuple of ndarrays, where each array represents an atomic monomial</span>
+<span class="sd">            factor.</span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; monomial = np.array([[1, 0, 1, 1, 0, 0],</span>
+<span class="sd">                                 [2, 1, 0, 2, 0, 0],</span>
+<span class="sd">                                 [1, 0, 3, 3, 0, 0],</span>
+<span class="sd">                                 [3, 3, 5, 0, 0, 0],</span>
+<span class="sd">                                 [3, 1, 4, 0, 0, 0],</span>
+<span class="sd">                                 [3, 6, 6, 0, 0, 0],</span>
+<span class="sd">                                 [3, 4, 5, 0, 0, 0]])</span>
+<span class="sd">        &gt;&gt;&gt; factorised = factorize_monomial(monomial)</span>
+<span class="sd">        [array([[1, 0, 1, 1, 0, 0]]),</span>
+<span class="sd">         array([[1, 0, 3, 3, 0, 0]]),</span>
+<span class="sd">         array([[2, 1, 0, 2, 0, 0],</span>
+<span class="sd">                [3, 1, 4, 0, 0, 0]]),</span>
+<span class="sd">         array([[3, 3, 5, 0, 0, 0],</span>
+<span class="sd">                [3, 4, 5, 0, 0, 0]]),</span>
+<span class="sd">         array([[3, 6, 6, 0, 0, 0]])]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ever_factorizes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">monomial</span><span class="p">,)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">monomial</span><span class="p">,)</span>
+
+        <span class="n">inflation_indices_position</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_inflation_indices_hash</span><span class="p">[</span>
+            <span class="n">op</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()]</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">monomial</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="n">adj_mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inflation_indices_overlap</span><span class="p">[</span><span class="n">inflation_indices_position</span><span class="p">][</span>
+            <span class="p">:,</span> <span class="n">inflation_indices_position</span><span class="p">]</span>
+
+        <span class="n">component_labels</span> <span class="o">=</span> <span class="n">nb_classify_disconnected_components</span><span class="p">(</span><span class="n">adj_mat</span><span class="p">)</span>
+        <span class="n">disconnected_components</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">monomial</span><span class="p">[</span><span class="n">component_labels</span> <span class="o">==</span> <span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">component_labels</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">canonical_order</span><span class="p">:</span>
+            <span class="n">disconnected_components</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">disconnected_components</span><span class="p">,</span>
+                                                   <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">disconnected_components</span></div>
+
+<div class="viewcode-block" id="InflationProblem.rectify_fake_setting"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem.rectify_fake_setting">[docs]</a>    <span class="k">def</span> <span class="nf">rectify_fake_setting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;When constructing the monomials in a non-network scenario, we rely</span>
+<span class="sd">        on an internal representation of operators where the integer denoting</span>
+<span class="sd">        the setting actually is an &#39;effective setting&#39; that encodes, in</span>
+<span class="sd">        addition to the &#39;private setting&#39; that each party is free to choose,</span>
+<span class="sd">        the values of all the parents of the variable in question, which also</span>
+<span class="sd">        effectively act as settings. This function resets this &#39;effective</span>
+<span class="sd">        setting&#39; integer to the true &#39;private setting&#39; integer. It is useful to</span>
+<span class="sd">        relate knowable monomials to their meaning as conditional events in</span>
+<span class="sd">        non-network scenarios. If the scenario is a network, this function does</span>
+<span class="sd">        nothing.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            monomial : numpy.ndarray</span>
+<span class="sd">                An internal representation of a monomial as a 2d numpy array.</span>
+<span class="sd">                Each row in the array corresponds to an operator. For each row,</span>
+<span class="sd">                the zeroth element represents the party, the last element</span>
+<span class="sd">                represents the outcome, the second-to-last element represents</span>
+<span class="sd">                the setting, and the remaining elements represent inflation</span>
+<span class="sd">                copies.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray</span>
+<span class="sd">            The monomial with the index of the setting representing only the</span>
+<span class="sd">            private setting.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_mon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">monomial</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">new_mon</span><span class="p">:</span>
+            <span class="n">party_index</span>        <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>     <span class="c1"># Parties start at 1 our notation</span>
+            <span class="n">effective_setting</span>  <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">o_private_settings</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">effective_to_parent_settings</span><span class="p">[</span>
+                                   <span class="n">party_index</span><span class="p">][</span><span class="n">effective_setting</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">o</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">o_private_settings</span>
+        <span class="k">return</span> <span class="n">new_mon</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

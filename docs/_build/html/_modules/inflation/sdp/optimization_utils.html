@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>inflation.sdp.optimization_utils &mdash; Inflation 1.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../contents.html" class="icon icon-home"> Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>inflation.sdp.optimization_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for inflation.sdp.optimization_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains helper functions to optimize (functions of) symbolic</span>
+<span class="sd">variables under the constraint that the InflationSDP instance they implicitly</span>
+<span class="sd">define must be feasible. Useful for exploring the set of parametrically-defined</span>
+<span class="sd">distribution for which quantum inflation (at specific hierarchy levels) is</span>
+<span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Real</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">bisect</span><span class="p">,</span> <span class="n">minimize</span><span class="p">,</span> <span class="n">Bounds</span>
+<span class="kn">from</span> <span class="nn">sympy.utilities.lambdify</span> <span class="kn">import</span> <span class="n">lambdify</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">inflation</span> <span class="kn">import</span> <span class="n">InflationSDP</span>
+<span class="kn">from</span> <span class="nn">inflation.sdp.quantum_tools</span> <span class="kn">import</span> <span class="n">make_numerical</span>
+<span class="kn">from</span> <span class="nn">inflation.sdp.monomial_classes</span> <span class="kn">import</span> <span class="n">CompoundMonomial</span>
+
+
+<div class="viewcode-block" id="max_within_feasible"><a class="viewcode-back" href="../../../optimization.html#inflation.sdp.optimization_utils.max_within_feasible">[docs]</a><span class="k">def</span> <span class="nf">max_within_feasible</span><span class="p">(</span><span class="n">sdp</span><span class="p">:</span> <span class="n">InflationSDP</span><span class="p">,</span>
+                        <span class="n">symbolic_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">CompoundMonomial</span><span class="p">,</span> <span class="n">Callable</span><span class="p">],</span>
+                        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                        <span class="n">return_last_certificate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span>
+                                           <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Add</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Maximize a single real variable within the set of feasible moment</span>
+<span class="sd">    matrices determined by an ``InflationSDP``. The dependence of the moment</span>
+<span class="sd">    matrices in the variable is specified by an assignment of monomials in the</span>
+<span class="sd">    moment matrix to arbitrary expressions of the variable. This is useful for</span>
+<span class="sd">    finding (bounds for) critical visibilities of distributions beyond which</span>
+<span class="sd">    they are impossible to generate in a given quantum causal scenario.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sdp : InflationSDP</span>
+<span class="sd">        The SDP problem under which to carry the optimization.</span>
+<span class="sd">    symbolic_values : Dict[CompoundMonomial, Callable]</span>
+<span class="sd">        The correspondence between monomials in the SDP problem and symbolic</span>
+<span class="sd">        expressions depending on the variable to be optimized.</span>
+<span class="sd">    method : str</span>
+<span class="sd">        Technique used for optimization. Currently supported: ``&quot;bisection&quot;``</span>
+<span class="sd">        for bisection algorithms, and ``&quot;dual&quot;`` for exploitation of the</span>
+<span class="sd">        certificates of infeasibility (typically much fewer iteration steps).</span>
+<span class="sd">    return_last_certificate : bool, optional</span>
+<span class="sd">        Whether to return, along with the maximum value of the parameter, a</span>
+<span class="sd">        separating surface that leaves the set of positive-semidefinite moment</span>
+<span class="sd">        matrices in its positive side and evaluates to 0 in the maximum value</span>
+<span class="sd">        reported.</span>
+
+<span class="sd">    **kwargs</span>
+<span class="sd">        Instructions on which extra symbolic values to assign numbers and</span>
+<span class="sd">        options to be passed to the optimization routines (bounds, precision,</span>
+<span class="sd">        tolerance, ...).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The maximum value that the parameter can take under the set of</span>
+<span class="sd">        positive-semidefinite moment matrices. This is the output when</span>
+<span class="sd">        ``return_last_certificate=False``.</span>
+<span class="sd">    Tuple[float, sympy.core.add.Add]</span>
+<span class="sd">        The maximum value that the parameter can take under the set of</span>
+<span class="sd">        positive-semidefinite moment matrices, and a corresponding separating</span>
+<span class="sd">        surface (a root of the function corresponds to the critical feasible</span>
+<span class="sd">        value of the parameter reported). This is the output when</span>
+<span class="sd">        ``return_last_certificate=True``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;bisection&quot;</span><span class="p">,</span> <span class="s2">&quot;dual&quot;</span><span class="p">],</span> \
+        <span class="s2">&quot;Unknown optimization method. Please use </span><span class="se">\&quot;</span><span class="s2">bisection</span><span class="se">\&quot;</span><span class="s2"> or </span><span class="se">\&quot;</span><span class="s2">dual</span><span class="se">\&quot;</span><span class="s2">.&quot;</span>
+    <span class="n">variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">symbolic_values</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Real</span><span class="p">):</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">free_symbols</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+        <span class="s2">&quot;Only optimization of a single variable is supported&quot;</span>
+    <span class="n">param</span> <span class="o">=</span> <span class="n">variables</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;return_last_certificate&quot;</span><span class="p">:</span> <span class="n">return_last_certificate</span><span class="p">})</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;bisection&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_maximize_via_bisect</span><span class="p">(</span><span class="n">sdp</span><span class="p">,</span> <span class="n">symbolic_values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;dual&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_maximize_via_dual</span><span class="p">(</span><span class="n">sdp</span><span class="p">,</span> <span class="n">symbolic_values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># OPTIMIZATION METHODS                                                        #</span>
+<span class="c1">###############################################################################</span>
+<span class="k">def</span> <span class="nf">_maximize_via_bisect</span><span class="p">(</span><span class="n">sdp</span><span class="p">:</span> <span class="n">InflationSDP</span><span class="p">,</span>
+                         <span class="n">symbolic_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">CompoundMonomial</span><span class="p">,</span> <span class="n">Callable</span><span class="p">],</span>
+                         <span class="n">param</span><span class="p">:</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span>
+                                            <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Add</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Implement the maximization of a variable within the feasible set of</span>
+<span class="sd">    moment matrices using SciPy&#39;s bisection algorithm.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sdp : InflationSDP</span>
+<span class="sd">        The SDP problem under which to carry the optimization.</span>
+<span class="sd">    symbolic_values : Dict[CompoundMonomial, Callable]</span>
+<span class="sd">        The correspondence between monomials in the SDP problem and symbolic</span>
+<span class="sd">        expressions depending on the variable to be optimized.</span>
+<span class="sd">    param : sympy.core.symbol.Symbol</span>
+<span class="sd">        The variable to be optimized.</span>
+
+<span class="sd">    **kwargs</span>
+<span class="sd">        Additional arguments to ``sdp.set_values()`` and</span>
+<span class="sd">        ``scipy.optimize.bisect()``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The maximum value that the parameter can take under the set of</span>
+<span class="sd">        positive-semidefinite moment matrices. This is the output when</span>
+<span class="sd">        ``return_last_certificate=False``.</span>
+<span class="sd">    Tuple[float, sympy.core.add.Add]</span>
+<span class="sd">        The maximum value that the parameter can take under the set of</span>
+<span class="sd">        positive-semidefinite moment matrices, and a corresponding separating</span>
+<span class="sd">        surface (a root of the function corresponds to the critical feasible</span>
+<span class="sd">        value of the parameter reported). This is the output when</span>
+<span class="sd">        ``return_last_certificate=True``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bounds</span>         <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bounds&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]))</span>
+    <span class="n">only_specified</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;only_specified_values&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">return_last</span>    <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_last_certificate&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">use_lpi</span>        <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_lpi_constraints&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">verbose</span>        <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="c1"># Prepare bisect kwargs</span>
+    <span class="n">bisect_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">kwarg</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="s2">&quot;rtol&quot;</span><span class="p">,</span> <span class="s2">&quot;maxiter&quot;</span><span class="p">,</span> <span class="s2">&quot;full_output&quot;</span><span class="p">,</span> <span class="s2">&quot;disp&quot;</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bisect_kwargs</span><span class="p">[</span><span class="n">kwarg</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">kwarg</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">bisect_kwargs</span><span class="p">[</span><span class="s2">&quot;xtol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;xtol&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">bisect_kwargs</span><span class="p">[</span><span class="s2">&quot;xtol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="n">evaluated_values</span> <span class="o">=</span> <span class="n">make_numerical</span><span class="p">(</span><span class="n">symbolic_values</span><span class="p">,</span> <span class="p">{</span><span class="n">param</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
+        <span class="n">sdp</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">evaluated_values</span><span class="p">,</span> <span class="n">use_lpi</span><span class="p">,</span> <span class="n">only_specified</span><span class="p">)</span>
+        <span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">feas_as_optim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter = </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">&lt;6.4g</span><span class="si">}</span><span class="s2">   &quot;</span> <span class="o">+</span>
+                  <span class="sa">f</span><span class="s2">&quot;Maximum smallest eigenvalue: </span><span class="si">{</span><span class="n">sdp</span><span class="o">.</span><span class="n">objective_value</span><span class="si">:</span><span class="s2">10.4g</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sdp</span><span class="o">.</span><span class="n">objective_value</span>
+    <span class="n">crit_param</span> <span class="o">=</span> <span class="n">bisect</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">bisect_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">return_last</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">crit_param</span><span class="p">,</span> <span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_probs</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">crit_param</span>
+
+
+<span class="k">def</span> <span class="nf">_maximize_via_dual</span><span class="p">(</span><span class="n">sdp</span><span class="p">:</span> <span class="n">InflationSDP</span><span class="p">,</span>
+                       <span class="n">symbolic_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">CompoundMonomial</span><span class="p">,</span> <span class="n">Callable</span><span class="p">],</span>
+                       <span class="n">param</span><span class="p">:</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
+                       <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span>
+                                          <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Add</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Implement the maximization of a variable within the feasible set of</span>
+<span class="sd">    moment matrices exploiting the certificates of infeasibility. For a given</span>
+<span class="sd">    value of the parameter, a separating surface that leaves the set of</span>
+<span class="sd">    positive-semidefinite moment matrices in its positive side is extracted.</span>
+<span class="sd">    The next value of the parameter used is that which evaluates the surface to</span>
+<span class="sd">    0.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sdp : InflationSDP</span>
+<span class="sd">        The SDP problem under which to carry the optimization.</span>
+<span class="sd">    symbolic_values : Dict[CompoundMonomial, Callable]</span>
+<span class="sd">        The correspondence between monomials in the SDP problem and symbolic</span>
+<span class="sd">        expressions depending on the variable to be optimized.</span>
+<span class="sd">    param : sympy.core.symbol.Symbol</span>
+<span class="sd">        The variable to be optimized.</span>
+
+<span class="sd">    **kwargs</span>
+<span class="sd">        Additional arguments to ``sdp.set_values()``, bounds of the</span>
+<span class="sd">        optimization interval, precision of the optimization, verbosity and</span>
+<span class="sd">        whether returning the last computed separating surface.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The maximum value that the parameter can take under the set of</span>
+<span class="sd">        positive-semidefinite moment matrices. This is the output when</span>
+<span class="sd">        ``return_last_certificate=False``.</span>
+<span class="sd">    Tuple[float, sympy.core.add.Add]</span>
+<span class="sd">        The maximum value that the parameter can take under the set of</span>
+<span class="sd">        positive-semidefinite moment matrices, and a corresponding separating</span>
+<span class="sd">        surface (a root of the function corresponds to the critical feasible</span>
+<span class="sd">        value of the parameter reported). This is the output when</span>
+<span class="sd">        ``return_last_certificate=True``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bounds</span>         <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bounds&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]))</span>
+    <span class="n">only_specified</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;only_specified_values&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">precision</span>      <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">)</span>
+    <span class="n">return_last</span>    <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_last_certificate&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">use_lpi</span>        <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_lpi_constraints&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">verbose</span>        <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">symbol_names</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">symbolic_values</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">func_to_minimize</span> <span class="o">=</span> <span class="n">lambdify</span><span class="p">([</span><span class="n">param</span><span class="p">],</span> <span class="o">-</span><span class="n">param</span><span class="p">,</span> <span class="n">modules</span><span class="o">=</span><span class="s1">&#39;numpy&#39;</span><span class="p">,</span> <span class="n">cse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sp_bounds</span> <span class="o">=</span> <span class="n">Bounds</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ub</span><span class="o">=</span><span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="n">new_ub</span> <span class="o">=</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">old_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+    <span class="n">discovered_certificates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Get a certificate for a value, find the critical value for it (that which</span>
+    <span class="c1"># makes the certificate zero), and repeat with this new value</span>
+    <span class="k">while</span> <span class="n">new_ub</span> <span class="o">&lt;</span> <span class="n">old_ub</span> <span class="o">-</span> <span class="n">precision</span><span class="p">:</span>
+        <span class="n">old_ub</span> <span class="o">=</span> <span class="n">new_ub</span>
+        <span class="n">evaluated_values</span> <span class="o">=</span> <span class="n">make_numerical</span><span class="p">(</span><span class="n">symbolic_values</span><span class="p">,</span> <span class="p">{</span><span class="n">param</span><span class="p">:</span> <span class="n">new_ub</span><span class="p">})</span>
+        <span class="n">sdp</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">evaluated_values</span><span class="p">,</span> <span class="n">use_lpi</span><span class="p">,</span> <span class="n">only_specified</span><span class="p">)</span>
+        <span class="n">sdp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">feas_as_optim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">discovered_certificates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sdp</span><span class="o">.</span><span class="n">certificate_as_probs</span><span class="p">())</span>
+        <span class="c1"># The feasible region is where the certificate is positive</span>
+        <span class="n">nonneg_expr</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">symbol_names</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">*</span> <span class="n">coeff</span>
+                          <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span>
+                          <span class="n">sdp</span><span class="o">.</span><span class="n">solution_object</span><span class="p">[</span><span class="s2">&quot;dual_certificate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">nonneg_func</span> <span class="o">=</span> <span class="n">lambdify</span><span class="p">([</span><span class="n">param</span><span class="p">],</span>
+                               <span class="n">nonneg_expr</span><span class="p">,</span>
+                               <span class="n">modules</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">,</span>
+                               <span class="n">cse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">constraints</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ineq&quot;</span><span class="p">,</span> <span class="s2">&quot;fun&quot;</span><span class="p">:</span> <span class="n">nonneg_func</span><span class="p">}</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span><span class="n">func_to_minimize</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span>
+                            <span class="n">method</span><span class="o">=</span><span class="s1">&#39;SLSQP&#39;</span><span class="p">,</span>
+                            <span class="n">bounds</span><span class="o">=</span><span class="n">sp_bounds</span><span class="p">,</span>
+                            <span class="n">constraints</span><span class="o">=</span><span class="n">constraints</span><span class="p">,</span>
+                            <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;disp&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+        <span class="n">new_ub</span> <span class="o">=</span> <span class="n">solution</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Current critical value:&quot;</span><span class="p">,</span> <span class="n">new_ub</span><span class="p">)</span>
+    <span class="n">crit_param</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">new_ub</span><span class="p">,</span> <span class="n">old_ub</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">return_last</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">crit_param</span><span class="p">,</span> <span class="n">discovered_certificates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">crit_param</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

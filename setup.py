@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
-with open("VERSION.txt", "r") as f:
-    __version__ = f.read().strip()
+with open('inflation/_version.py') as f:
+    exec(f.read())
 
 setup(
     name="inflation",
