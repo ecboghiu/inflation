@@ -39,6 +39,10 @@ class InflationProblem(object):
         same as insertion order in `dag`. If an integer is provided, it is used
         as the inflation level for all sources. By default ``1`` for all
         sources.
+    classical_sources : List[str], optional
+        List of sources that are classical. By default all sources are quantum.
+        Operators whose support overlap is over classical sources commute
+        regardless of their settings.
     order : List[str], optional
         Name of each party. This also fixes the order in which party outcomes
         and settings are to appear in a conditional probability distribution.

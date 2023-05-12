@@ -656,8 +656,8 @@ def nb_operators_commute(operator1: np.ndarray,
         Operator as an array of integers.
     quantum_sources : numpy.ndarray
         List of integers denoting the columns of the 2D array operator 
-        that enconde inflation indices for sources of correlations 
-        that are quantum mechanical in origin.
+        that encode inflation indices for sources that are quantum mechanical.
+        If the first element of the array is -1, then all sources are classical.
 
     Returns
     -------
@@ -667,36 +667,32 @@ def nb_operators_commute(operator1: np.ndarray,
 
     Examples
     --------
-    A^11_00 commutes with A^22_00
-    >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
-                             np.array([1, 2, 2, 0, 0]), np.array([1, 2]))
-    True
-
     A^11_00 does not commute with A^12_00 because they overlap on source 1.
     >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
                              np.array([1, 1, 2, 0, 0]),  np.array([1, 2]))
     False
     
-    A^11_00 now ncommutes with A^12_00 because only source 2 is quantum,
-    source 1 is classical
+    A^11_00 commutes with A^12_00 because source 1 is classical.
     >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
-                             np.array([1, 1, 2, 0, 0]),  np.array([1, 2]))
+                             np.array([1, 1, 2, 0, 0]),  np.array([2]))
     True
     """
-    if operator1[0] != operator2[0]:  # Different parties
+    if operator1[0] != operator2[0]:  
+        # Different parties commute.
         return True
-    if np.array_equal(operator1[1:-1], operator2[1:-1]):  # sources & settings
+    if np.array_equal(operator1[1:-1], operator2[1:-1]):  
+        # If all sources & settings are equal, then the operators commute.
         return True
-    print(quantum_sources)
-    if quantum_sources.size > 0:
-        print(quantum_sources[0])
-        return True
-        # return not nb_exists_shared_source(operator1[quantum_sources],
-        #                                    operator2[quantum_sources])
+    if quantum_sources[0] != -1:  # <- ! This convention is used to denote an 
+                                  # empty array,instead of using empty arrays,
+                                  # for numba compatibility.
+        # If any of the sources is quantum, then the operators commute if
+        # they do not overlap on a quantum source.
+        return not nb_exists_shared_source(operator1[quantum_sources],
+                                           operator2[quantum_sources])
     else:
         # If all the sources being measured are classical, then the 
         # operators commute.
-        print(quantum_sources[0])
         return True
 
 

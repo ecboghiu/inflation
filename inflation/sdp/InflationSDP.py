@@ -155,7 +155,6 @@ class InflationSDP(object):
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
                                                               self._notcomm)
-        print(self._lexorder, "\n", 1*self._notcomm)
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
         # These next properties are reset during generate_relaxation, but
