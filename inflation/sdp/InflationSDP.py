@@ -53,9 +53,6 @@ class InflationSDP(object):
     ----------
     inflationproblem : InflationProblem
         Details of the scenario.
-    commuting : bool, optional
-        Whether variables in the problem are going to be commuting (classical
-        problem) or non-commuting (quantum problem). By default ``False``.
     supports_problem : bool, optional
         Whether to consider feasibility problems with distributions, or just
         with the distribution's support. By default ``False``.
@@ -70,7 +67,6 @@ class InflationSDP(object):
 
     def __init__(self,
                  inflationproblem: InflationProblem,
-                 commuting: bool = False,
                  supports_problem: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
@@ -82,7 +78,6 @@ class InflationSDP(object):
             self.verbose = verbose
         else:
             self.verbose = inflationproblem.verbose
-        self.commuting = commuting
         self.InflationProblem = inflationproblem
         self.names = self.InflationProblem.names
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
@@ -145,12 +140,14 @@ class InflationSDP(object):
         self._lexorder = self._default_lexorder.copy()
 
         if self._quantum_sources.size == 0:
-            self.commuting = True
+            self.all_operators_commute = True
             self._quantum_sources = np.array([0])  # Dummy value, numba does
                                                    # not like empty arrays
+        else:
+            self.all_operators_commute = False
         self._default_notcomm = commutation_matrix(self._lexorder,
                                                    self._quantum_sources,
-                                                   self.commuting)
+                                                   self.all_operators_commute)
         self._notcomm = self._default_notcomm.copy()
         self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                               self._lexorder,
@@ -343,7 +340,7 @@ class InflationSDP(object):
                   f"{self.n_something_knowable} semi-knowable monomials, " +
                   f"and {self.n_unknowable} unknowable monomials.")
 
-        if self.commuting:
+        if self.all_operators_commute:
             self.physical_monomials = self.monomials
         else:
             self.physical_monomials = [mon for mon in self.monomials
@@ -1525,7 +1522,7 @@ class InflationSDP(object):
             calculate_momentmatrix(self.generating_monomials,
                                    self._notcomm,
                                    self._lexorder,
-                                   commuting=self.commuting,
+                                   commuting=self.all_operators_commute,
                                    verbose=self.verbose)
         idx_to_canonical_mon = {idx: self._to_2dndarray(mon_as_bytes)
                                 for (mon_as_bytes, idx) in
@@ -2017,8 +2014,10 @@ class InflationSDP(object):
                 self.canon_ndarray_from_hash[key] = array2d
                 return array2d
             else:
-                new_array2d = to_canonical(array2d, self._notcomm, self._lexorder,
-                                           self.commuting, apply_only_commutations)
+                new_array2d = to_canonical(array2d, self._notcomm,
+                                           self._lexorder,
+                                           self.all_operators_commute,
+                                           apply_only_commutations)
                 new_key = self._from_2dndarray(new_array2d)
                 self.canon_ndarray_from_hash[key]     = new_array2d
                 self.canon_ndarray_from_hash[new_key] = new_array2d
