@@ -40,9 +40,8 @@ class InflationProblem(object):
         as the inflation level for all sources. By default ``1`` for all
         sources.
     classical_sources : List[str], optional
-        List of sources that are classical. By default all sources are quantum.
-        Operators whose support overlap is over classical sources commute
-        regardless of their settings.
+        Names of the sources that are assumed to be classical. By default
+        empty. 
     order : List[str], optional
         Name of each party. This also fixes the order in which party outcomes
         and settings are to appear in a conditional probability distribution.
@@ -171,13 +170,14 @@ class InflationProblem(object):
         self.effective_to_parent_settings = effective_to_parent_settings
 
         # Create network corresponding to the unpacked scenario
-        actual_sources  = [source for source in nodes_with_children
-                           if source not in self.names]
-        self.nr_sources = len(actual_sources)
+        self._actual_sources  = np.array(
+            [source for source in nodes_with_children
+                    if source not in self.names])
+        self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
         self._quantum_sources, self._classical_sources = [], []
-        for ii, source in enumerate(actual_sources):
+        for ii, source in enumerate(self._actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
             if classical_sources:
@@ -245,12 +245,35 @@ class InflationProblem(object):
             "Error: duplicated inflation index pattern."
 
     def __repr__(self):
+        if len(self._classical_sources) == self.nr_sources:
+            source_info = "All sources are classical."
+        elif len(self._quantum_sources) == self.nr_sources:
+            source_info = "All sources are quantum."
+        else:
+            classical_sources = self._actual_sources[self._classical_sources-1]
+            quantum_sources   = self._actual_sources[self._quantum_sources - 1]
+            if len(classical_sources) > 1:
+                extra_1 = "s"
+                extra_2 = "are"
+            else:
+                extra_1 = ""
+                extra_2 = "is"
+            source_info = f"Source{extra_1} " + ", ".join(classical_sources) \
+                + f" {extra_2} classical, and "
+            if len(quantum_sources) > 1:
+                extra_1 = "s"
+                extra_2 = "are"
+            else:
+                extra_1 = ""
+                extra_2 = "is"
+            source_info += f"source{extra_1} " + ", ".join(quantum_sources) \
+                + f" {extra_2} quantum."
         return ("InflationProblem with " + str(self.dag) +
                 " as DAG, " + str(self.outcomes_per_party) +
                 " outcomes per party, " + str(self.settings_per_party) +
                 " settings per party and " +
                 str(self.inflation_level_per_source) +
-                " inflation copies per source.")
+                " inflation copies per source. " + source_info)
 
     def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array
