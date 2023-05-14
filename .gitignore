@@ -143,3 +143,5 @@ dmypy.json
 
 #Visual Studio IDE
 .vs/
+arena.py
+arena.ipynb

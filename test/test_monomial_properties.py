@@ -98,6 +98,40 @@ class TestToCanonical(unittest.TestCase):
                          self.sdp._sanitise_monomial(correct),
                          "to_canonical has problems with bringing monomials " +
                          "to representative form.")
+        
+    def test_commutation_with_hybrid_sources(self):
+        from inflation.sdp.fast_npa import nb_operators_commute
+        
+        # Two source scenario. Two operators with overlap on the first source, 
+        # with the first source being classical.
+        self.assertFalse(nb_operators_commute(
+                            np.array([1, 1, 1, 0, 0]),
+                            np.array([1, 1, 2, 0, 0]),
+                            np.array([1, 2])),  # both sources quantum
+                        "nb_operators_commute fails to identify " +
+                        "non-commutativty when overlapping on quantum sources.")
+        self.assertTrue(nb_operators_commute(
+                            np.array([1, 1, 1, 0, 0]),
+                            np.array([1, 1, 2, 0, 0]),
+                            np.array([2])),  # first source classical
+                        "nb_operators_commute fails to identify " +
+                        "commutativity when overlapping on classical sources.")
+        self.assertTrue(nb_operators_commute(
+                            np.array([1, 1, 1, 0, 0]),
+                            np.array([1, 1, 2, 1, 0]),
+                            np.array([2])),  # first source classical
+                        "nb_operators_commute fails to identify " +
+                        "commutativity when overlapping on classical sources "+
+                        "with different settings for the operators.")
+        self.assertTrue(nb_operators_commute(
+                            np.array([1, 1, 1, 0, 0]),
+                            np.array([1, 1, 1, 1, 0]),
+                            np.array([-1])),  # both sources classical
+                        "nb_operators_commute fails to identify " +
+                        "commutativity when overlapping on classical sources "+
+                        "with different settings for the operators.")
+        
+
 
     def test_ordering_parties(self):
         initial = 'A_1_1_0_0_0*A_1_2_0_0_0*C_0_2_1_0_0*B_1_0_2_0_0'
