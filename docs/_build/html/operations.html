@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Functions to operate on monomials &mdash; Inflation 1.0.0 documentation</title>
+  <title>Functions to operate on monomials &mdash; CausalInflation 0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
@@ -34,7 +34,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> Inflation
+            <a href="contents.html" class="icon icon-home"> CausalInflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -56,7 +56,6 @@
 <li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimization.html">Optimization helpers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Functions to operate on monomials</a><ul>
@@ -76,7 +75,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">Inflation</a>
+          <a href="contents.html">CausalInflation</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -122,8 +121,8 @@
 <section id="functions-to-operate-on-monomials">
 <h1>Functions to operate on monomials<a class="headerlink" href="#functions-to-operate-on-monomials" title="Permalink to this heading"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.apply_source_perm">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">apply_source_perm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#apply_source_perm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.apply_source_perm" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.apply_source_perm">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">apply_source_perm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#apply_source_perm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.apply_source_perm" title="Permalink to this definition"></a></dt>
 <dd><p>Apply a source swap to a monomial.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -133,7 +132,7 @@
 <li><p><strong>permutation</strong> (<em>numpy.ndarray</em>) – The permutation of the copies of the specified source. The format for
 the permutation here is to use indexing starting at one, so the
 permutation must be padded with a leading zero. The function
-<code class="docutils literal notranslate"><span class="pre">inflation.sdp.quantum_tools.format_permutations</span></code> converts
+<code class="docutils literal notranslate"><span class="pre">causalinflation.quantum.quantum_tools.format_permutations</span></code> converts
 a list of permutations to the necessary format.</p></li>
 </ul>
 </dd>
@@ -146,11 +145,70 @@ a list of permutations to the necessary format.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.factorize_monomial">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">factorize_monomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canonical_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#factorize_monomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.factorize_monomial" title="Permalink to this definition"></a></dt>
+<dd><p>This function splits a moment/expectation value into products of moments
+according to the support of the operators within the moment. The moment is
+encoded as a 2d array where each row is an operator. If
+<code class="docutils literal notranslate"><span class="pre">monomial=A*B*C*B</span></code> then row 1 is <code class="docutils literal notranslate"><span class="pre">A</span></code>, row 2 is <code class="docutils literal notranslate"><span class="pre">B</span></code>, row 3 is <code class="docutils literal notranslate"><span class="pre">C</span></code>,
+and row 4 is <code class="docutils literal notranslate"><span class="pre">B</span></code>. In each row, the columns encode the following
+information:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>First column: The party index, <em>starting from 1</em> (e.g., 1 for <code class="docutils literal notranslate"><span class="pre">A</span></code>,
+2 for <code class="docutils literal notranslate"><span class="pre">B</span></code>, etc.)</p></li>
+<li><p>Last two columns: The input <code class="docutils literal notranslate"><span class="pre">x</span></code> starting from zero, and then the
+output <code class="docutils literal notranslate"><span class="pre">a</span></code> starting from zero.</p></li>
+<li><p>In between: This encodes the support of the operator. There are as many
+columns as sources/quantum states. Column <cite>j</cite> represents source <cite>j-1</cite>
+(-1 because the 1stcol is the party). If the value is 0, then this
+operator does not measure this source. If the value is for e.g. 2,
+then this operator is acting on copy 2 of source <cite>j-1</cite>.</p></li>
+</ul>
+</div></blockquote>
+<p>The output is a tuple of ndarrays where each array represents another
+monomial s.t. their product is equal to the original monomial.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>raw_monomial</strong> (<em>np.ndarray</em>) – Monomial in 2d array form.</p></li>
+<li><p><strong>canonical_order</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return the different factors in a canonical order.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of ndarrays, where each array represents an atomic monomial
+factor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[np.ndarray]</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">monomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="go">                         [2, 1, 0, 2, 0, 0],</span>
+<span class="go">                         [1, 0, 3, 3, 0, 0],</span>
+<span class="go">                         [3, 3, 5, 0, 0, 0],</span>
+<span class="go">                         [3, 1, 4, 0, 0, 0],</span>
+<span class="go">                         [3, 6, 6, 0, 0, 0],</span>
+<span class="go">                         [3, 4, 5, 0, 0, 0]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">factorised</span> <span class="o">=</span> <span class="n">factorize_monomial</span><span class="p">(</span><span class="n">monomial</span><span class="p">)</span>
+<span class="go">[array([[1, 0, 1, 1, 0, 0]]),</span>
+<span class="go"> array([[1, 0, 3, 3, 0, 0]]),</span>
+<span class="go"> array([[2, 1, 0, 2, 0, 0],</span>
+<span class="go">        [3, 1, 4, 0, 0, 0]]),</span>
+<span class="go"> array([[3, 3, 5, 0, 0, 0],</span>
+<span class="go">        [3, 4, 5, 0, 0, 0]]),</span>
+<span class="go"> array([[3, 6, 6, 0, 0, 0]])]</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <section id="monomial-properties">
 <h2>Monomial properties<a class="headerlink" href="#monomial-properties" title="Permalink to this heading"></a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.nb_is_knowable">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">nb_is_knowable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#nb_is_knowable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.nb_is_knowable" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.is_knowable">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">is_knowable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#is_knowable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.is_knowable" title="Permalink to this definition"></a></dt>
 <dd><p>Determine whether a given atomic monomial admits an identification with
 a probability of the original scenario.</p>
 <dl class="field-list simple">
@@ -167,8 +225,8 @@ a probability of the original scenario.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.nb_is_physical">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">nb_is_physical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandwich_positivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#nb_is_physical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.nb_is_physical" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.is_physical">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">is_physical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandwich_positivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#is_physical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.is_physical" title="Permalink to this definition"></a></dt>
 <dd><p>Determines whether a monomial is physical, this is, if it always has a
 non-negative expectation value.</p>
 <p>This code also supports the detection of “sandwiches”, i.e., monomials
@@ -202,8 +260,8 @@ This simple example can be extended to various layers of sandwiching.</p>
 <section id="transformations-of-representation">
 <h2>Transformations of representation<a class="headerlink" href="#transformations-of-representation" title="Permalink to this heading"></a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.order_via_commutation">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">order_via_commutation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#order_via_commutation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.order_via_commutation" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.order_via_commutation">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">order_via_commutation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#order_via_commutation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.order_via_commutation" title="Permalink to this definition"></a></dt>
 <dd><p>Applies commutations between the operators forming a monomial until
 finding the smallest lexicographic representation.</p>
 <dl class="field-list simple">
@@ -231,8 +289,8 @@ relationships.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.quantum_tools.reduce_inflation_indices">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">reduce_inflation_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/quantum_tools.html#reduce_inflation_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.quantum_tools.reduce_inflation_indices" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.reduce_inflation_indices">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">reduce_inflation_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#reduce_inflation_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.reduce_inflation_indices" title="Permalink to this definition"></a></dt>
 <dd><p>Reduce the inflation indices of a monomial as much as possible. This
 procedure might not give the canonical form directly due to commutations.</p>
 <dl class="field-list simple">
@@ -249,8 +307,8 @@ procedure might not give the canonical form directly due to commutations.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.to_canonical">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_canonical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_only_commutations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#to_canonical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.to_canonical" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.to_canonical">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_canonical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_only_commutations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_canonical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_canonical" title="Permalink to this definition"></a></dt>
 <dd><p>Brings a monomial to canonical form with respect to commutations,
 removing square projectors, and identifying orthogonality.</p>
 <dl class="field-list simple">
@@ -280,8 +338,8 @@ relationships.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.to_name">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#to_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.to_name" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.to_name">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">to_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#to_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.to_name" title="Permalink to this definition"></a></dt>
 <dd><p>Convert the 2d array representation of a monomial to a string.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -309,26 +367,8 @@ an operators.</p></li>
 <section id="other-functions">
 <h2>Other functions<a class="headerlink" href="#other-functions" title="Permalink to this heading"></a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.nb_remove_sandwich">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">nb_remove_sandwich</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#nb_remove_sandwich"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.nb_remove_sandwich" title="Permalink to this definition"></a></dt>
-<dd><p>Removes sandwiching/pinching from a monomial. This is, it converts the
-monomial represented by <span class="math notranslate nohighlight">\(U A U^\dagger\)</span> into <span class="math notranslate nohighlight">\(A\)</span>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The monomial without sandwiches.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>numpy.ndarray</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="inflation.sdp.fast_npa.remove_projector_squares">
-<span class="sig-prename descclassname"><span class="pre">inflation.sdp.fast_npa.</span></span><span class="sig-name descname"><span class="pre">remove_projector_squares</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/sdp/fast_npa.html#remove_projector_squares"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.fast_npa.remove_projector_squares" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="causalinflation.quantum.fast_npa.remove_projector_squares">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.fast_npa.</span></span><span class="sig-name descname"><span class="pre">remove_projector_squares</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/fast_npa.html#remove_projector_squares"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.fast_npa.remove_projector_squares" title="Permalink to this definition"></a></dt>
 <dd><p>Simplify the monomial by removing operator powers. This is because we
 assume projectors, P**2=P. This corresponds to removing duplicates of rows
 which are adjacent.</p>
@@ -341,6 +381,24 @@ which are adjacent.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.remove_sandwich">
+<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">remove_sandwich</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#remove_sandwich"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.remove_sandwich" title="Permalink to this definition"></a></dt>
+<dd><p>Removes sandwiching/pinching from a monomial. This is, it converts the
+monomial represented by <span class="math notranslate nohighlight">\(U A U^\dagger\)</span> into <span class="math notranslate nohighlight">\(A\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – Input monomial.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The monomial without sandwiches.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
 </dd></dl>
