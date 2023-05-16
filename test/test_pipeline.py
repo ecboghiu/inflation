@@ -9,6 +9,11 @@ bilocality = InflationProblem(dag=bilocalDAG,
                               settings_per_party=[1, 1, 1],
                               outcomes_per_party=[2, 2, 2],
                               inflation_level_per_source=[2, 2])
+bilocality_c = InflationProblem(dag=bilocalDAG,
+                                settings_per_party=[1, 1, 1],
+                                outcomes_per_party=[2, 2, 2],
+                                inflation_level_per_source=[2, 2],
+                                classical_sources="all")
 bilocalSDP = InflationSDP(bilocality)
 
 trivial = InflationProblem({"h": ["v"]},
@@ -16,10 +21,16 @@ trivial = InflationProblem({"h": ["v"]},
                            settings_per_party=[2],
                            inflation_level_per_source=[2]
                            )
+trivial_c = InflationProblem({"h": ["v"]},
+                           outcomes_per_party=[2],
+                           settings_per_party=[2],
+                           inflation_level_per_source=[2],
+                           classical_sources="all"
+                           )
 
 
 class TestMonomialGeneration(unittest.TestCase):
-    bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
+    bilocalSDP_commuting = InflationSDP(bilocality_c)
     # Column structure for the NPA level 2 in a tripartite scenario
     col_structure = [[],
                      [0], [1], [2],
@@ -271,6 +282,14 @@ class TestSDPOutput(unittest.TestCase):
                                     settings_per_party=[1, 1, 1],
                                     inflation_level_per_source=[2, 1, 1])
 
+    cutInflation_c = InflationProblem({"lambda": ["a", "b"],
+                                       "mu": ["b", "c"],
+                                       "sigma": ["a", "c"]},
+                                      outcomes_per_party=[2, 2, 2],
+                                      settings_per_party=[1, 1, 1],
+                                      inflation_level_per_source=[2, 1, 1],
+                                      classical_sources="all")
+
     instrumental = InflationProblem({"U_AB": ["A", "B"],
                                      "A": ["B"]},
                                     outcomes_per_party=(2, 2),
@@ -381,7 +400,7 @@ class TestSDPOutput(unittest.TestCase):
                         "coefficients to the zero monomial.")
 
     def test_GHZ_commuting(self):
-        sdp = InflationSDP(self.cutInflation, commuting=True)
+        sdp = InflationSDP(self.cutInflation_c)
         sdp.generate_relaxation("local1")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct.")
@@ -579,7 +598,7 @@ class TestSymmetries(unittest.TestCase):
                         "Representatives mapping is not correct.")
 
     def test_commutations_after_symmetrization(self):
-        scenario = InflationSDP(trivial, commuting=True)
+        scenario = InflationSDP(trivial_c)
         col_structure = [[],
                          [[1, 2, 0, 0], [1, 2, 1, 0]],
                          [[1, 1, 0, 0], [1, 2, 0, 0]],

@@ -14,6 +14,14 @@ scenario = InflationProblem({"lambda": ["A", "B"],
                             inflation_level_per_source=[3, 2, 2],
                             order=('A', 'B', 'C'))
 
+scenario_c = InflationProblem({"lambda": ["A", "B"],
+                               "sigma": ["A", "C"],
+                               "mu": ["B", "C"]},
+                              outcomes_per_party=[2, 2, 2],
+                              settings_per_party=[1, 1, 1],
+                              inflation_level_per_source=[3, 2, 2],
+                              order=('A', 'B', 'C'),
+                              classical_sources="all")
 
 class TestKnowable(unittest.TestCase):
     def test_knowable_complete(self):
@@ -142,8 +150,8 @@ class TestToCanonical(unittest.TestCase):
 
 
 class TestToRepr(unittest.TestCase):
-    sdp_commuting    = InflationSDP(scenario, commuting=True)
-    sdp_noncommuting = InflationSDP(scenario, commuting=False)
+    sdp_commuting    = InflationSDP(scenario_c)
+    sdp_noncommuting = InflationSDP(scenario)
     names = sdp_commuting.names
 
     def test_commuting(self):
