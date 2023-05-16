@@ -73,6 +73,8 @@ def max_within_feasible(sdp: InflationSDP,
     for expr in symbolic_values.values():
         if not isinstance(expr, Real):
             variables.update(expr.atoms(sp.Symbol))
+    assert len(variables) != 0, \
+        "No variable to be optimized detected"
     assert len(variables) == 1, \
         "Only optimization of a single variable is supported"
     param = variables.pop()

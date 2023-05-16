@@ -12,6 +12,7 @@ Examples of use of this package include:
 - Optimisation over classical distributions.
 - Standard [Navascués-Pironio-Acín hierarchy](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401).
 - Scenarios with partial information.
+- Scenarios with some classical and some quantum sources.
 
 See the documentation for more details.
 

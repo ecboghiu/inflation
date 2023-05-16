@@ -1,3 +1,3 @@
 Optimization helpers
 ====================
-.. autofunction:: inflation.quantum.optimization_utils.max_within_feasible
+.. autofunction:: inflation.sdp.optimization_utils.max_within_feasible
