@@ -10,7 +10,7 @@ from itertools import chain, combinations_with_replacement
 from warnings import warn
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix)
-from typing import Tuple
+from typing import Union, Tuple
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -39,9 +39,9 @@ class InflationProblem(object):
         same as insertion order in `dag`. If an integer is provided, it is used
         as the inflation level for all sources. By default ``1`` for all
         sources.
-    classical_sources : List[str], optional
-        Names of the sources that are assumed to be classical. By default
-        empty. 
+    classical_sources : Union[List[str], str], optional
+        Names of the sources that are assumed to be classical. If ``'all'``,
+        it imposes that all sources are classical. By default empty. 
     order : List[str], optional
         Name of each party. This also fixes the order in which party outcomes
         and settings are to appear in a conditional probability distribution.
@@ -58,7 +58,7 @@ class InflationProblem(object):
                  outcomes_per_party=tuple(),
                  settings_per_party=tuple(),
                  inflation_level_per_source=tuple(),
-                 classical_sources=tuple(),
+                 classical_sources: Union[str, Tuple]=tuple(),
                  order=tuple(),
                  verbose=0):
         """Initialize the InflationProblem class.
@@ -181,10 +181,14 @@ class InflationProblem(object):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
             if classical_sources:
-                if source in classical_sources:
-                    self._classical_sources += [ii]
+                if not isinstance(classical_sources, str):
+                    if source in classical_sources:
+                        self._classical_sources += [ii]
+                    else:
+                        self._quantum_sources += [ii]
                 else:
-                    self._quantum_sources += [ii]
+                    if classical_sources == "all":
+                        self._classical_sources = range(self.nr_sources)
             else:
                 self._quantum_sources += [ii]
         self._quantum_sources   = 1 + np.array(self._quantum_sources)
