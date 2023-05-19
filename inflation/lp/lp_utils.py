@@ -1,9 +1,6 @@
-# Send problems to LP solvers
-
 import numpy as np
 
 from typing import List, Dict, Any
-from copy import deepcopy
 from mosek.fusion import *
 
 
@@ -11,26 +8,33 @@ def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
                         inequalities: List[Dict] = None,
                         equalities: List[Dict] = None
-                        ) -> Any:
-    # Internal function to solve the LP using Mosek FUSION API
-    # Return objective value
+                        ) -> Dict:
+    """Internal function to solve an LP with the Mosek FUSION API.
 
-    # if objective is None:
-    #     var_objective = {}
-    # else:
-    #     var_objective = objective.copy()
-    # if known_vars is None:
-    #     known_vars = {}
-    # if inequalities is None:
-    #     var_inequalities = []
-    # else:
-    #     var_inequalities = deepcopy(inequalities)
-    # if equalities is None:
-    #     var_equalities = []
-    # else:
-    #     var_equalities = deepcopy(equalities)
+    Parameters
+    ----------
+    objective : dict
+        Monomials (keys) and coefficients (values) that describe
+        the objective function
+    known_vars : dict
+        Monomials (keys) and known values of the monomials
+    inequalities: list of dict
+        Inequality constraints with monomials (keys) and coefficients (values)
+    equalities: list of dict
+        Equality constraints with monomials (keys) and coefficients (values)
 
-    # Define variables for LP
+    inequalities
+    equalities
+
+    Returns
+    -------
+    dict
+        Primal objective value, dual objective value, problem status, dual
+        certificate, x values
+
+    """
+
+    # Define variables for LP, excluding those with known values
     variables = set()
     variables.update(objective.keys())
     for ineq in inequalities:
@@ -39,32 +43,34 @@ def solveLP_MosekFUSION(objective: Dict = None,
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
 
-    # Compute c0, the constant part of objective
+    # Compute c0, the constant term in the objective function
     c0 = 0
     for x in objective.keys():
         if x in known_vars.keys():
             c0 += objective[x] * known_vars[x]
 
     # Create dictionary var_index - monomial : index
-    var_index = {x : i for i, x in enumerate(variables)}
+    var_index = {x: i for i, x in enumerate(variables)}
 
-    # Create matrices A, C and vectors b, d such that Ax + b >= 0, Cx + d == 0
+    # Create matrix A, vector b such that Ax + b >= 0
     A = np.zeros((len(inequalities), len(variables)))
     b = np.zeros(len(inequalities))
     for i, inequality in enumerate(inequalities):
-        vars = set(inequality)
-        for x in vars.difference(set(known_vars)):
-            A[i, var_index[x]] = inequality[x] # Fills A with coefficients of vars, excluding known vars
-        for x in vars:
+        monomials = set(inequality)
+        for x in monomials.difference(set(known_vars)):
+            A[i, var_index[x]] = inequality[x]
+        for x in monomials:
             if x in known_vars.keys():
-                b[i] += inequality[x] * known_vars[x] # Fills b with constant values
+                b[i] += inequality[x] * known_vars[x]
+
+    # Create matrix C, vector d such that Cx + d == 0
     C = np.zeros((len(equalities), len(variables)))
     d = np.zeros(len(equalities))
     for i, equality in enumerate(equalities):
-        vars = set(equality)
-        for x in vars.difference(set(known_vars)):
+        monomials = set(equality)
+        for x in monomials.difference(set(known_vars)):
             C[i, var_index[x]] = equality[x]
-        for x in vars:
+        for x in monomials:
             if x in known_vars.keys():
                 d[i] += equality[x] * known_vars[x]
 
@@ -76,46 +82,39 @@ def solveLP_MosekFUSION(objective: Dict = None,
 
         # Define constraints
         for i in range(len(inequalities)):
-            M.constraint("c" + str(i), Expr.add(Expr.dot(A[i], x), b[i]), Domain.greaterThan(0))
-
+            M.constraint("ineq" + str(i), Expr.add(Expr.dot(A[i], x), b[i]),
+                         Domain.greaterThan(0))
         for i in range(len(equalities)):
-            M.constraint("c" + str(len(inequalities) + i), Expr.add(Expr.dot(C[i], x), d[i]), Domain.equalsTo(0))
+            M.constraint("eq" + str(i), Expr.add(Expr.dot(C[i], x), d[i]),
+                         Domain.equalsTo(0))
 
-        # Define objective
+        # Define objective function
         obj = c0
         for var in set(objective).difference(set(known_vars)):
-            obj = Expr.add(obj, Expr.mul(x.index(var_index[var]), objective[var]))
+            obj = Expr.add(obj, Expr.mul(x.index(var_index[var]),
+                                         objective[var]))
         M.objective(ObjectiveSense.Maximize, obj)
 
+        # Solve the LP
+        M.acceptedSolutionStatus(AccSolutionStatus.Anything)
         M.solve()
-        print(M.primalObjValue())
 
+        x_values = dict(zip(variables, x.level()))
 
+        status = M.getProblemStatus()
+        if status == ProblemStatus.PrimalAndDualFeasible:
+            status_str = "feasible"
+            primal = M.primalObjValue()
+            dual = M.dualObjValue()
+        else:
+            status_str = "infeasible"
 
+        # Derive certificate here
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return {
+            "primal_value": primal,
+            "dual_value": dual,
+            "status": status_str,
+            "dual_certificate": None,
+            "x": x_values
+        }
