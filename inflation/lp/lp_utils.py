@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import List, Dict, Any
+from typing import List, Dict
 from mosek.fusion import *
 
 
@@ -22,9 +22,6 @@ def solveLP_MosekFUSION(objective: Dict = None,
         Inequality constraints with monomials (keys) and coefficients (values)
     equalities: list of dict
         Equality constraints with monomials (keys) and coefficients (values)
-
-    inequalities
-    equalities
 
     Returns
     -------
