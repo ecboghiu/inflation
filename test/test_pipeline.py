@@ -9,6 +9,11 @@ bilocality = InflationProblem(dag=bilocalDAG,
                               settings_per_party=[1, 1, 1],
                               outcomes_per_party=[2, 2, 2],
                               inflation_level_per_source=[2, 2])
+bilocality_c = InflationProblem(dag=bilocalDAG,
+                                settings_per_party=[1, 1, 1],
+                                outcomes_per_party=[2, 2, 2],
+                                inflation_level_per_source=[2, 2],
+                                classical_sources="all")
 bilocalSDP = InflationSDP(bilocality)
 
 trivial = InflationProblem({"h": ["v"]},
@@ -16,10 +21,16 @@ trivial = InflationProblem({"h": ["v"]},
                            settings_per_party=[2],
                            inflation_level_per_source=[2]
                            )
+trivial_c = InflationProblem({"h": ["v"]},
+                           outcomes_per_party=[2],
+                           settings_per_party=[2],
+                           inflation_level_per_source=[2],
+                           classical_sources="all"
+                           )
 
 
 class TestMonomialGeneration(unittest.TestCase):
-    bilocalSDP_commuting = InflationSDP(bilocality, commuting=True)
+    bilocalSDP_commuting = InflationSDP(bilocality_c)
     # Column structure for the NPA level 2 in a tripartite scenario
     col_structure = [[],
                      [0], [1], [2],
@@ -154,6 +165,8 @@ class TestMonomialGeneration(unittest.TestCase):
 class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
     sdp.generate_relaxation("npa1")
+    physical_bounds = {m: 0. for m in sdp.physical_monomials}
+    del physical_bounds[sdp.One]
 
     def prepare_objects(self, infSDP):
         var1 = infSDP.measurements[0][0][0][0]
@@ -166,43 +179,49 @@ class TestReset(unittest.TestCase):
     def test_reset_all(self):
         self.prepare_objects(self.sdp)
         self.sdp.reset("all")
-        self.assertTrue(len(self.sdp._processed_moment_lowerbounds) == 0,
-                        "Resetting lower bounds fails.")
-        self.assertTrue(len(self.sdp._processed_moment_upperbounds) == 0,
-                        "Resetting upper bounds fails.")
+        self.assertEqual(self.sdp.moment_lowerbounds,
+                         self.physical_bounds,
+                         "Resetting lower bounds fails.")
+        self.assertEqual(self.sdp.moment_upperbounds, dict(),
+                         "Resetting processed upper bounds fails.")
         self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
                          "Resetting the objective function fails.")
-        self.assertTrue(len(self.sdp.semiknown_moments) == 0,
-                        "Resetting the known values fails to empty " +
-                        "semiknown_moments.")
+        self.assertEqual(self.sdp.semiknown_moments, dict(),
+                         "Resetting the known values fails to empty " +
+                         "semiknown_moments.")
         self.assertEqual(self.sdp.known_moments, {self.sdp.One: 1.},
                          "Resetting the known values fails to empty " +
                          "known_moments.")
 
     def test_reset_bounds(self):
         self.prepare_objects(self.sdp)
+        correct = {key: val for key, val in self.physical_bounds.items()
+                   if key not in self.sdp.known_moments}
         self.sdp.reset("bounds")
-        self.assertTrue(len(self.sdp._processed_moment_lowerbounds) == 0,
-                        "Resetting lower bounds fails.")
-        self.assertTrue(len(self.sdp._processed_moment_upperbounds) == 0,
-                        "Resetting upper bounds fails.")
+        self.assertEqual(self.sdp.moment_lowerbounds,
+                         correct,
+                         "Resetting lower bounds fails.")
+        self.assertEqual(self.sdp.moment_upperbounds, dict(),
+                         "Resetting upper bounds fails.")
+        self.assertTrue(len(self.sdp.objective) == 2,
+                        "Resetting the bounds resets the objective function.")
+        self.assertTrue(len(self.sdp.known_moments) == 3,
+                        "Resetting the bounds resets the known moments.")
 
     def test_reset_some(self):
         self.prepare_objects(self.sdp)
         self.sdp.reset(["objective", "values"])
         self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
                          "Resetting the objective function fails.")
-        self.assertTrue(len(self.sdp.semiknown_moments) == 0,
+        self.assertEqual(self.sdp.semiknown_moments, dict(),
                         "Resetting the known values fails to empty " +
                         "semiknown_moments.")
         self.assertEqual(self.sdp.known_moments, {self.sdp.One: 1.},
                          "Resetting the known values fails to empty " +
                          "known_moments.")
-        self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
-                         "Resetting the objective function fails.")
-        self.assertTrue(len(self.sdp._processed_moment_lowerbounds) == 4,
+        self.assertTrue(len(self.sdp.moment_lowerbounds) == 4,
                         "Lower bounds are being reset when they should not.")
-        self.assertTrue(len(self.sdp._processed_moment_upperbounds) == 1,
+        self.assertTrue(len(self.sdp.moment_upperbounds) == 1,
                         "Upper bounds are being reset when they should not.")
 
     def test_reset_objective(self):
@@ -210,16 +229,28 @@ class TestReset(unittest.TestCase):
         self.sdp.reset("objective")
         self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
                          "Resetting the objective function fails.")
+        self.assertTrue(len(self.sdp.known_moments) == 3,
+                        "Resetting the objective resets the known moments.")
+        self.assertTrue(len(self.sdp.moment_lowerbounds) == 4,
+                        "Resetting the objective resets the lower bounds.")
+        self.assertTrue(len(self.sdp.moment_upperbounds) == 1,
+                        "Resetting the objective resets the upper bounds.")
 
     def test_reset_values(self):
         self.prepare_objects(self.sdp)
         self.sdp.reset("values")
-        self.assertTrue(len(self.sdp.semiknown_moments) == 0,
-                        "Resetting the known values fails to empty " +
-                        "semiknown_moments.")
+        self.assertEqual(self.sdp.semiknown_moments, dict(),
+                         "Resetting the known values fails to empty " +
+                         "semiknown_moments.")
         self.assertEqual(self.sdp.known_moments, {self.sdp.One: 1.},
                          "Resetting the known values fails to empty " +
                          "known_moments.")
+        self.assertTrue(len(self.sdp.moment_lowerbounds) == 4,
+                        "Resetting the objective resets the lower bounds.")
+        self.assertTrue(len(self.sdp.moment_upperbounds) == 1,
+                        "Resetting the objective resets the upper bounds.")
+        self.assertTrue(len(self.sdp.objective) == 2,
+                        "Resetting the bounds resets the objective function.")
 
 
 class TestSDPOutput(unittest.TestCase):
@@ -250,6 +281,14 @@ class TestSDPOutput(unittest.TestCase):
                                     outcomes_per_party=[2, 2, 2],
                                     settings_per_party=[1, 1, 1],
                                     inflation_level_per_source=[2, 1, 1])
+
+    cutInflation_c = InflationProblem({"lambda": ["a", "b"],
+                                       "mu": ["b", "c"],
+                                       "sigma": ["a", "c"]},
+                                      outcomes_per_party=[2, 2, 2],
+                                      settings_per_party=[1, 1, 1],
+                                      inflation_level_per_source=[2, 1, 1],
+                                      classical_sources="all")
 
     instrumental = InflationProblem({"U_AB": ["A", "B"],
                                      "A": ["B"]},
@@ -361,7 +400,7 @@ class TestSDPOutput(unittest.TestCase):
                         "coefficients to the zero monomial.")
 
     def test_GHZ_commuting(self):
-        sdp = InflationSDP(self.cutInflation, commuting=True)
+        sdp = InflationSDP(self.cutInflation_c)
         sdp.generate_relaxation("local1")
         self.assertEqual(len(sdp.generating_monomials), 18,
                          "The number of generating columns is not correct.")
@@ -559,7 +598,7 @@ class TestSymmetries(unittest.TestCase):
                         "Representatives mapping is not correct.")
 
     def test_commutations_after_symmetrization(self):
-        scenario = InflationSDP(trivial, commuting=True)
+        scenario = InflationSDP(trivial_c)
         col_structure = [[],
                          [[1, 2, 0, 0], [1, 2, 1, 0]],
                          [[1, 1, 0, 0], [1, 2, 0, 0]],

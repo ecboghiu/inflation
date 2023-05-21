@@ -31,7 +31,6 @@ def convert_to_human_readable(problem):
     # Replacer for constants
     constants = {moment.idx: str(value)
                  for moment, value in problem.known_moments.items()}
-    constant_replacer = np.vectorize(lambda x: constants.get(x, x))
     # Replacer for semiknowns
     semiknowns = dict()
     for key, val in problem.semiknown_moments.items():
@@ -50,7 +49,9 @@ def convert_to_human_readable(problem):
             replacement = monom
         return replacement
     known_replacer = np.vectorize(replace_known)
-    matrix = constant_replacer(matrix)
+    for ii, row in enumerate(matrix):
+        for jj, col in enumerate(row):
+            matrix[ii,jj] = constants.get(col, col)
     matrix = semiknown_replacer(matrix)
     matrix = np.triu(known_replacer(matrix).astype(object))
 
@@ -152,9 +153,9 @@ def write_to_mat(problem, filename):
                    for mon, coeff in problem.objective.items()
                    if abs(coeff) > 1e-8]
     lowerbounds = [[mon.idx + offset, bnd]
-                   for mon, bnd in problem._processed_moment_lowerbounds.items()]
+                   for mon, bnd in problem.moment_lowerbounds.items()]
     upperbounds = [[mon.idx + offset, bnd]
-                   for mon, bnd in problem._processed_moment_upperbounds.items()]
+                   for mon, bnd in problem.moment_upperbounds.items()]
     names       = np.array([[mon.idx + offset, mon.name]
                              for mon in problem.monomials], dtype=object)
     equalities  = []
@@ -305,13 +306,14 @@ def write_to_sdpa(problem, filename):
         blockstruct.append(str(-block_size))
     for equality in problem.moment_equalities:
         for var, coeff in equality.items():
-            if var != problem.One:
-                var = var_corresp[var.idx]
-                lines.append(f"{var}\t{block}\t{ii}\t{ii}\t{coeff}\n")
-                lines.append(f"{var}\t{block}\t{ii+1}\t{ii+1}\t{-coeff}\n")
-            else:
-                lines.append(f"0\t{block}\t{ii}\t{ii}\t{-coeff}\n")
-                lines.append(f"0\t{block}\t{ii+1}\t{ii+1}\t{coeff}\n")
+            if problem.known_moments.get(var, None) not in [0]:
+                if var != problem.One:
+                    var = var_corresp[var.idx]
+                    lines.append(f"{var}\t{block}\t{ii}\t{ii}\t{coeff}\n")
+                    lines.append(f"{var}\t{block}\t{ii+1}\t{ii+1}\t{-coeff}\n")
+                else:
+                    lines.append(f"0\t{block}\t{ii}\t{ii}\t{-coeff}\n")
+                    lines.append(f"0\t{block}\t{ii+1}\t{ii+1}\t{coeff}\n")
         ii += 2
 
     file_ = open(filename, "w")
