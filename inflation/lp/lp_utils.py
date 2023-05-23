@@ -7,7 +7,8 @@ from mosek.fusion import *
 def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
                         inequalities: List[Dict] = None,
-                        equalities: List[Dict] = None
+                        equalities: List[Dict] = None,
+                        semiknown_vars: Dict = None
                         ) -> Dict:
     """Internal function to solve an LP with the Mosek FUSION API.
 
@@ -30,13 +31,22 @@ def solveLP_MosekFUSION(objective: Dict = None,
         certificate, x values
 
     """
+    # Deal with unsanitary input
+    if known_vars is None:
+        known_vars = {}
+    if semiknown_vars is None:
+        semiknown_vars = {}
+
 
     # Define variables for LP, excluding those with known values
     variables = set()
     variables.update(objective.keys())
     for ineq in inequalities:
         variables.update(ineq.keys())
-    for eq in equalities:
+    internal_equalities = equalities.copy()
+    for x, (c, x2) in semiknown_vars.items():
+        internal_equalities.append({x: 1, x2: -c})
+    for eq in internal_equalities:
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
 
@@ -61,9 +71,9 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 b[i] += inequality[x] * known_vars[x]
 
     # Create matrix C, vector d such that Cx + d == 0
-    C = np.zeros((len(equalities), len(variables)))
-    d = np.zeros(len(equalities))
-    for i, equality in enumerate(equalities):
+    C = np.zeros((len(internal_equalities), len(variables)))
+    d = np.zeros(len(internal_equalities))
+    for i, equality in enumerate(internal_equalities):
         monomials = set(equality)
         for x in monomials.difference(known_vars.keys()):
             C[i, var_index[x]] = equality[x]
@@ -87,7 +97,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
 
         # Define objective function
         obj = c0
-        for var in set(objective.keys()).difference(known_vars.keys())):
+        for var in set(objective.keys()).difference(known_vars.keys()):
             obj = Expr.add(obj, Expr.mul(x.index(var_index[var]),
                                          objective[var]))
         M.objective(ObjectiveSense.Maximize, obj)
@@ -101,10 +111,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         status = M.getProblemStatus()
         if status == ProblemStatus.PrimalAndDualFeasible:
             status_str = "feasible"
-            primal = M.primalObjValue()
-            dual = M.dualObjValue()
         else:
             status_str = "infeasible"
+        primal = M.primalObjValue()
+        dual = M.dualObjValue()
 
         # Derive certificate here
 

@@ -5,7 +5,7 @@ from scipy.sparse import lil_matrix
 
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
-
+from inflation.lp.lp_utils import solveLP_MosekFUSION
 
 class TestMosek(unittest.TestCase):
     @classmethod
@@ -25,7 +25,7 @@ class TestMosek(unittest.TestCase):
                   "known_vars": {'1': 1}
                   }
 
-    def test_LP(self):
+    def test_LP_as_SDP_and_LP(self):
         problem = {
             "objective":  {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
             "known_vars": {'1': 1},  # Define the variable that is the identity
@@ -43,6 +43,14 @@ class TestMosek(unittest.TestCase):
                         "The dual and primal solutions in LP are not equal.")
         self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2),
                         "The solution to a simple LP is not correct.")
+        primal_sol_LP = solveLP_MosekFUSION(**problem)
+        value_primal_LP = primal_sol_LP["primal_value"]
+        self.assertTrue(np.isclose(value_primal, value_primal_LP),
+                        f"The LP and SDP interfaces are giving different"
+                        + "for the same problem, namely, \n"
+                        + f"{value_primal_LP} from the LP vs {value_primal}"
+                        + "from the SDP.")
+
 
     def test_semiknown_constraints(self):
         """Check that semiknown_moments are correctly processed."""
