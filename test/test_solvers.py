@@ -49,7 +49,7 @@ class TestMosek(unittest.TestCase):
                         f"The LP and SDP interfaces are giving different"
                         + "for the same problem, namely, \n"
                         + f"{value_primal_LP} from the LP vs {value_primal}"
-                        + "from the SDP.")
+                        + " from the SDP.")
 
 
     def test_semiknown_constraints(self):
