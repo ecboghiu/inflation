@@ -53,8 +53,8 @@ def solveLP_MosekFUSION(objective: Dict = None,
     A = np.zeros((len(inequalities), len(variables)))
     b = np.zeros(len(inequalities))
     for i, inequality in enumerate(inequalities):
-        monomials = set(inequality)
-        for x in monomials.difference(set(known_vars)):
+        monomials = set(inequality.keys())
+        for x in monomials.difference(known_vars.keys()):
             A[i, var_index[x]] = inequality[x]
         for x in monomials:
             if x in known_vars.keys():
@@ -65,7 +65,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
     d = np.zeros(len(equalities))
     for i, equality in enumerate(equalities):
         monomials = set(equality)
-        for x in monomials.difference(set(known_vars)):
+        for x in monomials.difference(known_vars.keys()):
             C[i, var_index[x]] = equality[x]
         for x in monomials:
             if x in known_vars.keys():
@@ -87,7 +87,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
 
         # Define objective function
         obj = c0
-        for var in set(objective).difference(set(known_vars)):
+        for var in set(objective.keys()).difference(known_vars.keys())):
             obj = Expr.add(obj, Expr.mul(x.index(var_index[var]),
                                          objective[var]))
         M.objective(ObjectiveSense.Maximize, obj)
