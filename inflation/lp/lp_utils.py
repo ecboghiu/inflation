@@ -1,7 +1,5 @@
-import numpy as np
-
 from typing import List, Dict
-from mosek.fusion import  Matrix, Model, ObjectiveSense, Expr, Domain, \
+from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
         OptimizeError, SolutionError, \
         AccSolutionStatus, ProblemStatus
 from scipy.sparse import dok_matrix
