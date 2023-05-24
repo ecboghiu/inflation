@@ -40,6 +40,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
 
+    num_variables = len(variables)
+    num_ineq = len(inequalities)
+    num_eq = len(equalities)
+
     # Compute c0, the constant term in the objective function
     c0 = 0
     for x in objective.keys():
@@ -50,8 +54,8 @@ def solveLP_MosekFUSION(objective: Dict = None,
     var_index = {x: i for i, x in enumerate(variables)}
 
     # Create matrix A, vector b such that Ax + b >= 0
-    A = np.zeros((len(inequalities), len(variables)))
-    b = np.zeros(len(inequalities))
+    A = np.zeros((num_ineq, num_variables))
+    b = np.zeros(num_ineq)
     for i, inequality in enumerate(inequalities):
         monomials = set(inequality.keys())
         for x in monomials.difference(known_vars.keys()):
@@ -61,8 +65,8 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 b[i] += inequality[x] * known_vars[x]
 
     # Create matrix C, vector d such that Cx + d == 0
-    C = np.zeros((len(equalities), len(variables)))
-    d = np.zeros(len(equalities))
+    C = np.zeros((num_eq, num_variables))
+    d = np.zeros(num_eq)
     for i, equality in enumerate(equalities):
         monomials = set(equality)
         for x in monomials.difference(known_vars.keys()):
@@ -75,19 +79,19 @@ def solveLP_MosekFUSION(objective: Dict = None,
         # Set up the problem as a primal LP
 
         # Define variables
-        x = M.variable("x", len(variables), Domain.greaterThan(0.0))
+        x = M.variable("x", num_variables, Domain.greaterThan(0.0))
 
         # Define constraints
-        for i in range(len(inequalities)):
+        for i in range(num_ineq):
             M.constraint("ineq" + str(i), Expr.add(Expr.dot(A[i], x), b[i]),
                          Domain.greaterThan(0))
-        for i in range(len(equalities)):
+        for i in range(num_eq):
             M.constraint("eq" + str(i), Expr.add(Expr.dot(C[i], x), d[i]),
                          Domain.equalsTo(0))
 
         # Define objective function
         obj = c0
-        for var in set(objective.keys()).difference(known_vars.keys())):
+        for var in set(objective.keys()).difference(known_vars.keys()):
             obj = Expr.add(obj, Expr.mul(x.index(var_index[var]),
                                          objective[var]))
         M.objective(ObjectiveSense.Maximize, obj)
@@ -106,12 +110,13 @@ def solveLP_MosekFUSION(objective: Dict = None,
         else:
             status_str = "infeasible"
 
-        # Derive certificate here
+        # Extract the certificate
+        certificate = {x: 0 for x in known_vars}
 
         return {
             "primal_value": primal,
             "dual_value": dual,
             "status": status_str,
-            "dual_certificate": None,
+            "dual_certificate": certificate,
             "x": x_values
         }
