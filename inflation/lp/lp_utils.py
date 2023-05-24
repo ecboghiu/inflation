@@ -1,13 +1,17 @@
 import numpy as np
 
 from typing import List, Dict
-from mosek.fusion import *
+from mosek.fusion import  Matrix, Model, ObjectiveSense, Expr, Domain, \
+        OptimizeError, SolutionError, \
+        AccSolutionStatus, ProblemStatus
+from scipy.sparse import dok_matrix
 
 
 def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
                         inequalities: List[Dict] = None,
-                        equalities: List[Dict] = None
+                        equalities: List[Dict] = None,
+                        semiknown_vars: Dict = None
                         ) -> Dict:
     """Internal function to solve an LP with the Mosek FUSION API.
 
@@ -30,19 +34,24 @@ def solveLP_MosekFUSION(objective: Dict = None,
         certificate, x values
 
     """
+    # Deal with unsanitary input
+    if known_vars is None:
+        known_vars = {}
+    if semiknown_vars is None:
+        semiknown_vars = {}
 
     # Define variables for LP, excluding those with known values
     variables = set()
     variables.update(objective.keys())
     for ineq in inequalities:
         variables.update(ineq.keys())
-    for eq in equalities:
+    internal_equalities = equalities.copy()
+    for x, (c, x2) in semiknown_vars.items():
+        internal_equalities.append({x: 1, x2: -c})
+    for eq in internal_equalities:
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
-
-    num_variables = len(variables)
-    num_ineq = len(inequalities)
-    num_eq = len(equalities)
+    nof_variables = len(variables)
 
     # Compute c0, the constant term in the objective function
     c0 = 0
@@ -54,40 +63,60 @@ def solveLP_MosekFUSION(objective: Dict = None,
     var_index = {x: i for i, x in enumerate(variables)}
 
     # Create matrix A, vector b such that Ax + b >= 0
-    A = np.zeros((num_ineq, num_variables))
-    b = np.zeros(num_ineq)
+    nof_inequalities = len(inequalities)
+    A = dok_matrix((nof_inequalities, nof_variables))
+    b = dok_matrix((nof_inequalities, 1))
     for i, inequality in enumerate(inequalities):
         monomials = set(inequality.keys())
         for x in monomials.difference(known_vars.keys()):
             A[i, var_index[x]] = inequality[x]
         for x in monomials:
             if x in known_vars.keys():
-                b[i] += inequality[x] * known_vars[x]
+                b[i, 0] += inequality[x] * known_vars[x]
+    b_mosek = Matrix.sparse(*b.shape,
+                            *b.nonzero(),
+                            b[b.nonzero()].A[0])
+    A_mosek = Matrix.sparse(*A.shape,
+                            *A.nonzero(),
+                            A[A.nonzero()].A[0])
+    del A, b
 
     # Create matrix C, vector d such that Cx + d == 0
-    C = np.zeros((num_eq, num_variables))
-    d = np.zeros(num_eq)
-    for i, equality in enumerate(equalities):
+    nof_equalities = len(internal_equalities)
+    C = dok_matrix((nof_equalities, nof_variables))
+    d = dok_matrix((nof_equalities, 1))
+    for i, equality in enumerate(internal_equalities):
         monomials = set(equality)
         for x in monomials.difference(known_vars.keys()):
             C[i, var_index[x]] = equality[x]
         for x in monomials:
             if x in known_vars.keys():
-                d[i] += equality[x] * known_vars[x]
+                d[i, 0] += equality[x] * known_vars[x]
+    d_mosek = Matrix.sparse(*d.shape,
+                            *d.nonzero(),
+                            d[d.nonzero()].A[0])
+    C_mosek = Matrix.sparse(*C.shape,
+                            *C.nonzero(),
+                            C[C.nonzero()].A[0])
+    del C, d
 
     with Model("LP") as M:
         # Set up the problem as a primal LP
 
         # Define variables
-        x = M.variable("x", num_variables, Domain.greaterThan(0.0))
+        x = M.variable("x", nof_variables, Domain.greaterThan(0.0))
 
         # Define constraints
-        for i in range(num_ineq):
-            M.constraint("ineq" + str(i), Expr.add(Expr.dot(A[i], x), b[i]),
-                         Domain.greaterThan(0))
-        for i in range(num_eq):
-            M.constraint("eq" + str(i), Expr.add(Expr.dot(C[i], x), d[i]),
-                         Domain.equalsTo(0))
+        M.constraint("ineqs", Expr.add(Expr.mul(A_mosek, x), b_mosek),
+                     Domain.greaterThan(0))
+        M.constraint("eqs", Expr.add(Expr.mul(C_mosek, x), d_mosek),
+                     Domain.equalsTo(0))
+        # for i in range(len(inequalities)):
+        #     M.constraint("ineq" + str(i), Expr.add(Expr.dot(A[i].todense(), x), b[i, 0]),
+        #                  Domain.greaterThan(0))
+        # for i in range(len(equalities)):
+        #     M.constraint("eq" + str(i), Expr.add(Expr.dot(C[i].todense(), x), d[i, 0]),
+        #                  Domain.equalsTo(0))
 
         # Define objective function
         obj = c0
@@ -105,10 +134,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         status = M.getProblemStatus()
         if status == ProblemStatus.PrimalAndDualFeasible:
             status_str = "feasible"
-            primal = M.primalObjValue()
-            dual = M.dualObjValue()
         else:
             status_str = "infeasible"
+        primal = M.primalObjValue()
+        dual = M.dualObjValue()
 
         # Extract the certificate
         certificate = {x: 0 for x in known_vars}
