@@ -1,7 +1,8 @@
+import numpy as np
+
 from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
-    OptimizeError, SolutionError, \
-    AccSolutionStatus, ProblemStatus
+    OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
 from scipy.sparse import dok_matrix
 
 
@@ -149,10 +150,12 @@ def solveLP_MosekFUSION(objective: Dict = None,
             x = M.variable("x", nof_variables, Domain.greaterThan(0.0))
 
             # Define primal constraints
-            M.constraint("ineqs", Expr.add(Expr.mul(A_mosek, x), b_mosek),
-                         Domain.greaterThan(0))
-            M.constraint("eqs", Expr.add(Expr.mul(C_mosek, x), d_mosek),
-                         Domain.equalsTo(0))
+            ineq_cons = M.constraint("ineqs",
+                                     Expr.add(Expr.mul(A_mosek, x), b_mosek),
+                                     Domain.greaterThan(0))
+            eq_cons = M.constraint("eqs",
+                                   Expr.add(Expr.mul(C_mosek, x), d_mosek),
+                                   Domain.equalsTo(0))
 
             # Define objective function
             obj = c0
@@ -182,8 +185,27 @@ def solveLP_MosekFUSION(objective: Dict = None,
         primal = M.primalObjValue()
         dual = M.dualObjValue()
 
-        # Extract the certificate
+        # Extract the certificate:
+        # Certificate is contained in the dual objective function b·y
         certificate = {x: 0 for x in known_vars}
+
+        if solve_dual:
+            y_values = y.level()
+        else:
+            y_values = np.concatenate((-ineq_cons.dual(), -eq_cons.dual()))
+
+        # Each monomial with known value is associated with a sum of duals
+        for i, ineq in enumerate(inequalities):
+            for x in set(ineq).intersection(known_vars):
+                certificate[x] += y_values[i] * ineq[x]
+        for i, eq in enumerate(equalities):
+            for x in set(eq).intersection(known_vars):
+                certificate[x] += y_values[i] * eq[x]
+
+        # Clean entries with coefficient zero
+        for x in certificate.keys():
+            if np.isclose(certificate[x], 0):
+                del certificate[x]
 
         return {
             "primal_value": primal,
