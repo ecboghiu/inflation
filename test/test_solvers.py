@@ -5,6 +5,7 @@ from scipy.sparse import lil_matrix
 
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
+from inflation.lp.lp_utils import solveLP_MosekFUSION
 
 
 class TestMosek(unittest.TestCase):
@@ -24,25 +25,35 @@ class TestMosek(unittest.TestCase):
                   "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                   "known_vars": {'1': 1}
                   }
+    simple_lp = {
+        "objective": {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
+        "known_vars": {'1': 1},  # Define the variable that is the identity
+        "inequalities": [{'x': -1, '1': 2},  # 2 - x >= 0
+                         {'y': -1, '1': 5},  # 5 - y >= 0
+                         {'z': -1, '1': 1 / 2},  # 1/2 - z >= 0
+                         {'w': 1, '1': 1}],  # w >= -1
+        "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
+    }
 
-    def test_LP(self):
-        problem = {
-            "objective":  {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
-            "known_vars": {'1': 1},  # Define the variable that is the identity
-            "inequalities": [{'x': -1, '1': 2},    # 2 - x >= 0
-                             {'y': -1, '1': 5},    # 5 - y >= 0
-                             {'z': -1, '1': 1/2},  # 1/2 - z >= 0
-                             {'w': 1,  '1': 1}],   # w >= -1
-            "equalities": [{'x': 1/2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
-        }
-        primal_sol   = solveSDP_MosekFUSION(**problem, solve_dual=False)
-        dual_sol     = solveSDP_MosekFUSION(**problem, solve_dual=True)
+    def test_LP_with_SDP(self):
+        primal_sol   = solveSDP_MosekFUSION(**self.simple_lp,
+                                            solve_dual=False)
+        dual_sol     = solveSDP_MosekFUSION(**self.simple_lp,
+                                            solve_dual=True)
         value_primal = primal_sol["primal_value"]
         value_dual   = dual_sol["primal_value"]
         self.assertTrue(np.isclose(value_primal, value_dual),
                         "The dual and primal solutions in LP are not equal.")
         self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2),
                         "The solution to a simple LP is not correct.")
+
+    def test_lp(self):
+        primal_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=False)
+        dual_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual = dual_sol["primal_value"]
+        self.assertAlmostEqual(value_primal, value_dual, None, "The dual and primal solutions in the LP are not equal.")
+        self.assertAlmostEqual(value_dual, 2 + 1 + 1/2 + 2, None, "The solution to the LP is incorrect.")
 
     def test_semiknown_constraints(self):
         """Check that semiknown_moments are correctly processed."""
