@@ -21,10 +21,6 @@ class TestMosek(unittest.TestCase):
     mask_matrices = {}
     for i in np.unique(G):
         mask_matrices.update({str(i): lil_matrix(G == i)})
-    simple_sdp = {"mask_matrices": mask_matrices,
-                  "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
-                  "known_vars": {'1': 1}
-                  }
     simple_lp = {
         "objective": {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
         "known_vars": {'1': 1},  # Define the variable that is the identity
@@ -34,6 +30,48 @@ class TestMosek(unittest.TestCase):
                          {'w': 1, '1': 1}],  # w >= -1
         "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
     }
+    simple_sdp = {"mask_matrices": mask_matrices,
+                  "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
+                  "known_vars": {'1': 1}
+                  }
+
+    def test_LP(self):
+        primal_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=False)
+        dual_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=True)
+
+        value_primal = primal_sol["primal_value"]
+        value_dual = dual_sol["primal_value"]
+        self.assertEqual(value_dual, 2 + 1 + 1/2 + 2,
+                         "The objective value of the LP is incorrect.")
+        self.assertEqual(value_primal, value_dual,
+                         "The primal and dual objective values are not equal.")
+
+        certificate_primal = primal_sol["dual_certificate"]
+        certificate_dual = dual_sol["dual_certificate"]
+        self.assertEqual(certificate_dual, {'1': 2 + 1 + 1/2 + 2},
+                         "The certificate for the LP is incorrect.")
+        self.assertEqual(certificate_primal, certificate_dual,
+                         "The primal and dual certificates are not equal.")
+
+        solution_primal = primal_sol["x"]
+        solution_dual = dual_sol["x"]
+        self.assertEqual(solution_dual, {'x': 2, 'y': 1, 'z': 1/2, 'w': -1},
+                         "The solution to the LP is incorrect.")
+        self.assertEqual(solution_primal, solution_dual,
+                         "The primal and dual solutions are not equal.")
+
+    def test_LP_inequalities(self):
+        self.simple_lp['equalities'] = []
+        primal_sol = solveLP_MosekFUSION(**self.simple_lp,
+                                         solve_dual=False)
+        dual_sol = solveLP_MosekFUSION(**self.simple_lp,
+                                       solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual = dual_sol["dual_value"]
+        self.assertEqual(value_dual, 19/2,
+                         "The objective value of the LP is incorrect.")
+        self.assertEqual(value_primal, value_dual,
+                         "The primal and dual solutions are not equal.")
 
     def test_LP_with_SDP(self):
         primal_sol   = solveSDP_MosekFUSION(**self.simple_lp,
@@ -46,14 +84,6 @@ class TestMosek(unittest.TestCase):
                         "The dual and primal solutions in LP are not equal.")
         self.assertTrue(np.isclose(value_dual, 2 + 1 + 1/2 + 2),
                         "The solution to a simple LP is not correct.")
-
-    def test_lp(self):
-        primal_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=False)
-        dual_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=True)
-        value_primal = primal_sol["primal_value"]
-        value_dual = dual_sol["primal_value"]
-        self.assertAlmostEqual(value_primal, value_dual, None, "The dual and primal solutions in the LP are not equal.")
-        self.assertAlmostEqual(value_dual, 2 + 1 + 1/2 + 2, None, "The solution to the LP is incorrect.")
 
     def test_semiknown_constraints(self):
         """Check that semiknown_moments are correctly processed."""
@@ -90,6 +120,19 @@ class TestMosek(unittest.TestCase):
                                              semiknown_vars={'z': (0.5, 'x')},
                                              solve_dual=True,
                                              process_constraints=True)
+        p_lp = solveLP_MosekFUSION(**problem,
+                                   semiknown_vars={},
+                                   solve_dual=False)
+        p_lpi_lp = solveLP_MosekFUSION(**problem,
+                                       semiknown_vars={'z': (0.5, 'x')},
+                                       solve_dual=False)
+        d_lp = solveLP_MosekFUSION(**problem,
+                                   semiknown_vars={},
+                                   solve_dual=True)
+        d_lpi_lp = solveLP_MosekFUSION(**problem,
+                                       semiknown_vars={'z': (0.5, 'x')},
+                                       solve_dual=True)
+
         truth_obj, truth_obj_lpi = -52, -109/2
         truth_x =     {'x': 3, 'y': 24, 'z': 1}
         truth_x_lpi = {'x': 3, 'y': 25, 'z': 3/2}
@@ -99,22 +142,28 @@ class TestMosek(unittest.TestCase):
 
         check = lambda x: np.isclose(x, truth_obj)
         self.assertTrue(all(map(check, [p['primal_value'],
-                                        d['primal_value']])), msg)
+                                        d['primal_value'],
+                                        p_lp['primal_value'],
+                                        d_lp['primal_value']])), msg)
 
         check = lambda x: np.isclose(x, truth_obj_lpi)
         self.assertTrue(all(map(check, [p_lpi['primal_value'],
                                         d_lpi['primal_value'],
                                         p_lpi_process['primal_value'],
-                                        d_lpi_process['primal_value']])), msg)
+                                        d_lpi_process['primal_value'],
+                                        p_lpi_lp['primal_value'],
+                                        d_lpi_lp['primal_value']])), msg)
 
         check = lambda x: all([np.isclose(v, truth_x[k])
                                for k, v in x.items()])
-        self.assertTrue(all(map(check, [p["x"], d["x"]])), msg)
+        self.assertTrue(all(map(check, [p["x"], d["x"],
+                                        p_lp["x"], d_lp["x"]])), msg)
 
         check = lambda x: all([np.isclose(v, truth_x_lpi[k])
                                for k, v in x.items()])
         self.assertTrue(all(map(check, [p_lpi["x"], p_lpi_process['x'],
-                                        d_lpi["x"], d_lpi_process['x']])), msg)
+                                        d_lpi["x"], d_lpi_process['x'],
+                                        p_lpi_lp["x"], d_lpi_lp["x"]])), msg)
 
     def test_SDP(self):
         # Maximization of CHSH on NPA level 1+AB

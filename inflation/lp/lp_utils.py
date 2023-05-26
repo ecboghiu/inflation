@@ -132,12 +132,13 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 s_mosek = Matrix.sparse(*s.shape,
                                         *s.nonzero(),
                                         s[s.nonzero()].A[0])
+                del s
                 transpose = s_mosek.transpose()
             elif inequalities:
                 transpose = A_mosek.transpose()
             else:
                 transpose = C_mosek.transpose()
-            del A, C, s
+            del A, C
 
             c = M.constraint("c", Expr.sub(Expr.mul(transpose, y), v_mosek),
                              Domain.equalsTo(0.0))
@@ -150,12 +151,13 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 bd_mosek = Matrix.sparse(*bd.shape,
                                          *bd.nonzero(),
                                          bd[bd.nonzero()].A[0])
+                del bd
                 obj = Expr.dot(bd_mosek, y)
             elif inequalities:
-                obj = Expr.dot(Expr.neg(b_mosek), y)
+                obj = Expr.dot(b_mosek, Expr.mul(-1, y))
             else:
-                obj = Expr.dot(Expr.neg(d_mosek), y)
-            del b, d, bd
+                obj = Expr.dot(d_mosek, Expr.mul(-1, y))
+            del b, d
 
             M.objective(ObjectiveSense.Minimize, obj)
         else:
