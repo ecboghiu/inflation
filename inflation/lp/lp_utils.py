@@ -108,9 +108,9 @@ def solveLP_MosekFUSION(objective: Dict = None,
             nof_dual_vars = nof_inequalities + nof_equalities
             y = M.variable("y", nof_dual_vars)
 
-            # Non-negativity constraint for y_i corresponding to inequalities
+            # Non-positivity constraint for y_i corresponding to inequalities
             for i in range(nof_inequalities):
-                M.constraint(y.index(i), Domain.greaterThan(0.0))
+                M.constraint(y.index(i), Domain.lessThan(0.0))
 
             # Define v as vector of coefficients of the objective, v·x
             v = dok_matrix((nof_variables, 1))
@@ -122,10 +122,11 @@ def solveLP_MosekFUSION(objective: Dict = None,
             v_mosek = Matrix.sparse(*v.shape,
                                     *v.nonzero(),
                                     v[v.nonzero()].A[0])
+            del v
 
             # Define dual constraints:
             # For primal objective function v·x, the dual constraints are
-            # (A \\ C)^T·y + v <= 0
+            # (A \\ C)^T·y - v == 0
             if inequalities and equalities:
                 s = vstack([A, C], 'dok')
                 s_mosek = Matrix.sparse(*s.shape,
@@ -136,33 +137,38 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 transpose = A_mosek.transpose()
             else:
                 transpose = C_mosek.transpose()
-            del A, b, C, d, v
+            del A, C, s
 
-            c = M.constraint("c", Expr.add(Expr.mul(transpose, y), v_mosek),
-                             Domain.lessThan(0.0))
+            c = M.constraint("c", Expr.sub(Expr.mul(transpose, y), v_mosek),
+                             Domain.equalsTo(0.0))
 
-            # Define dual objective: b·y_1 + d·y_2
+            # Define dual objective:
+            # Since Ax + b >= 0 and Cx + d == 0, the dual objective is
+            # -(b \\ d)·y
             if inequalities and equalities:
-                y_1 = y.slice(0, nof_inequalities)
-                y_2 = y.slice(nof_inequalities + 1, nof_dual_vars)
-                obj = Expr.add(Expr.dot(b_mosek, y_1), Expr.dot(d_mosek, y_2))
+                bd = -vstack([b, d], 'dok')
+                bd_mosek = Matrix.sparse(*bd.shape,
+                                         *bd.nonzero(),
+                                         bd[bd.nonzero()].A[0])
+                obj = Expr.dot(bd_mosek, y)
             elif inequalities:
-                obj = Expr.dot(b_mosek.transpose(), y)
+                obj = Expr.dot(Expr.neg(b_mosek), y)
             else:
-                obj = Expr.dot(d_mosek.transpose(), y)
+                obj = Expr.dot(Expr.neg(d_mosek), y)
+            del b, d, bd
 
             M.objective(ObjectiveSense.Minimize, obj)
         else:
             # Define primal variables
-            x = M.variable("x", nof_variables, Domain.greaterThan(0.0))
+            x = M.variable("x", nof_variables)
 
             # Define primal constraints
             ineq_cons = M.constraint("ineqs",
                                      Expr.add(Expr.mul(A_mosek, x), b_mosek),
-                                     Domain.greaterThan(0))
+                                     Domain.greaterThan(0.0))
             eq_cons = M.constraint("eqs",
                                    Expr.add(Expr.mul(C_mosek, x), d_mosek),
-                                   Domain.equalsTo(0))
+                                   Domain.equalsTo(0.0))
 
             # Define objective function
             obj = c0
@@ -179,7 +185,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
         if solve_dual:
             # Get primal solution value corresponding to each dual constraint
             x_values = {
-                x: -c.index([var_index[x], 0]).dual()[0]
+                x: c.index([var_index[x], 0]).dual()[0]
                 for x in variables
             }
         else:
