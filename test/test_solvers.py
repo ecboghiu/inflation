@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 import warnings
 from scipy.sparse import lil_matrix
+from copy import deepcopy
 
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
@@ -61,14 +62,28 @@ class TestMosek(unittest.TestCase):
                          "The primal and dual solutions are not equal.")
 
     def test_LP_inequalities(self):
-        self.simple_lp['equalities'] = []
-        primal_sol = solveLP_MosekFUSION(**self.simple_lp,
-                                         solve_dual=False)
-        dual_sol = solveLP_MosekFUSION(**self.simple_lp,
-                                       solve_dual=True)
+        lp = deepcopy(self.simple_lp)
+        lp['equalities'].clear()
+        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False)
+        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True)
         value_primal = primal_sol["primal_value"]
-        value_dual = dual_sol["dual_value"]
+        value_dual = dual_sol["primal_value"]
         self.assertEqual(value_dual, 19/2,
+                         "The objective value of the LP is incorrect.")
+        self.assertEqual(value_primal, value_dual,
+                         "The primal and dual solutions are not equal.")
+
+    def test_LP_equalities(self):
+        lp = deepcopy(self.simple_lp)
+        lp['inequalities'].clear()
+        lp['equalities'] += [{'y': -1, '1': 5},
+                             {'z': -1, '1': 1/2},
+                             {'w': 1, '1': 1}]
+        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False)
+        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True)
+        value_primal = primal_sol["primal_value"]
+        value_dual = dual_sol["primal_value"]
+        self.assertEqual(value_dual, -13/2,
                          "The objective value of the LP is incorrect.")
         self.assertEqual(value_primal, value_dual,
                          "The primal and dual solutions are not equal.")

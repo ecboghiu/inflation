@@ -43,6 +43,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         known_vars = {}
     if semiknown_vars is None:
         semiknown_vars = {}
+    if inequalities is None:
+        inequalities = []
+    if equalities is None:
+        equalities = []
 
     # Define variables for LP, excluding those with known values
     variables = set()
