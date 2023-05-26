@@ -181,7 +181,6 @@ def solveLP_MosekFUSION(objective: Dict = None,
         M.acceptedSolutionStatus(AccSolutionStatus.Anything)
         M.solve()
 
-        print(var_index)
         if solve_dual:
             # Get primal solution value corresponding to each dual constraint
             x_values = {
@@ -204,17 +203,15 @@ def solveLP_MosekFUSION(objective: Dict = None,
         certificate = {x: 0 for x in known_vars}
 
         if solve_dual:
-            y_values = y.level()
+            y_values = -y.level()
         else:
             y_values = np.concatenate((-ineq_cons.dual(), -eq_cons.dual()))
 
         # Each monomial with known value is associated with a sum of duals
-        for i, ineq in enumerate(inequalities):
-            for x in set(ineq).intersection(known_vars):
-                certificate[x] += y_values[i] * ineq[x]
-        for i, eq in enumerate(equalities):
-            for x in set(eq).intersection(known_vars):
-                certificate[x] += y_values[i] * eq[x]
+        cons = inequalities + equalities
+        for i, c in enumerate(cons):
+            for x in set(c).intersection(known_vars):
+                certificate[x] += y_values[i] * c[x]
 
         # Clean entries with coefficient zero
         for x in list(certificate.keys()):
