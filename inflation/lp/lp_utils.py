@@ -3,6 +3,7 @@ import numpy as np
 from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
     OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
+from mosek import boundkey
 from scipy.sparse import dok_matrix, vstack
 
 
@@ -231,3 +232,104 @@ def solveLP_MosekFUSION(objective: Dict = None,
             "dual_certificate": certificate,
             "x": x_values
         }
+
+
+def solveLP_Mosek(objective: Dict = None,
+                  known_vars: Dict = None,
+                  semiknown_vars: Dict = None,
+                  inequalities: List[Dict] = None,
+                  equalities: List[Dict] = None,
+                  solve_dual: bool = True
+                  ) -> Dict:
+    """Internal function to solve an LP with the Mosek Optimizer API.
+
+    Parameters
+    ----------
+    objective : dict
+        Monomials (keys) and coefficients (values) that describe
+        the objective function
+    known_vars : dict
+        Monomials (keys) and known values of the monomials
+    semiknown_vars : dict
+        Encodes proportionality constraints between monomials
+    inequalities : list of dict
+        Inequality constraints with monomials (keys) and coefficients (values)
+    equalities : list of dict
+        Equality constraints with monomials (keys) and coefficients (values)4
+    solve_dual : bool
+        Whether to solve the dual (True) or primal (False) formulation
+
+    Returns
+    -------
+    dict
+        Primal objective value, dual objective value, problem status, dual
+        certificate, x values
+    """
+
+    # Deal with unsanitary input
+    if known_vars is None:
+        known_vars = {}
+    if semiknown_vars is None:
+        semiknown_vars = {}
+    if inequalities is None:
+        inequalities = []
+    if equalities is None:
+        equalities = []
+
+    # Since the value of infinity is ignored, define it for symbolic purposes
+    inf = 0.0
+
+    # Define variables for LP, excluding those with known values
+    variables = set()
+    variables.update(objective.keys())
+    for ineq in inequalities:
+        variables.update(ineq.keys())
+    internal_equalities = equalities.copy()
+    for x, (c, x2) in semiknown_vars.items():
+        internal_equalities.append({x: 1, x2: -c})
+    for eq in internal_equalities:
+        variables.update(eq.keys())
+    variables.difference_update(known_vars.keys())
+    nof_variables = len(variables)
+
+    # Compute c0, the constant term in the objective function
+    c0 = 0
+    for x in objective.keys():
+        if x in known_vars.keys():
+            c0 += objective[x] * known_vars[x]
+
+    # Create dictionary var_index - monomial : index
+    var_index = {x: i for i, x in enumerate(variables)}
+
+    # Create matrix A in sparse representation stored by column
+    constraints = inequalities + equalities
+    asub = [[] for _ in range(nof_variables)]
+    aval = [[] for _ in range(nof_variables)]
+    for v in variables:
+        for i, c in enumerate(constraints):
+            if v in c:
+                asub[var_index[v]].append(i)
+                aval[var_index[v]].append(c[v])
+
+    # Create bound keys and bound values (lower and upper) for constraints
+    # Bound key describes whether the bound for the constraint is >= or ==
+    # Ax + b >= 0 -> Ax >= -b
+    cons_bk = []
+    cons_lb = []
+    cons_ub = []
+    for ineq in inequalities:
+        b = 0
+        for x in ineq:
+            if x in known_vars:
+                b += ineq[x] * known_vars[x]
+        cons_bk.append(boundkey.lo)
+        cons_lb.append(-b)
+        cons_ub.append(+inf)
+    for eq in equalities:
+        b = 0
+        for x in eq:
+            if x in known_vars:
+                b += eq[x] * known_vars[x]
+        cons_bk.append(boundkey.fx)
+        cons_lb.append(-b)
+        cons_ub.append(-b)
