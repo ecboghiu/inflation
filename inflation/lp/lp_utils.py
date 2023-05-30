@@ -313,16 +313,26 @@ def solveLP_Mosek(objective: Dict = None,
                 b[i] -= cons[x] * known_vars[x]
         b = b.tolist()
 
+        # Objective function coefficients
+        c = np.zeros(numvar)
+        for x in set(objective).difference(known_vars):
+            c[var_index[x]] = objective[x]
+
+        # Compute c0, the constant (fixed) term in the objective function
+        c0 = 0
+        for x in set(objective).intersection(known_vars):
+            c0 += objective[x] * known_vars[x]
+
         if solve_dual:
             numcon = len(variables)
             numvar = len(inequalities + internal_equalities)
-
             matrix = A.asformat('csr', copy=False)
+            objective_vector = b
 
             # Set bound keys and values for constraints (primal objective)
             # All equalities since primal variable x is free
             bkc = [mosek.boundkey.fx] * numcon
-            blc = buc = list(objective.values())
+            blc = buc = c
 
             # Set bound keys and values for variables
             # Non-positivity for y corresponding to inequalities
@@ -331,56 +341,37 @@ def solveLP_Mosek(objective: Dict = None,
             blx = [-inf] * numvar
             bux = [0.0] * nof_inequalities + [+inf] * nof_equalities
 
-            # Objective function coefficients
-            c = b
-
-            # The constant fixed term in the objective function is 0 for the
-            # dual formulation
-            c0 = 0
-
             # Set the objective sense
             task.putobjsense(mosek.objsense.minimize)
+
+            # Add all the problem data to the task
+
+
 
 
         else:
             matrix = A.asformat('csc', copy=False)
+            objective_vector = c
 
             # Set bound keys and bound values (lower and upper) for constraints
             # Ax + b >= 0 -> Ax >= -b
             bkc = [mosek.boundkey.lo] * nof_inequalities + \
                   [mosek.boundkey.fx] * nof_equalities
             blc = b
-            buc = [+inf] * nof_inequalities + \
-                  b[nof_inequalities:numcon] * nof_equalities
+            buc = b
 
             # Set bound keys and bound values (lower and upper) for variables
             bkx = [mosek.boundkey.fr] * numvar
             blx = [-inf] * numvar
             bux = [+inf] * numvar
 
-            # Objective function coefficients
-            c = np.zeros(numvar)
-            for x in set(objective).difference(known_vars):
-                c[var_index[x]] = objective[x]
-
-            # Compute c0, the constant (fixed) term in the objective function
-            c0 = 0
-            for x in set(objective).intersection(known_vars):
-                c0 += objective[x] * known_vars[x]
-
             # Set the objective sense
             task.putobjsense(mosek.objsense.maximize)
-
-        print(matrix.indptr[:-1])
-        print(matrix.indptr[1:])
-        print(matrix.indices)
-        print(matrix.data)
-
 
         # Add all the problem data to the task
         task.inputdata(maxnumcon=numcon,
                        maxnumvar=numvar,
-                       c=c,
+                       c=objective_vector,
                        cfix=c0,
                        aptrb=matrix.indptr[:-1],
                        aptre=matrix.indptr[1:],
@@ -392,6 +383,14 @@ def solveLP_Mosek(objective: Dict = None,
                        bkx=bkx,
                        blx=blx,
                        bux=bux)
+
+        print(matrix.indptr[:-1])
+        print(matrix.indptr[1:])
+        print(matrix.indices)
+        print(matrix.data)
+
+
+
 
 
         # Solve the problem
@@ -451,9 +450,10 @@ if __name__ == '__main__':
                          {'z': -1, '1': 1 / 2},  # 1/2 - z >= 0
                          {'w': 1, '1': 1}],  # w >= -1
         "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}],  # x/2 + 2y - 3 = 0
-        "solve_dual": True
     }
     safe_sol = solveLP_MosekFUSION(**simple_lp)
-    raw_sol = solveLP_Mosek(**simple_lp)
+    raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
+    raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
     print(safe_sol)
     print(raw_sol)
+    print(raw_sol_d)
