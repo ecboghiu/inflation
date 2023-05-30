@@ -5,7 +5,6 @@ from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
     OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
 from scipy.sparse import dok_matrix, vstack
-import sys
 
 def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
@@ -235,9 +234,6 @@ def solveLP_MosekFUSION(objective: Dict = None,
             "x": x_values
         }
 
-def streamprinter(text):
-    sys.stdout.write(text)
-    sys.stdout.flush()
 
 def solveLP_Mosek(objective: Dict = None,
                   known_vars: Dict = None,
@@ -302,7 +298,6 @@ def solveLP_Mosek(objective: Dict = None,
     var_index = {x: i for i, x in enumerate(variables)}
 
     with mosek.Task() as task:
-        # task.set_Stream(mosek.streamtype.log, streamprinter)
         # Set bound keys and bound values (lower and upper) for constraints
         # Ax + b >= 0 -> Ax >= -b
         bkc = []
@@ -335,7 +330,6 @@ def solveLP_Mosek(objective: Dict = None,
         c = np.zeros(nof_variables)
         for x in set(objective).difference(known_vars):
             c[var_index[x]] = objective[x]
-
 
         # Compute c0, the constant (fixed) term in the objective function
         c0 = 0
@@ -372,24 +366,36 @@ def solveLP_Mosek(objective: Dict = None,
         # Solve the problem
         task.optimize()
 
-        # task.solutionsummary(mosek.streamtype.msg)
-
-        # Get status information about the solution
+        # Get objective values
         basic = mosek.soltype.bas
-        status = task.getsolsta(basic)
-
-        # Get objective value and optimal solution
         primal = task.getprimalobj(basic)
         dual = task.getdualobj(basic)
+
+        # Get solution status
+        sol = task.getsolution(basic)
+        status = sol[1]
         if status == mosek.solsta.optimal:
             status_str = "feasible"
-            x = task.getxx(basic)
-            x_values = dict(zip(variables, x))
         else:
             status_str = "infeasible"
-            x_values = None
 
-        certificate = None
+        # Extract the certificate
+        certificate = {x: 0 for x in known_vars}
+        y_values = [-y for y in sol[7]]
+
+        # Each monomial with known value is associated with a sum of duals
+        for i, cons in enumerate(constraints):
+            for x in set(cons).intersection(known_vars):
+                certificate[x] += y_values[i] * cons[x]
+
+        # Clean entries with coefficient zero
+        for x in certificate:
+            if np.isclose(certificate[x], 0):
+                del certificate[x]
+
+        # Get optimal solutions x
+        x = sol[6]
+        x_values = dict(zip(variables, x))
 
         return {
             "primal_value": primal,
@@ -398,6 +404,7 @@ def solveLP_Mosek(objective: Dict = None,
             "dual_certificate": certificate,
             "x": x_values
         }
+
 
 if __name__ == '__main__':
     simple_lp = {
