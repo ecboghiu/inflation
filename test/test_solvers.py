@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
 from inflation.lp.lp_utils import solveLP_MosekFUSION
+from inflation.lp.lp_utils import solveLP_Mosek
 
 
 class TestMosek(unittest.TestCase):
@@ -37,29 +38,35 @@ class TestMosek(unittest.TestCase):
                   }
 
     def test_LP(self):
-        primal_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=False)
-        dual_sol = solveLP_MosekFUSION(**self.simple_lp, solve_dual=True)
+        for solveLP in (solveLP_MosekFUSION, solveLP_Mosek):
+            with self.subTest():
+                primal_sol = solveLP(**self.simple_lp, solve_dual=False)
+                dual_sol = solveLP(**self.simple_lp, solve_dual=True)
 
-        value_primal = primal_sol["primal_value"]
-        value_dual = dual_sol["primal_value"]
-        self.assertEqual(value_dual, 2 + 1 + 1/2 + 2,
-                         "The objective value of the LP is incorrect.")
-        self.assertEqual(value_primal, value_dual,
-                         "The primal and dual objective values are not equal.")
+                value_primal = primal_sol["primal_value"]
+                value_dual = dual_sol["primal_value"]
+                self.assertEqual(value_dual, 2 + 1 + 1/2 + 2,
+                                 "The objective value of the LP is incorrect.")
+                self.assertEqual(value_primal, value_dual,
+                                 "The primal and dual objective values are not"
+                                 "equal.")
 
-        certificate_primal = primal_sol["dual_certificate"]
-        certificate_dual = dual_sol["dual_certificate"]
-        self.assertEqual(certificate_dual, {'1': 2 + 1 + 1/2 + 2},
-                         "The certificate for the LP is incorrect.")
-        self.assertEqual(certificate_primal, certificate_dual,
-                         "The primal and dual certificates are not equal.")
+                certificate_primal = primal_sol["dual_certificate"]
+                certificate_dual = dual_sol["dual_certificate"]
+                self.assertEqual(certificate_dual, {'1': 2 + 1 + 1/2 + 2},
+                                 "The certificate for the LP is incorrect.")
+                self.assertEqual(certificate_primal, certificate_dual,
+                                 "The primal and dual certificates are not"
+                                 "equal.")
 
-        solution_primal = primal_sol["x"]
-        solution_dual = dual_sol["x"]
-        self.assertEqual(solution_dual, {'x': 2, 'y': 1, 'z': 1/2, 'w': -1},
-                         "The solution to the LP is incorrect.")
-        self.assertEqual(solution_primal, solution_dual,
-                         "The primal and dual solutions are not equal.")
+                solution_primal = primal_sol["x"]
+                solution_dual = dual_sol["x"]
+                self.assertEqual(solution_dual,
+                                 {'x': 2, 'y': 1, 'z': 1/2, 'w': -1},
+                                 "The solution to the LP is incorrect.")
+                self.assertEqual(solution_primal, solution_dual,
+                                 "The primal and dual solutions are not"
+                                 "equal.")
 
     def test_LP_inequalities(self):
         lp = deepcopy(self.simple_lp)
