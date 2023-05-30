@@ -5,7 +5,7 @@ from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
     OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
 from scipy.sparse import dok_matrix, vstack
-
+import sys
 
 def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
@@ -202,7 +202,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
 
         if solve_dual:
             primal = M.dualObjValue() + c0
-            dual = M.primalObjValue() +c0
+            dual = M.primalObjValue() + c0
         else:
             primal = M.primalObjValue()
             dual = M.dualObjValue()
@@ -235,6 +235,9 @@ def solveLP_MosekFUSION(objective: Dict = None,
             "x": x_values
         }
 
+def streamprinter(text):
+    sys.stdout.write(text)
+    sys.stdout.flush()
 
 def solveLP_Mosek(objective: Dict = None,
                   known_vars: Dict = None,
@@ -292,12 +295,14 @@ def solveLP_Mosek(objective: Dict = None,
     for eq in internal_equalities:
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
+    variables = sorted(variables)
     nof_variables = len(variables)
 
     # Create dictionary var_index - monomial : index
     var_index = {x: i for i, x in enumerate(variables)}
 
     with mosek.Task() as task:
+        # task.set_Stream(mosek.streamtype.log, streamprinter)
         # Set bound keys and bound values (lower and upper) for constraints
         # Ax + b >= 0 -> Ax >= -b
         bkc = []
@@ -309,7 +314,7 @@ def solveLP_Mosek(objective: Dict = None,
                 b += ineq[x] * known_vars[x]
             bkc.append(mosek.boundkey.lo)
             blc.append(-b)
-            buc.append(+inf)
+            buc.append(-b)
         for eq in internal_equalities:
             b = 0
             for x in set(eq).intersection(known_vars):
@@ -317,9 +322,6 @@ def solveLP_Mosek(objective: Dict = None,
             bkc.append(mosek.boundkey.fx)
             blc.append(-b)
             buc.append(-b)
-        print(bkc)
-        print(blc)
-        print(buc)
 
         # Set bound keys and bound values (lower and upper) for variables
         bkx = [mosek.boundkey.fr] * nof_variables
@@ -330,12 +332,10 @@ def solveLP_Mosek(objective: Dict = None,
         numvar = len(bkx)
 
         # Objective function coefficients
-        c = []
-        for x in var_index:
-            if x in objective:
-                c.append(objective[x])
-            else:
-                c.append(0.0)
+        c = np.zeros(nof_variables)
+        for x in set(objective).difference(known_vars):
+            c[var_index[x]] = objective[x]
+
 
         # Compute c0, the constant (fixed) term in the objective function
         c0 = 0
@@ -348,33 +348,31 @@ def solveLP_Mosek(objective: Dict = None,
         for i, cons in enumerate(constraints):
             for x in set(cons).difference(known_vars):
                 A[i, var_index[x]] = cons[x]
-        csr = A.asformat('csr', copy=False)
-        aptrb = csr.indptr[:-1]
-        aptre = csr.indptr[1:]
-        asub = csr.indices
-        aval = csr.data
+        csc = A.asformat('csc', copy=False)
 
         # Add all the problem data to the task
-        task.inputdata(numcon,
-                       numvar,
-                       c,
-                       c0,
-                       aptrb,
-                       aptre,
-                       asub,
-                       aval,
-                       bkc,
-                       blc,
-                       buc,
-                       bkx,
-                       blx,
-                       bux)
+        task.inputdata(maxnumcon=numcon,
+                       maxnumvar=numvar,
+                       c=c,
+                       cfix=c0,
+                       aptrb=csc.indptr[:-1],
+                       aptre=csc.indptr[1:],
+                       asub=csc.indices,
+                       aval=csc.data,
+                       bkc=bkc,
+                       blc=blc,
+                       buc=buc,
+                       bkx=bkx,
+                       blx=blx,
+                       bux=bux)
 
         # Set the objective sense
         task.putobjsense(mosek.objsense.maximize)
 
         # Solve the problem
         task.optimize()
+
+        # task.solutionsummary(mosek.streamtype.msg)
 
         # Get status information about the solution
         basic = mosek.soltype.bas
@@ -400,3 +398,16 @@ def solveLP_Mosek(objective: Dict = None,
             "dual_certificate": certificate,
             "x": x_values
         }
+
+if __name__ == '__main__':
+    simple_lp = {
+        "objective": {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
+        "known_vars": {'1': 1},  # Define the variable that is the identity
+        "inequalities": [{'x': -1, '1': 2},  # 2 - x >= 0
+                         {'y': -1, '1': 5},  # 5 - y >= 0
+                         {'z': -1, '1': 1 / 2},  # 1/2 - z >= 0
+                         {'w': 1, '1': 1}],  # w >= -1
+        "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
+    }
+    safe_sol = solveLP_MosekFUSION(**simple_lp)
+    raw_sol = solveLP_Mosek(**simple_lp)
