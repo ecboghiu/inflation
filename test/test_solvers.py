@@ -159,7 +159,12 @@ class TestMosek(unittest.TestCase):
         self.assertTrue(all(map(check, [p['primal_value'],
                                         d['primal_value'],
                                         p_lp['primal_value'],
-                                        d_lp['primal_value']])), msg)
+                                        d_lp['primal_value'],
+                                        p['dual_value'],
+                                        d['dual_value'],
+                                        p_lp['dual_value'],
+                                        d_lp['dual_value'],
+                                        ])), msg)
 
         check = lambda x: np.isclose(x, truth_obj_lpi)
         self.assertTrue(all(map(check, [p_lpi['primal_value'],
@@ -167,7 +172,14 @@ class TestMosek(unittest.TestCase):
                                         p_lpi_process['primal_value'],
                                         d_lpi_process['primal_value'],
                                         p_lpi_lp['primal_value'],
-                                        d_lpi_lp['primal_value']])), msg)
+                                        d_lpi_lp['primal_value'],
+                                        p_lpi['dual_value'],
+                                        d_lpi['dual_value'],
+                                        p_lpi_process['dual_value'],
+                                        d_lpi_process['dual_value'],
+                                        p_lpi_lp['dual_value'],
+                                        d_lpi_lp['dual_value']
+                                        ])), msg)
 
         check = lambda x: all([np.isclose(v, truth_x[k])
                                for k, v in x.items()])
@@ -261,3 +273,69 @@ class TestMosek(unittest.TestCase):
                         "not equal.")
         self.assertTrue(np.isclose(value_primal, bound),
                         f"Max CHSH with CHSH <= {bound} is not {bound}.")
+
+    def test_partially_known_objective(self):
+        """Check that semiknown_moments are correctly processed."""
+        problem = {
+            "objective":  {'x': -1, 'y': -2, 'z': -1},
+            "known_vars": {'1': 1, 'y': 25},
+            "inequalities":  [{'x': 1, 'y': 1, 'z': 1, '1': -26},
+                              {'x': 1, '1': -3},
+                              {'y': 1, '1': -4},
+                              {'z': 1, '1': -1}],
+            "equalities": [{'x': -5, 'y': 1, 'z': -2, '1': -7}],
+            "semiknown_vars": {'z': (0.5, 'x')}
+        }
+        p_lpi = solveSDP_MosekFUSION(**problem,
+                                     solve_dual=False,
+                                     process_constraints=False)
+        p_lpi_process = solveSDP_MosekFUSION(**problem,
+                                             solve_dual=False,
+                                             process_constraints=True)
+        d_lpi = solveSDP_MosekFUSION(**problem,
+                                     solve_dual=True,
+                                     process_constraints=False)
+        d_lpi_process = solveSDP_MosekFUSION(**problem,
+                                             solve_dual=True,
+                                             process_constraints=True)
+        p_lpi_lp = solveLP_MosekFUSION(**problem,
+                                       solve_dual=False)
+
+        d_lpi_lp = solveLP_MosekFUSION(**problem,
+                                       solve_dual=True)
+        truth_obj_lpi = -109/2
+        truth_x_lpi = {'x': 3, 'z': 3/2}
+
+        msg = "The dual and primal solutions are not equal when " + \
+              "processing semiknown constraints and partially-known objective."
+
+
+        check = lambda x: all([np.isclose(v, truth_x_lpi[k])
+                               for k, v in truth_x_lpi.items()])
+        self.assertTrue(check(p_lpi_lp["x"]), msg)
+        self.assertTrue(check(d_lpi_lp["x"]), msg)
+        self.assertTrue(check(p_lpi["x"]), msg)
+        self.assertTrue(check(p_lpi_process["x"]), msg)
+        self.assertTrue(check(d_lpi["x"]), msg)
+        self.assertTrue(check(d_lpi_process["x"]), msg)
+
+        check = lambda x: np.isclose(x, truth_obj_lpi)
+
+        vals = [
+            p_lpi_lp['primal_value'],
+            d_lpi_lp['primal_value'],
+            p_lpi_lp['dual_value'],
+            d_lpi_lp['dual_value'],
+            p_lpi['primal_value'],
+            p_lpi['dual_value'],
+            p_lpi_process['primal_value'],
+            p_lpi_process['dual_value'],
+            d_lpi_process['primal_value'],
+            d_lpi_process['dual_value'],
+            d_lpi['primal_value'],
+            d_lpi['dual_value']
+        ]
+        self.assertTrue(all(map(check, vals)), msg + "\n" +f"{vals} + vs {truth_obj_lpi}")
+
+
+

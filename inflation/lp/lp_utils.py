@@ -60,6 +60,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
     for eq in internal_equalities:
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
+    variables = list(variables)
     nof_variables = len(variables)
 
     # Compute c0, the constant term in the objective function
@@ -117,13 +118,13 @@ def solveLP_MosekFUSION(objective: Dict = None,
             for i in range(nof_inequalities):
                 M.constraint(y.index(i), Domain.lessThan(0.0))
 
-            # Define v as vector of coefficients of the objective, v·x
+            # Define v as vector of coefficients of the primal objective, v·x
             v = dok_matrix((nof_variables, 1))
-            for i, x in enumerate(variables):
+            for x, i in var_index.items():
                 try:
-                    v[var_index[x], 0] = objective[x]
+                    v[i, 0] = objective[x]
                 except KeyError:
-                    v[var_index[x], 0] = 0
+                    v[i, 0] = 0
             v_mosek = Matrix.sparse(*v.shape,
                                     *v.nonzero(),
                                     v[v.nonzero()].A[0])
@@ -132,7 +133,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
             # Define dual constraints:
             # For primal objective function v·x, the dual constraints are
             # (A \\ C)^T·y - v == 0
-            if inequalities and equalities:
+            if inequalities and internal_equalities:
                 s = vstack([A, C], 'dok')
                 s_mosek = Matrix.sparse(*s.shape,
                                         *s.nonzero(),
@@ -151,7 +152,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
             # Define dual objective:
             # Since Ax + b >= 0 and Cx + d == 0, the dual objective is
             # -(b \\ d)·y
-            if inequalities and equalities:
+            if inequalities and internal_equalities:
                 bd = -vstack([b, d], 'dok')
                 bd_mosek = Matrix.sparse(*bd.shape,
                                          *bd.nonzero(),
@@ -189,11 +190,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
         M.solve()
 
         if solve_dual:
-            # Get primal solution value corresponding to each dual constraint
-            x_values = {
-                x: c.index([var_index[x], 0]).dual()[0]
-                for x in variables
-            }
+            x_values = dict(zip(variables, c.dual()))
         else:
             x_values = dict(zip(variables, x.level()))
 
@@ -202,8 +199,13 @@ def solveLP_MosekFUSION(objective: Dict = None,
             status_str = "feasible"
         else:
             status_str = "infeasible"
-        primal = M.primalObjValue()
-        dual = M.dualObjValue()
+
+        if solve_dual:
+            primal = M.dualObjValue() + c0
+            dual = M.primalObjValue() +c0
+        else:
+            primal = M.primalObjValue()
+            dual = M.dualObjValue()
 
         # Extract the certificate:
         # Certificate is contained in the dual objective function b·y
@@ -212,10 +214,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         if solve_dual:
             y_values = -y.level()
         else:
-            y_values = np.concatenate((-ineq_cons.dual(), -eq_cons.dual()))
+            y_values = np.hstack((-ineq_cons.dual(), -eq_cons.dual()))
 
         # Each monomial with known value is associated with a sum of duals
-        cons = inequalities + equalities
+        cons = inequalities + internal_equalities
         for i, c in enumerate(cons):
             for x in set(c).intersection(known_vars):
                 certificate[x] += y_values[i] * c[x]
