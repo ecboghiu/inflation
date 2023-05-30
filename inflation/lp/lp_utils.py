@@ -344,11 +344,6 @@ def solveLP_Mosek(objective: Dict = None,
             # Set the objective sense
             task.putobjsense(mosek.objsense.minimize)
 
-            # Add all the problem data to the task
-
-
-
-
         else:
             matrix = A.asformat('csc', copy=False)
             objective_vector = c
@@ -357,8 +352,7 @@ def solveLP_Mosek(objective: Dict = None,
             # Ax + b >= 0 -> Ax >= -b
             bkc = [mosek.boundkey.lo] * nof_inequalities + \
                   [mosek.boundkey.fx] * nof_equalities
-            blc = b
-            buc = b
+            blc = buc = b
 
             # Set bound keys and bound values (lower and upper) for variables
             bkx = [mosek.boundkey.fr] * numvar
@@ -384,15 +378,6 @@ def solveLP_Mosek(objective: Dict = None,
                        blx=blx,
                        bux=bux)
 
-        print(matrix.indptr[:-1])
-        print(matrix.indptr[1:])
-        print(matrix.indices)
-        print(matrix.data)
-
-
-
-
-
         # Solve the problem
         task.optimize()
         basic = mosek.soltype.bas
@@ -400,7 +385,6 @@ def solveLP_Mosek(objective: Dict = None,
         status = sol[1]
         xx = sol[6]
         yy = sol[7]
-
 
         # Get objective values, solutions x, dual values y
         if solve_dual:
@@ -454,6 +438,3 @@ if __name__ == '__main__':
     safe_sol = solveLP_MosekFUSION(**simple_lp)
     raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
     raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
-    print(safe_sol)
-    print(raw_sol)
-    print(raw_sol_d)
