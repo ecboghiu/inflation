@@ -292,67 +292,100 @@ def solveLP_Mosek(objective: Dict = None,
         variables.update(eq.keys())
     variables.difference_update(known_vars.keys())
     variables = sorted(variables)
-    nof_variables = len(variables)
 
     # Create dictionary var_index - monomial : index
     var_index = {x: i for i, x in enumerate(variables)}
 
     with mosek.Task() as task:
-        # Set bound keys and bound values (lower and upper) for constraints
-        # Ax + b >= 0 -> Ax >= -b
-        bkc = []
-        blc = []
-        buc = []
-        for ineq in inequalities:
-            b = 0
-            for x in set(ineq).intersection(known_vars):
-                b += ineq[x] * known_vars[x]
-            bkc.append(mosek.boundkey.lo)
-            blc.append(-b)
-            buc.append(-b)
-        for eq in internal_equalities:
-            b = 0
-            for x in set(eq).intersection(known_vars):
-                b += eq[x] * known_vars[x]
-            bkc.append(mosek.boundkey.fx)
-            blc.append(-b)
-            buc.append(-b)
-
-        # Set bound keys and bound values (lower and upper) for variables
-        bkx = [mosek.boundkey.fr] * nof_variables
-        blx = [-inf] * nof_variables
-        bux = [+inf] * nof_variables
-
-        numcon = len(bkc)
-        numvar = len(bkx)
-
-        # Objective function coefficients
-        c = np.zeros(nof_variables)
-        for x in set(objective).difference(known_vars):
-            c[var_index[x]] = objective[x]
-
-        # Compute c0, the constant (fixed) term in the objective function
-        c0 = 0
-        for x in set(objective).intersection(known_vars):
-            c0 += objective[x] * known_vars[x]
+        numcon = len(inequalities + internal_equalities)
+        numvar = len(variables)
+        nof_inequalities = len(inequalities)
+        nof_equalities = len(internal_equalities)
 
         # Create sparse matrix A of constraints
         constraints = inequalities + internal_equalities
         A = dok_matrix((numcon, numvar))
+        b = np.zeros(numcon)
         for i, cons in enumerate(constraints):
             for x in set(cons).difference(known_vars):
                 A[i, var_index[x]] = cons[x]
-        csc = A.asformat('csc', copy=False)
+            for x in set(cons).intersection(known_vars):
+                b[i] -= cons[x] * known_vars[x]
+        b = b.tolist()
+
+        if solve_dual:
+            numcon = len(variables)
+            numvar = len(inequalities + internal_equalities)
+
+            matrix = A.asformat('csr', copy=False)
+
+            # Set bound keys and values for constraints (primal objective)
+            # All equalities since primal variable x is free
+            bkc = [mosek.boundkey.fx] * numcon
+            blc = buc = list(objective.values())
+
+            # Set bound keys and values for variables
+            # Non-positivity for y corresponding to inequalities
+            bkx = [mosek.boundkey.up] * nof_inequalities + \
+                  [mosek.boundkey.fr] * nof_equalities
+            blx = [-inf] * numvar
+            bux = [0.0] * nof_inequalities + [+inf] * nof_equalities
+
+            # Objective function coefficients
+            c = b
+
+            # The constant fixed term in the objective function is 0 for the
+            # dual formulation
+            c0 = 0
+
+            # Set the objective sense
+            task.putobjsense(mosek.objsense.minimize)
+
+
+        else:
+            matrix = A.asformat('csc', copy=False)
+
+            # Set bound keys and bound values (lower and upper) for constraints
+            # Ax + b >= 0 -> Ax >= -b
+            bkc = [mosek.boundkey.lo] * nof_inequalities + \
+                  [mosek.boundkey.fx] * nof_equalities
+            blc = b
+            buc = [+inf] * nof_inequalities + \
+                  b[nof_inequalities:numcon] * nof_equalities
+
+            # Set bound keys and bound values (lower and upper) for variables
+            bkx = [mosek.boundkey.fr] * numvar
+            blx = [-inf] * numvar
+            bux = [+inf] * numvar
+
+            # Objective function coefficients
+            c = np.zeros(numvar)
+            for x in set(objective).difference(known_vars):
+                c[var_index[x]] = objective[x]
+
+            # Compute c0, the constant (fixed) term in the objective function
+            c0 = 0
+            for x in set(objective).intersection(known_vars):
+                c0 += objective[x] * known_vars[x]
+
+            # Set the objective sense
+            task.putobjsense(mosek.objsense.maximize)
+
+        print(matrix.indptr[:-1])
+        print(matrix.indptr[1:])
+        print(matrix.indices)
+        print(matrix.data)
+
 
         # Add all the problem data to the task
         task.inputdata(maxnumcon=numcon,
                        maxnumvar=numvar,
                        c=c,
                        cfix=c0,
-                       aptrb=csc.indptr[:-1],
-                       aptre=csc.indptr[1:],
-                       asub=csc.indices,
-                       aval=csc.data,
+                       aptrb=matrix.indptr[:-1],
+                       aptre=matrix.indptr[1:],
+                       asub=matrix.indices,
+                       aval=matrix.data,
                        bkc=bkc,
                        blc=blc,
                        buc=buc,
@@ -360,20 +393,28 @@ def solveLP_Mosek(objective: Dict = None,
                        blx=blx,
                        bux=bux)
 
-        # Set the objective sense
-        task.putobjsense(mosek.objsense.maximize)
 
         # Solve the problem
         task.optimize()
-
-        # Get objective values
         basic = mosek.soltype.bas
-        primal = task.getprimalobj(basic)
-        dual = task.getdualobj(basic)
-
-        # Get solution status
         sol = task.getsolution(basic)
         status = sol[1]
+        xx = sol[6]
+        yy = sol[7]
+
+
+        # Get objective values, solutions x, dual values y
+        if solve_dual:
+            primal = task.getdualobj(basic) + c0
+            dual = task.getprimalobj(basic) + c0
+            x_values = dict(zip(variables, yy))
+            y_values = [-x for x in xx]
+        else:
+            primal = task.getprimalobj(basic)
+            dual = task.getdualobj(basic)
+            x_values = dict(zip(variables, xx))
+            y_values = [-y for y in yy]
+
         if status == mosek.solsta.optimal:
             status_str = "feasible"
         else:
@@ -381,7 +422,6 @@ def solveLP_Mosek(objective: Dict = None,
 
         # Extract the certificate
         certificate = {x: 0 for x in known_vars}
-        y_values = [-y for y in sol[7]]
 
         # Each monomial with known value is associated with a sum of duals
         for i, cons in enumerate(constraints):
@@ -389,13 +429,9 @@ def solveLP_Mosek(objective: Dict = None,
                 certificate[x] += y_values[i] * cons[x]
 
         # Clean entries with coefficient zero
-        for x in certificate:
+        for x in list(certificate):
             if np.isclose(certificate[x], 0):
                 del certificate[x]
-
-        # Get optimal solutions x
-        x = sol[6]
-        x_values = dict(zip(variables, x))
 
         return {
             "primal_value": primal,
@@ -414,7 +450,10 @@ if __name__ == '__main__':
                          {'y': -1, '1': 5},  # 5 - y >= 0
                          {'z': -1, '1': 1 / 2},  # 1/2 - z >= 0
                          {'w': 1, '1': 1}],  # w >= -1
-        "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
+        "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}],  # x/2 + 2y - 3 = 0
+        "solve_dual": True
     }
     safe_sol = solveLP_MosekFUSION(**simple_lp)
     raw_sol = solveLP_Mosek(**simple_lp)
+    print(safe_sol)
+    print(raw_sol)
