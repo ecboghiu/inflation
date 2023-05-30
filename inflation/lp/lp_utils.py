@@ -1,9 +1,9 @@
+import mosek
 import numpy as np
 
 from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
     OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
-from mosek import boundkey
 from scipy.sparse import dok_matrix, vstack
 
 
@@ -266,6 +266,9 @@ def solveLP_Mosek(objective: Dict = None,
         certificate, x values
     """
 
+    # Since the value of infinity is ignored, define it for symbolic purposes
+    inf = 0.0
+
     # Deal with unsanitary input
     if known_vars is None:
         known_vars = {}
@@ -275,9 +278,6 @@ def solveLP_Mosek(objective: Dict = None,
         inequalities = []
     if equalities is None:
         equalities = []
-
-    # Since the value of infinity is ignored, define it for symbolic purposes
-    inf = 0.0
 
     # Define variables for LP, excluding those with known values
     variables = set()
@@ -292,44 +292,109 @@ def solveLP_Mosek(objective: Dict = None,
     variables.difference_update(known_vars.keys())
     nof_variables = len(variables)
 
-    # Compute c0, the constant term in the objective function
-    c0 = 0
-    for x in objective.keys():
-        if x in known_vars.keys():
-            c0 += objective[x] * known_vars[x]
-
     # Create dictionary var_index - monomial : index
     var_index = {x: i for i, x in enumerate(variables)}
 
-    # Create matrix A in sparse representation stored by column
-    constraints = inequalities + equalities
-    asub = [[] for _ in range(nof_variables)]
-    aval = [[] for _ in range(nof_variables)]
-    for v in variables:
-        for i, c in enumerate(constraints):
-            if v in c:
-                asub[var_index[v]].append(i)
-                aval[var_index[v]].append(c[v])
-
-    # Create bound keys and bound values (lower and upper) for constraints
-    # Bound key describes whether the bound for the constraint is >= or ==
-    # Ax + b >= 0 -> Ax >= -b
-    cons_bk = []
-    cons_lb = []
-    cons_ub = []
-    for ineq in inequalities:
-        b = 0
-        for x in ineq:
-            if x in known_vars:
+    with mosek.Task() as task:
+        # Set bound keys and bound values (lower and upper) for constraints
+        # Ax + b >= 0 -> Ax >= -b
+        bkc = []
+        blc = []
+        buc = []
+        for ineq in inequalities:
+            b = 0
+            for x in set(ineq).intersection(known_vars):
                 b += ineq[x] * known_vars[x]
-        cons_bk.append(boundkey.lo)
-        cons_lb.append(-b)
-        cons_ub.append(+inf)
-    for eq in equalities:
-        b = 0
-        for x in eq:
-            if x in known_vars:
+            bkc.append(mosek.boundkey.lo)
+            blc.append(-b)
+            buc.append(+inf)
+        for eq in internal_equalities:
+            b = 0
+            for x in set(eq).intersection(known_vars):
                 b += eq[x] * known_vars[x]
-        cons_bk.append(boundkey.fx)
-        cons_lb.append(-b)
-        cons_ub.append(-b)
+            bkc.append(mosek.boundkey.fx)
+            blc.append(-b)
+            buc.append(-b)
+        print(bkc)
+        print(blc)
+        print(buc)
+
+        # Set bound keys and bound values (lower and upper) for variables
+        bkx = [mosek.boundkey.fr] * nof_variables
+        blx = [-inf] * nof_variables
+        bux = [+inf] * nof_variables
+
+        numcon = len(bkc)
+        numvar = len(bkx)
+
+        # Objective function coefficients
+        c = []
+        for x in var_index:
+            if x in objective:
+                c.append(objective[x])
+            else:
+                c.append(0.0)
+
+        # Compute c0, the constant (fixed) term in the objective function
+        c0 = 0
+        for x in set(objective).intersection(known_vars):
+            c0 += objective[x] * known_vars[x]
+
+        # Create sparse matrix A of constraints
+        constraints = inequalities + internal_equalities
+        A = dok_matrix((numcon, numvar))
+        for i, cons in enumerate(constraints):
+            for x in set(cons).difference(known_vars):
+                A[i, var_index[x]] = cons[x]
+        csr = A.asformat('csr', copy=False)
+        aptrb = csr.indptr[:-1]
+        aptre = csr.indptr[1:]
+        asub = csr.indices
+        aval = csr.data
+
+        # Add all the problem data to the task
+        task.inputdata(numcon,
+                       numvar,
+                       c,
+                       c0,
+                       aptrb,
+                       aptre,
+                       asub,
+                       aval,
+                       bkc,
+                       blc,
+                       buc,
+                       bkx,
+                       blx,
+                       bux)
+
+        # Set the objective sense
+        task.putobjsense(mosek.objsense.maximize)
+
+        # Solve the problem
+        task.optimize()
+
+        # Get status information about the solution
+        basic = mosek.soltype.bas
+        status = task.getsolsta(basic)
+
+        # Get objective value and optimal solution
+        primal = task.getprimalobj(basic)
+        dual = task.getdualobj(basic)
+        if status == mosek.solsta.optimal:
+            status_str = "feasible"
+            x = task.getxx(basic)
+            x_values = dict(zip(variables, x))
+        else:
+            status_str = "infeasible"
+            x_values = None
+
+        certificate = None
+
+        return {
+            "primal_value": primal,
+            "dual_value": dual,
+            "status": status_str,
+            "dual_certificate": certificate,
+            "x": x_values
+        }
