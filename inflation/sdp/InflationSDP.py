@@ -68,6 +68,7 @@ class InflationSDP(object):
     def __init__(self,
                  inflationproblem: InflationProblem,
                  supports_problem: bool = False,
+                 commuting: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
         """
@@ -138,20 +139,27 @@ class InflationSDP(object):
         lexorder = np.concatenate((self.zero_operator, lexorder))
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
+        self._lexorder_len = len(self._lexorder)
 
-        if self._quantum_sources.size == 0:
+        if (self._quantum_sources.size == 0) or commuting:
             self.all_operators_commute = True
             self._quantum_sources = np.array([0])  # Dummy value, numba does
                                                    # not like empty arrays
+            self._default_notcomm = np.zeros(
+                (self._lexorder_len, self._lexorder_len), dtype=bool)
+            self._notcomm = self._default_notcomm
+            self.all_commuting_q = lambda mon: True
         else:
             self.all_operators_commute = False
-        self._default_notcomm = commutation_matrix(self._lexorder,
-                                                   self._quantum_sources,
-                                                   self.all_operators_commute)
-        self._notcomm = self._default_notcomm.copy()
-        self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
-                                                              self._lexorder,
-                                                              self._notcomm)
+            self._default_notcomm = commutation_matrix(self._lexorder,
+                                                       self._quantum_sources,
+                                                       self.all_operators_commute)
+            self._notcomm = self._default_notcomm.copy()
+            self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
+                                                                  self._lexorder,
+                                                                  self._notcomm)
+
+
         self.canon_ndarray_from_hash    = dict()
         self.canonsym_ndarray_from_hash = dict()
         # These next properties are reset during generate_relaxation, but
