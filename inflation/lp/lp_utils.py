@@ -11,7 +11,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
                         semiknown_vars: Dict = None,
                         inequalities: List[Dict] = None,
                         equalities: List[Dict] = None,
-                        solve_dual: bool = True
+                        solve_dual: bool = True,
+                        feas_as_optim: bool = False,
+                        verbose: int = 0,
+                        solverparameters: Dict = None
                         ) -> Dict:
     """Internal function to solve an LP with the Mosek FUSION API.
 
@@ -27,9 +30,15 @@ def solveLP_MosekFUSION(objective: Dict = None,
     inequalities : list of dict
         Inequality constraints with monomials (keys) and coefficients (values)
     equalities : list of dict
-        Equality constraints with monomials (keys) and coefficients (values)4
+        Equality constraints with monomials (keys) and coefficients (values)
     solve_dual : bool
         Whether to solve the dual (True) or primal (False) formulation
+    feas_as_optim: bool
+        NOT IMPLEMENTED
+    verbose: bool
+        NOT IMPLEMENTED
+    solverparameters: dict
+        NOT IMPLEMENTED
 
     Returns
     -------
@@ -240,7 +249,10 @@ def solveLP_Mosek(objective: Dict = None,
                   semiknown_vars: Dict = None,
                   inequalities: List[Dict] = None,
                   equalities: List[Dict] = None,
-                  solve_dual: bool = True
+                  solve_dual: bool = True,
+                  feas_as_optim: bool = False,
+                  verbose: int = 0,
+                  solverparameters: Dict = None
                   ) -> Dict:
     """Internal function to solve an LP with the Mosek Optimizer API.
 
@@ -256,9 +268,13 @@ def solveLP_Mosek(objective: Dict = None,
     inequalities : list of dict
         Inequality constraints with monomials (keys) and coefficients (values)
     equalities : list of dict
-        Equality constraints with monomials (keys) and coefficients (values)4
+        Equality constraints with monomials (keys) and coefficients (values)
     solve_dual : bool
         Whether to solve the dual (True) or primal (False) formulation
+    feas_as_optim: bool
+        NOT IMPLEMENTED
+    verbose: int
+        verbosity. Higher means more messages. Default 0.
 
     Returns
     -------
