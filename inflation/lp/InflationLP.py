@@ -25,8 +25,8 @@ from ..sdp.quantum_tools import (clean_coefficients,
                                  flatten_symbolic_powers,
                                  party_physical_monomials,
                                  to_symbol)
-from ..sdp.sdp_utils import solveSDP_MosekFUSION
-
+# from ..sdp.sdp_utils import solveSDP_MosekFUSION
+from .lp_utils import solveLP_Mosek
 
 class InflationLP(object):
     """
@@ -541,7 +541,7 @@ class InflationLP(object):
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
 
-        self.solution_object = solveSDP_MosekFUSION(**args)
+        self.solution_object = solveLP_Mosek(**args)
 
         self.status = self.solution_object["status"]
         if self.status == "feasible":
