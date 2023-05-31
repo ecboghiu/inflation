@@ -56,6 +56,7 @@ class InflationLP(object):
                  inflationproblem: InflationProblem,
                  nonfanout: bool = False,
                  supports_problem: bool = False,
+                 all_nonnegative: bool = True,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
         """
@@ -68,6 +69,7 @@ class InflationLP(object):
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
         self.commuting = self.nonfanout  # Legacy terminology.
+        self.all_nonnegative = all_nonnegative
 
         if self.verbose > 1:
             print(inflationproblem)
@@ -250,7 +252,10 @@ class InflationLP(object):
 
         self.moment_inequalities = []
         self.moment_upperbounds  = dict()
-        self.moment_lowerbounds  = {m: 0. for m in self.monomials}
+        if self.all_nonnegative:
+            self.moment_lowerbounds = dict()
+        else:
+            self.moment_lowerbounds  = {m: 0. for m in self.monomials}
 
         self._set_lowerbounds(None)
         self._set_upperbounds(None)
@@ -540,6 +545,8 @@ class InflationLP(object):
                      "verbose": self.verbose,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
+        if self.all_nonnegative:
+            args["all_non_negative"] = True
 
         self.solution_object = solveLP_Mosek(**args)
 
