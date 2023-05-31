@@ -28,24 +28,28 @@ bounds = dict()
 
 instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
                                  direction='min')
+
+for k, v in instrumental_infLP._prepare_solver_arguments().items():
+    print(f"{k}: {v}")
+
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=0) >= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=0) >= "] = instrumental_infLP.objective_value
 
 instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
                                  direction='max')
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=0) <= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=0) <= "] = instrumental_infLP.objective_value
 
 instrumental_infLP.set_objective(objective={'<B_1_1_1>': 1},
                                  direction='min')
 
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=1) >= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=1) >= "] = instrumental_infLP.objective_value
 
 instrumental_infLP.set_objective(objective={'<B_1_1_1>': 1},
                                  direction='max')
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=1) <= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=1) <= "] = instrumental_infLP.objective_value
 for k, v in bounds.items():
     print(f"{k}{v:.3f}")
 
@@ -62,22 +66,22 @@ bounds = dict()
 instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
                                  direction='min')
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=0) >= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=0) >= "] = instrumental_infLP.objective_value
 
 instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
                                  direction='max')
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=0) <= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=0) <= "] = instrumental_infLP.objective_value
 
 instrumental_infLP.set_objective(objective={'<B_1_1_1>': 1},
                                  direction='min')
 
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=1) >= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=1) >= "] = instrumental_infLP.objective_value
 
 instrumental_infLP.set_objective(objective={'<B_1_1_1>': 1},
                                  direction='max')
 instrumental_infLP.solve()
-bounds["P(Y=1 do X#=1) <= "] = instrumental_infLP.objective_value
+bounds["P(B=1 do A#=1) <= "] = instrumental_infLP.objective_value
 for k, v in bounds.items():
     print(f"{k}{v:.3f}")
