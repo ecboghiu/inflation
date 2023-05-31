@@ -25,8 +25,8 @@ from ..sdp.quantum_tools import (clean_coefficients,
                                  flatten_symbolic_powers,
                                  party_physical_monomials,
                                  to_symbol)
-from ..sdp.sdp_utils import solveSDP_MosekFUSION
-
+# from ..sdp.sdp_utils import solveSDP_MosekFUSION
+from .lp_utils import solveLP_Mosek
 
 class InflationLP(object):
     """
@@ -56,6 +56,7 @@ class InflationLP(object):
                  inflationproblem: InflationProblem,
                  nonfanout: bool = False,
                  supports_problem: bool = False,
+                 all_nonnegative: bool = True,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
         """
@@ -68,6 +69,7 @@ class InflationLP(object):
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
         self.commuting = self.nonfanout  # Legacy terminology.
+        self.all_nonnegative = all_nonnegative
 
         if self.verbose > 1:
             print(inflationproblem)
@@ -82,6 +84,7 @@ class InflationLP(object):
         self.inflation_levels = inflationproblem.inflation_level_per_source
         self.setting_cardinalities = inflationproblem.settings_per_party
         self.private_setting_cardinalities = inflationproblem.private_settings_per_party
+        self.expected_distro_shape = inflationproblem.expected_distro_shape
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
         self.factorize_monomial = inflationproblem.factorize_monomial
         self._is_knowable_q_non_networks = \
@@ -91,9 +94,6 @@ class InflationLP(object):
 
         # The following depends on the form of CG notation
         self.outcome_cardinalities = inflationproblem.outcomes_per_party + 1
-        self.expected_distro_shape = tuple(np.hstack(
-            (inflationproblem.outcomes_per_party,
-             self.private_setting_cardinalities)).tolist())
 
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
@@ -252,7 +252,10 @@ class InflationLP(object):
 
         self.moment_inequalities = []
         self.moment_upperbounds  = dict()
-        self.moment_lowerbounds  = {m: 0. for m in self.monomials}
+        if self.all_nonnegative:
+            self.moment_lowerbounds = dict()
+        else:
+            self.moment_lowerbounds  = {m: 0. for m in self.monomials}
 
         self._set_lowerbounds(None)
         self._set_upperbounds(None)
@@ -542,8 +545,10 @@ class InflationLP(object):
                      "verbose": self.verbose,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
+        if self.all_nonnegative:
+            args["all_non_negative"] = True
 
-        self.solution_object = solveSDP_MosekFUSION(**args)
+        self.solution_object = solveLP_Mosek(**args)
 
         self.status = self.solution_object["status"]
         if self.status == "feasible":
