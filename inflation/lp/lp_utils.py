@@ -12,6 +12,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
                         inequalities: List[Dict] = None,
                         equalities: List[Dict] = None,
                         solve_dual: bool = True,
+                        all_non_negative: bool = True,
                         feas_as_optim: bool = False,
                         verbose: int = 0,
                         solverparameters: Dict = None
@@ -33,6 +34,9 @@ def solveLP_MosekFUSION(objective: Dict = None,
         Equality constraints with monomials (keys) and coefficients (values)
     solve_dual : bool
         Whether to solve the dual (True) or primal (False) formulation
+    all_non_negative : bool
+        Whether to set all primal variables as non-negative (True) or not
+        (False)
     feas_as_optim: bool
         NOT IMPLEMENTED
     verbose: bool
@@ -154,8 +158,14 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 transpose = C_mosek.transpose()
             del A, C
 
-            c = M.constraint("c", Expr.sub(Expr.mul(transpose, y), v_mosek),
-                             Domain.equalsTo(0.0))
+            if all_non_negative:
+                c = M.constraint("c",
+                                 Expr.sub(Expr.mul(transpose, y), v_mosek),
+                                 Domain.greaterThan(0.0))
+            else:
+                c = M.constraint("c",
+                                 Expr.sub(Expr.mul(transpose, y), v_mosek),
+                                 Domain.equalsTo(0.0))
 
             # Define dual objective:
             # Since Ax + b >= 0 and Cx + d == 0, the dual objective is
@@ -176,7 +186,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
             M.objective(ObjectiveSense.Minimize, obj)
         else:
             # Define primal variables
-            x = M.variable("x", nof_variables)
+            if all_non_negative:
+                x = M.variable("x", nof_variables, Domain.greaterThan(0.0))
+            else:
+                x = M.variable("x", nof_variables)
 
             # Define primal constraints
             ineq_cons = M.constraint("ineqs",
@@ -250,6 +263,7 @@ def solveLP_Mosek(objective: Dict = None,
                   inequalities: List[Dict] = None,
                   equalities: List[Dict] = None,
                   solve_dual: bool = True,
+                  all_non_negative: bool = True,
                   feas_as_optim: bool = False,
                   verbose: int = 0,
                   solverparameters: Dict = None
@@ -271,10 +285,15 @@ def solveLP_Mosek(objective: Dict = None,
         Equality constraints with monomials (keys) and coefficients (values)
     solve_dual : bool
         Whether to solve the dual (True) or primal (False) formulation
+    all_non_negative : bool
+        Whether to set all primal variables as non-negative (True) or not
+        (False)
     feas_as_optim: bool
         NOT IMPLEMENTED
     verbose: int
         verbosity. Higher means more messages. Default 0.
+    solverparameters: dict
+        NOT IMPLEMENTED
 
     Returns
     -------
@@ -346,8 +365,11 @@ def solveLP_Mosek(objective: Dict = None,
             objective_vector = b
 
             # Set bound keys and values for constraints (primal objective)
-            # All equalities since primal variable x is free
-            bkc = [mosek.boundkey.fx] * numcon
+            if all_non_negative:
+                bkc = [mosek.boundkey.lo] * numcon
+            else:
+                # All equalities since primal variable x is free
+                bkc = [mosek.boundkey.fx] * numcon
             blc = buc = c
 
             # Set bound keys and values for variables
@@ -371,8 +393,12 @@ def solveLP_Mosek(objective: Dict = None,
             blc = buc = b
 
             # Set bound keys and bound values (lower and upper) for variables
-            bkx = [mosek.boundkey.fr] * numvar
-            blx = [-inf] * numvar
+            if all_non_negative:
+                bkx = [mosek.boundkey.lo] * numvar
+                blx = [0.0] * numvar
+            else:
+                bkx = [mosek.boundkey.fr] * numvar
+                blx = [-inf] * numvar
             bux = [+inf] * numvar
 
             # Set the objective sense

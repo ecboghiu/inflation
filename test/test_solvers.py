@@ -3,6 +3,7 @@ import numpy as np
 import warnings
 from scipy.sparse import lil_matrix
 from copy import deepcopy
+from itertools import product
 
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
@@ -38,14 +39,28 @@ class TestMosek(unittest.TestCase):
                   }
 
     def test_LP(self):
-        for solveLP in (solveLP_MosekFUSION, solveLP_Mosek):
+        free_values = {
+            "non_neg": False,
+            "primal_value": 5.5,
+            "dual_certificate": {'1': 2 + 1 + 1 / 2 + 2},
+            "x": {'x': 2, 'y': 1, 'z': 1 / 2, 'w': -1}}
+        non_negative_values = {
+            "non_neg": True,
+            "primal_value": 3.5,
+            "dual_certificate": {'1': 3.5},
+            "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}}
+
+        for solveLP, bound in product((solveLP_MosekFUSION, solveLP_Mosek),
+                                      (free_values, non_negative_values)):
             with self.subTest():
-                primal_sol = solveLP(**self.simple_lp, solve_dual=False)
-                dual_sol = solveLP(**self.simple_lp, solve_dual=True)
+                primal_sol = solveLP(**self.simple_lp, solve_dual=False,
+                                     all_non_negative=bound["non_neg"])
+                dual_sol = solveLP(**self.simple_lp, solve_dual=True,
+                                   all_non_negative=bound["non_neg"])
 
                 value_primal = primal_sol["primal_value"]
                 value_dual = dual_sol["primal_value"]
-                self.assertEqual(value_dual, 2 + 1 + 1/2 + 2,
+                self.assertEqual(value_dual, bound["primal_value"],
                                  "The objective value of the LP is incorrect.")
                 self.assertEqual(value_primal, value_dual,
                                  "The primal and dual objective values are not"
@@ -53,7 +68,7 @@ class TestMosek(unittest.TestCase):
 
                 certificate_primal = primal_sol["dual_certificate"]
                 certificate_dual = dual_sol["dual_certificate"]
-                self.assertEqual(certificate_dual, {'1': 2 + 1 + 1/2 + 2},
+                self.assertEqual(certificate_dual, bound["dual_certificate"],
                                  "The certificate for the LP is incorrect.")
                 self.assertEqual(certificate_primal, certificate_dual,
                                  "The primal and dual certificates are not"
@@ -61,8 +76,7 @@ class TestMosek(unittest.TestCase):
 
                 solution_primal = primal_sol["x"]
                 solution_dual = dual_sol["x"]
-                self.assertEqual(solution_dual,
-                                 {'x': 2, 'y': 1, 'z': 1/2, 'w': -1},
+                self.assertEqual(solution_dual, bound["x"],
                                  "The solution to the LP is incorrect.")
                 self.assertEqual(solution_primal, solution_dual,
                                  "The primal and dual solutions are not"
@@ -71,8 +85,10 @@ class TestMosek(unittest.TestCase):
     def test_LP_inequalities(self):
         lp = deepcopy(self.simple_lp)
         lp['equalities'].clear()
-        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False)
-        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True)
+        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False,
+                                         all_non_negative=False)
+        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True,
+                                       all_non_negative=False)
         value_primal = primal_sol["primal_value"]
         value_dual = dual_sol["primal_value"]
         self.assertEqual(value_dual, 19/2,
@@ -86,8 +102,10 @@ class TestMosek(unittest.TestCase):
         lp['equalities'] += [{'y': -1, '1': 5},
                              {'z': -1, '1': 1/2},
                              {'w': 1, '1': 1}]
-        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False)
-        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True)
+        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False,
+                                         all_non_negative=False)
+        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True,
+                                       all_non_negative=False)
         value_primal = primal_sol["primal_value"]
         value_dual = dual_sol["primal_value"]
         self.assertEqual(value_dual, -13/2,
