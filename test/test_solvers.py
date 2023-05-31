@@ -50,7 +50,8 @@ class TestMosek(unittest.TestCase):
             "dual_certificate": {'1': 3.5},
             "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}}
 
-        for solveLP, bound in product((solveLP_MosekFUSION, solveLP_Mosek),
+        for solveLP, bound in product((solveLP_MosekFUSION, solveLP_Mosek,
+                                       solveSDP_MosekFUSION),
                                       (free_values, non_negative_values)):
             with self.subTest():
                 primal_sol = solveLP(**self.simple_lp, solve_dual=False,
