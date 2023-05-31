@@ -94,6 +94,11 @@ class InflationProblem(object):
                  + "These lists must have the same length and equal to the "
                  + "number of visible variables in the scenario.")
 
+        # Record expected shape of input distributions
+        self.expected_distro_shape = tuple(np.hstack(
+            (self.outcomes_per_party,
+             self.private_settings_per_party)).tolist())
+
         # Assign names to the visible variables
         names_have_been_set_yet = False
         if dag:

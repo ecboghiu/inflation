@@ -82,6 +82,7 @@ class InflationLP(object):
         self.inflation_levels = inflationproblem.inflation_level_per_source
         self.setting_cardinalities = inflationproblem.settings_per_party
         self.private_setting_cardinalities = inflationproblem.private_settings_per_party
+        self.expected_distro_shape = inflationproblem.expected_distro_shape
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
         self.factorize_monomial = inflationproblem.factorize_monomial
         self._is_knowable_q_non_networks = \
@@ -91,9 +92,6 @@ class InflationLP(object):
 
         # The following depends on the form of CG notation
         self.outcome_cardinalities = inflationproblem.outcomes_per_party + 1
-        self.expected_distro_shape = tuple(np.hstack(
-            (inflationproblem.outcomes_per_party,
-             self.private_setting_cardinalities)).tolist())
 
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
