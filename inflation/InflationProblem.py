@@ -607,7 +607,7 @@ class InflationProblem(object):
         return lexorder_symmetries
 
     def _discover_graph_automorphisms(self) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Return a list of all party relabelling symmetries (each preceeded by
+        """Return a list of all party relabelling symmetries (each proceeded by
         its associated source relabelling symmetry) consistent with the
         graphical symmetries of the original DAG, subject to matching
         cardinalities of inputs and outputs for all exchanged parties, and
