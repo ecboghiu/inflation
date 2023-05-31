@@ -81,6 +81,7 @@ class InflationLP(object):
         self.network_scenario = inflationproblem.is_network
         self.inflation_levels = inflationproblem.inflation_level_per_source
         self.setting_cardinalities = inflationproblem.settings_per_party
+        self.private_setting_cardinalities = inflationproblem.private_settings_per_party
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
         self.factorize_monomial = inflationproblem.factorize_monomial
         self._is_knowable_q_non_networks = \
@@ -90,6 +91,10 @@ class InflationLP(object):
 
         # The following depends on the form of CG notation
         self.outcome_cardinalities = inflationproblem.outcomes_per_party + 1
+        self.expected_distro_shape = tuple(np.hstack(
+            (inflationproblem.outcomes_per_party,
+             self.private_setting_cardinalities)).tolist())
+
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
         self.lexorder_symmetries = inflationproblem.inf_symmetries
@@ -318,6 +323,9 @@ class InflationLP(object):
                 ``True``), only atomic monomials are assigned numerical values.
         """
         if prob_array is not None:
+            assert prob_array.shape == self.expected_distro_shape, f"Cardinalities mismatch: \n" \
+                                                                                    f"expected {self.expected_distro_shape}, \n " \
+                                                                                    f"got {prob_array.shape}"
             knowable_values = {atom: atom.compute_marginal(prob_array)
                                for atom in self.knowable_atoms}
         else:
