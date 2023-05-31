@@ -179,11 +179,13 @@ class InflationLP(object):
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
-            print("Initiating symmetry calculation...")
+            if self.verbose > 0:
+                print("Initiating symmetry calculation...")
             old_reps, self.inverse = np.unique(
                 self._discover_inflation_orbits(),
                 return_inverse=True)
-            print(f"Orbits discovered! {len(old_reps)} unique monomials.")
+            if self.verbose > 1:
+                print(f"Orbits discovered! {len(old_reps)} unique monomials.")
             old_reps_set = set(old_reps.ravel().tolist())
             # Reset generating monomials
             self.generating_monomials = [self.generating_monomials[i] for i
