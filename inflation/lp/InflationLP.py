@@ -976,7 +976,7 @@ class InflationLP(object):
         # skip_party = [not i for i in self.has_children]
         ortho_groups_as_lexreprs = [self.mon_to_lexrepr(ortho_group)
                                     for ortho_group in self._ortho_groups]
-        alternatives = {g[-1]: g[:-2] for g in ortho_groups_as_lexreprs
+        alternatives = {g[-1]: g[:-1] for g in ortho_groups_as_lexreprs
                         if len(g) > 1}
         critical_values = set(alternatives.keys())
 
