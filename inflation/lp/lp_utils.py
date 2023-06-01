@@ -218,8 +218,13 @@ def solveLP_MosekFUSION(objective: Dict = None,
         status = M.getProblemStatus()
         if status == ProblemStatus.PrimalAndDualFeasible:
             status_str = "feasible"
-        else:
+        elif status in [ProblemStatus.DualInfeasible,
+                        ProblemStatus.PrimalInfeasible]:
             status_str = "infeasible"
+        elif status == ProblemStatus.Unknown:
+            status_str = "unknown"
+        else:
+            status_str = "other"
 
         if solve_dual:
             primal = M.dualObjValue() + c0
@@ -442,8 +447,13 @@ def solveLP_Mosek(objective: Dict = None,
 
         if status == mosek.solsta.optimal:
             status_str = "feasible"
-        else:
+        elif status in [mosek.solsta.dual_infeas_cer,
+                        mosek.solsta.primal_infeas_cer]:
             status_str = "infeasible"
+        elif status == mosek.solsta.unknown:
+            status_str = "unknown"
+        else:
+            status_str = "other"
 
         # Extract the certificate
         certificate = {x: 0 for x in known_vars}
