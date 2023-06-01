@@ -348,6 +348,13 @@ def solveLP_Mosek(objective: Dict = None,
         if verbose > 0:
             # Attach a log stream printer to the task
             task.set_Stream(mosek.streamtype.log, streamprinter)
+            task.putintparam(mosek.iparam.log_include_summary,
+                             mosek.onoffkey.on)
+            task.putintparam(mosek.iparam.log_storage, 1)
+        if verbose < 2:
+            task.putintparam(mosek.iparam.log_sim, 0)
+            task.putintparam(mosek.iparam.log_intpnt, 0)
+
 
         numcon = len(inequalities + internal_equalities)
         numvar = len(variables)
@@ -443,8 +450,6 @@ def solveLP_Mosek(objective: Dict = None,
         if verbose > 1:
             print("Pre-processing took", format(perf_counter() - t0, ".4f"),
                   "seconds.\n")
-            task.writedatastream(mosek.dataformat.ptf, mosek.compresstype.none,
-                                 sys.stdout.buffer)
             t0 = perf_counter()
 
         # Solve the problem
@@ -454,8 +459,6 @@ def solveLP_Mosek(objective: Dict = None,
         if verbose > 1:
             print("Solving took", format(perf_counter() - t0, ".4f"),
                   "seconds.")
-        if verbose > 0:
-            task.solutionsummary(mosek.streamtype.log)
         basic = mosek.soltype.bas
         sol = task.getsolution(basic)
         status = sol[1]
