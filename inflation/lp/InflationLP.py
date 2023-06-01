@@ -183,9 +183,8 @@ class InflationLP(object):
             if self.verbose > 1:
                 print(f"Orbits discovered! {len(old_reps)} unique monomials.")
             # Obtain the real generating monomomials after accounting for symmetry
-            self.generating_monomials = np.take(self.raw_generating_monomials,
-                                                unique_indices,
-                                                axis=0)
+            self.generating_monomials = [self.raw_generating_monomials[i]
+                                         for i in unique_indices.flat]
             self.n_columns = len(self.generating_monomials)
         else:
             self.inverse = np.arange(self.raw_n_columns)
