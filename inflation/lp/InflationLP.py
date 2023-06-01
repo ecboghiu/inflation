@@ -541,9 +541,9 @@ class InflationLP(object):
             args["all_non_negative"] = True
 
         self.solution_object = solveLP_Mosek(**args)
-
+        self.success = self.solution_object["success"]
         self.status = self.solution_object["status"]
-        if self.status == "feasible":
+        if self.success:
             self.primal_objective = self.solution_object["primal_value"]
             self.objective_value  = self.solution_object["primal_value"]
             self.objective_value *= (1 if self.maximize else -1)

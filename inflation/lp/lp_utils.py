@@ -478,19 +478,14 @@ def solveLP_Mosek(objective: Dict = None,
             y_values = [-y for y in yy]
 
         if status == mosek.solsta.optimal:
-            status_str = "feasible"
-        elif status in [mosek.solsta.dual_infeas_cer,
-                        mosek.solsta.prim_infeas_cer]:
-            status_str = "infeasible"
-        elif status == mosek.solsta.unknown:
-            status_str = "unknown"
-            symname, desc = mosek.Env.getcodedesc(trmcode)
-            if verbose > 0:
-                print("The solution status is unknown.")
-                print(f"   Termination code: {symname} {desc}")
+            success = True
         else:
-            status_str = "other"
-            print(f"An unexpected solution status '{status}' is obtained.")
+            success = False
+        status_str = status.__repr__()
+        term_tuple = mosek.Env.getcodedesc(trmcode)
+        if status == mosek.solsta.unknown and verbose > 0:
+            print("The solution status is unknown.")
+            print(f"   Termination code: {term_tuple}")
 
         # Extract the certificate
         certificate = {x: 0 for x in known_vars}
@@ -513,8 +508,10 @@ def solveLP_Mosek(objective: Dict = None,
             "primal_value": primal,
             "dual_value": dual,
             "status": status_str,
+            "success": success,
             "dual_certificate": certificate,
-            "x": x_values
+            "x": x_values,
+            "term_code": term_tuple
         }
 
 
