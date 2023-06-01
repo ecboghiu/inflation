@@ -27,6 +27,7 @@ from ..sdp.quantum_tools import (clean_coefficients,
                                  to_symbol)
 # from ..sdp.sdp_utils import solveSDP_MosekFUSION
 from .lp_utils import solveLP_Mosek
+from functools import reduce
 
 class InflationLP(object):
     """
@@ -145,32 +146,50 @@ class InflationLP(object):
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
-        self.raw_generating_monomials = self.build_columns()
-        self.raw_n_columns            = len(self.raw_generating_monomials)
-        collect()
-        # Calculate normalization equalities
 
-        self._monomials_as_lexreprs = [
-            [self._lexorder_lookup[op.tobytes()] for op in mon]
-            for mon in tqdm(self.raw_generating_monomials,
-                            disable=not self.verbose,
-                            desc="Obtaining boolvecs   ")
-        ]
-        monomials_as_lexboolvecs = np.zeros((self.raw_n_columns,
-                                             len(self._lexorder)),
-                                            dtype=bool)
-        for i, lexrepr in enumerate(self._monomials_as_lexreprs):
-            monomials_as_lexboolvecs[i, lexrepr] = True
-        self._monomials_as_lexboolvecs = monomials_as_lexboolvecs
-        del monomials_as_lexboolvecs
+        self._raw_monomials_as_lexboolvecs = self.build_raw_lexboolvecs()
+        # print(self._raw_monomials_as_lexboolvecs.astype(int))
+        # assert len(self._raw_monomials_as_lexboolvecs) == len(np.unique(self._raw_monomials_as_lexboolvecs, axis=0)), "Boolvec initialization includes duplicates!"
+        self.raw_n_columns = len(self._raw_monomials_as_lexboolvecs)
+        lex_range = np.arange(self._nr_operators)
+        self._raw_monomials_as_lexreprs = [lex_range[bool_idx]
+                                           for bool_idx in
+                                           self._raw_monomials_as_lexboolvecs]
+        # self.raw_generating_monomials =  [self._lexorder[lexrepr]
+        #                                    for lexrepr in
+        #                                    self._raw_monomials_as_lexreprs]
+
+        # self.raw_generating_monomials = self.build_columns()
+        # self.raw_n_columns            = len(self.raw_generating_monomials)
+        # if self.verbose > 0:
+        #     print(f"{self.raw_n_columns} raw monomials created.")
+        # collect()
+        # if self.verbose > 1:
+        #     print("Garbage collection completed.")
+        # # Calculate normalization equalities
+        #
+        # self._monomials_as_lexreprs = [
+        #     [self._lexorder_lookup[op.tobytes()] for op in mon]
+        #     for mon in tqdm(self.raw_generating_monomials,
+        #                     disable=not self.verbose,
+        #                     desc="Obtaining boolvecs   ")
+        # ]
+        # if self.verbose > 1:
+        #     print("_monomials_as_lexreprs created")
+        # monomials_as_lexboolvecs = np.zeros((self.raw_n_columns,
+        #                                      len(self._lexorder)),
+        #                                     dtype=bool)
+        # for i, lexrepr in enumerate(self._monomials_as_lexreprs):
+        #     monomials_as_lexboolvecs[i, lexrepr] = True
+        # self._monomials_as_lexboolvecs = monomials_as_lexboolvecs
+        # del monomials_as_lexboolvecs
         self._lookup_dict = {bitvec.tobytes(): i for i, bitvec in
-                             enumerate(self._monomials_as_lexboolvecs)}
+                             enumerate(self._raw_monomials_as_lexboolvecs)}
 
         self.column_level_equalities = self._discover_normalization_eqns()
         if self.verbose > 0:
             print("Number of equality constraints in the LP:",
                   len(self.column_level_equalities))
-
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
@@ -183,13 +202,14 @@ class InflationLP(object):
             if self.verbose > 1:
                 print(f"Orbits discovered! {len(old_reps)} unique monomials.")
             # Obtain the real generating monomomials after accounting for symmetry
-            self.generating_monomials = [self.raw_generating_monomials[i]
-                                         for i in unique_indices.flat]
-            self.n_columns = len(self.generating_monomials)
+            self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[unique_indices]
         else:
             self.inverse = np.arange(self.raw_n_columns)
-            self.n_columns = self.raw_n_columns
-            self.generating_monomials = self.raw_generating_monomials
+            self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs
+        self.generating_monomials = [self._lexorder[bool_idx]
+                                           for bool_idx in
+                                           self._monomials_as_lexboolvecs]
+        self.n_columns = len(self.generating_monomials)
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
                   self.n_columns)
@@ -236,8 +256,8 @@ class InflationLP(object):
             norm_idx_after_sym = self.inverse[norm_idx]
             norm_mon = self.compmonomial_from_idx[norm_idx_after_sym]
             eq_dict = {norm_mon: 1}
-            for idx in summation_idxs:
-                idx_after_sym = self.inverse[idx]
+            summation_idxs_after_sym = np.take(self.inverse, summation_idxs)
+            for idx_after_sym in summation_idxs_after_sym.flat:
                 mon = self.compmonomial_from_idx[idx_after_sym]
                 eq_dict[mon] = eq_dict.get(mon, 0) - 1
             self.moment_equalities.append(eq_dict)
@@ -609,8 +629,58 @@ class InflationLP(object):
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ###########################################################################
-    def build_columns(self,
-                      symbolic: bool = False) -> List[np.ndarray]:
+    # def build_columns(self,
+    #                   symbolic: bool = False) -> List[np.ndarray]:
+    #     r"""Creates the generating set of monomials.
+    #
+    #     Parameters
+    #     ----------
+    #     symbolic: bool, optional
+    #         If ``True``, it returns the columns as a list of sympy symbols
+    #         parsable by `InflationLP.generate_lp()`. By default
+    #         ``False``.
+    #     """
+    #     if not self.nonfanout:
+    #         choices_to_combine = [
+    #             tuple(ortho_group) + (self.identity_operator,)
+    #             for ortho_group in self._ortho_groups]
+    #         lengths = list(map(len, choices_to_combine))
+    #     else:
+    #         choices_to_combine = []
+    #         lengths = []
+    #         for party in range(self.nr_parties):
+    #             relevant_sources = np.flatnonzero(self.hypergraph[:, party])
+    #             relevant_inflevels = self.inflation_levels[relevant_sources]
+    #             max_mon_length = min(relevant_inflevels)
+    #             phys_mon = [party_physical_monomials(
+    #                 hypergraph=self.hypergraph,
+    #                 inflevels=self.inflation_levels,
+    #                 party=party,
+    #                 max_monomial_length=i,
+    #                 settings_per_party=self.setting_cardinalities,
+    #                 outputs_per_party=self.outcome_cardinalities,
+    #                 lexorder=self._lexorder)
+    #                 for i in range(max_mon_length + 1)]
+    #             lengths.append(sum(map(len, phys_mon)))
+    #             choices_to_combine.append(chain.from_iterable(phys_mon))
+    #     if self.verbose > 1:
+    #         print(f"Choices to combine complete. {lengths}")
+    #     nontriv_cols = map(np.vstack,
+    #                        tqdm(product(*choices_to_combine),
+    #                             disable=not self.verbose,
+    #                             desc="Building columns         ",
+    #                             total=np.prod(lengths),
+    #                             leave=True,
+    #                             position=0))
+    #     generating_monomials = sorted(nontriv_cols, key=len)
+    #
+    #     if symbolic:
+    #         generating_monomials = [to_symbol(col, self.names)
+    #                                 for col in generating_monomials]
+    #     return generating_monomials
+
+
+    def build_raw_lexboolvecs(self) -> List[np.ndarray]:
         r"""Creates the generating set of monomials.
 
         Parameters
@@ -620,14 +690,15 @@ class InflationLP(object):
             parsable by `InflationLP.generate_lp()`. By default
             ``False``.
         """
+        choices_to_combine = []
+        lengths = []
         if not self.nonfanout:
-            choices_to_combine = [
-                tuple(ortho_group) + (self.identity_operator,)
-                for ortho_group in self._ortho_groups]
-            lengths = list(map(len, choices_to_combine))
+            for ortho_group in self._ortho_groups:
+                boolvecs = np.vstack([self.mon_to_boolvec(op[np.newaxis]) for op in ortho_group])
+                boolvecs = np.pad(boolvecs, ((1, 0), (0, 0)))
+                lengths.append(len(boolvecs))
+                choices_to_combine.append(boolvecs)
         else:
-            choices_to_combine = []
-            lengths = []
             for party in range(self.nr_parties):
                 relevant_sources = np.flatnonzero(self.hypergraph[:, party])
                 relevant_inflevels = self.inflation_levels[relevant_sources]
@@ -641,21 +712,17 @@ class InflationLP(object):
                     outputs_per_party=self.outcome_cardinalities,
                     lexorder=self._lexorder)
                     for i in range(max_mon_length + 1)]
-                lengths.append(sum(map(len, phys_mon)))
-                choices_to_combine.append(chain.from_iterable(phys_mon))
-        nontriv_cols = map(np.vstack,
-                           tqdm(product(*choices_to_combine),
-                                disable=not self.verbose,
-                                desc="Building columns         ",
-                                total=np.prod(lengths),
-                                leave=True,
-                                position=0))
-        generating_monomials = sorted(nontriv_cols, key=len)
-
-        if symbolic:
-            generating_monomials = [to_symbol(col, self.names)
-                                    for col in generating_monomials]
-        return generating_monomials
+                boolvecs = np.vstack(
+                    [self.mon_to_boolvec(op) for op in chain.from_iterable(phys_mon)])
+                # boolvecs = np.pad(boolvecs, ((1, 0), (0, 0)))
+                lengths.append(len(boolvecs))
+                choices_to_combine.append(boolvecs)
+        # Use reduce to take outer combinations, using bitwise addition
+        if self.verbose > 0:
+            print(f"About to generate {np.prod(lengths)} probability placeholders...")
+        raw_lexboolvecs = reduce(outer_bitwise_or, choices_to_combine)
+        # Sort by operator count
+        return raw_lexboolvecs[np.argsort(np.sum(raw_lexboolvecs, axis=1))]
 
     def reset(self, which: Union[str, List[str]]) -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
@@ -965,6 +1032,7 @@ class InflationLP(object):
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
     ###########################################################################
+    #TODO: Use ONLY boolvecs, never lexrepr?
     def _discover_normalization_eqns(self) -> List[
         Tuple[int, Tuple[int, ...]]]:
         """Given the generating monomials, infer implicit normalization
@@ -987,8 +1055,8 @@ class InflationLP(object):
 
         column_level_equalities = []
         for i, (lexrepr, bool_vec) in tqdm(enumerate(zip(
-                self._monomials_as_lexreprs,
-                self._monomials_as_lexboolvecs)),
+                self._raw_monomials_as_lexreprs,
+                self._raw_monomials_as_lexboolvecs)),
                 disable=not self.verbose,
                 desc="Discovering equalities   ",
                 total=self.raw_n_columns):
@@ -1028,7 +1096,7 @@ class InflationLP(object):
         """
         if len(self.lexorder_symmetries) > 1:
             orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-                self._monomials_as_lexboolvecs,
+                self._raw_monomials_as_lexboolvecs,
                 lexorder_perms=self.lexorder_symmetries)
             return orbits
         else:
@@ -1345,3 +1413,7 @@ class InflationLP(object):
         boolvec = self.blank_bool_vec.copy()
         boolvec[self.mon_to_lexrepr(mon)] = True
         return boolvec
+
+def outer_bitwise_or(a, b):
+    temp = np.bitwise_or(a[:, np.newaxis], b[np.newaxis]).astype(bool)
+    return temp.reshape((-1, *temp.shape[2:]))
