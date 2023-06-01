@@ -1,3 +1,4 @@
+import sys
 import mosek
 import numpy as np
 
@@ -5,6 +6,8 @@ from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
     OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
 from scipy.sparse import dok_matrix, vstack
+from time import perf_counter
+from gc import collect
 
 def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
@@ -307,6 +310,11 @@ def solveLP_Mosek(objective: Dict = None,
         certificate, x values
     """
 
+    if verbose > 1:
+        t0 = perf_counter()
+        t_total = perf_counter()
+        print("Starting pre-processing for the LP solver...")
+
     # Since the value of infinity is ignored, define it for symbolic purposes
     inf = 0.0
 
@@ -337,6 +345,10 @@ def solveLP_Mosek(objective: Dict = None,
     var_index = {x: i for i, x in enumerate(variables)}
 
     with mosek.Task() as task:
+        if verbose > 0:
+            # Attach a log stream printer to the task
+            task.set_Stream(mosek.streamtype.log, streamprinter)
+
         numcon = len(inequalities + internal_equalities)
         numvar = len(variables)
         nof_inequalities = len(inequalities)
@@ -352,6 +364,8 @@ def solveLP_Mosek(objective: Dict = None,
             for x in set(cons).intersection(known_vars):
                 b[i] -= cons[x] * known_vars[x]
         b = b.tolist()
+        if verbose > 0:
+            print(f"Size of matrix A: {A.get_shape()}")
 
         # Objective function coefficients
         c = np.zeros(numvar)
@@ -425,8 +439,23 @@ def solveLP_Mosek(objective: Dict = None,
                        blx=blx,
                        bux=bux)
 
+        collect()
+        if verbose > 1:
+            print("Pre-processing took", format(perf_counter() - t0, ".4f"),
+                  "seconds.\n")
+            task.writedatastream(mosek.dataformat.ptf, mosek.compresstype.none,
+                                 sys.stdout.buffer)
+            t0 = perf_counter()
+
         # Solve the problem
-        task.optimize()
+        if verbose > 0:
+            print("\nSolving the problem...\n")
+        trmcode = task.optimize()
+        if verbose > 1:
+            print("Solving took", format(perf_counter() - t0, ".4f"),
+                  "seconds.")
+        if verbose > 0:
+            task.solutionsummary(mosek.streamtype.log)
         basic = mosek.soltype.bas
         sol = task.getsolution(basic)
         status = sol[1]
@@ -448,12 +477,17 @@ def solveLP_Mosek(objective: Dict = None,
         if status == mosek.solsta.optimal:
             status_str = "feasible"
         elif status in [mosek.solsta.dual_infeas_cer,
-                        mosek.solsta.primal_infeas_cer]:
+                        mosek.solsta.prim_infeas_cer]:
             status_str = "infeasible"
         elif status == mosek.solsta.unknown:
             status_str = "unknown"
+            symname, desc = mosek.Env.getcodedesc(trmcode)
+            if verbose > 0:
+                print("The solution status is unknown.")
+                print(f"   Termination code: {symname} {desc}")
         else:
             status_str = "other"
+            print(f"An unexpected solution status '{status}' is obtained.")
 
         # Extract the certificate
         certificate = {x: 0 for x in known_vars}
@@ -468,6 +502,10 @@ def solveLP_Mosek(objective: Dict = None,
             if np.isclose(certificate[x], 0):
                 del certificate[x]
 
+        if verbose > 1:
+            print("\nTotal execution time:",
+                  format(perf_counter() - t_total, ".4f"), "seconds.")
+
         return {
             "primal_value": primal,
             "dual_value": dual,
@@ -475,6 +513,12 @@ def solveLP_Mosek(objective: Dict = None,
             "dual_certificate": certificate,
             "x": x_values
         }
+
+
+def streamprinter(text: str) -> None:
+    """A stream printer to get output from Mosek."""
+    sys.stdout.write(text)
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
