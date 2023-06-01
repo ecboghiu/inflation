@@ -250,7 +250,7 @@ class CompoundMonomial(object):
         problem that are products of other moments. It is built from a tuple of
         instances of the ``InternalAtomicMonomial`` class.
 
-        At intialisation, a moment is classified into knowable, semi-knowable
+        At initialisation, a moment is classified into knowable, semi-knowable
         or unknowable based on the knowability of each of the atomic moments
         (which in turn is determined through methods of the
         ``InternalAtomicMonomial`` class). This class also computes names for

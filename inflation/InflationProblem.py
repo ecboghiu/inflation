@@ -607,7 +607,7 @@ class InflationProblem(object):
         return lexorder_symmetries
 
     def _discover_graph_automorphisms(self) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Return a list of all party relabelling symmetries (each preceeded by
+        """Return a list of all party relabelling symmetries (each proceeded by
         its associated source relabelling symmetry) consistent with the
         graphical symmetries of the original DAG, subject to matching
         cardinalities of inputs and outputs for all exchanged parties, and
@@ -699,7 +699,8 @@ class InflationProblem(object):
         default_events_order = np.arange(nr_original_events)
         original_dag_lookup = {op.tobytes(): i
                                for i, op in enumerate(self.original_dag_events)}
-        empty_perm = np.empty((0, nr_original_events), dtype=int)
+        # empty_perm = np.empty((0, nr_original_events), dtype=int)
+        empty_perm = default_events_order.copy().reshape((1, nr_original_events))
         possible_syms_per_party = []
         for p, (card_in, card_out) in enumerate(zip(
             self.settings_per_party.flat,
@@ -735,7 +736,7 @@ class InflationProblem(object):
                                 (op1.tobytes(),
                                  op2.tobytes()) for op1, op2 in sym))
                             possible_syms.add(discovered_sym)
-            possible_syms_as_permutations = []
+            possible_syms_as_permutations = [default_events_order]
             for sym in possible_syms:
                 events_order = default_events_order.copy()
                 for evnt1_hash, evnt2_hash in sym:
@@ -749,4 +750,9 @@ class InflationProblem(object):
             else:
                 possible_syms_as_permutations = empty_perm
             possible_syms_per_party.append(possible_syms_as_permutations)
-        return possible_syms_per_party
+
+        orig_order_perms = np.vstack([reduce(np.take, perms)
+                                      for perms in
+                                      product(*possible_syms_per_party)])
+
+        return np.take(self.original_dag_events, orig_order_perms, axis=0)

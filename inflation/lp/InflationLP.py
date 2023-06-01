@@ -145,23 +145,18 @@ class InflationLP(object):
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
-        self.generating_monomials = self.build_columns()
-        # Generate dictionary to indices (used in dealing with symmetries and
-        # column-level equalities)
-        self.genmon_hash_to_index = {self._from_2dndarray(op): i
-                                     for i, op in
-                                     enumerate(self.generating_monomials)}
-        self.n_columns            = len(self.generating_monomials)
+        self.raw_generating_monomials = self.build_columns()
+        self.raw_n_columns            = len(self.raw_generating_monomials)
         collect()
         # Calculate normalization equalities
 
         self._monomials_as_lexreprs = [
             [self._lexorder_lookup[op.tobytes()] for op in mon]
-            for mon in tqdm(self.generating_monomials,
+            for mon in tqdm(self.raw_generating_monomials,
                             disable=not self.verbose,
                             desc="Obtaining boolvecs   ")
         ]
-        monomials_as_lexboolvecs = np.zeros((self.n_columns,
+        monomials_as_lexboolvecs = np.zeros((self.raw_n_columns,
                                              len(self._lexorder)),
                                             dtype=bool)
         for i, lexrepr in enumerate(self._monomials_as_lexreprs):
@@ -179,25 +174,23 @@ class InflationLP(object):
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
-            print("Initiating symmetry calculation...")
-            old_reps, self.inverse = np.unique(
+            if self.verbose > 0:
+                print("Initiating symmetry calculation...")
+            old_reps, unique_indices, self.inverse = np.unique(
                 self._discover_inflation_orbits(),
+                return_index=True,
                 return_inverse=True)
-            print(f"Orbits discovered! {len(old_reps)} unique monomials.")
-            old_reps_set = set(old_reps.ravel().tolist())
-            # Reset generating monomials
-            self.generating_monomials = [self.generating_monomials[i] for i
-                                         in old_reps_set]
+            if self.verbose > 1:
+                print(f"Orbits discovered! {len(old_reps)} unique monomials.")
+            # Obtain the real generating monomomials after accounting for symmetry
+            self.generating_monomials = np.take(self.raw_generating_monomials,
+                                                unique_indices,
+                                                axis=0)
             self.n_columns = len(self.generating_monomials)
-            self.genmon_hash_to_index = {mon_hash: old_i for mon_hash, old_i
-                                         in self.genmon_hash_to_index.items()
-                                         if old_i in old_reps_set}
-            self.genmon_hash_to_index = {mon_hash: new_i for new_i, mon_hash in
-                                         enumerate(
-                                             self.genmon_hash_to_index.items()
-                                         )}
         else:
-            self.inverse = np.arange(self.n_columns)
+            self.inverse = np.arange(self.raw_n_columns)
+            self.n_columns = self.raw_n_columns
+            self.generating_monomials = self.raw_generating_monomials
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
                   self.n_columns)
@@ -999,7 +992,7 @@ class InflationLP(object):
                 self._monomials_as_lexboolvecs)),
                 disable=not self.verbose,
                 desc="Discovering equalities   ",
-                total=self.n_columns):
+                total=self.raw_n_columns):
             critical_values_in_boovec = critical_values.intersection(lexrepr)
             for c in critical_values_in_boovec:
                 try:
@@ -1040,7 +1033,7 @@ class InflationLP(object):
                 lexorder_perms=self.lexorder_symmetries)
             return orbits
         else:
-            return np.arange(self.n_columns, dtype=int)
+            return np.arange(self.raw_n_columns, dtype=int)
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
