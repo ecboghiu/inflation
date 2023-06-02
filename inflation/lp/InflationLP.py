@@ -69,7 +69,6 @@ class InflationLP(object):
         else:
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
-        self.commuting = self.nonfanout  # Legacy terminology.
         self.all_nonnegative = all_nonnegative
 
         if self.verbose > 1:
@@ -100,7 +99,7 @@ class InflationLP(object):
         self._nr_operators = inflationproblem._nr_operators
         self.lexorder_symmetries = inflationproblem.inf_symmetries
         self._lexorder_lookup = inflationproblem._lexorder_lookup
-        self.blank_bool_vec = np.zeros(len(self._lexorder), dtype=bool)
+        self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._ortho_groups = inflationproblem._ortho_groups
         self.has_children = np.ones(self.nr_parties, dtype=bool)
 
@@ -692,14 +691,7 @@ class InflationLP(object):
 
 
     def build_raw_lexboolvecs(self) -> List[np.ndarray]:
-        r"""Creates the generating set of monomials.
-
-        Parameters
-        ----------
-        symbolic: bool, optional
-            If ``True``, it returns the columns as a list of sympy symbols
-            parsable by `InflationLP.generate_lp()`. By default
-            ``False``.
+        r"""Creates the generating set of monomials (as boolvecs).
         """
         choices_to_combine = []
         lengths = []
