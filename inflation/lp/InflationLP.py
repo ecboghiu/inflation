@@ -213,8 +213,8 @@ class InflationLP(object):
             self.inverse = np.arange(self.raw_n_columns)
             self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs
         self.generating_monomials = [self._lexorder[bool_idx]
-                                           for bool_idx in
-                                           self._monomials_as_lexboolvecs]
+                                     for bool_idx in
+                                     self._monomials_as_lexboolvecs]
         self.n_columns = len(self.generating_monomials)
         if self.verbose > 0:
             print("Number of nonnegativity constraints in the LP:",
@@ -345,8 +345,8 @@ class InflationLP(object):
         """
         if prob_array is not None:
             assert prob_array.shape == self.expected_distro_shape, f"Cardinalities mismatch: \n" \
-                                                                                    f"expected {self.expected_distro_shape}, \n " \
-                                                                                    f"got {prob_array.shape}"
+                                                                   f"expected {self.expected_distro_shape}, \n " \
+                                                                   f"got {prob_array.shape}"
             knowable_values = {atom: atom.compute_marginal(prob_array)
                                for atom in self.knowable_atoms}
         else:
@@ -358,8 +358,8 @@ class InflationLP(object):
 
     def set_objective(self,
                       objective: Union[sp.core.expr.Expr,
-                                       dict,
-                                       None],
+                      dict,
+                      None],
                       direction: str = "max") -> None:
         """Set or change the objective function of the polynomial optimization
         problem.
@@ -419,11 +419,11 @@ class InflationLP(object):
 
     def set_values(self,
                    values: Union[Dict[Union[CompoundMonomial,
-                                            InternalAtomicMonomial,
-                                            sp.core.symbol.Symbol,
-                                            str],
-                                      Union[float, sp.core.expr.Expr]],
-                                 None],
+                   InternalAtomicMonomial,
+                   sp.core.symbol.Symbol,
+                   str],
+                   Union[float, sp.core.expr.Expr]],
+                   None],
                    use_lpi_constraints: bool = False,
                    only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the generating set.
@@ -689,7 +689,6 @@ class InflationLP(object):
     #                                 for col in generating_monomials]
     #     return generating_monomials
 
-
     def build_raw_lexboolvecs(self) -> List[np.ndarray]:
         r"""Creates the generating set of monomials (as boolvecs).
         """
@@ -697,7 +696,9 @@ class InflationLP(object):
         lengths = []
         if not self.nonfanout:
             for ortho_group in self._ortho_groups:
-                boolvecs = np.vstack([self.mon_to_boolvec(op[np.newaxis]) for op in ortho_group])
+                boolvecs = np.vstack(
+                    [self.mon_to_boolvec(op[np.newaxis]) for op in
+                     ortho_group])
                 boolvecs = np.pad(boolvecs, ((1, 0), (0, 0)))
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
@@ -716,7 +717,8 @@ class InflationLP(object):
                     lexorder=self._lexorder)
                     for i in range(max_mon_length + 1)]
                 boolvecs = np.vstack(
-                    [self.mon_to_boolvec(op) for op in chain.from_iterable(phys_mon)])
+                    [self.mon_to_boolvec(op) for op in
+                     chain.from_iterable(phys_mon)])
                 # boolvecs = np.pad(boolvecs, ((1, 0), (0, 0)))
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
@@ -1035,7 +1037,7 @@ class InflationLP(object):
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
     ###########################################################################
-    #TODO: Use ONLY boolvecs, never lexrepr?
+    # TODO: Use ONLY boolvecs, never lexrepr?
     def _discover_normalization_eqns(self) -> List[
         Tuple[int, Tuple[int, ...]]]:
         """Given the generating monomials, infer implicit normalization
@@ -1416,6 +1418,7 @@ class InflationLP(object):
         boolvec = self.blank_bool_vec.copy()
         boolvec[self.mon_to_lexrepr(mon)] = True
         return boolvec
+
 
 def outer_bitwise_or(a, b):
     temp = np.bitwise_or(a[:, np.newaxis], b[np.newaxis]).astype(bool)
