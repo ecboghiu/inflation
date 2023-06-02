@@ -638,57 +638,7 @@ class InflationLP(object):
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
-    ###########################################################################
-    # def build_columns(self,
-    #                   symbolic: bool = False) -> List[np.ndarray]:
-    #     r"""Creates the generating set of monomials.
-    #
-    #     Parameters
-    #     ----------
-    #     symbolic: bool, optional
-    #         If ``True``, it returns the columns as a list of sympy symbols
-    #         parsable by `InflationLP.generate_lp()`. By default
-    #         ``False``.
-    #     """
-    #     if not self.nonfanout:
-    #         choices_to_combine = [
-    #             tuple(ortho_group) + (self.identity_operator,)
-    #             for ortho_group in self._ortho_groups]
-    #         lengths = list(map(len, choices_to_combine))
-    #     else:
-    #         choices_to_combine = []
-    #         lengths = []
-    #         for party in range(self.nr_parties):
-    #             relevant_sources = np.flatnonzero(self.hypergraph[:, party])
-    #             relevant_inflevels = self.inflation_levels[relevant_sources]
-    #             max_mon_length = min(relevant_inflevels)
-    #             phys_mon = [party_physical_monomials(
-    #                 hypergraph=self.hypergraph,
-    #                 inflevels=self.inflation_levels,
-    #                 party=party,
-    #                 max_monomial_length=i,
-    #                 settings_per_party=self.setting_cardinalities,
-    #                 outputs_per_party=self.outcome_cardinalities,
-    #                 lexorder=self._lexorder)
-    #                 for i in range(max_mon_length + 1)]
-    #             lengths.append(sum(map(len, phys_mon)))
-    #             choices_to_combine.append(chain.from_iterable(phys_mon))
-    #     if self.verbose > 1:
-    #         print(f"Choices to combine complete. {lengths}")
-    #     nontriv_cols = map(np.vstack,
-    #                        tqdm(product(*choices_to_combine),
-    #                             disable=not self.verbose,
-    #                             desc="Building columns         ",
-    #                             total=np.prod(lengths),
-    #                             leave=True,
-    #                             position=0))
-    #     generating_monomials = sorted(nontriv_cols, key=len)
-    #
-    #     if symbolic:
-    #         generating_monomials = [to_symbol(col, self.names)
-    #                                 for col in generating_monomials]
-    #     return generating_monomials
-
+    ##########################################################################
     def build_raw_lexboolvecs(self) -> List[np.ndarray]:
         r"""Creates the generating set of monomials (as boolvecs).
         """
