@@ -25,7 +25,6 @@ from ..sdp.quantum_tools import (clean_coefficients,
                                  flatten_symbolic_powers,
                                  party_physical_monomials,
                                  to_symbol)
-# from ..sdp.sdp_utils import solveSDP_MosekFUSION
 from .lp_utils import solveLP_Mosek
 from functools import reduce
 
@@ -97,10 +96,18 @@ class InflationLP(object):
 
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
+        self._lexrange = np.arange(self._nr_operators)
         self.lexorder_symmetries = inflationproblem.inf_symmetries
         self._lexorder_lookup = inflationproblem._lexorder_lookup
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._ortho_groups = inflationproblem._ortho_groups
+
+        self._ortho_groups_as_boolarrays = [np.vstack(
+            [self.mon_to_boolvec(op[np.newaxis]) for op in
+             ortho_group]) for ortho_group in self._ortho_groups]
+        self._ortho_groups_as_boolvecs = [self.mon_to_boolvec(ortho_group)
+                                          for ortho_group in self._ortho_groups]
+
         self.has_children = np.ones(self.nr_parties, dtype=bool)
 
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
@@ -154,41 +161,7 @@ class InflationLP(object):
         self.monomial_from_name = dict()
 
         self._raw_monomials_as_lexboolvecs = self.build_raw_lexboolvecs()
-        # print(self._raw_monomials_as_lexboolvecs.astype(int))
-        # assert len(self._raw_monomials_as_lexboolvecs) == len(np.unique(self._raw_monomials_as_lexboolvecs, axis=0)), "Boolvec initialization includes duplicates!"
         self.raw_n_columns = len(self._raw_monomials_as_lexboolvecs)
-        lex_range = np.arange(self._nr_operators)
-        self._raw_monomials_as_lexreprs = [lex_range[bool_idx]
-                                           for bool_idx in
-                                           self._raw_monomials_as_lexboolvecs]
-        # self.raw_generating_monomials =  [self._lexorder[lexrepr]
-        #                                    for lexrepr in
-        #                                    self._raw_monomials_as_lexreprs]
-
-        # self.raw_generating_monomials = self.build_columns()
-        # self.raw_n_columns            = len(self.raw_generating_monomials)
-        # if self.verbose > 0:
-        #     print(f"{self.raw_n_columns} raw monomials created.")
-        # collect()
-        # if self.verbose > 1:
-        #     print("Garbage collection completed.")
-        # # Calculate normalization equalities
-        #
-        # self._monomials_as_lexreprs = [
-        #     [self._lexorder_lookup[op.tobytes()] for op in mon]
-        #     for mon in tqdm(self.raw_generating_monomials,
-        #                     disable=not self.verbose,
-        #                     desc="Obtaining boolvecs   ")
-        # ]
-        # if self.verbose > 1:
-        #     print("_monomials_as_lexreprs created")
-        # monomials_as_lexboolvecs = np.zeros((self.raw_n_columns,
-        #                                      len(self._lexorder)),
-        #                                     dtype=bool)
-        # for i, lexrepr in enumerate(self._monomials_as_lexreprs):
-        #     monomials_as_lexboolvecs[i, lexrepr] = True
-        # self._monomials_as_lexboolvecs = monomials_as_lexboolvecs
-        # del monomials_as_lexboolvecs
         self._lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                              enumerate(self._raw_monomials_as_lexboolvecs)}
 
@@ -645,11 +618,8 @@ class InflationLP(object):
         choices_to_combine = []
         lengths = []
         if not self.nonfanout:
-            for ortho_group in self._ortho_groups:
-                boolvecs = np.vstack(
-                    [self.mon_to_boolvec(op[np.newaxis]) for op in
-                     ortho_group])
-                boolvecs = np.pad(boolvecs, ((1, 0), (0, 0)))
+            for raw_boolarray in self._ortho_groups_as_boolarrays:
+                boolvecs = np.pad(raw_boolarray, ((1, 0), (0, 0)))
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         else:
@@ -669,7 +639,6 @@ class InflationLP(object):
                 boolvecs = np.vstack(
                     [self.mon_to_boolvec(op) for op in
                      chain.from_iterable(phys_mon)])
-                # boolvecs = np.pad(boolvecs, ((1, 0), (0, 0)))
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition
@@ -987,7 +956,6 @@ class InflationLP(object):
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
     ###########################################################################
-    # TODO: Use ONLY boolvecs, never lexrepr?
     def _discover_normalization_eqns(self) -> List[
         Tuple[int, Tuple[int, ...]]]:
         """Given the generating monomials, infer implicit normalization
@@ -1001,41 +969,39 @@ class InflationLP(object):
         List[Tuple[int, List[int]]]
             A list of normalization equalities between columns.
         """
-        # skip_party = [not i for i in self.has_children]
-        ortho_groups_as_lexreprs = [self.mon_to_lexrepr(ortho_group)
-                                    for ortho_group in self._ortho_groups]
-        alternatives = {g[-1]: g[:-1] for g in ortho_groups_as_lexreprs
+        ortho_groups_as_lexreprs = [self._lexrange[bool_vec] for bool_vec in self._ortho_groups_as_boolvecs]
+        alternatives = {g[-1]: r[:-1] for g,r in zip(
+            ortho_groups_as_lexreprs,
+            self._ortho_groups_as_boolarrays)
                         if len(g) > 1}
-        critical_values = set(alternatives.keys())
+        critical_boolvec = self.blank_bool_vec.copy()
+        for c in alternatives.keys():
+            critical_boolvec[c] = True
 
         column_level_equalities = []
-        for i, (lexrepr, bool_vec) in tqdm(enumerate(zip(
-                self._raw_monomials_as_lexreprs,
-                self._raw_monomials_as_lexboolvecs)),
+        for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs),
                 disable=not self.verbose,
                 desc="Discovering equalities   ",
                 total=self.raw_n_columns):
-            critical_values_in_boovec = critical_values.intersection(lexrepr)
-            for c in critical_values_in_boovec:
+            critical_boolvec_intersection = np.bitwise_and(bool_vec, critical_boolvec)
+            critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
+            for c in critical_values_in_boovec.flat:
                 try:
                     summands = [i]
                     absent_c_boolvec = bool_vec.copy()
                     absent_c_boolvec[c] = False
                     norm_i = self._lookup_dict[absent_c_boolvec.tobytes()]
-                    for a in alternatives[c]:
-                        alt_c_boolvec = absent_c_boolvec.copy()
-                        alt_c_boolvec[a] = True
+                    restored_c_boolvecs = np.bitwise_or(
+                        absent_c_boolvec[np.newaxis],
+                        alternatives[c]
+                    )
+                    for alt_c_boolvec in restored_c_boolvecs:
                         summands.append(
                             self._lookup_dict[alt_c_boolvec.tobytes()])
                     column_level_equalities.append((norm_i,
                                                     tuple(sorted(summands))))
                 except KeyError:
                     pass
-        # before_duplicate_removal = len(column_level_equalities)
-        # column_level_equalities = set(column_level_equalities)
-        # after_duplicate_removal = len(column_level_equalities)
-        # assert before_duplicate_removal == after_duplicate_removal, \
-        #     "Generating equalities with repetition."
         return column_level_equalities
 
     def _discover_inflation_orbits(self) -> np.ndarray:
