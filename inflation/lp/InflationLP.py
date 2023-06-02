@@ -519,7 +519,8 @@ class InflationLP(object):
               feas_as_optim=False,
               dualise=True,
               solverparameters=None,
-              solver_arguments={}) -> None:
+              solver_arguments={},
+              verbose: int = -1) -> None:
         r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
@@ -557,11 +558,14 @@ class InflationLP(object):
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
-
+        if verbose == -1:
+            real_verbose = self.verbose
+        else:
+            real_verbose = verbose
         args = self._prepare_solver_arguments()
         args.update(solver_arguments)
         args.update({"feas_as_optim": feas_as_optim,
-                     "verbose": self.verbose,
+                     "verbose": real_verbose,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
         if self.all_nonnegative:
@@ -1129,7 +1133,7 @@ class InflationLP(object):
         self._update_upperbounds()
         self._update_objective()
         num_nontrivial_known = len(self.known_moments)
-        if self.verbose > 1 and num_nontrivial_known > 0:
+        if self.verbose > 1 and num_nontrivial_known > 1:
             print("Number of variables with fixed numeric value:",
                   num_nontrivial_known)
         num_semiknown = len(self.semiknown_moments)
