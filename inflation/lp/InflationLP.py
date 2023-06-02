@@ -143,9 +143,16 @@ class InflationLP(object):
         """
         # Note that there IS NO POSSIBILITY OF ORTHOGONALITY in the LP
         # and hence we start indices from zero, always.
-        self.atomic_monomial_from_hash  = dict()
-        self.monomial_from_atoms        = dict()
-        self.monomial_from_name         = dict()
+        try:
+            self.generate_lp_has_been_called += 1
+        except AttributeError:
+            self.generate_lp_has_been_called = 0
+        if self.generate_lp_has_been_called:
+            return None
+
+        self.atomic_monomial_from_hash = dict()
+        self.monomial_from_atoms = dict()
+        self.monomial_from_name = dict()
 
         self._raw_monomials_as_lexboolvecs = self.build_raw_lexboolvecs()
         # print(self._raw_monomials_as_lexboolvecs.astype(int))
