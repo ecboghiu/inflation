@@ -39,9 +39,9 @@ class InflationProblem(object):
         Dictionary where each key is a parent node, and the corresponding value
         is a list of the corresponding children nodes. By default it is a
         single source connecting all the parties.
-    outcomes_per_party : List[int]
+    outcomes_per_party : [np.ndarray, List[int], Tuple[int,...]]
         Measurement outcome cardinalities.
-    settings_per_party : List[int], optional
+    settings_per_party : [np.ndarray, List[int], Tuple[int,...]], optional
         Measurement setting cardinalities. By default ``1`` for all parties.
     inflation_level_per_source : [int, List[int]], optional
         Number of copies per source in the inflated graph. Source order is the
