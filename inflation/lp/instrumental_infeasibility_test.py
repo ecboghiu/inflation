@@ -7,17 +7,15 @@ Inst = InflationProblem({"A": ["B"],
                         settings_per_party=(2, 1),
                         order=("A", "B"))
 
-p_X = [0.5, 0.5]
-p_AB_cond_X = np.zeros((2, 2, 2))
-p_AB_cond_X[0, 0, 0] = 1
-p_AB_cond_X[0, 1, 1] = 1
+p_AB_cond_XY = np.zeros((2, 2, 2, 1))
+p_AB_cond_XY[0, 0, 0, 0] = 1
+p_AB_cond_XY[0, 1, 1, 0] = 1
 
-p_ABX = np.zeros((2, 2, 2, 1))
-for (a, b, x), v in np.ndenumerate(p_AB_cond_X):
-    p_ABX[a, b, x] = v * p_X[x]
 
-Inst_LP = InflationLP(Inst, verbose=2)
+Inst_LP = InflationLP(Inst, verbose=0)
 Inst_LP.generate_lp()
-Inst_LP.set_distribution(p_ABX)
+Inst_LP.set_distribution(p_AB_cond_XY)
 Inst_LP.solve(dualise=False)
+print(Inst_LP.certificate_as_probs())
 Inst_LP.solve(dualise=True)
+print(Inst_LP.certificate_as_probs())
