@@ -603,11 +603,67 @@ class InflationLP(object):
             polynomial += coeff * self.names_to_symbols[mon_name]
         return polynomial
 
-    # TODO: Restore
-    # def certificate_as_string(self,
-    #                           clean: bool = True,
-    #                           chop_tol: float = 1e-10,
-    #                           round_decimals: int = 3) -> str:
+    def certificate_as_string(self,
+                              clean: bool = True,
+                              chop_tol: float = 1e-10,
+                              round_decimals: int = 3) -> str:
+        """Give the certificate as a string of a sum of probabilities. The
+        expression is in the form such that its satisfaction implies
+        incompatibility.
+
+        Parameters
+        ----------
+        clean : bool, optional
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals
+            specified by ``round_decimals``. By default, ``True``.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. By default, ``1e-10``.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number of
+            decimals specified. By default, ``3``.
+
+        Returns
+        -------
+        str
+            The certificate in terms of probabilities and marginals. The
+            certificate of incompatibility is ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationLP.solve()\" first.")
+
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
+
+        rest_of_dual = dual.copy()
+        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
+        constant_value += rest_of_dual.pop(self.One.name, 0)
+        if constant_value:
+            if clean:
+                cert = "{0:.{prec}f}".format(constant_value,
+                                             prec=round_decimals)
+            else:
+                cert = str(constant_value)
+        else:
+            cert = ""
+        for mon_name, coeff in rest_of_dual.items():
+            if mon_name != "0":
+                cert += "+" if coeff >= 0 else "-"
+                if np.isclose(abs(coeff), 1):
+                    cert += mon_name
+                else:
+                    if clean:
+                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
+                                                          mon_name,
+                                                          prec=round_decimals)
+                    else:
+                        cert += f"{abs(coeff)}*{mon_name}"
+        cert += " < 0"
+        return cert[1:] if cert[0] == "+" else cert
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
