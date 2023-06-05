@@ -600,7 +600,7 @@ class InflationSDP(object):
                  str(non_all_commuting_monomials))
         del non_all_commuting_monomials
         if not only_specified_values:
-            atomic_knowns = {mon.knowable_factors[0]: val
+            atomic_knowns = {mon.factors[0]: val
                              for mon, val in self.known_moments.items()
                              if len(mon) == 1}
             atomic_knowns.update({atom.dagger: val
