@@ -18,6 +18,7 @@ from warnings import warn
 from inflation import InflationProblem
 
 from .numbafied import nb_apply_lexorder_perm_to_lexboolvecs
+from .writer_utils import write_to_lp
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
@@ -736,7 +737,34 @@ class InflationLP(object):
         collect()
 
     # TODO: Restore export functionality
-    # def write_to_file(self, filename: str) -> None:
+    def write_to_file(self, filename: str) -> None:
+        """Exports the problem to a file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the exported file. If no file format is specified, it
+            defaults to the LP format. Supported formats are ``.lp`` (LP) and
+            ``.mps`` (MPS).
+        """
+        # Determine file extension
+        parts = filename.split(".")
+        if len(parts) >= 2:
+            extension = parts[-1]
+        else:
+            extension = "lp"
+            filename += ".lp"
+
+        # Write file according to the extension
+        if self.verbose > 0:
+            print("Writing the LP program to", filename)
+        if extension == "lp":
+            write_to_lp(self, filename)
+        elif extension == "mps":
+            write_to_mps(self, filename)
+        else:
+            raise Exception("File format not supported. Please choose between "
+                            + "the extensions `.lp` and `.mps`.")
 
     ###########################################################################
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
