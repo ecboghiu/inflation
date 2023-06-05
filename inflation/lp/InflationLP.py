@@ -1236,7 +1236,7 @@ class InflationLP(object):
         """
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
-    def _prepare_solver_arguments(self) -> dict:
+    def _prepare_solver_arguments(self, separate_bounds: bool = True) -> dict:
         """Prepare arguments to pass to the solver.
 
         The solver takes as input the following arguments, which are all
@@ -1250,6 +1250,13 @@ class InflationLP(object):
             coefficients of the keys in a linear equality constraint.
             * "inequalities": list of dicts where each dict gives the
             coefficients of the keys in a linear inequality constraint.
+
+        Parameters
+        ----------
+        separate_bounds : bool, optional
+            Whether to have variable bounds as a separate item in
+            ``solverargs`` (True) or absorb them into the inequalities (False).
+            By default, ``True``.
 
         Returns
         -------
@@ -1290,12 +1297,18 @@ class InflationLP(object):
             lb = {mon.name: 1}
             if not np.isclose(bnd, 0):
                 lb[self.constant_term_name] = -bnd
-            solverargs["inequalities"].append(lb)
+            if separate_bounds:
+                solverargs["lower_bounds"] = lb
+            else:
+                solverargs["inequalities"].append(lb)
         for mon, bnd in self._processed_moment_upperbounds.items():
             ub = {mon.name: -1}
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
-            solverargs["inequalities"].append(ub)
+            if separate_bounds:
+                solverargs["upper_bounds"] = ub
+            else:
+                solverargs["inequalities"].append(ub)
         return solverargs
 
     def _reset_solution(self) -> None:

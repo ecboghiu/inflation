@@ -14,6 +14,8 @@ def solveLP_MosekFUSION(objective: Dict = None,
                         semiknown_vars: Dict = None,
                         inequalities: List[Dict] = None,
                         equalities: List[Dict] = None,
+                        lower_bounds: Dict = None,
+                        upper_bounds: Dict = None,
                         solve_dual: bool = True,
                         all_non_negative: bool = True,
                         feas_as_optim: bool = False,
@@ -35,6 +37,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         Inequality constraints with monomials (keys) and coefficients (values)
     equalities : list of dict
         Equality constraints with monomials (keys) and coefficients (values)
+    lower_bounds : dict
+        Lower bounds of variables
+    upper_bounds : dict
+        Upper bounds of variables
     solve_dual : bool
         Whether to solve the dual (True) or primal (False) formulation
     all_non_negative : bool
@@ -63,6 +69,12 @@ def solveLP_MosekFUSION(objective: Dict = None,
         inequalities = []
     if equalities is None:
         equalities = []
+
+    # Absorb lower and upper bounds of variables into inequalities
+    if lower_bounds:
+        inequalities.append(lower_bounds)
+    if upper_bounds:
+        inequalities.append(upper_bounds)
 
     # Define variables for LP, excluding those with known values
     variables = set()
@@ -270,6 +282,8 @@ def solveLP_Mosek(objective: Dict = None,
                   semiknown_vars: Dict = None,
                   inequalities: List[Dict] = None,
                   equalities: List[Dict] = None,
+                  lower_bounds: Dict = None,
+                  upper_bounds: Dict = None,
                   solve_dual: bool = True,
                   all_non_negative: bool = True,
                   feas_as_optim: bool = False,
@@ -291,6 +305,10 @@ def solveLP_Mosek(objective: Dict = None,
         Inequality constraints with monomials (keys) and coefficients (values)
     equalities : list of dict
         Equality constraints with monomials (keys) and coefficients (values)
+    lower_bounds : dict
+        Lower bounds of variables
+    upper_bounds : dict
+        Upper bounds of variables
     solve_dual : bool
         Whether to solve the dual (True) or primal (False) formulation
     all_non_negative : bool
@@ -327,6 +345,12 @@ def solveLP_Mosek(objective: Dict = None,
         inequalities = []
     if equalities is None:
         equalities = []
+
+    # Absorb lower and upper bounds of variables into inequalities
+    if lower_bounds:
+        inequalities.append(lower_bounds)
+    if upper_bounds:
+        inequalities.append(upper_bounds)
 
     # Define variables for LP, excluding those with known values
     variables = set()
@@ -531,6 +555,9 @@ if __name__ == '__main__':
                          {'w': 1, '1': 1}],  # w >= -1
         "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}],  # x/2 + 2y - 3 = 0
     }
-    safe_sol = solveLP_MosekFUSION(**simple_lp)
-    raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
-    raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
+    safe_sol = solveLP_MosekFUSION(**simple_lp,
+                                   lower_bounds={'x': 0, 'y': 0,
+                                                 'z': 0, 'w': 0})
+    raw_sol = solveLP_Mosek(**simple_lp, all_non_negative=True)
+    print(safe_sol)
+    print(raw_sol)
