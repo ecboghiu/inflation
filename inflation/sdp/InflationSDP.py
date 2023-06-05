@@ -654,7 +654,8 @@ class InflationSDP(object):
               feas_as_optim=False,
               dualise=True,
               solverparameters=None,
-              solver_arguments={}) -> None:
+              solver_arguments={},
+              verbose: int = -1) -> None:
         r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
@@ -683,6 +684,9 @@ class InflationSDP(object):
             By default, solve will use the dictionary of SDP keyword arguments
             given by ``_prepare_solver_arguments()``. However, a user may
             manually override these arguments by passing their own here.
+        verbose : int, optional
+            How much information to display to the user. By default, ``-1``
+            (which sets it to ``self.verbose``).
         """
         if not self._relaxation_has_been_generated:
             raise Exception("Relaxation is not generated yet. " +
@@ -693,10 +697,12 @@ class InflationSDP(object):
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
 
+        real_verbose = self.verbose if verbose == -1 else verbose
+
         args = self._prepare_solver_arguments()
         args.update(solver_arguments)
         args.update({"feas_as_optim": feas_as_optim,
-                     "verbose": self.verbose,
+                     "verbose": real_verbose,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
 
