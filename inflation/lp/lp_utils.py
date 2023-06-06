@@ -9,6 +9,7 @@ from scipy.sparse import dok_matrix, vstack
 from time import perf_counter
 from gc import collect
 
+
 def solveLP_MosekFUSION(objective: Dict = None,
                         known_vars: Dict = None,
                         semiknown_vars: Dict = None,
@@ -69,12 +70,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
         inequalities = []
     if equalities is None:
         equalities = []
-
-    # Absorb lower and upper bounds of variables into inequalities
-    if lower_bounds:
-        inequalities.append(lower_bounds)
-    if upper_bounds:
-        inequalities.append(upper_bounds)
+    if lower_bounds is None:
+        lower_bounds = {}
+    if upper_bounds is None:
+        upper_bounds = {}
 
     # Define variables for LP, excluding those with known values
     variables = set()
@@ -174,13 +173,22 @@ def solveLP_MosekFUSION(objective: Dict = None,
             del A, C
 
             if all_non_negative:
-                c = M.constraint("c",
-                                 Expr.sub(Expr.mul(transpose, y), v_mosek),
+                c = M.constraint(Expr.sub(Expr.mul(transpose, y), v_mosek),
                                  Domain.greaterThan(0.0))
             else:
-                c = M.constraint("c",
-                                 Expr.sub(Expr.mul(transpose, y), v_mosek),
-                                 Domain.equalsTo(0.0))
+                # Set dual constraint bounds corresponding to primal variable
+                # bounds
+                def c(i): return Expr.sub(Expr.mul(transpose, y).index(i),
+                                          v_mosek.get(i, 0))
+                lb_index = {var_index[x] for x in lower_bounds}
+                ub_index = {var_index[x] for x in upper_bounds}
+                eq_index = set(range(nof_variables)) - lb_index - ub_index
+                for j in lb_index:
+                    M.constraint(c(j), Domain.greaterThan(0.0))
+                for j in ub_index:
+                    M.constraint(c(j), Domain.lessThan(0.0))
+                for j in eq_index:
+                    M.constraint(c(j), Domain.equalsTo(0.0))
 
             # Define dual objective:
             # Since Ax + b >= 0 and Cx + d == 0, the dual objective is
@@ -206,6 +214,14 @@ def solveLP_MosekFUSION(objective: Dict = None,
             else:
                 x = M.variable("x", nof_variables)
 
+            # Define variable constraints for lower/upper bounds
+            for monomial, value in lower_bounds.items():
+                M.constraint(x.index(var_index[monomial]),
+                             Domain.greaterThan(value))
+            for monomial, value in upper_bounds.items():
+                M.constraint(x.index(var_index[monomial]),
+                             Domain.lessThan(value))
+
             # Define primal constraints
             ineq_cons = M.constraint("ineqs",
                                      Expr.add(Expr.mul(A_mosek, x), b_mosek),
@@ -226,7 +242,12 @@ def solveLP_MosekFUSION(objective: Dict = None,
         M.solve()
 
         if solve_dual:
-            x_values = dict(zip(variables, c.dual()))
+            if all_non_negative:
+                x_values = dict(zip(variables, c.dual()))
+            else:
+                # Ignore constraints for variable bounds
+                x_values = {x: M.getConstraint(nof_inequalities + i).dual()[0]
+                            for x, i in var_index.items()}
         else:
             x_values = dict(zip(variables, x.level()))
 
@@ -357,7 +378,6 @@ def solveLP_Mosek(objective: Dict = None,
     inequalities.extend({mon: -1, '1': bnd}
                         for mon, bnd in upper_bounds.items())
 
-
     # Define variables for LP, excluding those with known values
     variables = set()
     variables.update(objective.keys())
@@ -384,7 +404,6 @@ def solveLP_Mosek(objective: Dict = None,
         if verbose < 2:
             task.putintparam(mosek.iparam.log_sim, 0)
             task.putintparam(mosek.iparam.log_intpnt, 0)
-
 
         numcon = len(inequalities + internal_equalities)
         numvar = len(variables)
@@ -561,9 +580,6 @@ if __name__ == '__main__':
                          {'w': 1, '1': 1}],  # w >= -1
         "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}],  # x/2 + 2y - 3 = 0
     }
-    safe_sol = solveLP_MosekFUSION(**simple_lp,
-                                   lower_bounds={'x': 0, 'y': 0,
-                                                 'z': 0, 'w': 0})
-    raw_sol = solveLP_Mosek(**simple_lp, all_non_negative=True)
-    print(safe_sol)
-    print(raw_sol)
+    safe_sol = solveLP_MosekFUSION(**simple_lp)
+    raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
+    raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
