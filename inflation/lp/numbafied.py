@@ -73,3 +73,8 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
             # if i in equivalent_monomial_positions.flat:  # SHOULD ALWAYS HAPPEN!
             orbits[equivalent_monomial_positions] = i
     return orbits
+
+@jit(nopython=True, cache=cache, forceobj=False, parallel=False)
+def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
+    temp = np.bitwise_or(a[:, np.newaxis], b[np.newaxis]).astype(bool)
+    return temp.reshape((-1, *temp.shape[2:]))

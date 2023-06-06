@@ -17,7 +17,7 @@ from warnings import warn
 
 from inflation import InflationProblem
 
-from .numbafied import nb_apply_lexorder_perm_to_lexboolvecs
+from .numbafied import nb_apply_lexorder_perm_to_lexboolvecs, nb_outer_bitwise_or
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
@@ -700,7 +700,7 @@ class InflationLP(object):
         # Use reduce to take outer combinations, using bitwise addition
         if self.verbose > 0:
             print(f"About to generate {np.prod(lengths)} probability placeholders...")
-        raw_lexboolvecs = reduce(outer_bitwise_or, choices_to_combine)
+        raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine)
         # Sort by operator count
         return raw_lexboolvecs[np.argsort(np.sum(raw_lexboolvecs, axis=1))]
 
@@ -1390,8 +1390,3 @@ class InflationLP(object):
         boolvec = self.blank_bool_vec.copy()
         boolvec[self.mon_to_lexrepr(mon)] = True
         return boolvec
-
-
-def outer_bitwise_or(a, b):
-    temp = np.bitwise_or(a[:, np.newaxis], b[np.newaxis]).astype(bool)
-    return temp.reshape((-1, *temp.shape[2:]))
