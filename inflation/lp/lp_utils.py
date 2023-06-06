@@ -345,12 +345,18 @@ def solveLP_Mosek(objective: Dict = None,
         inequalities = []
     if equalities is None:
         equalities = []
+    if lower_bounds is None:
+        lower_bounds = {}
+    if upper_bounds is None:
+        upper_bounds = {}
 
     # Absorb lower and upper bounds of variables into inequalities
-    if lower_bounds:
-        inequalities.append(lower_bounds)
-    if upper_bounds:
-        inequalities.append(upper_bounds)
+    # TODO: Use these cleverly in primal/dual formulation??
+    inequalities.extend({mon: 1, '1': -bnd}
+                        for mon, bnd in lower_bounds.items())
+    inequalities.extend({mon: -1, '1': bnd}
+                        for mon, bnd in upper_bounds.items())
+
 
     # Define variables for LP, excluding those with known values
     variables = set()

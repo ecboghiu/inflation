@@ -1293,22 +1293,18 @@ class InflationLP(object):
                       }
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
-        for mon, bnd in self._processed_moment_lowerbounds.items():
-            lb = {mon.name: 1}
-            if not np.isclose(bnd, 0):
-                lb[self.constant_term_name] = -bnd
-            if separate_bounds:
-                solverargs["lower_bounds"] = lb
-            else:
-                solverargs["inequalities"].append(lb)
-        for mon, bnd in self._processed_moment_upperbounds.items():
-            ub = {mon.name: -1}
-            if not np.isclose(bnd, 0):
-                ub[self.constant_term_name] = bnd
-            if separate_bounds:
-                solverargs["upper_bounds"] = ub
-            else:
-                solverargs["inequalities"].append(ub)
+        if separate_bounds:
+            solverargs["lower_bounds"] = {mon.name: bnd for mon, bnd in
+                                          self._processed_moment_lowerbounds.items()}
+            solverargs["upper_bounds"] = {mon.name: bnd for mon, bnd in
+                                          self._processed_moment_upperbounds.items()}
+        else:
+            solverargs["inequalities"].extend({mon.name: 1, '1': -bnd}
+                                              for mon, bnd in
+                                              self._processed_moment_lowerbounds.items())
+            solverargs["inequalities"].extend({mon.name: -1, '1': bnd}
+                                              for mon, bnd in
+                                              self._processed_moment_upperbounds.items())
         return solverargs
 
     def _reset_solution(self) -> None:
