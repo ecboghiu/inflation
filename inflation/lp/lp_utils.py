@@ -371,13 +371,6 @@ def solveLP_Mosek(objective: Dict = None,
     if upper_bounds is None:
         upper_bounds = {}
 
-    # Absorb lower and upper bounds of variables into inequalities
-    # TODO: Use these cleverly in primal/dual formulation??
-    inequalities.extend({mon: 1, '1': -bnd}
-                        for mon, bnd in lower_bounds.items())
-    inequalities.extend({mon: -1, '1': bnd}
-                        for mon, bnd in upper_bounds.items())
-
     # Define variables for LP, excluding those with known values
     variables = set()
     variables.update(objective.keys())
@@ -440,12 +433,20 @@ def solveLP_Mosek(objective: Dict = None,
             objective_vector = b
 
             # Set bound keys and values for constraints (primal objective)
+            blc = c
+            buc = c
             if all_non_negative:
                 bkc = [mosek.boundkey.lo] * numcon
             else:
-                # All equalities since primal variable x is free
+                # Set constraint bounds corresponding to primal variable bounds
                 bkc = [mosek.boundkey.fx] * numcon
-            blc = buc = c
+                for x, i in var_index.items():
+                    if x in set(lower_bounds).intersection(upper_bounds):
+                        bkc[i] = mosek.boundkey.ra
+                    elif x in lower_bounds:
+                        bkc[i] = mosek.boundkey.lo
+                    elif x in upper_bounds:
+                        bkc[i] = mosek.boundkey.up
 
             # Set bound keys and values for variables
             # Non-positivity for y corresponding to inequalities
@@ -471,10 +472,22 @@ def solveLP_Mosek(objective: Dict = None,
             if all_non_negative:
                 bkx = [mosek.boundkey.lo] * numvar
                 blx = [0.0] * numvar
+                bux = [+inf] * numvar
             else:
                 bkx = [mosek.boundkey.fr] * numvar
                 blx = [-inf] * numvar
-            bux = [+inf] * numvar
+                bux = [+inf] * numvar
+                for x, i in var_index.items():
+                    if x in set(lower_bounds).intersection(upper_bounds):
+                        bkx[i] = mosek.boundkey.ra
+                        blx[i] = lower_bounds[x]
+                        bux[i] = upper_bounds[x]
+                    elif x in lower_bounds:
+                        bkx[i] = mosek.boundkey.lo
+                        blx[i] = lower_bounds[x]
+                    elif x in upper_bounds:
+                        bkx[i] = mosek.boundkey.up
+                        bux[i] = upper_bounds[x]
 
             # Set the objective sense
             task.putobjsense(mosek.objsense.maximize)
