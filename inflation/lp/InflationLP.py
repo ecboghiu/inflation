@@ -1168,8 +1168,9 @@ class InflationLP(object):
         in case of redundancy.
         """
         for mon, lb in self.moment_lowerbounds.items():
-            self._processed_moment_lowerbounds[mon] = \
-                max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
+            if (not self.all_nonnegative) or (not np.isclose(lb, 0)):
+                self._processed_moment_lowerbounds[mon] = \
+                    max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
         for mon, value in self.known_moments.items():
             if isinstance(value, Real):
                 try:
