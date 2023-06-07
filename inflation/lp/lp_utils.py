@@ -305,7 +305,7 @@ def solveLP_Mosek(objective: Dict = None,
                   equalities: List[Dict] = None,
                   lower_bounds: Dict = None,
                   upper_bounds: Dict = None,
-                  solve_dual: bool = True,
+                  solve_dual: bool = False,
                   all_non_negative: bool = True,
                   feas_as_optim: bool = False,
                   verbose: int = 0,
@@ -398,15 +398,16 @@ def solveLP_Mosek(objective: Dict = None,
             task.putintparam(mosek.iparam.log_sim, 0)
             task.putintparam(mosek.iparam.log_intpnt, 0)
 
-        numcon = len(inequalities + internal_equalities)
-        numvar = len(variables)
-        nof_inequalities = len(inequalities)
-        nof_equalities = len(internal_equalities)
+
+        nof_primal_variables = len(variables)
+        nof_primal_inequalities = len(inequalities)
+        nof_primal_equalities = len(internal_equalities)
+        nof_primal_constraints = nof_primal_inequalities + nof_primal_equalities
 
         # Create sparse matrix A of constraints
         constraints = inequalities + internal_equalities
-        A = dok_matrix((numcon, numvar))
-        b = np.zeros(numcon)
+        A = dok_matrix((nof_primal_constraints, nof_primal_variables))
+        b = np.zeros(nof_primal_constraints)
         for i, cons in enumerate(constraints):
             for x in set(cons).difference(known_vars):
                 A[i, var_index[x]] = cons[x]
@@ -417,7 +418,7 @@ def solveLP_Mosek(objective: Dict = None,
             print(f"Size of matrix A: {A.get_shape()}")
 
         # Objective function coefficients
-        c = np.zeros(numvar)
+        c = np.zeros(nof_primal_variables)
         for x in set(objective).difference(known_vars):
             c[var_index[x]] = objective[x]
 
@@ -427,33 +428,46 @@ def solveLP_Mosek(objective: Dict = None,
             c0 += objective[x] * known_vars[x]
 
         if solve_dual:
-            numcon = len(variables)
-            numvar = len(inequalities + internal_equalities)
-            matrix = A.asformat('csr', copy=False)
-            objective_vector = b
+            inequalities_from_bounds = [{mon: -1, '1': bnd}
+                                        for mon, bnd in upper_bounds.items()]
+            inequalities_from_bounds.extend({mon: 1, '1': -bnd}
+                                        for mon, bnd in lower_bounds.items())
+            nof_primal_nontriv_bounds = len(inequalities_from_bounds)
+            nof_dual_constraints = nof_primal_variables
+            nof_dual_variables = nof_primal_equalities + nof_primal_inequalities + nof_primal_nontriv_bounds
+
+            A_extra = dok_matrix((nof_primal_nontriv_bounds, nof_primal_variables))
+            b_extra = np.zeros(nof_primal_nontriv_bounds)
+            for i, cons in enumerate(inequalities_from_bounds):
+                for x in set(cons).difference(known_vars):
+                    A_extra[i, var_index[x]] = cons[x]
+                for x in set(cons).intersection(known_vars):
+                    b_extra[i] -= cons[x] * known_vars[x]
+            b_extra = b_extra.tolist()
+
+            # matrix = A.asformat('csr', copy=False)
+            matrix = vstack((A, A_extra), format='csr')
+            objective_vector = b + b_extra
 
             # Set bound keys and values for constraints (primal objective)
             blc = c
             buc = c
+
+            # Set constraint bounds corresponding to primal variable bounds
             if all_non_negative:
-                bkc = [mosek.boundkey.lo] * numcon
+                bkc = [mosek.boundkey.lo] * nof_dual_constraints
             else:
-                # Set constraint bounds corresponding to primal variable bounds
-                bkc = [mosek.boundkey.fx] * numcon
-                for x, i in var_index.items():
-                    if x in set(lower_bounds).intersection(upper_bounds):
-                        bkc[i] = mosek.boundkey.ra
-                    elif x in lower_bounds:
-                        bkc[i] = mosek.boundkey.lo
-                    elif x in upper_bounds:
-                        bkc[i] = mosek.boundkey.up
+                bkc = [mosek.boundkey.fx] * nof_dual_constraints
 
             # Set bound keys and values for variables
             # Non-positivity for y corresponding to inequalities
-            bkx = [mosek.boundkey.up] * nof_inequalities + \
-                  [mosek.boundkey.fr] * nof_equalities
-            blx = [-inf] * numvar
-            bux = [0.0] * nof_inequalities + [+inf] * nof_equalities
+            bkx = [mosek.boundkey.up] * nof_primal_inequalities + \
+                  [mosek.boundkey.fr] * nof_primal_equalities + \
+                  [mosek.boundkey.up] * nof_primal_nontriv_bounds
+            blx = [-inf] * nof_dual_variables
+            bux = [0.0] * nof_primal_inequalities + \
+                  [+inf] * nof_primal_equalities + \
+                  [0.0] * nof_primal_nontriv_bounds
 
             # Set the objective sense
             task.putobjsense(mosek.objsense.minimize)
@@ -464,19 +478,19 @@ def solveLP_Mosek(objective: Dict = None,
 
             # Set bound keys and bound values (lower and upper) for constraints
             # Ax + b >= 0 -> Ax >= -b
-            bkc = [mosek.boundkey.lo] * nof_inequalities + \
-                  [mosek.boundkey.fx] * nof_equalities
+            bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
+                  [mosek.boundkey.fx] * nof_primal_equalities
             blc = buc = b
 
             # Set bound keys and bound values (lower and upper) for variables
             if all_non_negative:
-                bkx = [mosek.boundkey.lo] * numvar
-                blx = [0.0] * numvar
-                bux = [+inf] * numvar
+                bkx = [mosek.boundkey.lo] * nof_primal_variables
+                blx = [0.0] * nof_primal_variables
+                bux = [+inf] * nof_primal_variables
             else:
-                bkx = [mosek.boundkey.fr] * numvar
-                blx = [-inf] * numvar
-                bux = [+inf] * numvar
+                bkx = [mosek.boundkey.fr] * nof_primal_variables
+                blx = [-inf] * nof_primal_variables
+                bux = [+inf] * nof_primal_variables
                 for x, i in var_index.items():
                     if x in set(lower_bounds).intersection(upper_bounds):
                         bkx[i] = mosek.boundkey.ra
@@ -493,6 +507,12 @@ def solveLP_Mosek(objective: Dict = None,
             task.putobjsense(mosek.objsense.maximize)
 
         # Add all the problem data to the task
+        if solve_dual:
+            numcon = nof_dual_constraints
+            numvar = nof_dual_variables
+        else:
+            numcon = nof_primal_constraints
+            numvar = nof_primal_variables
         task.inputdata(maxnumcon=numcon,
                        maxnumvar=numvar,
                        c=objective_vector,
@@ -522,10 +542,21 @@ def solveLP_Mosek(objective: Dict = None,
             print("Solving took", format(perf_counter() - t0, ".4f"),
                   "seconds.")
         basic = mosek.soltype.bas
-        sol = task.getsolution(basic)
-        status = sol[1]
-        xx = sol[6]
-        yy = sol[7]
+        # sol = task.getsolution(basic)
+        (problemsta,
+         solutionsta,
+         skc,
+         skx,
+         skn,
+         xc,
+         xx,
+         yy,
+         slc,
+         suc,
+         slx,
+         sux,
+         snx) = task.getsolution(basic)
+
 
         # Get objective values, solutions x, dual values y
         if solve_dual:
@@ -539,13 +570,13 @@ def solveLP_Mosek(objective: Dict = None,
             x_values = dict(zip(variables, xx))
             y_values = [-y for y in yy]
 
-        if status == mosek.solsta.optimal:
+        if solutionsta == mosek.solsta.optimal:
             success = True
         else:
             success = False
-        status_str = status.__repr__()
+        status_str = solutionsta.__repr__()
         term_tuple = mosek.Env.getcodedesc(trmcode)
-        if status == mosek.solsta.unknown and verbose > 0:
+        if solutionsta == mosek.solsta.unknown and verbose > 0:
             print("The solution status is unknown.")
             print(f"   Termination code: {term_tuple}")
 

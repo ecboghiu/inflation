@@ -519,9 +519,9 @@ class InflationLP(object):
         self._cleanup_after_set_values()
 
     def solve(self,
-              interpreter="MOSEKFusion",
+              interpreter="solveLP_Mosek",
               feas_as_optim=False,
-              dualise=False, #TODO: Restore True default, but dualize temporarily broken
+              dualise=True,
               solverparameters=None,
               solver_arguments={},
               verbose: int = -1) -> None:
@@ -532,7 +532,7 @@ class InflationLP(object):
         Parameters
         ----------
         interpreter : str, optional
-            The solver to be called. By default ``"MOSEKFusion"``.
+            The solver to be called. By default ``"solveLP_Mosek"``.
         feas_as_optim : bool, optional
             Instead of solving the feasibility problem
 
@@ -546,17 +546,14 @@ class InflationLP(object):
             The correspondence is that the result of (2) is positive if (1) is
             feasible, and negative otherwise. By default ``False``.
         dualise : bool, optional
-            Optimize the dual problem (recommended). By default ``True``.
+            Optimize the dual problem (recommended). By default ``False``.
         solverparameters : dict, optional
             Extra parameters to be sent to the solver. By default ``None``.
         solver_arguments : dict, optional
-            By default, solve will use the dictionary of SDP keyword arguments
+            By default, solve will use the dictionary of LP keyword arguments
             given by ``_prepare_solver_arguments()``. However, a user may
             manually override these arguments by passing their own here.
         """
-        if not self._relaxation_has_been_generated:
-            raise Exception("Relaxation is not generated yet. " +
-                            "Call \"InflationSDP.get_relaxation()\" first")
         if feas_as_optim and len(self._processed_objective) > 1:
             warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
