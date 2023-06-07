@@ -444,16 +444,15 @@ def solveLP_Mosek(objective: Dict = None,
             nof_dual_variables = nof_primal_equalities + nof_primal_inequalities + nof_primal_nontriv_bounds
 
             if nof_primal_nontriv_bounds > 0:
-                Arow = np.array(nof_primal_nontriv_bounds)
-                b_extra = []
-                for i, (mon, bnd) in enumerate(lower_bounds.items()):
-                    Acol[i] = var_index[mon]
-                    Adata[i] = 1
+                Arow = np.arange(nof_primal_nontriv_bounds)
+                Acol, Adata, b_extra = [], [], []
+                for mon, bnd in lower_bounds.items():
+                    Acol.append(var_index[mon])
+                    Adata.append(1)
                     b_extra.append(bnd)
-                for pre_i, (mon, bnd) in enumerate(upper_bounds.items()):
-                    i = nof_primal_lower_bounds + pre_i
-                    Acol[i] = var_index[mon]
-                    Adata[i] = -1
+                for mon, bnd in upper_bounds.items():
+                    Acol.append(var_index[mon])
+                    Adata.append(-1)
                     b_extra.append(-bnd)
                 A_extra = coo_matrix((Adata, (Arow, Acol)),
                                shape=(nof_primal_nontriv_bounds,
