@@ -4,7 +4,7 @@ This file contains auxiliary functions of general purpose
 """
 import numpy as np
 from itertools import chain
-from typing import Iterable, Union, List
+from typing import Iterable, Union, List, Tuple
 
 
 def flatten(nested):
