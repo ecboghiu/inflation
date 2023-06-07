@@ -23,13 +23,19 @@ Evans = InflationProblem({"U_AB": ["A", "B"],
 
 Evans_Unpacked = InflationLP(Evans,
                              nonfanout=False,
-                             verbose=1)
+                             verbose=2)
 Evans_Unpacked.set_distribution(p_Q)
 known_do_values = {f'<C_0_1_{b}_{c}>': q[c]
-                   for c in range(2)
+                   for c in range(1)
                    for b in range(2)}
-known_do_values.update({f'<A_1_0_{b}_{a}>': 1 / 2
-                        for a in range(2)
+# known_do_values.update({f'<C_0_2_{b}_{c}>': q[c]
+#                         for c in range(1)
+#                         for b in range(2)})
+# known_do_values.update({f'<A_1_0_{b}_{a}>': 1 / 2
+#                         for a in range(1)
+#                         for b in range(2)})
+known_do_values.update({f'<A_2_0_{b}_{a}>': 1 / 2
+                        for a in range(1)
                         for b in range(2)})
 # known_do_values.update({f'<A_1_0_{b1}_{a}>*<C_0_1_{b2}_{c}>': q[c]*1 / 2
 #                         for a in range(2)
@@ -38,9 +44,11 @@ known_do_values.update({f'<A_1_0_{b}_{a}>': 1 / 2
 #                         for b2 in range(2)})
 Evans_Unpacked.set_values(known_do_values,
                           use_lpi_constraints=False)
-Evans_Unpacked.solve(dualise=True, verbose=1)
+print(f"Known Values: {Evans_Unpacked.known_moments}")
+Evans_Unpacked.solve(dualise=False, verbose=2)
 print(Evans_Unpacked.status)
-print(Evans_Unpacked.solution_object['x'])
+x_dict = {n: np.round(v, decimals=3) for n, v in Evans_Unpacked.solution_object['x'].items() if np.abs(v)>1e-10}
+print(x_dict)
 print(Evans_Unpacked.certificate_as_probs())
 
 

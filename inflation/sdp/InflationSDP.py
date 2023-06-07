@@ -29,11 +29,9 @@ from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix,
-                            clean_coefficients,
                             construct_normalization_eqs,
                             expand_moment_normalisation,
                             flatten_symbolic_powers,
-                            format_permutations,
                             generate_operators,
                             party_physical_monomials,
                             reduce_inflation_indices,
@@ -42,7 +40,7 @@ from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
-from ..utils import flatten
+from ..utils import flatten, clean_coefficients, format_permutations
 
 
 class InflationSDP(object):
@@ -573,9 +571,10 @@ class InflationSDP(object):
             monomials fixed (``False``). Regardless of this flag, unknowable
             variables can also be fixed.
         """
-        self._reset_values()
+        self._reset_solution()
 
         if (values is None) or (len(values) == 0):
+            self._reset_values()
             self._cleanup_after_set_values()
             return
 
