@@ -268,7 +268,10 @@ class InflationLP(object):
         # self.moment_inequalities = moment_equalities
         # del moment_equalities
         moment_inequalities = []
-        for (terms_idxs, signs) in self.collins_gisin_inequalities:
+        for (terms_idxs, signs) in tqdm(self.collins_gisin_inequalities,
+                                        disable=not self.verbose,
+                                        desc="Adjusting inequalities     ",
+                                        total=self.nof_collins_gisin_inequalities):
             terms_idxs_after_sym = self.inverse[terms_idxs]
             true_signs = np.power(-1, signs)
             moment_inequalities.append(
@@ -289,7 +292,9 @@ class InflationLP(object):
         self.set_objective(None)
         self.set_values(None)
 
-        self._relaxation_has_been_generated = True
+        self._lp_has_been_generated = True
+        if self.verbose > 1:
+            print("LP initialization complete, ready to accept further specifics.")
 
     def set_bounds(self,
                    bounds: Union[dict, None],
@@ -1376,9 +1381,9 @@ class InflationLP(object):
         Exception
             If the SDP relaxation has not been calculated yet.
         """
-        if not self._relaxation_has_been_generated:
-            raise Exception("Relaxation is not generated yet. " +
-                            "Call \"InflationSDP.get_relaxation()\" first")
+        if not self._lp_has_been_generated:
+            raise Exception("LP is not generated yet. " +
+                            "Call \"InflationLP._generate_lp()\" first")
 
         assert set(self.known_moments.keys()).issubset(self.monomials), \
             ("Error: Tried to assign known values outside of the variables: " +
