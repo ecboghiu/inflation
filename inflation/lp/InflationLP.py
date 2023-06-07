@@ -137,12 +137,12 @@ class InflationLP(object):
         self.monomial_from_name         = dict()
         self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One  = self.Monomial(self.identity_operator, idx=1)
-        self.generate_lp()
+        self._generate_lp()
 
     ###########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                       #
     ###########################################################################
-    def generate_lp(self) -> None:
+    def _generate_lp(self) -> None:
         """Creates the LP associated with the inflation problem.
 
         In the inflated graph there are many symmetries coming from invariance
