@@ -145,6 +145,7 @@ def _maximize_via_bisect(sdp: InflationSDP,
 
     def f(value):
         evaluated_values = make_numerical(symbolic_values, {param: value})
+        sdp._reset_values()
         sdp.set_values(evaluated_values, use_lpi, only_specified)
         sdp.solve(feas_as_optim=True)
         if verbose:
