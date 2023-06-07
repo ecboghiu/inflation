@@ -177,8 +177,9 @@ class InflationLP(object):
             # Calculate the inflation symmetries
             if self.verbose > 0:
                 print("Initiating symmetry calculation...")
+            self.orbits = self._discover_inflation_orbits()
             old_reps, unique_indices, raw_inverse = np.unique(
-                self._discover_inflation_orbits(),
+                self.orbits,
                 return_index=True,
                 return_inverse=True)
             if self.verbose > 1:
@@ -195,7 +196,8 @@ class InflationLP(object):
                 np.logical_not(self.already_collins_gisin_boolmarks)
             )
         else:
-            raw_inverse = np.arange(self.raw_n_columns)
+            self.orbits = np.arange(self.raw_n_columns)
+            raw_inverse = self.orbits.copy()
             self.already_collins_gisin_boolmarks_and_unique = self.already_collins_gisin_boolmarks
             self.collins_gisin_unique_ineq_positions = np.logical_not(self.already_collins_gisin_boolmarks)
 
@@ -1097,9 +1099,15 @@ class InflationLP(object):
          List[Tuple[numpy.ndarray, numpy.ndarray]]
             A list of tuples expressing conversion to Collins-Gisin form
         """
-        ortho_groups_as_lexreprs = [self._lexrange[bool_vec] for bool_vec in self._ortho_groups_as_boolvecs]
-        alternatives_as_boolarrays = {g[-1]: np.pad(r[:-1], ((1, 0), (0, 0))) for g,r in zip(
-            ortho_groups_as_lexreprs,
+        try:
+            self._discover_normalization_ineqns_has_been_called += 1
+        except AttributeError:
+            self._discover_normalization_ineqns_has_been_called = 0
+        if self._discover_normalization_ineqns_has_been_called:
+            warn("ERROR: Discovering inequalities TWICE!!")
+            return self.collins_gisin_inequalities
+        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
+            np.flatnonzero(self._non_cg_boolvec).flat,
             self._ortho_groups_as_boolarrays)}
         alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
                                  for i, bool_array in alternatives_as_boolarrays.items()}
@@ -1139,7 +1147,7 @@ class InflationLP(object):
         except AttributeError:
             self._discover_CG_indices_has_been_called = 0
         if self._discover_CG_indices_has_been_called:
-            print("ERROR: Discovering CG indices TWICE!!")
+            warn("ERROR: Discovering CG indices TWICE!!")
             return self.already_collins_gisin_boolmarks
 
         CG_indices = []
@@ -1163,6 +1171,13 @@ class InflationLP(object):
             The orbits of the generating columns implied by the inflation
             symmetries.
         """
+        try:
+            self._discover_orbits_has_been_called += 1
+        except AttributeError:
+            self._discover_orbits_has_been_called = 0
+        if self._discover_orbits_has_been_called:
+            warn("ERROR: Discovering orbits TWICE!!")
+            return self.orbits
         if len(self.lexorder_symmetries) > 1:
             orbits = nb_apply_lexorder_perm_to_lexboolvecs(
                 self._raw_monomials_as_lexboolvecs,
