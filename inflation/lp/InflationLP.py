@@ -173,11 +173,7 @@ class InflationLP(object):
 
         # initialize self.already_collins_gisin_idxs
         # and self.collins_gisin_inequalities
-        self._discover_normalization_ineqns()
-        self.already_collins_gisin_boolmarks = np.zeros(self.raw_n_columns, dtype=bool)
-        unique_up_to_sym_boolmarks = self.already_collins_gisin_boolmarks.copy()
-
-        self.already_collins_gisin_boolmarks[self.already_collins_gisin_idxs] = True
+        self.already_collins_gisin_boolmarks = self._discover_CG_indices()
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
             # Calculate the inflation symmetries
@@ -196,9 +192,14 @@ class InflationLP(object):
                 unique_up_to_sym_boolmarks,
                 self.already_collins_gisin_boolmarks
             )
+            self.collins_gisin_unique_ineq_positions = np.bitwise_and(
+                unique_up_to_sym_boolmarks,
+                np.logical_not(self.already_collins_gisin_boolmarks)
+            )
         else:
             raw_inverse = np.arange(self.raw_n_columns)
             self.already_collins_gisin_boolmarks_and_unique = self.already_collins_gisin_boolmarks
+            self.collins_gisin_unique_ineq_positions = np.logical_not(self.already_collins_gisin_boolmarks)
 
         raw_inverse[np.logical_not(self.already_collins_gisin_boolmarks)] = -1
         _, self.inverse = np.unique(
@@ -210,11 +211,14 @@ class InflationLP(object):
                                      for bool_idx in
                                      self._monomials_as_lexboolvecs]
         self.n_columns = len(self.generating_monomials)
+        self.nof_collins_gisin_inequalities = np.count_nonzero(self.collins_gisin_unique_ineq_positions)
+        self.collins_gisin_inequalities = self._discover_normalization_ineqns()
+
         if self.verbose > 0:
             print("Number of variables in the LP:",
                   self.n_columns)
             print("Number of nontrivial inequality constraints in the LP:",
-                  len(self.collins_gisin_inequalities))
+                  self.nof_collins_gisin_inequalities)
 
         # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
@@ -1090,13 +1094,13 @@ class InflationLP(object):
                     pass
         return column_level_equalities
 
-    def _discover_normalization_ineqns(self) -> None:
+    def _discover_normalization_ineqns(self) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
         Each tuple is a list of CG-monomials (as bitvectors) and a list of signs.
 
         Returns
         -------
-         List[Tuple[np.ndarray, np.ndarray]]
+         List[Tuple[numpy.ndarray, numpy.ndarray]]
             A list of tuples expressing conversion to Collins-Gisin form
         """
         ortho_groups_as_lexreprs = [self._lexrange[bool_vec] for bool_vec in self._ortho_groups_as_boolvecs]
@@ -1111,10 +1115,10 @@ class InflationLP(object):
 
         already_collins_gisin_idxs = []
         collins_gisin_inequalities = []
-        for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs),
+        for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs[self.collins_gisin_unique_ineq_positions]),
                 disable=not self.verbose,
                 desc="Discovering inequalities   ",
-                total=self.raw_n_columns):
+                total=self.nof_collins_gisin_inequalities):
             critical_boolvec_intersection = np.bitwise_and(bool_vec, critical_boolvec)
             critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
             if len(critical_values_in_boovec)>0:
@@ -1129,10 +1133,43 @@ class InflationLP(object):
                     adjustments)
                 terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
                 collins_gisin_inequalities.append((terms_as_rawidx, signs))
-            else:
-                already_collins_gisin_idxs.append(i)
-        self.already_collins_gisin_idxs = already_collins_gisin_idxs
-        self.collins_gisin_inequalities = collins_gisin_inequalities
+        return collins_gisin_inequalities
+
+
+    def _discover_CG_indices(self) -> np.ndarray:
+        """Given the generating monomials, infer which are already in Collins-Gisin notation.
+
+        Returns
+        -------
+         numpy.ndarray
+            A bit vector indicating which columns correspond to CG-form variables
+        """
+        try:
+            self._discover_CG_indices_has_been_called += 1
+        except AttributeError:
+            self._discover_CG_indices_has_been_called = 0
+        if self._discover_CG_indices_has_been_called:
+            print("ERROR: Discovering CG indices TWICE!!")
+            return self.already_collins_gisin_boolmarks
+        ortho_groups_as_lexreprs = [self._lexrange[bool_vec] for bool_vec in self._ortho_groups_as_boolvecs]
+        alternatives_as_boolarrays = {g[-1]: np.pad(r[:-1], ((1, 0), (0, 0))) for g,r in zip(
+            ortho_groups_as_lexreprs,
+            self._ortho_groups_as_boolarrays)}
+        alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
+                                 for i, bool_array in alternatives_as_boolarrays.items()}
+        critical_boolvec = self.blank_bool_vec.copy()
+        for c in alternatives_as_boolarrays.keys():
+            critical_boolvec[c] = True
+
+        CG_indices = []
+        for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs),
+                disable=not self.verbose,
+                desc="Discovering CG positions   ",
+                total=self.raw_n_columns):
+            critical_boolvec_intersection = np.bitwise_and(bool_vec, critical_boolvec)
+            critical_values_in_boolvec = np.flatnonzero(critical_boolvec_intersection)
+            CG_indices.append(critical_values_in_boolvec.any())
+        return np.logical_not(np.array(CG_indices, dtype=bool))
 
     def _discover_inflation_orbits(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
