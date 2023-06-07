@@ -41,5 +41,4 @@ def format_permutations(array: Union[
         The processed list of permutations.
     """
     source_permutation = np.asarray(array) + 1
-    padding = np.zeros((len(source_permutation), 1), dtype=int)
-    return np.hstack((padding, source_permutation))
+    return np.pad(source_permutation, ((0, 0), (1, 0)))
