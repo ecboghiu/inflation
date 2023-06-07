@@ -9,7 +9,7 @@ import sympy as sp
 
 from collections import Counter
 from gc import collect
-from itertools import chain, product
+from itertools import chain
 from numbers import Real
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
@@ -23,11 +23,11 @@ from .numbafied import (nb_apply_lexorder_perm_to_lexboolvecs,
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
-from ..sdp.quantum_tools import (clean_coefficients,
-                                 flatten_symbolic_powers,
+from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
 from .lp_utils import solveLP_Mosek
 from functools import reduce
+from ..utils import clean_coefficients
 
 class InflationLP(object):
     """

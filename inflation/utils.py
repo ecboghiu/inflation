@@ -4,7 +4,7 @@ This file contains auxiliary functions of general purpose
 """
 import numpy as np
 from itertools import chain
-from typing import Iterable, Union, List, Tuple
+from typing import Iterable, Union, List, Tuple, Dict
 
 
 def flatten(nested):
@@ -42,3 +42,35 @@ def format_permutations(array: Union[
     """
     source_permutation = np.asarray(array) + 1
     return np.pad(source_permutation, ((0, 0), (1, 0)))
+
+def clean_coefficients(cert: Dict[str, float],
+                       chop_tol: float = 1e-10,
+                       round_decimals: int = 3) -> Dict:
+    """Clean the list of coefficients in a certificate.
+
+    Parameters
+    ----------
+    cert : Dict[str, float]
+      A dictionary containing as keys the monomials associated to the elements
+      of the certificate and as values the corresponding coefficients.
+    chop_tol : float, optional
+      Coefficients in the dual certificate smaller in absolute value are
+      set to zero. Defaults to ``1e-10``.
+    round_decimals : int, optional
+      Coefficients that are not set to zero are rounded to the number
+      of decimals specified. Defaults to ``3``.
+
+    Returns
+    -------
+    np.ndarray
+      The cleaned-up coefficients.
+    """
+    coeffs = np.asarray(list(cert.values()))
+    # Take the biggest one and make it 1
+    normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
+    coeffs /= normalising_factor
+    # Set to zero very small coefficients
+    coeffs[np.abs(coeffs) <= chop_tol] = 0
+    # Round
+    coeffs = np.round(coeffs, decimals=round_decimals)
+    return dict(zip(cert.keys(), coeffs.flat))
