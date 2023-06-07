@@ -406,16 +406,25 @@ def solveLP_Mosek(objective: Dict = None,
 
         # Create sparse matrix A of constraints
         constraints = inequalities + internal_equalities
-        A = dok_matrix((nof_primal_constraints, nof_primal_variables))
-        b = np.zeros(nof_primal_constraints)
-        for i, cons in enumerate(constraints):
-            for x in set(cons).difference(known_vars):
-                A[i, var_index[x]] = cons[x]
-            for x in set(cons).intersection(known_vars):
-                b[i] -= cons[x] * known_vars[x]
-        b = b.tolist()
+
+        Arow, Acol, Adata, brow, bcol, bdata = [], [], [], [], [], []
+        for i, constraint in enumerate(constraints):
+            constraint_vars = set(constraint)
+            for x in constraint_vars.difference(known_vars):
+                Arow.append(i)
+                Acol.append(var_index[x])
+                Adata.append(constraint[x])
+            for x in constraint_vars.intersection(known_vars):
+                brow.append(i)
+                bcol.append(0)
+                bdata.append(-constraint[x] * known_vars[x])
+        A = coo_matrix((Adata, (Arow, Acol)), shape=(nof_primal_constraints,
+                                                     nof_primal_variables))
+        b = coo_matrix((bdata, (brow, bcol)), shape=(nof_primal_constraints,
+                                                     1)).toarray().ravel().tolist()
+
         if verbose > 0:
-            print(f"Size of matrix A: {A.get_shape()}")
+            print(f"Size of matrix A: {A.shape}")
 
         # Objective function coefficients
         c = np.zeros(nof_primal_variables)
@@ -428,23 +437,27 @@ def solveLP_Mosek(objective: Dict = None,
             c0 += objective[x] * known_vars[x]
 
         if solve_dual:
-            inequalities_from_bounds = [{mon: -1, '1': bnd}
-                                        for mon, bnd in upper_bounds.items()]
-            inequalities_from_bounds.extend({mon: 1, '1': -bnd}
-                                        for mon, bnd in lower_bounds.items())
-            nof_primal_nontriv_bounds = len(inequalities_from_bounds)
+            nof_primal_lower_bounds = len(lower_bounds)
+            nof_primal_nontriv_bounds = nof_primal_lower_bounds + len(upper_bounds)
             nof_dual_constraints = nof_primal_variables
             nof_dual_variables = nof_primal_equalities + nof_primal_inequalities + nof_primal_nontriv_bounds
 
             if nof_primal_nontriv_bounds > 0:
-                A_extra = dok_matrix((nof_primal_nontriv_bounds, nof_primal_variables))
-                b_extra = np.zeros(nof_primal_nontriv_bounds)
-                for i, cons in enumerate(inequalities_from_bounds):
-                    for x in set(cons).difference(known_vars):
-                        A_extra[i, var_index[x]] = cons[x]
-                    for x in set(cons).intersection(known_vars):
-                        b_extra[i] -= cons[x] * known_vars[x]
-                b_extra = b_extra.tolist()
+                Arow = np.array(nof_primal_nontriv_bounds)
+                b_extra = []
+                for i, (mon, bnd) in enumerate(lower_bounds.items()):
+                    Acol[i] = var_index[mon]
+                    Adata[i] = 1
+                    b_extra.append(bnd)
+                for pre_i, (mon, bnd) in enumerate(upper_bounds.items()):
+                    i = nof_primal_lower_bounds + pre_i
+                    Acol[i] = var_index[mon]
+                    Adata[i] = -1
+                    b_extra.append(-bnd)
+                A_extra = coo_matrix((Adata, (Arow, Acol)),
+                               shape=(nof_primal_nontriv_bounds,
+                                      nof_primal_variables))
+
                 matrix = vstack((A, A_extra), format='csr')
                 objective_vector = b + b_extra
             else:
