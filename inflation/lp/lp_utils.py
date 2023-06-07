@@ -5,7 +5,7 @@ import numpy as np
 from typing import List, Dict
 from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
     OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
-from scipy.sparse import dok_matrix, vstack
+from scipy.sparse import dok_matrix, vstack, coo_matrix
 from time import perf_counter
 from gc import collect
 
@@ -99,6 +99,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
     var_index = {x: i for i, x in enumerate(variables)}
 
     # Create matrix A, vector b such that Ax + b >= 0
+    # TODO: Switch to coo_matrix fast initialization
     nof_inequalities = len(inequalities)
     A = dok_matrix((nof_inequalities, nof_variables))
     b = dok_matrix((nof_inequalities, 1))
@@ -129,10 +130,10 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 d[i, 0] += equality[x] * known_vars[x]
     d_mosek = Matrix.sparse(*d.shape,
                             *d.nonzero(),
-                            d[d.nonzero()].A[0])
+                            d[d.nonzero()].toarray().ravel())
     C_mosek = Matrix.sparse(*C.shape,
                             *C.nonzero(),
-                            C[C.nonzero()].A[0])
+                            C[C.nonzero()].toarray().ravel())
 
     with Model("LP") as M:
         if solve_dual:
