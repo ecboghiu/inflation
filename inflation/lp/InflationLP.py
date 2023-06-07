@@ -106,11 +106,9 @@ class InflationLP(object):
         self._ortho_groups_as_boolarrays = [np.vstack(
             [self.mon_to_boolvec(op[np.newaxis]) for op in
              ortho_group]) for ortho_group in self._ortho_groups]
-        self._ortho_groups_as_boolvecs = [self.mon_to_boolvec(ortho_group)
-                                          for ortho_group in self._ortho_groups]
-
+        bad_boolvecs = [bool_array[-1] for bool_array in self._ortho_groups_as_boolarrays]
+        self._non_cg_boolvec = np.bitwise_or.reduce(bad_boolvecs, axis=0)
         self.has_children = np.ones(self.nr_parties, dtype=bool)
-
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
 
         if self.verbose > 1:
@@ -702,7 +700,7 @@ class InflationLP(object):
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ##########################################################################
-    def build_raw_lexboolvecs(self) -> List[np.ndarray]:
+    def build_raw_lexboolvecs(self) -> np.ndarray:
         r"""Creates the generating set of monomials (as boolvecs).
         """
         choices_to_combine = []
@@ -1059,21 +1057,17 @@ class InflationLP(object):
         List[Tuple[int, List[int]]]
             A list of normalization equalities between columns.
         """
-        ortho_groups_as_lexreprs = [self._lexrange[bool_vec] for bool_vec in self._ortho_groups_as_boolvecs]
-        alternatives = {g[-1]: r[:-1] for g,r in zip(
-            ortho_groups_as_lexreprs,
-            self._ortho_groups_as_boolarrays)
-                        if len(g) > 1}
-        critical_boolvec = self.blank_bool_vec.copy()
-        for c in alternatives.keys():
-            critical_boolvec[c] = True
+        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
+            np.flatnonzero(self._non_cg_boolvec).flat,
+            self._ortho_groups_as_boolarrays)}
+
 
         column_level_equalities = []
         for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs),
                 disable=not self.verbose,
                 desc="Discovering equalities   ",
                 total=self.raw_n_columns):
-            critical_boolvec_intersection = np.bitwise_and(bool_vec, critical_boolvec)
+            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
             critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
             for c in critical_values_in_boovec.flat:
                 try:
@@ -1083,7 +1077,7 @@ class InflationLP(object):
                     norm_i = self._raw_lookup_dict[absent_c_boolvec.tobytes()]
                     restored_c_boolvecs = np.bitwise_or(
                         absent_c_boolvec[np.newaxis],
-                        alternatives[c]
+                        alternatives_as_boolarrays[c]
                     )
                     for alt_c_boolvec in restored_c_boolvecs:
                         summands.append(
@@ -1109,17 +1103,13 @@ class InflationLP(object):
             self._ortho_groups_as_boolarrays)}
         alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
                                  for i, bool_array in alternatives_as_boolarrays.items()}
-        critical_boolvec = self.blank_bool_vec.copy()
-        for c in alternatives_as_boolarrays.keys():
-            critical_boolvec[c] = True
 
-        already_collins_gisin_idxs = []
         collins_gisin_inequalities = []
         for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs[self.collins_gisin_unique_ineq_positions]),
                 disable=not self.verbose,
                 desc="Discovering inequalities   ",
                 total=self.nof_collins_gisin_inequalities):
-            critical_boolvec_intersection = np.bitwise_and(bool_vec, critical_boolvec)
+            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
             critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
             if len(critical_values_in_boovec)>0:
                 absent_c_boolvec = bool_vec.copy()
@@ -1151,22 +1141,13 @@ class InflationLP(object):
         if self._discover_CG_indices_has_been_called:
             print("ERROR: Discovering CG indices TWICE!!")
             return self.already_collins_gisin_boolmarks
-        ortho_groups_as_lexreprs = [self._lexrange[bool_vec] for bool_vec in self._ortho_groups_as_boolvecs]
-        alternatives_as_boolarrays = {g[-1]: np.pad(r[:-1], ((1, 0), (0, 0))) for g,r in zip(
-            ortho_groups_as_lexreprs,
-            self._ortho_groups_as_boolarrays)}
-        alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
-                                 for i, bool_array in alternatives_as_boolarrays.items()}
-        critical_boolvec = self.blank_bool_vec.copy()
-        for c in alternatives_as_boolarrays.keys():
-            critical_boolvec[c] = True
 
         CG_indices = []
         for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs),
                 disable=not self.verbose,
                 desc="Discovering CG positions   ",
                 total=self.raw_n_columns):
-            critical_boolvec_intersection = np.bitwise_and(bool_vec, critical_boolvec)
+            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
             critical_values_in_boolvec = np.flatnonzero(critical_boolvec_intersection)
             CG_indices.append(critical_values_in_boolvec.any())
         return np.logical_not(np.array(CG_indices, dtype=bool))
