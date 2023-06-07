@@ -812,8 +812,8 @@ class InflationLP(object):
                 mon_as_boolvec = self.mon_to_boolvec(mon=array2d)
                 mon_as_symboolvec = mon_as_boolvec[self.lexorder_symmetries]
                 mon_as_symboolvec = mon_as_symboolvec[
-                    np.lexsort(np.rot90(mon_as_symboolvec))]
-                mon_as_boolvec = mon_as_symboolvec[0]
+                    np.lexsort(mon_as_symboolvec.T[::-1])]
+                mon_as_boolvec = mon_as_symboolvec[-1]
                 repr_array2d = self._lexorder[mon_as_boolvec]
                 mon = InternalAtomicMonomial(self, repr_array2d)
                 for mon_as_boolvec in mon_as_symboolvec:
