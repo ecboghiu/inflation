@@ -25,8 +25,7 @@ from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (clean_coefficients,
                                  flatten_symbolic_powers,
-                                 party_physical_monomials,
-                                 to_symbol)
+                                 party_physical_monomials)
 from .lp_utils import solveLP_Mosek
 from functools import reduce
 
