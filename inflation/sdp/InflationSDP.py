@@ -573,10 +573,11 @@ class InflationSDP(object):
             monomials fixed (``False``). Regardless of this flag, unknowable
             variables can also be fixed.
         """
-        self._reset_values()
+        self._reset_solution()
 
         if (values is None) or (len(values) == 0):
             self._cleanup_after_set_values()
+            self._reset_values()
             return
 
         self.use_lpi_constraints = use_lpi_constraints
