@@ -436,18 +436,21 @@ def solveLP_Mosek(objective: Dict = None,
             nof_dual_constraints = nof_primal_variables
             nof_dual_variables = nof_primal_equalities + nof_primal_inequalities + nof_primal_nontriv_bounds
 
-            A_extra = dok_matrix((nof_primal_nontriv_bounds, nof_primal_variables))
-            b_extra = np.zeros(nof_primal_nontriv_bounds)
-            for i, cons in enumerate(inequalities_from_bounds):
-                for x in set(cons).difference(known_vars):
-                    A_extra[i, var_index[x]] = cons[x]
-                for x in set(cons).intersection(known_vars):
-                    b_extra[i] -= cons[x] * known_vars[x]
-            b_extra = b_extra.tolist()
+            if nof_primal_nontriv_bounds > 0:
+                A_extra = dok_matrix((nof_primal_nontriv_bounds, nof_primal_variables))
+                b_extra = np.zeros(nof_primal_nontriv_bounds)
+                for i, cons in enumerate(inequalities_from_bounds):
+                    for x in set(cons).difference(known_vars):
+                        A_extra[i, var_index[x]] = cons[x]
+                    for x in set(cons).intersection(known_vars):
+                        b_extra[i] -= cons[x] * known_vars[x]
+                b_extra = b_extra.tolist()
+                matrix = vstack((A, A_extra), format='csr')
+                objective_vector = b + b_extra
+            else:
+                matrix = A.asformat('csr', copy=False)
+                objective_vector = b
 
-            # matrix = A.asformat('csr', copy=False)
-            matrix = vstack((A, A_extra), format='csr')
-            objective_vector = b + b_extra
 
             # Set bound keys and values for constraints (primal objective)
             blc = c
