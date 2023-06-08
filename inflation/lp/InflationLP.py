@@ -20,6 +20,7 @@ from inflation import InflationProblem
 from .numbafied import (nb_apply_lexorder_perm_to_lexboolvecs,
                         nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
+from .writer_utils import write_to_lp, write_to_mps
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
