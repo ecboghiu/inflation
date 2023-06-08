@@ -274,9 +274,11 @@ class InflationLP(object):
                                         total=self.nof_collins_gisin_inequalities):
             terms_idxs_after_sym = self.inverse[terms_idxs]
             true_signs = np.power(-1, signs)
-            moment_inequalities.append(
-                {self.compmonomial_from_idx[i]: s
-                 for i, s in zip(terms_idxs_after_sym.flat, true_signs.flat)})
+            current_ineq = dict()
+            for i, s in zip(terms_idxs_after_sym.flat, true_signs.flat):
+                mon = self.compmonomial_from_idx[i]
+                current_ineq[mon] = current_ineq.get(mon, 0) + s
+            moment_inequalities.append(current_ineq)
         self.moment_inequalities = moment_inequalities
         del moment_inequalities
 
@@ -487,6 +489,8 @@ class InflationLP(object):
             monomials_not_present = set(self.known_moments.keys()
                                         ).difference(self.monomials)
             for mon in monomials_not_present:
+                warn(f"We do not recognize the set value of {mon} "
+                     + "as it does not appear in the internal list of monomials.")
                 del self.known_moments[mon]
 
             # Get the remaining monomials that need assignment
@@ -505,22 +509,21 @@ class InflationLP(object):
                                   if not mon.is_atomic)
             surprising_semiknowns = set()
             for mon in remaining_mons:
-                if mon not in self.known_moments.keys():
-                    value, unknown_factors, known_status = mon.evaluate(
-                        atomic_knowns,
-                        self.use_lpi_constraints)
-                    if known_status == "Known":
-                        self.known_moments[mon] = value
-                    elif known_status == "Semi":
-                        if self.use_lpi_constraints:
-                            unknown_mon = \
-                                self._monomial_from_atoms(unknown_factors)
-                            self.semiknown_moments[mon] = (value, unknown_mon)
-                            if self.verbose > 0:
-                                if unknown_mon not in self.monomials:
-                                    surprising_semiknowns.add(unknown_mon)
-                    else:
-                        pass
+                value, unknown_factors, known_status = mon.evaluate(
+                    atomic_knowns,
+                    self.use_lpi_constraints)
+                if known_status == "Known":
+                    self.known_moments[mon] = value
+                elif known_status == "Semi":
+                    if self.use_lpi_constraints:
+                        unknown_mon = \
+                            self._monomial_from_atoms(unknown_factors)
+                        self.semiknown_moments[mon] = (value, unknown_mon)
+                        if self.verbose > 0:
+                            if unknown_mon not in self.monomials:
+                                surprising_semiknowns.add(unknown_mon)
+                else:
+                    pass
             if (len(surprising_semiknowns) >= 1) and (self.verbose > 0):
                 warn("When processing LPI constraints we encountered at " +
                      "least one monomial that does not appear in the " +
