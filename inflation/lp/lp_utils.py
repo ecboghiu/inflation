@@ -3,313 +3,9 @@ import mosek
 import numpy as np
 
 from typing import List, Dict
-from mosek.fusion import Matrix, Model, ObjectiveSense, Expr, Domain, \
-    OptimizeError, SolutionError, AccSolutionStatus, ProblemStatus
-from scipy.sparse import dok_matrix, vstack, coo_matrix
+from scipy.sparse import vstack, coo_matrix
 from time import perf_counter
 from gc import collect
-
-
-def solveLP_MosekFUSION(objective: Dict = None,
-                        known_vars: Dict = None,
-                        semiknown_vars: Dict = None,
-                        inequalities: List[Dict] = None,
-                        equalities: List[Dict] = None,
-                        lower_bounds: Dict = None,
-                        upper_bounds: Dict = None,
-                        solve_dual: bool = False,
-                        all_non_negative: bool = True,
-                        feas_as_optim: bool = False,
-                        verbose: int = 0,
-                        solverparameters: Dict = None
-                        ) -> Dict:
-    """Internal function to solve an LP with the Mosek FUSION API.
-
-    Parameters
-    ----------
-    objective : dict
-        Monomials (keys) and coefficients (values) that describe
-        the objective function
-    known_vars : dict
-        Monomials (keys) and known values of the monomials
-    semiknown_vars : dict
-        Encodes proportionality constraints between monomials
-    inequalities : list of dict
-        Inequality constraints with monomials (keys) and coefficients (values)
-    equalities : list of dict
-        Equality constraints with monomials (keys) and coefficients (values)
-    lower_bounds : dict
-        Lower bounds of variables
-    upper_bounds : dict
-        Upper bounds of variables
-    solve_dual : bool
-        Whether to solve the dual (True) or primal (False) formulation
-    all_non_negative : bool
-        Whether to set all primal variables as non-negative (True) or not
-        (False)
-    feas_as_optim: bool
-        NOT IMPLEMENTED
-    verbose: bool
-        NOT IMPLEMENTED
-    solverparameters: dict
-        NOT IMPLEMENTED
-
-    Returns
-    -------
-    dict
-        Primal objective value, dual objective value, problem status, dual
-        certificate, x values
-    """
-
-    # Deal with unsanitary input
-    if known_vars is None:
-        known_vars = {}
-    if semiknown_vars is None:
-        semiknown_vars = {}
-    if inequalities is None:
-        inequalities = []
-    if equalities is None:
-        equalities = []
-    if lower_bounds is None:
-        lower_bounds = {}
-    if upper_bounds is None:
-        upper_bounds = {}
-
-    # Define variables for LP, excluding those with known values
-    variables = set()
-    variables.update(objective.keys())
-    for ineq in inequalities:
-        variables.update(ineq.keys())
-    internal_equalities = equalities.copy()
-    for x, (c, x2) in semiknown_vars.items():
-        internal_equalities.append({x: 1, x2: -c})
-    for eq in internal_equalities:
-        variables.update(eq.keys())
-    variables.difference_update(known_vars.keys())
-    variables = list(variables)
-    nof_variables = len(variables)
-
-    # Compute c0, the constant term in the objective function
-    c0 = 0
-    for x in objective.keys():
-        if x in known_vars.keys():
-            c0 += objective[x] * known_vars[x]
-
-    # Create dictionary var_index - monomial : index
-    var_index = {x: i for i, x in enumerate(variables)}
-
-    nof_primal_variables = len(variables)
-    nof_primal_inequalities = len(inequalities)
-    nof_primal_equalities = len(internal_equalities)
-    nof_primal_constraints = nof_primal_inequalities + nof_primal_equalities
-
-    # Create matrix A, vector b such that Ax + b >= 0
-    Arow, Acol, Adata, brow, bcol, bdata = [], [], [], [], [], []
-    for i, ineq in enumerate(inequalities):
-        ineq_vars = set(ineq)
-        for x in ineq_vars.difference(known_vars):
-            Arow.append(i)
-            Acol.append(var_index[x])
-            Adata.append(ineq[x])
-        for x in ineq_vars.intersection(known_vars):
-            brow.append(i)
-            bcol.append(0)
-            bdata.append(ineq[x] * known_vars[x])
-    A = coo_matrix((Adata, (Arow, Acol)), shape=(nof_primal_inequalities,
-                                                 nof_primal_variables))
-    b = coo_matrix((bdata, (brow, bcol)), shape=(nof_primal_inequalities, 1))
-    A_mosek = Matrix.sparse(*A.shape,
-                            *A.nonzero(),
-                            Adata)
-    b_mosek = Matrix.sparse(*b.shape,
-                            *b.nonzero(),
-                            bdata)
-
-    # Create matrix C, vector d such that Cx + d == 0
-    Crow, Ccol, Cdata, drow, dcol, ddata = [], [], [], [], [], []
-    for i, eq in enumerate(equalities):
-        eq_vars = set(eq)
-        for x in eq_vars.difference(known_vars):
-            Crow.append(i)
-            Ccol.append(var_index[x])
-            Cdata.append(eq[x])
-        for x in eq_vars.intersection(known_vars):
-            drow.append(i)
-            dcol.append(0)
-            ddata.append(eq[x] * known_vars[x])
-    C = coo_matrix((Cdata, (Crow, Ccol)), shape=(nof_primal_equalities,
-                                                 nof_primal_variables))
-    d = coo_matrix((ddata, (drow, dcol)), shape=(nof_primal_equalities, 1))
-    C_mosek = Matrix.sparse(*C.shape,
-                            *C.nonzero(),
-                            Cdata)
-    d_mosek = Matrix.sparse(*d.shape,
-                            *d.nonzero(),
-                            ddata)
-
-    with Model("LP") as M:
-        if solve_dual:
-            # Define dual variables:
-            nof_dual_vars = nof_primal_constraints
-            y = M.variable("y", nof_dual_vars)
-
-            # Non-positivity constraint for y_i corresponding to inequalities
-            for i in range(nof_primal_inequalities):
-                M.constraint(y.index(i), Domain.lessThan(0.0))
-
-            # Define v as vector of coefficients of the primal objective, v·x
-            v = dok_matrix((nof_variables, 1))
-            for x, i in var_index.items():
-                try:
-                    v[i, 0] = objective[x]
-                except KeyError:
-                    v[i, 0] = 0
-            v_mosek = Matrix.sparse(*v.shape,
-                                    *v.nonzero(),
-                                    v[v.nonzero()].A[0])
-            del v
-
-            # Define dual constraints:
-            # For primal objective function v·x, the dual constraints are
-            # (A \\ C)^T·y - v == 0
-            if inequalities and internal_equalities:
-                s = vstack([A, C], 'dok')
-                s_mosek = Matrix.sparse(*s.shape,
-                                        *s.nonzero(),
-                                        s[s.nonzero()].A[0])
-                del s
-                transpose = s_mosek.transpose()
-            elif inequalities:
-                transpose = A_mosek.transpose()
-            else:
-                transpose = C_mosek.transpose()
-            del A, C
-
-            if all_non_negative:
-                c = M.constraint(Expr.sub(Expr.mul(transpose, y), v_mosek),
-                                 Domain.greaterThan(0.0))
-            else:
-                # Set dual constraint bounds corresponding to primal variable
-                # bounds
-                def c(i): return Expr.sub(Expr.mul(transpose, y).index(i),
-                                          v_mosek.get(i, 0))
-                lb_index = {var_index[x] for x in lower_bounds}
-                ub_index = {var_index[x] for x in upper_bounds}
-                eq_index = set(range(nof_variables)) - lb_index - ub_index
-                for j in lb_index:
-                    M.constraint(c(j), Domain.greaterThan(0.0))
-                for j in ub_index:
-                    M.constraint(c(j), Domain.lessThan(0.0))
-                for j in eq_index:
-                    M.constraint(c(j), Domain.equalsTo(0.0))
-
-            # Define dual objective:
-            # Since Ax + b >= 0 and Cx + d == 0, the dual objective is
-            # -(b \\ d)·y
-            if inequalities and internal_equalities:
-                bd = -vstack([b, d], 'dok')
-                bd_mosek = Matrix.sparse(*bd.shape,
-                                         *bd.nonzero(),
-                                         bd[bd.nonzero()].A[0])
-                del bd
-                obj = Expr.dot(bd_mosek, y)
-            elif inequalities:
-                obj = Expr.dot(b_mosek, Expr.mul(-1, y))
-            else:
-                obj = Expr.dot(d_mosek, Expr.mul(-1, y))
-            del b, d
-
-            M.objective(ObjectiveSense.Minimize, obj)
-        else:
-            # Define primal variables
-            if all_non_negative:
-                x = M.variable("x", nof_variables, Domain.greaterThan(0.0))
-            else:
-                x = M.variable("x", nof_variables)
-
-            # Define variable constraints for lower/upper bounds
-            for monomial, value in lower_bounds.items():
-                M.constraint(x.index(var_index[monomial]),
-                             Domain.greaterThan(value))
-            for monomial, value in upper_bounds.items():
-                M.constraint(x.index(var_index[monomial]),
-                             Domain.lessThan(value))
-
-            # Define primal constraints
-            ineq_cons = M.constraint("ineqs",
-                                     Expr.add(Expr.mul(A_mosek, x), b_mosek),
-                                     Domain.greaterThan(0.0))
-            eq_cons = M.constraint("eqs",
-                                   Expr.add(Expr.mul(C_mosek, x), d_mosek),
-                                   Domain.equalsTo(0.0))
-
-            # Define objective function
-            obj = c0
-            for var in set(objective.keys()).difference(known_vars.keys()):
-                obj = Expr.add(obj, Expr.mul(x.index(var_index[var]),
-                                             objective[var]))
-            M.objective(ObjectiveSense.Maximize, obj)
-
-        # Solve the LP
-        M.acceptedSolutionStatus(AccSolutionStatus.Anything)
-        M.solve()
-
-        if solve_dual:
-            if all_non_negative:
-                x_values = dict(zip(variables, c.dual()))
-            else:
-                # Ignore constraints for variable bounds
-                x_values = {
-                    x: M.getConstraint(nof_primal_inequalities + i).dual()[0]
-                    for x, i in var_index.items()}
-        else:
-            x_values = dict(zip(variables, x.level()))
-
-        status = M.getProblemStatus()
-        if status == ProblemStatus.PrimalAndDualFeasible:
-            status_str = "feasible"
-        elif status in [ProblemStatus.DualInfeasible,
-                        ProblemStatus.PrimalInfeasible]:
-            status_str = "infeasible"
-        elif status == ProblemStatus.Unknown:
-            status_str = "unknown"
-        else:
-            status_str = "other"
-
-        if solve_dual:
-            primal = M.dualObjValue() + c0
-            dual = M.primalObjValue() + c0
-        else:
-            primal = M.primalObjValue()
-            dual = M.dualObjValue()
-
-        # Extract the certificate:
-        # Certificate is contained in the dual objective function b·y
-        certificate = {x: 0 for x in known_vars}
-
-        if solve_dual:
-            y_values = -y.level()
-        else:
-            y_values = np.hstack((-ineq_cons.dual(), -eq_cons.dual()))
-
-        # Each monomial with known value is associated with a sum of duals
-        cons = inequalities + internal_equalities
-        for i, c in enumerate(cons):
-            for x in set(c).intersection(known_vars):
-                certificate[x] += y_values[i] * c[x]
-
-        # Clean entries with coefficient zero
-        for x in list(certificate.keys()):
-            if np.isclose(certificate[x], 0):
-                del certificate[x]
-
-        return {
-            "primal_value": primal,
-            "dual_value": dual,
-            "status": status_str,
-            "dual_certificate": certificate,
-            "x": x_values
-        }
 
 
 def solveLP_Mosek(objective: Dict = None,
@@ -412,11 +108,11 @@ def solveLP_Mosek(objective: Dict = None,
             task.putintparam(mosek.iparam.log_sim, 0)
             task.putintparam(mosek.iparam.log_intpnt, 0)
 
-
         nof_primal_variables = len(variables)
         nof_primal_inequalities = len(inequalities)
         nof_primal_equalities = len(internal_equalities)
-        nof_primal_constraints = nof_primal_inequalities + nof_primal_equalities
+        nof_primal_constraints = nof_primal_inequalities + \
+            nof_primal_equalities
 
         # Create sparse matrix A of constraints
         constraints = inequalities + internal_equalities
@@ -434,8 +130,9 @@ def solveLP_Mosek(objective: Dict = None,
                 bdata.append(-constraint[x] * known_vars[x])
         A = coo_matrix((Adata, (Arow, Acol)), shape=(nof_primal_constraints,
                                                      nof_primal_variables))
-        b = coo_matrix((bdata, (brow, bcol)), shape=(nof_primal_constraints,
-                                                     1)).toarray().ravel().tolist()
+        b = coo_matrix((bdata, (brow, bcol)),
+                       shape=(nof_primal_constraints,
+                              1)).toarray().ravel().tolist()
 
         if verbose > 0:
             print(f"Size of matrix A: {A.shape}")
@@ -452,9 +149,11 @@ def solveLP_Mosek(objective: Dict = None,
 
         if solve_dual:
             nof_primal_lower_bounds = len(lower_bounds)
-            nof_primal_nontriv_bounds = nof_primal_lower_bounds + len(upper_bounds)
+            nof_primal_nontriv_bounds = nof_primal_lower_bounds + \
+                len(upper_bounds)
             nof_dual_constraints = nof_primal_variables
-            nof_dual_variables = nof_primal_equalities + nof_primal_inequalities + nof_primal_nontriv_bounds
+            nof_dual_variables = nof_primal_equalities + \
+                nof_primal_inequalities + nof_primal_nontriv_bounds
 
             if nof_primal_nontriv_bounds > 0:
                 Arow = np.arange(nof_primal_nontriv_bounds)
@@ -468,15 +167,14 @@ def solveLP_Mosek(objective: Dict = None,
                     Adata.append(-1)
                     b_extra.append(-bnd)
                 A_extra = coo_matrix((Adata, (Arow, Acol)),
-                               shape=(nof_primal_nontriv_bounds,
-                                      nof_primal_variables))
+                                     shape=(nof_primal_nontriv_bounds,
+                                            nof_primal_variables))
 
                 matrix = vstack((A, A_extra), format='csr')
                 objective_vector = b + b_extra
             else:
                 matrix = A.asformat('csr', copy=False)
                 objective_vector = b
-
 
             # Set bound keys and values for constraints (primal objective)
             blc = c
@@ -571,7 +269,6 @@ def solveLP_Mosek(objective: Dict = None,
             print("Solving took", format(perf_counter() - t0, ".4f"),
                   "seconds.")
         basic = mosek.soltype.bas
-        # sol = task.getsolution(basic)
         (problemsta,
          solutionsta,
          skc,
@@ -586,11 +283,10 @@ def solveLP_Mosek(objective: Dict = None,
          sux,
          snx) = task.getsolution(basic)
 
-
         # Get objective values, solutions x, dual values y
         if solve_dual:
-            primal = task.getdualobj(basic) + c0
-            dual = task.getprimalobj(basic) + c0
+            primal = task.getdualobj(basic)
+            dual = task.getprimalobj(basic)
             x_values = dict(zip(variables, yy))
             y_values = [-x for x in xx]
         else:
@@ -653,6 +349,5 @@ if __name__ == '__main__':
                          {'w': 1, '1': 1}],  # w >= -1
         "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}],  # x/2 + 2y - 3 = 0
     }
-    safe_sol = solveLP_MosekFUSION(**simple_lp)
     raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
     raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
