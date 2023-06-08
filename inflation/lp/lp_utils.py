@@ -17,7 +17,7 @@ def solveLP_MosekFUSION(objective: Dict = None,
                         equalities: List[Dict] = None,
                         lower_bounds: Dict = None,
                         upper_bounds: Dict = None,
-                        solve_dual: bool = True,
+                        solve_dual: bool = False,
                         all_non_negative: bool = True,
                         feas_as_optim: bool = False,
                         verbose: int = 0,
@@ -98,51 +98,63 @@ def solveLP_MosekFUSION(objective: Dict = None,
     # Create dictionary var_index - monomial : index
     var_index = {x: i for i, x in enumerate(variables)}
 
+    nof_primal_variables = len(variables)
+    nof_primal_inequalities = len(inequalities)
+    nof_primal_equalities = len(internal_equalities)
+    nof_primal_constraints = nof_primal_inequalities + nof_primal_equalities
+
     # Create matrix A, vector b such that Ax + b >= 0
-    # TODO: Switch to coo_matrix fast initialization
-    nof_inequalities = len(inequalities)
-    A = dok_matrix((nof_inequalities, nof_variables))
-    b = dok_matrix((nof_inequalities, 1))
-    for i, inequality in enumerate(inequalities):
-        monomials = set(inequality.keys())
-        for x in monomials.difference(known_vars.keys()):
-            A[i, var_index[x]] = inequality[x]
-        for x in monomials:
-            if x in known_vars.keys():
-                b[i, 0] += inequality[x] * known_vars[x]
-    b_mosek = Matrix.sparse(*b.shape,
-                            *b.nonzero(),
-                            b[b.nonzero()].A[0])
+    Arow, Acol, Adata, brow, bcol, bdata = [], [], [], [], [], []
+    for i, ineq in enumerate(inequalities):
+        ineq_vars = set(ineq)
+        for x in ineq_vars.difference(known_vars):
+            Arow.append(i)
+            Acol.append(var_index[x])
+            Adata.append(ineq[x])
+        for x in ineq_vars.intersection(known_vars):
+            brow.append(i)
+            bcol.append(0)
+            bdata.append(ineq[x] * known_vars[x])
+    A = coo_matrix((Adata, (Arow, Acol)), shape=(nof_primal_inequalities,
+                                                 nof_primal_variables))
+    b = coo_matrix((bdata, (brow, bcol)), shape=(nof_primal_inequalities, 1))
     A_mosek = Matrix.sparse(*A.shape,
                             *A.nonzero(),
-                            A[A.nonzero()].A[0])
+                            Adata)
+    b_mosek = Matrix.sparse(*b.shape,
+                            *b.nonzero(),
+                            bdata)
 
     # Create matrix C, vector d such that Cx + d == 0
-    nof_equalities = len(internal_equalities)
-    C = dok_matrix((nof_equalities, nof_variables))
-    d = dok_matrix((nof_equalities, 1))
-    for i, equality in enumerate(internal_equalities):
-        monomials = set(equality)
-        for x in monomials.difference(known_vars.keys()):
-            C[i, var_index[x]] = equality[x]
-        for x in monomials:
-            if x in known_vars.keys():
-                d[i, 0] += equality[x] * known_vars[x]
-    d_mosek = Matrix.sparse(*d.shape,
-                            *d.nonzero(),
-                            d[d.nonzero()].toarray().ravel())
+    Crow, Ccol, Cdata, drow, dcol, ddata = [], [], [], [], [], []
+    for i, eq in enumerate(equalities):
+        eq_vars = set(eq)
+        for x in eq_vars.difference(known_vars):
+            Crow.append(i)
+            Ccol.append(var_index[x])
+            Cdata.append(eq[x])
+        for x in eq_vars.intersection(known_vars):
+            drow.append(i)
+            dcol.append(0)
+            ddata.append(eq[x] * known_vars[x])
+    C = coo_matrix((Cdata, (Crow, Ccol)), shape=(nof_primal_equalities,
+                                                 nof_primal_variables))
+    d = coo_matrix((ddata, (drow, dcol)), shape=(nof_primal_equalities, 1))
     C_mosek = Matrix.sparse(*C.shape,
                             *C.nonzero(),
-                            C[C.nonzero()].toarray().ravel())
+                            Cdata)
+    d_mosek = Matrix.sparse(*d.shape,
+                            *d.nonzero(),
+                            ddata)
 
     with Model("LP") as M:
         if solve_dual:
             # Define dual variables:
-            nof_dual_vars = nof_inequalities + nof_equalities
+            nof_dual_vars = nof_primal_constraints
             y = M.variable("y", nof_dual_vars)
 
             # Non-positivity constraint for y_i corresponding to inequalities
-            for i in range(nof_inequalities):
+            for i in range(nof_primal_inequalities):
                 M.constraint(y.index(i), Domain.lessThan(0.0))
 
             # Define v as vector of coefficients of the primal objective, v·x
@@ -247,8 +259,9 @@ def solveLP_MosekFUSION(objective: Dict = None,
                 x_values = dict(zip(variables, c.dual()))
             else:
                 # Ignore constraints for variable bounds
-                x_values = {x: M.getConstraint(nof_inequalities + i).dual()[0]
-                            for x, i in var_index.items()}
+                x_values = {
+                    x: M.getConstraint(nof_primal_inequalities + i).dual()[0]
+                    for x, i in var_index.items()}
         else:
             x_values = dict(zip(variables, x.level()))
 
