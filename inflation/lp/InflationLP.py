@@ -274,9 +274,11 @@ class InflationLP(object):
                                         total=self.nof_collins_gisin_inequalities):
             terms_idxs_after_sym = self.inverse[terms_idxs]
             true_signs = np.power(-1, signs)
-            moment_inequalities.append(
-                {self.compmonomial_from_idx[i]: s
-                 for i, s in zip(terms_idxs_after_sym.flat, true_signs.flat)})
+            current_ineq = dict()
+            for i, s in zip(terms_idxs_after_sym.flat, true_signs.flat):
+                mon = self.compmonomial_from_idx[i]
+                current_ineq[mon] = current_ineq.get(mon, 0) + s
+            moment_inequalities.append(current_ineq)
         self.moment_inequalities = moment_inequalities
         del moment_inequalities
 
