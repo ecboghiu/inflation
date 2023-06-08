@@ -2,12 +2,10 @@ import unittest
 import numpy as np
 import warnings
 from scipy.sparse import lil_matrix
-from copy import deepcopy
 from itertools import product
 
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
-from inflation.lp.lp_utils import solveLP_MosekFUSION
 from inflation.lp.lp_utils import solveLP_Mosek
 
 
@@ -50,8 +48,7 @@ class TestMosek(unittest.TestCase):
             "dual_certificate": {'1': 3.5},
             "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}}
 
-        for solveLP, bound in product((solveLP_MosekFUSION, solveLP_Mosek,
-                                       solveSDP_MosekFUSION),
+        for solveLP, bound in product((solveLP_Mosek, solveSDP_MosekFUSION),
                                       (free_values, non_negative_values)):
             with self.subTest():
                 primal_sol = solveLP(**self.simple_lp, solve_dual=False,
@@ -90,8 +87,7 @@ class TestMosek(unittest.TestCase):
                   "dual_certificate": {'1': 3.5},
                   "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}},)
 
-        for solveLP, case in product((solveLP_MosekFUSION, solveLP_Mosek),
-                                     cases):
+        for solveLP, case in product((solveLP_Mosek,), cases):
             with self.subTest():
                 primal_sol = solveLP(**self.simple_lp, **case["args"],
                                      solve_dual=False)
@@ -121,37 +117,6 @@ class TestMosek(unittest.TestCase):
                 self.assertEqual(solution_primal, solution_dual,
                                  "The primal and dual solutions are not"
                                  "equal.")
-
-    def test_LP_inequalities(self):
-        lp = deepcopy(self.simple_lp)
-        lp['equalities'].clear()
-        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False,
-                                         all_non_negative=False)
-        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True,
-                                       all_non_negative=False)
-        value_primal = primal_sol["primal_value"]
-        value_dual = dual_sol["primal_value"]
-        self.assertEqual(value_dual, 19/2,
-                         "The objective value of the LP is incorrect.")
-        self.assertEqual(value_primal, value_dual,
-                         "The primal and dual solutions are not equal.")
-
-    def test_LP_equalities(self):
-        lp = deepcopy(self.simple_lp)
-        lp['inequalities'].clear()
-        lp['equalities'] += [{'y': -1, '1': 5},
-                             {'z': -1, '1': 1/2},
-                             {'w': 1, '1': 1}]
-        primal_sol = solveLP_MosekFUSION(**lp, solve_dual=False,
-                                         all_non_negative=False)
-        dual_sol = solveLP_MosekFUSION(**lp, solve_dual=True,
-                                       all_non_negative=False)
-        value_primal = primal_sol["primal_value"]
-        value_dual = dual_sol["primal_value"]
-        self.assertEqual(value_dual, -13/2,
-                         "The objective value of the LP is incorrect.")
-        self.assertEqual(value_primal, value_dual,
-                         "The primal and dual solutions are not equal.")
 
     def test_LP_with_SDP(self):
         primal_sol   = solveSDP_MosekFUSION(**self.simple_lp,
@@ -200,18 +165,18 @@ class TestMosek(unittest.TestCase):
                                              semiknown_vars={'z': (0.5, 'x')},
                                              solve_dual=True,
                                              process_constraints=True)
-        p_lp = solveLP_MosekFUSION(**problem,
-                                   semiknown_vars={},
-                                   solve_dual=False)
-        p_lpi_lp = solveLP_MosekFUSION(**problem,
-                                       semiknown_vars={'z': (0.5, 'x')},
-                                       solve_dual=False)
-        d_lp = solveLP_MosekFUSION(**problem,
-                                   semiknown_vars={},
-                                   solve_dual=True)
-        d_lpi_lp = solveLP_MosekFUSION(**problem,
-                                       semiknown_vars={'z': (0.5, 'x')},
-                                       solve_dual=True)
+        p_lp = solveLP_Mosek(**problem,
+                             semiknown_vars={},
+                             solve_dual=False)
+        p_lpi_lp = solveLP_Mosek(**problem,
+                                 semiknown_vars={'z': (0.5, 'x')},
+                                 solve_dual=False)
+        d_lp = solveLP_Mosek(**problem,
+                             semiknown_vars={},
+                             solve_dual=True)
+        d_lpi_lp = solveLP_Mosek(**problem,
+                                 semiknown_vars={'z': (0.5, 'x')},
+                                 solve_dual=True)
 
         truth_obj, truth_obj_lpi = -52, -109/2
         truth_x =     {'x': 3, 'y': 24, 'z': 1}
@@ -363,11 +328,11 @@ class TestMosek(unittest.TestCase):
         d_lpi_process = solveSDP_MosekFUSION(**problem,
                                              solve_dual=True,
                                              process_constraints=True)
-        p_lpi_lp = solveLP_MosekFUSION(**problem,
-                                       solve_dual=False)
+        p_lpi_lp = solveLP_Mosek(**problem,
+                                 solve_dual=False)
 
-        d_lpi_lp = solveLP_MosekFUSION(**problem,
-                                       solve_dual=True)
+        d_lpi_lp = solveLP_Mosek(**problem,
+                                 solve_dual=True)
         truth_obj_lpi = -109/2
         truth_x_lpi = {'x': 3, 'z': 3/2}
 
