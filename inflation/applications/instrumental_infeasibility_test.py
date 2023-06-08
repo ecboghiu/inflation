@@ -13,9 +13,10 @@ p_AB_cond_XY[0, 1, 1, 0] = 1
 
 
 Inst_LP = InflationLP(Inst, verbose=0)
-Inst_LP.generate_lp()
 Inst_LP.set_distribution(p_AB_cond_XY)
 Inst_LP.solve(dualise=False)
+print((Inst_LP.solution_object['primal_value'], Inst_LP.solution_object['dual_value']))
 print(Inst_LP.certificate_as_probs())
 Inst_LP.solve(dualise=True)
+print((Inst_LP.solution_object['primal_value'], Inst_LP.solution_object['dual_value']))
 print(Inst_LP.certificate_as_probs())

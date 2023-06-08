@@ -139,6 +139,71 @@ def nb_expand_moment_normalisation(moment, outcome_cardinalities):
  
     return signs, terms
 
+def to_tuples_of_tuples(mon):
+    if mon.ndim == 1:
+        return tuple(mon.tolist())
+    else:
+        return tuple(tuple(i) for i in mon.tolist())
+
+def test_compare_nb_moment_expand_with_sympy(moment, outcome_cardinality):
+    import sympy as sp
+    from math import prod
+    
+    lexorder = []
+    for outcome_tuple in np.ndindex(*outcome_cardinality[moment[:, 0] - 1]):
+        aux = moment.copy()
+        aux[:, -1] = np.array(outcome_tuple)
+        lexorder.append(to_tuples_of_tuples(aux))
+    lexorder = np.array(sorted(list(set([op for moment in lexorder for op in moment]))),
+                        dtype=moment.dtype)
+    One_as_arr = np.empty(shape=(0, moment.shape[1]), dtype=moment.dtype)
+    
+    spvars = [sp.S.One]
+    spvars2op = {sp.S.One : One_as_arr}
+    op2spvars = {to_tuples_of_tuples(One_as_arr): One_as_arr}
+    for op in lexorder:
+        var = sp.Symbol(str(op[0])+'_'+str(op[-2])+'_'+str(op[-1]))
+        spvars += [var]
+        spvars2op[var] = op
+        op2spvars[to_tuples_of_tuples(op)] = var
+    
+    subs = {}
+    for op in lexorder:
+        if op[-1] == outcome_cardinality[op[0] - 1] - 1:
+            summ = 0
+            for a in range(outcome_cardinality[op[0] - 1] - 1):
+                op_a = op.copy()
+                op_a[-1] = a
+                summ += op2spvars[to_tuples_of_tuples(op_a)]
+                # summ += sp.Symbol(str(op_a[0])+'_'+str(op_a[-2])+'_'+str(op_a[-1]))
+            subs[op2spvars[to_tuples_of_tuples(op)]] = sp.S.One - summ 
+
+    p = prod(op2spvars[to_tuples_of_tuples(op)] for op in moment)
+    p_expanded = sp.expand(p.subs(subs), deep=False, force=True, multinomial=False,
+                           power_base=False, power_exp=False, log=False,)
+    
+    expansion_sympy = {}
+    offset, terms = p_expanded.as_coeff_add()
+    if not np.isclose(float(offset), 0):
+        expansion_sympy[tuple()] = offset
+    for term in terms:
+        coeff, factors = term.as_coeff_mul()
+        ops = [np.expand_dims(spvars2op[factor], axis=0) 
+               for factor in sorted(factors, key=lambda x: (len(str(x)), str(x)))]
+        ops = np.concatenate(ops, axis=0)
+        expansion_sympy[to_tuples_of_tuples(ops)] = coeff        
+    
+    signs, terms = nb_expand_moment_normalisation(moment, outcome_cardinality)
+    expansion_numba = {to_tuples_of_tuples(t): s for s, t in zip(signs, terms)}
+    assert len(expansion_numba) == len(terms), "Duplicated terms"
+    
+    if expansion_numba != expansion_sympy:
+        print("Key differences:", set(expansion_numba).difference(set(expansion_sympy)))
+        for k in expansion_numba:
+            if not np.isclose(expansion_numba[k], expansion_sympy[k]):
+                print(f"Key {k} has expansion_numba[k]={expansion_numba[k]} and expansion_sympy[k]={expansion_sympy[k]}")
+    
+
 if __name__ == '__main__':
     case = "A1 = 1 - A0"
     signs, terms = nb_expand_moment_normalisation(np.array([[1,0,0,1]]),
@@ -234,3 +299,57 @@ if __name__ == '__main__':
             [7, 0, 0, 1, 0, 0, 1, 1],
             [8, 0, 0, 0, 0, 1, 1, 0]]), np.array([2,2,2,2,2,2,2,2]))
     assert len(signs) == 64, "Number of terms is wrong"
+
+    ############## Test by comparing with SymPy implementation #################   
+     
+    import itertools
+    import numba
+    import numpy as np
+    from tqdm import tqdm
+    from inflation import InflationProblem, InflationSDP
+    from expand_last_outcome import nb_expand_moment_normalisation
+
+    inflated_parties = ["A", "B", "C", "D"]
+    outcomes = [4]*len(inflated_parties)
+    settings = [2]*len(inflated_parties)
+    line = InflationProblem(dag={"s":  inflated_parties},
+                        outcomes_per_party=[o+1 for o in outcomes],
+                        settings_per_party=settings,
+                        order=inflated_parties,
+                        verbose=0)
+    sdp = InflationSDP(line, commuting=True, verbose=1)
+    lexorder = sdp._lexorder
+
+    party_ops = [lexorder[lexorder[:, 0] == p + 1] for p in range(len(inflated_parties))]
+    party_ops = [p.tolist() for p in party_ops]
+    probs = []
+    for indexes in tqdm(itertools.product(*[range(len(pops)+1) for pops in party_ops]), desc="Building CG terms"):
+        arr = [party_ops[j][i-1] for j, i in enumerate(indexes) if i > 0]
+        probs.append(np.array(arr, dtype=np.uint8))
+    probs = sorted(probs, key=lambda x: (x.shape[0], tuple(x.tolist())))
+    probs[0] = probs[0].reshape((0, lexorder.shape[1]))
+
+    print("Now separating the terms with the last outcome from the rest")
+    @numba.njit()
+    def nb_if_moment_has_last_outcome(moment, cards):
+        # Identify the operators with the last outcome
+        for op in moment:
+            if op[-1] == cards[op[0] - 1] - 1:
+                return True
+        return False
+
+    probs_with_last_output = []
+    new_probs = []
+    _outs_ = np.array(outcomes)
+    for p in tqdm(probs, desc="Building list of probs in CG notation with at least one last outcome:"):
+        if nb_if_moment_has_last_outcome(p, _outs_):
+            probs_with_last_output += [p]
+        else:
+            new_probs += [p]
+    probs = new_probs 
+
+    print("Number of terms with last outcome:", len(probs_with_last_output))
+    print("Number of CG terms without last outcome:", len(probs))
+    
+    for p in tqdm(probs_with_last_output, desc="Comparing with Sympy"):
+        test_compare_nb_moment_expand_with_sympy(p, _outs_)    
