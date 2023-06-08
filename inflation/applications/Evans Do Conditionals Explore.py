@@ -6,7 +6,7 @@ Evans = InflationProblem({"U_AB": ["A", "B"],
                           "B": ["A", "C"]},
                          outcomes_per_party=(2, 2, 2),
                          settings_per_party=(1, 1, 1),
-                         inflation_level_per_source=(1, 2),  # TO BE MODIFIED
+                         inflation_level_per_source=(2, 2),  # TO BE MODIFIED
                          order=("A", "B", "C"))
 
 p_A = [0.5, 0.5]
@@ -22,12 +22,12 @@ for (b, c, a), v in np.ndenumerate(p_BC_cond_A):
 
 
 
-print("Now considering NONFANOUT inflation (a.k.a. `SWIGs\INTERRUPTION`)")
-Evans_Interrupted = InflationLP(Evans,
-                                 nonfanout=True,
-                                 verbose=1)
-Evans_Interrupted.set_distribution(p_ABC)
-Evans_Interrupted_bounds = dict()
+# print("Now considering NONFANOUT inflation (a.k.a. `SWIGs\INTERRUPTION`)")
+# Evans_Interrupted = InflationLP(Evans,
+#                                  nonfanout=True,
+#                                  verbose=1)
+# Evans_Interrupted.set_distribution(p_ABC)
+# Evans_Interrupted_bounds = dict()
 
 # Evans_Interrupted.set_objective(objective={'<C_0_1_0_1>': 1},
 #                                  direction='min')
@@ -35,11 +35,11 @@ Evans_Interrupted_bounds = dict()
 # Evans_Interrupted_bounds["P(C=1 do B##=0) >= "] = Evans_Interrupted.objective_value
 # print("Objective value: ", Evans_Interrupted.objective_value)
 
-Evans_Interrupted.set_objective(objective={'<C_0_1_0_0>': 1},
-                                 direction='min')
-Evans_Interrupted.solve(verbose=0)
-Evans_Interrupted_bounds["P(C=1 do B##=0) <= "] = 1-Evans_Interrupted.objective_value
-print("Objective value: ", 1-Evans_Interrupted.objective_value)
+# Evans_Interrupted.set_objective(objective={'<C_0_1_0_0>': 1},
+#                                  direction='min')
+# Evans_Interrupted.solve(verbose=0)
+# Evans_Interrupted_bounds["P(C=1 do B##=0) <= "] = 1-Evans_Interrupted.objective_value
+# print("Objective value: ", 1-Evans_Interrupted.objective_value)
 #
 # Evans_Interrupted.set_objective(objective={'<C_0_1_1_1>': 1},
 #                                  direction='min')
@@ -75,6 +75,7 @@ Evans_Unpacked_bounds = dict()
 Evans_Unpacked.set_objective(objective={'<C_0_1_0_0>': 1},
                                  direction='min')
 Evans_Unpacked.solve()
+print("Status: ", Evans_Unpacked.objective_value)
 Evans_Unpacked_bounds["P(C=1 do B##=0) <= "] = 1-Evans_Unpacked.objective_value
 print("Objective value: ", 1-Evans_Unpacked.objective_value)
 #
