@@ -801,9 +801,10 @@ class InflationLP(object):
         if self.verbose > 0:
             print("Writing the LP program to", filename)
         if extension == "lp":
-            write_to_lp(self, filename)
-        elif extension == "mps":
-            write_to_mps(self, filename)
+            args = self._prepare_solver_arguments(separate_bounds=True)
+            write_to_lp(args, filename)
+        # elif extension == "mps":
+        #     write_to_mps(self, filename)
         else:
             raise Exception("File format not supported. Please choose between "
                             + "the extensions `.lp` and `.mps`.")

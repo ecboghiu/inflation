@@ -1,20 +1,17 @@
-from inflation import InflationLP
 import numpy as np
 
 
-def write_to_lp(problem: InflationLP,
+def write_to_lp(args: dict,
                 filename: str) -> None:
     """Export the problem to a file in .lp format.
 
     Parameters
     ----------
-    problem : inflation.InflationLP
-        The problem to write to the file.
+    args : dict
+        The arguments of the problem to write to the file.
     filename : str
         The file to write to.
     """
-    # Recover arguments from the problem
-    args = problem._prepare_solver_arguments(separate_bounds=True)
     objective = args['objective']
     known_vars = args['known_vars']
     semiknown_vars = args['semiknown_vars']
@@ -88,7 +85,7 @@ def write_to_lp(problem: InflationLP,
 
 
 # TODO: Add write_to_mps functionality
-def write_to_mps(problem: InflationLP,
+def write_to_mps(args: dict,
                  filename: str) -> None:
     pass
 
@@ -137,7 +134,7 @@ def format_constraint_lp(known_vars: dict,
 
 if __name__ == '__main__':
     import mosek
-    from inflation import InflationProblem
+    from inflation import InflationLP, InflationProblem
 
     p = np.zeros((2, 2, 2, 1))
     p[0, 0, 0, 0] = 0.3
@@ -160,7 +157,8 @@ if __name__ == '__main__':
     instrumental_infLP.set_objective(objective={'<B_1_0_0>': 1},
                                      direction='max')
     instrumental_infLP.solve()
-    write_to_lp(instrumental_infLP, 'inst.lp')
+    args = instrumental_infLP._prepare_solver_arguments(separate_bounds=True)
+    write_to_lp(args, 'inst.lp')
     with mosek.Task() as task:
         try:
             task.readdata("inst.lp")
