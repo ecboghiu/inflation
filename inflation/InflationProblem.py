@@ -16,7 +16,7 @@ from .sdp.fast_npa import (nb_classify_disconnected_components,
                            apply_source_perm)
 
 from .utils import format_permutations
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
 
 from functools import reduce
 from tqdm import tqdm
@@ -63,12 +63,12 @@ class InflationProblem(object):
         * 2: debug level: show properties of objects created.
     """
     def __init__(self,
-                 dag=None,
-                 outcomes_per_party=tuple(),
-                 settings_per_party=tuple(),
-                 inflation_level_per_source=tuple(),
-                 classical_sources: Union[str, Tuple]=tuple(),
-                 order=tuple(),
+                 dag: Union[Dict, None]=None,
+                 outcomes_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
+                 settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
+                 inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
+                 classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
+                 order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
         """Initialize the InflationProblem class.
         """
