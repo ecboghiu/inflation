@@ -1,9 +1,7 @@
-import numpy as np
-
-
 def write_to_lp(args: dict,
                 filename: str) -> None:
-    """Export the problem to a file in .lp format.
+    """Export the problem to a file in .lp format. Specification can be found
+    at https://docs.mosek.com/latest/pythonapi/lp-format.html.
 
     Parameters
     ----------
@@ -134,6 +132,7 @@ def format_constraint_lp(known_vars: dict,
 
 if __name__ == '__main__':
     import mosek
+    import numpy as np
     from inflation import InflationLP, InflationProblem
 
     p = np.zeros((2, 2, 2, 1))
@@ -163,7 +162,7 @@ if __name__ == '__main__':
         try:
             task.readdata("inst.lp")
             task.optimize()
-            assert(np.isclose(1 - instrumental_infLP.objective_value,
-                              1 - task.getprimalobj(mosek.soltype.bas)))
+            assert(np.isclose(instrumental_infLP.objective_value,
+                              task.getprimalobj(mosek.soltype.bas)))
         except (mosek.Error, AssertionError) as e:
             print(e)
