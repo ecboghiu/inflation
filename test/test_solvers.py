@@ -85,7 +85,24 @@ class TestMosek(unittest.TestCase):
                            "all_non_negative": False},
                   "primal_value": 3.5,
                   "dual_certificate": {'1': 3.5},
-                  "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}},)
+                  "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}},
+                 {"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
+                           "all_non_negative": True},
+                  "primal_value": 3.5,
+                  "dual_certificate": {'1': 3.5},
+                  "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}},
+                 {"args": {"lower_bounds": {'x': -2, 'y': 2},
+                           "upper_bounds": {'z': -2, 'w': 2},
+                           "all_non_negative": False},
+                  "primal_value": 0.0,
+                  "dual_certificate": {'1': 8.0},
+                  "x": {'x': -2.0, 'y': 2.0, 'z': -2.0, 'w': -1.0}},
+                 {"args": {"lower_bounds": {'x': -1, 'y': 1},
+                           "upper_bounds": {'w': 1},
+                           "all_non_negative": True},
+                  "primal_value": 3.5,
+                  "dual_certificate": {'1': 3.5},
+                  "x": {'x': 2.0, 'y': 1.0, 'z': 0.5, 'w': 0}})
 
         for solveLP, case in product((solveLP_Mosek,), cases):
             with self.subTest():
