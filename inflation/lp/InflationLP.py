@@ -160,8 +160,11 @@ class InflationLP(object):
         self.monomial_from_atoms = dict()
         self.monomial_from_name = dict()
 
-        self._raw_monomials_as_lexboolvecs, self.already_collins_gisin_boolmarks = self.build_raw_lexboolvecs()
+        (self._raw_monomials_as_lexboolvecs,
+         self._raw_monomials_as_lexboolvecs_non_CG) = self.build_raw_lexboolvecs()
+        collect(generation=2)
         self.raw_n_columns = len(self._raw_monomials_as_lexboolvecs)
+
         self._raw_lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                                  enumerate(self._raw_monomials_as_lexboolvecs)}
 
@@ -170,41 +173,31 @@ class InflationLP(object):
             # Calculate the inflation symmetries
             if self.verbose > 0:
                 eprint("Initiating symmetry calculation...")
-            self.orbits = self._discover_inflation_orbits()
-            old_reps, unique_indices, raw_inverse = np.unique(
-                self.orbits,
+            orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs)
+            old_reps, unique_indices_CG, self.inverse = np.unique(
+                orbits,
                 return_index=True,
                 return_inverse=True)
+            orbits_non_CG = self._discover_inflation_orbits(
+                self._raw_monomials_as_lexboolvecs_non_CG)
+            old_reps_non_CG, unique_indices_non_CG = np.unique(
+                orbits_non_CG, return_index=True)
             if self.verbose > 1:
                 print(f"Orbits discovered! {len(old_reps)} unique monomials.")
             # Obtain the real generating monomomials after accounting for symmetry
-            unique_up_to_sym_boolmarks = np.zeros(self.raw_n_columns, dtype=bool)
-            unique_up_to_sym_boolmarks[unique_indices] = True
-            self.already_collins_gisin_boolmarks_and_unique = np.bitwise_and(
-                unique_up_to_sym_boolmarks,
-                self.already_collins_gisin_boolmarks
-            )
-            self.collins_gisin_unique_ineq_positions = np.bitwise_and(
-                unique_up_to_sym_boolmarks,
-                np.logical_not(self.already_collins_gisin_boolmarks)
-            )
         else:
-            self.orbits = np.arange(self.raw_n_columns)
-            raw_inverse = self.orbits.copy()
-            self.already_collins_gisin_boolmarks_and_unique = self.already_collins_gisin_boolmarks
-            self.collins_gisin_unique_ineq_positions = np.logical_not(self.already_collins_gisin_boolmarks)
+            unique_indices_CG = np.arange(self.raw_n_columns)
+            self.inverse = unique_indices_CG
+            unique_indices_non_CG = np.arange(len(self._raw_monomials_as_lexboolvecs_non_CG))
 
-        raw_inverse[np.logical_not(self.already_collins_gisin_boolmarks)] = -1
-        _, self.inverse = np.unique(
-            raw_inverse,
-            return_inverse=True)
-        self.inverse = self.inverse - 1
-        self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[self.already_collins_gisin_boolmarks_and_unique]
+        self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[unique_indices_CG]
+        self._monomials_as_lexboolvecs_non_CG = self._raw_monomials_as_lexboolvecs_non_CG[unique_indices_non_CG]
+
         self.generating_monomials = [self._lexorder[bool_idx]
                                      for bool_idx in
                                      self._monomials_as_lexboolvecs]
         self.n_columns = len(self.generating_monomials)
-        self.nof_collins_gisin_inequalities = np.count_nonzero(self.collins_gisin_unique_ineq_positions)
+        self.nof_collins_gisin_inequalities = len(unique_indices_non_CG)
 
         if self.verbose > 0:
             eprint("Number of variables in the LP:",
@@ -704,7 +697,7 @@ class InflationLP(object):
     ##########################################################################
     def build_raw_lexboolvecs(self) -> Tuple[np.ndarray, np.ndarray]:
         r"""Creates the generating set of monomials (as boolvecs),
-        and also highlights which are already in Collins-Gisin notation.
+        both in and out of Collins-Gisin notation.
         """
         choices_to_combine = []
         lengths = []
@@ -740,8 +733,10 @@ class InflationLP(object):
         raw_is_not_CG_form = reduce(nb_outer_bitwise_or, is_not_CG_form)
         # Sort by operator count
         operator_count_sort = np.argsort(np.sum(raw_lexboolvecs, axis=1))
-        return (raw_lexboolvecs[operator_count_sort],
-                np.logical_not(raw_is_not_CG_form[operator_count_sort]))
+        raw_lexboolvecs = raw_lexboolvecs[operator_count_sort]
+        raw_is_not_CG_form = raw_is_not_CG_form[operator_count_sort]
+        return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
+                raw_lexboolvecs[raw_is_not_CG_form])
 
     def reset(self, which: Union[str, List[str]]) -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
@@ -1146,15 +1141,15 @@ class InflationLP(object):
                                  for i, bool_array in alternatives_as_boolarrays.items()}
 
         collins_gisin_inequalities = []
-        for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs[self.collins_gisin_unique_ineq_positions]),
+        for i, bool_vec in tqdm(enumerate(self._monomials_as_lexboolvecs_non_CG),
                 disable=not self.verbose,
                 desc="Discovering inequalities   ",
                 total=self.nof_collins_gisin_inequalities):
             critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
-            critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
-            if len(critical_values_in_boovec)>0:
+            if np.any(critical_boolvec_intersection):
                 absent_c_boolvec = bool_vec.copy()
-                absent_c_boolvec[critical_values_in_boovec] = False
+                absent_c_boolvec[critical_boolvec_intersection] = False
+                critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
                 signs = reduce(nb_outer_bitwise_xor,
                                (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
                 adjustments = reduce(nb_outer_bitwise_or,
@@ -1190,7 +1185,7 @@ class InflationLP(object):
     #                   self._non_cg_boolvec))
 
 
-    def _discover_inflation_orbits(self) -> np.ndarray:
+    def _discover_inflation_orbits(self, _raw_monomials_as_lexboolvecs) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
         function outputs a list of all permutations.
@@ -1201,16 +1196,9 @@ class InflationLP(object):
             The orbits of the generating columns implied by the inflation
             symmetries.
         """
-        try:
-            self._discover_orbits_has_been_called += 1
-        except AttributeError:
-            self._discover_orbits_has_been_called = 0
-        if self._discover_orbits_has_been_called:
-            warn("ERROR: Discovering orbits TWICE!!")
-            return self.orbits
         if len(self.lexorder_symmetries) > 1:
             orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-                self._raw_monomials_as_lexboolvecs,
+                _raw_monomials_as_lexboolvecs,
                 lexorder_perms=self.lexorder_symmetries)
             return orbits
         else:
