@@ -205,7 +205,6 @@ class InflationLP(object):
                                      self._monomials_as_lexboolvecs]
         self.n_columns = len(self.generating_monomials)
         self.nof_collins_gisin_inequalities = np.count_nonzero(self.collins_gisin_unique_ineq_positions)
-        self.collins_gisin_inequalities = self._discover_normalization_ineqns()
 
         if self.verbose > 0:
             eprint("Number of variables in the LP:",
@@ -260,15 +259,15 @@ class InflationLP(object):
         #     moment_equalities.append(eq_dict)
         # self.moment_inequalities = moment_equalities
         # del moment_equalities
+
+        self.collins_gisin_inequalities = self._discover_normalization_ineqns()
         moment_inequalities = []
         for (terms_idxs, signs) in tqdm(self.collins_gisin_inequalities,
                                         disable=not self.verbose,
                                         desc="Adjusting inequalities     ",
                                         total=self.nof_collins_gisin_inequalities):
-            terms_idxs_after_sym = self.inverse[terms_idxs]
-            true_signs = np.power(-1, signs)
             current_ineq = dict()
-            for i, s in zip(terms_idxs_after_sym.flat, true_signs.flat):
+            for i, s in zip(terms_idxs.flat, signs.flat):
                 mon = self.compmonomial_from_idx[i]
                 current_ineq[mon] = current_ineq.get(mon, 0) + s
             moment_inequalities.append(current_ineq)
@@ -1164,7 +1163,9 @@ class InflationLP(object):
                     absent_c_boolvec[np.newaxis],
                     adjustments)
                 terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
-                collins_gisin_inequalities.append((terms_as_rawidx, signs))
+                terms_as_ids = self.inverse[terms_as_rawidx]
+                true_signs = np.power(-1, signs)
+                collins_gisin_inequalities.append((terms_as_ids, true_signs))
         return collins_gisin_inequalities
 
 
