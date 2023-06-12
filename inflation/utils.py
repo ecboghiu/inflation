@@ -2,10 +2,11 @@
 This file contains auxiliary functions of general purpose
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
+from __future__ import print_function
 import numpy as np
 from itertools import chain
 from typing import Iterable, Union, List, Tuple, Dict
-
+from sys import stderr
 
 def flatten(nested):
     """Keeps flattening a nested lists of lists until  the
@@ -74,3 +75,6 @@ def clean_coefficients(cert: Dict[str, float],
     # Round
     coeffs = np.round(coeffs, decimals=round_decimals)
     return dict(zip(cert.keys(), coeffs.flat))
+
+def eprint(*args, **kwargs):
+    print(*args, file=stderr, **kwargs)

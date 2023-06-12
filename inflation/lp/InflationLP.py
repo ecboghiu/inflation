@@ -28,7 +28,7 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
 from .lp_utils import solveLP_Mosek
 from functools import reduce
-from ..utils import clean_coefficients
+from ..utils import clean_coefficients, eprint
 
 class InflationLP(object):
     """
@@ -169,7 +169,7 @@ class InflationLP(object):
         if symmetrization_required:
             # Calculate the inflation symmetries
             if self.verbose > 0:
-                print("Initiating symmetry calculation...")
+                eprint("Initiating symmetry calculation...")
             self.orbits = self._discover_inflation_orbits()
             old_reps, unique_indices, raw_inverse = np.unique(
                 self.orbits,
@@ -208,9 +208,9 @@ class InflationLP(object):
         self.collins_gisin_inequalities = self._discover_normalization_ineqns()
 
         if self.verbose > 0:
-            print("Number of variables in the LP:",
+            eprint("Number of variables in the LP:",
                   self.n_columns)
-            print("Number of nontrivial inequality constraints in the LP:",
+            eprint("Number of nontrivial inequality constraints in the LP:",
                   self.nof_collins_gisin_inequalities)
 
         # Associate Monomials to the remaining entries.
@@ -735,7 +735,7 @@ class InflationLP(object):
                 choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition
         if self.verbose > 0:
-            print(f"About to generate {np.prod(lengths)} probability placeholders...")
+            eprint(f"About to generate {np.prod(lengths)} probability placeholders...")
         is_not_CG_form = [np.matmul(choices, self._non_cg_boolvec) for choices in choices_to_combine]
         raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine)
         raw_is_not_CG_form = reduce(nb_outer_bitwise_or, is_not_CG_form)
