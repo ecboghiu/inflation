@@ -769,7 +769,6 @@ class InflationLP(object):
                 self.reset(attr)
         collect()
 
-    # TODO: Restore export functionality
     def write_to_file(self, filename: str) -> None:
         """Exports the problem to a file.
 
@@ -789,13 +788,13 @@ class InflationLP(object):
             filename += ".lp"
 
         # Write file according to the extension
+        args = self._prepare_solver_arguments(separate_bounds=True)
         if self.verbose > 0:
             print("Writing the LP program to", filename)
         if extension == "lp":
-            args = self._prepare_solver_arguments(separate_bounds=True)
             write_to_lp(args, filename)
-        # elif extension == "mps":
-        #     write_to_mps(self, filename)
+        elif extension == "mps":
+            write_to_mps(args, filename)
         else:
             raise Exception("File format not supported. Please choose between "
                             + "the extensions `.lp` and `.mps`.")
