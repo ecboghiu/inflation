@@ -1,3 +1,6 @@
+import mosek
+
+
 def write_to_lp(args: dict,
                 filename: str) -> None:
     """Export the problem to a file in .lp format. Specification can be found
@@ -82,10 +85,23 @@ def write_to_lp(args: dict,
     f.close()
 
 
-# TODO: Add write_to_mps functionality
 def write_to_mps(args: dict,
                  filename: str) -> None:
-    pass
+    """Export the problem to a file in .mps format. Specification can be found
+    at https://docs.mosek.com/latest/pythonapi/mps-format.html.
+
+    Parameters
+    ----------
+    args : dict
+        The arguments of the problem to write to the file.
+    filename : str
+        The file to write to.
+    """
+    lps_filename = f"{filename.split('.')[0]}.lp"
+    write_to_lp(args, lps_filename)
+    with mosek.Task() as t:
+        t.readdata(f"{lps_filename}")
+        t.writedata(filename)
 
 
 def format_constraint_lp(known_vars: dict,
@@ -128,41 +144,3 @@ def format_constraint_lp(known_vars: dict,
     elif cons_type == 'ineq':
         cons = cons[:-3] + ' >= ' + str(-c)
     return cons
-
-
-if __name__ == '__main__':
-    import mosek
-    import numpy as np
-    from inflation import InflationLP, InflationProblem
-
-    p = np.zeros((2, 2, 2, 1))
-    p[0, 0, 0, 0] = 0.3
-    p[1, 0, 0, 0] = 0.7
-    p[0, 0, 1, 0] = 0.7
-    p[1, 1, 1, 0] = 0.3
-    p = 0.9 * p + 0.1 * (1 / 4)
-
-    instrumental = InflationProblem({"U_AB": ["A", "B"],
-                                     "A": ["B"]},
-                                    outcomes_per_party=(2, 2),
-                                    settings_per_party=(2, 1),
-                                    inflation_level_per_source=(1,),
-                                    order=("A", "B"),
-                                    classical_sources=["U_AB"])
-    instrumental_infLP = InflationLP(instrumental,
-                                     nonfanout=False,
-                                     verbose=False)
-    instrumental_infLP.set_distribution(p)
-    instrumental_infLP.set_objective(objective={'<B_1_0_0>': 1},
-                                     direction='max')
-    instrumental_infLP.solve()
-    args = instrumental_infLP._prepare_solver_arguments(separate_bounds=True)
-    write_to_lp(args, 'inst.lp')
-    with mosek.Task() as task:
-        try:
-            task.readdata("inst.lp")
-            task.optimize()
-            assert(np.isclose(instrumental_infLP.objective_value,
-                              task.getprimalobj(mosek.soltype.bas)))
-        except (mosek.Error, AssertionError) as e:
-            print(e)
