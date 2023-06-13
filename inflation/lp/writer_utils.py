@@ -57,8 +57,8 @@ def write_to_lp(args: dict, filename: str) -> None:
 
 
 def write_to_mps(args: dict, filename: str) -> None:
-    """Export the problem to a file in .lp format. Specification can be found
-    at https://docs.mosek.com/latest/pythonapi/lp-format.html.
+    """Export the problem to a file in .mps format. Specification can be found
+    at https://docs.mosek.com/latest/pythonapi/mps-format.html.
 
     Parameters
     ----------
