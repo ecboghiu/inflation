@@ -1227,6 +1227,9 @@ class InflationLP(object):
         if self.verbose > 1 and num_nontrivial_known > 1:
             print("Number of variables with fixed numeric value:",
                   num_nontrivial_known)
+        if len(self.semiknown_moments):
+            for k in self.known_moments.keys():
+                self.semiknown_moments.pop(k, None)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
             print(f"Number of semiknown variables: {num_semiknown}")
