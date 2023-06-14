@@ -59,6 +59,7 @@ class InflationLP(object):
                  nonfanout: bool = False,
                  supports_problem: bool = False,
                  all_nonnegative: bool = True,
+                 use_equalities: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
         """
@@ -71,7 +72,7 @@ class InflationLP(object):
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
         self.all_nonnegative = all_nonnegative
-
+        self.use_equalities = use_equalities
         if self.verbose > 1:
             print(inflationproblem)
 
@@ -164,9 +165,14 @@ class InflationLP(object):
          self._raw_monomials_as_lexboolvecs_non_CG) = self.build_raw_lexboolvecs()
         collect(generation=2)
         self.raw_n_columns = len(self._raw_monomials_as_lexboolvecs)
+        self.raw_n_columns_non_CG = len(self._raw_monomials_as_lexboolvecs_non_CG)
 
         self._raw_lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                                  enumerate(self._raw_monomials_as_lexboolvecs)}
+        if self.use_equalities:
+            self._raw_lookup_dict.update({bitvec.tobytes(): i+self.raw_n_columns
+                                          for i, bitvec in
+                                          enumerate(self._raw_monomials_as_lexboolvecs_non_CG)})
 
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
@@ -174,36 +180,52 @@ class InflationLP(object):
             if self.verbose > 0:
                 eprint("Initiating symmetry calculation...")
             orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs)
-            old_reps, unique_indices_CG, self.inverse = np.unique(
+            old_reps_CG, unique_indices_CG, inverse_CG = np.unique(
                 orbits,
                 return_index=True,
                 return_inverse=True)
+            num_CG = len(old_reps_CG)
             orbits_non_CG = self._discover_inflation_orbits(
                 self._raw_monomials_as_lexboolvecs_non_CG)
-            old_reps_non_CG, unique_indices_non_CG = np.unique(
-                orbits_non_CG, return_index=True)
+            old_reps_non_CG, unique_indices_non_CG, inverse_non_CG = np.unique(
+                orbits_non_CG, return_index=True, return_inverse=True)
+            num_non_CG = len(old_reps_non_CG)
             if self.verbose > 1:
-                print(f"Orbits discovered! {len(old_reps)} unique monomials.")
+                print(f"Orbits discovered! {num_CG} unique monomials.")
             # Obtain the real generating monomomials after accounting for symmetry
         else:
-            unique_indices_CG = np.arange(self.raw_n_columns)
-            self.inverse = unique_indices_CG
-            unique_indices_non_CG = np.arange(len(self._raw_monomials_as_lexboolvecs_non_CG))
+            num_CG = self.raw_n_columns
+            unique_indices_CG = np.arange(num_CG)
+            inverse_CG = unique_indices_CG
+            num_non_CG = self.raw_n_columns_non_CG
+            unique_indices_non_CG = np.arange(num_non_CG)
+            inverse_non_CG = unique_indices_non_CG
+        if self.use_equalities:
+            self.inverse = np.hstack((inverse_CG, inverse_non_CG+num_CG))
+        else:
+            self.inverse = inverse_CG
 
         self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[unique_indices_CG]
         self._monomials_as_lexboolvecs_non_CG = self._raw_monomials_as_lexboolvecs_non_CG[unique_indices_non_CG]
+        if self.use_equalities:
+            self._monomials_as_lexboolvecs = np.vstack((
+                self._monomials_as_lexboolvecs,
+                self._monomials_as_lexboolvecs_non_CG
+            ))
 
         self.generating_monomials = [self._lexorder[bool_idx]
                                      for bool_idx in
                                      self._monomials_as_lexboolvecs]
         self.n_columns = len(self.generating_monomials)
-        self.nof_collins_gisin_inequalities = len(unique_indices_non_CG)
+
+        self.nof_collins_gisin_inequalities = num_non_CG
 
         if self.verbose > 0:
             eprint("Number of variables in the LP:",
                   self.n_columns)
-            eprint("Number of nontrivial inequality constraints in the LP:",
-                  self.nof_collins_gisin_inequalities)
+            if not self.use_equalities:
+                eprint("Number of nontrivial inequality constraints in the LP:",
+                      self.nof_collins_gisin_inequalities)
 
         # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
@@ -241,31 +263,37 @@ class InflationLP(object):
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
         self.moment_equalities = []
-        # for (norm_idx, summation_idxs) in self.column_level_equalities:
-        #     norm_idx_after_sym = self.inverse[norm_idx]
-        #     norm_mon = self.compmonomial_from_idx[norm_idx_after_sym]
-        #     eq_dict = {norm_mon: 1}
-        #     summation_idxs_after_sym = np.take(self.inverse, summation_idxs)
-        #     for idx_after_sym in summation_idxs_after_sym.flat:
-        #         mon = self.compmonomial_from_idx[idx_after_sym]
-        #         eq_dict[mon] = eq_dict.get(mon, 0) - 1
-        #     moment_equalities.append(eq_dict)
-        # self.moment_inequalities = moment_equalities
-        # del moment_equalities
-
-        self.collins_gisin_inequalities = self._discover_normalization_ineqns()
-        moment_inequalities = []
-        for (terms_idxs, signs) in tqdm(self.collins_gisin_inequalities,
-                                        disable=not self.verbose,
-                                        desc="Adjusting inequalities     ",
-                                        total=self.nof_collins_gisin_inequalities):
-            current_ineq = dict()
-            for i, s in zip(terms_idxs.flat, signs.flat):
-                mon = self.compmonomial_from_idx[i]
-                current_ineq[mon] = current_ineq.get(mon, 0) + s
-            moment_inequalities.append(current_ineq)
-        self.moment_inequalities = moment_inequalities
-        del moment_inequalities
+        self.moment_inequalities = []
+        if self.use_equalities:
+            self.collins_gisin_equalities = self._discover_normalization_eqns()
+            moment_equalities = []
+            for (terms_idxs, signs) in tqdm(self.collins_gisin_equalities,
+                                            disable=not self.verbose,
+                                            desc="Adjusting equalities     "):
+                current_eq = dict()
+                for i, s in zip(terms_idxs.flat, signs.flat):
+                    mon = self.compmonomial_from_idx[i]
+                    current_eq[mon] = current_eq.get(mon, 0) + s
+                moment_equalities.append(current_eq)
+            self.moment_equalities = moment_equalities
+            del moment_equalities
+        else:
+            self.collins_gisin_inequalities = self._discover_normalization_ineqns()
+            moment_inequalities = []
+            for (terms_idxs, signs) in tqdm(self.collins_gisin_inequalities,
+                                            disable=not self.verbose,
+                                            desc="Adjusting inequalities     "):
+                current_ineq = dict()
+                for i, s in zip(terms_idxs.flat, signs.flat):
+                    mon = self.compmonomial_from_idx[i]
+                    current_ineq[mon] = current_ineq.get(mon, 0) + s
+                moment_inequalities.append(current_ineq)
+                # next_ineq = {self.One: 1}
+                # for mon, s in current_ineq.items():
+                #     next_ineq[mon] = next_ineq.get(mon, 0) - s
+                # moment_inequalities.append(next_ineq)
+            self.moment_inequalities = moment_inequalities
+            del moment_inequalities
 
 
         self.moment_upperbounds  = dict()
@@ -1116,6 +1144,48 @@ class InflationLP(object):
     #             except KeyError:
     #                 pass
     #     return column_level_equalities
+
+    def _discover_normalization_eqns(self) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Given the generating monomials, infer conversion to Collins-Gisin notation.
+        Each tuple is a list of CG-monomials (as bitvectors) and a list of signs.
+
+        Returns
+        -------
+         List[Tuple[numpy.ndarray, numpy.ndarray]]
+            A list of tuples expressing conversion to Collins-Gisin form
+        """
+        try:
+            self._discover_normalization_eqns_has_been_called += 1
+        except AttributeError:
+            self._discover_normalization_eqns_has_been_called = 0
+        if self._discover_normalization_eqns_has_been_called:
+            warn("ERROR: Discovering equalities TWICE!!")
+            return self.collins_gisin_equalities
+        alternatives_as_boolarrays = {v: np.pad(r, ((1, 0), (0, 0))) for v,r in zip(
+            np.flatnonzero(self._non_cg_boolvec).flat,
+            self._ortho_groups_as_boolarrays)}
+        alternatives_as_signs = {i: np.power(-1, np.count_nonzero(bool_array, axis=1))
+                                 for i, bool_array in alternatives_as_boolarrays.items()}
+
+        collins_gisin_equalities = []
+        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+                disable=not self.verbose,
+                desc="Discovering equalities   "):
+            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
+            if np.any(critical_boolvec_intersection):
+                critical_values_in_boovec = np.flatnonzero(
+                    critical_boolvec_intersection)
+                for i in critical_values_in_boovec.flat:
+                    absent_c_boolvec = bool_vec.copy()
+                    absent_c_boolvec[i] = False
+                    terms_as_boolvecs = np.bitwise_or(
+                        absent_c_boolvec[np.newaxis],
+                        alternatives_as_boolarrays[i])
+                    terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for
+                                       boolvec in terms_as_boolvecs]
+                    terms_as_ids = self.inverse[terms_as_rawidx]
+                    collins_gisin_equalities.append((terms_as_ids, alternatives_as_signs[i]))
+        return collins_gisin_equalities
 
     def _discover_normalization_ineqns(self) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
