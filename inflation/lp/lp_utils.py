@@ -91,7 +91,8 @@ def solveLP_Mosek(objective: Dict = None,
         internal_equalities.append({x: 1, x2: -c})
     for eq in internal_equalities:
         variables.update(eq.keys())
-    variables.difference_update(known_vars.keys())
+    known_vars_as_set = set(known_vars)
+    variables.difference_update(known_vars_as_set)
     variables = sorted(variables)
 
     # Create dictionary var_index - monomial : index
@@ -119,15 +120,19 @@ def solveLP_Mosek(objective: Dict = None,
 
         Arow, Acol, Adata, brow, bcol, bdata = [], [], [], [], [], []
         for i, constraint in enumerate(constraints):
-            constraint_vars = set(constraint)
-            for x in constraint_vars.difference(known_vars):
-                Arow.append(i)
-                Acol.append(var_index[x])
-                Adata.append(constraint[x])
-            for x in constraint_vars.intersection(known_vars):
-                brow.append(i)
-                bcol.append(0)
-                bdata.append(-constraint[x] * known_vars[x])
+            var_part = {var_index[x]: v
+                        for x, v in constraint.items()
+                        if x not in known_vars_as_set}
+            Arow.extend([i]*len(var_part))
+            for j, v in var_part.items():
+                Acol.append(j)
+                Adata.append(v)
+            const_part = sum(-v*known_vars[x]
+                          for x, v in constraint.items()
+                          if x in known_vars_as_set)
+            brow.append(i)
+            bcol.append(0)
+            bdata.append(const_part)
         A = coo_matrix((Adata, (Arow, Acol)), shape=(nof_primal_constraints,
                                                      nof_primal_variables))
         b = coo_matrix((bdata, (brow, bcol)),
@@ -139,15 +144,18 @@ def solveLP_Mosek(objective: Dict = None,
 
         # Objective function coefficients
         c = np.zeros(nof_primal_variables)
-        for x in set(objective).difference(known_vars):
+        for x in set(objective).difference(known_vars_as_set):
             c[var_index[x]] = objective[x]
 
         # Compute c0, the constant (fixed) term in the objective function
-        c0 = 0
-        for x in set(objective).intersection(known_vars):
-            c0 += objective[x] * known_vars[x]
+        c0 = sum(objective[x] * known_vars[x]
+                 for x in set(objective).intersection(known_vars_as_set))
 
         if solve_dual:
+            if verbose>1:
+                print("Proceeding with dual initialization...")
+            # matrix = A.tocsc(copy=False)
+
             nof_primal_lower_bounds = len(lower_bounds)
             nof_primal_nontriv_bounds = nof_primal_lower_bounds + \
                 len(upper_bounds)
@@ -173,9 +181,10 @@ def solveLP_Mosek(objective: Dict = None,
                 matrix = vstack((A, A_extra), format='csr')
                 objective_vector = b + b_extra
             else:
-                matrix = A.asformat('csr', copy=False)
+                matrix = A.tocsr(copy=False)
                 objective_vector = b
-
+            if verbose > 1:
+                print("Sparse matrix reformat complete...")
             # Set bound keys and values for constraints (primal objective)
             blc = c
             buc = c
@@ -200,7 +209,11 @@ def solveLP_Mosek(objective: Dict = None,
             task.putobjsense(mosek.objsense.minimize)
 
         else:
-            matrix = A.asformat('csc', copy=False)
+            if verbose > 1:
+                print("Proceeding with primal initialization...")
+            matrix = A.tocsc(copy=False)
+            if verbose > 1:
+                print("Sparse matrix reformat complete...")
             objective_vector = c
 
             # Set bound keys and bound values (lower and upper) for constraints
@@ -221,17 +234,19 @@ def solveLP_Mosek(objective: Dict = None,
             bkx = [mosek.boundkey.fr] * nof_primal_variables
             blx = [-inf] * nof_primal_variables
             bux = [+inf] * nof_primal_variables
-            for x, i in var_index.items():
-                if x in set(lower_bounds).intersection(upper_bounds):
-                    bkx[i] = mosek.boundkey.ra
-                    blx[i] = lower_bounds[x]
-                    bux[i] = upper_bounds[x]
-                elif x in lower_bounds:
-                    bkx[i] = mosek.boundkey.lo
-                    blx[i] = lower_bounds[x]
-                elif x in upper_bounds:
-                    bkx[i] = mosek.boundkey.up
-                    bux[i] = upper_bounds[x]
+            for x in set(lower_bounds).intersection(upper_bounds):
+                i = var_index[x]
+                bkx[i] = mosek.boundkey.ra
+                blx[i] = lower_bounds[x]
+                bux[i] = upper_bounds[x]
+            for x in set(lower_bounds).difference(upper_bounds):
+                i = var_index[x]
+                bkx[i] = mosek.boundkey.lo
+                blx[i] = lower_bounds[x]
+            for x in set(upper_bounds).difference(lower_bounds):
+                i = var_index[x]
+                bkx[i] = mosek.boundkey.up
+                bux[i] = upper_bounds[x]
 
             # Set the objective sense
             task.putobjsense(mosek.objsense.maximize)
@@ -243,6 +258,8 @@ def solveLP_Mosek(objective: Dict = None,
         else:
             numcon = nof_primal_constraints
             numvar = nof_primal_variables
+        if verbose > 1:
+            print("Starting task.inputdata in Mosek...")
         task.inputdata(maxnumcon=numcon,
                        maxnumvar=numvar,
                        c=objective_vector,
@@ -257,7 +274,6 @@ def solveLP_Mosek(objective: Dict = None,
                        bkx=bkx,
                        blx=blx,
                        bux=bux)
-
         collect()
         if verbose > 1:
             print("Pre-processing took", format(perf_counter() - t0, ".4f"),
