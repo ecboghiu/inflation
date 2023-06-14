@@ -61,7 +61,7 @@ class InflationLP(object):
                  all_nonnegative: bool = True,
                  use_equalities: bool = False,
                  verbose=None) -> None:
-        """Constructor for the InflationSDP class.
+        """Constructor for the InflationLP class.
         """
         self.supports_problem = supports_problem
         if verbose is not None:
@@ -251,7 +251,7 @@ class InflationLP(object):
         self.n_something_knowable = _counter["Semi"]
         self.n_unknowable         = _counter["Unknowable"]
         if self.verbose > 1:
-            print(f"The problem has {self.n_knowable} knowable monomials, " +
+            eprint(f"The problem has {self.n_knowable} knowable monomials, " +
                   f"{self.n_something_knowable} semi-knowable monomials, " +
                   f"and {self.n_unknowable} unknowable monomials.")
 
@@ -550,7 +550,7 @@ class InflationLP(object):
               dualise=True,
               solverparameters=None,
               solver_arguments={},
-              verbose: int = -1) -> None:
+              verbose=None) -> None:
         r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
@@ -585,7 +585,7 @@ class InflationLP(object):
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
             feas_as_optim = False
-        if verbose == -1:
+        if verbose is None:
             real_verbose = self.verbose
         else:
             real_verbose = verbose
@@ -1210,10 +1210,9 @@ class InflationLP(object):
                                  for i, bool_array in alternatives_as_boolarrays.items()}
 
         collins_gisin_inequalities = []
-        for i, bool_vec in tqdm(enumerate(self._monomials_as_lexboolvecs_non_CG),
+        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
                 disable=not self.verbose,
-                desc="Discovering inequalities   ",
-                total=self.nof_collins_gisin_inequalities):
+                desc="Discovering inequalities   "):
             critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
             if np.any(critical_boolvec_intersection):
                 absent_c_boolvec = bool_vec.copy()
