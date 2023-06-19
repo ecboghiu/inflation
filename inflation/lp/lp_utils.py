@@ -261,20 +261,28 @@ def solveLP_Mosek(objective: Dict = None,
                 numvar = nof_primal_variables
             if verbose > 1:
                 print("Starting task.inputdata in Mosek...")
-            task.inputdata(maxnumcon=numcon,
-                           maxnumvar=numvar,
-                           c=objective_vector,
-                           cfix=c0,
-                           aptrb=matrix.indptr[:-1],
-                           aptre=matrix.indptr[1:],
-                           asub=matrix.indices,
-                           aval=matrix.data,
-                           bkc=bkc,
-                           blc=blc,
-                           buc=buc,
-                           bkx=bkx,
-                           blx=blx,
-                           bux=bux)
+            task.inputdata(# maxnumcon=
+                           numcon,
+                           # maxnumvar=
+                           numvar,
+                           # c=
+                           objective_vector,
+                           # cfix=
+                           c0,
+                           # aptrb=
+                           matrix.indptr[:-1],
+                           # aptre=
+                           matrix.indptr[1:],
+                           # asub=
+                           matrix.indices,
+                           # aval=
+                           matrix.data,
+                           bkc,
+                           blc,
+                           buc,
+                           bkx,
+                           blx,
+                           bux)
             collect()
             if verbose > 1:
                 print("Pre-processing took", format(perf_counter() - t0, ".4f"),
