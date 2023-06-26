@@ -538,7 +538,7 @@ class InflationSDP(object):
                  f"moment matrix:\n\t{surprising_objective_terms}")
             self._update_objective()
 
-    def set_values(self,
+    def update_values(self,
                    values: Union[Dict[Union[CompoundMonomial,
                                             InternalAtomicMonomial,
                                             sp.core.symbol.Symbol,
@@ -571,12 +571,10 @@ class InflationSDP(object):
             monomials fixed (``False``). Regardless of this flag, unknowable
             variables can also be fixed.
         """
-        self._reset_solution()
-
-        if (values is None) or (len(values) == 0):
-            self._reset_values()
-            self._cleanup_after_set_values()
+        if (values is None) or len(values) == 0:
             return
+
+        self._reset_solution()
 
         self.use_lpi_constraints = use_lpi_constraints
 
@@ -646,6 +644,18 @@ class InflationSDP(object):
                      f"original moment matrix:\n\t{surprising_semiknowns}")
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
+
+    def set_values(self, values, **kwargs):
+        r"""Exactly like update_values, except it resets all known values to zero
+        as an intermediate step
+        """
+        self._reset_values()
+        if (values is None) or len(values) == 0:
+            self._cleanup_after_set_values()
+            return
+        else:
+            self.update_values(values, **kwargs)
+            return
 
     def solve(self,
               interpreter="MOSEKFusion",

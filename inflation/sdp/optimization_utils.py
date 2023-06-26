@@ -145,14 +145,13 @@ def _maximize_via_bisect(sdp: InflationSDP,
 
     def f(value):
         evaluated_values = make_numerical(symbolic_values, {param: value})
-        sdp._reset_values()
         sdp.set_values(evaluated_values, use_lpi, only_specified)
         sdp.solve(feas_as_optim=True)
         if verbose:
             print(f"Parameter = {value:<6.4g}   " +
                   f"Maximum smallest eigenvalue: {sdp.objective_value:10.4g}")
         return sdp.objective_value
-    crit_param = bisect(f, bounds[0], bounds[1], **bisect_kwargs)
+    crit_param = bisect(f, bounds[0], bounds[1], **bisect_kwargs, full_output=False)
     if return_last:
         return crit_param, sdp.certificate_as_probs()
     else:
