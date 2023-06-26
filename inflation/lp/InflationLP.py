@@ -492,6 +492,9 @@ class InflationLP(object):
             monomials fixed (``False``). Regardless of this flag, unknowable
             variables can also be fixed.
         """
+        if (values is None) or len(values) == 0:
+            return
+
         self._reset_solution()
 
         self.use_lpi_constraints = use_lpi_constraints
