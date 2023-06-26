@@ -1,6 +1,7 @@
 import unittest
 import warnings
 import mosek
+import os
 import numpy as np
 
 from inflation import InflationProblem, InflationLP
@@ -48,3 +49,4 @@ class TestWriters(unittest.TestCase):
                                        msg=f"The expected value and value when"
                                            f" reading from {ext.upper()} are "
                                            f"not equal.")
+                os.remove(f"inst.{ext}")

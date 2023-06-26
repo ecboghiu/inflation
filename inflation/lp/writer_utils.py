@@ -42,16 +42,10 @@ def write_to_lp(args: dict, filename: str) -> None:
             i += 1
 
     f.write("bounds\n")
-    for var in variables:
-        if var in lower_bounds:
-            lb = lower_bounds[var]
-        else:
-            lb = "-infinity"
-        if var in upper_bounds:
-            ub = upper_bounds[var]
-        else:
-            ub = "+infinity"
-        f.write(f" {lb} <= {var} <= {ub}\n")
+    for x in lower_bounds:
+        f.write(f"{lower_bounds[x]} <= {x}")
+    for x in upper_bounds:
+        f.write(f"{x} <= {upper_bounds[x]}")
     f.write("end")
     f.close()
 
