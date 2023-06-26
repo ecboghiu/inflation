@@ -100,6 +100,28 @@ def solveLP_Mosek(objective: Dict = None,
 
     with mosek.Env() as env:
         with mosek.Task(env) as task:
+            task.putintparam(mosek.iparam.presolve_use,
+                             mosek.presolvemode.off) # REVERT!!
+            task.putintparam(mosek.iparam.presolve_lindep_use,
+                             mosek.onoffkey.on)
+            if solve_dual:
+                # REVERT!! Poor choices ONLY demo for Erica
+                # task.putintparam(mosek.iparam.optimizer,
+                #                  mosek.optimizertype.dual_simplex)
+                # task.putintparam(mosek.iparam.sim_solve_form,
+                #                  mosek.solveform.primal)
+                task.putintparam(mosek.iparam.optimizer,
+                                 mosek.optimizertype.dual_simplex)
+                task.putintparam(mosek.iparam.sim_solve_form,
+                                 mosek.solveform.dual)
+            else:
+                # task.putintparam(mosek.iparam.optimizer,
+                #                  mosek.optimizertype.primal_simplex)
+                # task.putintparam(mosek.iparam.sim_solve_form, mosek.solveform.dual) # if force solveform=primal while optimizertype=dual_simplex we get wierd invalid inequality
+                task.putintparam(mosek.iparam.optimizer,
+                                 mosek.optimizertype.dual_simplex)
+                task.putintparam(mosek.iparam.sim_solve_form,
+                                 mosek.solveform.primal)
             if verbose > 0:
                 # Attach a log stream printer to the task
                 task.set_Stream(mosek.streamtype.log, streamprinter)
