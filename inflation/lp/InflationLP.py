@@ -459,15 +459,15 @@ class InflationLP(object):
                  f"generating set:\n\t{surprising_objective_terms}")
             self._update_objective()
 
-    def set_values(self,
-                   values: Union[Dict[Union[CompoundMonomial,
-                   InternalAtomicMonomial,
-                   sp.core.symbol.Symbol,
-                   str],
-                   Union[float, sp.core.expr.Expr]],
-                   None],
-                   use_lpi_constraints: bool = False,
-                   only_specified_values: bool = False) -> None:
+    def update_values(self,
+                      values: Union[Dict[Union[CompoundMonomial,
+                      InternalAtomicMonomial,
+                      sp.core.symbol.Symbol,
+                      str],
+                      Union[float, sp.core.expr.Expr]],
+                      None],
+                      use_lpi_constraints: bool = False,
+                      only_specified_values: bool = False) -> None:
         """Directly assign numerical values to variables in the generating set.
         This is done via a dictionary where keys are the variables to have
         numerical values assigned (either in their operator form, in string
@@ -493,11 +493,6 @@ class InflationLP(object):
             variables can also be fixed.
         """
         self._reset_solution()
-
-        if (values is None) or (len(values) == 0):
-            self._reset_values()
-            self._cleanup_after_set_values()
-            return
 
         self.use_lpi_constraints = use_lpi_constraints
 
@@ -556,6 +551,18 @@ class InflationLP(object):
                      f"generating set:\n\t{surprising_semiknowns}")
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
+
+    def set_values(self, values, **kwargs):
+        r"""Exactly like update_values, except it resets all known values to zero
+        as an intermediate step
+        """
+        self._reset_values()
+        if (values is None) or len(values) == 0:
+            self._cleanup_after_set_values()
+            return
+        else:
+            self.update_values(values, **kwargs)
+            return
 
     def solve(self,
               interpreter="solveLP_Mosek",
