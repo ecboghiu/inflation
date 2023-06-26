@@ -29,6 +29,7 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
 from .lp_utils import solveLP_Mosek
 from functools import reduce
 from ..utils import clean_coefficients, eprint
+from functools import cached_property
 
 class InflationLP(object):
     """
@@ -59,6 +60,7 @@ class InflationLP(object):
                  nonfanout: bool = False,
                  supports_problem: bool = False,
                  all_nonnegative: bool = True,
+                 use_only_equalities: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationLP class.
         """
@@ -93,7 +95,7 @@ class InflationLP(object):
         self.np_dtype = inflationproblem._np_dtype
 
         # The following depends on the form of CG notation
-        self.outcome_cardinalities = inflationproblem.outcomes_per_party + 1
+
 
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
@@ -101,18 +103,52 @@ class InflationLP(object):
         self.lexorder_symmetries = inflationproblem.inf_symmetries
         self._lexorder_lookup = inflationproblem._lexorder_lookup
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
-        self._ortho_groups = inflationproblem._ortho_groups
+        self._ortho_groups_per_party = inflationproblem._ortho_groups_per_party
+        self.has_children = inflationproblem.has_children.copy()
+        if use_only_equalities:
+            self.has_children[:] = True
+        self.does_not_have_children = np.logical_not(self.has_children)
 
-        self._ortho_groups_as_boolarrays = [np.vstack(
-            [self.mon_to_boolvec(op[np.newaxis]) for op in
-             ortho_group]) for ortho_group in self._ortho_groups]
-        bad_boolvecs = [bool_array[-1] for bool_array in self._ortho_groups_as_boolarrays]
-        # TODO: We want to consider ALL outcomes for variables which have children, but not the last outcome for childless variables.
+        all_ortho_groups_as_boolarrays = []
+        for ortho_groups in self._ortho_groups_per_party:
+            ortho_groups_as_boolarrays = []
+            for ortho_group in ortho_groups:
+                ortho_groups_as_boolarrays.append(np.vstack(
+                    [self.mon_to_boolvec(op[np.newaxis]) for op in ortho_group]))
+            all_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
+        CG_adjusting_ortho_groups_as_boolarrays = []
+        CG_nonadjusting_ortho_groups_as_boolarrays = []
+        for i, ortho_groups_as_boolarrays in enumerate(all_ortho_groups_as_boolarrays):
+            if self.does_not_have_children[i]:
+                CG_adjusting_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
+            else:
+                CG_nonadjusting_ortho_groups_as_boolarrays.append(
+                    ortho_groups_as_boolarrays)
+
+
+        self.CG_adjusting_ortho_groups_as_boolarrays = list(chain.from_iterable(CG_adjusting_ortho_groups_as_boolarrays))
+        self.CG_nonadjusting_ortho_groups_as_boolarrays = list(chain.from_iterable(CG_nonadjusting_ortho_groups_as_boolarrays))
+        self.all_ortho_groups_as_boolarrays = list(chain.from_iterable(all_ortho_groups_as_boolarrays))
+
+        # self._ortho_groups_as_boolarrays = [np.vstack(
+        #     [self.mon_to_boolvec(op[np.newaxis]) for op in
+        #      ortho_group]) for ortho_group in self._ortho_groups]
+
+
+        # We want to consider ALL outcomes for variables which have children, but not the last outcome for childless variables.
         # In other words, if we take all the CG equalities, we want to convert them to inequalities when the LHS is non_CG but childless-only.
-        self._non_cg_boolvec = np.bitwise_or.reduce(bad_boolvecs, axis=0)
-        self.has_children = inflationproblem.has_children
-        #For now:
-        self.use_equalities = np.any(self.has_children)
+        if np.any(self.does_not_have_children):
+            bad_boolvecs_for_ineqs = [bool_array[-1] for bool_array in self.CG_adjusting_ortho_groups_as_boolarrays]
+            self.boolvec_for_CG_ineqs = np.bitwise_or.reduce(bad_boolvecs_for_ineqs, axis=0)
+        else:
+            self.boolvec_for_CG_ineqs = self.blank_bool_vec
+        if np.any(self.has_children):
+            bad_boolvecs_for_eqs = [bool_array[-1] for bool_array in self.CG_nonadjusting_ortho_groups_as_boolarrays]
+            self.boolvec_for_FR_eqs = np.bitwise_or.reduce(bad_boolvecs_for_eqs, axis=0)
+        else:
+            self.boolvec_for_FR_eqs = self.blank_bool_vec
+
+
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
 
         if self.verbose > 1:
@@ -171,10 +207,10 @@ class InflationLP(object):
 
         self._raw_lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                                  enumerate(self._raw_monomials_as_lexboolvecs)}
-        if self.use_equalities:
-            self._raw_lookup_dict.update({bitvec.tobytes(): i+self.raw_n_columns
-                                          for i, bitvec in
-                                          enumerate(self._raw_monomials_as_lexboolvecs_non_CG)})
+        # if self.use_equalities:
+        #     self._raw_lookup_dict.update({bitvec.tobytes(): i+self.raw_n_columns
+        #                                   for i, bitvec in
+        #                                   enumerate(self._raw_monomials_as_lexboolvecs_non_CG)})
 
         symmetrization_required = np.any(self.inflation_levels - 1)
         if symmetrization_required:
@@ -201,19 +237,20 @@ class InflationLP(object):
             inverse_CG = unique_indices_CG
             self.num_non_CG = self.raw_n_columns_non_CG
             unique_indices_non_CG = np.arange(self.num_non_CG)
-            inverse_non_CG = unique_indices_non_CG
-        if self.use_equalities:
-            self.inverse = np.hstack((inverse_CG, inverse_non_CG+self.num_CG))
-        else:
-            self.inverse = inverse_CG
+        #     inverse_non_CG = unique_indices_non_CG
+        # if self.use_equalities:
+        #     self.inverse = np.hstack((inverse_CG, inverse_non_CG+self.num_CG))
+        # else:
+        #     self.inverse = inverse_CG
+        self.inverse = inverse_CG
 
         self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[unique_indices_CG]
         self._monomials_as_lexboolvecs_non_CG = self._raw_monomials_as_lexboolvecs_non_CG[unique_indices_non_CG]
-        if self.use_equalities:
-            self._monomials_as_lexboolvecs = np.vstack((
-                self._monomials_as_lexboolvecs,
-                self._monomials_as_lexboolvecs_non_CG
-            ))
+        # if self.use_equalities:
+        #     self._monomials_as_lexboolvecs = np.vstack((
+        #         self._monomials_as_lexboolvecs,
+        #         self._monomials_as_lexboolvecs_non_CG
+        #     ))
 
         self.generating_monomials = [self._lexorder[bool_idx]
                                      for bool_idx in
@@ -225,9 +262,8 @@ class InflationLP(object):
         if self.verbose > 0:
             eprint("Number of variables in the LP:",
                   self.n_columns)
-            if not self.use_equalities:
-                eprint("Number of nontrivial inequality constraints in the LP:",
-                      self.nof_collins_gisin_inequalities)
+            eprint("Number of nontrivial inequality constraints in the LP:",
+                    self.nof_collins_gisin_inequalities)
 
         # Associate Monomials to the remaining entries.
         self.compmonomial_from_idx = dict()
@@ -264,13 +300,13 @@ class InflationLP(object):
 
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
-        self.moment_equalities = []
-        self.moment_inequalities = []
-        if self.use_equalities:
-            # self.collins_gisin_equalities = self._discover_normalization_eqns()
-            self.moment_equalities = self._discover_normalization_eqns_lite()
-        else:
-            self.moment_inequalities = self._discover_normalization_ineqns()
+        # self.moment_equalities = []
+        # self.moment_inequalities = []
+        # if self.use_equalities:
+        #     # self.collins_gisin_equalities = self._discover_normalization_eqns
+        #     self.moment_equalities = self._discover_normalization_eqns_lite
+        # else:
+        #     self.moment_inequalities = self._discover_normalization_ineqns
 
 
         self.moment_upperbounds  = dict()
@@ -700,49 +736,6 @@ class InflationLP(object):
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ##########################################################################
-    def build_raw_lexboolvecs(self) -> Tuple[np.ndarray, np.ndarray]:
-        r"""Creates the generating set of monomials (as boolvecs),
-        both in and out of Collins-Gisin notation.
-        """
-        choices_to_combine = []
-        lengths = []
-        if not self.nonfanout:
-            for raw_boolarray in self._ortho_groups_as_boolarrays:
-                boolvecs = np.pad(raw_boolarray, ((1, 0), (0, 0)))
-                lengths.append(len(boolvecs))
-                choices_to_combine.append(boolvecs)
-        else:
-            for party in range(self.nr_parties):
-                relevant_sources = np.flatnonzero(self.hypergraph[:, party])
-                relevant_inflevels = self.inflation_levels[relevant_sources]
-                max_mon_length = min(relevant_inflevels)
-                phys_mon = [party_physical_monomials(
-                    hypergraph=self.hypergraph,
-                    inflevels=self.inflation_levels,
-                    party=party,
-                    max_monomial_length=i,
-                    settings_per_party=self.setting_cardinalities,
-                    outputs_per_party=self.outcome_cardinalities,
-                    lexorder=self._lexorder)
-                    for i in range(max_mon_length + 1)]
-                boolvecs = np.vstack(
-                    [self.mon_to_boolvec(op) for op in
-                     chain.from_iterable(phys_mon)])
-                lengths.append(len(boolvecs))
-                choices_to_combine.append(boolvecs)
-        # Use reduce to take outer combinations, using bitwise addition
-        if self.verbose > 0:
-            eprint(f"About to generate {np.prod(lengths)} probability placeholders...")
-        is_not_CG_form = [np.matmul(choices, self._non_cg_boolvec) for choices in choices_to_combine]
-        raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine)
-        raw_is_not_CG_form = reduce(nb_outer_bitwise_or, is_not_CG_form)
-        # Sort by operator count
-        operator_count_sort = np.argsort(np.sum(raw_lexboolvecs, axis=1))
-        raw_lexboolvecs = raw_lexboolvecs[operator_count_sort]
-        raw_is_not_CG_form = raw_is_not_CG_form[operator_count_sort]
-        return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
-                raw_lexboolvecs[raw_is_not_CG_form])
-
     def reset(self, which: Union[str, List[str]]) -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
 
@@ -1076,211 +1069,236 @@ class InflationLP(object):
         return np.array([int(s) for s in components], dtype=self.np_dtype)
 
     ###########################################################################
-    # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
+    # ROUTINES RELATED TO THE GENERATION OF THE LP                            #
     ###########################################################################
-    # def _discover_normalization_eqns(self) -> List[
-    #     Tuple[int, Tuple[int, ...]]]:
-    #     """Given the generating monomials, infer implicit normalization
-    #     equalities between them. Each normalization equality is a two element
-    #     tuple; the first element is an integer indicating a particular column,
-    #     the second element is a list of integers indicating other columns such
-    #     that the sum of the latter columns is equal to the former column.
-    #
-    #     Returns
-    #     -------
-    #     List[Tuple[int, List[int]]]
-    #         A list of normalization equalities between columns.
-    #     """
-    #     alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
-    #         np.flatnonzero(self._non_cg_boolvec).flat,
-    #         self._ortho_groups_as_boolarrays)}
-    #
-    #
-    #     column_level_equalities = []
-    #     for i, bool_vec in tqdm(enumerate(self._raw_monomials_as_lexboolvecs),
-    #             disable=not self.verbose,
-    #             desc="Discovering equalities   ",
-    #             total=self.raw_n_columns):
-    #         critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
-    #         critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
-    #         for c in critical_values_in_boovec.flat:
-    #             try:
-    #                 summands = [i]
-    #                 absent_c_boolvec = bool_vec.copy()
-    #                 absent_c_boolvec[c] = False
-    #                 norm_i = self._raw_lookup_dict[absent_c_boolvec.tobytes()]
-    #                 restored_c_boolvecs = np.bitwise_or(
-    #                     absent_c_boolvec[np.newaxis],
-    #                     alternatives_as_boolarrays[c]
-    #                 )
-    #                 for alt_c_boolvec in restored_c_boolvecs:
-    #                     summands.append(
-    #                         self._raw_lookup_dict[alt_c_boolvec.tobytes()])
-    #                 column_level_equalities.append((norm_i,
-    #                                                 tuple(sorted(summands))))
-    #             except KeyError:
-    #                 pass
-    #     return column_level_equalities
 
-    def _discover_normalization_eqns(self) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Given the generating monomials, infer conversion to Collins-Gisin notation.
-        Each tuple is a list of CG-monomials (as bitvectors) and a list of signs.
+    def build_raw_lexboolvecs(self) -> Tuple[np.ndarray, np.ndarray]:
+        r"""Creates the generating set of monomials (as boolvecs),
+        both in and out of Collins-Gisin notation.
+        """
+        choices_to_combine = []
+        lengths = []
+        if not self.nonfanout:
+            for raw_boolarray in self.all_ortho_groups_as_boolarrays:
+                boolvecs = np.pad(raw_boolarray, ((1, 0), (0, 0)))
+                lengths.append(len(boolvecs))
+                choices_to_combine.append(boolvecs)
+        else:
+            outcome_cardinalities = self.inflationproblem.outcomes_per_party + 1 # We consider ALL outcomes when setting up the LP
+            for party in range(self.nr_parties):
+                relevant_sources = np.flatnonzero(self.hypergraph[:, party])
+                relevant_inflevels = self.inflation_levels[relevant_sources]
+                max_mon_length = min(relevant_inflevels)
+                phys_mon = [party_physical_monomials(
+                    hypergraph=self.hypergraph,
+                    inflevels=self.inflation_levels,
+                    party=party,
+                    max_monomial_length=i,
+                    settings_per_party=self.setting_cardinalities,
+                    outputs_per_party=outcome_cardinalities,
+                    lexorder=self._lexorder)
+                    for i in range(max_mon_length + 1)]
+                boolvecs = np.vstack(
+                    [self.mon_to_boolvec(op) for op in
+                     chain.from_iterable(phys_mon)])
+                lengths.append(len(boolvecs))
+                choices_to_combine.append(boolvecs)
+        # Use reduce to take outer combinations, using bitwise addition
+        if self.verbose > 0:
+            eprint(f"About to generate {np.prod(lengths)} probability placeholders...")
+        is_not_CG_form = [np.matmul(choices, self.boolvec_for_CG_ineqs) for choices in choices_to_combine]
+        raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine)
+        raw_is_not_CG_form = reduce(nb_outer_bitwise_or, is_not_CG_form)
+        # Sort by operator count
+        operator_count_sort = np.argsort(np.sum(raw_lexboolvecs, axis=1))
+        raw_lexboolvecs = raw_lexboolvecs[operator_count_sort]
+        raw_is_not_CG_form = raw_is_not_CG_form[operator_count_sort]
+        return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
+                raw_lexboolvecs[raw_is_not_CG_form])
+    @cached_property
+    def moment_equalities_OLD(self) -> List[Dict]:
+        """Given the generating monomials, find Frechet-Boole equalities between them.
 
         Returns
         -------
-         List[Tuple[numpy.ndarray, numpy.ndarray]]
-            A list of tuples expressing conversion to Collins-Gisin form
+         List[Dict]
+            A list of dictionaries expressing Frechet-Boole equalities.
         """
-        try:
-            self._discover_normalization_eqns_has_been_called += 1
-        except AttributeError:
-            self._discover_normalization_eqns_has_been_called = 0
-        if self._discover_normalization_eqns_has_been_called:
-            warn("ERROR: Discovering equalities TWICE!!")
-            return self.collins_gisin_equalities
-        alternatives_as_boolarrays = {v: np.pad(r, ((1, 0), (0, 0))) for v,r in zip(
-            np.flatnonzero(self._non_cg_boolvec).flat,
-            self._ortho_groups_as_boolarrays)}
-        alternatives_as_signs = {i: np.power(-1, np.count_nonzero(bool_array, axis=1))
-                                 for i, bool_array in alternatives_as_boolarrays.items()}
-
         frechet_boole_equalities = []
-        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                disable=not self.verbose,
-                desc="Discovering equalities   "):
-            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
-            critical_values_in_boovec = np.flatnonzero(
-                critical_boolvec_intersection)
+        if np.any(self.boolvec_for_FR_eqs):
+            alternatives_as_boolarrays = {v: np.pad(r, ((1, 0), (0, 0))) for
+                                          v, r in zip(
+                    np.flatnonzero(self.boolvec_for_FR_eqs).flat,
+                    self.CG_nonadjusting_ortho_groups_as_boolarrays)}
+            alternatives_as_signs = {
+                i: np.power(-1, np.count_nonzero(bool_array, axis=1))
+                for i, bool_array in alternatives_as_boolarrays.items()}
+            for bool_vec in tqdm(self._monomials_as_lexboolvecs,
+                    disable=not self.verbose,
+                    desc="Discovering equalities   "):
+                critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_FR_eqs)
+                if np.any(critical_boolvec_intersection):
+                    critical_values_in_boovec = np.flatnonzero(
+                        critical_boolvec_intersection)
 
-            for i in critical_values_in_boovec.flat:
-                absent_c_boolvec = bool_vec.copy()
-                absent_c_boolvec[i] = False
-                terms_as_boolvecs = np.bitwise_or(
-                    absent_c_boolvec[np.newaxis],
-                    alternatives_as_boolarrays[i])
-                terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for
-                                   boolvec in terms_as_boolvecs]
-                terms_as_idxs = self.inverse[terms_as_rawidx]
-                current_eq = defaultdict(int)
-                for idx, s in zip(terms_as_idxs.flat,  alternatives_as_signs[i].flat):
-                    mon = self.compmonomial_from_idx[idx]
-                    current_eq[mon] += s
-                frechet_boole_equalities.append(current_eq)
+                    for i in critical_values_in_boovec.flat:
+                        absent_c_boolvec = bool_vec.copy()
+                        absent_c_boolvec[i] = False
+                        terms_as_boolvecs = np.bitwise_or(
+                            absent_c_boolvec[np.newaxis],
+                            alternatives_as_boolarrays[i])
+                        terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for
+                                           boolvec in terms_as_boolvecs]
+                        terms_as_idxs = self.inverse[terms_as_rawidx]
+                        current_eq = defaultdict(int)
+                        for idx, s in zip(terms_as_idxs.flat,  alternatives_as_signs[i].flat):
+                            mon = self.compmonomial_from_idx[idx]
+                            current_eq[mon] += s
+                        frechet_boole_equalities.append(current_eq)
+            if self.verbose > 0:
+                eprint("Number of nontrivial equality constraints in the LP:",
+                        len(frechet_boole_equalities))
         return frechet_boole_equalities
 
-    def _discover_normalization_eqns_lite(self) -> List[Tuple[np.ndarray, np.ndarray]]:
+    @cached_property
+    def moment_equalities(self) -> List[Dict]:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
-        Each tuple is a list of CG-monomials (as bitvectors) and a list of signs.
 
         Returns
         -------
-         List[Tuple[numpy.ndarray, numpy.ndarray]]
-            A list of tuples expressing conversion to Collins-Gisin form
+         List[Dict]
+            A list of dictionaries expressing conversion to Collins-Gisin form.
         """
-        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
-            np.flatnonzero(self._non_cg_boolvec).flat,
-            self._ortho_groups_as_boolarrays)}
-        alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
-                                 for i, bool_array in alternatives_as_boolarrays.items()}
-
         collins_gisin_equalities = []
-        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                disable=not self.verbose,
-                desc="Discovering equalities lite "):
-            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
-            absent_c_boolvec = bool_vec.copy()
-            absent_c_boolvec[critical_boolvec_intersection] = False
-            critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
-            signs = reduce(nb_outer_bitwise_xor,
-                           (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
-            adjustments = reduce(nb_outer_bitwise_or,
-                           (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
-            terms_as_boolvecs = np.bitwise_or(
-                absent_c_boolvec[np.newaxis],
-                adjustments)
-            #Conversion from inequality to equality:
-            signs = np.hstack((signs,1))
-            terms_as_boolvecs = np.vstack((terms_as_boolvecs, bool_vec))
-            terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
-            terms_as_ids = self.inverse[terms_as_rawidx]
-            true_signs = np.power(-1, signs)
+        if np.any(self.boolvec_for_FR_eqs):
+            alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+                                          for v, r in zip(
+                    np.flatnonzero(self.boolvec_for_FR_eqs).flat,
+                    self.CG_nonadjusting_ortho_groups_as_boolarrays)}
+            alternatives_as_signs = {
+                i: np.count_nonzero(bool_array, axis=1).astype(bool)
+                for i, bool_array in alternatives_as_boolarrays.items()}
+            for bool_vec in tqdm(self._monomials_as_lexboolvecs,
+                    disable=not self.verbose,
+                    desc="Discovering equalities   "):
+                critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_FR_eqs)
+                if np.any(critical_boolvec_intersection):
+                    absent_c_boolvec = bool_vec.copy()
+                    absent_c_boolvec[critical_boolvec_intersection] = False
+                    critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
+                    signs = reduce(nb_outer_bitwise_xor,
+                                   (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
+                    adjustments = reduce(nb_outer_bitwise_or,
+                                   (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
+                    terms_as_boolvecs = np.bitwise_or(
+                        absent_c_boolvec[np.newaxis],
+                        adjustments)
+                    #Conversion from inequality to equality:
+                    signs = np.hstack((signs,1))
+                    terms_as_boolvecs = np.vstack((terms_as_boolvecs, bool_vec))
+                    terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
+                    terms_as_ids = self.inverse[terms_as_rawidx]
+                    true_signs = np.power(-1, signs)
 
-            current_eq = defaultdict(int)
-            for idx, s in zip(terms_as_ids.flat,
-                              true_signs.flat):
-                mon = self.compmonomial_from_idx[idx]
-                current_eq[mon] += s
-            collins_gisin_equalities.append(current_eq)
+                    current_eq = defaultdict(int)
+                    for idx, s in zip(terms_as_ids.flat,
+                                      true_signs.flat):
+                        mon = self.compmonomial_from_idx[idx]
+                        current_eq[mon] += s
+                    collins_gisin_equalities.append(current_eq)
+            if self.verbose > 0:
+                eprint("Number of nontrivial equality constraints in the LP:",
+                        len(collins_gisin_equalities))
         return collins_gisin_equalities
 
-    def _discover_normalization_ineqns(self) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Given the generating monomials, infer conversion to Collins-Gisin notation.
-        Each tuple is a list of CG-monomials (as bitvectors) and a list of signs.
-
-        Returns
-        -------
-         List[Tuple[numpy.ndarray, numpy.ndarray]]
-            A list of tuples expressing conversion to Collins-Gisin form
-        """
-        try:
-            self._discover_normalization_ineqns_has_been_called += 1
-        except AttributeError:
-            self._discover_normalization_ineqns_has_been_called = 0
-        if self._discover_normalization_ineqns_has_been_called:
-            warn("ERROR: Discovering inequalities TWICE!!")
-            return self.collins_gisin_inequalities
-        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
-            np.flatnonzero(self._non_cg_boolvec).flat,
-            self._ortho_groups_as_boolarrays)}
-        alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
-                                 for i, bool_array in alternatives_as_boolarrays.items()}
-
-        collins_gisin_inequalities = []
-        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                disable=not self.verbose,
-                desc="Discovering inequalities   "):
-            critical_boolvec_intersection = np.bitwise_and(bool_vec, self._non_cg_boolvec)
-            absent_c_boolvec = bool_vec.copy()
-            absent_c_boolvec[critical_boolvec_intersection] = False
-            critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
-            signs = reduce(nb_outer_bitwise_xor,
-                           (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
-            adjustments = reduce(nb_outer_bitwise_or,
-                           (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
-            terms_as_boolvecs = np.bitwise_or(
-                absent_c_boolvec[np.newaxis],
-                adjustments)
-            terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
-            terms_as_ids = self.inverse[terms_as_rawidx]
-            true_signs = np.power(-1, signs)
-
-            current_ineq = defaultdict(int)
-            for idx, s in zip(terms_as_ids.flat,
-                              true_signs.flat):
-                mon = self.compmonomial_from_idx[idx]
-                current_ineq[mon] += s
-            collins_gisin_inequalities.append(current_ineq)
-        return collins_gisin_inequalities
-
-    # def _discover_CG_indices(self) -> np.ndarray:
-    #     """Given the generating monomials, infer which are already in Collins-Gisin notation.
+    # @cached_property
+    # def _discover_normalization_eqns_lite(self) -> List[Dict]:
+    #     """Given the generating monomials, infer conversion to Collins-Gisin notation.
     #
     #     Returns
     #     -------
-    #      numpy.ndarray
-    #         A bit vector indicating which columns correspond to CG-form variables
+    #      List[Dict]
+    #         A list of dictionaries expressing conversion to Collins-Gisin form.
     #     """
-    #     try:
-    #         self._discover_CG_indices_has_been_called += 1
-    #     except AttributeError:
-    #         self._discover_CG_indices_has_been_called = 0
-    #     if self._discover_CG_indices_has_been_called:
-    #         warn("ERROR: Discovering CG indices TWICE!!")
-    #         return self.already_collins_gisin_boolmarks
+    #     alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
+    #         np.flatnonzero(self.boolvec_for_CG_ineqs).flat,
+    #         self.CG_adjusting_ortho_groups_as_boolarrays)}
+    #     alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
+    #                              for i, bool_array in alternatives_as_boolarrays.items()}
     #
-    #     return np.logical_not(
-    #         np.matmul(self._raw_monomials_as_lexboolvecs,
-    #                   self._non_cg_boolvec))
+    #     collins_gisin_equalities = []
+    #     for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+    #             disable=not self.verbose,
+    #             desc="Discovering equalities lite "):
+    #         critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_CG_ineqs)
+    #         absent_c_boolvec = bool_vec.copy()
+    #         absent_c_boolvec[critical_boolvec_intersection] = False
+    #         critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
+    #         signs = reduce(nb_outer_bitwise_xor,
+    #                        (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
+    #         adjustments = reduce(nb_outer_bitwise_or,
+    #                        (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
+    #         terms_as_boolvecs = np.bitwise_or(
+    #             absent_c_boolvec[np.newaxis],
+    #             adjustments)
+    #         #Conversion from inequality to equality:
+    #         signs = np.hstack((signs,1))
+    #         terms_as_boolvecs = np.vstack((terms_as_boolvecs, bool_vec))
+    #         terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
+    #         terms_as_ids = self.inverse[terms_as_rawidx]
+    #         true_signs = np.power(-1, signs)
+    #
+    #         current_eq = defaultdict(int)
+    #         for idx, s in zip(terms_as_ids.flat,
+    #                           true_signs.flat):
+    #             mon = self.compmonomial_from_idx[idx]
+    #             current_eq[mon] += s
+    #         collins_gisin_equalities.append(current_eq)
+    #     return collins_gisin_equalities
+
+    @cached_property
+    def moment_inequalities(self) -> List[Dict]:
+        """Given the generating monomials, infer conversion to Collins-Gisin notation.
+
+        Returns
+        -------
+         List[Dict]
+            A list of dictionaries expressing conversion to Collins-Gisin form.
+        """
+        collins_gisin_inequalities = []
+        if np.any(self.boolvec_for_CG_ineqs):
+            alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+                                          for v, r in zip(
+                    np.flatnonzero(self.boolvec_for_CG_ineqs).flat,
+                    self.CG_adjusting_ortho_groups_as_boolarrays)}
+            alternatives_as_signs = {
+                i: np.count_nonzero(bool_array, axis=1).astype(bool)
+                for i, bool_array in alternatives_as_boolarrays.items()}
+            for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+                    disable=not self.verbose,
+                    desc="Discovering inequalities   "):
+                critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_CG_ineqs)
+                absent_c_boolvec = bool_vec.copy()
+                absent_c_boolvec[critical_boolvec_intersection] = False
+                critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
+                signs = reduce(nb_outer_bitwise_xor,
+                               (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
+                adjustments = reduce(nb_outer_bitwise_or,
+                               (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
+                terms_as_boolvecs = np.bitwise_or(
+                    absent_c_boolvec[np.newaxis],
+                    adjustments)
+                terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
+                terms_as_ids = self.inverse[terms_as_rawidx]
+                true_signs = np.power(-1, signs)
+
+                current_ineq = defaultdict(int)
+                for idx, s in zip(terms_as_ids.flat,
+                                  true_signs.flat):
+                    mon = self.compmonomial_from_idx[idx]
+                    current_ineq[mon] += s
+                collins_gisin_inequalities.append(current_ineq)
+        return collins_gisin_inequalities
 
 
     def _discover_inflation_orbits(self, _raw_monomials_as_lexboolvecs) -> np.ndarray:

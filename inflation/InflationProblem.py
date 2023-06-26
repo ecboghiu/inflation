@@ -150,19 +150,19 @@ class InflationProblem(object):
 
         # Unpacking of visible nodes with children
         nodes_with_children = list(self.dag.keys())
-        self.has_children   = np.zeros(self.nr_parties, dtype=int)
+        self.has_children   = np.zeros(self.nr_parties, dtype=bool)
         self.is_network     = set(nodes_with_children).isdisjoint(self.names)
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties),
-                                    dtype=int)
+                                    dtype=bool)
         for parent in nodes_with_children:
             if parent in self.names:
                 ii = names_to_integers[parent]
-                self.has_children[ii] = 1
+                self.has_children[ii] = True
                 for child in dag[parent]:
                     jj = names_to_integers[child]
-                    adjacency_matrix[ii, jj] = 1
+                    adjacency_matrix[ii, jj] = True
         # Compute number of settings for the unpacked variables
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
         settings_per_party_lst = [[s] for s in self.private_settings_per_party]
@@ -302,12 +302,15 @@ class InflationProblem(object):
                     for o in O_vals.flat:
                         measurements_per_party[i, s, o, -1] = o
             self.measurements.append(measurements_per_party)
-        self._ortho_groups = list() # Useful for LP
+        self._ortho_groups_per_party = []
+         # Useful for LP
         for p, measurements_per_party in enumerate(self.measurements):
+            _ortho_groups = []
             O_card = self.outcomes_per_party[p]
-            self._ortho_groups.extend(
+            self._ortho_groups_per_party.append(
                 measurements_per_party.reshape(
                     (-1, O_card, self._nr_properties)))
+        self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
         self._lexorder = np.vstack(self._ortho_groups)
         self._lexorder_lookup = {op.tobytes(): i for i, op in
                                  enumerate(self._lexorder)}
