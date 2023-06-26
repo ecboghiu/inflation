@@ -25,13 +25,13 @@ Evans = InflationProblem({"U_AB": ["A", "B"],
 
 Evans_Unpacked = InflationLP(Evans,
                              nonfanout=False,
+                             use_only_equalities=False,
                              verbose=2)
 semiknown_usage = False
 Evans_Unpacked.set_distribution(p_Q, use_lpi_constraints=semiknown_usage)
-Evans_Unpacked.set_values({
+Evans_Unpacked.update_values({
     '<A_1_0_0_0>': 1 / 2,
-    '<A_1_0_1_0>': 1 / 2
-},
+    '<A_1_0_1_0>': 1 / 2},
     use_lpi_constraints=semiknown_usage)
 
 print(f"Known Values: {Evans_Unpacked.known_moments}")
