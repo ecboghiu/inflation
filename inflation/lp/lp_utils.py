@@ -92,7 +92,7 @@ def solveLP_Mosek(objective: Dict = None,
     for eq in internal_equalities:
         variables.update(eq.keys())
     known_vars_as_set = set(known_vars)
-    variables.difference_update(known_vars_as_set)
+    variables.update(known_vars_as_set)
     variables = sorted(variables)
 
     # Create dictionary var_index - monomial : index
@@ -134,7 +134,7 @@ def solveLP_Mosek(objective: Dict = None,
 
             nof_primal_variables = len(variables)
             nof_primal_inequalities = len(inequalities)
-            nof_primal_equalities = len(internal_equalities)
+            nof_primal_equalities = len(internal_equalities) + len(known_vars)
             nof_primal_constraints = nof_primal_inequalities + \
                 nof_primal_equalities
 
@@ -144,18 +144,22 @@ def solveLP_Mosek(objective: Dict = None,
             Arow, Acol, Adata, brow, bcol, bdata = [], [], [], [], [], []
             for i, constraint in enumerate(constraints):
                 var_part = {var_index[x]: v
-                            for x, v in constraint.items()
-                            if x not in known_vars_as_set}
+                            for x, v in constraint.items()}
                 Arow.extend([i]*len(var_part))
                 for j, v in var_part.items():
                     Acol.append(j)
                     Adata.append(v)
-                const_part = sum(-v*known_vars[x]
-                              for x, v in constraint.items()
-                              if x in known_vars_as_set)
+                const_part = 0
                 brow.append(i)
                 bcol.append(0)
                 bdata.append(const_part)
+            for i, (x, b) in enumerate(known_vars.items()):
+                Arow.append(len(constraints) + i)
+                Acol.append(var_index[x])
+                Adata.append(1)
+                brow.append(len(constraints) + i)
+                bcol.append(0)
+                bdata.append(b)
             A = coo_matrix((Adata, (Arow, Acol)), shape=(nof_primal_constraints,
                                                          nof_primal_variables))
             b = coo_matrix((bdata, (brow, bcol)),
@@ -359,9 +363,8 @@ def solveLP_Mosek(objective: Dict = None,
             certificate = {x: 0 for x in known_vars}
 
             # Each monomial with known value is associated with a sum of duals
-            for i, cons in enumerate(constraints):
-                for x in set(cons).intersection(known_vars):
-                    certificate[x] += y_values[i] * cons[x]
+            for i, (x, b) in enumerate(known_vars.items()):
+                certificate[x] += y_values[len(constraints) + i]
 
             # Clean entries with coefficient zero
             for x in list(certificate):
