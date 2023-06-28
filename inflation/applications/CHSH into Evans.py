@@ -1,3 +1,4 @@
+import mosek
 from inflation import InflationProblem, InflationLP
 from inflation.utils import clean_coefficients
 import numpy as np
@@ -36,7 +37,10 @@ Evans_Unpacked.update_values({
     use_lpi_constraints=semiknown_usage)
 
 # print(f"Known Values: {Evans_Unpacked.known_moments}")
-Evans_Unpacked.solve(dualise=False, verbose=2)
+params = {
+    mosek.iparam.presolve_use: mosek.presolvemode.off,  # REVERT!!
+    mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}  # For precise inequalities
+Evans_Unpacked.solve(dualise=False, verbose=2, solverparameters=params)
 print("Status: ", Evans_Unpacked.status)
 # x_dict = {n: np.round(v, decimals=5) for n, v in
 #           Evans_Unpacked.solution_object['x'].items() if np.abs(v) > 1e-5}

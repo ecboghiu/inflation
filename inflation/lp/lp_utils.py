@@ -28,29 +28,30 @@ def solveLP_Mosek(objective: Dict = None,
     objective : dict
         Monomials (keys) and coefficients (values) that describe
         the objective function
-    known_vars : dict
+    known_vars : dict, optional
         Monomials (keys) and known values of the monomials
-    semiknown_vars : dict
+    semiknown_vars : dict, optional
         Encodes proportionality constraints between monomials
-    inequalities : list of dict
+    inequalities : list of dict, optional
         Inequality constraints with monomials (keys) and coefficients (values)
-    equalities : list of dict
+    equalities : list of dict, optional
         Equality constraints with monomials (keys) and coefficients (values)
-    lower_bounds : dict
+    lower_bounds : dict, optional
         Lower bounds of variables
-    upper_bounds : dict
+    upper_bounds : dict, optional
         Upper bounds of variables
-    solve_dual : bool
+    solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation
-    all_non_negative : bool
+    all_non_negative : bool, optional
         Whether to set all primal variables as non-negative (True) or not
         (False)
-    feas_as_optim: bool
+    feas_as_optim : bool, optional
         NOT IMPLEMENTED
-    verbose: int
+    verbose : int, optional
         verbosity. Higher means more messages. Default 0.
-    solverparameters: dict
-        NOT IMPLEMENTED
+    solverparameters : dict, optional
+        Parameters to pass to the MOSEK solver. See `MOSEK's documentation
+        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_.
 
     Returns
     -------
@@ -100,10 +101,15 @@ def solveLP_Mosek(objective: Dict = None,
 
     with mosek.Env() as env:
         with mosek.Task(env) as task:
-            task.putintparam(mosek.iparam.presolve_use,
-                             mosek.presolvemode.off) # REVERT!!
-            task.putintparam(mosek.iparam.optimizer,
-                             mosek.optimizertype.dual_simplex) # For precise inequalities
+            # Set parameters for the solver depending on value type
+            if solverparameters:
+                for param, val in solverparameters.items():
+                    if isinstance(val, int):
+                        task.putintparam(param, val)
+                    elif isinstance(val, float):
+                        task.putdouparam(param, val)
+                    elif isinstance(val, str):
+                        task.putstrparam(param, val)
             if solve_dual:
                 task.putintparam(mosek.iparam.sim_solve_form,
                                  mosek.solveform.dual)
