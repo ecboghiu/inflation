@@ -66,9 +66,14 @@ def clean_coefficients(cert: Dict[str, float],
     np.ndarray
       The cleaned-up coefficients.
     """
+    chop_tol = np.abs(chop_tol)
     coeffs = np.asarray(list(cert.values()))
-    # Take the biggest one and make it 1
-    normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
+    if chop_tol > 0:
+        # Try to take the smallest nonzero one and make it 1, when possible
+        normalising_factor = np.min(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
+    else:
+        # Take the largest nonzero one and make it 1
+        normalising_factor = np.max(np.abs(coeffs[np.abs(coeffs) > chop_tol]))
     coeffs /= normalising_factor
     # Set to zero very small coefficients
     coeffs[np.abs(coeffs) <= chop_tol] = 0
