@@ -1,4 +1,5 @@
 from inflation import InflationProblem, InflationLP
+from inflation.utils import clean_coefficients
 import numpy as np
 
 p_Q = np.zeros((2, 2, 2, 1, 1, 1), dtype=float)
@@ -34,10 +35,10 @@ Evans_Unpacked.update_values({
     '<A_1_0_1_0>': 1 / 2},
     use_lpi_constraints=semiknown_usage)
 
-print(f"Known Values: {Evans_Unpacked.known_moments}")
+# print(f"Known Values: {Evans_Unpacked.known_moments}")
 Evans_Unpacked.solve(dualise=False, verbose=2)
 print("Status: ", Evans_Unpacked.status)
-x_dict = {n: np.round(v, decimals=5) for n, v in
-          Evans_Unpacked.solution_object['x'].items() if np.abs(v) > 1e-5}
-print(x_dict)
+# x_dict = {n: np.round(v, decimals=5) for n, v in
+#           Evans_Unpacked.solution_object['x'].items() if np.abs(v) > 1e-5}
+# print(x_dict)
 print(Evans_Unpacked.certificate_as_probs())
