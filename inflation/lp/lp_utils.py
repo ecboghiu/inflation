@@ -50,8 +50,14 @@ def solveLP_Mosek(objective: Dict = None,
     verbose : int, optional
         verbosity. Higher means more messages. Default 0.
     solverparameters : dict, optional
-        Parameters to pass to the MOSEK solver. See `MOSEK's documentation
-        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_.
+        Parameters to pass to the MOSEK solver. For example, to control whether
+        presolve is applied before optimization, set
+        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or
+        ``mosek.presolvemode.off``. Or, control which optimizer is used by
+        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK's
+        documentation
+        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_ for
+        more details.
 
     Returns
     -------
