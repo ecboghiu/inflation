@@ -40,15 +40,15 @@ class TestMosek(unittest.TestCase):
         free_values = {
             "non_neg": False,
             "primal_value": 5.5,
-            "dual_certificate": {'1': 2 + 1 + 1 / 2 + 2},
+            "dual_certificate": {'1': -5.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
             "x": {'x': 2, 'y': 1, 'z': 1 / 2, 'w': -1}}
         non_negative_values = {
             "non_neg": True,
             "primal_value": 3.5,
-            "dual_certificate": {'1': 3.5},
+            "dual_certificate": {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
             "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}}
 
-        for solveLP, bound in product((solveLP_Mosek, solveSDP_MosekFUSION),
+        for solveLP, bound in product((solveLP_Mosek,),
                                       (free_values, non_negative_values)):
             with self.subTest():
                 primal_sol = solveLP(**self.simple_lp, solve_dual=False,
@@ -84,24 +84,28 @@ class TestMosek(unittest.TestCase):
         cases = ({"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
                            "all_non_negative": False},
                   "primal_value": 3.5,
-                  "dual_certificate": {'1': 3.5},
+                  "dual_certificate":
+                      {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}},
                  {"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
                            "all_non_negative": True},
                   "primal_value": 3.5,
-                  "dual_certificate": {'1': 3.5},
+                  "dual_certificate":
+                      {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5}},
                  {"args": {"lower_bounds": {'x': -2, 'y': 2},
                            "upper_bounds": {'z': -2, 'w': 2},
                            "all_non_negative": False},
                   "primal_value": 0.0,
-                  "dual_certificate": {'1': 8.0},
+                  "dual_certificate":
+                      {'1': -8.0, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': -2.0, 'y': 2.0, 'z': -2.0, 'w': -1.0}},
                  {"args": {"lower_bounds": {'x': -1, 'y': 1},
                            "upper_bounds": {'w': 1},
                            "all_non_negative": True},
                   "primal_value": 3.5,
-                  "dual_certificate": {'1': 3.5},
+                  "dual_certificate":
+                      {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': 2.0, 'y': 1.0, 'z': 0.5, 'w': 0}})
 
         for solveLP, case in product((solveLP_Mosek,), cases):

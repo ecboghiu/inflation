@@ -363,12 +363,13 @@ def solveLP_Mosek(objective: Dict = None,
                 print("The solution status is unknown.")
                 print(f"   Termination code: {term_tuple}")
 
-            # Extract the certificate
-            certificate = {x: 0 for x in known_vars}
+            # Extract the certificate: c⋅x - y⋅b <= 0
+            certificate = {x: 0 for x in variables}
 
-            # Each monomial with known value is associated with a sum of duals
-            for i, (x, b) in enumerate(known_vars.items()):
-                certificate[x] += y_values[len(constraints) + i]
+            for (x, c) in objective.items():
+                certificate[x] += c
+            for i, x in enumerate(known_vars):
+                certificate[x] -= y_values[len(constraints) + i]
 
             # Clean entries with coefficient zero
             for x in list(certificate):
