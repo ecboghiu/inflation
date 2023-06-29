@@ -14,6 +14,7 @@ from numbers import Real
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
+from scipy.sparse import coo_matrix
 
 from inflation import InflationProblem
 
@@ -1490,6 +1491,147 @@ class InflationLP(object):
             Monomial encoded as a 2D array.
         """
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
+
+    def _prepare_solver_matrices(self, separate_bounds: bool = True) -> dict:
+        """Convert arguments from dictionaries to sparse coo_matrix form to
+        pass to the solver.
+
+        Parameters
+        ----------
+        separate_bounds : bool, optional
+            Whether to have variable bounds as a separate item in
+            ``solverargs`` (True) or absorb them into the inequalities (False).
+            By default, ``True``.
+
+        Returns
+        -------
+        dict
+            The arguments to be passed to the solver.
+
+        Raises
+        ------
+        Exception
+            If the LP has not been generated yet.
+        """
+        if not self._lp_has_been_generated:
+            raise Exception("LP is not generated yet. " +
+                            "Call \"InflationLP._generate_lp()\" first")
+
+        assert set(self.known_moments.keys()).issubset(self.monomials), \
+            ("Error: Tried to assign known values outside of the variables: " +
+             str(set(self.known_moments.keys()
+                     ).difference(self.monomials)))
+
+        # Defining variables in the LP
+        variables = set()
+        variables.update(mon.name for mon in self._processed_objective)
+        variables.update(mon.name for mon in self.known_moments)
+        variables.update(self.constant_term_name)
+        internal_equalities = self.moment_equalities.copy()
+        for mon, (coeff, subs) in self.semiknown_moments.items():
+            internal_equalities.append({mon.name: 1, subs.name: -coeff})
+        for eq in internal_equalities:
+            variables.update(mon.name for mon in eq)
+        for ineq in self.moment_inequalities:
+            variables.update(mon.name for mon in ineq)
+        variables = sorted(variables)
+
+        # Create dictionary to return column index for each variable
+        var_index = {x: i for i, x in enumerate(variables)}
+
+        nof_variables = len(variables)
+        nof_known_vars = len(self.known_moments)
+        nof_equalities = len(internal_equalities) + len(self.known_moments)
+        nof_inequalities = len(self.moment_inequalities)
+
+        # Sparse matrix for objective
+        obj_row = [0] * len(self._processed_objective)
+        obj_col, obj_data = [], []
+        for x, c in self._processed_objective.items():
+            obj_col.append(var_index[x])
+            obj_data.append(c)
+        objective = coo_matrix((obj_data, (obj_row, obj_col)),
+                               shape=(0, nof_variables))
+
+        # Sparse matrix for known values
+        known_row = [0] * (nof_known_vars + 1)
+        known_col, known_data = [], []
+        for x, v in self.known_moments.items():
+            known_col.append(var_index[x])
+            known_data.append(v)
+        # Add the constant 1 in case un-normalized problems remove it
+        known_col.append(var_index[self.constant_term_name])
+        known_data.append(1)
+        known_vars = coo_matrix((known_data, (known_row, known_col)),
+                                shape=(0, nof_variables))
+
+        # Sparse matrix for equalities
+        eq_row, eq_col, eq_data = [], [], []
+        for i, eq in enumerate(internal_equalities):
+            eq_row.extend([i] * len(eq))
+            for x, v in eq.items():
+                eq_col.append(var_index[x])
+                eq_data.append(v)
+        equalities = coo_matrix((eq_data, (eq_row, eq_col)),
+                                shape=(nof_equalities, nof_variables))
+
+        # Sparse matrix for inequalities
+        ineq_row, ineq_col, ineq_data = [], [], []
+        for i, ineq in enumerate(self.moment_inequalities):
+            ineq_row.extend([i] * len(ineq))
+            for x, v in ineq.items():
+                ineq_col.append(var_index[x])
+                ineq_data.append(v)
+        inequalities = coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                                  shape=(nof_inequalities, nof_variables))
+
+        solverargs = {"objective": objective,
+                      "known_vars": known_vars,
+                      "equalities": equalities,
+                      "inequalities": inequalities,
+                      "var_index": var_index}
+
+        nof_lb = len(self._processed_moment_lowerbounds)
+        nof_ub = len(self._processed_moment_upperbounds)
+        if separate_bounds:
+            lb_row = [0] * nof_lb
+            lb_col, lb_data = [], []
+            for x, bound in self._processed_moment_lowerbounds.items():
+                lb_col.append(var_index[x])
+                lb_data.append(bound)
+            lower_bounds = coo_matrix((lb_data, (lb_row, lb_col)),
+                                      shape=(0, nof_lb))
+
+            ub_row = [0] * nof_ub
+            ub_col, ub_data = [], []
+            for x, bound in self._processed_moment_upperbounds.items():
+                ub_col.append(var_index[x])
+                ub_data.append(bound)
+            upper_bounds = coo_matrix((ub_data, (ub_row, ub_col)),
+                                      shape=(0, nof_ub))
+
+            solverargs["lower_bounds"] = lower_bounds
+            solverargs["upper_bounds"] = upper_bounds
+        else:
+            for i, (x, bound) in \
+                    enumerate(self._processed_moment_lowerbounds.items()):
+                ineq_row.extend([nof_inequalities + i] * 2)
+                ineq_col.extend([var_index[x],
+                                 var_index[self.constant_term_name]])
+                ineq_data.extend([1, -bound])
+
+            for i, (x, bound) in \
+                    enumerate(self._processed_moment_upperbounds.items()):
+                ineq_row.extend([nof_inequalities + nof_lb + i] * 2)
+                ineq_col.extend([var_index[x],
+                                 var_index[self.constant_term_name]])
+                ineq_data.extend([-1, bound])
+
+            inequalities = coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                                      shape=(nof_inequalities, nof_variables))
+            solverargs["inequalities"] = inequalities
+
+        return solverargs
 
     def _prepare_solver_arguments(self, separate_bounds: bool = True) -> dict:
         """Prepare arguments to pass to the solver.
