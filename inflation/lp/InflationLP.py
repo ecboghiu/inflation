@@ -267,29 +267,30 @@ class InflationLP(object):
                     self.nof_collins_gisin_inequalities)
 
         # Associate Monomials to the remaining entries.
+        self.monomials = []
         self.compmonomial_from_idx = dict()
-        for idx, mon in tqdm(enumerate(self.generating_monomials),
+        self.compmonomial_to_idx = dict()
+        for idx, mon_as_2d in tqdm(enumerate(self.generating_monomials),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
-            self.compmonomial_from_idx[idx] = self.Monomial(mon, idx)
-        self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
+            mon = self.Monomial(mon_as_2d, idx)
+            self.monomials.append(mon)
+            self.compmonomial_from_idx[idx] = mon
+            self.compmonomial_to_idx[mon] = idx
+        self.first_free_idx = self.n_columns + 1
 
-        self.monomials = list(self.compmonomial_from_idx.values())
-        assert all(v == 1 for v in Counter(self.monomials).values()), \
-            "Multiple indices are being associated to the same monomial"
-        knowable_atoms = set()
-        for mon in self.monomials:
-            knowable_atoms.update(mon.knowable_factors)
-        self.knowable_atoms = [self._monomial_from_atoms([atom])
-                               for atom in knowable_atoms]
-        del knowable_atoms
 
-        _counter = Counter([mon.knowability_status for mon in self.monomials])
-        self.n_knowable           = _counter["Knowable"]
-        self.n_something_knowable = _counter["Semi"]
-        self.n_unknowable         = _counter["Unknowable"]
+        assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
+            (f"Multiple indices are being associated to the same monomial. \n" +
+            f"Expected {self.n_columns}, got {len(self.compmonomial_to_idx.keys())}.")
+
+
         if self.verbose > 1:
+            _counter = Counter([mon.knowability_status for mon in self.monomials])
+            self.n_knowable           = _counter["Knowable"]
+            self.n_something_knowable = _counter["Semi"]
+            self.n_unknowable         = _counter["Unknowable"]
             eprint(f"The problem has {self.n_knowable} knowable monomials, " +
                   f"{self.n_something_knowable} semi-knowable monomials, " +
                   f"and {self.n_unknowable} unknowable monomials.")
@@ -325,6 +326,10 @@ class InflationLP(object):
         if self.verbose > 1:
             print("LP initialization complete, ready to accept further specifics.")
 
+    @cached_property
+    def monomials_as_strings(self):
+        return [mon.name for mon in self.monomials]
+
     def set_bounds(self,
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
@@ -356,6 +361,13 @@ class InflationLP(object):
             self._set_upperbounds(bounds)
         else:
             self._set_lowerbounds(bounds)
+
+    @cached_property
+    def knowable_atoms(self):
+        _knowable_atoms = set()
+        for mon in self.monomials:
+            _knowable_atoms.update(mon.knowable_factors)
+        return _knowable_atoms
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -965,6 +977,8 @@ class InflationLP(object):
         """
         if isinstance(mon, CompoundMonomial):
             return mon
+        elif isinstance(mon, InternalAtomicMonomial):
+            return self._monomial_from_atoms([mon])
         elif isinstance(mon, (sp.core.symbol.Symbol,
                               sp.core.power.Pow,
                               sp.core.mul.Mul)):
@@ -993,10 +1007,10 @@ class InflationLP(object):
         elif isinstance(mon, Real):
             if np.isclose(float(mon), 1):
                 return self.One
-            elif np.isclose(float(mon), 0):
-                return self.Zero
+            # elif np.isclose(float(mon), 0):
+            #     raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
             else:
-                raise Exception(f"Constant monomial {mon} can only be 0 or 1.")
+                raise Exception(f"Constant monomial {mon} can only be 1.")
         else:
             raise Exception(f"sanitise_monomial: {mon} is of type " +
                             f"{type(mon)} and is not supported.")
