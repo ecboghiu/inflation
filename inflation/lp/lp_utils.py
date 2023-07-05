@@ -99,8 +99,6 @@ def solveLP_Mosek(objective: Dict = None,
     for eq in internal_equalities:
         variables.update(eq.keys())
     known_vars_as_set = set(known_vars)
-    variables_minus_known_vars = variables.difference(known_vars_as_set)
-    variables_minus_known_vars = sorted(variables_minus_known_vars)
     variables.update(known_vars_as_set)
     variables = sorted(variables)
 
@@ -343,15 +341,13 @@ def solveLP_Mosek(objective: Dict = None,
             if solve_dual:
                 primal = task.getdualobj(basic)
                 dual = task.getprimalobj(basic)
-                y = [yy[var_index[x]] for x in variables_minus_known_vars]
-                x_values = dict(zip(variables_minus_known_vars, y))
-                y_values = xx
+                x_values = dict(zip(variables, yy))
+                y_values = [-x for x in xx]
             else:
                 primal = task.getprimalobj(basic)
                 dual = task.getdualobj(basic)
-                x = [xx[var_index[x]] for x in variables_minus_known_vars]
-                x_values = dict(zip(variables_minus_known_vars, x))
-                y_values = yy
+                x_values = dict(zip(variables, xx))
+                y_values = [-y for y in yy]
 
             if solutionsta == mosek.solsta.optimal:
                 success = True
