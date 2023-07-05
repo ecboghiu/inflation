@@ -366,8 +366,8 @@ def solveLP_Mosek(objective: Dict = None,
             # Extract the certificate: c⋅x - y⋅b <= 0
             certificate = {x: 0 for x in variables}
 
-            for (x, c) in objective.items():
-                certificate[x] += c
+            for x in set(objective).difference(known_vars):
+                certificate[x] += objective[x]
             for i, x in enumerate(known_vars):
                 certificate[x] -= y_values[len(constraints) + i]
 
