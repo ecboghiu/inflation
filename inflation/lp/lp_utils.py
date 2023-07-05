@@ -99,8 +99,6 @@ def solveLP_Mosek(objective: Dict = None,
     for eq in internal_equalities:
         variables.update(eq.keys())
     known_vars_as_set = set(known_vars)
-    variables_minus_known_vars = variables.difference(known_vars_as_set)
-    variables_minus_known_vars = sorted(variables_minus_known_vars)
     variables.update(known_vars_as_set)
     variables = sorted(variables)
 
@@ -343,14 +341,12 @@ def solveLP_Mosek(objective: Dict = None,
             if solve_dual:
                 primal = task.getdualobj(basic)
                 dual = task.getprimalobj(basic)
-                y = [yy[var_index[x]] for x in variables_minus_known_vars]
-                x_values = dict(zip(variables_minus_known_vars, y))
+                x_values = dict(zip(variables, yy))
                 y_values = xx
             else:
                 primal = task.getprimalobj(basic)
                 dual = task.getdualobj(basic)
-                x = [xx[var_index[x]] for x in variables_minus_known_vars]
-                x_values = dict(zip(variables_minus_known_vars, x))
+                x_values = dict(zip(variables, xx))
                 y_values = yy
 
             if solutionsta == mosek.solsta.optimal:
@@ -366,8 +362,8 @@ def solveLP_Mosek(objective: Dict = None,
             # Extract the certificate: c⋅x - y⋅b <= 0
             certificate = {x: 0 for x in variables}
 
-            for (x, c) in objective.items():
-                certificate[x] += c
+            for x in set(objective).difference(known_vars):
+                certificate[x] += objective[x]
             for i, x in enumerate(known_vars):
                 certificate[x] -= y_values[len(constraints) + i]
 

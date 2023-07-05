@@ -1527,6 +1527,90 @@ class InflationLP(object):
         """
         return np.asarray(array2d, dtype=self.np_dtype).tobytes()
 
+    @cached_property
+    def _sparse_objective(self) -> coo_matrix:
+        """Prepares the objective as a sparse matrix.
+
+        Returns
+        -------
+        coo_matrix
+            Objective as sparse matrix
+        """
+        nof_variables = len(self.var_index)
+
+        obj_row = [0] * len(self._processed_objective)
+        obj_col, obj_data = [], []
+        for x, c in self._processed_objective.items():
+            obj_col.append(self.var_index[x.name])
+            obj_data.append(c)
+        return coo_matrix((obj_data, (obj_row, obj_col)),
+                          shape=(1, nof_variables))
+
+    @cached_property
+    def _sparse_known_vars(self) -> coo_matrix:
+        """Prepares the known values as a sparse matrix.
+
+        Returns
+        -------
+        coo_matrix
+            Known values as sparse matrix
+        """
+        nof_known_vars = len(self.known_moments)
+        nof_variables = len(self.var_index)
+
+        known_row = [0] * (nof_known_vars + 1)
+        known_col, known_data = [], []
+        for x, v in self.known_moments.items():
+            known_col.append(self.var_index[x.name])
+            known_data.append(v)
+        # Add the constant 1 in case un-normalized problems remove it
+        known_col.append(self.var_index[self.constant_term_name])
+        known_data.append(1)
+        return coo_matrix((known_data, (known_row, known_col)),
+                          shape=(1, nof_variables))
+
+    @cached_property
+    def _sparse_equalities(self) -> coo_matrix:
+        """Prepares the equalities as a sparse matrix.
+
+        Returns
+        -------
+        coo_matrix
+            Equalities as sparse matrix
+        """
+        nof_equalities = len(self.moment_equalities) + len(self.known_moments)
+        nof_variables = len(self.var_index)
+
+        eq_row, eq_col, eq_data = [], [], []
+        for i, eq in enumerate(self.moment_equalities):
+            eq_row.extend([i] * len(eq))
+            for x, v in eq.items():
+                eq_col.append(self.var_index[x.name])
+                eq_data.append(v)
+        return coo_matrix((eq_data, (eq_row, eq_col)),
+                          shape=(nof_equalities, nof_variables))
+
+    @cached_property
+    def _sparse_inequalities(self) -> coo_matrix:
+        """Prepares the inequalities as a sparse matrix.
+
+        Returns
+        -------
+        coo_matrix
+            Inequalities as sparse matrix
+        """
+        nof_inequalities = len(self.moment_inequalities)
+        nof_variables = len(self.var_index)
+
+        ineq_row, ineq_col, ineq_data = [], [], []
+        for i, ineq in enumerate(self.moment_inequalities):
+            ineq_row.extend([i] * len(ineq))
+            for x, v in ineq.items():
+                ineq_col.append(self.var_index[x.name])
+                ineq_data.append(v)
+        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                          shape=(nof_inequalities, nof_variables))
+
     def _prepare_solver_matrices(self, separate_bounds: bool = True) -> dict:
         """Convert arguments from dictionaries to sparse coo_matrix form to
         pass to the solver.
@@ -1559,72 +1643,28 @@ class InflationLP(object):
 
         # Defining variables in the LP
         variables = set()
-        variables.update(mon.name for mon in self._processed_objective)
-        variables.update(mon.name for mon in self.known_moments)
-        variables.update(self.constant_term_name)
+        variables.update(self._processed_objective)
+        variables.update(self.known_moments)
         internal_equalities = self.moment_equalities.copy()
         for mon, (coeff, subs) in self.semiknown_moments.items():
-            internal_equalities.append({mon.name: 1, subs.name: -coeff})
+            internal_equalities.append({mon: 1, subs: -coeff})
         for eq in internal_equalities:
-            variables.update(mon.name for mon in eq)
+            variables.update(eq)
         for ineq in self.moment_inequalities:
-            variables.update(mon.name for mon in ineq)
-        variables = sorted(variables)
+            variables.update(ineq)
 
         # Create dictionary to return column index for each variable
-        var_index = {x: i for i, x in enumerate(variables)}
+        self.var_index = {mon.name: i for i, mon in enumerate(variables)}
+        self.var_index.setdefault(self.constant_term_name, len(variables))
 
         nof_variables = len(variables)
-        nof_known_vars = len(self.known_moments)
-        nof_equalities = len(internal_equalities) + len(self.known_moments)
         nof_inequalities = len(self.moment_inequalities)
 
-        # Sparse matrix for objective
-        obj_row = [0] * len(self._processed_objective)
-        obj_col, obj_data = [], []
-        for x, c in self._processed_objective.items():
-            obj_col.append(var_index[x])
-            obj_data.append(c)
-        objective = coo_matrix((obj_data, (obj_row, obj_col)),
-                               shape=(0, nof_variables))
-
-        # Sparse matrix for known values
-        known_row = [0] * (nof_known_vars + 1)
-        known_col, known_data = [], []
-        for x, v in self.known_moments.items():
-            known_col.append(var_index[x])
-            known_data.append(v)
-        # Add the constant 1 in case un-normalized problems remove it
-        known_col.append(var_index[self.constant_term_name])
-        known_data.append(1)
-        known_vars = coo_matrix((known_data, (known_row, known_col)),
-                                shape=(0, nof_variables))
-
-        # Sparse matrix for equalities
-        eq_row, eq_col, eq_data = [], [], []
-        for i, eq in enumerate(internal_equalities):
-            eq_row.extend([i] * len(eq))
-            for x, v in eq.items():
-                eq_col.append(var_index[x])
-                eq_data.append(v)
-        equalities = coo_matrix((eq_data, (eq_row, eq_col)),
-                                shape=(nof_equalities, nof_variables))
-
-        # Sparse matrix for inequalities
-        ineq_row, ineq_col, ineq_data = [], [], []
-        for i, ineq in enumerate(self.moment_inequalities):
-            ineq_row.extend([i] * len(ineq))
-            for x, v in ineq.items():
-                ineq_col.append(var_index[x])
-                ineq_data.append(v)
-        inequalities = coo_matrix((ineq_data, (ineq_row, ineq_col)),
-                                  shape=(nof_inequalities, nof_variables))
-
-        solverargs = {"objective": objective,
-                      "known_vars": known_vars,
-                      "equalities": equalities,
-                      "inequalities": inequalities,
-                      "var_index": var_index}
+        solverargs = {"objective": self._sparse_objective,
+                      "known_vars": self._sparse_known_vars,
+                      "equalities": self._sparse_equalities,
+                      "inequalities": self._sparse_inequalities,
+                      "var_index": self.var_index}
 
         nof_lb = len(self._processed_moment_lowerbounds)
         nof_ub = len(self._processed_moment_upperbounds)
@@ -1632,7 +1672,7 @@ class InflationLP(object):
             lb_row = [0] * nof_lb
             lb_col, lb_data = [], []
             for x, bound in self._processed_moment_lowerbounds.items():
-                lb_col.append(var_index[x])
+                lb_col.append(self.var_index[x.name])
                 lb_data.append(bound)
             lower_bounds = coo_matrix((lb_data, (lb_row, lb_col)),
                                       shape=(0, nof_lb))
@@ -1640,7 +1680,7 @@ class InflationLP(object):
             ub_row = [0] * nof_ub
             ub_col, ub_data = [], []
             for x, bound in self._processed_moment_upperbounds.items():
-                ub_col.append(var_index[x])
+                ub_col.append(self.var_index[x.name])
                 ub_data.append(bound)
             upper_bounds = coo_matrix((ub_data, (ub_row, ub_col)),
                                       shape=(0, nof_ub))
@@ -1648,18 +1688,21 @@ class InflationLP(object):
             solverargs["lower_bounds"] = lower_bounds
             solverargs["upper_bounds"] = upper_bounds
         else:
+            ineq_row = self._sparse_inequalities.row
+            ineq_col = self._sparse_inequalities.col
+            ineq_data = self._sparse_inequalities.data
             for i, (x, bound) in \
                     enumerate(self._processed_moment_lowerbounds.items()):
                 ineq_row.extend([nof_inequalities + i] * 2)
-                ineq_col.extend([var_index[x],
-                                 var_index[self.constant_term_name]])
+                ineq_col.extend([self.var_index[x.name],
+                                 self.var_index[self.constant_term_name]])
                 ineq_data.extend([1, -bound])
 
             for i, (x, bound) in \
                     enumerate(self._processed_moment_upperbounds.items()):
                 ineq_row.extend([nof_inequalities + nof_lb + i] * 2)
-                ineq_col.extend([var_index[x],
-                                 var_index[self.constant_term_name]])
+                ineq_col.extend([self.var_index[x.name],
+                                 self.var_index[self.constant_term_name]])
                 ineq_data.extend([-1, bound])
 
             inequalities = coo_matrix((ineq_data, (ineq_row, ineq_col)),
