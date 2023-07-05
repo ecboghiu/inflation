@@ -559,6 +559,10 @@ class InflationLP(object):
                         if self.verbose > 0:
                             if unknown_mon not in self.monomials:
                                 surprising_semiknowns.add(unknown_mon)
+                                raise Exception(
+                                    "When processing LPI constraints we encountered a " +
+                                    "monomial that does not appear in the list of LP " +
+                                    f"variables:\n\t{unknown_mon}")
                 else:
                     pass
             if (len(surprising_semiknowns) >= 1) and (self.verbose > 0):
@@ -1141,15 +1145,11 @@ class InflationLP(object):
         return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
                 raw_lexboolvecs[raw_is_not_CG_form])
     @cached_property
-    def moment_equalities_OLD(self) -> List[Dict]:
+    def sparse_equalities_OLD(self) -> coo_matrix:
         """Given the generating monomials, find Frechet-Boole equalities between them.
-
-        Returns
-        -------
-         List[Dict]
-            A list of dictionaries expressing Frechet-Boole equalities.
         """
-        frechet_boole_equalities = []
+        eq_row, eq_col, eq_data = [], [], []
+        nof_equalities = 0
         if np.any(self.boolvec_for_FR_eqs):
             alternatives_as_boolarrays = {v: np.pad(r, ((1, 0), (0, 0))) for
                                           v, r in zip(
@@ -1167,6 +1167,7 @@ class InflationLP(object):
                         critical_boolvec_intersection)
 
                     for i in critical_values_in_boovec.flat:
+
                         absent_c_boolvec = bool_vec.copy()
                         absent_c_boolvec[i] = False
                         terms_as_boolvecs = np.bitwise_or(
@@ -1175,26 +1176,25 @@ class InflationLP(object):
                         terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for
                                            boolvec in terms_as_boolvecs]
                         terms_as_idxs = self.inverse[terms_as_rawidx]
-                        current_eq = defaultdict(int)
-                        for idx, s in zip(terms_as_idxs.flat,  alternatives_as_signs[i].flat):
-                            mon = self.compmonomial_from_idx[idx]
-                            current_eq[mon] += s
-                        frechet_boole_equalities.append(current_eq)
+                        true_signs = alternatives_as_signs[i]
+
+                        eq_row.extend([nof_equalities] * len(true_signs))
+                        eq_col.extend(terms_as_idxs.flat)
+                        eq_data.extend(true_signs.flat)
+                        nof_equalities += 1
+
             if self.verbose > 0:
                 eprint("Number of nontrivial equality constraints in the LP:",
-                        len(frechet_boole_equalities))
-        return frechet_boole_equalities
+                        nof_equalities)
+        return coo_matrix((eq_data, (eq_row, eq_col)),
+                          shape=(nof_equalities, self.n_columns))
 
     @cached_property
-    def moment_equalities(self) -> List[Dict]:
+    def sparse_equalities(self) -> coo_matrix:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
-
-        Returns
-        -------
-         List[Dict]
-            A list of dictionaries expressing conversion to Collins-Gisin form.
         """
-        collins_gisin_equalities = []
+        eq_row, eq_col, eq_data = [], [], []
+        nof_equalities = 0
         if np.any(self.boolvec_for_FR_eqs):
             alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
                                           for v, r in zip(
@@ -1203,11 +1203,13 @@ class InflationLP(object):
             alternatives_as_signs = {
                 i: np.count_nonzero(bool_array, axis=1).astype(bool)
                 for i, bool_array in alternatives_as_boolarrays.items()}
+
             for bool_vec in tqdm(self._monomials_as_lexboolvecs,
                     disable=not self.verbose,
                     desc="Discovering equalities   "):
                 critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_FR_eqs)
                 if np.any(critical_boolvec_intersection):
+
                     absent_c_boolvec = bool_vec.copy()
                     absent_c_boolvec[critical_boolvec_intersection] = False
                     critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
@@ -1222,19 +1224,38 @@ class InflationLP(object):
                     signs = np.hstack((signs,1))
                     terms_as_boolvecs = np.vstack((terms_as_boolvecs, bool_vec))
                     terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
-                    terms_as_ids = self.inverse[terms_as_rawidx]
+                    terms_as_idxs = self.inverse[terms_as_rawidx]
                     true_signs = np.power(-1, signs)
 
-                    current_eq = defaultdict(int)
-                    for idx, s in zip(terms_as_ids.flat,
-                                      true_signs.flat):
-                        mon = self.compmonomial_from_idx[idx]
-                        current_eq[mon] += s
-                    collins_gisin_equalities.append(current_eq)
+                    eq_row.extend([nof_equalities] * len(signs))
+                    eq_col.extend(terms_as_idxs.flat)
+                    eq_data.extend(true_signs.flat)
+                    nof_equalities += 1
             if self.verbose > 0:
                 eprint("Number of nontrivial equality constraints in the LP:",
-                        len(collins_gisin_equalities))
-        return collins_gisin_equalities
+                        nof_equalities)
+        return coo_matrix((eq_data, (eq_row, eq_col)),
+                          shape=(nof_equalities, self.n_columns))
+
+
+    def _coo_vec_to_dict(self, input_coo_vec: coo_matrix):
+        if input_coo_vec.has_canonical_format:
+            return dict(zip((self.compmonomial_from_idx[idx] for idx in input_coo_vec.col),
+                     input_coo_vec.data))
+        else:
+            input_coo_vec.sum_duplicates()
+            return self._coo_vec_to_dict(input_coo_vec)
+
+    def _coo_mat_to_dict(self, input_coo_mat: coo_matrix):
+        l = input_coo_mat.shape[0]
+        return [self._coo_vec_to_dict(input_coo_mat.getrow(i).tocoo(copy=False)) for i in tqdm(range(l),
+                    disable=not self.verbose,
+                    desc="Converting sparse matrix into list of dictionaries...")]
+
+
+    @cached_property
+    def moment_equalities(self):
+        return self._coo_mat_to_dict(self.sparse_equalities)
 
     # @cached_property
     # def _discover_normalization_eqns_lite(self) -> List[Dict]:
@@ -1282,15 +1303,11 @@ class InflationLP(object):
     #     return collins_gisin_equalities
 
     @cached_property
-    def moment_inequalities(self) -> List[Dict]:
+    def sparse_inequalities(self) -> coo_matrix:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
-
-        Returns
-        -------
-         List[Dict]
-            A list of dictionaries expressing conversion to Collins-Gisin form.
         """
-        collins_gisin_inequalities = []
+        ineq_row, ineq_col, ineq_data = [], [], []
+        nof_inequalities = 0
         if np.any(self.boolvec_for_CG_ineqs):
             alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
                                           for v, r in zip(
@@ -1302,6 +1319,7 @@ class InflationLP(object):
             for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
                     disable=not self.verbose,
                     desc="Discovering inequalities   "):
+
                 critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_CG_ineqs)
                 absent_c_boolvec = bool_vec.copy()
                 absent_c_boolvec[critical_boolvec_intersection] = False
@@ -1314,16 +1332,19 @@ class InflationLP(object):
                     absent_c_boolvec[np.newaxis],
                     adjustments)
                 terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
-                terms_as_ids = self.inverse[terms_as_rawidx]
+                terms_as_idxs = self.inverse[terms_as_rawidx]
                 true_signs = np.power(-1, signs)
 
-                current_ineq = defaultdict(int)
-                for idx, s in zip(terms_as_ids.flat,
-                                  true_signs.flat):
-                    mon = self.compmonomial_from_idx[idx]
-                    current_ineq[mon] += s
-                collins_gisin_inequalities.append(current_ineq)
-        return collins_gisin_inequalities
+                ineq_row.extend([nof_inequalities] * len(signs))
+                ineq_col.extend(terms_as_idxs.flat)
+                ineq_data.extend(true_signs.flat)
+                nof_inequalities += 1
+        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                          shape=(nof_inequalities, self.n_columns))
+
+    @cached_property
+    def moment_inequalities(self):
+        return self._coo_mat_to_dict(self.sparse_inequalities)
 
 
     def _discover_inflation_orbits(self, _raw_monomials_as_lexboolvecs) -> np.ndarray:
