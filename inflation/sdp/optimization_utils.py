@@ -145,7 +145,9 @@ def _maximize_via_bisect(sdp: InflationSDP,
 
     def f(value):
         evaluated_values = make_numerical(symbolic_values, {param: value})
-        sdp.set_values(evaluated_values, use_lpi, only_specified)
+        sdp.set_values(evaluated_values,
+                       use_lpi_constraints=use_lpi,
+                       only_specified_values=only_specified)
         sdp.solve(feas_as_optim=True)
         if verbose:
             print(f"Parameter = {value:<6.4g}   " +
@@ -218,7 +220,9 @@ def _maximize_via_dual(sdp: InflationSDP,
     while new_ub < old_ub - precision:
         old_ub = new_ub
         evaluated_values = make_numerical(symbolic_values, {param: new_ub})
-        sdp.set_values(evaluated_values, use_lpi, only_specified)
+        sdp.set_values(evaluated_values,
+                       use_lpi_constraints=use_lpi,
+                       only_specified_values=only_specified)
         sdp.solve(feas_as_optim=True)
         discovered_certificates.append(sdp.certificate_as_probs())
         # The feasible region is where the certificate is positive
