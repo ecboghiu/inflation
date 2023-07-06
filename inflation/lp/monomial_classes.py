@@ -10,60 +10,37 @@ from functools import total_ordering
 from numbers import Real
 from typing import Dict, List, Tuple
 
-from ..sdp.fast_npa import mon_is_zero
 from ..sdp.monomial_utils import (compute_marginal,
                                   name_from_atom_names,
                                   symbol_from_atom_name,
                                   symbol_prod)
+from functools import reduce
+# import methodtools
 
 
 @total_ordering
 class InternalAtomicMonomial(object):
-    # TODO: Sparse boolean ndarray representation might be useful, since order
-    # never matters in the LP case.
-    __slots__ = ["as_ndarray",
+    __slots__ = ["as_int_vec",
+                 "as_bool_vec",
+                 "as_2d_array",
                  "is_one",
-                 "is_zero",
                  "is_knowable",
                  "n_operators",
-                 "op_length",
                  "rectified_ndarray",
-                 "lp"
+                 "lp",
+                 "name",
+                 "symbol",
+                 "signature"
                  ]
 
-    def __init__(self, inflation_lp_instance, array2d: np.ndarray):
+    def __init__(self, inflation_lp_instance, as_1d_vec: np.ndarray):
         r"""This class models a moment
         :math:`\langle Op_1 Op_2\dots Op_n\rangle` on the inflated problem,
         which cannot be decomposed into products of other moments. It is used
         as a building block for the ``CompoundMonomial`` class. It is
-        initialized with a 2D array representing a moment and an an instance of
-        ``InflationSDP``, used for methods that depend on the scenario.
+        initialized with a 1D array representing a moment and an instance of
+        ``InflationLP``, used for methods that depend on the scenario.
 
-        2D Array encoding
-        -----------------
-        A moment :math:`M=\langle Op_1 Op_2\dots Op_n\rangle` can be specified
-        by a 2D array with `n` rows, one for each operator :math:`Op_k`.
-        Row `k` contains a list of integers which encode information about the
-        operator :math:`Opk`.
-         * The first integer is an index in ``{1,...,nr_parties}``, indicating
-           the party, where `nr_parties` is the number of parties in the DAG.
-         * The second-to-last and last integers encode the setting and the
-           outcome of the operator, respectively.
-         * The remaining positions ``i`` indicate on which copy of the source
-           ``i-1`` (-1 because the first index encodes the party) the operator
-           is acting, with value ``0`` representing no support on the
-           ``i-1``-th source.
-
-        For example, the moment
-        :math:`\langle A^{0,2,1}_{x=2,a=3} C^{2,0,1}_{z=4,c=5}\rangle`, where
-        the complete list of parties is ``["A","B","C"]`` corresponds to the
-        following array:
-
-        >>> m = np.array([[1, 0, 2, 1, 2, 3],
-                          [3, 2, 0, 1, 4, 5]])
-
-        Given that this moment is knowable and can be associated with a
-        probability, it is given the name ``"pAC(35|24)"``.
 
         Parameters
         ----------
@@ -76,27 +53,31 @@ class InternalAtomicMonomial(object):
             A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D
             array.
         """
-        self.lp         = inflation_lp_instance
-        self.as_ndarray = np.asarray(array2d, dtype=self.lp.np_dtype)
-        self.n_operators, self.op_length = self.as_ndarray.shape
-        assert self.op_length == self.lp._nr_properties, \
-            ("An AtomicMonomial should be a 2-d array where each row is a list"
-             + f" of integers of length {self.lp._nr_properties}. The first "
-             + "index corresponds to the party, the last one to the outcome, "
-             + "the second-to-last to the setting, and the rest to the "
-             + "inflation copies.")
-        self.is_zero     = mon_is_zero(self.as_ndarray)
+        self.lp = inflation_lp_instance
+        if as_1d_vec.dtype == bool:
+            self.as_bool_vec = as_1d_vec
+            self.as_int_vec = np.flatnonzero(self.as_bool_vec).astype(int)
+        else:
+            self.as_int_vec = as_1d_vec.astype(int)
+            self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()
+            self.as_bool_vec[self.as_int_vec] = True
+
+        self.as_2d_array = inflation_lp_instance._lexorder[self.as_int_vec]
+        self.n_operators = len(self.as_int_vec)
         self.is_one      = (self.n_operators == 0)
-        self.is_knowable = (self.is_zero
-                            or self.is_one
-                            or self.lp._atomic_knowable_q(self.as_ndarray))
+        self.is_knowable = (self.is_one or
+                            self.lp._atomic_knowable_q(self.as_2d_array))
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
-                self.lp.rectify_fake_setting(np.take(self.as_ndarray,
+                inflation_lp_instance.rectify_fake_setting(np.take(self.as_2d_array,
                                                      [0, -2, -1],
                                                      axis=1)),
                 dtype=int)
+
+        self.name = self._name
+        self.signature = self._signature
+        self.symbol = self._symbol
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -132,15 +113,13 @@ class InternalAtomicMonomial(object):
         return self.name
 
     @property
-    def name(self):
+    def _name(self):
         """A string representing the monomial. In case of knowable monomials,
         it is of the form ``p(outputs|inputs)``. Otherwise it represents the
         expectation value of the monomial with bracket notation.
         """
         if self.is_one:
             return "1"
-        elif self.is_zero:
-            return "0"
         elif self.is_knowable:
             # Use notation p(outputs|settings)
             # Convention in numpy monomial format is first party = 1
@@ -159,17 +138,21 @@ class InternalAtomicMonomial(object):
         else:
             # Use expectation value notation
             operators = []
-            for op in self.as_ndarray:
+            for op in self.as_2d_array:
                 operators.append("_".join([self.lp.names[op[0] - 1]]
                                           + [str(i) for i in op[1:]]))
             return "<" + " ".join(operators) + ">"
 
     @property
-    def signature(self):
-        return self.lp._from_2dndarray(self.as_ndarray)
+    def _signature(self):
+        # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
+        return self.as_bool_vec.tobytes()
+        return tuple(sorted())
+
+
 
     @property
-    def symbol(self):
+    def _symbol(self):
         """Return a sympy Symbol representing the monomial."""
         return symbol_from_atom_name(self.name)
 
@@ -190,10 +173,7 @@ class InternalAtomicMonomial(object):
             The value of the corresponding probability (which can be a marginal
             involving only a few parties)
         """
-        if self.is_zero:
-            return 0.
-        else:
-            return compute_marginal(prob_array, self.rectified_ndarray)
+        return compute_marginal(prob_array, self.rectified_ndarray)
 
 
 class CompoundMonomial(object):
@@ -203,7 +183,6 @@ class CompoundMonomial(object):
                  "is_atomic",
                  "is_knowable",
                  "is_one",
-                 "is_zero",
                  "knowability_status",
                  "knowable_factors",
                  "mask_matrix",
@@ -214,7 +193,11 @@ class CompoundMonomial(object):
                  "name",
                  "signature",
                  "symbol",
-                 "unknowable_factors"
+                 "unknowable_factors",
+                 "as_bool_vec",
+                 "as_int_vec"
+                 # "_names_of_factors",
+                 # "_symbols_of_factors"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
@@ -258,13 +241,25 @@ class CompoundMonomial(object):
             self.knowability_status = "Unknowable"
         else:
             self.knowability_status = "Semi"
-        self.is_zero = any(factor.is_zero for factor in self.factors)
         self.is_one  = (all(factor.is_one for factor in self.factors)
                         or (self.n_factors == 0))
         self.as_counter  = Counter(self.factors)
+
+
+        if self.is_one:
+            self.as_bool_vec = np.zeros(0, dtype=bool)
+            self.as_int_vec = np.zeros(0, dtype=int)
+        elif self.is_atomic:
+            self.as_bool_vec = self.factors[0].as_bool_vec
+            self.as_int_vec = self.factors[0].as_int_vec
+        else:
+            self.as_bool_vec = reduce(np.bitwise_or,
+                                      (factor.as_bool_vec for factor in self.factors))
+            self.as_int_vec = np.hstack([factor.as_int_vec for factor in self.factors]).astype(int)
+
         self.name        = name_from_atom_names(self._names_of_factors)
         self.symbol      = symbol_prod(self._symbols_of_factors)
-        self.signature   = tuple(sorted(self.factors))
+        self.signature   = self.factors
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
@@ -370,6 +365,8 @@ class CompoundMonomial(object):
                 known_value *= (known_monomials[factor] ** power)
             except KeyError:
                 unknown_counter[factor] = power
+        # unknown_factors = sorted(unknown_counter.elements(),
+        #                          key=lambda factor: factor.as_int_vec.tobytes())
         unknown_factors = list(unknown_counter.elements())
         if (len(unknown_factors) == 0):
             known_status = "Known"

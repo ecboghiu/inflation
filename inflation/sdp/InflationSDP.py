@@ -118,7 +118,7 @@ class InflationSDP(object):
         self._is_knowable_q_non_networks = \
             self.InflationProblem._is_knowable_q_non_networks
         self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
-        self.factorize_monomial = self.InflationProblem.factorize_monomial
+        self.factorize_monomial = self.InflationProblem.factorize_monomial_2d
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2

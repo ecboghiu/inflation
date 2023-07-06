@@ -29,7 +29,7 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
 from .lp_utils import solveLP_Mosek
 from functools import reduce
-from ..utils import clean_coefficients, eprint
+from ..utils import clean_coefficients, eprint, partsextractor
 from functools import cached_property
 
 class InflationLP(object):
@@ -89,7 +89,8 @@ class InflationLP(object):
         self.private_setting_cardinalities = inflationproblem.private_settings_per_party
         self.expected_distro_shape = inflationproblem.expected_distro_shape
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
-        self.factorize_monomial = inflationproblem.factorize_monomial
+        self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
+        self.factorize_monomial_1d = inflationproblem.factorize_monomial_1d
         self._is_knowable_q_non_networks = \
             inflationproblem._is_knowable_q_non_networks
         self._nr_properties = inflationproblem._nr_properties
@@ -173,7 +174,7 @@ class InflationLP(object):
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
-        self.Zero = self.Monomial(self.zero_operator, idx=0)
+        # self.Zero = self.Monomial(self.zero_operator, idx=0)
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._generate_lp()
 
@@ -253,10 +254,10 @@ class InflationLP(object):
         #         self._monomials_as_lexboolvecs_non_CG
         #     ))
 
-        self.generating_monomials = [self._lexorder[bool_idx]
-                                     for bool_idx in
-                                     self._monomials_as_lexboolvecs]
-        self.n_columns = len(self.generating_monomials)
+        # self.generating_monomials = [self._lexorder[bool_idx]
+        #                              for bool_idx in
+        #                              self._monomials_as_lexboolvecs]
+        self.n_columns = len(self._monomials_as_lexboolvecs)
 
         self.nof_collins_gisin_inequalities = self.num_non_CG
 
@@ -270,13 +271,16 @@ class InflationLP(object):
         _monomials = []
         _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
-        for idx, mon_as_2d in tqdm(enumerate(self.generating_monomials),
+        for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
-            mon = self.Monomial(mon_as_2d, idx)
+            mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
             _monomials.append(mon)
             _compmonomial_from_idx[idx] = mon
+            # if mon in _compmonomial_to_idx:
+            #     alt_id = _compmonomial_to_idx[mon]
+            #     raise Exception(f"Two monomials are being mixed up! {idx}->{self._lexorder[self._monomials_as_lexboolvecs[idx]]} and \n {alt_id}->{self._lexorder[self._monomials_as_lexboolvecs[alt_id]]}")
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
@@ -833,7 +837,7 @@ class InflationLP(object):
     # ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #
     ###########################################################################
     def _AtomicMonomial(self,
-                        array2d: np.ndarray) -> InternalAtomicMonomial:
+                        array1d: np.ndarray) -> InternalAtomicMonomial:
         """Construct an instance of the `InternalAtomicMonomial` class from
         a 2D array description of a monomial.
 
@@ -842,39 +846,35 @@ class InflationLP(object):
 
         Parameters
         ----------
-        array2d : numpy.ndarray
-            Monomial encoded as a 2D array of integers, where each row encodes
-            one of the operators appearing in the monomial.
+        array1d : numpy.ndarray
+            Monomial encoded as a 1D array of integers relative to _lexorder.
 
         Returns
         -------
         InternalAtomicMonomial
             An instance of the `InternalAtomicMonomial` class representing the
-            input 2D array monomial.
+            input.
         """
-        key = self._from_2dndarray(array2d)
+        key = self.blank_bool_vec.copy() #QUANTUM CASE WILL BE DIFFERENT
+        key[array1d] = True
         try:
-            return self.atomic_monomial_from_hash[key]
+            return self.atomic_monomial_from_hash[key.tobytes()]
         except KeyError:
             if len(self.lexorder_symmetries) == 1:
-                mon = InternalAtomicMonomial(self, array2d)
+                mon = InternalAtomicMonomial(self, array1d)
                 self.atomic_monomial_from_hash[key] = mon
                 return mon
             else:
-                mon_as_boolvec = self.mon_to_boolvec(mon=array2d)
-                mon_as_symboolvec = mon_as_boolvec[self.lexorder_symmetries]
+                mon_as_symboolvec = key[self.lexorder_symmetries]
                 mon_as_symboolvec = mon_as_symboolvec[
                     np.lexsort(mon_as_symboolvec.T[::-1])]
                 mon_as_boolvec = mon_as_symboolvec[-1]
-                repr_array2d = self._lexorder[mon_as_boolvec]
-                mon = InternalAtomicMonomial(self, repr_array2d)
-                for mon_as_boolvec in mon_as_symboolvec:
-                    repr_array2d = self._lexorder[mon_as_boolvec]
-                    key = repr_array2d.tobytes()
-                    self.atomic_monomial_from_hash[key] = mon
+                mon = InternalAtomicMonomial(self, np.flatnonzero(mon_as_boolvec))
+                for alt_key in mon_as_symboolvec:
+                    self.atomic_monomial_from_hash[alt_key.tobytes()] = mon
                 return mon
 
-    def Monomial(self, array2d: np.ndarray, idx=-1) -> CompoundMonomial:
+    def Monomial(self, array1d: np.ndarray, idx=-1) -> CompoundMonomial:
         r"""Create an instance of the `CompoundMonomial` class from a 2D array.
         An instance of `CompoundMonomial` is a collection of
         `InternalAtomicMonomial`.
@@ -882,8 +882,7 @@ class InflationLP(object):
         Parameters
         ----------
         array2d : numpy.ndarray
-            Moment encoded as a 2D array of integers, where each row encodes
-            one of the operators appearing in the moment.
+            Moment encoded as a 1D array of integers, relative to _lexorder
         idx : int, optional
             Assigns an integer index to the resulting monomial, which can be
             used as an id, by default -1.
@@ -893,25 +892,8 @@ class InflationLP(object):
         CompoundMonomial
             The monomial factorised into AtomicMonomials, all brought to
             representative form under inflation symmetries.
-
-        Examples
-        --------
-
-        The moment
-        :math:`\langle A^{0,2,1}_{x=2,a=3}C^{2,0,1}_{z=1,c=1}
-        C^{1,0,2}_{z=0,c=0}\rangle` corresponds to the following 2D array:
-
-        >>> m = np.array([[1, 0, 2, 1, 2, 3],
-                          [3, 2, 0, 1, 1, 1],
-                          [3, 1, 0, 2, 0, 0]])
-
-        The resulting monomial, ``InflationSDP.Monomial(m)``, is a collection
-        of two ``InternalAtomicMonomial`` s,
-        :math:`\langle A^{0,1,1}_{x=2,a=3}C^{1,0,1}_{z=1,c=1}\rangle` and
-        :math:`\langle C^{1,0,1}_{z=0,c=0}\rangle`, after factorizing the input
-        monomial and reducing the inflation indices of each of the factors.
         """
-        _factors = self.factorize_monomial(array2d, canonical_order=False)
+        _factors = self.factorize_monomial_1d(array1d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
@@ -934,19 +916,10 @@ class InflationLP(object):
         CompoundMonomial
             A `CompoundMonomial` with atomic factors given by `atoms`.
         """
-        list_of_atoms = []
-        for factor in atoms:
-            if factor.is_zero:
-                list_of_atoms = [factor]
-                break
-            elif not factor.is_one:
-                list_of_atoms.append(factor)
-            else:
-                pass
-        atoms = tuple(sorted(list_of_atoms))
+        key = tuple(sorted(atoms))
         try:
-            mon = self.monomial_from_atoms[atoms]
-            return mon
+            return self.monomial_from_atoms[key]
+            # raise KeyError()
         except KeyError:
             mon = CompoundMonomial(atoms)
             try:
@@ -954,7 +927,7 @@ class InflationLP(object):
                 self.first_free_idx += 1
             except AttributeError:
                 pass
-            self.monomial_from_atoms[atoms]   = mon
+            self.monomial_from_atoms[key] = mon
             self.monomial_from_name[mon.name] = mon
             return mon
 
@@ -1002,12 +975,15 @@ class InflationLP(object):
             return self._sanitise_monomial(array)
         elif isinstance(mon, (tuple, list, np.ndarray)):
             array = np.asarray(mon, dtype=self.np_dtype)
-            assert array.ndim == 2, \
-                "The monomial representations must be 2d arrays."
-            assert array.shape[-1] == self._nr_properties, \
-                "The input does not conform to the operator specification."
-            # canon = self._to_canonical_memoized(array)
-            return self.Monomial(array)
+            assert array.ndim <= 2, \
+                "The monomial representations must be 1d or 2d arrays."
+            if array.ndim == 2:
+                return self._sanitise_monomial(self.mon_to_lexrepr(array))
+            elif array.ndim == 1:
+                return self.Monomial(array)
+            else:
+                assert array.ndim == 2, \
+                    "The monomial representations must be 2d arrays."
         elif isinstance(mon, str):
             try:
                 return self.monomial_from_name[mon]
@@ -1825,7 +1801,7 @@ class InflationLP(object):
             return [self._lexorder_lookup[self._from_2dndarray(op)] for op in
                     mon]
         except KeyError:
-            return []
+            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder.")
 
     def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
         boolvec = self.blank_bool_vec.copy()

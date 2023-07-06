@@ -272,7 +272,7 @@ class InflationProblem(object):
 
         all_unique_inflation_indices = np.unique(
             np.vstack(self.inflation_indices_per_party),
-            axis=0)
+            axis=0).astype(self._np_dtype)
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
                                         in enumerate(
@@ -311,10 +311,15 @@ class InflationProblem(object):
                 measurements_per_party.reshape(
                     (-1, O_card, self._nr_properties)))
         self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
-        self._lexorder = np.vstack(self._ortho_groups)
+        self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._lexorder_lookup = {op.tobytes(): i for i, op in
                                  enumerate(self._lexorder)}
         self._nr_operators = len(self._lexorder)
+
+        self._lexorder_for_factorization = np.array([
+            self._inflation_indices_hash[op.tobytes()]
+            for op in self._lexorder[:, 1:-2]],
+            dtype=int)
 
         # Discover the inflation symmetries
         self.inf_symmetries = self.lexorder_perms_from_inflation()
@@ -395,9 +400,9 @@ class InflationProblem(object):
         else:
             return True
 
-    def factorize_monomial(self,
-                           monomial: np.ndarray,
-                           canonical_order=False) -> Tuple[np.ndarray, ...]:
+    def factorize_monomial_2d(self,
+                              monomial_as_2darray: np.ndarray,
+                              canonical_order=False) -> Tuple[np.ndarray, ...]:
         """Split a moment/expectation value into products of moments according
         to the support of the operators within the moment. The moment is
         encoded as a 2d array where each row is an operator. If
@@ -421,7 +426,7 @@ class InflationProblem(object):
 
         Parameters
         ----------
-        monomial : numpy.ndarray
+        monomial_as_2darray : numpy.ndarray
             Monomial in 2d array form.
         canonical_order: bool, optional
             Whether to return the different factors in a canonical order.
@@ -440,7 +445,7 @@ class InflationProblem(object):
                                  [3, 1, 4, 0, 0, 0],
                                  [3, 6, 6, 0, 0, 0],
                                  [3, 4, 5, 0, 0, 0]])
-        >>> factorised = factorize_monomial(monomial)
+        >>> factorised = factorize_monomial(monomial_as_2darray)
         [array([[1, 0, 1, 1, 0, 0]]),
          array([[1, 0, 3, 3, 0, 0]]),
          array([[2, 1, 0, 2, 0, 0],
@@ -450,20 +455,63 @@ class InflationProblem(object):
          array([[3, 6, 6, 0, 0, 0]])]
         """
         if not self.ever_factorizes:
-            return (monomial,)
-        n = len(monomial)
+            return (monomial_as_2darray,)
+        n = len(monomial_as_2darray)
         if n <= 1:
-            return (monomial,)
+            return (monomial_as_2darray,)
 
         inflation_indices_position = [self._inflation_indices_hash[
-            op.tobytes()] for op in monomial.astype(self._np_dtype)[:, 1:-2]]
+            op.tobytes()] for op in monomial_as_2darray.astype(self._np_dtype)[:, 1:-2]]
         adj_mat = self._inflation_indices_overlap[inflation_indices_position][
             :, inflation_indices_position]
 
         component_labels = nb_classify_disconnected_components(adj_mat)
         disconnected_components = tuple(
-            monomial[component_labels == i]
+            monomial_as_2darray[component_labels == i]
             for i in range(component_labels.max(initial=0) + 1))
+
+        if canonical_order:
+            disconnected_components = tuple(sorted(disconnected_components,
+                                                   key=lambda x: x.tobytes()))
+        return disconnected_components
+
+    def factorize_monomial_1d(self,
+                              monomial_as_1darray: np.ndarray,
+                              canonical_order=False) -> Tuple[np.ndarray, ...]:
+        """Split a moment/expectation value into products of moments according
+        to the support of the operators within the moment. The moment is
+        encoded as a 1d array representing elements of the lexorder.
+
+        The output is a tuple of ndarrays where each array represents another
+        monomial s.t. their product is equal to the original monomial.
+
+        Parameters
+        ----------
+        monomial_as_1darray : numpy.ndarray
+            Monomial in 1d array form.
+        canonical_order: bool, optional
+            Whether to return the different factors in a canonical order.
+
+        Returns
+        -------
+        Tuple[numpy.ndarray]
+            A tuple of ndarrays, where each array represents a picklist for an atomic monomial
+            factor.
+        """
+        if not self.ever_factorizes:
+            return (monomial_as_1darray,)
+
+        inflation_indices_position = self._lexorder_for_factorization[monomial_as_1darray]
+        if len(inflation_indices_position) <= 1:
+            return (monomial_as_1darray,)
+
+        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
+            :, inflation_indices_position]
+        component_labels = nb_classify_disconnected_components(adj_mat)
+        # print(f"DEBUG: Component labels {component_labels}")
+        nof_components = component_labels.max(initial=0) + 1
+        disconnected_components = tuple(monomial_as_1darray[component_labels == i]
+            for i in range(nof_components))
 
         if canonical_order:
             disconnected_components = tuple(sorted(disconnected_components,

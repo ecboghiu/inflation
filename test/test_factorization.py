@@ -19,7 +19,7 @@ class TestFactorization(unittest.TestCase):
                              [3, 1, 4, 0, 0, 0],
                              [3, 6, 6, 0, 0, 0],
                              [3, 4, 5, 0, 0, 0]])
-        factorised = prob.factorize_monomial(monomial, canonical_order=True)
+        factorised = prob.factorize_monomial_2d(monomial, canonical_order=True)
         correct    = np.array([np.array([[1, 0, 1, 1, 0, 0]]),
                                np.array([[1, 0, 3, 3, 0, 0]]),
                                np.array([[2, 1, 0, 2, 0, 0],
@@ -52,7 +52,7 @@ class TestFactorization(unittest.TestCase):
                              [4, 0, 3, 1, 0],
                              [4, 0, 2, 1, 0],
                              [4, 0, 1, 1, 0]])
-        factorised = prob.factorize_monomial(monomial)
+        factorised = prob.factorize_monomial_2d(monomial)
         correct    = np.array([np.array([[1, 1, 0, 1, 0],
                                          [1, 1, 0, 0, 0],
                                          [2, 1, 1, 0, 0],
@@ -84,8 +84,8 @@ class TestFactorization(unittest.TestCase):
         A1C2 = np.array([[0, 1, 0, 0, 0],
                          [2, 0, 2, 0, 0]])
 
-        self.assertEqual(len(prob.factorize_monomial(A1C1)),
-                         len(prob.factorize_monomial(A1C2)),
+        self.assertEqual(len(prob.factorize_monomial_2d(A1C1)),
+                         len(prob.factorize_monomial_2d(A1C2)),
                          "Causally independent parties are being treated "
                          + "different depending on the copy indices.")
 
@@ -99,7 +99,7 @@ class TestFactorization(unittest.TestCase):
         monomial = np.array([[1, 0, 1, 1, 0, 0],
                              [2, 1, 1, 0, 0, 0],
                              [3, 1, 0, 2, 0, 0]])
-        factorised = prob.factorize_monomial(monomial)
+        factorised = prob.factorize_monomial_2d(monomial)
 
         self.assertEqual(monomial.tolist(), factorised[0].tolist(),
                          "Non-factorizable monomials are being factorized.")
@@ -111,7 +111,7 @@ class TestFactorization(unittest.TestCase):
         monomial = np.array([[1, 1, 0, 0],
                              [1, 1, 1, 0],
                              [1, 1, 0, 0]])
-        factorised = prob.factorize_monomial(monomial)
+        factorised = prob.factorize_monomial_2d(monomial)
 
         self.assertEqual(monomial.tolist(), factorised[0].tolist(),
                          "Non-factorizable, non-commutative monomials are "
