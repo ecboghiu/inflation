@@ -267,18 +267,23 @@ class InflationLP(object):
                     self.nof_collins_gisin_inequalities)
 
         # Associate Monomials to the remaining entries.
-        self.monomials = []
-        self.compmonomial_from_idx = dict()
-        self.compmonomial_to_idx = dict()
+        _monomials = []
+        _compmonomial_from_idx = dict()
+        _compmonomial_to_idx = dict()
         for idx, mon_as_2d in tqdm(enumerate(self.generating_monomials),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
             mon = self.Monomial(mon_as_2d, idx)
-            self.monomials.append(mon)
-            self.compmonomial_from_idx[idx] = mon
-            self.compmonomial_to_idx[mon] = idx
+            _monomials.append(mon)
+            _compmonomial_from_idx[idx] = mon
+            _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
+        self.monomials = np.array(_monomials, dtype=object)
+        self.compmonomial_from_idx = _compmonomial_from_idx
+        self.compmonomial_to_idx = _compmonomial_to_idx
+        del _monomials, _compmonomial_from_idx, _compmonomial_to_idx
+        collect(generation=2)
 
 
         assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
@@ -1238,19 +1243,17 @@ class InflationLP(object):
                           shape=(nof_equalities, self.n_columns))
 
 
-    def _coo_vec_to_dict(self, input_coo_vec: coo_matrix):
-        if input_coo_vec.has_canonical_format:
-            return dict(zip((self.compmonomial_from_idx[idx] for idx in input_coo_vec.col),
-                     input_coo_vec.data))
-        else:
-            input_coo_vec.sum_duplicates()
-            return self._coo_vec_to_dict(input_coo_vec)
+    def _coo_vec_to_dict(self, col: np.ndarray, data: np.ndarray):
+        return dict(zip(self.monomials[col].flat, data))
+        # return dict(zip(partsextractor(self.monomials, col), data))
 
     def _coo_mat_to_dict(self, input_coo_mat: coo_matrix):
-        l = input_coo_mat.shape[0]
-        return [self._coo_vec_to_dict(input_coo_mat.getrow(i).tocoo(copy=False)) for i in tqdm(range(l),
-                    disable=not self.verbose,
-                    desc="Converting sparse matrix into list of dictionaries...")]
+        input_lil_mat = input_coo_mat.tolil(copy=False)
+        return [self._coo_vec_to_dict(*args) for args in tqdm(zip(input_lil_mat.rows,
+                                                                  input_lil_mat.data),
+                                                              disable=not self.verbose,
+                                                              total=input_coo_mat.shape[0],
+                                                              desc="Converting sparse matrix into list of dictionaries...")]
 
 
     @cached_property
