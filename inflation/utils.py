@@ -7,7 +7,7 @@ import numpy as np
 from itertools import chain
 from typing import Iterable, Union, List, Tuple, Dict
 from sys import stderr
-
+from operator import itemgetter
 def flatten(nested):
     """Keeps flattening a nested lists of lists until  the
     first element of the resulting list is not a list.
@@ -83,3 +83,14 @@ def clean_coefficients(cert: Dict[str, float],
 
 def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
+
+def partsextractor(thing_to_take_parts_of, indices):
+    if hasattr(indices, '__iter__'):
+        if len(indices) == 0:
+            return tuple()
+        elif len(indices) == 1:
+            return (itemgetter(*indices)(thing_to_take_parts_of),)
+        else:
+            return itemgetter(*indices)(thing_to_take_parts_of)
+    else:
+        return itemgetter(indices)(thing_to_take_parts_of)
