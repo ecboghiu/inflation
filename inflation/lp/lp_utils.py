@@ -8,6 +8,356 @@ from time import perf_counter
 from gc import collect
 
 
+def solveLP(objective: coo_matrix = coo_matrix([]),
+            known_vars: coo_matrix = coo_matrix([]),
+            inequalities: coo_matrix = coo_matrix([]),
+            equalities: coo_matrix = coo_matrix([]),
+            lower_bounds: coo_matrix = coo_matrix([]),
+            upper_bounds: coo_matrix = coo_matrix([]),
+            solve_dual: bool = False,
+            all_non_negative: bool = True,
+            feas_as_optim: bool = False,
+            verbose: int = 0,
+            solverparameters: Dict = None,
+            variables: List = None
+            ) -> Dict:
+    """Internal function to solve an LP with the Mosek Optimizer API using
+    sparse matrices. Columns of each matrix correspond to a fixed order of
+    variables in the LP.
+
+    Parameters
+    ----------
+    objective : coo_matrix, optional
+        Objective function with coefficients as matrix entries.
+    known_vars : coo_matrix, optional
+        Known values of the monomials with values as matrix entries.
+    inequalities : coo_matrix, optional
+        Inequality constraints in matrix form.
+    equalities : coo_matrix, optional
+        Equality constraints in matrix form.
+    lower_bounds : coo_matrix, optional
+        Lower bounds of variables with bounds as matrix entries.
+    upper_bounds : coo_matrix, optional
+        Upper bounds of variables with bounds as matrix entries.
+    solve_dual : bool, optional
+        Whether to solve the dual (``True``) or primal (``False``) formulation.
+        By default, ``False``.
+    all_non_negative : bool, optional
+        Whether to set all primal variables as non-negative. By default,
+        ``True``.
+    feas_as_optim : bool, optional
+        NOT IMPLEMENTED
+    verbose : int, optional
+        Verbosity. Higher means more messages. By default, 0.
+    solverparameters : dict, optional
+        Parameters to pass to the MOSEK solver. For example, to control whether
+        presolve is applied before optimization, set
+        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or
+        ``mosek.presolvemode.off``. Or, control which optimizer is used by
+        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK's
+        documentation
+        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_ for
+        more details.
+    variables : list
+        Monomials by name in same order as column indices of all other solver
+        arguments
+
+    Returns
+    -------
+    dict
+        Primal objective value, dual objective value, problem status, success
+        status, dual certificate (as dictionary and sparse matrix), x values,
+        and response code.
+    """
+
+    if verbose > 1:
+        t0 = perf_counter()
+        t_total = perf_counter()
+        print("Starting pre-processing for the LP solver...")
+
+    # Since the value of infinity is ignored, define it for symbolic purposes
+    inf = 0.0
+
+    with mosek.Env() as env:
+        with mosek.Task(env) as task:
+            # Set parameters for the solver depending on value type
+            if solverparameters:
+                for param, val in solverparameters.items():
+                    if isinstance(val, int):
+                        task.putintparam(param, val)
+                    elif isinstance(val, float):
+                        task.putdouparam(param, val)
+                    elif isinstance(val, str):
+                        task.putstrparam(param, val)
+            if solve_dual:
+                task.putintparam(mosek.iparam.sim_solve_form,
+                                 mosek.solveform.dual)
+            else:
+                task.putintparam(mosek.iparam.sim_solve_form,
+                                 mosek.solveform.primal)
+            if verbose > 0:
+                # Attach a log stream printer to the task
+                task.set_Stream(mosek.streamtype.log, streamprinter)
+                task.putintparam(mosek.iparam.log_include_summary,
+                                 mosek.onoffkey.on)
+                task.putintparam(mosek.iparam.log_storage, 1)
+            if verbose < 2:
+                task.putintparam(mosek.iparam.log_sim, 0)
+                task.putintparam(mosek.iparam.log_intpnt, 0)
+
+            # Initialize constraint matrix
+            constraints = vstack((inequalities, equalities))
+            (nof_primal_constraints, nof_primal_variables) = constraints.shape
+
+            # Initialize b vector (RHS of constraints)
+            b = [0] * nof_primal_constraints
+
+            # Add known values as equality constraints to the constraint matrix
+            nof_known_vars = known_vars.nnz
+            kv_row = [*range(nof_known_vars)]
+            kv_col = known_vars.col
+            kv_data = [1] * nof_known_vars
+            kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
+                                   shape=(nof_known_vars,
+                                          nof_primal_variables))
+            constraints = vstack((constraints, kv_matrix))
+            b.extend(known_vars.data)
+
+            (nof_primal_constraints, nof_primal_variables) = constraints.shape
+            nof_primal_inequalities = inequalities.shape[0]
+            nof_primal_equalities = equalities.shape[0] + nof_known_vars
+            nof_lb = lower_bounds.nnz
+            nof_ub = upper_bounds.nnz
+
+            if verbose > 0:
+                print(f"Size of constraint matrix: {constraints.shape}")
+
+            if solve_dual:
+                if verbose > 1:
+                    print("Proceeding with dual initialization...")
+
+                nof_primal_nontriv_bounds = nof_lb + nof_ub
+                nof_dual_constraints = nof_primal_variables
+                nof_dual_variables = nof_primal_constraints + \
+                    nof_primal_nontriv_bounds
+
+                # Add variable bounds as inequality constraints to matrix
+                if nof_primal_nontriv_bounds > 0:
+                    bounds_row = [*range(nof_primal_nontriv_bounds)]
+                    bounds_col = np.concatenate((lower_bounds.col,
+                                                 upper_bounds.col))
+                    bounds_data = ([1] * nof_lb) + ([-1] * nof_ub)
+                    bounds_matrix = coo_matrix(
+                        (bounds_data, (bounds_row, bounds_col)),
+                        shape=(nof_primal_nontriv_bounds,
+                               nof_primal_variables))
+                    matrix = vstack((constraints, bounds_matrix),
+                                    format='csr')
+                    b_extra = np.concatenate(
+                        (lower_bounds.data, [-ub for ub in upper_bounds.data]))
+                    objective_vector = np.concatenate((b, b_extra))
+                else:
+                    matrix = constraints.tocsr(copy=False)
+                    objective_vector = b
+
+                if verbose > 1:
+                    print("Sparse matrix reformat complete...")
+
+                # Set bound keys and values for constraints (primal objective)
+                blc = objective.toarray().ravel()
+                buc = objective.toarray().ravel()
+
+                # Set constraint bounds corresponding to primal variable bounds
+                if all_non_negative:
+                    bkc = [mosek.boundkey.lo] * nof_dual_constraints
+                else:
+                    bkc = [mosek.boundkey.fx] * nof_dual_constraints
+
+                # Set bound keys and values for variables
+                # Non-positivity for y corresponding to inequalities
+                bkx = [mosek.boundkey.up] * nof_primal_inequalities + \
+                      [mosek.boundkey.fr] * nof_primal_equalities + \
+                      [mosek.boundkey.up] * nof_primal_nontriv_bounds
+                blx = [-inf] * nof_dual_variables
+                bux = [0.0] * nof_primal_inequalities + \
+                      [+inf] * nof_primal_equalities + \
+                      [0.0] * nof_primal_nontriv_bounds
+
+                # Set the objective sense
+                task.putobjsense(mosek.objsense.minimize)
+
+            else:
+                if verbose > 1:
+                    print("Proceeding with primal initialization...")
+
+                matrix = constraints.tocsc(copy=False)
+
+                if verbose > 1:
+                    print("Sparse matrix reformat complete...")
+
+                objective_vector = objective.toarray().ravel()
+
+                # Set bound keys and values for constraints
+                # Ax + b >= 0 -> Ax >= -b
+                bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
+                      [mosek.boundkey.fx] * nof_primal_equalities
+                blc = buc = b
+
+                # Set correct bounds if x >= 0
+                if all_non_negative:
+                    zeros = np.zeros(nof_primal_variables)
+                    lb_col = [*range(nof_primal_variables)]
+                    # If there are no lower bounds, resize creates array of
+                    # zeros. If there are lower bounds, negative bounds are
+                    # corrected to zero.
+                    lb_data = np.maximum(
+                        np.resize(lower_bounds.toarray(),
+                                  (1, nof_primal_variables)),
+                        zeros).ravel()
+                else:
+                    lb_col = lower_bounds.col
+                    lb_data = lower_bounds.toarray().ravel()
+                ub_col = upper_bounds.col
+                ub_data = upper_bounds.toarray().ravel()
+
+                # Set bound keys and bound values for variables
+                bkx = [mosek.boundkey.fr] * nof_primal_variables
+                blx = [-inf] * nof_primal_variables
+                bux = [+inf] * nof_primal_variables
+                for col in range(nof_primal_variables):
+                    if col in lb_col and col in ub_col:
+                        bkx[col] = mosek.boundkey.ra
+                        blx[col] = lb_data[col]
+                        bux[col] = ub_data[col]
+                    elif col in lb_col:
+                        bkx[col] = mosek.boundkey.lo
+                        blx[col] = lb_data[col]
+                    elif col in ub_col:
+                        bux[col] = mosek.boundkey.up
+                        bux[col] = ub_data[col]
+
+                # Set the objective sense
+                task.putobjsense(mosek.objsense.maximize)
+
+            # Add all the problem data to the task
+            if solve_dual:
+                numcon = nof_dual_constraints
+                numvar = nof_dual_variables
+            else:
+                numcon = nof_primal_constraints
+                numvar = nof_primal_variables
+            if verbose > 1:
+                print("Starting task.inputdata in Mosek...")
+            task.inputdata(# maxnumcon=
+                           numcon,
+                           # maxnumvar=
+                           numvar,
+                           # c=
+                           objective_vector,
+                           # cfix=
+                           0,
+                           # aptrb=
+                           matrix.indptr[:-1],
+                           # aptre=
+                           matrix.indptr[1:],
+                           # asub=
+                           matrix.indices,
+                           # aval=
+                           matrix.data,
+                           bkc,
+                           blc,
+                           buc,
+                           bkx,
+                           blx,
+                           bux)
+            collect()
+            if verbose > 1:
+                print("Pre-processing took",
+                      format(perf_counter() - t0, ".4f"), "seconds.\n")
+                t0 = perf_counter()
+
+            # Solve the problem
+            if verbose > 0:
+                print("\nSolving the problem...\n")
+            trmcode = task.optimize()
+            if verbose > 1:
+                print("Solving took", format(perf_counter() - t0, ".4f"),
+                      "seconds.")
+            basic = mosek.soltype.bas
+            (problemsta,
+             solutionsta,
+             skc,
+             skx,
+             skn,
+             xc,
+             xx,
+             yy,
+             slc,
+             suc,
+             slx,
+             sux,
+             snx) = task.getsolution(basic)
+
+            # Get objective values, solutions x, dual values y
+            if solve_dual:
+                primal = task.getdualobj(basic)
+                dual = task.getprimalobj(basic)
+                x_values = dict(zip(variables, yy))
+                y_values = xx
+            else:
+                primal = task.getprimalobj(basic)
+                dual = task.getdualobj(basic)
+                x_values = dict(zip(variables, xx))
+                y_values = yy
+
+            if solutionsta == mosek.solsta.optimal:
+                success = True
+            else:
+                success = False
+            status_str = solutionsta.__repr__()
+            term_tuple = mosek.Env.getcodedesc(trmcode)
+            if solutionsta == mosek.solsta.unknown and verbose > 0:
+                print("The solution status is unknown.")
+                print(f"   Termination code: {term_tuple}")
+
+            # Extract the certificate as a sparse matrix: c⋅x - y⋅b <= 0
+            y_values = y_values[nof_primal_constraints - nof_known_vars:]
+            cert_row = [0] * nof_primal_variables
+            cert_col = [*range(nof_primal_variables)]
+            cert_data = [0] * nof_primal_variables
+            obj_data = objective.toarray().ravel()
+            for col in np.setdiff1d(objective.col, known_vars.col):
+                cert_data[col] -= obj_data[col]
+            for i, col in enumerate(known_vars.col):
+                cert_data[col] += y_values[i]
+            sparse_certificate = coo_matrix((cert_data, (cert_row, cert_col)),
+                                            shape=(1, nof_primal_variables))
+
+            # Certificate as a dictionary
+            certificate = dict(zip(variables,
+                                   sparse_certificate.toarray().ravel()))
+
+            # Clean entries with coefficient zero
+            for x in list(certificate):
+                if np.isclose(certificate[x], 0):
+                    del certificate[x]
+
+            if verbose > 1:
+                print("\nTotal execution time:",
+                      format(perf_counter() - t_total, ".4f"), "seconds.")
+
+            return {
+                "primal_value": primal,
+                "dual_value": dual,
+                "status": status_str,
+                "success": success,
+                "dual_certificate": certificate,
+                "sparse_certificate": sparse_certificate,
+                "x": x_values,
+                "term_code": term_tuple
+            }
+
+
 def solveLP_Mosek(objective: Dict = None,
                   known_vars: Dict = None,
                   semiknown_vars: Dict = None,
@@ -405,3 +755,20 @@ if __name__ == '__main__':
     }
     raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
     raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
+
+    obj = coo_matrix(([-2, 1, 1, 1], ([0, 0, 0, 0], [1, 2, 3, 4])),
+                     shape=(1, 5))
+    kv = coo_matrix(([1], ([0], [0])), shape=(1, 5))
+    ineq = coo_matrix(([2, -1, 5, -1, 0.5, -1, 1, 1],
+                       ([0, 0, 1, 1, 2, 2, 3, 3], [0, 2, 0, 3, 0, 4, 0, 1])),
+                      shape=(4, 5))
+    eq = coo_matrix(([-3, 0.5, 2], ([0, 0, 0], [0, 2, 3])), shape=(1, 5))
+    simple_lp_mat = {
+        "objective": obj,
+        "known_vars": kv,
+        "inequalities": ineq,
+        "equalities": eq,
+        "variables": ['1', 'w', 'x', 'y', 'z']
+    }
+    mat_sol = solveLP(**simple_lp_mat, solve_dual=False)
+    mat_sol_d = solveLP(**simple_lp_mat, solve_dual=True)
