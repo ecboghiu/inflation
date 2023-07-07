@@ -88,6 +88,7 @@ class InflationLP(object):
         self.network_scenario = inflationproblem.is_network
         self.inflation_levels = inflationproblem.inflation_level_per_source
         self.setting_cardinalities = inflationproblem.settings_per_party
+        self.outcome_cardinalities = inflationproblem.outcomes_per_party
         self.private_setting_cardinalities = inflationproblem.private_settings_per_party
         self.expected_distro_shape = inflationproblem.expected_distro_shape
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
@@ -1086,7 +1087,7 @@ class InflationLP(object):
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         else:
-            outcome_cardinalities = self.inflationproblem.outcomes_per_party + 1 # We consider ALL outcomes when setting up the LP
+            fake_outcome_cardinalities = self.outcome_cardinalities + 1 # We consider ALL outcomes when setting up the LP
             for party in range(self.nr_parties):
                 relevant_sources = np.flatnonzero(self.hypergraph[:, party])
                 relevant_inflevels = self.inflation_levels[relevant_sources]
@@ -1097,7 +1098,7 @@ class InflationLP(object):
                     party=party,
                     max_monomial_length=i,
                     settings_per_party=self.setting_cardinalities,
-                    outputs_per_party=outcome_cardinalities,
+                    outputs_per_party=fake_outcome_cardinalities,
                     lexorder=self._lexorder)
                     for i in range(max_mon_length + 1)]
                 boolvecs = np.vstack(
