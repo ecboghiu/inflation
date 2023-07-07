@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import warnings
 
-from inflation import InflationProblem, InflationSDP
+from inflation import InflationProblem, InflationSDP, InflationLP
 
 bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
 bilocality = InflationProblem(dag=bilocalDAG,
@@ -414,6 +414,18 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.status, "infeasible",
                          "The commuting SDP is not identifying incompatible " +
                          "distributions.")
+        lp_fanout = InflationLP(self.cutInflation_c, nonfanout=False)
+        lp_fanout.set_distribution(self.GHZ(0.5 + 1e-2))
+        lp_fanout.solve()
+        self.assertEqual(lp_fanout.success, False,
+                         "The fanout LP is not identifying incompatible " +
+                         "distributions.")
+        lp_nonfanout = InflationLP(self.cutInflation_c, nonfanout=True)
+        lp_nonfanout.set_distribution(self.GHZ(0.5 + 1e-2))
+        lp_nonfanout.solve()
+        self.assertEqual(lp_nonfanout.success, False,
+                         "The nonfanout LP is not identifying incompatible " +
+                         "distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective <= 0,
                         "The commuting SDP with feasibility as optimization " +
@@ -422,6 +434,16 @@ class TestSDPOutput(unittest.TestCase):
         sdp.solve()
         self.assertEqual(sdp.status, "feasible",
                          "The commuting SDP is not recognizing compatible " +
+                         "distributions.")
+        lp_fanout.set_distribution(self.GHZ(0.5 - 1e-2))
+        lp_fanout.solve()
+        self.assertEqual(lp_fanout.success, True,
+                         "The fanout LP is not recognizing compatible " +
+                         "distributions.")
+        lp_nonfanout.set_distribution(self.GHZ(0.5 - 1e-2))
+        lp_nonfanout.solve()
+        self.assertEqual(lp_nonfanout.success, True,
+                         "The nonfanout LP is not identifying incompatible " +
                          "distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective >= 0,
