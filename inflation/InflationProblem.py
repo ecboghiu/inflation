@@ -405,9 +405,21 @@ class InflationProblem(object):
     @cached_property
     def _lexrepr_to_names(self):
         # Use expectation value notation. As ndarray for rapid multiextract.
-        as_list = ["_".join([self.names[op[0] - 1]]
-                                          + [str(i) for i in op[1:]])
-                for op in self._lexorder]
+        as_list = []
+        for op in self._lexorder:
+            name = self.names[op[0] - 1]
+            inflation_indices_as_strs = [str(i) for i in op[1:-2]]
+            if self.settings_per_party[op[0]-1] == 1:
+                setting_as_str = '∅'
+            else:
+                setting_as_str = str(op[-2])
+            outcome_as_str = str(op[-1])
+            char_list = [name] + inflation_indices_as_strs + [setting_as_str, outcome_as_str]
+            op_as_str = "_".join(char_list)
+            as_list.append(op_as_str)
+        # as_list = ["_".join([self.names[op[0] - 1]]
+        #                                   + [str(i) for i in op[1:]])
+        #         for op in self._lexorder]
         return np.array(as_list)
 
     @cached_property

@@ -1063,7 +1063,7 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the operator.
         """
-        components = op_string.split("_")
+        components = op_string.replace('∅','0').split("_")
         assert len(components) == self._nr_properties, \
             f"There need to be {self._nr_properties} properties to match " + \
             "the scenario."
