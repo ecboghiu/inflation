@@ -313,12 +313,6 @@ class InflationLP(object):
         #     self.moment_inequalities = self._discover_normalization_ineqns
 
 
-        self.moment_upperbounds  = dict()
-        if self.all_nonnegative:
-            self.moment_lowerbounds = dict()
-        else:
-            self.moment_lowerbounds  = {m: 0. for m in self.monomials}
-
         self._set_lowerbounds(None)
         self._set_upperbounds(None)
         self.set_objective(None)
@@ -459,20 +453,21 @@ class InflationLP(object):
                      + "will constrain the optimization to distributions with "
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
-            objective_dict = {self.One: 0}
-            for mon, coeff in objective.items():
-                if not np.isclose(coeff, 0):
-                    mon = self._sanitise_monomial(mon)
-                    objective_dict[mon] = \
-                        objective_dict.get(mon, 0) + (sign * coeff)
-            self.objective = objective_dict
+            self.objective = {mon: sign*coeff for (mon, coeff) in objective.items() if not np.isclose(coeff, 0)}
+            # objective_dict = {self.One: 0}
+            # objective_dict = defaultdict(int)
+            # for mon, coeff in objective.items():
+            #     if not np.isclose(coeff, 0):
+            #         mon = self._sanitise_monomial(mon)
+            #         objective_dict[mon] += (sign * coeff)
+            # self.objective = objective_dict
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
             assert len(surprising_objective_terms) == 0, \
                 ("When interpreting the objective we have encountered at " +
                  "least one monomial that does not appear in the original " +
                  f"generating set:\n\t{surprising_objective_terms}")
-            self._update_objective()
+            # self._update_objective()
 
     def update_values(self,
                       values: Union[Dict[Union[CompoundMonomial,
@@ -622,7 +617,7 @@ class InflationLP(object):
             given by ``_prepare_solver_arguments()``. However, a user may
             manually override these arguments by passing their own here.
         """
-        if feas_as_optim and len(self._processed_objective) > 1:
+        if feas_as_optim and len(self.objective) > 0:
             warn("You have a non-trivial objective, but set to solve a " +
                  "feasibility problem as optimization. Setting "
                  + "feas_as_optim=False and optimizing the objective...")
@@ -1350,13 +1345,13 @@ class InflationLP(object):
                                        mon, value in self.known_moments.items()
                                        if not np.isclose(value, 0)]
             for mon in nonzero_known_monomials:
-                self._processed_moment_lowerbounds[mon] = 1.
+                # self._processed_moment_lowerbounds[mon] = 1.
+                self.moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
             self.semiknown_moments = dict()
-
-        self._update_lowerbounds()
-        self._update_upperbounds()
-        self._update_objective()
+        # self._update_lowerbounds()
+        # self._update_upperbounds()
+        # self._update_objective()
         num_nontrivial_known = len(self.known_moments)
         if self.verbose > 1 and num_nontrivial_known > 1:
             print("Number of variables with fixed numeric value:",
@@ -1377,18 +1372,20 @@ class InflationLP(object):
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
-        self._processed_moment_lowerbounds = dict()
+        self.moment_lowerbounds = dict()
+        # self._processed_moment_lowerbounds = dict()
 
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
         self._reset_solution()
-        self._processed_moment_upperbounds = dict()
+        self.moment_upperbounds = dict()
+        # self._processed_moment_upperbounds = dict()
 
     def _reset_objective(self) -> None:
         """Reset the objective function."""
         self._reset_solution()
-        self.objective = {self.One: 0.}
-        self._processed_objective = self.objective
+        self.objective = defaultdict(int)
+        # self._processed_objective = self.objective
         self.maximize = True  # Direction of the optimization
 
     def _reset_values(self) -> None:
@@ -1399,67 +1396,67 @@ class InflationLP(object):
         self.known_moments[self.One] = 1.
         collect()
 
-    def _update_objective(self) -> None:
-        """Process the objective with the information from known_moments
-        and semiknown_moments.
-        """
-        self._processed_objective = self.objective.copy()
-        knowns_to_process = set(self.known_moments.keys()
-                                ).intersection(
-            self._processed_objective.keys())
-        knowns_to_process.discard(self.One)
-        for m in knowns_to_process:
-            value = self.known_moments[m]
-            self._processed_objective[self.One] += \
-                self._processed_objective[m] * value
-            del self._processed_objective[m]
-        semiknowns_to_process = set(self.semiknown_moments.keys()
-                                    ).intersection(
-            self._processed_objective.keys())
-        for mon in semiknowns_to_process:
-            coeff = self._processed_objective[mon]
-            for (subs_coeff, subs) in self.semiknown_moments[mon]:
-                self._processed_objective[subs] = \
-                    self._processed_objective.get(subs, 0) + coeff * subs_coeff
-                del self._processed_objective[mon]
-        collect()
-
-    def _update_lowerbounds(self) -> None:
-        """Helper function to check that lowerbounds are consistent with the
-        specified known values, and to keep only the lowest lowerbounds
-        in case of redundancy.
-        """
-        for mon, lb in self.moment_lowerbounds.items():
-            if (not self.all_nonnegative) or (not np.isclose(lb, 0)):
-                self._processed_moment_lowerbounds[mon] = \
-                    max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
-        for mon, value in self.known_moments.items():
-            if isinstance(value, Real):
-                try:
-                    lb = self._processed_moment_lowerbounds[mon]
-                    assert lb <= value, (f"Value {value} assigned for " +
-                                         f"monomial {mon} contradicts the " +
-                                         f"assigned lower bound of {lb}.")
-                    del self._processed_moment_lowerbounds[mon]
-                except KeyError:
-                    pass
-        self.moment_lowerbounds = self._processed_moment_lowerbounds
-
-    def _update_upperbounds(self) -> None:
-        """Helper function to check that upperbounds are consistent with the
-        specified known values.
-        """
-        for mon, value in self.known_moments.items():
-            if isinstance(value, Real):
-                try:
-                    ub = self._processed_moment_upperbounds[mon]
-                    assert ub >= value, (f"Value {value} assigned for " +
-                                         f"monomial {mon} contradicts the " +
-                                         f"assigned upper bound of {ub}.")
-                    del self._processed_moment_upperbounds[mon]
-                except KeyError:
-                    pass
-        self.moment_upperbounds = self._processed_moment_upperbounds
+    # def _update_objective(self) -> None:
+    #     """Process the objective with the information from known_moments
+    #     and semiknown_moments.
+    #     """
+    #     self._processed_objective = self.objective.copy()
+    #     knowns_to_process = set(self.known_moments.keys()
+    #                             ).intersection(
+    #         self._processed_objective.keys())
+    #     knowns_to_process.discard(self.One)
+    #     for m in knowns_to_process:
+    #         value = self.known_moments[m]
+    #         self._processed_objective[self.One] += \
+    #             self._processed_objective[m] * value
+    #         del self._processed_objective[m]
+    #     semiknowns_to_process = set(self.semiknown_moments.keys()
+    #                                 ).intersection(
+    #         self._processed_objective.keys())
+    #     for mon in semiknowns_to_process:
+    #         coeff = self._processed_objective[mon]
+    #         for (subs_coeff, subs) in self.semiknown_moments[mon]:
+    #             self._processed_objective[subs] = \
+    #                 self._processed_objective.get(subs, 0) + coeff * subs_coeff
+    #             del self._processed_objective[mon]
+    #     collect()
+    #
+    # def _update_lowerbounds(self) -> None:
+    #     """Helper function to check that lowerbounds are consistent with the
+    #     specified known values, and to keep only the lowest lowerbounds
+    #     in case of redundancy.
+    #     """
+    #     for mon, lb in self.moment_lowerbounds.items():
+    #         if (not self.all_nonnegative) or (not np.isclose(lb, 0)):
+    #             self._processed_moment_lowerbounds[mon] = \
+    #                 max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
+    #     for mon, value in self.known_moments.items():
+    #         if isinstance(value, Real):
+    #             try:
+    #                 lb = self._processed_moment_lowerbounds[mon]
+    #                 assert lb <= value, (f"Value {value} assigned for " +
+    #                                      f"monomial {mon} contradicts the " +
+    #                                      f"assigned lower bound of {lb}.")
+    #                 del self._processed_moment_lowerbounds[mon]
+    #             except KeyError:
+    #                 pass
+    #     self.moment_lowerbounds = self._processed_moment_lowerbounds
+    #
+    # def _update_upperbounds(self) -> None:
+    #     """Helper function to check that upperbounds are consistent with the
+    #     specified known values.
+    #     """
+    #     for mon, value in self.known_moments.items():
+    #         if isinstance(value, Real):
+    #             try:
+    #                 ub = self._processed_moment_upperbounds[mon]
+    #                 assert ub >= value, (f"Value {value} assigned for " +
+    #                                      f"monomial {mon} contradicts the " +
+    #                                      f"assigned upper bound of {ub}.")
+    #                 del self._processed_moment_upperbounds[mon]
+    #             except KeyError:
+    #                 pass
+    #     self.moment_upperbounds = self._processed_moment_upperbounds
 
     ###########################################################################
     # OTHER ROUTINES                                                          #
@@ -1499,9 +1496,9 @@ class InflationLP(object):
         """
         nof_variables = len(self.compmonomial_to_idx)
 
-        obj_row = [0] * len(self._processed_objective)
+        obj_row = [0] * len(self.objective)
         obj_col, obj_data = [], []
-        for x, c in self._processed_objective.items():
+        for x, c in self.objective.items():
             obj_col.append(self.compmonomial_to_idx[x])
             obj_data.append(c)
         return coo_matrix((obj_data, (obj_row, obj_col)),
@@ -1562,7 +1559,7 @@ class InflationLP(object):
 
         # Defining variables in the LP
         variables = set()
-        variables.update(self._processed_objective)
+        variables.update(self.objective)
         variables.update(self.known_moments)
         internal_equalities = self.moment_equalities.copy()
         for mon, (coeff, subs) in self.semiknown_moments.items():
@@ -1581,12 +1578,12 @@ class InflationLP(object):
                       "equalities": self.sparse_equalities,
                       "inequalities": self.sparse_inequalities}
 
-        nof_lb = len(self._processed_moment_lowerbounds)
-        nof_ub = len(self._processed_moment_upperbounds)
+        nof_lb = len(self.moment_lowerbounds)
+        nof_ub = len(self.moment_upperbounds)
         if separate_bounds:
             lb_row = [0] * nof_lb
             lb_col, lb_data = [], []
-            for x, bound in self._processed_moment_lowerbounds.items():
+            for x, bound in self.moment_lowerbounds.items():
                 lb_col.append(self.compmonomial_to_idx[x])
                 lb_data.append(bound)
             lower_bounds = coo_matrix((lb_data, (lb_row, lb_col)),
@@ -1594,7 +1591,7 @@ class InflationLP(object):
 
             ub_row = [0] * nof_ub
             ub_col, ub_data = [], []
-            for x, bound in self._processed_moment_upperbounds.items():
+            for x, bound in self.moment_upperbounds.items():
                 ub_col.append(self.compmonomial_to_idx[x])
                 ub_data.append(bound)
             upper_bounds = coo_matrix((ub_data, (ub_row, ub_col)),
@@ -1607,14 +1604,14 @@ class InflationLP(object):
             ineq_col = self.sparse_inequalities.col
             ineq_data = self.sparse_inequalities.data
             for i, (x, bound) in \
-                    enumerate(self._processed_moment_lowerbounds.items()):
+                    enumerate(self.moment_lowerbounds.items()):
                 ineq_row.extend([nof_inequalities + i] * 2)
                 ineq_col.extend([self.compmonomial_to_idx[x],
                                  self.compmonomial_to_idx[self.One]])
                 ineq_data.extend([1, -bound])
 
             for i, (x, bound) in \
-                    enumerate(self._processed_moment_upperbounds.items()):
+                    enumerate(self.moment_upperbounds.items()):
                 ineq_row.extend([nof_inequalities + nof_lb + i] * 2)
                 ineq_col.extend([self.compmonomial_to_idx[x],
                                  self.compmonomial_to_idx[self.One]])
@@ -1668,7 +1665,7 @@ class InflationLP(object):
                      ).difference(self.monomials)))
 
         solverargs = {"objective": {mon.name: coeff for mon, coeff
-                                    in self._processed_objective.items()},
+                                    in self.objective.items()},
                       "known_vars": {mon.name: val for mon, val
                                      in self.known_moments.items()},
                       "semiknown_vars": {mon.name: (coeff, subs.name)
@@ -1685,16 +1682,16 @@ class InflationLP(object):
         solverargs["known_vars"][self.constant_term_name] = 1.
         if separate_bounds:
             solverargs["lower_bounds"] = {mon.name: bnd for mon, bnd in
-                                          self._processed_moment_lowerbounds.items()}
+                                          self.moment_lowerbounds.items()}
             solverargs["upper_bounds"] = {mon.name: bnd for mon, bnd in
-                                          self._processed_moment_upperbounds.items()}
+                                          self.moment_upperbounds.items()}
         else:
             solverargs["inequalities"].extend({mon.name: 1, '1': -bnd}
                                               for mon, bnd in
-                                              self._processed_moment_lowerbounds.items())
+                                              self.moment_lowerbounds.items())
             solverargs["inequalities"].extend({mon.name: -1, '1': bnd}
                                               for mon, bnd in
-                                              self._processed_moment_upperbounds.items())
+                                              self.moment_upperbounds.items())
         return solverargs
 
     def _reset_solution(self) -> None:
@@ -1733,8 +1730,8 @@ class InflationLP(object):
                                   upperbound), \
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different upper bounds.")
-        self._processed_moment_upperbounds = sanitized_upperbounds
-        self._update_upperbounds()
+        self.moment_upperbounds = sanitized_upperbounds
+        # self._update_upperbounds()
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
         """Set lower bounds for variables in the SDP relaxation.
@@ -1759,8 +1756,8 @@ class InflationLP(object):
                 assert np.isclose(old_bound, lowerbound), \
                     (f"Contradiction: Cannot set the same monomial {mon} to " +
                      "have different lower bounds.")
-        self._processed_moment_lowerbounds = sanitized_lowerbounds
-        self._update_lowerbounds()
+        self.moment_lowerbounds = sanitized_lowerbounds
+        # self._update_lowerbounds()
 
     def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
         boolvec = self.blank_bool_vec.copy()
