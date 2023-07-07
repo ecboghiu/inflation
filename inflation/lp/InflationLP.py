@@ -262,6 +262,7 @@ class InflationLP(object):
 
         # Associate Monomials to the remaining entries.
         _monomials = []
+        _monomial_names = []
         _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
@@ -270,6 +271,7 @@ class InflationLP(object):
                              total=self.n_columns):
             mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
             _monomials.append(mon)
+            _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
             # if mon in _compmonomial_to_idx:
             #     alt_id = _compmonomial_to_idx[mon]
@@ -277,11 +279,12 @@ class InflationLP(object):
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
+        self.monomial_names = np.array(_monomial_names)
         self.compmonomial_from_idx = _compmonomial_from_idx
         self.compmonomial_to_idx = _compmonomial_to_idx
-        del _monomials, _compmonomial_from_idx, _compmonomial_to_idx
+        del _monomials, _compmonomial_from_idx, _compmonomial_to_idx, _monomial_names
         collect(generation=2)
-
+        assert self.monomials[0] == self.One, "Sparse indexing requires that first column represent one."
 
         assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
             (f"Multiple indices are being associated to the same monomial. \n" +
@@ -916,7 +919,7 @@ class InflationLP(object):
             except AttributeError:
                 pass
             self.monomial_from_atoms[key] = mon
-            self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.name] = mon  # TODO: Add simple name and complex name
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
@@ -1206,68 +1209,50 @@ class InflationLP(object):
         return coo_matrix((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
-
-    def _coo_vec_to_dict(self, col: np.ndarray, data: np.ndarray):
-        return dict(zip(self.monomials[col].flat, data))
-        # return dict(zip(partsextractor(self.monomials, col), data))
-
-    def _coo_mat_to_dict(self, input_coo_mat: coo_matrix):
-        input_lil_mat = input_coo_mat.tolil(copy=False)
-        return [self._coo_vec_to_dict(*args) for args in tqdm(zip(input_lil_mat.rows,
-                                                                  input_lil_mat.data),
-                                                              disable=not self.verbose,
-                                                              total=input_coo_mat.shape[0],
-                                                              desc="Converting sparse matrix into list of dictionaries...")]
-
-
-    @cached_property
-    def moment_equalities(self):
-        return self._coo_mat_to_dict(self.sparse_equalities)
-
-    # @cached_property
-    # def _discover_normalization_eqns_lite(self) -> List[Dict]:
-    #     """Given the generating monomials, infer conversion to Collins-Gisin notation.
-    #
-    #     Returns
-    #     -------
-    #      List[Dict]
-    #         A list of dictionaries expressing conversion to Collins-Gisin form.
-    #     """
-    #     alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
-    #         np.flatnonzero(self.boolvec_for_CG_ineqs).flat,
-    #         self.CG_adjusting_ortho_groups_as_boolarrays)}
-    #     alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
-    #                              for i, bool_array in alternatives_as_boolarrays.items()}
-    #
-    #     collins_gisin_equalities = []
-    #     for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-    #             disable=not self.verbose,
-    #             desc="Discovering equalities lite "):
-    #         critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_CG_ineqs)
-    #         absent_c_boolvec = bool_vec.copy()
-    #         absent_c_boolvec[critical_boolvec_intersection] = False
-    #         critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
-    #         signs = reduce(nb_outer_bitwise_xor,
-    #                        (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
-    #         adjustments = reduce(nb_outer_bitwise_or,
-    #                        (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
-    #         terms_as_boolvecs = np.bitwise_or(
-    #             absent_c_boolvec[np.newaxis],
-    #             adjustments)
-    #         #Conversion from inequality to equality:
-    #         signs = np.hstack((signs,1))
-    #         terms_as_boolvecs = np.vstack((terms_as_boolvecs, bool_vec))
-    #         terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
-    #         terms_as_ids = self.inverse[terms_as_rawidx]
-    #         true_signs = np.power(-1, signs)
-    #
-    #         current_eq = defaultdict(int)
-    #         for idx, s in zip(terms_as_ids.flat,
-    #                           true_signs.flat):
-    #             mon = self.compmonomial_from_idx[idx]
-    #             current_eq[mon] += s
-    #         collins_gisin_equalities.append(current_eq)
-    #     return collins_gisin_equalities
+        # @cached_property
+        # def _discover_normalization_eqns_lite(self) -> List[Dict]:
+        #     """Given the generating monomials, infer conversion to Collins-Gisin notation.
+        #
+        #     Returns
+        #     -------
+        #      List[Dict]
+        #         A list of dictionaries expressing conversion to Collins-Gisin form.
+        #     """
+        #     alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0))) for v,r in zip(
+        #         np.flatnonzero(self.boolvec_for_CG_ineqs).flat,
+        #         self.CG_adjusting_ortho_groups_as_boolarrays)}
+        #     alternatives_as_signs = {i: np.count_nonzero(bool_array, axis=1).astype(bool)
+        #                              for i, bool_array in alternatives_as_boolarrays.items()}
+        #
+        #     collins_gisin_equalities = []
+        #     for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+        #             disable=not self.verbose,
+        #             desc="Discovering equalities lite "):
+        #         critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_CG_ineqs)
+        #         absent_c_boolvec = bool_vec.copy()
+        #         absent_c_boolvec[critical_boolvec_intersection] = False
+        #         critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
+        #         signs = reduce(nb_outer_bitwise_xor,
+        #                        (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
+        #         adjustments = reduce(nb_outer_bitwise_or,
+        #                        (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
+        #         terms_as_boolvecs = np.bitwise_or(
+        #             absent_c_boolvec[np.newaxis],
+        #             adjustments)
+        #         #Conversion from inequality to equality:
+        #         signs = np.hstack((signs,1))
+        #         terms_as_boolvecs = np.vstack((terms_as_boolvecs, bool_vec))
+        #         terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
+        #         terms_as_ids = self.inverse[terms_as_rawidx]
+        #         true_signs = np.power(-1, signs)
+        #
+        #         current_eq = defaultdict(int)
+        #         for idx, s in zip(terms_as_ids.flat,
+        #                           true_signs.flat):
+        #             mon = self.compmonomial_from_idx[idx]
+        #             current_eq[mon] += s
+        #         collins_gisin_equalities.append(current_eq)
+        #     return collins_gisin_equalities
 
     @cached_property
     def sparse_inequalities(self) -> coo_matrix:
@@ -1284,21 +1269,25 @@ class InflationLP(object):
                 i: np.count_nonzero(bool_array, axis=1).astype(bool)
                 for i, bool_array in alternatives_as_boolarrays.items()}
             for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                    disable=not self.verbose,
-                    desc="Discovering inequalities   "):
-
-                critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_CG_ineqs)
+                                 disable=not self.verbose,
+                                 desc="Discovering inequalities   "):
+                critical_boolvec_intersection = np.bitwise_and(bool_vec,
+                                                               self.boolvec_for_CG_ineqs)
                 absent_c_boolvec = bool_vec.copy()
                 absent_c_boolvec[critical_boolvec_intersection] = False
-                critical_values_in_boovec = np.flatnonzero(critical_boolvec_intersection)
+                critical_values_in_boovec = np.flatnonzero(
+                    critical_boolvec_intersection)
                 signs = reduce(nb_outer_bitwise_xor,
-                               (alternatives_as_signs[i] for i in critical_values_in_boovec.flat))
+                               (alternatives_as_signs[i] for i in
+                                critical_values_in_boovec.flat))
                 adjustments = reduce(nb_outer_bitwise_or,
-                               (alternatives_as_boolarrays[i] for i in critical_values_in_boovec.flat))
+                                     (alternatives_as_boolarrays[i] for i in
+                                      critical_values_in_boovec.flat))
                 terms_as_boolvecs = np.bitwise_or(
                     absent_c_boolvec[np.newaxis],
                     adjustments)
-                terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for boolvec in terms_as_boolvecs]
+                terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for
+                                   boolvec in terms_as_boolvecs]
                 terms_as_idxs = self.inverse[terms_as_rawidx]
                 true_signs = np.power(-1, signs)
 
@@ -1309,9 +1298,51 @@ class InflationLP(object):
         return coo_matrix((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
+    def _coo_vec_to_mon_dict(self, col: np.ndarray,
+                             data: np.ndarray) -> Dict:
+        return dict(zip(self.monomials[col].flat, data))
+
+    def _coo_vec_to_name_dict(self, col: np.ndarray,
+                             data: np.ndarray) -> Dict:
+        return dict(zip(self.monomial_names[col].flat, data))
+
+    def _coo_mat_to_dict(self,
+                         input_coo_mat: coo_matrix,
+                         string_keys=False) -> List[Dict]:
+        input_lil_mat = input_coo_mat.tolil(copy=False)
+        args_iter = zip(input_lil_mat.rows, input_lil_mat.data)
+        if string_keys:
+            return [self._coo_vec_to_name_dict(*args) for args in args_iter]
+        else:
+            return [self._coo_vec_to_mon_dict(*args) for args in args_iter]
+
+    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_matrix:
+        """
+        This is a PLACEHOLDER function, possibly to be deprecated, to convert
+         dicts into COO matrices.
+        """
+        data = list(monomials_dict.values())
+        keys = list(monomials_dict.keys())
+        col = partsextractor(self.compmonomial_to_idx, keys)
+        row = np.zeros(len(col), dtype=int)
+        return coo_matrix((data, (row, col)), shape=(1, self.n_columns))
+
+
+
+    @cached_property
+    def moment_equalities(self):
+        return self._coo_mat_to_dict(self.sparse_equalities)
+    @cached_property
+    def moment_equalities_by_name(self):
+        return self._coo_mat_to_dict(self.sparse_equalities, string_keys=True)
+
     @cached_property
     def moment_inequalities(self):
         return self._coo_mat_to_dict(self.sparse_inequalities)
+
+    @cached_property
+    def moment_inequalities_by_name(self):
+        return self._coo_mat_to_dict(self.sparse_inequalities, string_keys=True)
 
 
     def _discover_inflation_orbits(self, _raw_monomials_as_lexboolvecs) -> np.ndarray:
@@ -1485,47 +1516,36 @@ class InflationLP(object):
                                                             [0, -2, -1],
                                                             axis=1))
 
-    @cached_property
+    @property
     def sparse_objective(self) -> coo_matrix:
-        """Prepares the objective as a sparse matrix.
-
-        Returns
-        -------
-        coo_matrix
-            Objective as sparse matrix
-        """
-        nof_variables = len(self.compmonomial_to_idx)
-
-        obj_row = [0] * len(self.objective)
-        obj_col, obj_data = [], []
-        for x, c in self.objective.items():
-            obj_col.append(self.compmonomial_to_idx[x])
-            obj_data.append(c)
-        return coo_matrix((obj_data, (obj_row, obj_col)),
-                          shape=(1, nof_variables))
-
-    @cached_property
+        # TO BE DEPRECATED
+        return self._mon_dict_to_coo_vec(self.objective)
+    @property
+    def objective_by_name(self) -> Dict:
+        return self._coo_mat_to_dict(self.sparse_objective, string_keys=True)[0]
+    @property
     def sparse_known_vars(self) -> coo_matrix:
-        """Prepares the known values as a sparse matrix.
+        # TO BE DEPRECATED
+        return self._mon_dict_to_coo_vec(self.known_moments)
+    @property
+    def known_vars_by_name(self) -> Dict:
+        return self._coo_mat_to_dict(self.sparse_known_vars, string_keys=True)[0]
+    @property
+    def sparse_lowerbounds(self) -> coo_matrix:
+        # TO BE DEPRECATED
+        return self._mon_dict_to_coo_vec(self.moment_lowerbounds)
+    @property
+    def lowerbounds_by_name(self) -> Dict:
+        return self._coo_mat_to_dict(self.sparse_lowerbounds, string_keys=True)[0]
+    @property
+    def sparse_upperbounds(self) -> coo_matrix:
+        # TO BE DEPRECATED
+        return self._mon_dict_to_coo_vec(self.moment_upperbounds)
+    @property
+    def upperbounds_by_name(self) -> Dict:
+        return self._coo_mat_to_dict(self.moment_upperbounds, string_keys=True)[0]
 
-        Returns
-        -------
-        coo_matrix
-            Known values as sparse matrix
-        """
-        nof_known_vars = len(self.known_moments)
-        nof_variables = len(self.compmonomial_to_idx)
-
-        known_row = [0] * (nof_known_vars + 1)
-        known_col, known_data = [], []
-        for x, v in self.known_moments.items():
-            known_col.append(self.compmonomial_to_idx[x])
-            known_data.append(v)
-        # Add the constant 1 in case un-normalized problems remove it
-        known_col.append(self.compmonomial_to_idx[self.One])
-        known_data.append(1)
-        return coo_matrix((known_data, (known_row, known_col)),
-                          shape=(1, nof_variables))
+    #TODO: Add properties for semiknowns as sparse and by name.
 
     def _prepare_solver_matrices(self, separate_bounds: bool = True) -> dict:
         """Convert arguments from dictionaries to sparse coo_matrix form to
@@ -1558,68 +1578,44 @@ class InflationLP(object):
                      ).difference(self.monomials)))
 
         # Defining variables in the LP
-        variables = set()
-        variables.update(self.objective)
-        variables.update(self.known_moments)
+        # TODO: Use SPARSE equalities with semiknowns!!
         internal_equalities = self.moment_equalities.copy()
         for mon, (coeff, subs) in self.semiknown_moments.items():
             internal_equalities.append({mon: 1, subs: -coeff})
-        for eq in internal_equalities:
-            variables.update(eq)
-        for ineq in self.moment_inequalities:
-            variables.update(ineq)
-        variables.add(self.One)
 
-        nof_variables = len(variables)
-        nof_inequalities = len(self.moment_inequalities)
 
         solverargs = {"objective": self.sparse_objective,
                       "known_vars": self.sparse_known_vars,
                       "equalities": self.sparse_equalities,
                       "inequalities": self.sparse_inequalities}
 
-        nof_lb = len(self.moment_lowerbounds)
-        nof_ub = len(self.moment_upperbounds)
         if separate_bounds:
-            lb_row = [0] * nof_lb
-            lb_col, lb_data = [], []
-            for x, bound in self.moment_lowerbounds.items():
-                lb_col.append(self.compmonomial_to_idx[x])
-                lb_data.append(bound)
-            lower_bounds = coo_matrix((lb_data, (lb_row, lb_col)),
-                                      shape=(0, nof_lb))
-
-            ub_row = [0] * nof_ub
-            ub_col, ub_data = [], []
-            for x, bound in self.moment_upperbounds.items():
-                ub_col.append(self.compmonomial_to_idx[x])
-                ub_data.append(bound)
-            upper_bounds = coo_matrix((ub_data, (ub_row, ub_col)),
-                                      shape=(0, nof_ub))
-
-            solverargs["lower_bounds"] = lower_bounds
-            solverargs["upper_bounds"] = upper_bounds
+            solverargs["lower_bounds"] = self.sparse_lowerbounds
+            solverargs["upper_bounds"] = self.sparse_upperbounds
         else:
-            ineq_row = self.sparse_inequalities.row
-            ineq_col = self.sparse_inequalities.col
-            ineq_data = self.sparse_inequalities.data
-            for i, (x, bound) in \
-                    enumerate(self.moment_lowerbounds.items()):
-                ineq_row.extend([nof_inequalities + i] * 2)
-                ineq_col.extend([self.compmonomial_to_idx[x],
-                                 self.compmonomial_to_idx[self.One]])
-                ineq_data.extend([1, -bound])
+            nof_inequalities = self.sparse_inequalities.shape[0]
+            nof_lb = self.sparse_lowerbounds.shape[1]
+            nof_ub = self.sparse_upperbounds.shape[1]
+            # TODO: Introduce methods for converting upper and lower bounds to inequality matrices
+            new_row = np.hstack((
+                self.sparse_inequalities.row,
+                np.repeat(np.arange(nof_inequalities, nof_inequalities+nof_lb), 2),
+                np.repeat(np.arange(nof_inequalities + nof_lb, nof_inequalities + nof_lb + nof_ub), 2)
+            ))
+            new_col = np.hstack((
+                self.sparse_inequalities.col,
+                np.vstack((np.ones(nof_lb, dtype=int), self.sparse_lowerbounds.col)).T.ravel(),
+                np.vstack((np.ones(nof_ub, dtype=int), self.sparse_upperbounds.col)).T.ravel(),
+            ))
 
-            for i, (x, bound) in \
-                    enumerate(self.moment_upperbounds.items()):
-                ineq_row.extend([nof_inequalities + nof_lb + i] * 2)
-                ineq_col.extend([self.compmonomial_to_idx[x],
-                                 self.compmonomial_to_idx[self.One]])
-                ineq_data.extend([-1, bound])
+            new_data = np.hstack((
+                self.sparse_inequalities.data,
+                np.vstack((-np.asarray(self.sparse_lowerbounds.data), np.ones(nof_lb, dtype=int))).T.ravel(),
+                np.vstack((self.sparse_upperbounds.data, -np.ones(nof_ub, dtype=int))).T.ravel(),
+            ))
 
-            inequalities = coo_matrix((ineq_data, (ineq_row, ineq_col)),
-                                      shape=(nof_inequalities, nof_variables))
-            solverargs["inequalities"] = inequalities
+            solverargs["inequalities"] = coo_matrix((new_data, (new_row, new_col)),
+                                      shape=(nof_inequalities + nof_lb + nof_ub, self.n_columns))
 
         return solverargs
 
