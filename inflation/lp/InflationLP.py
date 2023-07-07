@@ -1588,7 +1588,7 @@ class InflationLP(object):
                       "known_vars": self.sparse_known_vars,
                       "equalities": self.sparse_equalities,
                       "inequalities": self.sparse_inequalities,
-                      "variables": variables}
+                      "variables": self.monomial_names}
 
         if separate_bounds:
             solverargs["lower_bounds"] = self.sparse_lowerbounds
