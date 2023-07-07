@@ -1545,7 +1545,31 @@ class InflationLP(object):
     def upperbounds_by_name(self) -> Dict:
         return self._coo_mat_to_dict(self.moment_upperbounds, string_keys=True)[0]
 
-    #TODO: Add properties for semiknowns as sparse and by name.
+    @property
+    def sparse_semiknown(self) -> coo_matrix:
+        nof_semiknown = len(self.semiknown_moments)
+        nof_variables = len(self.compmonomial_to_idx)
+        semiknown_row = [*range(nof_semiknown)]
+        semiknown_col, semiknown_data = [], []
+        for x, (c, x2) in self.semiknown_moments.items():
+            semiknown_col.extend([self.compmonomial_to_idx[x],
+                                  self.compmonomial_to_idx[x2]])
+            semiknown_data.extend([1, -c])
+        return coo_matrix((semiknown_data, (semiknown_row, semiknown_col)),
+                          shape=(nof_semiknown, nof_variables))
+
+    @property
+    def semiknown_by_name(self) -> Dict:
+        semiknown_col = self.sparse_semiknown.col
+        semiknown_data = self.sparse_semiknown.data
+        semiknown = dict()
+        for i in range(0, semiknown_data, 2):
+            x_idx = semiknown_col[i]
+            c = -semiknown_data[i + 1]
+            x2_idx = semiknown_col[i + 1]
+            semiknown[self.compmonomial_from_idx[x_idx]] = \
+                (c, self.compmonomial_from_idx[x2_idx])
+        return semiknown
 
     def _prepare_solver_matrices(self, separate_bounds: bool = True) -> dict:
         """Convert arguments from dictionaries to sparse coo_matrix form to
