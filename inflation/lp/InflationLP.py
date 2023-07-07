@@ -80,6 +80,8 @@ class InflationLP(object):
         # Inheritance
         self.InflationProblem = inflationproblem
         self.names = inflationproblem.names
+        self.names_to_ints = inflationproblem.names_to_ints
+        self._lexrepr_to_names = inflationproblem._lexrepr_to_names
         self.nr_sources = inflationproblem.nr_sources
         self.nr_parties = inflationproblem.nr_parties
         self.hypergraph = inflationproblem.hypergraph
@@ -95,15 +97,13 @@ class InflationLP(object):
             inflationproblem._is_knowable_q_non_networks
         self._nr_properties = inflationproblem._nr_properties
         self.np_dtype = inflationproblem._np_dtype
-
-        # The following depends on the form of CG notation
-
-
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
         self._lexrange = np.arange(self._nr_operators)
         self.lexorder_symmetries = inflationproblem.inf_symmetries
-        self._lexorder_lookup = inflationproblem._lexorder_lookup
+        # self._lexorder_lookup = inflationproblem._lexorder_lookup
+        self._from_2dndarray = inflationproblem._from_2dndarray
+        self.mon_to_lexrepr = inflationproblem.mon_to_lexrepr
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._ortho_groups_per_party = inflationproblem._ortho_groups_per_party
         self.has_children = inflationproblem.has_children.copy()
@@ -127,15 +127,9 @@ class InflationLP(object):
                 CG_nonadjusting_ortho_groups_as_boolarrays.append(
                     ortho_groups_as_boolarrays)
 
-
         self.CG_adjusting_ortho_groups_as_boolarrays = list(chain.from_iterable(CG_adjusting_ortho_groups_as_boolarrays))
         self.CG_nonadjusting_ortho_groups_as_boolarrays = list(chain.from_iterable(CG_nonadjusting_ortho_groups_as_boolarrays))
         self.all_ortho_groups_as_boolarrays = list(chain.from_iterable(all_ortho_groups_as_boolarrays))
-
-        # self._ortho_groups_as_boolarrays = [np.vstack(
-        #     [self.mon_to_boolvec(op[np.newaxis]) for op in
-        #      ortho_group]) for ortho_group in self._ortho_groups]
-
 
         # We want to consider ALL outcomes for variables which have children, but not the last outcome for childless variables.
         # In other words, if we take all the CG equalities, we want to convert them to inequalities when the LHS is non_CG but childless-only.
@@ -149,9 +143,6 @@ class InflationLP(object):
             self.boolvec_for_FR_eqs = np.bitwise_or.reduce(bad_boolvecs_for_eqs, axis=0)
         else:
             self.boolvec_for_FR_eqs = self.blank_bool_vec
-
-
-        self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
 
         if self.verbose > 1:
             print("Number of single operator measurements per party:", end="")
@@ -171,6 +162,7 @@ class InflationLP(object):
         # These next properties are reset during generate_lp, but are needed in
         # init so as to be able to test the Monomial constructor function
         # without generate_lp.
+        #TODO: Enable test of Monomial constructor without generate_lp!
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
@@ -1495,17 +1487,6 @@ class InflationLP(object):
                                                             [0, -2, -1],
                                                             axis=1))
 
-    def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
-        """Obtains the bytes representation of an array. The library uses this
-        representation as hashes for the corresponding monomials.
-
-        Parameters
-        ----------
-        array2d : numpy.ndarray
-            Monomial encoded as a 2D array.
-        """
-        return np.asarray(array2d, dtype=self.np_dtype).tobytes()
-
     @cached_property
     def sparse_objective(self) -> coo_matrix:
         """Prepares the objective as a sparse matrix.
@@ -1779,29 +1760,6 @@ class InflationLP(object):
                      "have different lower bounds.")
         self._processed_moment_lowerbounds = sanitized_lowerbounds
         self._update_lowerbounds()
-
-    def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:
-        """Create a monomial array from its corresponding stream of bytes.
-
-        Parameters
-        ----------
-        bytestream : bytes
-            The stream of bytes encoding the monomial.
-
-        Returns
-        -------
-        numpy.ndarray
-            The corresponding monomial in array form.
-        """
-        array = np.frombuffer(bytestream, dtype=self.np_dtype)
-        return array.reshape((-1, self._nr_properties))
-
-    def mon_to_lexrepr(self, mon: np.ndarray) -> List[int]:
-        try:
-            return [self._lexorder_lookup[self._from_2dndarray(op)] for op in
-                    mon]
-        except KeyError:
-            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder.")
 
     def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
         boolvec = self.blank_bool_vec.copy()

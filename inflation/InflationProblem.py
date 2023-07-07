@@ -15,10 +15,10 @@ from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm)
 
-from .utils import format_permutations
+from .utils import format_permutations, partsextractor
 from typing import Tuple, List, Union, Dict
 
-from functools import reduce
+from functools import reduce, cached_property
 from tqdm import tqdm
 
 # Force warnings.warn() to omit the source code line in the message
@@ -251,8 +251,6 @@ class InflationProblem(object):
             np.min_scalar_type(self.nr_parties + 1),
             np.min_scalar_type(np.max(self.inflation_level_per_source) + 1)],
             [])
-        #Get some original graph properties
-        self.original_dag_events = self._original_DAG_event_list()
 
         # Create all the different possibilities for inflation indices
         self.inflation_indices_per_party = list()
@@ -312,8 +310,6 @@ class InflationProblem(object):
                     (-1, O_card, self._nr_properties)))
         self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
-        self._lexorder_lookup = {op.tobytes(): i for i, op in
-                                 enumerate(self._lexorder)}
         self._nr_operators = len(self._lexorder)
 
         self._lexorder_for_factorization = np.array([
@@ -357,6 +353,71 @@ class InflationProblem(object):
                 str(self.inflation_level_per_source) +
                 " inflation copies per source. " + source_info)
 
+    ###########################################################################
+    # HELPER UTILITY FUNCTION                                    #
+    ###########################################################################
+
+    @cached_property
+    def original_dag_events(self) -> np.ndarray:
+        """
+        Creates the analog of a lexorder for the original DAG.
+        """
+        original_dag_events = []
+        for p in range(self.nr_parties):
+            O_vals = np.arange(self.outcomes_per_party[p],
+                               dtype=self._np_dtype)
+            S_vals = np.arange(self.private_settings_per_party[p],
+                               dtype=self._np_dtype)
+            events_per_party = np.empty(
+                (len(S_vals), len(O_vals), 3),
+                dtype=self._np_dtype)
+            events_per_party[::, :, 0] = p + 1
+            for s in S_vals.flat:
+                events_per_party[s, :, -2] = s
+                for o in O_vals.flat:
+                    events_per_party[s, o, -1] = o
+            original_dag_events.extend(
+                events_per_party.reshape((-1, 3)))
+        return np.vstack(original_dag_events).astype(self._np_dtype)
+
+    @cached_property
+    def _lexorder_lookup(self):
+        return {op.tobytes(): i for i, op in enumerate(self._lexorder)}
+    def mon_to_lexrepr(self, mon: np.ndarray) -> np.ndarray:
+        ops_as_hashes = list(map(self._from_2dndarray, mon))
+        try:
+            return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=int)
+            # return np.array([self._lexorder_lookup[op_hash] for op_hash in ops_as_hashes], dtype=int)
+        except KeyError:
+            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder.")
+
+    def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
+        """Obtains the bytes representation of an array. The library uses this
+        representation as hashes for the corresponding monomials.
+
+        Parameters
+        ----------
+        array2d : numpy.ndarray
+            Monomial encoded as a 2D array.
+        """
+        return np.asarray(array2d, dtype=self._np_dtype).tobytes()
+
+    @cached_property
+    def _lexrepr_to_names(self):
+        # Use expectation value notation. As ndarray for rapid multiextract.
+        as_list = ["_".join([self.names[op[0] - 1]]
+                                          + [str(i) for i in op[1:]])
+                for op in self._lexorder]
+        return np.array(as_list)
+
+    @cached_property
+    def names_to_ints(self):
+        return {name: i + 1 for i, name in enumerate(self.names)}
+
+    ###########################################################################
+    # FUNCTIONS PERTAINING TO KNOWABILITY                                     #
+    ###########################################################################
+
     def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
@@ -399,6 +460,48 @@ class InflationProblem(object):
                     return False
         else:
             return True
+
+    def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
+        """When constructing the monomials in a non-network scenario, we rely
+        on an internal representation of operators where the integer denoting
+        the setting actually is an 'effective setting' that encodes, in
+        addition to the 'private setting' that each party is free to choose,
+        the values of all the parents of the variable in question, which also
+        effectively act as settings. This function resets this 'effective
+        setting' integer to the true 'private setting' integer. It is useful to
+        relate knowable monomials to their meaning as conditional events in
+        non-network scenarios. If the scenario is a network, this function does
+        nothing.
+
+        Parameters
+        ----------
+            monomial : numpy.ndarray
+                An internal representation of a monomial as a 2d numpy array.
+                Each row in the array corresponds to an operator. For each row,
+                the zeroth element represents the party, the last element
+                represents the outcome, the second-to-last element represents
+                the setting, and the remaining elements represent inflation
+                copies.
+
+        Returns
+        -------
+        numpy.ndarray
+            The monomial with the index of the setting representing only the
+            private setting.
+        """
+        new_mon = np.array(monomial, copy=False)
+        for o in new_mon:
+            party_index        = o[0] - 1     # Parties start at 1 our notation
+            effective_setting  = o[-2]
+            o_private_settings = \
+                self.effective_to_parent_settings[
+                                   party_index][effective_setting][0]
+            o[-2] = o_private_settings
+        return new_mon
+
+    ###########################################################################
+    # FUNCTIONS PERTAINING TO FACTORIZATION                                   #
+    ###########################################################################
 
     def factorize_monomial_2d(self,
                               monomial_as_2darray: np.ndarray,
@@ -518,44 +621,9 @@ class InflationProblem(object):
                                                    key=lambda x: x.tobytes()))
         return disconnected_components
 
-    def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
-        """When constructing the monomials in a non-network scenario, we rely
-        on an internal representation of operators where the integer denoting
-        the setting actually is an 'effective setting' that encodes, in
-        addition to the 'private setting' that each party is free to choose,
-        the values of all the parents of the variable in question, which also
-        effectively act as settings. This function resets this 'effective
-        setting' integer to the true 'private setting' integer. It is useful to
-        relate knowable monomials to their meaning as conditional events in
-        non-network scenarios. If the scenario is a network, this function does
-        nothing.
-
-        Parameters
-        ----------
-            monomial : numpy.ndarray
-                An internal representation of a monomial as a 2d numpy array.
-                Each row in the array corresponds to an operator. For each row,
-                the zeroth element represents the party, the last element
-                represents the outcome, the second-to-last element represents
-                the setting, and the remaining elements represent inflation
-                copies.
-
-        Returns
-        -------
-        numpy.ndarray
-            The monomial with the index of the setting representing only the
-            private setting.
-        """
-        new_mon = np.array(monomial, copy=False)
-        for o in new_mon:
-            party_index        = o[0] - 1     # Parties start at 1 our notation
-            effective_setting  = o[-2]
-            o_private_settings = \
-                self.effective_to_parent_settings[
-                                   party_index][effective_setting][0]
-            o[-2] = o_private_settings
-        return new_mon
-
+    ###########################################################################
+    # FUNCTIONS PERTAINING TO SYMMETRY                                        #
+    ###########################################################################
     def lexorder_perms_from_inflation(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
@@ -713,29 +781,6 @@ class InflationProblem(object):
                                  dtype=int),
                      ))
         return discovered_automorphisms
-
-    def _original_DAG_event_list(self) -> np.ndarray:
-        """
-        Creates the analog of a lexorder for the original DAG.
-        """
-        original_dag_events = []
-        for p in range(self.nr_parties):
-            O_vals = np.arange(self.outcomes_per_party[p],
-                               dtype=self._np_dtype)
-            S_vals = np.arange(self.private_settings_per_party[p],
-                               dtype=self._np_dtype)
-            events_per_party = np.empty(
-                (len(S_vals), len(O_vals), 3),
-                dtype=self._np_dtype)
-            events_per_party[::, :, 0] = p + 1
-            for s in S_vals.flat:
-                events_per_party[s, :, -2] = s
-                for o in O_vals.flat:
-                    events_per_party[s, o, -1] = o
-            original_dag_events.extend(
-                events_per_party.reshape((-1, 3)))
-        return np.vstack(original_dag_events).astype(self._np_dtype)
-
 
     #TASK: Obtain a list of all setting relabellings,
     # and all outcome-per-setting relabellings.
