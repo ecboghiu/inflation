@@ -113,6 +113,11 @@ class InternalAtomicMonomial(object):
         return self.name
 
     @property
+    def _raw_name(self):
+        list_of_op_names = self.lp._lexrepr_to_names[self.as_int_vec]
+        return "<" + " ".join(list_of_op_names) + ">"
+
+    @property
     def _name(self):
         """A string representing the monomial. In case of knowable monomials,
         it is of the form ``p(outputs|inputs)``. Otherwise it represents the
@@ -136,12 +141,7 @@ class InternalAtomicMonomial(object):
                     "(" + o_divider.join(outputs) +
                     "|" + i_divider.join(inputs) + ")")
         else:
-            # Use expectation value notation
-            operators = []
-            for op in self.as_2d_array:
-                operators.append("_".join([self.lp.names[op[0] - 1]]
-                                          + [str(i) for i in op[1:]]))
-            return "<" + " ".join(operators) + ">"
+            return self._raw_name
 
     @property
     def _signature(self):
