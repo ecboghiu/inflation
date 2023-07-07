@@ -1519,14 +1519,17 @@ class InflationLP(object):
         nof_known_vars = len(self.known_moments)
         nof_variables = len(self.compmonomial_to_idx)
 
-        known_row = [0] * (nof_known_vars + 1)
+        known_row = [0] * nof_known_vars
         known_col, known_data = [], []
         for x, v in self.known_moments.items():
             known_col.append(self.compmonomial_to_idx[x])
             known_data.append(v)
         # Add the constant 1 in case un-normalized problems remove it
-        known_col.append(self.compmonomial_to_idx[self.One])
-        known_data.append(1)
+        one_idx = self.compmonomial_to_idx[self.One]
+        if one_idx not in known_col:
+            known_row.append(0)
+            known_col.append(one_idx)
+            known_data.append(1)
         return coo_matrix((known_data, (known_row, known_col)),
                           shape=(1, nof_variables))
 
@@ -1560,26 +1563,15 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
-        # Defining variables in the LP
-        variables = set()
-        variables.update(self._processed_objective)
-        variables.update(self.known_moments)
-        internal_equalities = self.moment_equalities.copy()
-        for mon, (coeff, subs) in self.semiknown_moments.items():
-            internal_equalities.append({mon: 1, subs: -coeff})
-        for eq in internal_equalities:
-            variables.update(eq)
-        for ineq in self.moment_inequalities:
-            variables.update(ineq)
-        variables.add(self.One)
-
+        variables = [mon.name for mon in self.compmonomial_to_idx]
         nof_variables = len(variables)
         nof_inequalities = len(self.moment_inequalities)
 
         solverargs = {"objective": self.sparse_objective,
                       "known_vars": self.sparse_known_vars,
                       "equalities": self.sparse_equalities,
-                      "inequalities": self.sparse_inequalities}
+                      "inequalities": self.sparse_inequalities,
+                      "variables": variables}
 
         nof_lb = len(self._processed_moment_lowerbounds)
         nof_ub = len(self._processed_moment_upperbounds)
