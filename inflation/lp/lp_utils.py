@@ -359,11 +359,11 @@ def solveLP_Mosek(objective: Dict = None,
                 print("The solution status is unknown.")
                 print(f"   Termination code: {term_tuple}")
 
-            # Extract the certificate: c⋅x - y⋅b >= 0 for all primal feasible
+            # Extract the certificate: y.b - c⋅x >= 0 for all primal feasible
             certificate = {x: 0 for x in variables}
 
             for x in set(objective).difference(known_vars):
-                certificate[x] += objective[x]
+                certificate[x] -= objective[x]
             for i, x in enumerate(known_vars):
                 certificate[x] += y_values[len(constraints) + i]
 
