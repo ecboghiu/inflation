@@ -854,7 +854,7 @@ class InflationLP(object):
         except KeyError:
             if len(self.lexorder_symmetries) == 1:
                 mon = InternalAtomicMonomial(self, array1d)
-                self.atomic_monomial_from_hash[key] = mon
+                self.atomic_monomial_from_hash[key.tobytes()] = mon
                 return mon
             else:
                 mon_as_symboolvec = key[self.lexorder_symmetries]
