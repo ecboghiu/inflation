@@ -14,7 +14,7 @@ from numbers import Real
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, vstack
 
 from inflation import InflationProblem
 
@@ -1597,16 +1597,12 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
-        # Defining variables in the LP
-        # TODO: Use SPARSE equalities with semiknowns!!
-        internal_equalities = self.moment_equalities.copy()
-        for mon, (coeff, subs) in self.semiknown_moments.items():
-            internal_equalities.append({mon: 1, subs: -coeff})
-
+        internal_equalities = vstack((self.sparse_equalities,
+                                      self.sparse_semiknown))
 
         solverargs = {"objective": self.sparse_objective,
                       "known_vars": self.sparse_known_vars,
-                      "equalities": self.sparse_equalities,
+                      "equalities": internal_equalities,
                       "inequalities": self.sparse_inequalities,
                       "variables": self.monomial_names}
 
