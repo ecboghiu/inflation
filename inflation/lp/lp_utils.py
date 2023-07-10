@@ -6,14 +6,16 @@ from typing import List, Dict
 from scipy.sparse import vstack, coo_matrix
 from time import perf_counter
 from gc import collect
+from ..utils import partsextractor
 
 
-def solveLP(objective: coo_matrix = coo_matrix([]),
-            known_vars: coo_matrix = coo_matrix([]),
-            inequalities: coo_matrix = coo_matrix([]),
-            equalities: coo_matrix = coo_matrix([]),
-            lower_bounds: coo_matrix = coo_matrix([]),
-            upper_bounds: coo_matrix = coo_matrix([]),
+def solveLP(objective: coo_matrix | Dict,
+            known_vars: coo_matrix | Dict,
+            semiknown_vars: Dict,
+            inequalities: coo_matrix | List[Dict],
+            equalities: coo_matrix | List[Dict],
+            lower_bounds: coo_matrix | Dict,
+            upper_bounds: coo_matrix | Dict,
             solve_dual: bool = False,
             all_non_negative: bool = True,
             feas_as_optim: bool = False,
@@ -21,6 +23,106 @@ def solveLP(objective: coo_matrix = coo_matrix([]),
             solverparameters: Dict = None,
             variables: List = None
             ) -> Dict:
+    """Wrapper function that converts all dictionaries to sparse matrices to
+    pass to the solver.
+
+    Parameters
+    ----------
+    objective : coo_matrix | Dict, optional
+        Objective function
+    known_vars : coo_matrix | Dict, optional
+        Known values of the monomials
+    semiknown_vars : Dict, optional
+        Semiknown variables
+    inequalities : coo_matrix | List[Dict], optional
+        Inequality constraints
+    equalities : coo_matrix | List[Dict], optional
+        Equality constraints
+    lower_bounds : coo_matrix | Dict, optional
+        Lower bounds of variables
+    upper_bounds : coo_matrix | Dict, optional
+        Upper bounds of variables
+    solve_dual : bool, optional
+        Whether to solve the dual (``True``) or primal (``False``) formulation.
+        By default, ``False``.
+    all_non_negative : bool, optional
+        Whether to set all primal variables as non-negative. By default,
+        ``True``.
+    feas_as_optim : bool, optional
+        NOT IMPLEMENTED
+    verbose : int, optional
+        Verbosity. Higher means more messages. By default, 0.
+    solverparameters : dict, optional
+        Parameters to pass to the MOSEK solver. For example, to control whether
+        presolve is applied before optimization, set
+        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or
+        ``mosek.presolvemode.off``. Or, control which optimizer is used by
+        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK's
+        documentation
+        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_ for
+        more details.
+    variables : list
+        Monomials by name in same order as column indices of all other solver
+        arguments
+
+    Returns
+    -------
+    dict
+        Primal objective value, dual objective value, problem status, success
+        status, dual certificate (as dictionary and sparse matrix), x values,
+        and response code.
+    """
+    # Save solver arguments
+    solver_args = locals()
+
+    # Check type for arguments related to the problem
+    problem_args = ("objective",
+                    "known_vars",
+                    "semiknown_vars",
+                    "inequalities",
+                    "equalities",
+                    "lower_bounds",
+                    "upper_bounds")
+    used_args = {k: v for k, v in solver_args
+                 if k in problem_args and v is not None}
+    if all(isinstance(arg, coo_matrix) for arg in used_args.values()):
+        assert (variables is not None, "Variables must be declared when all "
+                                       "arguments are in sparse matrix form.")
+    elif all(isinstance(arg, dict | list) for arg in used_args.values()):
+        if variables is None:
+            # Infer variables
+            variables = set()
+            variables.update(objective)
+            for ineq in inequalities:
+                variables.update(ineq)
+            for eq in equalities:
+                variables.update(eq)
+            for x, (c, x2) in semiknown_vars.items():
+                variables.update([x, x2])
+            variables.update(known_vars)
+            variables = sorted(variables)
+        solver_args.update(convert_dicts(**used_args, variables=variables))
+    else:
+        assert (variables is not None, "Variables must be declared when "
+                                       "arguments are of mixed form.")
+        solver_args.update(convert_dicts(**used_args, variables=variables))
+    solver_args.pop("semiknown_vars", None)
+    return solveLP_sparse(**solver_args)
+
+
+def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
+                   known_vars: coo_matrix = coo_matrix([]),
+                   inequalities: coo_matrix = coo_matrix([]),
+                   equalities: coo_matrix = coo_matrix([]),
+                   lower_bounds: coo_matrix = coo_matrix([]),
+                   upper_bounds: coo_matrix = coo_matrix([]),
+                   solve_dual: bool = False,
+                   all_non_negative: bool = True,
+                   feas_as_optim: bool = False,
+                   verbose: int = 0,
+                   solverparameters: Dict = None,
+                   variables: List = None
+                   ) -> Dict:
     """Internal function to solve an LP with the Mosek Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
     variables in the LP.
@@ -743,6 +845,94 @@ def streamprinter(text: str) -> None:
     sys.stdout.flush()
 
 
+###########################################################################
+# ROUTINES RELATED TO SPARSE MATRIX CONVERSION                            #
+###########################################################################
+
+
+def dict_to_sparse_vec(str_dict: Dict, variables: List) -> coo_matrix:
+    """Convert a dictionary of monomial names and values to a one-dimensional
+    sparse matrix.
+    """
+    var_to_idx = {x: i for i, x in enumerate(variables)}
+    data = list(str_dict.values())
+    keys = list(str_dict.keys())
+    col = partsextractor(var_to_idx, keys)
+    row = np.zeros(len(col), dtype=int)
+    return coo_matrix((data, (row, col)), shape=(1, len(variables)))
+
+
+def constraint_vec_to_mat(constraints: List[Dict],
+                          variables: List) -> coo_matrix:
+    """Convert a list of dictionaries representing constraints to a sparse
+    matrix."""
+    row = []
+    for i, cons in enumerate(constraints):
+        row.extend([i] * len(cons))
+    cols = [dict_to_sparse_vec(cons, variables).col for cons in constraints]
+    col = [c for vec_col in cols for c in vec_col]
+    data = [dict_to_sparse_vec(cons, variables).data for cons in constraints]
+    data = [d for vec_data in data for d in vec_data]
+    return coo_matrix((data, (row, col)),
+                      shape=(len(constraints), len(variables)))
+
+
+def convert_dicts(objective: coo_matrix | Dict = None,
+                  known_vars: coo_matrix | Dict = None,
+                  semiknown_vars: coo_matrix | Dict = None,
+                  inequalities: coo_matrix | List[Dict] = None,
+                  equalities: coo_matrix | List[Dict] = None,
+                  lower_bounds: coo_matrix | Dict = None,
+                  upper_bounds: coo_matrix | Dict = None,
+                  variables: List = None) -> Dict:
+    """Convert any dictionaries to sparse matrices to send to the solver."""
+    # Dictionary of arguments to convert
+    sparse_args = {k: None for k, arg in locals().items()
+                   if isinstance(arg, dict | list)}
+    if "objective" in sparse_args:
+        sparse_args["objective"] = dict_to_sparse_vec(objective, variables)
+    if "known_vars" in sparse_args:
+        sparse_args["known_vars"] = dict_to_sparse_vec(known_vars, variables)
+    if "inequalities" in sparse_args:
+        sparse_args["inequalities"] = constraint_vec_to_mat(inequalities,
+                                                            variables)
+    if "equalities" in sparse_args:
+        equalities_mat = constraint_vec_to_mat(equalities, variables)
+        if "semiknown_vars" in sparse_args:
+            nof_semiknown = len(semiknown_vars)
+            nof_variables = len(variables)
+            var_to_idx = {x: i for i, x in enumerate(variables)}
+            row = np.repeat(np.arange(nof_semiknown), 2)
+            col = [(var_to_idx[x], var_to_idx[x2])
+                   for x, (c, x2) in semiknown_vars.items()]
+            col = list(sum(col, ()))
+            data = [(1, -c) for x, (c, x2) in semiknown_vars.items()]
+            data = list(sum(data, ()))
+            semiknown_mat = coo_matrix((data, (row, col)),
+                                       shape=(nof_semiknown, nof_variables))
+            equalities_mat = vstack((equalities_mat, semiknown_mat))
+        sparse_args["equalities"] = equalities_mat
+    if "lower_bounds" in sparse_args:
+        sparse_args["lower_bounds"] = dict_to_sparse_vec(lower_bounds,
+                                                         variables)
+    if "upper_bounds" in sparse_args:
+        ub = dict_to_sparse_vec(upper_bounds, variables)
+        ub_data = [-c for c in ub.data]
+        sparse_args["upper_bounds"] = coo_matrix((ub_data, (ub.row, ub.col)),
+                                                 shape=(1, len(variables)))
+    return sparse_args
+
+
+def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix) -> coo_matrix:
+    """Convert a one-dimensional sparse matrix to a full-dimensional one."""
+    nof_rows = sparse_vec.nnz
+    nof_cols = sparse_vec.shape[1]
+    row = [*range(nof_rows)]
+    col = sparse_vec.col
+    data = [1] * nof_rows
+    return coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
+
+
 if __name__ == '__main__':
     simple_lp = {
         "objective": {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
@@ -770,5 +960,5 @@ if __name__ == '__main__':
         "equalities": eq,
         "variables": ['1', 'w', 'x', 'y', 'z']
     }
-    mat_sol = solveLP(**simple_lp_mat, solve_dual=False)
-    mat_sol_d = solveLP(**simple_lp_mat, solve_dual=True)
+    mat_sol = solveLP_sparse(solve_dual=False, **simple_lp_mat)
+    mat_sol_d = solveLP_sparse(solve_dual=True, **simple_lp_mat)
