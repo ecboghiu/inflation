@@ -842,31 +842,27 @@ def streamprinter(text: str) -> None:
 ###########################################################################
 
 
-def dict_to_sparse_vec(str_dict: Dict, variables: List) -> coo_matrix:
-    """Convert a dictionary of monomial names and values to a one-dimensional
-    sparse matrix.
-    """
-    var_to_idx = {x: i for i, x in enumerate(variables)}
-    data = list(str_dict.values())
-    keys = list(str_dict.keys())
-    col = partsextractor(var_to_idx, keys)
-    row = np.zeros(len(col), dtype=int)
-    return coo_matrix((data, (row, col)), shape=(1, len(variables)))
-
-
-def constraint_vec_to_mat(constraints: List[Dict],
-                          variables: List) -> coo_matrix:
-    """Convert a list of dictionaries representing constraints to a sparse
-    matrix."""
-    row = []
-    for i, cons in enumerate(constraints):
-        row.extend([i] * len(cons))
-    cols = [dict_to_sparse_vec(cons, variables).col for cons in constraints]
-    col = [c for vec_col in cols for c in vec_col]
-    data = [dict_to_sparse_vec(cons, variables).data for cons in constraints]
-    data = [d for vec_data in data for d in vec_data]
-    return coo_matrix((data, (row, col)),
-                      shape=(len(constraints), len(variables)))
+def to_sparse(argument: Union[Dict, List[Dict]],
+              variables: List) -> coo_matrix:
+    """Convert a solver argument to a sparse matrix to pass to the solver."""
+    if type(argument) == dict:
+        var_to_idx = {x: i for i, x in enumerate(variables)}
+        data = list(argument.values())
+        keys = list(argument.keys())
+        col = partsextractor(var_to_idx, keys)
+        row = np.zeros(len(col), dtype=int)
+        return coo_matrix((data, (row, col)), shape=(1, len(variables)))
+    else:
+        # Argument is a list of constraints
+        row = []
+        for i, cons in enumerate(argument):
+            row.extend([i] * len(cons))
+        cols = [to_sparse(cons, variables).col for cons in argument]
+        col = [c for vec_col in cols for c in vec_col]
+        data = [to_sparse(cons, variables).data for cons in argument]
+        data = [d for vec_data in data for d in vec_data]
+        return coo_matrix((data, (row, col)),
+                          shape=(len(argument), len(variables)))
 
 
 def convert_dicts(objective: Union[coo_matrix, Dict] = None,
@@ -882,14 +878,13 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
     sparse_args = {k: None for k, arg in locals().items()
                    if isinstance(arg, (dict, list))}
     if "objective" in sparse_args:
-        sparse_args["objective"] = dict_to_sparse_vec(objective, variables)
+        sparse_args["objective"] = to_sparse(objective, variables)
     if "known_vars" in sparse_args:
-        sparse_args["known_vars"] = dict_to_sparse_vec(known_vars, variables)
+        sparse_args["known_vars"] = to_sparse(known_vars, variables)
     if "inequalities" in sparse_args:
-        sparse_args["inequalities"] = constraint_vec_to_mat(inequalities,
-                                                            variables)
+        sparse_args["inequalities"] = to_sparse(inequalities, variables)
     if "equalities" in sparse_args:
-        equalities_mat = constraint_vec_to_mat(equalities, variables)
+        equalities_mat = to_sparse(equalities, variables)
         if "semiknown_vars" in sparse_args:
             nof_semiknown = len(semiknown_vars)
             nof_variables = len(variables)
@@ -905,10 +900,9 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
             equalities_mat = vstack((equalities_mat, semiknown_mat))
         sparse_args["equalities"] = equalities_mat
     if "lower_bounds" in sparse_args:
-        sparse_args["lower_bounds"] = dict_to_sparse_vec(lower_bounds,
-                                                         variables)
+        sparse_args["lower_bounds"] = to_sparse(lower_bounds, variables)
     if "upper_bounds" in sparse_args:
-        ub = dict_to_sparse_vec(upper_bounds, variables)
+        ub = to_sparse(upper_bounds, variables)
         ub_data = [-c for c in ub.data]
         sparse_args["upper_bounds"] = coo_matrix((ub_data, (ub.row, ub.col)),
                                                  shape=(1, len(variables)))
