@@ -2,20 +2,20 @@ import sys
 import mosek
 import numpy as np
 
-from typing import List, Dict
+from typing import List, Dict, Union
 from scipy.sparse import vstack, coo_matrix
 from time import perf_counter
 from gc import collect
-from ..utils import partsextractor, sparse_vec_to_sparse_mat
+from inflation.utils import partsextractor, sparse_vec_to_sparse_mat
 
 
-def solveLP(objective: coo_matrix | Dict,
-            known_vars: coo_matrix | Dict,
+def solveLP(objective: Union[coo_matrix, Dict],
+            known_vars: Union[coo_matrix, Dict],
             semiknown_vars: Dict,
-            inequalities: coo_matrix | List[Dict],
-            equalities: coo_matrix | List[Dict],
-            lower_bounds: coo_matrix | Dict,
-            upper_bounds: coo_matrix | Dict,
+            inequalities: Union[coo_matrix, List[Dict]],
+            equalities: Union[coo_matrix, List[Dict]],
+            lower_bounds: Union[coo_matrix, Dict],
+            upper_bounds: Union[coo_matrix, Dict],
             solve_dual: bool = False,
             all_non_negative: bool = True,
             feas_as_optim: bool = False,
@@ -86,9 +86,9 @@ def solveLP(objective: coo_matrix | Dict,
     used_args = {k: v for k, v in solver_args
                  if k in problem_args and v is not None}
     if all(isinstance(arg, coo_matrix) for arg in used_args.values()):
-        assert (variables is not None, "Variables must be declared when all "
-                                       "arguments are in sparse matrix form.")
-    elif all(isinstance(arg, dict | list) for arg in used_args.values()):
+        assert variables is not None, "Variables must be declared when all " \
+                                      "arguments are in sparse matrix form."
+    elif all(isinstance(arg, (dict, list)) for arg in used_args.values()):
         if variables is None:
             # Infer variables
             variables = set()
@@ -103,8 +103,8 @@ def solveLP(objective: coo_matrix | Dict,
             variables = sorted(variables)
         solver_args.update(convert_dicts(**used_args, variables=variables))
     else:
-        assert (variables is not None, "Variables must be declared when "
-                                       "arguments are of mixed form.")
+        assert variables is not None, "Variables must be declared when " \
+                                      "arguments are of mixed form."
         solver_args.update(convert_dicts(**used_args, variables=variables))
     solver_args.pop("semiknown_vars", None)
     return solveLP_sparse(**solver_args)
@@ -869,18 +869,18 @@ def constraint_vec_to_mat(constraints: List[Dict],
                       shape=(len(constraints), len(variables)))
 
 
-def convert_dicts(objective: coo_matrix | Dict = None,
-                  known_vars: coo_matrix | Dict = None,
-                  semiknown_vars: coo_matrix | Dict = None,
-                  inequalities: coo_matrix | List[Dict] = None,
-                  equalities: coo_matrix | List[Dict] = None,
-                  lower_bounds: coo_matrix | Dict = None,
-                  upper_bounds: coo_matrix | Dict = None,
+def convert_dicts(objective: Union[coo_matrix, Dict] = None,
+                  known_vars: Union[coo_matrix, Dict] = None,
+                  semiknown_vars: Union[coo_matrix, Dict] = None,
+                  inequalities: Union[coo_matrix, List[Dict]] = None,
+                  equalities: Union[coo_matrix, List[Dict]] = None,
+                  lower_bounds: Union[coo_matrix, Dict] = None,
+                  upper_bounds: Union[coo_matrix, Dict] = None,
                   variables: List = None) -> Dict:
     """Convert any dictionaries to sparse matrices to send to the solver."""
     # Dictionary of arguments to convert
     sparse_args = {k: None for k, arg in locals().items()
-                   if isinstance(arg, dict | list)}
+                   if isinstance(arg, (dict, list))}
     if "objective" in sparse_args:
         sparse_args["objective"] = dict_to_sparse_vec(objective, variables)
     if "known_vars" in sparse_args:
