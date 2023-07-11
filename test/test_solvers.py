@@ -1,12 +1,12 @@
 import unittest
 import numpy as np
 import warnings
-from scipy.sparse import lil_matrix
+from scipy.sparse import lil_matrix, coo_matrix
 from itertools import product
 
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
-from inflation.lp.lp_utils import solveLP_Mosek
+from inflation.lp.lp_utils import solveLP_Mosek, to_sparse, convert_dicts
 
 
 class TestMosek(unittest.TestCase):
@@ -388,5 +388,22 @@ class TestMosek(unittest.TestCase):
         ]
         self.assertTrue(all(map(check, vals)), msg + "\n" +f"{vals} + vs {truth_obj_lpi}")
 
+    def test_to_sparse(self):
+        known_vars = {'y': 0, 'x': -2, 'z': 9}
+        variables = ['x', 'y', 'z']
+        expected_mat = coo_matrix(([-2, 0, 9], ([0, 0, 0], [0, 1, 2])),
+                                  shape=(1, 3))
+        actual_mat = to_sparse(known_vars, variables)
+        self.assertEqual((expected_mat - actual_mat).nnz, 0,
+                         "The dictionary was not correctly converted to a "
+                         "sparse matrix.")
 
-
+        inequalities = self.simple_lp["inequalities"]
+        variables = ['1', 'w', 'x', 'y', 'z']
+        expected_mat = coo_matrix(([2, -1, 5, -1, 1/2, -1, 1, 1],
+                                   ([0, 0, 1, 1, 2, 2, 3, 3],
+                                   [0, 2, 0, 3, 0, 4, 0, 1])), shape=(4, 5))
+        actual_mat = to_sparse(inequalities, variables)
+        self.assertEqual((expected_mat - actual_mat).nnz, 0,
+                         "The list of dictionaries was not correctly "
+                         "converted to a sparse matrix.")
