@@ -8,6 +8,9 @@ from itertools import chain
 from typing import Iterable, Union, List, Tuple, Dict
 from sys import stderr
 from operator import itemgetter
+from scipy.sparse import coo_matrix
+
+
 def flatten(nested):
     """Keeps flattening a nested lists of lists until  the
     first element of the resulting list is not a list.
@@ -94,3 +97,25 @@ def partsextractor(thing_to_take_parts_of, indices):
             return itemgetter(*indices)(thing_to_take_parts_of)
     else:
         return itemgetter(indices)(thing_to_take_parts_of)
+
+
+def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix,
+                             row_repeat: int = 1) -> coo_matrix:
+    """Convert a one-dimensional sparse matrix to a full-dimensional one. Used
+    to expand solver arguments that are passed as a one-dimensional matrix such
+    as known_vars, lower_bounds, upper_bounds."""
+    nof_rows = sparse_vec.nnz
+    nof_cols = sparse_vec.shape[1]
+    row = [*range(nof_rows)]
+    col = sparse_vec.col
+    data = [1] * nof_rows
+    # Formulating variable bounds as inequality constraints in InflationLP
+    if row_repeat == 2:
+        row = np.repeat(np.arange(nof_rows), 2)
+        col = [None] * (2 * nof_rows)
+        col[::2] = sparse_vec.col
+        col[1::2] = np.zeros(nof_rows)  # Assumes '1' monomial is first column
+        data = [None] * (2 * nof_rows)
+        data[::2] = [1] * nof_rows
+        data[1::2] = [-c for c in sparse_vec.data]
+    return coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))

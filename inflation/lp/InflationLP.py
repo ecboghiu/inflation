@@ -29,7 +29,8 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
 from .lp_utils import solveLP_Mosek
 from functools import reduce
-from ..utils import clean_coefficients, eprint, partsextractor
+from ..utils import clean_coefficients, eprint, partsextractor, \
+    sparse_vec_to_sparse_mat
 from functools import cached_property
 
 class InflationLP(object):
@@ -1610,30 +1611,16 @@ class InflationLP(object):
             solverargs["lower_bounds"] = self.sparse_lowerbounds
             solverargs["upper_bounds"] = self.sparse_upperbounds
         else:
-            nof_inequalities = self.sparse_inequalities.shape[0]
-            nof_lb = self.sparse_lowerbounds.shape[1]
             nof_ub = self.sparse_upperbounds.shape[1]
-            # TODO: Introduce methods for converting upper and lower bounds to inequality matrices
-            new_row = np.hstack((
-                self.sparse_inequalities.row,
-                np.repeat(np.arange(nof_inequalities, nof_inequalities+nof_lb), 2),
-                np.repeat(np.arange(nof_inequalities + nof_lb, nof_inequalities + nof_lb + nof_ub), 2)
-            ))
-            new_col = np.hstack((
-                self.sparse_inequalities.col,
-                np.vstack((np.ones(nof_lb, dtype=int), self.sparse_lowerbounds.col)).T.ravel(),
-                np.vstack((np.ones(nof_ub, dtype=int), self.sparse_upperbounds.col)).T.ravel(),
-            ))
-
-            new_data = np.hstack((
-                self.sparse_inequalities.data,
-                np.vstack((-np.asarray(self.sparse_lowerbounds.data), np.ones(nof_lb, dtype=int))).T.ravel(),
-                np.vstack((self.sparse_upperbounds.data, -np.ones(nof_ub, dtype=int))).T.ravel(),
-            ))
-
-            solverargs["inequalities"] = coo_matrix((new_data, (new_row, new_col)),
-                                      shape=(nof_inequalities + nof_lb + nof_ub, self.n_columns))
-
+            lb_mat = sparse_vec_to_sparse_mat(self.sparse_lowerbounds,
+                                              row_repeat=2)
+            ub_mat = sparse_vec_to_sparse_mat(self.sparse_upperbounds,
+                                              row_repeat=2)
+            ub_data = [-c for c in ub_mat.data]
+            ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
+                                shape=(nof_ub, len(self.monomial_names)))
+            solverargs["inequalities"] = vstack((self.sparse_inequalities,
+                                                 lb_mat, ub_mat))
         return solverargs
 
     def _prepare_solver_arguments(self, separate_bounds: bool = True) -> dict:

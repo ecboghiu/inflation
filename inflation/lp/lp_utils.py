@@ -6,7 +6,7 @@ from typing import List, Dict
 from scipy.sparse import vstack, coo_matrix
 from time import perf_counter
 from gc import collect
-from ..utils import partsextractor
+from ..utils import partsextractor, sparse_vec_to_sparse_mat
 
 
 def solveLP(objective: coo_matrix | Dict,
@@ -215,17 +215,12 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
             b = [0] * nof_primal_constraints
 
             # Add known values as equality constraints to the constraint matrix
-            nof_known_vars = known_vars.nnz
-            kv_row = [*range(nof_known_vars)]
-            kv_col = known_vars.col
-            kv_data = [1] * nof_known_vars
-            kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
-                                   shape=(nof_known_vars,
-                                          nof_primal_variables))
+            kv_matrix = sparse_vec_to_sparse_mat(known_vars)
             constraints = vstack((constraints, kv_matrix))
             b.extend(known_vars.data)
 
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
+            nof_known_vars = known_vars.nnz
             nof_primal_inequalities = inequalities.shape[0]
             nof_primal_equalities = equalities.shape[0] + nof_known_vars
             nof_lb = lower_bounds.nnz
@@ -245,15 +240,12 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
                 # Add variable bounds as inequality constraints to matrix
                 if nof_primal_nontriv_bounds > 0:
-                    bounds_row = [*range(nof_primal_nontriv_bounds)]
-                    bounds_col = np.concatenate((lower_bounds.col,
-                                                 upper_bounds.col))
-                    bounds_data = ([1] * nof_lb) + ([-1] * nof_ub)
-                    bounds_matrix = coo_matrix(
-                        (bounds_data, (bounds_row, bounds_col)),
-                        shape=(nof_primal_nontriv_bounds,
-                               nof_primal_variables))
-                    matrix = vstack((constraints, bounds_matrix),
+                    lb_mat = sparse_vec_to_sparse_mat(lower_bounds)
+                    ub_mat = sparse_vec_to_sparse_mat(upper_bounds)
+                    ub_data = [-1] * nof_ub
+                    ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
+                                        shape=(nof_ub, nof_primal_variables))
+                    matrix = vstack((constraints, lb_mat, ub_mat),
                                     format='csr')
                     b_extra = np.concatenate(
                         (lower_bounds.data, [-ub for ub in upper_bounds.data]))
@@ -921,16 +913,6 @@ def convert_dicts(objective: coo_matrix | Dict = None,
         sparse_args["upper_bounds"] = coo_matrix((ub_data, (ub.row, ub.col)),
                                                  shape=(1, len(variables)))
     return sparse_args
-
-
-def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix) -> coo_matrix:
-    """Convert a one-dimensional sparse matrix to a full-dimensional one."""
-    nof_rows = sparse_vec.nnz
-    nof_cols = sparse_vec.shape[1]
-    row = [*range(nof_rows)]
-    col = sparse_vec.col
-    data = [1] * nof_rows
-    return coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
 
 
 if __name__ == '__main__':
