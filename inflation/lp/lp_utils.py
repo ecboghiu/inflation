@@ -215,7 +215,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
             b = [0] * nof_primal_constraints
 
             # Add known values as equality constraints to the constraint matrix
-            kv_matrix = sparse_vec_to_sparse_mat(known_vars)
+            kv_matrix = sparse_vec_to_sparse_mat(known_vars, conversion_style="eq")
             constraints = vstack((constraints, kv_matrix))
             b.extend(known_vars.data)
 
@@ -240,15 +240,15 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
                 # Add variable bounds as inequality constraints to matrix
                 if nof_primal_nontriv_bounds > 0:
-                    lb_mat = sparse_vec_to_sparse_mat(lower_bounds)
-                    ub_mat = sparse_vec_to_sparse_mat(upper_bounds)
-                    ub_data = [-1] * nof_ub
+                    lb_mat = sparse_vec_to_sparse_mat(lower_bounds, conversion_style="eq")
+                    ub_mat = sparse_vec_to_sparse_mat(upper_bounds, conversion_style="eq")
+                    ub_data = -ub_mat.data
                     ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
                                         shape=(nof_ub, nof_primal_variables))
                     matrix = vstack((constraints, lb_mat, ub_mat),
                                     format='csr')
                     b_extra = np.concatenate(
-                        (lower_bounds.data, [-ub for ub in upper_bounds.data]))
+                        (lower_bounds.data, -np.asarray(upper_bounds.data)))
                     objective_vector = np.concatenate((b, b_extra))
                 else:
                     matrix = constraints.tocsr(copy=False)
@@ -297,26 +297,31 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                       [mosek.boundkey.fx] * nof_primal_equalities
                 blc = buc = b
 
-                # Set correct bounds if x >= 0
-                if all_non_negative:
-                    zeros = np.zeros(nof_primal_variables)
-                    lb_col = [*range(nof_primal_variables)]
-                    # If there are no lower bounds, resize creates array of
-                    # zeros. If there are lower bounds, negative bounds are
-                    # corrected to zero.
-                    lb_data = np.maximum(
-                        np.resize(lower_bounds.toarray(),
-                                  (1, nof_primal_variables)),
-                        zeros).ravel()
-                else:
-                    lb_col = lower_bounds.col
-                    lb_data = lower_bounds.toarray().ravel()
+                # # Set correct bounds if x >= 0
+                # if all_non_negative:
+                #     zeros = np.zeros(nof_primal_variables)
+                #     lb_col = [*range(nof_primal_variables)]
+                #     # If there are no lower bounds, resize creates array of
+                #     # zeros. If there are lower bounds, negative bounds are
+                #     # corrected to zero.
+                #     lb_data = np.maximum(
+                #         np.resize(lower_bounds.toarray(),
+                #                   (1, nof_primal_variables)),
+                #         zeros).ravel()
+                # else:
+                #     lb_col = lower_bounds.col
+                #     lb_data = lower_bounds.toarray().ravel()
                 ub_col = upper_bounds.col
                 ub_data = upper_bounds.toarray().ravel()
+                lb_col = lower_bounds.col
+                lb_data = lower_bounds.toarray().ravel()
 
                 # Set bound keys and bound values for variables
                 bkx = [mosek.boundkey.fr] * nof_primal_variables
-                blx = [-inf] * nof_primal_variables
+                if all_non_negative:
+                    blx = np.zeros(nof_primal_variables)
+                else:
+                    blx = [-inf] * nof_primal_variables
                 bux = [+inf] * nof_primal_variables
                 for col in range(nof_primal_variables):
                     if col in lb_col and col in ub_col:
