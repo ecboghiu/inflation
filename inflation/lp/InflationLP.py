@@ -1613,12 +1613,9 @@ class InflationLP(object):
         else:
             nof_ub = self.sparse_upperbounds.shape[1]
             lb_mat = sparse_vec_to_sparse_mat(self.sparse_lowerbounds,
-                                              row_repeat=2)
+                                              conversion_style="lb")
             ub_mat = sparse_vec_to_sparse_mat(self.sparse_upperbounds,
-                                              row_repeat=2)
-            ub_data = [-c for c in ub_mat.data]
-            ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
-                                shape=(nof_ub, len(self.monomial_names)))
+                                              conversion_style="ub")
             solverargs["inequalities"] = vstack((self.sparse_inequalities,
                                                  lb_mat, ub_mat))
         return solverargs

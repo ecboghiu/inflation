@@ -87,7 +87,7 @@ def clean_coefficients(cert: Dict[str, float],
 def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
 
-def partsextractor(thing_to_take_parts_of, indices):
+def partsextractor(thing_to_take_parts_of, indices) -> Tuple[int,...]:
     if hasattr(indices, '__iter__'):
         if len(indices) == 0:
             return tuple()
@@ -100,22 +100,27 @@ def partsextractor(thing_to_take_parts_of, indices):
 
 
 def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix,
-                             row_repeat: int = 1) -> coo_matrix:
+                             conversion_style = "eq") -> coo_matrix:
     """Convert a one-dimensional sparse matrix to a full-dimensional one. Used
     to expand solver arguments that are passed as a one-dimensional matrix such
     as known_vars, lower_bounds, upper_bounds."""
+    assert conversion_style in {"eq, lb, ub"}, "Conversion style must be `lb` or `ub` or `eq`."
     nof_rows = sparse_vec.nnz
     nof_cols = sparse_vec.shape[1]
-    row = [*range(nof_rows)]
-    col = sparse_vec.col
-    data = [1] * nof_rows
-    # Formulating variable bounds as inequality constraints in InflationLP
-    if row_repeat == 2:
+    if conversion_style == "eq":
+        row = np.arange(nof_rows)
+        col = sparse_vec.col
+        data = np.ones(nof_rows)
+    else:
         row = np.repeat(np.arange(nof_rows), 2)
-        col = [None] * (2 * nof_rows)
-        col[::2] = sparse_vec.col
-        col[1::2] = np.zeros(nof_rows)  # Assumes '1' monomial is first column
-        data = [None] * (2 * nof_rows)
-        data[::2] = [1] * nof_rows
-        data[1::2] = [-c for c in sparse_vec.data]
-    return coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
+        col = np.vstack((
+            sparse_vec.col,
+            np.zeros(nof_rows)
+        )).T.ravel() # Assumes '1' monomial is first column
+        data = np.vstack((
+            -np.ones(nof_rows),
+            sparse_vec.data,
+        )).T.ravel() # Assumes '1' monomial is first column
+    if conversion_style == "lb":
+        data = -data
+    return coo_matrix((-data, (row, col)), shape=(nof_rows, nof_cols))
