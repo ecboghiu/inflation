@@ -867,45 +867,41 @@ def to_sparse(argument: Union[Dict, List[Dict]],
 
 def convert_dicts(objective: Union[coo_matrix, Dict] = None,
                   known_vars: Union[coo_matrix, Dict] = None,
-                  semiknown_vars: Union[coo_matrix, Dict] = None,
+                  semiknown_vars: Dict = None,
                   inequalities: Union[coo_matrix, List[Dict]] = None,
                   equalities: Union[coo_matrix, List[Dict]] = None,
                   lower_bounds: Union[coo_matrix, Dict] = None,
                   upper_bounds: Union[coo_matrix, Dict] = None,
                   variables: List = None) -> Dict:
-    """Convert any dictionaries to sparse matrices to send to the solver."""
-    # Dictionary of arguments to convert
-    sparse_args = {k: None for k, arg in locals().items()
-                   if isinstance(arg, (dict, list))}
-    if "objective" in sparse_args:
-        sparse_args["objective"] = to_sparse(objective, variables)
-    if "known_vars" in sparse_args:
-        sparse_args["known_vars"] = to_sparse(known_vars, variables)
-    if "inequalities" in sparse_args:
-        sparse_args["inequalities"] = to_sparse(inequalities, variables)
-    if "equalities" in sparse_args:
-        equalities_mat = to_sparse(equalities, variables)
-        if "semiknown_vars" in sparse_args:
-            nof_semiknown = len(semiknown_vars)
-            nof_variables = len(variables)
-            var_to_idx = {x: i for i, x in enumerate(variables)}
-            row = np.repeat(np.arange(nof_semiknown), 2)
-            col = [(var_to_idx[x], var_to_idx[x2])
-                   for x, (c, x2) in semiknown_vars.items()]
-            col = list(sum(col, ()))
-            data = [(1, -c) for x, (c, x2) in semiknown_vars.items()]
-            data = list(sum(data, ()))
-            semiknown_mat = coo_matrix((data, (row, col)),
-                                       shape=(nof_semiknown, nof_variables))
-            equalities_mat = vstack((equalities_mat, semiknown_mat))
-        sparse_args["equalities"] = equalities_mat
-    if "lower_bounds" in sparse_args:
-        sparse_args["lower_bounds"] = to_sparse(lower_bounds, variables)
-    if "upper_bounds" in sparse_args:
-        ub = to_sparse(upper_bounds, variables)
-        ub_data = [-c for c in ub.data]
-        sparse_args["upper_bounds"] = coo_matrix((ub_data, (ub.row, ub.col)),
-                                                 shape=(1, len(variables)))
+    """Convert any dictionaries to sparse matrices to send to the solver.
+    Semiknown variables are absorbed into the equality constraints. Only
+    converted arguments are returned."""
+
+    assert variables is not None, "Variables must be passed."
+
+    # Arguments converted from dictionaries to sparse matrices
+    sparse_args = {k: to_sparse(arg, variables) for k, arg in locals().items()
+                   if isinstance(arg, (dict, list)) and k != "semiknown_vars"
+                   and k != "variables"}
+
+    # Add semiknown variables to equality constraints
+    if semiknown_vars:
+        nof_semiknown = len(semiknown_vars)
+        nof_variables = len(variables)
+        var_to_idx = {x: i for i, x in enumerate(variables)}
+        row = np.repeat(np.arange(nof_semiknown), 2)
+        col = [(var_to_idx[x], var_to_idx[x2])
+               for x, (c, x2) in semiknown_vars.items()]
+        col = list(sum(col, ()))
+        data = [(1, -c) for x, (c, x2) in semiknown_vars.items()]
+        data = list(sum(data, ()))
+        semiknown_mat = coo_matrix((data, (row, col)),
+                                   shape=(nof_semiknown, nof_variables))
+        if "equalities" in sparse_args:
+            sparse_args["equalities"] = vstack((sparse_args["equalities"],
+                                                semiknown_mat))
+        else:
+            sparse_args["equalities"] = semiknown_mat
     return sparse_args
 
 

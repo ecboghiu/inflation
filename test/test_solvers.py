@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 import warnings
-from scipy.sparse import lil_matrix, coo_matrix
+from scipy.sparse import lil_matrix, coo_matrix, vstack
 from itertools import product
-
+from copy import deepcopy
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
 from inflation.lp.lp_utils import solveLP_Mosek, to_sparse, convert_dicts
@@ -389,21 +389,64 @@ class TestMosek(unittest.TestCase):
         self.assertTrue(all(map(check, vals)), msg + "\n" +f"{vals} + vs {truth_obj_lpi}")
 
     def test_to_sparse(self):
-        known_vars = {'y': 0, 'x': -2, 'z': 9}
-        variables = ['x', 'y', 'z']
-        expected_mat = coo_matrix(([-2, 0, 9], ([0, 0, 0], [0, 1, 2])),
-                                  shape=(1, 3))
-        actual_mat = to_sparse(known_vars, variables)
-        self.assertEqual((expected_mat - actual_mat).nnz, 0,
-                         "The dictionary was not correctly converted to a "
-                         "sparse matrix.")
+        with self.subTest(msg="Convert dictionary to sparse matrix"):
+            known_vars = {'y': 0, 'x': -2, 'z': 9}
+            variables = ['x', 'y', 'z']
+            expected_mat = coo_matrix(([-2, 0, 9], ([0, 0, 0], [0, 1, 2])),
+                                      shape=(1, 3))
+            actual_mat = to_sparse(known_vars, variables)
+            self.assertEqual((expected_mat - actual_mat).nnz, 0,
+                             "The dictionary was not correctly converted to a "
+                             "sparse matrix.")
+        with self.subTest(msg="Convert list of dictionaries to sparse matrix"):
+            inequalities = self.simple_lp["inequalities"]
+            variables = ['1', 'w', 'x', 'y', 'z']
+            expected_mat = coo_matrix(([2, -1, 5, -1, 1/2, -1, 1, 1],
+                                       ([0, 0, 1, 1, 2, 2, 3, 3],
+                                       [0, 2, 0, 3, 0, 4, 0, 1])),
+                                      shape=(4, 5))
+            actual_mat = to_sparse(inequalities, variables)
+            self.assertEqual((expected_mat - actual_mat).nnz, 0,
+                             "The list of dictionaries was not correctly "
+                             "converted to a sparse matrix.")
 
-        inequalities = self.simple_lp["inequalities"]
-        variables = ['1', 'w', 'x', 'y', 'z']
-        expected_mat = coo_matrix(([2, -1, 5, -1, 1/2, -1, 1, 1],
-                                   ([0, 0, 1, 1, 2, 2, 3, 3],
-                                   [0, 2, 0, 3, 0, 4, 0, 1])), shape=(4, 5))
-        actual_mat = to_sparse(inequalities, variables)
-        self.assertEqual((expected_mat - actual_mat).nnz, 0,
-                         "The list of dictionaries was not correctly "
-                         "converted to a sparse matrix.")
+    def test_convert_dicts(self):
+        dict_lp = deepcopy(self.simple_lp)
+        semiknown = dict_lp["semiknown_vars"] = {'x': (4, 'y'), 'w': (-2, 'z')}
+        dict_lp["lower_bounds"] = {'x': 0, 'y': -2, 'z': 3}
+        dict_lp["upper_bounds"] = {'w': 5, 'x': 0, 'y': -1}
+        var = ['1', 'w', 'x', 'y', 'z']
+        mat_lp = {k: to_sparse(v, var) for k, v in dict_lp.items()
+                  if k != "semiknown_vars"}
+        semiknown_mat = coo_matrix(([1, -4, 1, 2],
+                                    ([0, 0, 1, 1], [2, 3, 1, 4])),
+                                   shape=(len(semiknown), len(var)))
+        mat_lp["equalities"] = vstack((mat_lp["equalities"], semiknown_mat))
+        mixed_lp = {k: dict_lp[k] for k in ("objective", "semiknown_vars")}
+        mixed_lp.update({k: mat_lp[k]
+                         for k in ("known_vars", "upper_bounds")})
+
+        with self.subTest(msg="Variables not passed"):
+            with self.assertRaises(AssertionError):
+                convert_dicts(**dict_lp)
+        with self.subTest(msg="All arguments are matrices"):
+            expected_args = {}
+            actual_args = convert_dicts(**mat_lp, variables=var)
+            self.assertEqual(expected_args, actual_args)
+
+        types = {"All dictionaries": (mat_lp, dict_lp),
+                 "Mixed type": ({"objective": mat_lp["objective"],
+                                 "equalities": semiknown_mat},
+                                mixed_lp)}
+        for type_name, (expected_args, to_convert) in types.items():
+            with self.subTest(msg="Convert arguments of type:", i=type_name):
+                actual_args = convert_dicts(**to_convert, variables=var)
+                self.assertEqual(len(expected_args), len(actual_args),
+                                 "The number of returned arguments is not "
+                                 "correct.")
+                for arg in expected_args:
+                    (exp_arg, act_arg) = (expected_args[arg], actual_args[arg])
+                    self.assertEqual((exp_arg - act_arg).nnz, 0,
+                                     f"{arg} is not equal: "
+                                     f"{exp_arg.toarray()} != "
+                                     f"{act_arg.toarray()}.")
