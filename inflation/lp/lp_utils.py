@@ -407,7 +407,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 print("The solution status is unknown.")
                 print(f"   Termination code: {term_tuple}")
 
-            # Extract the certificate as a sparse matrix: c⋅x - y⋅b <= 0
+            # Extract the certificate as a sparse matrix: y.b - c.x <= 0
             y_values = y_values[nof_primal_constraints - nof_known_vars:]
             cert_row = [0] * nof_primal_variables
             cert_col = [*range(nof_primal_variables)]
@@ -796,13 +796,13 @@ def solveLP_Mosek(objective: Dict = None,
                 print("The solution status is unknown.")
                 print(f"   Termination code: {term_tuple}")
 
-            # Extract the certificate: c⋅x - y⋅b <= 0 for all primal feasible
+            # Extract the certificate: y.b - c.x <= 0 for all primal feasible
             certificate = {x: 0 for x in variables}
 
             for x in set(objective).difference(known_vars):
-                certificate[x] += objective[x]
+                certificate[x] -= objective[x]
             for i, x in enumerate(known_vars):
-                certificate[x] -= y_values[len(constraints) + i]
+                certificate[x] += y_values[len(constraints) + i]
 
             # Clean entries with coefficient zero
             for x in list(certificate):
