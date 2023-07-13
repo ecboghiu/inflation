@@ -6,8 +6,7 @@ from typing import List, Dict, Union
 from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
-from inflation.utils import partsextractor, sparse_vec_to_sparse_mat, \
-    vstack_non_empty
+from inflation.utils import partsextractor, expand_sparse_vec, vstack_non_empty
 
 
 def solveLP(objective: Union[coo_matrix, Dict],
@@ -216,7 +215,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
             b = [0] * nof_primal_constraints
 
             # Add known values as equality constraints to the constraint matrix
-            kv_matrix = sparse_vec_to_sparse_mat(known_vars, conversion_style="eq")
+            kv_matrix = expand_sparse_vec(known_vars, conversion_style="eq")
             constraints = vstack_non_empty((constraints, kv_matrix))
             b.extend(known_vars.data)
 
@@ -241,8 +240,10 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
                 # Add variable bounds as inequality constraints to matrix
                 if nof_primal_nontriv_bounds > 0:
-                    lb_mat = sparse_vec_to_sparse_mat(lower_bounds, conversion_style="eq")
-                    ub_mat = sparse_vec_to_sparse_mat(upper_bounds, conversion_style="eq")
+                    lb_mat = expand_sparse_vec(lower_bounds,
+                                               conversion_style="eq")
+                    ub_mat = expand_sparse_vec(upper_bounds,
+                                               conversion_style="eq")
                     ub_data = -ub_mat.data
                     ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
                                         shape=(nof_ub, nof_primal_variables))
@@ -795,13 +796,13 @@ def solveLP_Mosek(objective: Dict = None,
                 print("The solution status is unknown.")
                 print(f"   Termination code: {term_tuple}")
 
-            # Extract the certificate: y.b - c⋅x >= 0 for all primal feasible
+            # Extract the certificate: c⋅x - y⋅b <= 0 for all primal feasible
             certificate = {x: 0 for x in variables}
 
             for x in set(objective).difference(known_vars):
-                certificate[x] -= objective[x]
+                certificate[x] += objective[x]
             for i, x in enumerate(known_vars):
-                certificate[x] += y_values[len(constraints) + i]
+                certificate[x] -= y_values[len(constraints) + i]
 
             # Clean entries with coefficient zero
             for x in list(certificate):

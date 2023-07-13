@@ -99,32 +99,35 @@ def partsextractor(thing_to_take_parts_of, indices) -> Tuple[int,...]:
         return itemgetter(indices)(thing_to_take_parts_of)
 
 
-def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix,
-                             conversion_style = "eq") -> coo_matrix:
-    """Convert a one-dimensional sparse matrix to a full-dimensional one. Used
-    to expand solver arguments that are passed as a one-dimensional matrix such
-    as known_vars, lower_bounds, upper_bounds."""
+def expand_sparse_vec(sparse_vec: coo_matrix,
+                      conversion_style: str = "eq") -> coo_matrix:
+    """Expand a one-dimensional sparse matrix to its full form. Used to expand
+    the solver arguments known_vars, lower_bounds, and upper_bounds."""
     assert conversion_style in {"eq", "lb", "ub"}, \
-        "Conversion style must be `lb` or `ub` or `eq`."
+        "Conversion style must be `lb`, `ub`, or `eq`."
     nof_rows = sparse_vec.nnz
     nof_cols = sparse_vec.shape[1]
     if conversion_style == "eq":
+        # Data values do not appear in '1' monomial column
         row = np.arange(nof_rows)
         col = sparse_vec.col
         data = np.ones(nof_rows)
     else:
+        # Data values appear in '1' monomial column
+        # Upper bound format: x <= a -> a - x >= 0
         row = np.repeat(np.arange(nof_rows), 2)
         col = np.vstack((
             sparse_vec.col,
-            np.zeros(nof_rows)
-        )).T.ravel() # Assumes '1' monomial is first column
+            np.zeros(nof_rows)  # Assumes '1' monomial is first column
+        )).T.ravel()
         data = np.vstack((
             -np.ones(nof_rows),
             sparse_vec.data,
-        )).T.ravel() # Assumes '1' monomial is first column
+        )).T.ravel()
     if conversion_style == "lb":
+        # Lower bound format: x >= a -> x - a >= 0
         data = -data
-    return coo_matrix((-data, (row, col)), shape=(nof_rows, nof_cols))
+    return coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
 
 
 def vstack_non_empty(blocks: tuple, format: str = None) -> coo_matrix:
