@@ -8,7 +8,7 @@ from itertools import chain
 from typing import Iterable, Union, List, Tuple, Dict
 from sys import stderr
 from operator import itemgetter
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, vstack
 
 
 def flatten(nested):
@@ -104,7 +104,8 @@ def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix,
     """Convert a one-dimensional sparse matrix to a full-dimensional one. Used
     to expand solver arguments that are passed as a one-dimensional matrix such
     as known_vars, lower_bounds, upper_bounds."""
-    assert conversion_style in {"eq, lb, ub"}, "Conversion style must be `lb` or `ub` or `eq`."
+    assert conversion_style in {"eq", "lb", "ub"}, \
+        "Conversion style must be `lb` or `ub` or `eq`."
     nof_rows = sparse_vec.nnz
     nof_cols = sparse_vec.shape[1]
     if conversion_style == "eq":
@@ -124,3 +125,15 @@ def sparse_vec_to_sparse_mat(sparse_vec: coo_matrix,
     if conversion_style == "lb":
         data = -data
     return coo_matrix((-data, (row, col)), shape=(nof_rows, nof_cols))
+
+
+def vstack_non_empty(blocks: tuple, format: str = None) -> coo_matrix:
+    """Stack non-empty blocks."""
+    non_empty = tuple(mat for mat in blocks if mat.nnz > 0)
+    nof_blocks = len(non_empty)
+    if nof_blocks > 1:
+        return vstack(non_empty, format=format)
+    elif nof_blocks == 1:
+        return non_empty[0]
+    else:
+        return coo_matrix([])

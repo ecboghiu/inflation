@@ -52,9 +52,9 @@ class TestMosek(unittest.TestCase):
                                       (free_values, non_negative_values)):
             with self.subTest():
                 primal_sol = solveLP(**self.simple_lp, solve_dual=False,
-                                     all_non_negative=bound["non_neg"])
+                                     default_non_negative=bound["non_neg"])
                 dual_sol = solveLP(**self.simple_lp, solve_dual=True,
-                                   all_non_negative=bound["non_neg"])
+                                   default_non_negative=bound["non_neg"])
 
                 value_primal = primal_sol["primal_value"]
                 value_dual = dual_sol["primal_value"]
@@ -82,27 +82,27 @@ class TestMosek(unittest.TestCase):
 
     def test_LP_bounds(self):
         cases = ({"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
-                           "all_non_negative": False},
+                           "default_non_negative": False},
                   "primal_value": 3.5,
                   "dual_certificate":
                       {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}},
                  {"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
-                           "all_non_negative": True},
+                           "default_non_negative": True},
                   "primal_value": 3.5,
                   "dual_certificate":
                       {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}},
                  {"args": {"lower_bounds": {'x': -2, 'y': 2},
                            "upper_bounds": {'z': -2, 'w': 2},
-                           "all_non_negative": False},
+                           "default_non_negative": False},
                   "primal_value": 0.0,
                   "dual_certificate":
                       {'1': -8.0, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
                   "x": {'x': -2.0, 'y': 2.0, 'z': -2.0, 'w': -1.0, '1': 1}},
                  {"args": {"lower_bounds": {'x': -1, 'y': 1},
                            "upper_bounds": {'w': 1},
-                           "all_non_negative": True},
+                           "default_non_negative": True},
                   "primal_value": 3.5,
                   "dual_certificate":
                       {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},

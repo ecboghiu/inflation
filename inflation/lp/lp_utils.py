@@ -3,10 +3,11 @@ import mosek
 import numpy as np
 
 from typing import List, Dict, Union
-from scipy.sparse import vstack, coo_matrix
+from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
-from inflation.utils import partsextractor, sparse_vec_to_sparse_mat
+from inflation.utils import partsextractor, sparse_vec_to_sparse_mat, \
+    vstack_non_empty
 
 
 def solveLP(objective: Union[coo_matrix, Dict],
@@ -17,7 +18,7 @@ def solveLP(objective: Union[coo_matrix, Dict],
             lower_bounds: Union[coo_matrix, Dict],
             upper_bounds: Union[coo_matrix, Dict],
             solve_dual: bool = False,
-            all_non_negative: bool = True,
+            default_non_negative: bool = True,
             feas_as_optim: bool = False,
             verbose: int = 0,
             solverparameters: Dict = None,
@@ -45,8 +46,8 @@ def solveLP(objective: Union[coo_matrix, Dict],
     solve_dual : bool, optional
         Whether to solve the dual (``True``) or primal (``False``) formulation.
         By default, ``False``.
-    all_non_negative : bool, optional
-        Whether to set all primal variables as non-negative. By default,
+    default_non_negative : bool, optional
+        Whether to set default primal variables as non-negative. By default,
         ``True``.
     feas_as_optim : bool, optional
         NOT IMPLEMENTED
@@ -85,7 +86,7 @@ def solveLP(objective: Union[coo_matrix, Dict],
                     "upper_bounds")
     used_args = {k: v for k, v in solver_args
                  if k in problem_args and v is not None}
-    if all(isinstance(arg, coo_matrix) for arg in used_args.values()):
+    if all(issparse(arg) for arg in used_args.values()):
         assert variables is not None, "Variables must be declared when all " \
                                       "arguments are in sparse matrix form."
     elif all(isinstance(arg, (dict, list)) for arg in used_args.values()):
@@ -117,7 +118,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                    lower_bounds: coo_matrix = coo_matrix([]),
                    upper_bounds: coo_matrix = coo_matrix([]),
                    solve_dual: bool = False,
-                   all_non_negative: bool = True,
+                   default_non_negative: bool = True,
                    feas_as_optim: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
@@ -144,8 +145,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
     solve_dual : bool, optional
         Whether to solve the dual (``True``) or primal (``False``) formulation.
         By default, ``False``.
-    all_non_negative : bool, optional
-        Whether to set all primal variables as non-negative. By default,
+    default_non_negative : bool, optional
+        Whether to set default primal variables as non-negative. By default,
         ``True``.
     feas_as_optim : bool, optional
         NOT IMPLEMENTED
@@ -208,7 +209,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 task.putintparam(mosek.iparam.log_intpnt, 0)
 
             # Initialize constraint matrix
-            constraints = vstack((inequalities, equalities))
+            constraints = vstack_non_empty((inequalities, equalities))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
 
             # Initialize b vector (RHS of constraints)
@@ -216,7 +217,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
             # Add known values as equality constraints to the constraint matrix
             kv_matrix = sparse_vec_to_sparse_mat(known_vars, conversion_style="eq")
-            constraints = vstack((constraints, kv_matrix))
+            constraints = vstack_non_empty((constraints, kv_matrix))
             b.extend(known_vars.data)
 
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
@@ -245,8 +246,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     ub_data = -ub_mat.data
                     ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
                                         shape=(nof_ub, nof_primal_variables))
-                    matrix = vstack((constraints, lb_mat, ub_mat),
-                                    format='csr')
+                    matrix = vstack_non_empty((constraints, lb_mat, ub_mat),
+                                              format='csr')
                     b_extra = np.concatenate(
                         (lower_bounds.data, -np.asarray(upper_bounds.data)))
                     objective_vector = np.concatenate((b, b_extra))
@@ -262,7 +263,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 buc = objective.toarray().ravel()
 
                 # Set constraint bounds corresponding to primal variable bounds
-                if all_non_negative:
+                if default_non_negative:
                     bkc = [mosek.boundkey.lo] * nof_dual_constraints
                 else:
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
@@ -297,20 +298,6 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                       [mosek.boundkey.fx] * nof_primal_equalities
                 blc = buc = b
 
-                # # Set correct bounds if x >= 0
-                # if all_non_negative:
-                #     zeros = np.zeros(nof_primal_variables)
-                #     lb_col = [*range(nof_primal_variables)]
-                #     # If there are no lower bounds, resize creates array of
-                #     # zeros. If there are lower bounds, negative bounds are
-                #     # corrected to zero.
-                #     lb_data = np.maximum(
-                #         np.resize(lower_bounds.toarray(),
-                #                   (1, nof_primal_variables)),
-                #         zeros).ravel()
-                # else:
-                #     lb_col = lower_bounds.col
-                #     lb_data = lower_bounds.toarray().ravel()
                 ub_col = upper_bounds.col
                 ub_data = upper_bounds.toarray().ravel()
                 lb_col = lower_bounds.col
@@ -318,7 +305,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
                 # Set bound keys and bound values for variables
                 bkx = [mosek.boundkey.fr] * nof_primal_variables
-                if all_non_negative:
+                if default_non_negative:
                     blx = np.zeros(nof_primal_variables)
                 else:
                     blx = [-inf] * nof_primal_variables
@@ -465,7 +452,7 @@ def solveLP_Mosek(objective: Dict = None,
                   lower_bounds: Dict = None,
                   upper_bounds: Dict = None,
                   solve_dual: bool = False,
-                  all_non_negative: bool = True,
+                  default_non_negative: bool = True,
                   feas_as_optim: bool = False,
                   verbose: int = 0,
                   solverparameters: Dict = None
@@ -491,8 +478,8 @@ def solveLP_Mosek(objective: Dict = None,
         Upper bounds of variables
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation
-    all_non_negative : bool, optional
-        Whether to set all primal variables as non-negative (True) or not
+    default_non_negative : bool, optional
+        Whether to set default primal variables as non-negative (True) or not
         (False)
     feas_as_optim : bool, optional
         NOT IMPLEMENTED
@@ -654,7 +641,7 @@ def solveLP_Mosek(objective: Dict = None,
                                          shape=(nof_primal_nontriv_bounds,
                                                 nof_primal_variables))
 
-                    matrix = vstack((A, A_extra), format='csr')
+                    matrix = vstack_non_empty((A, A_extra), format='csr')
                     objective_vector = b + b_extra
                 else:
                     matrix = A.tocsr(copy=False)
@@ -666,7 +653,7 @@ def solveLP_Mosek(objective: Dict = None,
                 buc = c
 
                 # Set constraint bounds corresponding to primal variable bounds
-                if all_non_negative:
+                if default_non_negative:
                     bkc = [mosek.boundkey.lo] * nof_dual_constraints
                 else:
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
@@ -699,7 +686,7 @@ def solveLP_Mosek(objective: Dict = None,
                 blc = buc = b
 
                 # Set correct bounds if x >= 0
-                if all_non_negative:
+                if default_non_negative:
                     for x in variables:
                         if x in lower_bounds:
                             lower_bounds[x] = max(0, lower_bounds[x])
@@ -903,8 +890,8 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
         semiknown_mat = coo_matrix((data, (row, col)),
                                    shape=(nof_semiknown, nof_variables))
         if "equalities" in sparse_args:
-            sparse_args["equalities"] = vstack((sparse_args["equalities"],
-                                                semiknown_mat))
+            sparse_args["equalities"] = vstack_non_empty(
+                (sparse_args["equalities"], semiknown_mat))
         else:
             sparse_args["equalities"] = semiknown_mat
     return sparse_args

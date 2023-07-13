@@ -19,7 +19,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                          inequalities: List[Dict] = None,
                          equalities: List[Dict] = None,
                          solve_dual: bool = True,
-                         all_non_negative: bool = False,
+                         default_non_negative: bool = False,
                          feas_as_optim: bool = False,
                          verbose: int = 0,
                          solverparameters: Dict = {},
@@ -116,8 +116,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation. By
         default ``True``.
-    all_non_negative: bool, optional
-        Whether to set all primal variables as non-negative (True) or not
+    default_non_negative: bool, optional
+        Whether to set default primal variables as non-negative (True) or not
         (False). By default, ``False``.
     feas_as_optim : bool, optional
         Whether to treat feasibility problems, where the objective is,
@@ -322,7 +322,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             # Add constraints
             # ci + Tr Z Fi + \sum_j I_j A_ji + \sum_j E_j C_ji == 0
             ci_constraints = []
-            if all_non_negative:
+            if default_non_negative:
                 domain = Domain.lessThan(0)
             else:
                 domain = Domain.equalsTo(0)
@@ -353,7 +353,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             # Set up the problem in primal formulation
 
             # Define variables
-            if all_non_negative:
+            if default_non_negative:
                 domain = Domain.greaterThan(0)
             else:
                 domain = Domain.unbounded()

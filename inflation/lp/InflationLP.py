@@ -30,7 +30,7 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
 from .lp_utils import solveLP_Mosek
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
-    sparse_vec_to_sparse_mat
+    sparse_vec_to_sparse_mat, vstack_non_empty
 from functools import cached_property
 
 class InflationLP(object):
@@ -61,7 +61,7 @@ class InflationLP(object):
                  inflationproblem: InflationProblem,
                  nonfanout: bool = False,
                  supports_problem: bool = False,
-                 all_nonnegative: bool = True,
+                 default_non_negative: bool = True,
                  use_only_equalities: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationLP class.
@@ -74,7 +74,7 @@ class InflationLP(object):
         else:
             self.verbose = inflationproblem.verbose
         self.nonfanout = nonfanout
-        self.all_nonnegative = all_nonnegative
+        self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)
 
@@ -636,8 +636,8 @@ class InflationLP(object):
                      "verbose": real_verbose,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
-        if self.all_nonnegative:
-            args["all_non_negative"] = True
+        if self.default_non_negative:
+            args["default_non_negative"] = True
 
         self.solution_object = solveLP_Mosek(**args)
         self.success = self.solution_object["success"]
@@ -1459,7 +1459,7 @@ class InflationLP(object):
     #     in case of redundancy.
     #     """
     #     for mon, lb in self.moment_lowerbounds.items():
-    #         if (not self.all_nonnegative) or (not np.isclose(lb, 0)):
+    #         if (not self.default_non_negative) or (not np.isclose(lb, 0)):
     #             self._processed_moment_lowerbounds[mon] = \
     #                 max(self._processed_moment_lowerbounds.get(mon, -np.infty), lb)
     #     for mon, value in self.known_moments.items():
@@ -1598,8 +1598,8 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
-        internal_equalities = vstack((self.sparse_equalities,
-                                      self.sparse_semiknown))
+        internal_equalities = vstack_non_empty((self.sparse_equalities,
+                                               self.sparse_semiknown))
 
         solverargs = {"objective": self.sparse_objective,
                       "known_vars": self.sparse_known_vars,
@@ -1611,13 +1611,12 @@ class InflationLP(object):
             solverargs["lower_bounds"] = self.sparse_lowerbounds
             solverargs["upper_bounds"] = self.sparse_upperbounds
         else:
-            nof_ub = self.sparse_upperbounds.shape[1]
             lb_mat = sparse_vec_to_sparse_mat(self.sparse_lowerbounds,
                                               conversion_style="lb")
             ub_mat = sparse_vec_to_sparse_mat(self.sparse_upperbounds,
                                               conversion_style="ub")
-            solverargs["inequalities"] = vstack((self.sparse_inequalities,
-                                                 lb_mat, ub_mat))
+            solverargs["inequalities"] = vstack_non_empty(
+                (self.sparse_inequalities, lb_mat, ub_mat))
         return solverargs
 
     def _prepare_solver_arguments(self, separate_bounds: bool = True) -> dict:
