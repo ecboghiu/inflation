@@ -2,11 +2,11 @@ import unittest
 import numpy as np
 import warnings
 from scipy.sparse import lil_matrix, coo_matrix, vstack
-from itertools import product
 from copy import deepcopy
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
-from inflation.lp.lp_utils import solveLP_Mosek, to_sparse, convert_dicts
+from inflation.lp.lp_utils import solveLP_sparse, solveLP_Mosek, to_sparse, \
+    convert_dicts
 
 
 class TestMosek(unittest.TestCase):
@@ -31,113 +31,65 @@ class TestMosek(unittest.TestCase):
                          {'w': 1, '1': 1}],  # w >= -1
         "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}]  # x/2 + 2y - 3 = 0
     }
+    var = ['1', 'w', 'x', 'y', 'z']
+    mat_lp = convert_dicts(**simple_lp, variables=var)
+    lp_expected_sol_free_bounds = {
+        "primal_value": 5.5,
+        "dual_certificate": {'1': 5.5, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+        "x": {'x': 2, 'y': 1, 'z': 1 / 2, 'w': -1, '1': 1}
+    }
+    lp_expected_sol_non_neg_bounds = {
+        "primal_value": 3.5,
+        "dual_certificate": {'1': 3.5, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+        "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}
+    }
     simple_sdp = {"mask_matrices": mask_matrices,
                   "objective":  {'7': 1, '8': 1, '9': 1, '10': -1},
                   "known_vars": {'1': 1}
                   }
 
-    def test_LP(self):
-        free_values = {
-            "non_neg": False,
-            "primal_value": 5.5,
-            "dual_certificate": {'1': -5.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
-            "x": {'x': 2, 'y': 1, 'z': 1 / 2, 'w': -1, '1': 1}}
-        non_negative_values = {
-            "non_neg": True,
-            "primal_value": 3.5,
-            "dual_certificate": {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
-            "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}}
+    def test_LP_free_bounds(self):
+        expected_sol = self.lp_expected_sol_free_bounds
+        actual_sols = self.setup_LP_test_case({"default_non_negative": False})
+        self.check_solution(expected_sol, actual_sols)
 
-        for solveLP, bound in product((solveLP_Mosek,),
-                                      (free_values, non_negative_values)):
-            with self.subTest():
-                primal_sol = solveLP(**self.simple_lp, solve_dual=False,
-                                     default_non_negative=bound["non_neg"])
-                dual_sol = solveLP(**self.simple_lp, solve_dual=True,
-                                   default_non_negative=bound["non_neg"])
+    def test_LP_non_negative_bounds(self):
+        expected_sol = self.lp_expected_sol_non_neg_bounds
+        actual_sols = self.setup_LP_test_case({"default_non_negative": True})
+        self.check_solution(expected_sol, actual_sols)
 
-                value_primal = primal_sol["primal_value"]
-                value_dual = dual_sol["primal_value"]
-                self.assertEqual(value_dual, bound["primal_value"],
-                                 "The objective value of the LP is incorrect.")
-                self.assertEqual(value_primal, value_dual,
-                                 "The primal and dual objective values are not"
-                                 "equal.")
+    def test_LP_lower_bounds_of_zero(self):
+        expected_sol = self.lp_expected_sol_non_neg_bounds
+        actual_sols = self.setup_LP_test_case({
+            "lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
+            "default_non_negative": False})
+        self.check_solution(expected_sol, actual_sols)
 
-                certificate_primal = primal_sol["dual_certificate"]
-                certificate_dual = dual_sol["dual_certificate"]
-                self.assertEqual(certificate_dual, bound["dual_certificate"],
-                                 "The certificate for the LP is incorrect.")
-                self.assertEqual(certificate_primal, certificate_dual,
-                                 "The primal and dual certificates are not"
-                                 "equal.")
+    def test_LP_lower_bounds_of_zero_and_non_negative(self):
+        expected_sol = self.lp_expected_sol_non_neg_bounds
+        actual_sols = self.setup_LP_test_case({
+            "lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
+            "default_non_negative": True})
+        self.check_solution(expected_sol, actual_sols)
 
-                solution_primal = primal_sol["x"]
-                solution_dual = dual_sol["x"]
-                self.assertEqual(solution_dual, bound["x"],
-                                 "The solution to the LP is incorrect.")
-                self.assertEqual(solution_primal, solution_dual,
-                                 "The primal and dual solutions are not"
-                                 "equal.")
+    def test_LP_negative_lower_bounds(self):
+        expected_sol = {
+            "primal_value": 0.0,
+            "dual_certificate": {'1': 8.0, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+            "x": {'x': -2.0, 'y': 2.0, 'z': -2.0, 'w': -1.0, '1': 1}}
+        actual_sols = self.setup_LP_test_case({
+            "lower_bounds": {'x': -2, 'y': 2},
+            "upper_bounds": {'z': -2, 'w': 2},
+            "default_non_negative": False})
+        self.check_solution(expected_sol, actual_sols)
 
-    def test_LP_bounds(self):
-        cases = ({"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
-                           "default_non_negative": False},
-                  "primal_value": 3.5,
-                  "dual_certificate":
-                      {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
-                  "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}},
-                 {"args": {"lower_bounds": {'x': 0, 'y': 0, 'z': 0, 'w': 0},
-                           "default_non_negative": True},
-                  "primal_value": 3.5,
-                  "dual_certificate":
-                      {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
-                  "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}},
-                 {"args": {"lower_bounds": {'x': -2, 'y': 2},
-                           "upper_bounds": {'z': -2, 'w': 2},
-                           "default_non_negative": False},
-                  "primal_value": 0.0,
-                  "dual_certificate":
-                      {'1': -8.0, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
-                  "x": {'x': -2.0, 'y': 2.0, 'z': -2.0, 'w': -1.0, '1': 1}},
-                 {"args": {"lower_bounds": {'x': -1, 'y': 1},
-                           "upper_bounds": {'w': 1},
-                           "default_non_negative": True},
-                  "primal_value": 3.5,
-                  "dual_certificate":
-                      {'1': -3.5, 'w': -2, 'x': 1, 'y': 1, 'z': 1},
-                  "x": {'x': 2.0, 'y': 1.0, 'z': 0.5, 'w': 0, '1': 1}})
-
-        for solveLP, case in product((solveLP_Mosek,), cases):
-            with self.subTest():
-                primal_sol = solveLP(**self.simple_lp, **case["args"],
-                                     solve_dual=False)
-                dual_sol = solveLP(**self.simple_lp, **case["args"],
-                                   solve_dual=True)
-
-                value_primal = primal_sol["primal_value"]
-                value_dual = dual_sol["primal_value"]
-                self.assertEqual(value_dual, case["primal_value"],
-                                 "The objective value of the LP is incorrect.")
-                self.assertEqual(value_primal, value_dual,
-                                 "The primal and dual objective values are not"
-                                 "equal.")
-
-                certificate_primal = primal_sol["dual_certificate"]
-                certificate_dual = dual_sol["dual_certificate"]
-                self.assertEqual(certificate_dual, case["dual_certificate"],
-                                 "The certificate for the LP is incorrect.")
-                self.assertEqual(certificate_primal, certificate_dual,
-                                 "The primal and dual certificates are not"
-                                 "equal.")
-
-                solution_primal = primal_sol["x"]
-                solution_dual = dual_sol["x"]
-                self.assertEqual(solution_dual, case["x"],
-                                 "The solution to the LP is incorrect.")
-                self.assertEqual(solution_primal, solution_dual,
-                                 "The primal and dual solutions are not"
-                                 "equal.")
+    def test_LP_negative_lower_bounds_and_non_negative(self):
+        expected_sol = self.lp_expected_sol_non_neg_bounds
+        actual_sols = self.setup_LP_test_case({
+            "lower_bounds": {'x': -1, 'y': 1},
+            "upper_bounds": {'w': 1},
+            "default_non_negative": True})
+        self.check_solution(expected_sol, actual_sols)
 
     def test_LP_with_SDP(self):
         primal_sol   = solveSDP_MosekFUSION(**self.simple_lp,
@@ -337,6 +289,7 @@ class TestMosek(unittest.TestCase):
             "equalities": [{'x': -5, 'y': 1, 'z': -2, '1': -7}],
             "semiknown_vars": {'z': (0.5, 'x')}
         }
+        problem_mat = convert_dicts(**problem, variables=self.var)
         p_lpi = solveSDP_MosekFUSION(**problem,
                                      solve_dual=False,
                                      process_constraints=False)
@@ -354,6 +307,12 @@ class TestMosek(unittest.TestCase):
 
         d_lpi_lp = solveLP_Mosek(**problem,
                                  solve_dual=True)
+        p_lpi_lp_sparse = solveLP_sparse(**problem_mat,
+                                         variables=self.var,
+                                         solve_dual=False)
+        d_lpi_lp_sparse = solveLP_sparse(**problem_mat,
+                                         variables=self.var,
+                                         solve_dual=True)
         truth_obj_lpi = -109/2
         truth_x_lpi = {'x': 3, 'z': 3/2}
 
@@ -363,28 +322,34 @@ class TestMosek(unittest.TestCase):
 
         check = lambda x: all([np.isclose(v, truth_x_lpi[k])
                                for k, v in truth_x_lpi.items()])
-        self.assertTrue(check(p_lpi_lp["x"]), msg)
-        self.assertTrue(check(d_lpi_lp["x"]), msg)
         self.assertTrue(check(p_lpi["x"]), msg)
         self.assertTrue(check(p_lpi_process["x"]), msg)
+        self.assertTrue(check(p_lpi_lp["x"]), msg)
+        self.assertTrue(check(p_lpi_lp_sparse["x"]), msg)
         self.assertTrue(check(d_lpi["x"]), msg)
         self.assertTrue(check(d_lpi_process["x"]), msg)
+        self.assertTrue(check(d_lpi_lp["x"]), msg)
+        self.assertTrue(check(d_lpi_lp_sparse["x"]), msg)
 
         check = lambda x: np.isclose(x, truth_obj_lpi)
 
         vals = [
-            p_lpi_lp['primal_value'],
-            d_lpi_lp['primal_value'],
-            p_lpi_lp['dual_value'],
-            d_lpi_lp['dual_value'],
             p_lpi['primal_value'],
             p_lpi['dual_value'],
             p_lpi_process['primal_value'],
             p_lpi_process['dual_value'],
+            p_lpi_lp['primal_value'],
+            p_lpi_lp['dual_value'],
+            p_lpi_lp_sparse['primal_value'],
+            p_lpi_lp_sparse['dual_value'],
             d_lpi_process['primal_value'],
             d_lpi_process['dual_value'],
             d_lpi['primal_value'],
-            d_lpi['dual_value']
+            d_lpi['dual_value'],
+            d_lpi_lp['primal_value'],
+            d_lpi_lp['dual_value'],
+            d_lpi_lp_sparse['primal_value'],
+            d_lpi_lp_sparse['dual_value'],
         ]
         self.assertTrue(all(map(check, vals)), msg + "\n" +f"{vals} + vs {truth_obj_lpi}")
 
@@ -450,3 +415,44 @@ class TestMosek(unittest.TestCase):
                                      f"{arg} is not equal: "
                                      f"{exp_arg.toarray()} != "
                                      f"{act_arg.toarray()}.")
+
+    def setup_LP_test_case(self, args):
+        """Given problem arguments, set up dictionary of solutions from the
+        solver."""
+        dict_primal_sol = solveLP_Mosek(**self.simple_lp, **args,
+                                        solve_dual=False)
+        dict_dual_sol = solveLP_Mosek(**self.simple_lp, **args,
+                                      solve_dual=True)
+        args.update(convert_dicts(**args, variables=self.var))
+        mat_primal_sol = solveLP_sparse(**self.mat_lp, **args,
+                                        variables=self.var, solve_dual=False)
+        mat_dual_sol = solveLP_sparse(**self.mat_lp, **args,
+                                      variables=self.var, solve_dual=True)
+        actual_sols = {
+            "dictionary, primal": dict_primal_sol,
+            "dictionary, dual": dict_dual_sol,
+            "sparse, primal": mat_primal_sol,
+            "sparse, dual": mat_dual_sol
+        }
+        return actual_sols
+
+    def check_solution(self, exp_sol, act_sols):
+        """Asserts that primal values, certificates, and x values are all
+        correct."""
+        primal_values = {prob: sol["primal_value"]
+                         for prob, sol in act_sols.items()}
+        for prob, value in primal_values.items():
+            with self.subTest(msg="Testing primal values", i=prob):
+                self.assertEqual(exp_sol["primal_value"], value,
+                                 f"The objective value is incorrect.")
+        certificates = {prob: sol["dual_certificate"]
+                        for prob, sol in act_sols.items()}
+        for prob, cert in certificates.items():
+            with self.subTest(msg="Testing certificates", i=prob):
+                self.assertEqual(exp_sol["dual_certificate"], cert,
+                                 f"The dual certificate is incorrect.")
+        x_values = {prob: sol["x"] for prob, sol in act_sols.items()}
+        for prob, x in x_values.items():
+            with self.subTest(msg="Testing x values", i=prob):
+                self.assertEqual(exp_sol["x"], x,
+                                 f"The solution values are incorrect.")

@@ -27,7 +27,7 @@ from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
-from .lp_utils import solveLP_Mosek
+from .lp_utils import solveLP_Mosek, solveLP_sparse
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec, vstack_non_empty
@@ -586,7 +586,7 @@ class InflationLP(object):
             return
 
     def solve(self,
-              interpreter="solveLP_Mosek",
+              interpreter="solveLP_sparse",
               feas_as_optim=False,
               dualise=True,
               solverparameters=None,
@@ -599,7 +599,7 @@ class InflationLP(object):
         Parameters
         ----------
         interpreter : str, optional
-            The solver to be called. By default ``"solveLP_Mosek"``.
+            The solver to be called. By default ``"solveLP_sparse"``.
         feas_as_optim : bool, optional
             Instead of solving the feasibility problem
 
@@ -630,7 +630,10 @@ class InflationLP(object):
             real_verbose = self.verbose
         else:
             real_verbose = verbose
-        args = self._prepare_solver_arguments()
+        if interpreter == "solveLP_Mosek":
+            args = self._prepare_solver_arguments()
+        else:
+            args = self._prepare_solver_matrices()
         args.update(solver_arguments)
         args.update({"feas_as_optim": feas_as_optim,
                      "verbose": real_verbose,
@@ -639,7 +642,10 @@ class InflationLP(object):
         if self.default_non_negative:
             args["default_non_negative"] = True
 
-        self.solution_object = solveLP_Mosek(**args)
+        if interpreter == "solveLP_Mosek":
+            self.solution_object = solveLP_Mosek(**args)
+        else:
+            self.solution_object = solveLP_sparse(**args)
         self.success = self.solution_object["success"]
         self.status = self.solution_object["status"]
         if self.success:

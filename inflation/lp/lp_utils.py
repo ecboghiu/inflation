@@ -101,11 +101,11 @@ def solveLP(objective: Union[coo_matrix, Dict],
                 variables.update([x, x2])
             variables.update(known_vars)
             variables = sorted(variables)
-        solver_args.update(convert_dicts(**used_args, variables=variables))
+        solver_args.update(convert_dicts(**solver_args, variables=variables))
     else:
         assert variables is not None, "Variables must be declared when " \
                                       "arguments are of mixed form."
-        solver_args.update(convert_dicts(**used_args, variables=variables))
+        solver_args.update(convert_dicts(**solver_args, variables=variables))
     solver_args.pop("semiknown_vars", None)
     return solveLP_sparse(**solver_args)
 
@@ -294,7 +294,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 objective_vector = objective.toarray().ravel()
 
                 # Set bound keys and values for constraints
-                # Ax + b >= 0 -> Ax >= -b
+                # Ax >= b where b is 0
                 bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
                       [mosek.boundkey.fx] * nof_primal_equalities
                 blc = buc = b
@@ -305,11 +305,12 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 lb_data = lower_bounds.toarray().ravel()
 
                 # Set bound keys and bound values for variables
-                bkx = [mosek.boundkey.fr] * nof_primal_variables
                 if default_non_negative:
                     blx = np.zeros(nof_primal_variables)
+                    bkx = [mosek.boundkey.lo] * nof_primal_variables
                 else:
                     blx = [-inf] * nof_primal_variables
+                    bkx = [mosek.boundkey.fr] * nof_primal_variables
                 bux = [+inf] * nof_primal_variables
                 for col in range(nof_primal_variables):
                     if col in lb_col and col in ub_col:
@@ -320,7 +321,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                         bkx[col] = mosek.boundkey.lo
                         blx[col] = lb_data[col]
                     elif col in ub_col:
-                        bux[col] = mosek.boundkey.up
+                        bkx[col] = mosek.boundkey.up
                         bux[col] = ub_data[col]
 
                 # Set the objective sense
@@ -865,6 +866,11 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
                   equalities: Union[coo_matrix, List[Dict]] = None,
                   lower_bounds: Union[coo_matrix, Dict] = None,
                   upper_bounds: Union[coo_matrix, Dict] = None,
+                  solve_dual: bool = False,
+                  default_non_negative: bool = True,
+                  feas_as_optim: bool = False,
+                  verbose: int = 0,
+                  solverparameters: Dict = None,
                   variables: List = None) -> Dict:
     """Convert any dictionaries to sparse matrices to send to the solver.
     Semiknown variables are absorbed into the equality constraints. Only
@@ -875,7 +881,7 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
     # Arguments converted from dictionaries to sparse matrices
     sparse_args = {k: to_sparse(arg, variables) for k, arg in locals().items()
                    if isinstance(arg, (dict, list)) and k != "semiknown_vars"
-                   and k != "variables"}
+                   and k != "solverparameters" and k != "variables"}
 
     # Add semiknown variables to equality constraints
     if semiknown_vars:
