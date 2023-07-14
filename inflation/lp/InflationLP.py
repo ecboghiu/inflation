@@ -457,14 +457,13 @@ class InflationLP(object):
                      + "will constrain the optimization to distributions with "
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
-            self.objective = {mon: sign*coeff for (mon, coeff) in objective.items() if not np.isclose(coeff, 0)}
-            # objective_dict = {self.One: 0}
-            # objective_dict = defaultdict(int)
-            # for mon, coeff in objective.items():
-            #     if not np.isclose(coeff, 0):
-            #         mon = self._sanitise_monomial(mon)
-            #         objective_dict[mon] += (sign * coeff)
-            # self.objective = objective_dict
+            objective_dict = {self.One: 0}
+            for mon, coeff in objective.items():
+                if not np.isclose(coeff, 0):
+                    mon = self._sanitise_monomial(mon)
+                    objective_dict[mon] = \
+                        objective_dict.get(mon, 0) + (sign * coeff)
+            self.objective = objective_dict
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
             assert len(surprising_objective_terms) == 0, \

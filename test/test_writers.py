@@ -24,29 +24,40 @@ class TestWriters(unittest.TestCase):
                                      "A": ["B"]},
                                     outcomes_per_party=(2, 2),
                                     settings_per_party=(2, 1),
-                                    inflation_level_per_source=(1,),
                                     order=("A", "B"),
                                     classical_sources=["U_AB"])
     instrumental_infLP = InflationLP(instrumental,
                                      nonfanout=False,
-                                     verbose=False)
+                                     verbose=False,
+                                     use_only_equalities=True)
     instrumental_infLP.set_distribution(p)
-    instrumental_infLP.set_objective(objective={'<B_1_0_0>': 1},
+    instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
                                      direction='max')
     instrumental_infLP.solve()
     args = instrumental_infLP._prepare_solver_arguments(separate_bounds=True)
     primal_value = instrumental_infLP.objective_value
 
-    def test_writers(self):
-        for (write, ext) in ((write_to_lp, 'lp'), (write_to_mps, 'mps')):
-            with self.subTest():
-                write(self.args, f"inst.{ext}")
-                with mosek.Task() as task:
-                    task.readdata(f"inst.{ext}")
-                    task.optimize()
-                    obj = task.getprimalobj(mosek.soltype.bas)
-                self.assertAlmostEqual(self.primal_value, obj,
-                                       msg=f"The expected value and value when"
-                                           f" reading from {ext.upper()} are "
-                                           f"not equal.")
-                os.remove(f"inst.{ext}")
+    def test_write_to_lp(self):
+        self.ext = 'lp'
+        write_to_lp(self.args, "inst.lp")
+        with mosek.Task() as task:
+            task.readdata("inst.lp")
+            task.optimize()
+            obj = task.getprimalobj(mosek.soltype.bas)
+        self.assertAlmostEqual(self.primal_value, obj,
+                               msg="The expected value and value when reading "
+                                   "from LP are not equal.")
+
+    def test_write_to_mps(self):
+        self.ext = 'mps'
+        write_to_mps(self.args, "inst.mps")
+        with mosek.Task() as task:
+            task.readdata("inst.mps")
+            task.optimize()
+            obj = task.getprimalobj(mosek.soltype.bas)
+        self.assertAlmostEqual(self.primal_value, obj,
+                               msg="The expected value and value when reading "
+                                   "from MPS are not equal.")
+
+    def tearDown(self):
+        os.remove(f"inst.{self.ext}")
