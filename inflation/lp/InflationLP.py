@@ -448,7 +448,7 @@ class InflationLP(object):
                 objective_raw = {k: float(v)
                                  for k, v in objective_raw.items()}
             else:
-                objective_raw = {self.One: float(objective)}
+                objective_raw = defaultdict(int)
             return self.set_objective(objective_raw, direction)
         else:
             if self.use_lpi_constraints and self.verbose > 0:
@@ -457,12 +457,10 @@ class InflationLP(object):
                      + "will constrain the optimization to distributions with "
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
-            objective_dict = {self.One: 0}
+            objective_dict = defaultdict(int)
             for mon, coeff in objective.items():
                 if not np.isclose(coeff, 0):
-                    mon = self._sanitise_monomial(mon)
-                    objective_dict[mon] = \
-                        objective_dict.get(mon, 0) + (sign * coeff)
+                    objective_dict[self._sanitise_monomial(mon)] += (sign * coeff)
             self.objective = objective_dict
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
