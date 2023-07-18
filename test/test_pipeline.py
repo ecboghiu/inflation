@@ -253,6 +253,34 @@ class TestReset(unittest.TestCase):
                         "Resetting the bounds resets the objective function.")
 
 
+class TestResetLP(unittest.TestCase):
+    lp = InflationLP(trivial)
+    lp._generate_lp()
+
+    def setUp(self) -> None:
+        var1 = "<v_1_0_0 v_1_1_0>"
+        var2 = "pv(0|1)"
+        self.lp.set_objective({var1: 1}, "max")
+        self.lp.set_bounds({var1: 0.9}, "up")
+        self.lp.set_bounds({var1: 0.1}, "lo")
+        self.lp.set_values({var2: 0.5})
+
+    def test_reset_all(self):
+        self.lp.reset("all")
+        self.assertEqual(self.lp.moment_lowerbounds, dict(),
+                         "Resetting lower bounds failed.")
+        self.assertEqual(self.lp.moment_upperbounds, dict(),
+                         "Resetting upper bounds failed.")
+        self.assertEqual(self.lp.objective, dict(),
+                         "Resetting objective failed.")
+        self.assertEqual(self.lp.semiknown_moments, dict(),
+                         "Resetting known values failed to empty "
+                         "semiknown_moments.")
+        self.assertEqual(self.lp.known_moments, {self.lp.One: 1.},
+                         "Resetting known values failed to empty "
+                         "known_moments.")
+
+
 class TestSDPOutput(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
