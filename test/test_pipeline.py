@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import warnings
+from itertools import product
 
 from inflation import InflationProblem, InflationSDP, InflationLP
 
@@ -613,6 +614,79 @@ class TestSDPOutput(unittest.TestCase):
                          "being recognized as such.")
 
 
+class TestLPOutput(unittest.TestCase):
+    def test_bounds(self):
+        ub = 0.8
+        lb = 0.2
+        very_trivial = InflationProblem({"a": ["b"]}, outcomes_per_party=[2])
+        lp = InflationLP(very_trivial)
+        operator = np.asarray(lp.monomials).flatten()[1]
+        with self.subTest(msg="Setting upper bound"):
+            lp.set_objective({operator: 1}, "max")
+            lp.set_bounds({operator: ub}, "up")
+            lp.solve()
+            self.assertAlmostEqual(
+                lp.objective_value, ub,
+                msg=f"Setting upper bounds to monomials failed. The result "
+                    f"obtained for {{max x s.t. x <= {ub}}} is "
+                    f"{lp.objective_value}.")
+        with self.subTest(msg="Setting lower bound"):
+            lp.set_objective({operator: 1}, "min")
+            lp.set_bounds({operator: lb}, "lo")
+            lp.solve()
+            self.assertAlmostEqual(
+                lp.objective_value, lb,
+                msg=f"Setting lower bounds to monomials failed. The result "
+                    f"obtained for {{min x s.t. x >= {lb}}} is "
+                    f"{lp.objective_value}.")
+
+    def test_instrumental(self):
+        lp = InflationLP(TestSDPOutput.instrumental)
+        with self.subTest(msg="Infeasible Bonet's inequality"):
+            lp.set_distribution(TestSDPOutput.incompatible_dist)
+            lp.solve(feas_as_optim=False)
+            self.assertTrue(lp.status in ["prim_infeas_cer", "dual_infeas_cer",
+                                          "unknown"],
+                            "Failed to detect the infeasibility of the "
+                            "distribution that maximally violates Bonet's "
+                            "inequality.")
+        with self.subTest(msg="Infeasible normalization"):
+            unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
+            lp.set_distribution(unnormalized_dist)
+            lp.solve(feas_as_optim=False)
+            self.assertTrue(lp.status in ["prim_infeas_cer", "dual_infeas_cer",
+                                          "unknown"],
+                            "Failed to detect the infeasibility of a "
+                            "distribution that violates normalization.")
+        with self.subTest(msg="Feasible instrumental"):
+            compatible_dist = unnormalized_dist / 4
+            lp.set_distribution(compatible_dist)
+            lp.solve(feas_as_optim=False)
+            self.assertEqual(lp.status, "optimal",
+                             "A feasible distribution for the instrumental "
+                             "scenario is not being recognized as such.")
+
+    def test_supports(self):
+        lp = InflationLP(TestSDPOutput.bellScenario, supports_problem=True)
+        with self.subTest(msg="Incompatible support"):
+            pr_support = np.zeros((2, 2, 2, 2))
+            for a, b, x, y in np.ndindex(*pr_support.shape):
+                if x*y == (a + b) % 2:
+                    pr_support[a, b, x, y] = np.random.randn()
+            lp.set_distribution(pr_support)
+            lp.solve(feas_as_optim=False)
+            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer"],
+                          "Failed to detect the infeasibility of a support "
+                          "known to be incompatible.")
+        with self.subTest(msg="Compatible support"):
+            compatible_support = np.ones((2, 2, 2, 2), dtype=float)
+            lp.set_distribution(compatible_support)
+            lp.solve(feas_as_optim=False)
+            self.assertEqual(lp.status, "optimal",
+                             "A feasible support for the Bell scenario was "
+                             "not recognized as such.")
+
+
 class TestSymmetries(unittest.TestCase):
     def test_apply_symmetries(self):
         from inflation.sdp.quantum_tools import \
@@ -770,3 +844,211 @@ class TestConstraintGeneration(unittest.TestCase):
                          out_good,
                          "Column equalities are not being " +
                          "properly lifted to moment inequalities.")
+
+
+class TestPipelineLP(unittest.TestCase):
+    def _monomial_generation(self, **args):
+        with self.subTest(msg="Testing monomial generation"):
+            raw_n_columns = args["scenario"].raw_n_columns
+            truth = args["truth_columns"]
+            self.assertEqual(raw_n_columns, truth,
+                             f"There are {raw_n_columns} columns but {truth} "
+                             f"were expected.")
+
+    def _equalities(self, **args):
+        with self.subTest(msg="Testing equalities"):
+            equalities = args["scenario"].moment_equalities
+            truth = args["truth_eq"]
+            self.assertEqual(len(equalities), truth,
+                             f"There are {len(equalities)} equalities but "
+                             f"{truth} were expected.")
+            self.assertTrue(all(set(equality.values()) == {-1, 1}
+                                for equality in equalities),
+                            "Some implicit equalities lack a nontrivial "
+                            "left-hand or right-hand side.")
+
+    def _GHZ(self, **args):
+        lp = args["scenario"]
+        GHZ = args["GHZ"]
+        crit_cutoff = args["crit_cutoff"]
+        with self.subTest(msg="Testing GHZ, incompatible distribution"):
+            lp.set_distribution(GHZ(crit_cutoff + 1e-2))
+            lp.solve()
+            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer",
+                                      "unknown"],
+                          "The LP did not identify the incompatible "
+                          "distribution.")
+        with self.subTest(msg="Testing GHZ, incompatible distribution, "
+                              "feasibility as optimization"):
+            self.skipTest("Feasibility as optimization not implemented")
+            lp.solve(feas_as_optim=True)
+            self.assertTrue(lp.primal_objective <= 0,
+                            "The LP with feasibility as optimization did not "
+                            "identify the incompatible distribution.")
+        with self.subTest(msg="Testing GHZ, compatible distribution"):
+            lp.set_distribution(GHZ(crit_cutoff - 1e-2))
+            lp.solve()
+            self.assertEqual(lp.status, "optimal",
+                             "The LP did not recognize the compatible "
+                             "distribution.")
+        with self.subTest(msg="Testing GHZ, compatible distribution, "
+                              "feasibility as optimization"):
+            lp.solve(feas_as_optim=True)
+            self.assertTrue(lp.primal_objective >= 0,
+                            "The LP with feasibility as optimization did not "
+                            "recognize the compatible distribution.")
+
+    def _run(self, **args):
+        self._monomial_generation(**args)
+        self._equalities(**args)
+        self._GHZ(**args)
+
+
+class TestInstrumental(TestPipelineLP):
+    instrumental = InflationProblem({"U_AB": ["A", "B"],
+                                     "A": ["B"]},
+                                    outcomes_per_party=(2, 2),
+                                    settings_per_party=(2, 1),
+                                    inflation_level_per_source=(1,),
+                                    order=("A", "B"))
+
+    def GHZ(self, v):
+        dist = np.full((2, 2, 2, 1), (1 - v) / 4)
+        dist[0, 0, 0, 0] = dist[0, 1, 1, 0] = v + (1 - v) / 4
+        return dist
+
+    def test_instrumental_fanout(self):
+        inst = InflationLP(self.instrumental, nonfanout=False)
+        args = {"scenario": inst,
+                "truth_columns": 36,
+                "truth_eq": 20,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1/3}
+        self._run(**args)
+
+    def test_instrumental_nonfanout(self):
+        inst = InflationLP(self.instrumental, nonfanout=True)
+        args = {"scenario": inst,
+                "truth_columns": 15,
+                "truth_eq": 6,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1/3}
+        self._run(**args)
+
+
+class TestBell(TestPipelineLP):
+    bellScenario = InflationProblem({"Lambda": ["A", "B"]},
+                                    outcomes_per_party=[2, 2],
+                                    settings_per_party=[2, 2],
+                                    inflation_level_per_source=[1])
+
+    def _CHSH(self, **args):
+        lp = args["scenario"]
+        truth = args["truth_obj"]
+        lp.set_objective({1: 2.0,
+                          "pA(0|0)": -4.0,
+                          "pB(0|0)": -4.0,
+                          "pAB(00|11)": -4.0,
+                          "pAB(00|00)": 4.0,
+                          "pAB(00|01)": 4.0,
+                          "pAB(00|10)": 4.0}, "max")
+        with self.subTest(msg="Testing max CHSH"):
+            lp.solve()
+            self.assertAlmostEqual(lp.objective_value, truth,
+                                   msg=f"The LP is not recovering max(CHSH) = "
+                                       f"{truth}.")
+        # Biased CHSH?
+
+    def GHZ(self, v):
+        dist = np.full((2, 2, 2, 2), (1 - v) / 4)
+        dist[0, 0, 0, 0] = dist[0, 1, 1, 0] = v + (1 - v) / 4
+        return dist
+
+    def test_bell_fanout(self):
+        bell = InflationLP(self.bellScenario, nonfanout=False)
+        args = {"scenario": bell,
+                "truth_columns": 16,
+                "truth_obj": 2,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 0.2}
+        self._run(**args)
+        # self._CHSH(**args)
+
+    def test_bell_nonfanout(self):
+        bell = InflationLP(self.bellScenario, nonfanout=True)
+        args = {"scenario": bell,
+                "truth_columns": 9,
+                "truth_obj": 2,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 0.2}
+        self._run(**args)
+        # self._CHSH(**args)
+
+
+class TestTriangle(TestPipelineLP):
+    triangle = InflationProblem({"lambda": ["a", "b"],
+                                 "mu": ["b", "c"],
+                                 "sigma": ["a", "c"]},
+                                outcomes_per_party=[2, 2, 2],
+                                settings_per_party=[1, 1, 1],
+                                inflation_level_per_source=[1, 1, 1],
+                                order=['a', 'b', 'c'])
+
+    def GHZ(self, v):
+        dist = np.zeros((2, 2, 2, 1, 1, 1))
+        dist[0, 0, 0] = dist[1, 1, 1] = 1 / 2
+        return v * dist + (1 - v) / 8
+
+    def test_triangle_fanout(self):
+        triangle = InflationLP(self.triangle, nonfanout=False)
+        args = {"scenario": triangle,
+                "truth_columns": 8,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+
+    def test_triangle_nonfanout(self):
+        triangle = InflationLP(self.triangle, nonfanout=True)
+        args = {"scenario": triangle,
+                "truth_columns": 8,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+
+
+class TestEvans(TestPipelineLP):
+    evans = InflationProblem({"U_AB": ["A", "B"],
+                              "U_BC": ["B", "C"],
+                              "B": ["A", "C"]},
+                             outcomes_per_party=(2, 2, 2),
+                             settings_per_party=(1, 1, 1),
+                             inflation_level_per_source=(1, 1),
+                             order=("A", "B", "C"))
+
+    def GHZ(self, v):
+        dist = np.zeros((2, 2, 2, 1, 1, 1))
+        for x, y, z in product(range(2), repeat=3):
+            dist[x, y, z] = (1 + v * (-1) ** (x + y + y * z)) / 8
+        return dist
+
+    def test_evans_fanout(self):
+        evans = InflationLP(self.evans, nonfanout=False)
+        args = {"scenario": evans,
+                "truth_columns": 48,
+                "truth_eq": 16,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+
+    def test_evans_nonfanout(self):
+        evans = InflationLP(self.evans, nonfanout=True)
+        args = {"scenario": evans,
+                "truth_columns": 27,
+                "truth_eq": 9,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
