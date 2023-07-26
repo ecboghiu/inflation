@@ -1111,15 +1111,28 @@ class InflationLP(object):
         # Use reduce to take outer combinations, using bitwise addition
         if self.verbose > 0:
             eprint(f"About to generate {np.prod(lengths)} probability placeholders...")
-        is_not_CG_form = [np.matmul(choices, self.boolvec_for_CG_ineqs) for choices in choices_to_combine]
-        raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine)
-        raw_is_not_CG_form = reduce(nb_outer_bitwise_or, is_not_CG_form)
-        # Sort by operator count
-        operator_count_sort = np.argsort(np.sum(raw_lexboolvecs, axis=1))
-        raw_lexboolvecs = raw_lexboolvecs[operator_count_sort]
-        raw_is_not_CG_form = raw_is_not_CG_form[operator_count_sort]
-        return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
-                raw_lexboolvecs[raw_is_not_CG_form])
+
+        choices_to_combine_CG = []
+        choices_to_combine_global = []
+        for choices in choices_to_combine:
+            CG_selection = np.logical_not(np.matmul(choices, self.boolvec_for_CG_ineqs))
+            choices_to_combine_CG.append(choices[CG_selection])
+            event_count = choices.sum(axis=1)
+            choices_to_combine_global.append(choices[event_count == event_count.max()])
+        raw_boolvecs_CG = reduce(nb_outer_bitwise_or, choices_to_combine_CG)
+        raw_boolvecs_global = reduce(nb_outer_bitwise_or, choices_to_combine_global)
+        # print("Raw boolvecs global: ", raw_boolvecs_global)
+        # is_not_CG_form = [np.matmul(choices, self.boolvec_for_CG_ineqs) for choices in choices_to_combine]
+        # raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine_CG)
+        # raw_is_not_CG_form = reduce(nb_outer_bitwise_or, is_not_CG_form)
+        # operator_count_sort = np.argsort(np.sum(raw_lexboolvecs, axis=1))
+        # raw_lexboolvecs = raw_lexboolvecs[operator_count_sort]
+        # raw_is_not_CG_form = raw_is_not_CG_form[operator_count_sort]
+        # return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
+        #         raw_lexboolvecs[raw_is_not_CG_form])
+        return (raw_boolvecs_CG[np.argsort(np.sum(raw_boolvecs_CG, axis=1))],
+            raw_boolvecs_global)
+
     @cached_property
     def sparse_equalities_OLD(self) -> coo_matrix:
         """Given the generating monomials, find Frechet-Boole equalities between them.
@@ -1277,27 +1290,32 @@ class InflationLP(object):
                                  desc="Discovering inequalities   "):
                 critical_boolvec_intersection = np.bitwise_and(bool_vec,
                                                                self.boolvec_for_CG_ineqs)
-                absent_c_boolvec = bool_vec.copy()
-                absent_c_boolvec[critical_boolvec_intersection] = False
-                critical_values_in_boovec = np.flatnonzero(
-                    critical_boolvec_intersection)
-                signs = reduce(nb_outer_bitwise_xor,
-                               (alternatives_as_signs[i] for i in
-                                critical_values_in_boovec.flat))
-                adjustments = reduce(nb_outer_bitwise_or,
-                                     (alternatives_as_boolarrays[i] for i in
-                                      critical_values_in_boovec.flat))
-                terms_as_boolvecs = np.bitwise_or(
-                    absent_c_boolvec[np.newaxis],
-                    adjustments)
-                terms_as_rawidx = [self._raw_lookup_dict[boolvec.tobytes()] for
-                                   boolvec in terms_as_boolvecs]
-                terms_as_idxs = self.inverse[terms_as_rawidx]
-                true_signs = np.power(-1, signs)
+                if critical_boolvec_intersection.any():
+                    absent_c_boolvec = bool_vec.copy()
+                    absent_c_boolvec[critical_boolvec_intersection] = False
+                    critical_values_in_boovec = np.flatnonzero(
+                        critical_boolvec_intersection)
+                    signs = reduce(nb_outer_bitwise_xor,
+                                   (alternatives_as_signs[i] for i in
+                                    critical_values_in_boovec.flat))
+                    adjustments = reduce(nb_outer_bitwise_or,
+                                         (alternatives_as_boolarrays[i] for i in
+                                          critical_values_in_boovec.flat))
+                    terms_as_boolvecs = np.bitwise_or(
+                        absent_c_boolvec[np.newaxis],
+                        adjustments)
+                    terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()] for
+                                       term_boolvec in terms_as_boolvecs]
+                    terms_as_idxs = self.inverse[terms_as_rawidx]
+                    true_signs = np.power(-1, signs)
 
-                ineq_row.extend([nof_inequalities] * len(signs))
-                ineq_col.extend(terms_as_idxs.flat)
-                ineq_data.extend(true_signs.flat)
+                    ineq_row.extend([nof_inequalities] * len(signs))
+                    ineq_col.extend(terms_as_idxs.flat)
+                    ineq_data.extend(true_signs.flat)
+                else:
+                    ineq_row.append(nof_inequalities)
+                    ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
+                    ineq_data.append(1)
                 nof_inequalities += 1
         return coo_matrix((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
