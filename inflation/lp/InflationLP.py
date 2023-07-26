@@ -587,8 +587,9 @@ class InflationLP(object):
               feas_as_optim=False,
               dualise=True,
               solverparameters=None,
-              solver_arguments={},
-              verbose=None) -> None:
+              verbose=None,
+              default_non_negative=None,
+              **solver_arguments) -> None:
         r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
@@ -627,6 +628,10 @@ class InflationLP(object):
             real_verbose = self.verbose
         else:
             real_verbose = verbose
+        if default_non_negative is None:
+            real_default_non_negative = self.default_non_negative
+        else:
+            real_default_non_negative = default_non_negative
         if interpreter == "solveLP_Mosek":
             args = self._prepare_solver_arguments()
         else:
@@ -634,10 +639,9 @@ class InflationLP(object):
         args.update(solver_arguments)
         args.update({"feas_as_optim": feas_as_optim,
                      "verbose": real_verbose,
+                     "default_non_negative": real_default_non_negative,
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
-        if self.default_non_negative:
-            args["default_non_negative"] = True
 
         if interpreter == "solveLP_Mosek":
             self.solution_object = solveLP_Mosek(**args)
