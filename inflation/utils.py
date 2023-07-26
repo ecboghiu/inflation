@@ -69,6 +69,8 @@ def clean_coefficients(cert: Dict[str, float],
     np.ndarray
       The cleaned-up coefficients.
     """
+    if not cert:
+        return cert
     chop_tol = np.abs(chop_tol)
     coeffs = np.asarray(list(cert.values()))
     if chop_tol > 0:
