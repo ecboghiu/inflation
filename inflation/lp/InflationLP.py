@@ -1123,8 +1123,8 @@ class InflationLP(object):
             choices_to_combine_CG.append(choices[CG_selection])
             event_count = choices.sum(axis=1)
             choices_to_combine_global.append(choices[event_count == event_count.max()])
-        raw_boolvecs_CG = reduce(nb_outer_bitwise_or, choices_to_combine_CG)
-        raw_boolvecs_global = reduce(nb_outer_bitwise_or, choices_to_combine_global)
+        raw_boolvecs_CG = reduce(nb_outer_bitwise_or, reversed(choices_to_combine_CG))
+        raw_boolvecs_global = reduce(nb_outer_bitwise_or, reversed(choices_to_combine_global))
         # print("Raw boolvecs global: ", raw_boolvecs_global)
         # is_not_CG_form = [np.matmul(choices, self.boolvec_for_CG_ineqs) for choices in choices_to_combine]
         # raw_lexboolvecs = reduce(nb_outer_bitwise_or, choices_to_combine_CG)
