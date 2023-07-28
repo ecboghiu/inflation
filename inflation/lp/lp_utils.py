@@ -121,7 +121,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                    feas_as_optim: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
-                   variables: List = None
+                   variables: List = None,
+                   feas_as_optim_ver: int = 1
                    ) -> Dict:
     """Internal function to solve an LP with the Mosek Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
@@ -180,6 +181,13 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
     # Since the value of infinity is ignored, define it for symbolic purposes
     inf = 0.0
 
+    if feas_as_optim:
+        solve_dual = False
+        if feas_as_optim_ver == 3 or feas_as_optim_ver == 5:
+            default_non_negative = True
+        else:
+            default_non_negative = False
+
     with mosek.Env() as env:
         with mosek.Task(env) as task:
             # Set parameters for the solver depending on value type
@@ -207,6 +215,16 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 task.putintparam(mosek.iparam.log_sim, 0)
                 task.putintparam(mosek.iparam.log_intpnt, 0)
 
+            if feas_as_optim_ver == 4:
+                # v4: reverse order of inequalities
+                nof_ineq = inequalities.shape[0]
+                len_ineq_row = len(inequalities.row)
+                ineq_row = np.full(len_ineq_row, nof_ineq - 1) - inequalities.row
+                inequalities = coo_matrix((inequalities.data,
+                                           (ineq_row, inequalities.col)),
+                                          shape=inequalities.shape)
+                feas_as_optim_ver = 1
+
             # Initialize constraint matrix
             constraints = vstack_non_empty((inequalities, equalities))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
@@ -214,15 +232,90 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
             # Initialize b vector (RHS of constraints)
             b = [0] * nof_primal_constraints
 
-            # Add known values as equality constraints to the constraint matrix
-            kv_matrix = expand_sparse_vec(known_vars, conversion_style="eq")
-            constraints = vstack_non_empty((constraints, kv_matrix))
-            b.extend(known_vars.data)
+            if feas_as_optim_ver == 5:
+                # Each known value is replaced by two inequalities with slacks
+                nof_known_vars = known_vars.nnz
+                kv_row = np.concatenate(
+                    (np.arange(nof_known_vars * 2),
+                     np.arange(nof_known_vars * 2)))
+                kv_col = np.concatenate(
+                    (known_vars.col, known_vars.col,
+                     np.repeat(nof_primal_variables, nof_known_vars * 2)))
+                kv_data = np.concatenate(
+                    (np.repeat(1, nof_known_vars * 2),
+                     np.repeat(1, nof_known_vars),
+                     np.repeat(-1, nof_known_vars)))
+                kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
+                                       shape=(nof_known_vars * 2,
+                                              nof_primal_variables + 1))
+                constraints.resize(*(nof_primal_constraints,
+                                     nof_primal_variables + 1))
+                constraints = vstack_non_empty((constraints, kv_matrix))
+                (nof_primal_constraints, nof_primal_variables) = constraints.shape
+                b = np.concatenate((b, known_vars.data, known_vars.data))
+            else:
+                # Add known values as equality constraints to the constraint matrix
+                nof_known_vars = known_vars.nnz
+                kv_matrix = expand_sparse_vec(known_vars, conversion_style="eq")
+                constraints = vstack_non_empty((constraints, kv_matrix))
+                (nof_primal_constraints, nof_primal_variables) = constraints.shape
+                b.extend(known_vars.data)
+
+            if feas_as_optim:
+                if feas_as_optim_ver == 1:
+                    # v1: Add slack variable lambda to each inequality
+                    nof_primal_inequalities = inequalities.shape[0]
+                    cons_row = np.concatenate(
+                        (constraints.row, np.arange(nof_primal_inequalities)))
+                    cons_col = np.concatenate(
+                        (constraints.col, np.repeat(nof_primal_variables,
+                                                    nof_primal_inequalities)))
+                    cons_data = np.concatenate(
+                        (constraints.data, np.repeat(1, nof_primal_inequalities)))
+                    constraints = coo_matrix((cons_data, (cons_row, cons_col)),
+                                             shape=(nof_primal_constraints,
+                                                    nof_primal_variables + 1))
+                elif feas_as_optim_ver == 2:
+                    # v2: Add a different slack for each inequality
+                    nof_primal_inequalities = inequalities.shape[0]
+                    cons_row = np.concatenate(
+                        (constraints.row, np.arange(nof_primal_inequalities)))
+                    cons_col = np.concatenate(
+                        (constraints.col,
+                         np.arange(nof_primal_variables,
+                                   nof_primal_variables +
+                                   nof_primal_inequalities)))
+                    cons_data = np.concatenate(
+                        (constraints.data, np.repeat(1, nof_primal_inequalities)))
+                    constraints = coo_matrix((cons_data, (cons_row, cons_col)),
+                                             shape=(nof_primal_constraints,
+                                                    nof_primal_variables +
+                                                    nof_primal_inequalities))
+                elif feas_as_optim_ver == 3:
+                    # v3: Add two slacks for each known value
+                    cons_row = np.concatenate(
+                        (constraints.row,
+                         np.repeat(np.arange(
+                             nof_primal_constraints - nof_known_vars,
+                             nof_primal_constraints
+                         ), 2)))
+                    cons_col = np.concatenate(
+                        (constraints.col,
+                         np.arange(nof_primal_variables,
+                                   nof_primal_variables + nof_known_vars * 2)))
+                    cons_data = np.concatenate(
+                        (constraints.data,
+                         np.tile([1, -1], nof_known_vars)))
+                    constraints = coo_matrix((cons_data, (cons_row, cons_col)),
+                                             shape=(nof_primal_constraints,
+                                                    nof_primal_variables +
+                                                    nof_known_vars * 2))
 
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
-            nof_known_vars = known_vars.nnz
             nof_primal_inequalities = inequalities.shape[0]
-            nof_primal_equalities = equalities.shape[0] + nof_known_vars
+            nof_primal_equalities = equalities.shape[0]
+            if not feas_as_optim_ver == 5:
+                nof_primal_equalities += nof_known_vars
             nof_lb = lower_bounds.nnz
             nof_ub = upper_bounds.nnz
 
@@ -291,12 +384,33 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 if verbose > 1:
                     print("Sparse matrix reformat complete...")
 
-                objective_vector = objective.toarray().ravel()
+                if feas_as_optim:
+                    if feas_as_optim_ver == 1 or feas_as_optim_ver == 5:
+                        # v1: Minimize lambda
+                        objective_vector = np.zeros(nof_primal_variables)
+                        objective_vector[-1] = -1
+                    elif feas_as_optim_ver == 2:
+                        # v2: Minimize sum of lambdas
+                        objective_vector = np.concatenate(
+                            (np.zeros(nof_primal_variables -
+                                      nof_primal_inequalities),
+                             -np.ones(nof_primal_inequalities)))
+                    elif feas_as_optim_ver == 3:
+                        # v3: Minimize sum of lambdas
+                        objective_vector = np.concatenate(
+                            (np.zeros(nof_primal_variables -
+                                      nof_known_vars * 2),
+                             -np.ones(nof_known_vars * 2)))
+                else:
+                    objective_vector = objective.toarray().ravel()
 
                 # Set bound keys and values for constraints
                 # Ax >= b where b is 0
                 bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
                       [mosek.boundkey.fx] * nof_primal_equalities
+                if feas_as_optim_ver == 5:
+                    bkc += [mosek.boundkey.lo] * nof_known_vars + \
+                           [mosek.boundkey.up] * nof_known_vars
                 blc = buc = b
 
                 ub_col = upper_bounds.col
@@ -311,6 +425,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 else:
                     blx = [-inf] * nof_primal_variables
                     bkx = [mosek.boundkey.fr] * nof_primal_variables
+                    if feas_as_optim_ver == 2:
+                        bkx[nof_primal_variables - nof_primal_inequalities:] = [mosek.boundkey.lo] * nof_primal_inequalities
                 bux = [+inf] * nof_primal_variables
                 for col in range(nof_primal_variables):
                     if col in lb_col and col in ub_col:
@@ -363,7 +479,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 print("Pre-processing took",
                       format(perf_counter() - t0, ".4f"), "seconds.\n")
                 t0 = perf_counter()
-
+            task.writedata('dump.ptf')
             # Solve the problem
             if verbose > 0:
                 print("\nSolving the problem...\n")
@@ -408,8 +524,11 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 print("The solution status is unknown.")
                 print(f"   Termination code: {term_tuple}")
 
-            # Extract the certificate as a sparse matrix: y.b - c.x <= 0
-            y_values = y_values[nof_primal_constraints - nof_known_vars:]
+            if feas_as_optim_ver == 5:
+                y_values = y_values[nof_primal_constraints - nof_known_vars * 2:]
+            else:
+                # Extract the certificate as a sparse matrix: y.b - c.x <= 0
+                y_values = y_values[nof_primal_constraints - nof_known_vars:]
             cert_row = [0] * nof_primal_variables
             cert_col = [*range(nof_primal_variables)]
             cert_data = [0] * nof_primal_variables
@@ -418,6 +537,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 cert_data[col] -= obj_data[col]
             for i, col in enumerate(known_vars.col):
                 cert_data[col] += y_values[i]
+                if feas_as_optim_ver == 5:
+                    cert_data[col] += y_values[i + nof_known_vars]
             sparse_certificate = coo_matrix((cert_data, (cert_row, cert_col)),
                                             shape=(1, nof_primal_variables))
 
