@@ -4,11 +4,11 @@ This file contains auxiliary functions of general purpose
 """
 from __future__ import print_function
 import numpy as np
+import scipy.sparse as sps
 from itertools import chain
 from typing import Iterable, Union, List, Tuple, Dict
 from sys import stderr
 from operator import itemgetter
-from scipy.sparse import coo_matrix, vstack
 
 
 def flatten(nested):
@@ -101,8 +101,8 @@ def partsextractor(thing_to_take_parts_of, indices) -> Tuple[int,...]:
         return itemgetter(indices)(thing_to_take_parts_of)
 
 
-def expand_sparse_vec(sparse_vec: coo_matrix,
-                      conversion_style: str = "eq") -> coo_matrix:
+def expand_sparse_vec(sparse_vec: sps.coo_matrix,
+                      conversion_style: str = "eq") -> sps.coo_matrix:
     """Expand a one-dimensional sparse matrix to its full form. Used to expand
     the solver arguments known_vars, lower_bounds, and upper_bounds."""
     assert conversion_style in {"eq", "lb", "ub"}, \
@@ -129,16 +129,28 @@ def expand_sparse_vec(sparse_vec: coo_matrix,
     if conversion_style == "lb":
         # Lower bound format: x >= a -> x - a >= 0
         data = -data
-    return coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
+    return sps.coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
 
 
-def vstack_non_empty(blocks: tuple, format: str = None) -> coo_matrix:
-    """Stack non-empty blocks."""
+def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_matrix:
+    """Stack sparse matrices in coo_matrix form more efficiently."""
     non_empty = tuple(mat for mat in blocks if mat.nnz > 0)
     nof_blocks = len(non_empty)
     if nof_blocks > 1:
-        return vstack(non_empty, format=format)
+        if all(isinstance(block, sps.coo_matrix) for block in blocks):
+            mat_row = blocks[0].row
+            for block in blocks[1:]:
+                mat_row = np.concatenate((mat_row,
+                                          block.row + np.max(mat_row) + 1))
+            mat_col = np.concatenate(tuple(block.col for block in blocks))
+            mat_data = np.concatenate(tuple(block.data for block in blocks))
+            nof_rows = np.max(mat_row) + 1
+            nof_cols = blocks[0].shape[1]
+            return sps.coo_matrix((mat_data, (mat_row, mat_col)),
+                                  shape=(nof_rows, nof_cols)).asformat(format)
+        else:
+            sps.vstack(blocks, format)
     elif nof_blocks == 1:
         return non_empty[0]
     else:
-        return coo_matrix([])
+        return sps.coo_matrix([])

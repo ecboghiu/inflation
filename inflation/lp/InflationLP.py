@@ -30,7 +30,7 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
 from .lp_utils import solveLP_Mosek, solveLP_sparse
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
-    expand_sparse_vec, vstack_non_empty
+    expand_sparse_vec, vstack
 from functools import cached_property
 
 class InflationLP(object):
@@ -1623,8 +1623,8 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
-        internal_equalities = vstack_non_empty((self.sparse_equalities,
-                                               self.sparse_semiknown))
+        internal_equalities = vstack((self.sparse_equalities,
+                                      self.sparse_semiknown))
 
         solverargs = {"objective": self.sparse_objective,
                       "known_vars": self.sparse_known_vars,
@@ -1640,7 +1640,7 @@ class InflationLP(object):
                                        conversion_style="lb")
             ub_mat = expand_sparse_vec(self.sparse_upperbounds,
                                        conversion_style="ub")
-            solverargs["inequalities"] = vstack_non_empty(
+            solverargs["inequalities"] = vstack(
                 (self.sparse_inequalities, lb_mat, ub_mat))
         return solverargs
 

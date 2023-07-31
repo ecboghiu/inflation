@@ -6,7 +6,7 @@ from typing import List, Dict, Union
 from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
-from inflation.utils import partsextractor, expand_sparse_vec, vstack_non_empty
+from inflation.utils import partsextractor, expand_sparse_vec, vstack
 
 
 def solveLP(objective: Union[coo_matrix, Dict],
@@ -208,7 +208,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 task.putintparam(mosek.iparam.log_intpnt, 0)
 
             # Initialize constraint matrix
-            constraints = vstack_non_empty((inequalities, equalities))
+            constraints = vstack((inequalities, equalities))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
 
             # Initialize b vector (RHS of constraints)
@@ -216,7 +216,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
             # Add known values as equality constraints to the constraint matrix
             kv_matrix = expand_sparse_vec(known_vars, conversion_style="eq")
-            constraints = vstack_non_empty((constraints, kv_matrix))
+            constraints = vstack((constraints, kv_matrix))
             b.extend(known_vars.data)
 
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
@@ -247,8 +247,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     ub_data = -ub_mat.data
                     ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
                                         shape=(nof_ub, nof_primal_variables))
-                    matrix = vstack_non_empty((constraints, lb_mat, ub_mat),
-                                              format='csr')
+                    matrix = vstack((constraints, lb_mat, ub_mat),
+                                    format='csr')
                     b_extra = np.concatenate(
                         (lower_bounds.data, -np.asarray(upper_bounds.data)))
                     objective_vector = np.concatenate((b, b_extra))
@@ -643,7 +643,7 @@ def solveLP_Mosek(objective: Dict = None,
                                          shape=(nof_primal_nontriv_bounds,
                                                 nof_primal_variables))
 
-                    matrix = vstack_non_empty((A, A_extra), format='csr')
+                    matrix = vstack((A, A_extra), format='csr')
                     objective_vector = b + b_extra
                 else:
                     matrix = A.tocsr(copy=False)
@@ -897,7 +897,7 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
         semiknown_mat = coo_matrix((data, (row, col)),
                                    shape=(nof_semiknown, nof_variables))
         if "equalities" in sparse_args:
-            sparse_args["equalities"] = vstack_non_empty(
+            sparse_args["equalities"] = vstack(
                 (sparse_args["equalities"], semiknown_mat))
         else:
             sparse_args["equalities"] = semiknown_mat
