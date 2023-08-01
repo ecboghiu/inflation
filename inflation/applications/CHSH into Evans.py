@@ -37,12 +37,11 @@ Evans_Unpacked.update_values({
     use_lpi_constraints=semiknown_usage)
 
 # print(f"Known Values: {Evans_Unpacked.known_moments}")
-params = {
-    mosek.iparam.presolve_use: mosek.presolvemode.off,  # REVERT!!
-    mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}  # For precise inequalities
-Evans_Unpacked.solve(dualise=False, verbose=2, solverparameters=params)
+# params = {
+#     mosek.iparam.presolve_use: mosek.presolvemode.off,  # REVERT!!
+#     mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}  # For precise inequalities
+Evans_Unpacked.solve(dualise=True, verbose=2, feas_as_optim=True)
 print("Status: ", Evans_Unpacked.status)
-# x_dict = {n: np.round(v, decimals=5) for n, v in
-#           Evans_Unpacked.solution_object['x'].items() if np.abs(v) > 1e-5}
-# print(x_dict)
+print(Evans_Unpacked.certificate_as_probs())
+Evans_Unpacked.solve(dualise=False, verbose=2, feas_as_optim=True)
 print(Evans_Unpacked.certificate_as_probs())
