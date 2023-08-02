@@ -10,13 +10,13 @@ from inflation.utils import partsextractor, expand_sparse_vec, vstack
 import gurobipy as gp
 
 
-def solveLP(objective: Union[coo_matrix, Dict],
-            known_vars: Union[coo_matrix, Dict],
-            semiknown_vars: Dict,
-            inequalities: Union[coo_matrix, List[Dict]],
-            equalities: Union[coo_matrix, List[Dict]],
-            lower_bounds: Union[coo_matrix, Dict],
-            upper_bounds: Union[coo_matrix, Dict],
+def solveLP(objective: Union[coo_matrix, Dict] = None,
+            known_vars: Union[coo_matrix, Dict] = None,
+            semiknown_vars: Dict = None,
+            inequalities: Union[coo_matrix, List[Dict]] = None,
+            equalities: Union[coo_matrix, List[Dict]] = None,
+            lower_bounds: Union[coo_matrix, Dict] = None,
+            upper_bounds: Union[coo_matrix, Dict] = None,
             solve_dual: bool = False,
             default_non_negative: bool = True,
             relax_known_vars: bool = False,
@@ -91,7 +91,7 @@ def solveLP(objective: Union[coo_matrix, Dict],
                     "equalities",
                     "lower_bounds",
                     "upper_bounds")
-    used_args = {k: v for k, v in solver_args
+    used_args = {k: v for k, v in solver_args.items()
                  if k in problem_args and v is not None}
     if all(issparse(arg) for arg in used_args.values()):
         assert variables is not None, "Variables must be declared when all " \
@@ -109,11 +109,12 @@ def solveLP(objective: Union[coo_matrix, Dict],
                 variables.update([x, x2])
             variables.update(known_vars)
             variables = sorted(variables)
-        solver_args.update(convert_dicts(**solver_args, variables=variables))
+            solver_args["variables"] = variables
+        solver_args.update(convert_dicts(**solver_args))
     else:
         assert variables is not None, "Variables must be declared when " \
                                       "arguments are of mixed form."
-        solver_args.update(convert_dicts(**solver_args, variables=variables))
+        solver_args.update(convert_dicts(**solver_args))
     solver_args.pop("semiknown_vars", None)
     return solveLP_sparse(**solver_args)
 
