@@ -369,6 +369,16 @@ class InflationLP(object):
             _knowable_atoms.update(mon.knowable_factors)
         return _knowable_atoms
 
+    @cached_property
+    def nonlinear_equalities(self):
+        return {mon: mon.factors for mon in self.monomials if mon.n_factors > 1}
+
+    # @property
+    # def nonlinear_equalities(self):
+    #     result = self.nonlinear_equalities.copy()
+    #     [result.pop(key) for key in self.known_moments.keys()]
+    #     return result
+
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
                          use_lpi_constraints=False,
@@ -1360,17 +1370,10 @@ class InflationLP(object):
     @cached_property
     def moment_equalities(self):
         return self._coo_mat_to_dict(self.sparse_equalities)
-    @cached_property
-    def moment_equalities_by_name(self):
-        return self._coo_mat_to_dict(self.sparse_equalities, string_keys=True)
 
     @cached_property
     def moment_inequalities(self):
         return self._coo_mat_to_dict(self.sparse_inequalities)
-
-    @cached_property
-    def moment_inequalities_by_name(self):
-        return self._coo_mat_to_dict(self.sparse_inequalities, string_keys=True)
 
 
     def _discover_inflation_orbits(self, _raw_monomials_as_lexboolvecs) -> np.ndarray:
@@ -1455,6 +1458,18 @@ class InflationLP(object):
         self.known_moments[self.One] = 1.
         collect()
 
+    def _reset_solution(self) -> None:
+        """Resets class attributes storing the solution to the SDP
+        relaxation."""
+        for attribute in {"primal_objective",
+                          "objective_value",
+                          "solution_object"}:
+            try:
+                delattr(self, attribute)
+            except AttributeError:
+                pass
+        self.status = "Not yet solved"
+
     # def _update_objective(self) -> None:
     #     """Process the objective with the information from known_moments
     #     and semiknown_moments.
@@ -1518,31 +1533,20 @@ class InflationLP(object):
     #     self.moment_upperbounds = self._processed_moment_upperbounds
 
     ###########################################################################
-    # OTHER ROUTINES                                                          #
+    # Preparation for passing to external interfaces                          #
     ###########################################################################
-    def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
-        """Return ``True`` if the input monomial, encoded as a 2D array,
-        can be associated to a knowable value in the scenario, and ``False``
-        otherwise.
 
-        Parameters
-        ----------
-        atomic_monarray : numpy.ndarray
-            Monomial encoded as a 2D array.
+    @cached_property
+    def moment_equalities_by_name(self):
+        return self._coo_mat_to_dict(self.sparse_equalities, string_keys=True)
 
-        Returns
-        -------
-        bool
-            Whether the monomial could be assigned a numerical value.
-        """
-        if not is_knowable(atomic_monarray):
-            return False
-        elif self.network_scenario:
-            return True
-        else:
-            return self._is_knowable_q_non_networks(np.take(atomic_monarray,
-                                                            [0, -2, -1],
-                                                            axis=1))
+    @cached_property
+    def moment_inequalities_by_name(self):
+        return self._coo_mat_to_dict(self.sparse_inequalities, string_keys=True)
+
+    @cached_property
+    def nonlinear_equalities_by_name(self):
+        return {mon.name: tuple(fac.name for fac in val) for mon, val in self.nonlinear_equalities.items()}
 
     @property
     def sparse_objective(self) -> coo_matrix:
@@ -1588,12 +1592,15 @@ class InflationLP(object):
 
     @property
     def semiknown_by_name(self) -> Dict:
-        col = self.sparse_semiknown.col
-        data = self.sparse_semiknown.data
-        x = [self.compmonomial_from_idx[x].name for x in col[::2]]
-        tuples = [(-c, self.compmonomial_from_idx[x2].name)
-                  for c, x2 in zip(data[1::2], col[1::2])]
-        return dict(zip(x, tuples))
+        return {mon.name: (coeff, subs.name)
+                                         for mon, (coeff, subs)
+                                         in self.semiknown_moments.items()}
+        # col = self.sparse_semiknown.col
+        # data = self.sparse_semiknown.data
+        # x = [self.compmonomial_from_idx[x].name for x in col[::2]]
+        # tuples = [(-c, self.compmonomial_from_idx[x2].name)
+        #           for c, x2 in zip(data[1::2], col[1::2])]
+        # return dict(zip(x, tuples))
 
     def _prepare_solver_matrices(self, separate_bounds: bool = True) -> dict:
         """Convert arguments from dictionaries to sparse coo_matrix form to
@@ -1687,27 +1694,17 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
-        solverargs = {"objective": {mon.name: coeff for mon, coeff
-                                    in self.objective.items()},
-                      "known_vars": {mon.name: val for mon, val
-                                     in self.known_moments.items()},
-                      "semiknown_vars": {mon.name: (coeff, subs.name)
-                                         for mon, (coeff, subs)
-                                         in self.semiknown_moments.items()},
-                      "equalities": [{mon.name: coeff
-                                      for mon, coeff in eq.items()}
-                                     for eq in self.moment_equalities],
-                      "inequalities": [{mon.name: coeff
-                                        for mon, coeff in ineq.items()}
-                                       for ineq in self.moment_inequalities]
+        solverargs = {"objective": self.objective_by_name,
+                      "known_vars": self.known_vars_by_name,
+                      "semiknown_vars": self.semiknown_by_name,
+                      "equalities": self.moment_equalities_by_name,
+                      "inequalities": self.moment_inequalities_by_name
                       }
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
         if separate_bounds:
-            solverargs["lower_bounds"] = {mon.name: bnd for mon, bnd in
-                                          self.moment_lowerbounds.items()}
-            solverargs["upper_bounds"] = {mon.name: bnd for mon, bnd in
-                                          self.moment_upperbounds.items()}
+            solverargs["lower_bounds"] = self.lowerbounds_by_name
+            solverargs["upper_bounds"] = self.upperbounds_by_name
         else:
             solverargs["inequalities"].extend({mon.name: 1, '1': -bnd}
                                               for mon, bnd in
@@ -1717,17 +1714,32 @@ class InflationLP(object):
                                               self.moment_upperbounds.items())
         return solverargs
 
-    def _reset_solution(self) -> None:
-        """Resets class attributes storing the solution to the SDP
-        relaxation."""
-        for attribute in {"primal_objective",
-                          "objective_value",
-                          "solution_object"}:
-            try:
-                delattr(self, attribute)
-            except AttributeError:
-                pass
-        self.status = "Not yet solved"
+    ###########################################################################
+    # OTHER ROUTINES                                                          #
+    ###########################################################################
+    def _atomic_knowable_q(self, atomic_monarray: np.ndarray) -> bool:
+        """Return ``True`` if the input monomial, encoded as a 2D array,
+        can be associated to a knowable value in the scenario, and ``False``
+        otherwise.
+
+        Parameters
+        ----------
+        atomic_monarray : numpy.ndarray
+            Monomial encoded as a 2D array.
+
+        Returns
+        -------
+        bool
+            Whether the monomial could be assigned a numerical value.
+        """
+        if not is_knowable(atomic_monarray):
+            return False
+        elif self.network_scenario:
+            return True
+        else:
+            return self._is_knowable_q_non_networks(np.take(atomic_monarray,
+                                                            [0, -2, -1],
+                                                            axis=1))
 
     def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
         """Set upper bounds for variables in the SDP relaxation.
