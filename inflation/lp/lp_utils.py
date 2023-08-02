@@ -7,6 +7,7 @@ from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
 from inflation.utils import partsextractor, expand_sparse_vec, vstack
+import gurobipy as gp
 
 
 def solveLP(objective: Union[coo_matrix, Dict],
@@ -518,6 +519,129 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 "x": x_values,
                 "term_code": term_tuple
             }
+
+
+def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
+                   known_vars: coo_matrix = coo_matrix([]),
+                   inequalities: coo_matrix = coo_matrix([]),
+                   equalities: coo_matrix = coo_matrix([]),
+                   lower_bounds: coo_matrix = coo_matrix([]),
+                   upper_bounds: coo_matrix = coo_matrix([]),
+                   default_non_negative: bool = True,
+                   relax_known_vars: bool = False,
+                   relax_inequalities: bool = False,
+                   verbose: int = 0,
+                   solverparameters: Dict = None,
+                   variables: List = None
+                   ) -> Dict:
+    """Internal function to solve an LP with the Gurobi Optimizer API using
+    sparse matrices. Columns of each matrix correspond to a fixed order of
+    variables in the LP.
+
+    Parameters
+    ----------
+    objective : coo_matrix, optional
+        Objective function with coefficients as matrix entries.
+    known_vars : coo_matrix, optional
+        Known values of the monomials with values as matrix entries.
+    inequalities : coo_matrix, optional
+        Inequality constraints in matrix form.
+    equalities : coo_matrix, optional
+        Equality constraints in matrix form.
+    lower_bounds : coo_matrix, optional
+        Lower bounds of variables with bounds as matrix entries.
+    upper_bounds : coo_matrix, optional
+        Upper bounds of variables with bounds as matrix entries.
+    default_non_negative : bool, optional
+        Whether to set default primal variables as non-negative. By default,
+        ``True``.
+    relax_known_vars : bool, optional
+        Do feasibility as optimization where each known value equality becomes
+        two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +
+        lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda is a slack
+        variable. By default, ``False``.
+    relax_inequalities : bool, optional
+        Do feasibility as optimization where each inequality is relaxed by the
+        non-negative slack variable lambda. By default, ``False``.
+    verbose : int, optional
+        Verbosity. Higher means more messages. By default, 0.
+    solverparameters : dict, optional
+        Parameters to pass to the MOSEK solver. For example, to control whether
+        presolve is applied before optimization, set
+        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or
+        ``mosek.presolvemode.off``. Or, control which optimizer is used by
+        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK's
+        documentation
+        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_ for
+        more details.
+    variables : list
+        Monomials by name in same order as column indices of all other solver
+        arguments
+
+    Returns
+    -------
+    dict
+        Primal objective value, dual objective value, problem status, success
+        status, dual certificate (as dictionary and sparse matrix), x values,
+        and response code.
+    """
+    if verbose > 1:
+        t0 = perf_counter()
+        t_total = perf_counter()
+        print("Starting pre-processing for the LP solver...")
+
+    # Create new model
+    m = gp.Model("QCP")
+
+    (nof_primal_inequalities, nof_primal_variables) = inequalities.shape
+    nof_primal_equalities = equalities.shape[0]
+    kv_matrix = expand_sparse_vec(known_vars)
+
+    # Create variables and set variable bounds
+    lb_array = lower_bounds.toarray().ravel()
+    ub_array = upper_bounds.toarray().ravel()
+    x = m.addMVar(shape=(nof_primal_variables,))
+    if lb_array.size > 0:
+        x.setAttr("lb", lb_array)
+    if ub_array.size > 0:
+        x.setAttr("ub", ub_array)
+
+    # Set objective
+    objective_vector = objective.toarray().ravel()
+    m.setObjective(objective_vector @ x, gp.GRB.MAXIMIZE)
+
+    # Add inequality constraint matrix
+    rhs_ineq = np.zeros(nof_primal_inequalities)
+    m.addConstr(inequalities @ x >= rhs_ineq, name="ineq")
+
+    # Add equality constraint matrix
+    rhs_eq = np.zeros(nof_primal_equalities)
+    m.addConstr(equalities @ x == rhs_eq, name="eq")
+
+    # Add known value constraint matrix
+    rhs_kv = known_vars.data
+    m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
+
+    collect()
+    if verbose > 1:
+        print("Pre-processing took",
+              format(perf_counter() - t0, ".4f"), "seconds.\n")
+        t0 = perf_counter()
+
+    # Solve the problem
+    if verbose > 0:
+        print("\nSolving the problem...\n")
+    m.optimize()
+    if verbose > 1:
+        print("Solving took", format(perf_counter() - t0, ".4f"),
+              "seconds.")
+
+    print(x.X)
+    print('Obj: %g' % m.objVal)
+
+    if verbose > 1:
+        print("\nTotal execution time:",
+              format(perf_counter() - t_total, ".4f"), "seconds.")
 
 
 def solveLP_Mosek(objective: Dict = None,
