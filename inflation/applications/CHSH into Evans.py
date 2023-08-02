@@ -44,3 +44,13 @@ Evans_Unpacked.solve(dualise=False, verbose=2, relax_known_vars=True)
 print(Evans_Unpacked.certificate_as_probs())
 Evans_Unpacked.solve(dualise=True, verbose=2, relax_known_vars=True)
 print(Evans_Unpacked.certificate_as_probs())
+Evans_Unpacked.solve(dualise=False, verbose=2, relax_inequalities=True)
+print(Evans_Unpacked.certificate_as_probs())
+Evans_Unpacked.solve(dualise=True, verbose=2, relax_inequalities=True)
+print(Evans_Unpacked.certificate_as_probs())
+Evans_Unpacked.solve(dualise=False, verbose=2, relax_known_vars=True,
+                     relax_inequalities=True)
+print(Evans_Unpacked.certificate_as_probs())
+Evans_Unpacked.solve(dualise=True, verbose=2, relax_known_vars=True,
+                     relax_inequalities=True)
+print(Evans_Unpacked.certificate_as_probs())

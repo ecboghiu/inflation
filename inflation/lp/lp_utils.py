@@ -19,6 +19,7 @@ def solveLP(objective: Union[coo_matrix, Dict],
             solve_dual: bool = False,
             default_non_negative: bool = True,
             relax_known_vars: bool = False,
+            relax_inequalities: bool = False,
             verbose: int = 0,
             solverparameters: Dict = None,
             variables: List = None
@@ -53,6 +54,9 @@ def solveLP(objective: Union[coo_matrix, Dict],
         two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +
         lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda is a slack
         variable. By default, ``False``.
+    relax_inequalities : bool, optional
+        Do feasibility as optimization where each inequality is relaxed by the
+        non-negative slack variable lambda. By default, ``False``.
     verbose : int, optional
         Verbosity. Higher means more messages. By default, 0.
     solverparameters : dict, optional
@@ -122,6 +126,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                    solve_dual: bool = False,
                    default_non_negative: bool = True,
                    relax_known_vars: bool = False,
+                   relax_inequalities: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
                    variables: List = None
@@ -155,6 +160,9 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
         two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +
         lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda is a slack
         variable. By default, ``False``.
+    relax_inequalities : bool, optional
+        Do feasibility as optimization where each inequality is relaxed by the
+        non-negative slack variable lambda. By default, ``False``.
     verbose : int, optional
         Verbosity. Higher means more messages. By default, 0.
     solverparameters : dict, optional
@@ -186,8 +194,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
     # Since the value of infinity is ignored, define it for symbolic purposes
     inf = 0.0
 
-    if relax_known_vars:
-        default_non_negative = True
+    if relax_known_vars or relax_inequalities:
+        default_non_negative = False
 
     with mosek.Env() as env:
         with mosek.Task(env) as task:
@@ -246,8 +254,23 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 # Add known values as equalities to the constraint matrix
                 kv_matrix = expand_sparse_vec(known_vars)
                 b.extend(known_vars.data)
-
             constraints = vstack_non_empty((constraints, kv_matrix))
+            nof_primal_constraints = constraints.shape[0]
+
+            if relax_inequalities:
+                # Add slack variable lambda to each inequality
+                nof_primal_inequalities = inequalities.shape[0]
+                cons_row = np.concatenate(
+                    (constraints.row, np.arange(nof_primal_inequalities)))
+                cons_col = np.concatenate(
+                    (constraints.col, np.repeat(nof_primal_variables,
+                                                nof_primal_inequalities)))
+                cons_data = np.concatenate(
+                    (constraints.data, np.repeat(1, nof_primal_inequalities)))
+                constraints = coo_matrix((cons_data, (cons_row, cons_col)),
+                                         shape=(nof_primal_constraints,
+                                                nof_primal_variables + 1))
+
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
             nof_primal_inequalities = inequalities.shape[0]
             nof_primal_equalities = equalities.shape[0]
@@ -290,7 +313,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     print("Sparse matrix reformat complete...")
 
                 # Set bound keys and values for constraints (primal objective)
-                if relax_known_vars:
+                if relax_known_vars or relax_inequalities:
                     blc = buc = np.zeros(nof_primal_variables)
                     blc[-1] = buc[-1] = -1
                 else:
@@ -301,6 +324,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     bkc = [mosek.boundkey.lo] * nof_dual_constraints
                 else:
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
+                    if relax_known_vars or relax_inequalities:
+                        bkc[-1] = mosek.boundkey.lo
 
                 # Set bound keys and values for variables
                 # Non-positivity for y corresponding to inequalities
@@ -325,7 +350,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 if verbose > 1:
                     print("Sparse matrix reformat complete...")
 
-                if relax_known_vars:
+                if relax_known_vars or relax_inequalities:
                     # Minimize lambda
                     objective_vector = np.zeros(nof_primal_variables)
                     objective_vector[-1] = -1
@@ -365,6 +390,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     elif col in ub_col:
                         bkx[col] = mosek.boundkey.up
                         bux[col] = ub_data[col]
+                if relax_known_vars or relax_inequalities:
+                    bkx[-1] = mosek.boundkey.lo
 
                 # Set the objective sense
                 task.putobjsense(mosek.objsense.maximize)
@@ -916,6 +943,7 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
                   solve_dual: bool = False,
                   default_non_negative: bool = True,
                   relax_known_vars: bool = False,
+                  relax_inequalities: bool = False,
                   verbose: int = 0,
                   solverparameters: Dict = None,
                   variables: List = None) -> Dict:

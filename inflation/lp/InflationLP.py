@@ -584,8 +584,8 @@ class InflationLP(object):
 
     def solve(self,
               interpreter="solveLP_sparse",
-              feas_as_optim=False,
               relax_known_vars=False,
+              relax_inequalities=False,
               dualise=True,
               solverparameters=None,
               verbose=None,
@@ -599,18 +599,14 @@ class InflationLP(object):
         ----------
         interpreter : str, optional
             The solver to be called. By default ``"solveLP_sparse"``.
-        feas_as_optim : bool, optional
-            Instead of solving the feasibility problem
-
-                :math:`(1) \text{ find vars such that } \Gamma \succeq 0`
-
-            setting this label to ``True`` solves instead the problem
-
-                :math:`(2) \text{ max }\lambda\text{ such that }
-                \Gamma - \lambda\cdot 1 \succeq 0.`
-
-            The correspondence is that the result of (2) is positive if (1) is
-            feasible, and negative otherwise. By default ``False``.
+        relax_known_vars : bool, optional
+            Do feasibility as optimization where each known value equality
+            becomes two relaxed inequality constraints. E.g., P(A) = 0.7
+            becomes P(A) + lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda
+            is a slack variable. By default, ``False``.
+        relax_inequalities : bool, optional
+            Do feasibility as optimization where each inequality is relaxed by
+            the non-negative slack variable lambda. By default, ``False``.
         dualise : bool, optional
             Optimize the dual problem (recommended). By default ``False``.
         solverparameters : dict, optional
@@ -620,11 +616,13 @@ class InflationLP(object):
             given by ``_prepare_solver_arguments()``. However, a user may
             manually override these arguments by passing their own here.
         """
-        if feas_as_optim and len(self.objective) > 0:
-            warn("You have a non-trivial objective, but set to solve a " +
+        if (relax_known_vars or relax_inequalities) and \
+                len(self.objective) > 0:
+            warn("You have a non-trivial objective, but set to solve a "
                  "feasibility problem as optimization. Setting "
-                 + "feas_as_optim=False and optimizing the objective...")
-            feas_as_optim = False
+                 "relax_known_vars=False, relax_inequalities=False, and "
+                 "optimizing the objective...")
+            relax_known_vars = relax_inequalities = False
         if verbose is None:
             real_verbose = self.verbose
         else:
@@ -639,6 +637,7 @@ class InflationLP(object):
             args = self._prepare_solver_matrices()
         args.update(solver_arguments)
         args.update({"relax_known_vars": relax_known_vars,
+                     "relax_inequalities": relax_inequalities,
                      "verbose": real_verbose,
                      "default_non_negative": real_default_non_negative,
                      "solverparameters": solverparameters,
