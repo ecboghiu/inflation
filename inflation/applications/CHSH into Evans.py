@@ -40,8 +40,7 @@ Evans_Unpacked.update_values({
 # params = {
 #     mosek.iparam.presolve_use: mosek.presolvemode.off,  # REVERT!!
 #     mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}  # For precise inequalities
-Evans_Unpacked.solve(dualise=True, verbose=2, feas_as_optim=True)
-print("Status: ", Evans_Unpacked.status)
+Evans_Unpacked.solve(dualise=False, verbose=2, relax_known_vars=True)
 print(Evans_Unpacked.certificate_as_probs())
-Evans_Unpacked.solve(dualise=False, verbose=2, feas_as_optim=True)
+Evans_Unpacked.solve(dualise=True, verbose=2, relax_known_vars=True)
 print(Evans_Unpacked.certificate_as_probs())

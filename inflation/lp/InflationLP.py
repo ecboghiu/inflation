@@ -585,6 +585,7 @@ class InflationLP(object):
     def solve(self,
               interpreter="solveLP_sparse",
               feas_as_optim=False,
+              relax_known_vars=False,
               dualise=True,
               solverparameters=None,
               verbose=None,
@@ -637,7 +638,7 @@ class InflationLP(object):
         else:
             args = self._prepare_solver_matrices()
         args.update(solver_arguments)
-        args.update({"feas_as_optim": feas_as_optim,
+        args.update({"relax_known_vars": relax_known_vars,
                      "verbose": real_verbose,
                      "default_non_negative": real_default_non_negative,
                      "solverparameters": solverparameters,
