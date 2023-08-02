@@ -1134,8 +1134,10 @@ class InflationLP(object):
         # raw_is_not_CG_form = raw_is_not_CG_form[operator_count_sort]
         # return (raw_lexboolvecs[np.logical_not(raw_is_not_CG_form)],
         #         raw_lexboolvecs[raw_is_not_CG_form])
-        return (raw_boolvecs_CG[np.argsort(np.sum(raw_boolvecs_CG, axis=1))],
-            raw_boolvecs_global)
+        return (raw_boolvecs_CG[np.argsort(raw_boolvecs_CG.sum(axis=1))],
+                raw_boolvecs_global[np.argsort(np.matmul(raw_boolvecs_global,
+                                                         self.boolvec_for_CG_ineqs.astype(int))
+                                               )])
 
     @cached_property
     def sparse_equalities_OLD(self) -> coo_matrix:
