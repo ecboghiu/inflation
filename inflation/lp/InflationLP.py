@@ -27,7 +27,7 @@ from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
-from .lp_utils import solveLP_Mosek, solveLP_sparse
+from .lp_utils import solveLP_Mosek, solveLP_sparse, solveLP
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec, vstack_non_empty
@@ -646,7 +646,7 @@ class InflationLP(object):
         if interpreter == "solveLP_Mosek":
             self.solution_object = solveLP_Mosek(**args)
         else:
-            self.solution_object = solveLP_sparse(**args)
+            self.solution_object = solveLP(**args)
         self.success = self.solution_object["success"]
         self.status = self.solution_object["status"]
         if self.success:
