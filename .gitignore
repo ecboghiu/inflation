@@ -145,3 +145,5 @@ dmypy.json
 .vs/
 arena.py
 arena.ipynb
+arena_ghz.py
+arena_phys.py

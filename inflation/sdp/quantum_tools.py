@@ -7,7 +7,8 @@ import numpy as np
 import sympy
 
 from copy import deepcopy
-from itertools import permutations, product, combinations_with_replacement
+from itertools import permutations, product, combinations_with_replacement, \
+                      combinations
 from tqdm import tqdm
 from typing import Any, Dict, List, Tuple, Union
 
@@ -472,7 +473,7 @@ def party_physical_monomials(hypergraph: np.ndarray,
     Parameters
     ----------
     hypergraph : numpy.ndarray
-         Hypergraph of the scenario.
+        Hypergraph of the scenario.
     inflevels : np.ndarray
         The number of copies of each source in the inflated scenario.
     party : int
@@ -547,7 +548,51 @@ def party_physical_monomials(hypergraph: np.ndarray,
     return new_monomials.transpose(
         (2, 0, 1, 3, 4)
     ).reshape((-1, max_monomial_length, nr_properties))
+    
+def party_physical_monomials_via_cliques(max_monomial_length: int,
+                             party_lexorder: np.ndarray,
+                             party_not_comm: np.ndarray
+                             ) -> np.ndarray:
+    """Generate all possible non-negative monomials for a given party composed
+    of at most ``max_monomial_length`` operators.
 
+    Parameters
+    ----------
+    max_monomial_length : int
+        The maximum number of operators in the monomial.
+    party_lexorder : numpy.ndarray
+        A matrix storing the lexicographic order of operators of a single party.
+        If an operator has lexicographic rank `i`, then it is placed at the ``i``-th row of
+        lexorder.
+    party_notcomm: numpy.ndarray
+        A matrix storing the non-commutativity of operators belonging to a 
+        single party.
+
+    Returns
+    -------
+    List[numpy.ndarray]
+        An array containing all possible positive monomials of the given
+        length.
+    """
+    import networkx as nx
+    cliques = list(nx.find_cliques(nx.from_numpy_array(party_not_comm)))
+    assert max_monomial_length <= len(cliques), \
+                (f"The commutations relations only allow for {len(cliques)}" + 
+                   "all-commuting operators in a monomial.")
+    list_of_all_commuting_products = []
+    for _clique_idxs in combinations(range(len(cliques)), max_monomial_length):
+        # If we have 4 cliques and max_monomial_length=2, then we go through
+        # the different combinations of 2 cliques out of 4 from which to take
+        # one operator each from.
+        for ops in product(*[cliques[i] for i in _clique_idxs]):
+            # Given the choice of cliques, take the cartesian product of the 
+            # cliques to get all possible commuting monomials with operators
+            # from each clique
+            mon = np.vstack([party_lexorder[op] for op in ops])
+            list_of_all_commuting_products.append(mon)  
+    list_of_all_commuting_products = np.array(list_of_all_commuting_products)
+    return list_of_all_commuting_products
+ 
 
 ###############################################################################
 # OTHER FUNCTIONS                                                             #
