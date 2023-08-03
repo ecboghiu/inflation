@@ -458,7 +458,8 @@ def lexicographic_order(infSDP) -> Dict[str, int]:
                               commutative=False)] = i
     return lexorder
 
-
+# TODO remove this function once party_physical_monomials_via_cliques is fully
+# functional
 def party_physical_monomials(hypergraph: np.ndarray,
                              inflevels: np.ndarray,
                              party: int,
@@ -550,9 +551,9 @@ def party_physical_monomials(hypergraph: np.ndarray,
     ).reshape((-1, max_monomial_length, nr_properties))
     
 def party_physical_monomials_via_cliques(max_monomial_length: int,
-                             party_lexorder: np.ndarray,
-                             party_not_comm: np.ndarray
-                             ) -> np.ndarray:
+                                         party_lexorder: np.ndarray,
+                                         party_not_comm: np.ndarray
+                                        ) -> np.ndarray:
     """Generate all possible non-negative monomials for a given party composed
     of at most ``max_monomial_length`` operators.
 
@@ -562,8 +563,8 @@ def party_physical_monomials_via_cliques(max_monomial_length: int,
         The maximum number of operators in the monomial.
     party_lexorder : numpy.ndarray
         A matrix storing the lexicographic order of operators of a single party.
-        If an operator has lexicographic rank `i`, then it is placed at the ``i``-th row of
-        lexorder.
+        If an operator has lexicographic rank `i`, then it is placed at 
+        the ``i``-th row of lexorder.
     party_notcomm: numpy.ndarray
         A matrix storing the non-commutativity of operators belonging to a 
         single party.

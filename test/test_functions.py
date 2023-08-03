@@ -5,11 +5,13 @@ from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP
 from inflation.sdp.fast_npa import nb_remove_sandwich
-from inflation.sdp.quantum_tools import to_symbol
+from inflation.sdp.quantum_tools import to_symbol, \
+                                        party_physical_monomials_via_cliques
+from itertools import combinations
 
 
 class TestFunctions(unittest.TestCase):
-    def test_sandwich(self):
+    def test_remove_sandwich(self):
         # <(A_111*A_121*A_111)*(A_332*A_312*A_342*A_312*A_332)*(B_011*B_012)>
         monomial = np.array([[1, 1, 1, 1, 0, 0],
                              [1, 1, 2, 1, 0, 0],
@@ -134,8 +136,6 @@ class TestFunctions(unittest.TestCase):
                          "to_symbol is not working as expected.")
 
     def test_physical_monomial_generation(self):
-        from inflation.sdp.quantum_tools import party_physical_monomials_via_cliques
-        from itertools import combinations
         _lexorder = np.array(['a','b','c','d','e','f'], dtype=object)
         name2lexorder = {name: i for i, name in enumerate(_lexorder)}
         sets_of_notcommuting = [('a','b','c'), ('d','e'), ('f')]
