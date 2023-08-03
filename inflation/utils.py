@@ -134,22 +134,30 @@ def expand_sparse_vec(sparse_vec: sps.coo_matrix,
 
 def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_matrix:
     """Stack sparse matrices in coo_matrix form more efficiently."""
-    non_empty = tuple(mat for mat in blocks if mat.nnz > 0)
+    non_empty = tuple(mat for mat in blocks if mat.shape[0])
     nof_blocks = len(non_empty)
     if nof_blocks > 1:
         if all(isinstance(block, sps.coo_matrix) for block in blocks):
-            mat_row = blocks[0].row
-            for block in blocks[1:]:
-                mat_row = np.concatenate((mat_row,
-                                          block.row + np.max(mat_row) + 1))
-            mat_col = np.concatenate(tuple(block.col for block in blocks))
-            mat_data = np.concatenate(tuple(block.data for block in blocks))
-            nof_rows = np.max(mat_row) + 1
-            nof_cols = blocks[0].shape[1]
+            # mat_row = blocks[0].row
+            # (row_count, _) = blocks[0].shape
+            # for block in blocks[1:]:
+            #     mat_row = np.concatenate((mat_row,
+            #                               block.row + row_count))
+            nof_rows = 0
+            nof_cols = 0
+            adjusted_rows = []
+            for block in blocks:
+                adjusted_rows.append(block.row + nof_rows)
+                (block_len, block_wid) = block.shape
+                nof_rows += block_len
+                nof_cols = max(nof_cols, block_wid)
+            mat_row = np.hstack(adjusted_rows)
+            mat_col = np.hstack(tuple(block.col for block in blocks))
+            mat_data = np.hstack(tuple(block.data for block in blocks))
             return sps.coo_matrix((mat_data, (mat_row, mat_col)),
                                   shape=(nof_rows, nof_cols)).asformat(format)
         else:
-            sps.vstack(blocks, format)
+            return sps.vstack(blocks, format)
     elif nof_blocks == 1:
         return non_empty[0]
     else:
