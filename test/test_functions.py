@@ -132,3 +132,52 @@ class TestFunctions(unittest.TestCase):
                                    ["A", "B"]),
                          truth,
                          "to_symbol is not working as expected.")
+
+    def test_physical_monomial_generation(self):
+        from inflation.sdp.quantum_tools import party_physical_monomials_via_cliques
+        from itertools import combinations
+        _lexorder = np.array(['a','b','c','d','e','f'], dtype=object)
+        name2lexorder = {name: i for i, name in enumerate(_lexorder)}
+        sets_of_notcommuting = [('a','b','c'), ('d','e'), ('f')]
+        _notcomm = np.zeros([_lexorder.shape[0]]*2, dtype=bool)
+        for clique in sets_of_notcommuting:
+            for e1, e2 in combinations(clique, 2):
+                _notcomm[name2lexorder[e1], name2lexorder[e2]] = True
+                _notcomm[name2lexorder[e2], name2lexorder[e1]] = True
+        result = party_physical_monomials_via_cliques(1, _lexorder, _notcomm)
+        correct = np.array([[['a']],
+                            [['b']], 
+                            [['c']], 
+                            [['d']],
+                            [['e']],
+                            [['f']]], dtype='<U1')
+        self.assertTrue(np.array_equal(result, correct),
+            "The physical monomials of length 1 are not generated correctly.")
+        result = party_physical_monomials_via_cliques(2, _lexorder, _notcomm)
+        correct = np.array([[['a'], ['d']],
+                            [['a'], ['e']],
+                            [['b'], ['d']],
+                            [['b'], ['e']],
+                            [['c'], ['d']],
+                            [['c'], ['e']],
+                            [['a'], ['f']],
+                            [['b'], ['f']],
+                            [['c'], ['f']],
+                            [['d'], ['f']],
+                            [['e'], ['f']]], dtype='<U1')
+        self.assertTrue(np.array_equal(result, correct),
+            "The physical monomials of length 2 are not generated correctly.")
+        result = party_physical_monomials_via_cliques(3, _lexorder, _notcomm)
+        correct = np.array([[['a'], ['d'], ['f']],
+                            [['a'], ['e'], ['f']],
+                            [['b'], ['d'], ['f']],
+                            [['b'], ['e'], ['f']],
+                            [['c'], ['d'], ['f']],
+                            [['c'], ['e'], ['f']]], dtype='<U1')
+        self.assertTrue(np.array_equal(result, correct),
+            "The physical monomials of length 3 are not generated correctly.")
+        
+        # The following checks that the function raises the correct exception
+        # when the monomial length is too large.
+        with self.assertRaises(AssertionError): 
+            party_physical_monomials_via_cliques(4, _lexorder, _notcomm)

@@ -577,7 +577,7 @@ def party_physical_monomials_via_cliques(max_monomial_length: int,
     import networkx as nx
     cliques = list(nx.find_cliques(nx.from_numpy_array(party_not_comm)))
     assert max_monomial_length <= len(cliques), \
-                (f"The commutations relations only allow for {len(cliques)}" + 
+                (f"The commutations relations only allow for {len(cliques)} " + 
                    "all-commuting operators in a monomial.")
     list_of_all_commuting_products = []
     for _clique_idxs in combinations(range(len(cliques)), max_monomial_length):
