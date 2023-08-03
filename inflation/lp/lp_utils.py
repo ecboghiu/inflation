@@ -9,6 +9,10 @@ from gc import collect
 from inflation.utils import partsextractor, expand_sparse_vec, vstack
 import gurobipy as gp
 
+def drop_zero_rows(coo_mat: coo_matrix):
+    nz_rows, new_row = np.unique(coo_mat.row, return_inverse=True)
+    coo_mat.row[:] = new_row
+    coo_mat._shape = (len(nz_rows), coo_mat.shape[1])
 
 def solveLP(objective: Union[coo_matrix, Dict] = None,
             known_vars: Union[coo_matrix, Dict] = None,
@@ -188,6 +192,9 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
         and response code.
     """
 
+    drop_zero_rows(inequalities)
+    drop_zero_rows(equalities)
+
     if verbose > 1:
         t0 = perf_counter()
         t_total = perf_counter()
@@ -228,56 +235,69 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
             # Initialize constraint matrix
             constraints = vstack((inequalities, equalities))
+            # nof_primal_inequalities = 0
+            # if inequalities.nnz:
+            #     nof_primal_inequalities = inequalities.shape[0]
+            # nof_primal_equalities = 0
+            # if equalities.nnz:
+            #     nof_primal_equalities = equalities.shape[0]
+
+            nof_primal_inequalities = inequalities.shape[0]
+            nof_primal_equalities = equalities.shape[0]
+
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
             nof_known_vars = known_vars.nnz
 
             # Initialize b vector (RHS of constraints)
             b = [0] * nof_primal_constraints
 
-            if relax_known_vars:
-                # Each known value is replaced by two inequalities with slacks
-                kv_row = np.concatenate(
-                    (np.arange(nof_known_vars * 2),
-                     np.arange(nof_known_vars * 2)))
-                kv_col = np.concatenate(
-                    (known_vars.col, known_vars.col,
-                     np.repeat(nof_primal_variables, nof_known_vars * 2)))
-                kv_data = np.concatenate(
-                    (np.repeat(1, nof_known_vars * 2),
-                     np.repeat(1, nof_known_vars),
-                     np.repeat(-1, nof_known_vars)))
-                kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
-                                       shape=(nof_known_vars * 2,
-                                              nof_primal_variables + 1))
-                constraints.resize(*(nof_primal_constraints,
-                                     nof_primal_variables + 1))
-                b = np.concatenate((b, known_vars.data, known_vars.data))
-            else:
-                # Add known values as equalities to the constraint matrix
-                kv_matrix = expand_sparse_vec(known_vars)
-                b.extend(known_vars.data)
-            constraints = vstack((constraints, kv_matrix))
-            nof_primal_constraints = constraints.shape[0]
 
             if relax_inequalities:
                 # Add slack variable lambda to each inequality
-                nof_primal_inequalities = inequalities.shape[0]
-                cons_row = np.concatenate(
+                cons_row = np.hstack(
                     (constraints.row, np.arange(nof_primal_inequalities)))
-                cons_col = np.concatenate(
+                cons_col = np.hstack(
                     (constraints.col, np.repeat(nof_primal_variables,
                                                 nof_primal_inequalities)))
-                cons_data = np.concatenate(
+                cons_data = np.hstack(
                     (constraints.data, np.repeat(1, nof_primal_inequalities)))
                 constraints = coo_matrix((cons_data, (cons_row, cons_col)),
                                          shape=(nof_primal_constraints,
                                                 nof_primal_variables + 1))
 
-            (nof_primal_constraints, nof_primal_variables) = constraints.shape
-            nof_primal_inequalities = inequalities.shape[0]
-            nof_primal_equalities = equalities.shape[0]
-            if not relax_known_vars:
+            # print("Known vars shape:", known_vars.shape)
+            # print("Known vars data len:", len(known_vars.data))
+
+
+            if relax_known_vars:
+                # Each known value is replaced by two inequalities with slacks
+                kv_row = np.repeat(
+                    np.arange(nof_known_vars * 2),
+                    2)
+                kv_col = np.empty((nof_known_vars * 4,), dtype=int)
+                kv_col[0:(2*nof_known_vars):2] = np.arange(nof_known_vars)
+                kv_col[(2 * nof_known_vars):(4 * nof_known_vars):2] = kv_col[0:(2*nof_known_vars):2]
+                kv_col[1::2] = np.broadcast_to(nof_primal_variables, 2*nof_known_vars)
+                kv_data = np.hstack((
+                    np.broadcast_to(1, 2*nof_known_vars),
+                    np.tile([1, -1], nof_known_vars)
+                ))
+                kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
+                                       shape=(nof_known_vars * 2,
+                                              nof_primal_variables + 1))
+                constraints.resize(*(nof_primal_constraints,
+                                     nof_primal_variables + 1))
+                b.extend(known_vars.data.flat)
+                b.extend(known_vars.data.flat) # x2 on purpose!!
+            else:
+                # Add known values as equalities to the constraint matrix
+                kv_matrix = expand_sparse_vec(known_vars)
+                b.extend(known_vars.data.flat)
                 nof_primal_equalities += nof_known_vars
+
+            constraints = vstack((constraints, kv_matrix))
+            (nof_primal_constraints, nof_primal_variables) = constraints.shape
+
             nof_lb = lower_bounds.nnz
             nof_ub = upper_bounds.nnz
 
@@ -326,8 +346,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     bkc = [mosek.boundkey.lo] * nof_dual_constraints
                 else:
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
-                    if relax_known_vars or relax_inequalities:
-                        bkc[-1] = mosek.boundkey.lo
+                    # if relax_known_vars or relax_inequalities:
+                    #     bkc[-1] = mosek.boundkey.lo
 
                 # Set bound keys and values for variables
                 # Non-positivity for y corresponding to inequalities
@@ -393,7 +413,7 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                         bkx[col] = mosek.boundkey.up
                         bux[col] = ub_data[col]
                 if relax_known_vars or relax_inequalities:
-                    bkx[-1] = mosek.boundkey.lo
+                    bkx[-1] = mosek.boundkey.fr
 
                 # Set the objective sense
                 task.putobjsense(mosek.objsense.maximize)
@@ -434,6 +454,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 print("Pre-processing took",
                       format(perf_counter() - t0, ".4f"), "seconds.\n")
                 t0 = perf_counter()
+
+            task.writedata("debug.ptf")
 
             # Solve the problem
             if verbose > 0:
