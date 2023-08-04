@@ -14,6 +14,12 @@ def drop_zero_rows(coo_mat: coo_matrix):
     coo_mat.row[:] = new_row
     coo_mat._shape = (len(nz_rows), coo_mat.shape[1])
 
+def canonical_order(coo_mat: coo_matrix):
+    order = np.lexsort([coo_mat.col, coo_mat.row])
+    coo_mat.row[:] = np.asarray(coo_mat.row)[order]
+    coo_mat.col[:] = np.asarray(coo_mat.col)[order]
+    coo_mat.data[:] = np.asarray(coo_mat.data)[order]
+
 def solveLP(objective: Union[coo_matrix, Dict] = None,
             known_vars: Union[coo_matrix, Dict] = None,
             semiknown_vars: Dict = None,
@@ -196,6 +202,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
     drop_zero_rows(inequalities)
     drop_zero_rows(equalities)
+    canonical_order(known_vars)
 
     if verbose > 1:
         t0 = perf_counter()
@@ -321,7 +328,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                                                conversion_style="eq")
                     ub_mat = expand_sparse_vec(upper_bounds,
                                                conversion_style="eq")
-                    ub_mat.data = -ub_mat.data # just a list of ones
+                    ub_mat.data[:] = -ub_mat.data # just a list of ones
                     # ub_data = -ub_mat.data
                     # ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
                     #                     shape=(nof_ub, nof_primal_variables))
