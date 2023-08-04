@@ -1180,7 +1180,7 @@ class InflationLP(object):
             alternatives_as_signs = {
                 i: np.power(-1, np.count_nonzero(bool_array, axis=1))
                 for i, bool_array in alternatives_as_boolarrays.items()}
-            for bool_vec in tqdm(self._monomials_as_lexboolvecs,
+            for bool_vec in tqdm(self._monomials_as_lexboolvecs[::-1],
                     disable=not self.verbose,
                     desc="Discovering equalities   "):
                 critical_boolvec_intersection = np.bitwise_and(bool_vec, self.boolvec_for_FR_eqs)
