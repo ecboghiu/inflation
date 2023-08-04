@@ -27,7 +27,8 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
             relax_inequalities: bool = False,
             verbose: int = 0,
             solverparameters: Dict = None,
-            variables: List = None
+            variables: List = None,
+            **kwargs
             ) -> Dict:
     """Wrapper function that converts all dictionaries to sparse matrices to
     pass to the solver.
@@ -135,7 +136,8 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                    relax_inequalities: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
-                   variables: List = None
+                   variables: List = None,
+                   **kwargs
                    ) -> Dict:
     """Internal function to solve an LP with the Mosek Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
@@ -556,7 +558,9 @@ def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
                    relax_inequalities: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
-                   variables: List = None
+                   variables: List = None,
+                   factorization_conditions: dict = None,
+                   **kwargs
                    ) -> Dict:
     """Internal function to solve an LP with the Gurobi Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
@@ -576,6 +580,8 @@ def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
         Lower bounds of variables with bounds as matrix entries.
     upper_bounds : coo_matrix, optional
         Upper bounds of variables with bounds as matrix entries.
+    factorization_conditions : dict, optional
+        Allows one to specify that certain variables are equal to the product of other variables
     default_non_negative : bool, optional
         Whether to set default primal variables as non-negative. By default,
         ``True``.

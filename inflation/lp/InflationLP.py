@@ -371,19 +371,19 @@ class InflationLP(object):
 
     @cached_property
     def factorization_conditions(self):
-        return {mon: mon.factors for mon in self.monomials if mon.n_factors > 1}
+        conds = dict()
+        for mon in self.monomials:
+            if mon.n_factors > 1:
+                conds[mon] = tuple(self.monomial_from_atoms[[fac]] for fac in mon.factors)
+        return conds
 
     @cached_property
     def quadratic_factorization_conditions(self):
         conds = dict()
         for mon in self.monomials:
-            if mon.n_factors == 2:
-                conds[mon] = mon.factors
-            if mon.n_factors > 2:
-                conds[mon] = (mon.factors[0], self.monomial_from_atoms[mon.factors[1:]])
+            if mon.n_factors > 1:
+                conds[mon] = (self.monomial_from_atoms[mon.factors[:1]], self.monomial_from_atoms[mon.factors[1:]])
         return conds
-
-
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
