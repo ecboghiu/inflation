@@ -370,14 +370,20 @@ class InflationLP(object):
         return _knowable_atoms
 
     @cached_property
-    def nonlinear_equalities(self):
+    def factorization_conditions(self):
         return {mon: mon.factors for mon in self.monomials if mon.n_factors > 1}
 
-    # @property
-    # def nonlinear_equalities(self):
-    #     result = self.nonlinear_equalities.copy()
-    #     [result.pop(key) for key in self.known_moments.keys()]
-    #     return result
+    @cached_property
+    def quadratic_factorization_conditions(self):
+        conds = dict()
+        for mon in self.monomials:
+            if mon.n_factors == 2:
+                conds[mon] = mon.factors
+            if mon.n_factors > 2:
+                conds[mon] = (mon.factors[0], self.monomial_from_atoms[mon.factors[1:]])
+        return conds
+
+
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -1556,8 +1562,20 @@ class InflationLP(object):
         return self._coo_mat_to_dict(self.sparse_inequalities, string_keys=True)
 
     @cached_property
-    def nonlinear_equalities_by_name(self):
-        return {mon.name: tuple(fac.name for fac in val) for mon, val in self.nonlinear_equalities.items()}
+    def factorization_conditions_by_name(self):
+        return {mon.name: tuple(fac.name for fac in val) for mon, val in self.factorization_conditions.items()}
+
+    @cached_property
+    def sparse_factorization_conditions(self):
+        return {self.compmonomial_to_idx[mon]: partsextractor(self.compmonomial_to_idx, val) for mon, val in self.factorization_conditions.items()}
+
+    @cached_property
+    def quadratic_factorization_conditions_by_name(self):
+        return {mon.name: tuple(fac.name for fac in val) for mon, val in self.quadratic_factorization_conditions.items()}
+
+    @cached_property
+    def sparse_quadratic_factorization_conditions(self):
+        return {self.compmonomial_to_idx[mon]: partsextractor(self.compmonomial_to_idx, val) for mon, val in self.quadratic_factorization_conditions.items()}
 
     @property
     def sparse_objective(self) -> coo_matrix:
