@@ -109,7 +109,7 @@ class InflationLP(object):
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._ortho_groups_per_party = inflationproblem._ortho_groups_per_party
         self.has_children = inflationproblem.has_children.copy()
-        if include_all_outcomes:
+        if include_all_outcomes or supports_problem: # HACK to fix detection of incompatible supports. (Can be fixed upon adding set_extra_equalities)
             self.has_children[:] = True
         self.does_not_have_children = np.logical_not(self.has_children)
 
