@@ -190,7 +190,7 @@ class InflationProblem(object):
         self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
-        self._quantum_sources, self._classical_sources = [], []
+        self._nonclassical_sources, self._classical_sources = [], []
         for ii, source in enumerate(self._actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
@@ -199,13 +199,13 @@ class InflationProblem(object):
                     if source in classical_sources:
                         self._classical_sources += [ii]
                     else:
-                        self._quantum_sources += [ii]
+                        self._nonclassical_sources += [ii]
                 else:
                     if classical_sources == "all":
                         self._classical_sources = range(self.nr_sources)
             else:
-                self._quantum_sources += [ii]
-        self._quantum_sources   = 1 + np.array(self._quantum_sources)
+                self._nonclassical_sources += [ii]
+        self._nonclassical_sources   = 1 + np.array(self._nonclassical_sources)
         self._classical_sources = 1 + np.array(self._classical_sources)
 
         assert self.hypergraph.shape[1] == self.nr_parties, \
@@ -325,11 +325,11 @@ class InflationProblem(object):
     def __repr__(self):
         if len(self._classical_sources) == self.nr_sources:
             source_info = "All sources are classical."
-        elif len(self._quantum_sources) == self.nr_sources:
+        elif len(self._nonclassical_sources) == self.nr_sources:
             source_info = "All sources are quantum."
         else:
             classical_sources = self._actual_sources[self._classical_sources-1]
-            quantum_sources   = self._actual_sources[self._quantum_sources - 1]
+            quantum_sources   = self._actual_sources[self._nonclassical_sources - 1]
             if len(classical_sources) > 1:
                 extra_1 = "s"
                 extra_2 = "are"

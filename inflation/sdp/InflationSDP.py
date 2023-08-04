@@ -98,7 +98,7 @@ class InflationSDP(object):
             self.has_children = self.InflationProblem.has_children
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
-        self._quantum_sources = self.InflationProblem._quantum_sources
+        self._quantum_sources = self.InflationProblem._nonclassical_sources
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
