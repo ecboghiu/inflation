@@ -244,7 +244,7 @@ class InflationProblem(object):
                 self.ever_factorizes = True
                 break
 
-        #Establish internal dtype
+        # Establish internal dtype
         self._np_dtype = np.find_common_type([
             np.min_scalar_type(np.max(self.settings_per_party)),
             np.min_scalar_type(np.max(self.outcomes_per_party)),
@@ -271,6 +271,7 @@ class InflationProblem(object):
         all_unique_inflation_indices = np.unique(
             np.vstack(self.inflation_indices_per_party),
             axis=0).astype(self._np_dtype)
+        
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
                                         in enumerate(
@@ -301,7 +302,8 @@ class InflationProblem(object):
                         measurements_per_party[i, s, o, -1] = o
             self.measurements.append(measurements_per_party)
         self._ortho_groups_per_party = []
-         # Useful for LP
+        
+        # Useful for LP
         for p, measurements_per_party in enumerate(self.measurements):
             _ortho_groups = []
             O_card = self.outcomes_per_party[p]
