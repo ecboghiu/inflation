@@ -62,7 +62,7 @@ class InflationLP(object):
                  nonfanout: bool = False,
                  supports_problem: bool = False,
                  default_non_negative: bool = True,
-                 use_only_equalities: bool = False,
+                 include_all_outcomes: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationLP class.
         """
@@ -109,7 +109,7 @@ class InflationLP(object):
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._ortho_groups_per_party = inflationproblem._ortho_groups_per_party
         self.has_children = inflationproblem.has_children.copy()
-        if use_only_equalities:
+        if include_all_outcomes:
             self.has_children[:] = True
         self.does_not_have_children = np.logical_not(self.has_children)
 
