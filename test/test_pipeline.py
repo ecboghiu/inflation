@@ -880,7 +880,7 @@ class TestPipelineLP(unittest.TestCase):
                           "distribution.")
         with self.subTest(msg="Testing GHZ, incompatible distribution, "
                               "feasibility as optimization"):
-            self.skipTest("Feasibility as optimization not implemented")
+            # self.skipTest("Feasibility as optimization not implemented")
             lp.solve(feas_as_optim=True)
             self.assertTrue(lp.primal_objective <= 0,
                             "The LP with feasibility as optimization did not "
