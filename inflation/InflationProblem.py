@@ -7,13 +7,15 @@ inflation.
 import numpy as np
 
 from itertools import (chain,
+                       combinations,
                        combinations_with_replacement,
                        product,
                        permutations)
 from warnings import warn
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
-                           apply_source_perm)
+                           apply_source_perm,
+                           commutation_matrix)
 
 from .utils import format_permutations, partsextractor
 from typing import Tuple, List, Union, Dict
@@ -301,9 +303,9 @@ class InflationProblem(object):
                     for o in O_vals.flat:
                         measurements_per_party[i, s, o, -1] = o
             self.measurements.append(measurements_per_party)
-        self._ortho_groups_per_party = []
         
         # Useful for LP
+        self._ortho_groups_per_party = []
         for p, measurements_per_party in enumerate(self.measurements):
             _ortho_groups = []
             O_card = self.outcomes_per_party[p]
@@ -313,6 +315,24 @@ class InflationProblem(object):
         self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._nr_operators = len(self._lexorder)
+        
+        self._compatible_measurements = \
+                    np.invert(commutation_matrix(self._lexorder,
+                                                self._nonclassical_sources,
+                                                False))
+                    
+        # Use self._ortho_groups to label operators that are orthogonal as
+        # incompatible as their product is zero, and they can never be 
+        # observed together with non-zero probability.
+        _op_to_lexorder_dict = {op.tobytes(): i for i, op in enumerate(self._lexorder)}
+        for ortho_group in self._ortho_groups:
+            for op1, op2 in combinations(ortho_group, 2):
+                i = _op_to_lexorder_dict[op1.tobytes()]
+                j = _op_to_lexorder_dict[op2.tobytes()]
+                self._compatible_measurements[i, j] = False
+                self._compatible_measurements[j, i] = False
+        for i in range(self._compatible_measurements.shape[0]):
+            self._compatible_measurements[i, i] = False
 
         self._lexorder_for_factorization = np.array([
             self._inflation_indices_hash[op.tobytes()]
