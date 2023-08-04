@@ -1668,7 +1668,8 @@ class InflationLP(object):
                       "known_vars": self.sparse_known_vars,
                       "equalities": internal_equalities,
                       "inequalities": self.sparse_inequalities,
-                      "variables": self.monomial_names}
+                      "variables": self.monomial_names,
+                      "factorization_conditions": self.sparse_quadratic_factorization_conditions}
 
         if separate_bounds:
             solverargs["lower_bounds"] = self.sparse_lowerbounds
@@ -1727,7 +1728,8 @@ class InflationLP(object):
                       "known_vars": self.known_vars_by_name,
                       "semiknown_vars": self.semiknown_by_name,
                       "equalities": self.moment_equalities_by_name,
-                      "inequalities": self.moment_inequalities_by_name
+                      "inequalities": self.moment_inequalities_by_name,
+                      "factorization_conditions": self.quadratic_factorization_conditions_by_name
                       }
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.

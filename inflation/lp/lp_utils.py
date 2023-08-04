@@ -122,13 +122,13 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
     solver_args.pop("semiknown_vars", None)
     return solveLP_sparse(**solver_args)
 
-
-def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
-                   known_vars: coo_matrix = coo_matrix([]),
-                   inequalities: coo_matrix = coo_matrix([]),
-                   equalities: coo_matrix = coo_matrix([]),
-                   lower_bounds: coo_matrix = coo_matrix([]),
-                   upper_bounds: coo_matrix = coo_matrix([]),
+blank_coo_matrix = coo_matrix((0,0), dtype=np.int8)
+def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
+                   known_vars: coo_matrix = blank_coo_matrix,
+                   inequalities: coo_matrix = blank_coo_matrix,
+                   equalities: coo_matrix = blank_coo_matrix,
+                   lower_bounds: coo_matrix = blank_coo_matrix,
+                   upper_bounds: coo_matrix = blank_coo_matrix,
                    solve_dual: bool = False,
                    default_non_negative: bool = True,
                    relax_known_vars: bool = False,
