@@ -564,21 +564,19 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             }
 
 
-def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
-                   known_vars: coo_matrix = coo_matrix([]),
-                   inequalities: coo_matrix = coo_matrix([]),
-                   equalities: coo_matrix = coo_matrix([]),
-                   lower_bounds: coo_matrix = coo_matrix([]),
-                   upper_bounds: coo_matrix = coo_matrix([]),
-                   default_non_negative: bool = True,
-                   relax_known_vars: bool = False,
-                   relax_inequalities: bool = False,
-                   verbose: int = 0,
-                   solverparameters: Dict = None,
-                   variables: List = None,
-                   factorization_conditions: dict = None,
-                   **kwargs
-                   ) -> Dict:
+def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
+                 known_vars: coo_matrix = coo_matrix([]),
+                 inequalities: coo_matrix = coo_matrix([]),
+                 equalities: coo_matrix = coo_matrix([]),
+                 lower_bounds: coo_matrix = coo_matrix([]),
+                 upper_bounds: coo_matrix = coo_matrix([]),
+                 factorization_conditions: dict = None,
+                 default_non_negative: bool = True,
+                 relax_known_vars: bool = False,
+                 relax_inequalities: bool = False,
+                 verbose: int = 0,
+                 **kwargs
+                 ) -> Dict:
     """Internal function to solve an LP with the Gurobi Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
     variables in the LP.
@@ -612,33 +610,24 @@ def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
         non-negative slack variable lambda. By default, ``False``.
     verbose : int, optional
         Verbosity. Higher means more messages. By default, 0.
-    solverparameters : dict, optional
-        Parameters to pass to the MOSEK solver. For example, to control whether
-        presolve is applied before optimization, set
-        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or
-        ``mosek.presolvemode.off``. Or, control which optimizer is used by
-        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK's
-        documentation
-        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_ for
-        more details.
-    variables : list
-        Monomials by name in same order as column indices of all other solver
-        arguments
 
     Returns
     -------
     dict
-        Primal objective value, dual objective value, problem status, success
-        status, dual certificate (as dictionary and sparse matrix), x values,
-        and response code.
+        Primal objective value, problem status, success status, x values
     """
     if verbose > 1:
         t0 = perf_counter()
         t_total = perf_counter()
         print("Starting pre-processing for the LP solver...")
 
+    env = gp.Env(empty=True)
+    if verbose == 0:
+        env.setParam('OutputFlag', 0)  # Supress output from solver
+    env.start()
+
     # Create new model
-    m = gp.Model("QCP")
+    m = gp.Model(env=env)
 
     (nof_primal_inequalities, nof_primal_variables) = inequalities.shape
     nof_primal_equalities = equalities.shape[0]
@@ -670,8 +659,9 @@ def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
     m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
 
     # Add quadratic constraints
-    for m, factors in factorization_conditions.items():
-        m.addConstr(x[m] == x[factors[0]] * x[factors[1]])
+    if factorization_conditions:
+        m.addConstrs(x[mon] == x[factors[0]] * x[factors[1]]
+                     for mon, factors in factorization_conditions.items())
 
     collect()
     if verbose > 1:
@@ -687,12 +677,29 @@ def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
         print("Solving took", format(perf_counter() - t0, ".4f"),
               "seconds.")
 
-    print(x.X)
-    print('Obj: %g' % m.objVal)
+    sc = gp.StatusConstClass
+    solution_statuses = {sc.__dict__[k]: k for k in sc.__dict__.keys()
+                         if 'A' <= k[0] <= 'Z'}
+    status_str = solution_statuses[m.Status]
+    if status_str == "OPTIMAL":
+        success = True
+        primal = m.ObjVal
+        x_values = x.X
+    else:
+        success = False
+        primal = None
+        x_values = None
 
     if verbose > 1:
         print("\nTotal execution time:",
               format(perf_counter() - t_total, ".4f"), "seconds.")
+
+    return {
+        "primal_value": primal,
+        "status": status_str,
+        "success": success,
+        "x": x_values,
+    }
 
 
 def solveLP_Mosek(objective: Dict = None,

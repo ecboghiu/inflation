@@ -27,7 +27,7 @@ from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
-from .lp_utils import solveLP_Mosek, solveLP_sparse, solveLP
+from .lp_utils import solveLP, solve_Gurobi
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec, vstack
@@ -660,14 +660,14 @@ class InflationLP(object):
         ##### Still allow for 'feas_as_optim' as an argument ###################
         if 'feas_as_optim' in solver_arguments:
             if solver_arguments["feas_as_optim"]:
-                relax_inequalities = True
+                relax_known_vars = relax_inequalities = True
                 del solver_arguments["feas_as_optim"]
             else:
-                relax_inequalities = False
+                relax_known_vars = relax_inequalities = False
                 del solver_arguments["feas_as_optim"]
         args.update(solver_arguments)
         ########################################################################
-        
+
         args.update({"relax_known_vars": relax_known_vars,
                      "relax_inequalities": relax_inequalities,
                      "verbose": real_verbose,
@@ -675,8 +675,8 @@ class InflationLP(object):
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
 
-        if interpreter == "solveLP_Mosek":
-            self.solution_object = solveLP_Mosek(**args)
+        if interpreter in QCP_interpreters:
+            self.solution_object = solve_Gurobi(**args)
         else:
             self.solution_object = solveLP(**args)
         self.success = self.solution_object["success"]
