@@ -10,7 +10,7 @@ import sympy as sp
 from collections import Counter, deque
 from functools import reduce
 from gc import collect
-from itertools import chain, count, product, permutations, repeat
+from itertools import chain, count, product, permutations, repeat, combinations
 from operator import itemgetter
 from numbers import Real
 from scipy.sparse import lil_matrix
@@ -149,9 +149,18 @@ class InflationSDP(object):
             self.all_commuting_q = lambda mon: True
         else:
             self.all_operators_commute = False
-            self._default_notcomm = commutation_matrix(self._lexorder,
-                                                       self._quantum_sources,
-                                                       self.all_operators_commute)
+            self._default_notcomm = \
+                np.invert(self.InflationProblem._compatible_measurements.copy())
+            # While orthogonal operators are not compatible, they commute
+            for ortho_group in self.InflationProblem._ortho_groups:
+                for op1, op2 in combinations(ortho_group, 2):
+                    i = self.InflationProblem.mon_to_lexrepr(np.expand_dims(op1, axis=0))
+                    j = self.InflationProblem.mon_to_lexrepr(np.expand_dims(op2, axis=0))
+                    self._default_notcomm[i, j] = False
+                    self._default_notcomm[j, i] = False
+            for i in range(self._compatible_measurements.shape[0]):
+                self._default_notcomm[i, i] = False
+            
             self._notcomm = self._default_notcomm.copy()
             self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                                   self._lexorder,
