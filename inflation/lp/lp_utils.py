@@ -274,34 +274,44 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                                          shape=(nof_primal_constraints,
                                                 nof_primal_variables + 1))
 
-            # print("Known vars shape:", known_vars.shape)
-            # print("Known vars data len:", len(known_vars.data))
-
-
             if relax_known_vars:
                 # Each known value is replaced by two inequalities with slacks
-                kv_row = np.repeat(
+                # ELIE VERSION
+                # kv_row = np.repeat(
+                #     np.arange(nof_known_vars * 2),
+                #     2)
+                # kv_col = np.empty((nof_known_vars * 4,), dtype=int)
+                # kv_col[0:(2*nof_known_vars):2] = np.arange(nof_known_vars)
+                # kv_col[(2 * nof_known_vars):(4 * nof_known_vars):2] = kv_col[0:(2*nof_known_vars):2]
+                # kv_col[1::2] = np.broadcast_to(nof_primal_variables, 2*nof_known_vars)
+                # kv_data = np.hstack((
+                #     np.broadcast_to(1, 2*nof_known_vars),
+                #     np.tile([1, -1], nof_known_vars)
+                # ))
+                # ERICA VERSION
+                kv_row = np.tile(
                     np.arange(nof_known_vars * 2),
                     2)
-                kv_col = np.empty((nof_known_vars * 4,), dtype=int)
-                kv_col[0:(2*nof_known_vars):2] = np.arange(nof_known_vars)
-                kv_col[(2 * nof_known_vars):(4 * nof_known_vars):2] = kv_col[0:(2*nof_known_vars):2]
-                kv_col[1::2] = np.broadcast_to(nof_primal_variables, 2*nof_known_vars)
-                kv_data = np.hstack((
-                    np.broadcast_to(1, 2*nof_known_vars),
-                    np.tile([1, -1], nof_known_vars)
+                kv_col = np.hstack((
+                    np.tile(known_vars.col, 2),
+                    np.broadcast_to(nof_primal_variables, nof_known_vars * 2)
                 ))
+                kv_data = np.hstack((
+                    np.broadcast_to(1, nof_known_vars * 3),
+                    np.broadcast_to(-1, nof_known_vars)
+                ))
+
                 kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
                                        shape=(nof_known_vars * 2,
                                               nof_primal_variables + 1))
+                canonical_order(kv_matrix)
                 constraints.resize(*(nof_primal_constraints,
                                      nof_primal_variables + 1))
-                b.extend(known_vars.data.flat)
-                b.extend(known_vars.data.flat) # x2 on purpose!!
+                b = np.hstack((b, np.tile(known_vars.data, 2)))
             else:
                 # Add known values as equalities to the constraint matrix
                 kv_matrix = expand_sparse_vec(known_vars)
-                b.extend(known_vars.data.flat)
+                b = np.hstack((b, known_vars.data))
                 nof_primal_equalities += nof_known_vars
 
             constraints = vstack((constraints, kv_matrix))
