@@ -669,6 +669,10 @@ def solveLP_Gurobi(objective: coo_matrix = coo_matrix([]),
     rhs_kv = known_vars.data
     m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
 
+    # Add quadratic constraints
+    for m, factors in factorization_conditions.items():
+        m.addConstr(x[m] == x[factors[0]] * x[factors[1]])
+
     collect()
     if verbose > 1:
         print("Pre-processing took",

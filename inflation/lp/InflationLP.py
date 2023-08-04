@@ -647,10 +647,15 @@ class InflationLP(object):
             real_default_non_negative = self.default_non_negative
         else:
             real_default_non_negative = default_non_negative
-        if interpreter == "solveLP_Mosek":
-            args = self._prepare_solver_arguments()
+
+        QCP_interpreters = {"solve_Gurobi"}
+        LP_interpreters = {"solveLP_Mosek", "solveLP", "solveLP_sparse"}
+        sparse_interpreters = {"solveLP", "solveLP_sparse", "solve_Gurobi"}
+        is_qcp = (interpreter in QCP_interpreters)
+        if interpreter in sparse_interpreters:
+            args = self._prepare_solver_matrices(include_nonlinear=is_qcp)
         else:
-            args = self._prepare_solver_matrices()
+            args = self._prepare_solver_arguments(include_nonlinear=is_qcp)
         
         ##### Still allow for 'feas_as_optim' as an argument ###################
         if 'feas_as_optim' in solver_arguments:
@@ -1631,7 +1636,7 @@ class InflationLP(object):
         #           for c, x2 in zip(data[1::2], col[1::2])]
         # return dict(zip(x, tuples))
 
-    def _prepare_solver_matrices(self, separate_bounds: bool = True) -> dict:
+    def _prepare_solver_matrices(self, separate_bounds: bool = True, include_nonlinear=False) -> dict:
         """Convert arguments from dictionaries to sparse coo_matrix form to
         pass to the solver.
 
@@ -1668,8 +1673,9 @@ class InflationLP(object):
                       "known_vars": self.sparse_known_vars,
                       "equalities": internal_equalities,
                       "inequalities": self.sparse_inequalities,
-                      "variables": self.monomial_names,
-                      "factorization_conditions": self.sparse_quadratic_factorization_conditions}
+                      "variables": self.monomial_names}
+        if include_nonlinear:
+            solverargs["factorization_conditions"] = self.sparse_quadratic_factorization_conditions
 
         if separate_bounds:
             solverargs["lower_bounds"] = self.sparse_lowerbounds
@@ -1683,7 +1689,7 @@ class InflationLP(object):
                 (self.sparse_inequalities, lb_mat, ub_mat))
         return solverargs
 
-    def _prepare_solver_arguments(self, separate_bounds: bool = True) -> dict:
+    def _prepare_solver_arguments(self, separate_bounds: bool = True, include_nonlinear=False) -> dict:
         """Prepare arguments to pass to the solver.
 
         The solver takes as input the following arguments, which are all
@@ -1728,9 +1734,10 @@ class InflationLP(object):
                       "known_vars": self.known_vars_by_name,
                       "semiknown_vars": self.semiknown_by_name,
                       "equalities": self.moment_equalities_by_name,
-                      "inequalities": self.moment_inequalities_by_name,
-                      "factorization_conditions": self.quadratic_factorization_conditions_by_name
+                      "inequalities": self.moment_inequalities_by_name
                       }
+        if include_nonlinear:
+            solverargs["factorization_conditions"] = self.quadratic_factorization_conditions_by_name
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
         if separate_bounds:
