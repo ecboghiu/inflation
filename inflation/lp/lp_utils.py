@@ -634,13 +634,14 @@ def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
     kv_matrix = expand_sparse_vec(known_vars)
 
     # Create variables and set variable bounds
-    lb_array = lower_bounds.toarray().ravel()
-    ub_array = upper_bounds.toarray().ravel()
-    x = m.addMVar(shape=(nof_primal_variables,))
-    if lb_array.size > 0:
-        x.setAttr("lb", lb_array)
-    if ub_array.size > 0:
-        x.setAttr("ub", ub_array)
+    # lb_array = lower_bounds.toarray().ravel()
+    # ub_array = upper_bounds.toarray().ravel()
+    x = m.addMVar(shape=nof_primal_variables)
+    # TODO: Fix variable bounds
+    # if lower_bounds.nnz > 0:
+    #     x.setAttr("lb", lb_array)
+    # if upper_bounds.nnz > 0:
+    #     x.setAttr("ub", ub_array)
 
     # Set objective
     objective_vector = objective.toarray().ravel()
@@ -660,8 +661,10 @@ def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
 
     # Add quadratic constraints
     if factorization_conditions:
-        m.addConstrs(x[mon] == x[factors[0]] * x[factors[1]]
-                     for mon, factors in factorization_conditions.items())
+        m.setParam("NonConvex", 2)
+        m.addConstrs((x[mon] == x[factors[0]] * x[factors[1]]
+                     for mon, factors in factorization_conditions.items()),
+                     name="fac")
 
     collect()
     if verbose > 1:

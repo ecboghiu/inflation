@@ -374,7 +374,7 @@ class InflationLP(object):
         conds = dict()
         for mon in self.monomials:
             if mon.n_factors > 1:
-                conds[mon] = tuple(self.monomial_from_atoms[[fac]] for fac in mon.factors)
+                conds[mon] = tuple(self.monomial_from_atoms[(fac,)] for fac in mon.factors)
         return conds
 
     @cached_property
