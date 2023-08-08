@@ -634,14 +634,18 @@ def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
     kv_matrix = expand_sparse_vec(known_vars)
 
     # Create variables and set variable bounds
-    # lb_array = lower_bounds.toarray().ravel()
-    # ub_array = upper_bounds.toarray().ravel()
     x = m.addMVar(shape=nof_primal_variables)
-    # TODO: Fix variable bounds
-    # if lower_bounds.nnz > 0:
-    #     x.setAttr("lb", lb_array)
-    # if upper_bounds.nnz > 0:
-    #     x.setAttr("ub", ub_array)
+    m.update()
+    if not default_non_negative:
+        x.lb = -gp.GRB.INFINITY
+    if lower_bounds.nnz > 0:
+        new_lb = x.lb
+        new_lb[lower_bounds.col] = lower_bounds.data
+        x.lb = new_lb
+    if upper_bounds.nnz > 0:
+        new_ub = x.ub
+        new_ub[upper_bounds.col] = upper_bounds.data
+        x.ub = new_ub
 
     # Set objective
     objective_vector = objective.toarray().ravel()
