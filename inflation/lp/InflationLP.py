@@ -30,7 +30,7 @@ from ..sdp.quantum_tools import (flatten_symbolic_powers,
 from .lp_utils import solveLP, solve_Gurobi
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
-    expand_sparse_vec, vstack
+    expand_sparse_vec
 from functools import cached_property
 
 class InflationLP(object):
@@ -1217,7 +1217,7 @@ class InflationLP(object):
                           shape=(nof_equalities, self.n_columns))
 
     @cached_property
-    def sparse_equalities(self) -> coo_matrix:
+    def minimal_sparse_equalities(self) -> coo_matrix:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
         """
         eq_row, eq_col, eq_data = [], [], []
@@ -1310,7 +1310,26 @@ class InflationLP(object):
         #     return collins_gisin_equalities
 
     @cached_property
-    def sparse_inequalities(self) -> coo_matrix:
+    def sparse_extra_equalities(self) -> coo_matrix:
+        """Extra equalities in sparse matrix form."""
+        eq_row, eq_col, eq_data = [], [], []
+        nof_equalities = len(self.extra_equalities)
+        for row_idx, eq in enumerate(self.extra_equalities):
+            nof_vars = len(eq)
+            eq_row.extend(np.repeat(row_idx, nof_vars))
+            eq_col.extend([self.compmonomial_to_idx[x] for x in eq])
+            eq_data.extend(eq.values())
+        return coo_matrix((eq_data, (eq_row, eq_col)),
+                          shape=(nof_equalities, self.n_columns))
+
+    @property
+    def sparse_equalities(self) -> coo_matrix:
+        """All equalities (minimal and extra) in sparse matrix form."""
+        return vstack((self.minimal_sparse_equalities,
+                       self.sparse_extra_equalities))
+
+    @cached_property
+    def minimal_sparse_inequalities(self) -> coo_matrix:
         """Given the generating monomials, infer conversion to Collins-Gisin notation.
         """
         ineq_row, ineq_col, ineq_data = [], [], []
@@ -1357,6 +1376,25 @@ class InflationLP(object):
                 nof_inequalities += 1
         return coo_matrix((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
+
+    @cached_property
+    def sparse_extra_inequalities(self) -> coo_matrix:
+        """Extra inequalities in sparse matrix form."""
+        ineq_row, ineq_col, ineq_data = [], [], []
+        nof_inequalities = len(self.extra_inequalities)
+        for row_idx, ineq in enumerate(self.extra_inequalities):
+            nof_vars = len(ineq)
+            ineq_row.extend(np.repeat(row_idx, nof_vars))
+            ineq_col.extend([self.compmonomial_to_idx[x] for x in ineq])
+            ineq_data.extend(ineq.values())
+        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                          shape=(nof_inequalities, self.n_columns))
+
+    @property
+    def sparse_inequalities(self) -> coo_matrix:
+        """All inequalities (minimal and extra) in sparse matrix form."""
+        return vstack((self.minimal_sparse_inequalities,
+                       self.sparse_extra_inequalities))
 
     def _coo_vec_to_mon_dict(self, col: np.ndarray,
                              data: np.ndarray) -> Dict:
@@ -1478,6 +1516,8 @@ class InflationLP(object):
         self.known_moments     = dict()
         self.semiknown_moments = dict()
         self.known_moments[self.One] = 1.
+        self.extra_equalities = []
+        self.extra_inequalities = []
         collect()
 
     def _reset_solution(self) -> None:
@@ -1831,6 +1871,58 @@ class InflationLP(object):
                      "have different lower bounds.")
         self.moment_lowerbounds = sanitized_lowerbounds
         # self._update_lowerbounds()
+
+    def _set_extra_equalities(self,
+                              extra_equalities: Union[list, None]) -> None:
+        """Set extra equality constraints for the LP.
+
+        Parameters
+        ----------
+        extra_equalities : Union[list, None]
+            List of dictionaries representing additional equality constraints.
+            The keys (variables) can be strings, instances of
+            `CompoundMonomial`, or monomials as 2D arrays.
+        """
+        if not extra_equalities:
+            return
+        sanitized_extra_equalities = []
+        for eq in extra_equalities:
+            sanitized_equality = dict()
+            for x, v in eq.items():
+                x = self._sanitise_monomial(x)
+                if x not in sanitized_equality:
+                    sanitized_equality[x] = v
+                else:
+                    # If monomial appears multiple times, sum the values
+                    sanitized_equality[x] += v
+            sanitized_extra_equalities.append(sanitized_equality)
+        self.extra_equalities = sanitized_extra_equalities
+
+    def _set_extra_inequalities(self,
+                                extra_inequalities: Union[list, None]) -> None:
+        """Set extra inequality constraints for the LP.
+
+        Parameters
+        ----------
+        extra_inequalities : Union[list, None]
+            List of dictionaries representing additional inequality
+             constraints. The keys (variables) can be strings, instances of
+            `CompoundMonomial`, or monomials as 2D arrays.
+        """
+        if not extra_inequalities:
+            return
+        sanitized_extra_inequalities = []
+        for ineq in extra_inequalities:
+            sanitized_inequality = dict()
+            for x, v in ineq.items():
+                x = self._sanitise_monomial(x)
+                if x not in sanitized_inequality:
+                    sanitized_inequality[x] = v
+                else:
+                    # If monomial appears multiple times, sum the values
+                    sanitized_inequality[x] += v
+            sanitized_extra_inequalities.append(sanitized_inequality)
+        self.extra_inequalities = sanitized_extra_inequalities
 
     def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
         boolvec = self.blank_bool_vec.copy()
