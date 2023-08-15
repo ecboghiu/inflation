@@ -316,11 +316,15 @@ class InflationProblem(object):
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._nr_operators = len(self._lexorder)
         
-        self._compatible_measurements = \
-                    np.invert(commutation_matrix(self._lexorder,
-                                                 self._nonclassical_sources,
-                                                 False))
-                    
+        if self._nonclassical_sources.size == 0:
+            self._compatible_measurements = \
+                np.invert(np.zeros((self._lexorder.shape[0], self._lexorder.shape[0]),
+                                   dtype=bool))
+        else:
+            self._compatible_measurements = \
+                        np.invert(commutation_matrix(self._lexorder,
+                                                    self._nonclassical_sources,
+                                                    False))
         # Use self._ortho_groups to label operators that are orthogonal as
         # incompatible as their product is zero, and they can never be 
         # observed together with non-zero probability.
