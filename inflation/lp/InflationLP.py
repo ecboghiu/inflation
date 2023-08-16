@@ -239,7 +239,10 @@ class InflationLP(object):
         # else:
         #     self.inverse = inverse_CG
         self.inverse = inverse_CG
-
+        
+        ##### CHANGED
+        # unique_indices_CG.sort() # s.t. self.One is the first, to pass assertion
+        #####
         self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[unique_indices_CG]
         self._monomials_as_lexboolvecs_non_CG = self._raw_monomials_as_lexboolvecs_non_CG[unique_indices_non_CG]
         # if self.use_equalities:
@@ -261,22 +264,30 @@ class InflationLP(object):
             eprint("Number of nontrivial inequality constraints in the LP:",
                     self.nof_collins_gisin_inequalities)
 
+        _monomials_as_lexorder = [tuple(self.mon_to_lexrepr(self._lexorder[bool_idx]))
+                                           for bool_idx in
+                                           self._monomials_as_lexboolvecs]
+
         # Associate Monomials to the remaining entries.
         _monomials = []
         _monomial_names = []
         _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
+        boolvec2mon = dict()
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
             mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
+            boolvec2mon[tuple(tuple(op) for op in self._lexorder[mon_as_lexboolvec])] = mon
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
             # if mon in _compmonomial_to_idx:
             #     alt_id = _compmonomial_to_idx[mon]
             #     raise Exception(f"Two monomials are being mixed up! {idx}->{self._lexorder[self._monomials_as_lexboolvecs[idx]]} and \n {alt_id}->{self._lexorder[self._monomials_as_lexboolvecs[alt_id]]}")
+            if mon in _compmonomial_to_idx:
+                print(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
@@ -1093,23 +1104,41 @@ class InflationLP(object):
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         else:
-            fake_outcome_cardinalities = self.outcome_cardinalities + 1 # We consider ALL outcomes when setting up the LP
+            from itertools import combinations
+            # fake_outcome_cardinalities = self.outcome_cardinalities + 1 # We consider ALL outcomes when setting up the LP
             for party in range(self.nr_parties):
-                relevant_sources = np.flatnonzero(self.hypergraph[:, party])
-                relevant_inflevels = self.inflation_levels[relevant_sources]
-                max_mon_length = min(relevant_inflevels)
-                phys_mon = [party_physical_monomials(
-                    hypergraph=self.hypergraph,
-                    inflevels=self.inflation_levels,
-                    party=party,
-                    max_monomial_length=i,
-                    settings_per_party=self.setting_cardinalities,
-                    outputs_per_party=fake_outcome_cardinalities,
-                    lexorder=self._lexorder)
-                    for i in range(max_mon_length + 1)]
-                boolvecs = np.vstack(
-                    [self.mon_to_boolvec(op) for op in
-                     chain.from_iterable(phys_mon)])
+                # for cliques_as_arrs in self.InflationProblem._subsets_of_compatible_mmnts_per_party[party]:
+                #     cliques_as_frozen_sets = [frozenset(clique) for clique in cliques_as_arrs]
+                #     for nr_ops in range(0, UP_TO_LENGTH):
+                #         unique_sets = set()
+                #         for ops in combinations(cliques_as_frozen_sets, nr_ops):
+                #             unique_sets.add(frozenset(ops))
+                #     unique_sets_as_boolvecs = []
+                #     for mon_as_set in unique_sets:
+                #         boolvec = np.zeros(self._lexorder.shape[0], dtype=bool)
+                #         boolvec[list(mon_as_set)] = True
+                #         unique_sets_as_boolvecs += [boolvec]
+                
+                # relevant_sources = np.flatnonzero(self.hypergraph[:, party])
+                # relevant_inflevels = self.inflation_levels[relevant_sources]
+                # max_mon_length = min(relevant_inflevels)
+                # phys_mon = [party_physical_monomials(
+                #     hypergraph=self.hypergraph,
+                #     inflevels=self.inflation_levels,
+                #     party=party,
+                #     max_monomial_length=i,
+                #     settings_per_party=self.setting_cardinalities,
+                #     outputs_per_party=fake_outcome_cardinalities,
+                #     lexorder=self._lexorder)
+                #     for i in range(max_mon_length + 1)]
+                # boolvecs = np.vstack(
+                #     [self.mon_to_boolvec(op) for op in
+                #      chain.from_iterable(phys_mon)])
+                boolvecs = self.InflationProblem._generate_compatible_monomials_given_party(party)
+                # ##################### TODO remove this, it doesn't help
+                # boolvecs = np.array(list(reversed(sorted([tuple(v) for v in boolvecs],
+                #                                          key=lambda x: (-sum(x), x)))))  # TODO: better sorting
+                # #####################
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition

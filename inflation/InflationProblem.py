@@ -23,6 +23,8 @@ from typing import Tuple, List, Union, Dict
 from functools import reduce, cached_property
 from tqdm import tqdm
 
+import networkx as nx
+
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
 import warnings
@@ -381,6 +383,50 @@ class InflationProblem(object):
     ###########################################################################
     # HELPER UTILITY FUNCTION                                    #
     ###########################################################################
+    @cached_property
+    def _subsets_of_compatible_mmnts_per_party(self):
+        compat_subsets_per_party = {}
+        for party in range(self.nr_parties):
+            _s_ = self._lexorder[:, 0] == party + 1
+            # party_lexorder = self._lexorder[_s_]
+            offset = np.argmax(_s_ == True)
+            party_compat = self._compatible_measurements[:, _s_][_s_, :]
+            G = nx.from_numpy_array(party_compat)
+            cliques = list(nx.find_cliques(G))
+            compat_subsets_per_party[party] = [[offset + node for node in c] for c in cliques]
+        return compat_subsets_per_party
+    
+    def _generate_compatible_monomials_given_party(self, party: int,
+                                                  up_to_length: int = None,
+                                                  with_last_outcome: bool = False):
+        # The cliques will be all unique sets of compatible operators of
+        # ALL lengths, given a scenario's compatibility matrix
+        cliques = self._subsets_of_compatible_mmnts_per_party[party]
+        # cliques = [sorted(c) for c in cliques]  # almost surely networkx returns 
+        #                                         # cliques as sorted nodes but
+        #                                         # for safety we sort them
+        max_len_clique = max([len(c) for c in cliques])
+        max_length = up_to_length if up_to_length != None else max_len_clique
+        if max_length > max_len_clique and self.verbose > 0:
+            warn("The maximum length of physical monomials required is " +
+                 "larger than the maximum sequence of compatible operators")
+            max_length = max_len_clique
+        # Take combinations of all lengths up to the specified maximum
+        # of all the cliques
+        unique_subsets = {ops for nr_ops in range(max_length + 1)
+                              for clique in cliques
+                              for ops in combinations(clique, nr_ops)}
+        # Sort them in ascending lexicographic order
+        unique_subsets = sorted([list(s) for s in unique_subsets],
+                                key=lambda x: (len(x), x))
+        # Convert them to boolean vector encoding
+        unique_subsets_as_boolvecs = []
+        for mon_as_set in unique_subsets:
+            boolvec = np.zeros(self._lexorder.shape[0], dtype=bool)
+            boolvec[mon_as_set] = True
+            unique_subsets_as_boolvecs += [boolvec]
+        unique_subsets_as_boolvecs = np.vstack(unique_subsets_as_boolvecs)
+        return unique_subsets_as_boolvecs
 
     @cached_property
     def original_dag_events(self) -> np.ndarray:
