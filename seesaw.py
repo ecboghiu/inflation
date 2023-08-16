@@ -461,7 +461,7 @@ def see_saw(outcomes_per_party,
 if __name__ == '__main__':
     
     ############################# CHSH #########################################
-    
+
     dag = {'psiAB': ['A', 'B']}
     outcomes_per_party = {'A': 2, 'B': 2}
     settings_per_party = {'A': 2, 'B': 2}
@@ -469,171 +469,272 @@ if __name__ == '__main__':
     ops = generate_ops(outcomes_per_party, settings_per_party)
     A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
     B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]   
+    CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
     CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
 
     # Fix local dimensions
     LOCAL_DIM = 2
     Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-    
+
     state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
     povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
-    
-    bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
-    bell_state = bell_state @ bell_state.T.conj()
-    A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
-    A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
-    B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
-    B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
-    _A = [A0, A1]
-    _B = [B0, B1]
-    
-    fixed_states = {'psiAB': bell_state}
-    fixed_measurements = {'A': [A0, A1],
-                          'B': [B0, B1]}
-    
-    
-    final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
-    final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
-    perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
-    perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
-    p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
-                                  final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
-    
-    
-    assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
-    
-    ########## Compute reduced bell operator assuming state is the SDP variable
-    
-    BellOp_yb = compute_effective_Bell_operator(Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party),
-                                    {'psiAB': bell_state}, {'A': [A0, A1], 'B': [B0, B1]},
-                                    'psiAB',
-                                    outcomes_per_party,
-                                    settings_per_party,
-                                    state_support,
-                                    povms_support,
-                                    Hilbert_space_dims)
-    BellOp_yb_correct = np.zeros((4,4), dtype=np.complex64)
-    for a, b, x, y in np.ndindex(2, 2, 2, 2):
-        BellOp_yb_correct += CHSH_array[a, b, x, y] * np.kron(_A[x][a], _B[y][b])
-    assert np.allclose(BellOp_yb_correct, BellOp_yb, atol=1e-7, rtol=1e-7), "Bell operators are not equal"
-        
-    # Solve SDP with this reduced Bell operator    
-    
-    rho = cp.Variable((4,4), hermitian=True)
+
+    # bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
+    # bell_state = bell_state @ bell_state.T.conj()
+    # A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
+    # A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
+    # B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
+    # B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
+    # _A = [A0, A1]
+    # _B = [B0, B1]
+    #
+    # fixed_states = {'psiAB': bell_state}
+    # fixed_measurements = {'A': [A0, A1],
+    #                       'B': [B0, B1]}
+    #
+    # final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
+    # final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
+    # perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
+    # perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
+    # p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
+    #                               final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
+    #
+    #
+    # assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
+    #
+    # ########## Compute reduced bell operator assuming state is the SDP variable
+    #
+    # BellOp_yb = compute_effective_Bell_operator(Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party),
+    #                                 {'psiAB': bell_state}, {'A': [A0, A1], 'B': [B0, B1]},
+    #                                 'psiAB',
+    #                                 outcomes_per_party,
+    #                                 settings_per_party,
+    #                                 state_support,
+    #                                 povms_support,
+    #                                 Hilbert_space_dims)
+    # BellOp_yb_correct = np.zeros((4,4), dtype=np.complex64)
+    # for a, b, x, y in np.ndindex(2, 2, 2, 2):
+    #     BellOp_yb_correct += CHSH_array[a, b, x, y] * np.kron(_A[x][a], _B[y][b])
+    # assert np.allclose(BellOp_yb_correct, BellOp_yb, atol=1e-7, rtol=1e-7), "Bell operators are not equal"
+    #
+    # # Solve SDP with this reduced Bell operator
+    #
+    # rho = cp.Variable((4,4), hermitian=True)
+    # constraints = [rho >> 0, cp.real(cp.trace(rho)) == 1]
+    # objective =  cp.real(cp.trace(BellOp_yb @ rho))
+    # prob = cp.Problem(cp.Maximize(objective), constraints)
+    # prob.solve(verbose=False)
+    # assert abs(prob.value - 2*np.sqrt(2)) < 1e-7, "Optimal value is not 2sqrt(2) for when using state as variable"
+    #
+    # ########## Compute reduced bell operator assuming Bob's mmnts are the SDP variable
+    # # tr rho Axa \otimes Byb = tr (Id_A \otimes Byb ) @ rho @ (Axa \otimes Id_B)
+    # #                        = tr Byb @ tr_A (rho @ (Axa \otimes Id_B))
+    # #                        = tr Byb @ BellOp_yb
+    # BellOp_yb = compute_effective_Bell_operator(Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party),
+    #                                 {'psiAB': bell_state},
+    #                                 {'A': [A0, A1],
+    #                                  'B': [B0, B1]},
+    #                                 ('B', 0, 1),
+    #                                 outcomes_per_party,
+    #                                 settings_per_party,
+    #                                 state_support,
+    #                                 povms_support,
+    #                                 Hilbert_space_dims)
+    #
+    # # Computing the expression manually:
+    # # tr rho Axa \otimes Byb = tr (Id_A \otimes Byb ) @ rho @ (Axa \otimes Id_B)
+    # #                        = tr Byb @ tr_A (rho @ (Axa \otimes Id_B))
+    # #                        = tr Byb @ BellOp_yb
+    # BellOp_yb_correct = np.zeros((2,2), dtype=object)
+    # for y in range(2):
+    #     for b in range(2):
+    #         BellOp_yb_correct[y, b] = np.zeros((4, 4), dtype=np.complex64)
+    # for y in range(2):
+    #     for b in range(2):
+    #         for x in range(2):
+    #             for a in range(2):
+    #                 BellOp_yb_correct[b, y] += CHSH_array[a, b, x, y] * np.kron(_A[x][a], np.eye(2))
+    #         BellOp_yb_correct[b, y] = bell_state @ BellOp_yb_correct[b, y]
+    #         # Do partial trace with qutip to avoid errors, but I wouldn't use qutip for our implementation
+    #         BellOp_yb_correct[b, y] = qt.Qobj(BellOp_yb_correct[b, y], dims=[[2, 2], [2, 2]])
+    #         BellOp_yb_correct[b, y] = BellOp_yb_correct[b, y].ptrace(1)
+    #         BellOp_yb_correct[b, y] = BellOp_yb_correct[b, y].data.A
+    #         assert np.allclose(BellOp_yb[b, y], BellOp_yb_correct[b, y], atol=1e-7, rtol=1e-7), "Bell operators are not equal"
+    #
+    # povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup in povms_support.items()}
+    # B00 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
+    # B01 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
+    # B10 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
+    # B11 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
+    # _B_ = [[B00, B01], [B10, B11]]
+    # constraints = [B00 + B01 == np.eye(povm_dims['B']),
+    #                B10 + B11 == np.eye(povm_dims['B']),
+    #                B00 >> 0, B01 >> 0, B10 >> 0, B11 >> 0]
+    # objective =  cp.real(cp.trace(sum([BellOp_yb[b, y] @ _B_[y][b] for y, b in np.ndindex(2, 2)])))
+    # prob = cp.Problem(cp.Maximize(objective), constraints)
+    # prob.solve(verbose=False)
+    # assert abs(prob.value - 2*np.sqrt(2)) < 1e-7, "Optimal value is not 2sqrt(2) for Byb"
+
+    # Start with randomly generated values (assuming all are unknown)
+    seesaw_states = {'psiAB': generate_random_mixed_state(4)}
+    seesaw_povms = {'A': [generate_random_povm(Hilbert_space_dims[
+                                                   povms_support['A'][0]],
+                                               outcomes_per_party['A']),
+                          generate_random_povm(Hilbert_space_dims[
+                                                   povms_support['A'][0]],
+                                               outcomes_per_party['A'])],
+                    'B': [generate_random_povm(Hilbert_space_dims[
+                                                   povms_support['B'][0]],
+                                               outcomes_per_party['B']),
+                          generate_random_povm(Hilbert_space_dims[
+                                                   povms_support['B'][0]],
+                                               outcomes_per_party['B'])]}
+
+    # Set up parameter to optimize psiAB
+    BellOp_psiAB = cp.Parameter(shape=(4, 4), hermitian=True)
+
+    # Construct the problem for optimizing psiAB
+    rho = cp.Variable(shape=(4, 4), hermitian=True)
+    # cp.Variable has nonneg argument but also having hermitian=True gives
+    # ValueError: Cannot set more than one special attribute in Variable.
     constraints = [rho >> 0, cp.real(cp.trace(rho)) == 1]
-    objective =  cp.real(cp.trace(BellOp_yb @ rho))
-    prob = cp.Problem(cp.Maximize(objective), constraints)
-    prob.solve(verbose=False)
-    assert abs(prob.value - 2*np.sqrt(2)) < 1e-7, "Optimal value is not 2sqrt(2) for when using state as variable"
-    
-    ########## Compute reduced bell operator assuming Bob's mmnts are the SDP variable
-    # tr rho Axa \otimes Byb = tr (Id_A \otimes Byb ) @ rho @ (Axa \otimes Id_B)
-    #                        = tr Byb @ tr_A (rho @ (Axa \otimes Id_B))
-    #                        = tr Byb @ BellOp_yb
-    BellOp_yb = compute_effective_Bell_operator(Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party),
-                                    {'psiAB': bell_state},
-                                    {'A': [A0, A1],
-                                     'B': [B0, B1]},
-                                    ('B', 0, 1),
-                                    outcomes_per_party,
-                                    settings_per_party,
-                                    state_support,
-                                    povms_support,
-                                    Hilbert_space_dims)
-    
-    # Computing the expression manually:
-    # tr rho Axa \otimes Byb = tr (Id_A \otimes Byb ) @ rho @ (Axa \otimes Id_B)
-    #                        = tr Byb @ tr_A (rho @ (Axa \otimes Id_B))
-    #                        = tr Byb @ BellOp_yb
-    BellOp_yb_correct = np.zeros((2,2), dtype=object)
-    for y in range(2):
-        for b in range(2):
-            BellOp_yb_correct[y, b] = np.zeros((4, 4), dtype=np.complex64)
-    for y in range(2):
-        for b in range(2):
-            for x in range(2):
-                for a in range(2):
-                    BellOp_yb_correct[b, y] += CHSH_array[a, b, x, y] * np.kron(_A[x][a], np.eye(2))
-            BellOp_yb_correct[b, y] = bell_state @ BellOp_yb_correct[b, y]
-            # Do partial trace with qutip to avoid errors, but I wouldn't use qutip for our implementation
-            BellOp_yb_correct[b, y] = qt.Qobj(BellOp_yb_correct[b, y], dims=[[2, 2], [2, 2]])
-            BellOp_yb_correct[b, y] = BellOp_yb_correct[b, y].ptrace(1)
-            BellOp_yb_correct[b, y] = BellOp_yb_correct[b, y].data.A
-            assert np.allclose(BellOp_yb[b, y], BellOp_yb_correct[b, y], atol=1e-7, rtol=1e-7), "Bell operators are not equal"
-            
-        
-    povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup in povms_support.items()}
-    B00 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
-    B01 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
-    B10 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
-    B11 = cp.Variable((povm_dims['B'],)*2, hermitian=True)
+    objective = cp.real(cp.trace(BellOp_psiAB @ rho))
+    prob_psiAB = cp.Problem(cp.Maximize(objective), constraints)
+
+    # Set up parameters to optimize A, B
+    BellOp_00 = cp.Parameter(shape=(2, 2), hermitian=True)
+    BellOp_01 = cp.Parameter(shape=(2, 2), hermitian=True)
+    BellOp_10 = cp.Parameter(shape=(2, 2), hermitian=True)
+    BellOp_11 = cp.Parameter(shape=(2, 2), hermitian=True)
+    BellOps = np.array([[BellOp_00, BellOp_01], [BellOp_10, BellOp_11]])
+
+    # Construct the problem for optimizing A
+    povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup])
+                 for p, sup in povms_support.items()}
+    A00 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
+    A01 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
+    A10 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
+    A11 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
+    _A_ = [[A00, A01], [A10, A11]]
+    constraints = [A00 + A01 == np.eye(povm_dims['A']),
+                   A10 + A11 == np.eye(povm_dims['A']),
+                   A00 >> 0, A01 >> 0, A10 >> 0, A11 >> 0]
+    objective = cp.real(cp.trace(sum([BellOps[a, x] @ _A_[x][a]
+                                      for x, a in np.ndindex(2, 2)])))
+    prob_A = cp.Problem(cp.Maximize(objective), constraints)
+
+    # Construct the problem for optimizing B
+    B00 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
+    B01 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
+    B10 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
+    B11 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
     _B_ = [[B00, B01], [B10, B11]]
     constraints = [B00 + B01 == np.eye(povm_dims['B']),
                    B10 + B11 == np.eye(povm_dims['B']),
                    B00 >> 0, B01 >> 0, B10 >> 0, B11 >> 0]
-    objective =  cp.real(cp.trace(sum([BellOp_yb[b, y] @ _B_[y][b] for y, b in np.ndindex(2, 2)])))
-    prob = cp.Problem(cp.Maximize(objective), constraints)
-    prob.solve(verbose=False)
-    assert abs(prob.value - 2*np.sqrt(2)) < 1e-7, "Optimal value is not 2sqrt(2) for Byb"
-    
-    
+    objective = cp.real(cp.trace(sum([BellOps[b, y] @ _B_[y][b]
+                                      for y, b in np.ndindex(2, 2)])))
+    prob_B = cp.Problem(cp.Maximize(objective), constraints)
+
+    # Arguments to compute reduced Bell operator
+    args = {"objective_fullprob": Bell_CG2prob(CHSH, outcomes_per_party,
+                                               settings_per_party),
+            "states": seesaw_states,
+            "povms": seesaw_povms,
+            "outcomes_per_party": outcomes_per_party,
+            "settings_per_party": settings_per_party,
+            "state_support": state_support,
+            "povm_support": povms_support,
+            "Hilbert_space_dims": Hilbert_space_dims}
+
+    # Iteratively optimize until objective value converges
+    while True:
+        BellOp_psiAB.value = compute_effective_Bell_operator(
+            **args, variable_to_optimise_over='psiAB')
+        prob_psiAB.solve(verbose=False)
+        args["states"]['psiAB'] = rho.value
+        print(prob_psiAB.value)
+
+        BellOps_values = compute_effective_Bell_operator(
+            **args, variable_to_optimise_over=('A', 0, 1))
+        for a, x in np.ndindex(2, 2):
+            BellOps[a, x].value = BellOps_values[a, x]
+        prob_A.solve(verbose=False)
+        args["povms"]['A'][0] = [A00.value, A01.value]
+        args["povms"]['A'][1] = [A10.value, A11.value]
+        print(prob_A.value)
+
+        BellOps_values = compute_effective_Bell_operator(
+            **args, variable_to_optimise_over=('B', 0, 1))
+        for b, y in np.ndindex(2, 2):
+            BellOps[b, y].value = BellOps_values[b, y]
+        prob_B.solve(verbose=False)
+        args["povms"]['B'][0] = [B00.value, B01.value]
+        args["povms"]['B'][1] = [B10.value, B11.value]
+        print(prob_B.value)
+
+        if abs(prob_B.value - prob_A.value) < 1e-7:
+            print("YAYYYYYYYY!!!!")
+            print(args["states"])
+            print(args["povms"])
+            break
+
     # ############################# MERMIN Triangle ##############################
-    
+
     # dag_triangle = {'psi1': ['A', 'B'],
     #                 'psi2': ['A', 'C'],
-    #                 'psi3': ['B', 'C']}  
+    #                 'psi3': ['B', 'C']}
     # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
     # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
-    
+
     # scenario = NetworkScenario(dag_triangle, outcomes_per_party, settings_per_party)
-    
+
     # ops = generate_ops(outcomes_per_party, settings_per_party)
     # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
     # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
     # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-    
+
     # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
     # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
-    
+
     # # Fix local dimensions
     # LOCAL_DIM = 2
     # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-    
+
     # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
     #                  'psiAC': ['H_A_psiAC', 'H_C_psiAC'],
     #                  'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
     # povms_support = {'A': ['H_A_psiAB', 'H_A_psiAC'],
     #                  'B': ['H_B_psiBC', 'H_B_psiAB'],
     #                  'C': ['H_C_psiAC', 'H_C_psiBC']}
-    
+
 
     # fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
     # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
-    
-    # print("Should be 2sqrt(2)=", 
+
+    # print("Should be 2sqrt(2)=",
     #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
-   
+
     # ############################# MERMIN Global ##############################
-    
+
     # dag_global = {'psi1': ['A', 'B', 'C']}
     # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
     # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
-    
+
     # scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
-    
+
     # ops = generate_ops(outcomes_per_party, settings_per_party)
     # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
     # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
     # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-    
+
     # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
     # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
-    
+
     # # Fix local dimensions
     # LOCAL_DIM = 2
     # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-    
+
     # state_support = {'psiABC': ['H_A_psiAB', 'H_B_psiAB', 'H_C_psiAC']}
     # povms_support = {'A': ['H_A_psiABC'],
     #                  'B': ['H_B_psiABC'],
@@ -642,7 +743,6 @@ if __name__ == '__main__':
 
     # fixed_states = {'psiABC': None}
     # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
-    
-    # print("Should be 4=", 
+
+    # print("Should be 4=",
     #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
-    
