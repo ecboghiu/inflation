@@ -754,40 +754,82 @@ if __name__ == '__main__':
 
     # ############################# MERMIN Triangle ##############################
     
-    dag_triangle = {'psiAB': ['A', 'B'],
-                    'psiAC': ['A', 'C'],
-                    'psiBC': ['B', 'C']}
+    # dag_triangle = {'psiAB': ['A', 'B'],
+    #                 'psiAC': ['A', 'C'],
+    #                 'psiBC': ['B', 'C']}
+    # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
+    # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
+    
+    # scenario = NetworkScenario(dag_triangle, outcomes_per_party, settings_per_party)
+    
+    # ops = generate_ops(outcomes_per_party, settings_per_party)
+    # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
+    
+    # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
+    # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
+    # MERMIN_as_array = Bell_CG2prob(MERMIN, outcomes_per_party, settings_per_party)
+    
+    # # Fix local dimensions
+    # LOCAL_DIM = 2
+    # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+    # print(Hilbert_space_dims)
+    
+    # # TODO: something wrong with Hilbert_space_dims, missing objective_as_array
+    
+    # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
+    #                  'psiAC': ['H_A_psiAC', 'H_C_psiAC'],
+    #                  'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
+    # povms_support = {'A': ['H_A_psiAB', 'H_A_psiAC'],
+    #                  'B': ['H_B_psiBC', 'H_B_psiAB'],
+    #                  'C': ['H_C_psiAC', 'H_C_psiBC']}
+    
+    # fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
+    # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
+    
+    # seesaw(outcomes_per_party=outcomes_per_party,
+    #        settings_per_party=settings_per_party,
+    #        objective_as_array=MERMIN_as_array,
+    #        Hilbert_space_dims=Hilbert_space_dims,
+    #        fixed_states=fixed_states,
+    #        fixed_povms=fixed_measurements,
+    #        state_support=state_support,
+    #        povms_support=povms_support)
+
+    # print("Should be 2sqrt(2)=",
+    #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
+
+    # ############################# MERMIN Global ##############################
+
+    dag_global = {'psiABC': ['A', 'B', 'C']}
     outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
     settings_per_party = {'A': 2, 'B': 2, 'C': 2}
-    
-    scenario = NetworkScenario(dag_triangle, outcomes_per_party, settings_per_party)
-    
+
+    scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
+
     ops = generate_ops(outcomes_per_party, settings_per_party)
     A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
     B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
     C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-    
+
     # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
     MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
     MERMIN_as_array = Bell_CG2prob(MERMIN, outcomes_per_party, settings_per_party)
-    
+
     # Fix local dimensions
     LOCAL_DIM = 2
     Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-    print(Hilbert_space_dims)
-    
-    # TODO: something wrong with Hilbert_space_dims, missing objective_as_array
-    
-    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
-                     'psiAC': ['H_A_psiAC', 'H_C_psiAC'],
-                     'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
-    povms_support = {'A': ['H_A_psiAB', 'H_A_psiAC'],
-                     'B': ['H_B_psiBC', 'H_B_psiAB'],
-                     'C': ['H_C_psiAC', 'H_C_psiBC']}
-    
-    fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
+
+    state_support = {'psiABC': ['H_A_psiABC', 'H_B_psiABC', 'H_C_psiABC']}
+    povms_support = {'A': ['H_A_psiABC'],
+                     'B': ['H_B_psiABC'],
+                     'C': ['H_C_psiABC']}
+
+
+    fixed_states = {'psiABC': None}
     fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
-    
+
     seesaw(outcomes_per_party=outcomes_per_party,
            settings_per_party=settings_per_party,
            objective_as_array=MERMIN_as_array,
@@ -796,38 +838,3 @@ if __name__ == '__main__':
            fixed_povms=fixed_measurements,
            state_support=state_support,
            povms_support=povms_support)
-
-    # print("Should be 2sqrt(2)=",
-    #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
-
-    # ############################# MERMIN Global ##############################
-
-    # dag_global = {'psi1': ['A', 'B', 'C']}
-    # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
-    # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
-
-    # scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
-
-    # ops = generate_ops(outcomes_per_party, settings_per_party)
-    # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
-    # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-
-    # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
-    # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
-
-    # # Fix local dimensions
-    # LOCAL_DIM = 2
-    # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-
-    # state_support = {'psiABC': ['H_A_psiAB', 'H_B_psiAB', 'H_C_psiAC']}
-    # povms_support = {'A': ['H_A_psiABC'],
-    #                  'B': ['H_B_psiABC'],
-    #                  'C': ['H_C_psiABC']}
-
-
-    # fixed_states = {'psiABC': None}
-    # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
-
-    # print("Should be 4=",
-    #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
