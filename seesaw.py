@@ -6,6 +6,7 @@ from typing import Union, List, Tuple, Dict, Literal
 import sympy as sp
 import cvxpy as cp
 import numba as nb
+from copy import deepcopy
 
 def flatten(l: List) -> List:
     return [item for sublist in l for item in sublist]
@@ -456,10 +457,166 @@ def see_saw(outcomes_per_party,
     return prob.value
 
 
+def seesaw(outcomes_per_party,
+           settings_per_party,
+           objective_as_array,
+           Hilbert_space_dims,
+           fixed_states,
+           fixed_povms,
+           state_support,
+           povms_support):
+    """
+
+    """
+    parties = list(outcomes_per_party.keys())
+    outcome_cards = list(outcomes_per_party.values())
+    setting_cards = list(settings_per_party.keys())
+
+    povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup
+                 in povms_support.items()}
+    state_dims = {s: np.prod([Hilbert_space_dims[h] for h in sup]) for s, sup
+                  in state_support.items()}
+
+    seesaw_states = fixed_states.copy()
+    seesaw_povms = deepcopy(fixed_povms)
+
+    # Create a list of CVXPY variables that we will optimise over, by checking
+    # which entries are 'None'. If an entry is 'None', add a string representing
+    # it to cvxpy_variables. Then, add to _cvxpy_states and _cvxpy_povms where
+    # the entry is 'None' either a random state and POVM for that setting
+    cvxpy_variables = []
+    for s in seesaw_states.keys():
+        if seesaw_states[s] is None:
+            # Keep that of this variable as we will optimise over it
+            cvxpy_variables += [s]
+        else:
+            # Check that the dimension corresponds to that deduced from Hilbert_space_dims
+            assert seesaw_states[s].shape == (state_dims[s], state_dims[s]), \
+                f"Dimension of fixed state {s} does not match that deduced from Hilbert_space_dims"
+    for party in parties:
+        _list_of_x = []
+        for x, povm in enumerate(seesaw_povms[party]):
+            if povm is None:
+                # Keep that of this variable as we will optimise over it, also
+                # keep track of the setting
+                _list_of_x += [x]
+            else:
+                # Check that the dimension corresponds to that deduced from Hilbert_space_dims
+                assert len(seesaw_povms[party][x]) == outcome_cards[
+                    party], "Number of outcomes is not correct"
+                assert seesaw_povms[party][x][0].shape == (
+                    povm_dims[party], povm_dims[party]), \
+                    f"Dimension of fixed POVM {party} does not match that deduced from Hilbert_space_dims"
+        cvxpy_variables += [(party, *_list_of_x)]
+
+
+    # Set up problems and their parameters for each unknown value
+    cvxpy_probs = {}
+    cvxpy_parameters = {}
+    for variable in cvxpy_variables:
+        if isinstance(variable, str):
+            # Set up problem for unknown states
+            state_dim = (state_dims[variable],) * 2
+            BellOp = cp.Parameter(shape=state_dim, hermitian=True)
+            rho = cp.Variable(shape=state_dim, hermitian=True) \
+                if seesaw_states[variable] is None else seesaw_states[variable]
+            # cp.Variable has nonneg argument but also having hermitian=True gives
+            # ValueError: Cannot set more than one special attribute in Variable.
+            constraints = [rho >> 0, cp.real(cp.trace(rho)) == 1]
+            objective = cp.real(cp.trace(BellOp @ rho))
+            cvxpy_probs[variable] = cp.Problem(cp.Maximize(objective),
+                                               constraints)
+            cvxpy_parameters[variable] = BellOp
+        else:
+            # Set up problem for unknown povms
+            party = variable[0]
+            op_dims = (settings_per_party[party], outcomes_per_party[party])
+            povm_dim = povm_dims[party]
+            BellOps = np.zeros(op_dims, dtype=object)
+            vars_in_prob = np.zeros(op_dims, dtype=object)
+            for i, j in np.ndindex(*op_dims):
+                BellOps[i, j] = cp.Parameter(shape=(povm_dim,) * 2,
+                                             hermitian=True)
+                vars_in_prob[i, j] = cp.Variable(shape=(povm_dim,) * 2,
+                                                 hermitian=True) \
+                    if seesaw_povms[party][j] is None \
+                    else seesaw_povms[party][j]
+            constraints = []
+            for row in vars_in_prob:
+                constraints.append(row.sum() == np.eye(povm_dim))
+                for v in row:
+                    constraints.append(v >> 0)
+            objective = cp.real(cp.trace(sum([BellOps[a, x] @ vars_in_prob[x][a]
+                                              for x, a in
+                                              np.ndindex(*op_dims)])))
+            cvxpy_probs[variable] = cp.Problem(cp.Maximize(objective),
+                                               constraints)
+            cvxpy_parameters[variable] = BellOps
+
+    # Arguments to compute reduced Bell operator
+    args = {"objective_fullprob": objective_as_array,
+            "states": seesaw_states,
+            "povms": seesaw_povms,
+            "outcomes_per_party": outcomes_per_party,
+            "settings_per_party": settings_per_party,
+            "state_support": state_support,
+            "povm_support": povms_support,
+            "Hilbert_space_dims": Hilbert_space_dims}
+
+    # Generate random sample states and povms and return the best value
+    best_value = 0
+    for i in range(1, 6):
+        print(f"ITERATION {i}")
+        old_value = 0
+        for s in fixed_states:
+            if fixed_states[s] is None:
+                args["states"][s] = generate_random_mixed_state(state_dims[s])
+        for p in fixed_povms:
+            for j, x in enumerate(fixed_povms[p]):
+                if x is None:
+                    args["povms"][p][j] = generate_random_povm(povm_dims[p],
+                                                               outcomes_per_party[p])
+
+        # Iteratively optimize until objective value converges
+        for v in itertools.cycle(cvxpy_variables):
+            BellOps = cvxpy_parameters[v]
+            prob = cvxpy_probs[v]
+            if isinstance(v, str):
+                # Optimizing state
+                BellOps.value = compute_effective_Bell_operator(
+                    **args, variable_to_optimise_over=v)
+                prob.solve(verbose=False)
+                args["states"][v] = prob.variables()[0].value
+            else:
+                # Optimizing povms
+                BellOps_values = compute_effective_Bell_operator(
+                    **args, variable_to_optimise_over=v)
+                for p, x in np.ndindex(settings_per_party[v[0]],
+                                       outcomes_per_party[v[0]]):
+                    BellOps[p, x].value = BellOps_values[p, x]
+                prob.solve(verbose=False)
+                vars_in_prob = prob.variables()
+                for j in range(outcomes_per_party[v[0]]):
+                    args["povms"][v[0]][j] = [j.value for j in
+                                              vars_in_prob[:settings_per_party[v[0]]]]
+                    vars_in_prob = vars_in_prob[settings_per_party[v[0]]:]
+            new_value = prob.value
+            print(prob.value)
+
+            if abs(new_value - old_value) < 1e-7:
+                print("CONVERGENCE")
+                print(args["states"])
+                print(args["povms"])
+                best_value = new_value if new_value > best_value \
+                    else best_value
+                break
+            else:
+                old_value = new_value
+    print("BEST VALUE: ", best_value)
     
     
 if __name__ == '__main__':
-    
+
     ############################# CHSH #########################################
 
     dag = {'psiAB': ['A', 'B']}
@@ -478,6 +635,15 @@ if __name__ == '__main__':
 
     state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
     povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
+
+    seesaw(outcomes_per_party=outcomes_per_party,
+           settings_per_party=settings_per_party,
+           objective_as_array=CHSH_array,
+           Hilbert_space_dims=Hilbert_space_dims,
+           fixed_states={'psiAB': None},
+           fixed_povms={'A': [None, None], 'B': [None, None]},
+           state_support=state_support,
+           povms_support=povms_support)
 
     # bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
     # bell_state = bell_state @ bell_state.T.conj()
@@ -575,142 +741,49 @@ if __name__ == '__main__':
     # prob.solve(verbose=False)
     # assert abs(prob.value - 2*np.sqrt(2)) < 1e-7, "Optimal value is not 2sqrt(2) for Byb"
 
-    # Start with randomly generated values (assuming all are unknown)
-    seesaw_states = {'psiAB': generate_random_mixed_state(4)}
-    seesaw_povms = {'A': [generate_random_povm(Hilbert_space_dims[
-                                                   povms_support['A'][0]],
-                                               outcomes_per_party['A']),
-                          generate_random_povm(Hilbert_space_dims[
-                                                   povms_support['A'][0]],
-                                               outcomes_per_party['A'])],
-                    'B': [generate_random_povm(Hilbert_space_dims[
-                                                   povms_support['B'][0]],
-                                               outcomes_per_party['B']),
-                          generate_random_povm(Hilbert_space_dims[
-                                                   povms_support['B'][0]],
-                                               outcomes_per_party['B'])]}
-
-    # Set up parameter to optimize psiAB
-    BellOp_psiAB = cp.Parameter(shape=(4, 4), hermitian=True)
-
-    # Construct the problem for optimizing psiAB
-    rho = cp.Variable(shape=(4, 4), hermitian=True)
-    # cp.Variable has nonneg argument but also having hermitian=True gives
-    # ValueError: Cannot set more than one special attribute in Variable.
-    constraints = [rho >> 0, cp.real(cp.trace(rho)) == 1]
-    objective = cp.real(cp.trace(BellOp_psiAB @ rho))
-    prob_psiAB = cp.Problem(cp.Maximize(objective), constraints)
-
-    # Set up parameters to optimize A, B
-    BellOp_00 = cp.Parameter(shape=(2, 2), hermitian=True)
-    BellOp_01 = cp.Parameter(shape=(2, 2), hermitian=True)
-    BellOp_10 = cp.Parameter(shape=(2, 2), hermitian=True)
-    BellOp_11 = cp.Parameter(shape=(2, 2), hermitian=True)
-    BellOps = np.array([[BellOp_00, BellOp_01], [BellOp_10, BellOp_11]])
-
-    # Construct the problem for optimizing A
-    povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup])
-                 for p, sup in povms_support.items()}
-    A00 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
-    A01 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
-    A10 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
-    A11 = cp.Variable((povm_dims['A'],) * 2, hermitian=True)
-    _A_ = [[A00, A01], [A10, A11]]
-    constraints = [A00 + A01 == np.eye(povm_dims['A']),
-                   A10 + A11 == np.eye(povm_dims['A']),
-                   A00 >> 0, A01 >> 0, A10 >> 0, A11 >> 0]
-    objective = cp.real(cp.trace(sum([BellOps[a, x] @ _A_[x][a]
-                                      for x, a in np.ndindex(2, 2)])))
-    prob_A = cp.Problem(cp.Maximize(objective), constraints)
-
-    # Construct the problem for optimizing B
-    B00 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
-    B01 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
-    B10 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
-    B11 = cp.Variable((povm_dims['B'],) * 2, hermitian=True)
-    _B_ = [[B00, B01], [B10, B11]]
-    constraints = [B00 + B01 == np.eye(povm_dims['B']),
-                   B10 + B11 == np.eye(povm_dims['B']),
-                   B00 >> 0, B01 >> 0, B10 >> 0, B11 >> 0]
-    objective = cp.real(cp.trace(sum([BellOps[b, y] @ _B_[y][b]
-                                      for y, b in np.ndindex(2, 2)])))
-    prob_B = cp.Problem(cp.Maximize(objective), constraints)
-
-    # Arguments to compute reduced Bell operator
-    args = {"objective_fullprob": Bell_CG2prob(CHSH, outcomes_per_party,
-                                               settings_per_party),
-            "states": seesaw_states,
-            "povms": seesaw_povms,
-            "outcomes_per_party": outcomes_per_party,
-            "settings_per_party": settings_per_party,
-            "state_support": state_support,
-            "povm_support": povms_support,
-            "Hilbert_space_dims": Hilbert_space_dims}
-
-    # Iteratively optimize until objective value converges
-    while True:
-        BellOp_psiAB.value = compute_effective_Bell_operator(
-            **args, variable_to_optimise_over='psiAB')
-        prob_psiAB.solve(verbose=False)
-        args["states"]['psiAB'] = rho.value
-        print(prob_psiAB.value)
-
-        BellOps_values = compute_effective_Bell_operator(
-            **args, variable_to_optimise_over=('A', 0, 1))
-        for a, x in np.ndindex(2, 2):
-            BellOps[a, x].value = BellOps_values[a, x]
-        prob_A.solve(verbose=False)
-        args["povms"]['A'][0] = [A00.value, A01.value]
-        args["povms"]['A'][1] = [A10.value, A11.value]
-        print(prob_A.value)
-
-        BellOps_values = compute_effective_Bell_operator(
-            **args, variable_to_optimise_over=('B', 0, 1))
-        for b, y in np.ndindex(2, 2):
-            BellOps[b, y].value = BellOps_values[b, y]
-        prob_B.solve(verbose=False)
-        args["povms"]['B'][0] = [B00.value, B01.value]
-        args["povms"]['B'][1] = [B10.value, B11.value]
-        print(prob_B.value)
-
-        if abs(prob_B.value - prob_A.value) < 1e-7:
-            print("YAYYYYYYYY!!!!")
-            print(args["states"])
-            print(args["povms"])
-            break
-
     # ############################# MERMIN Triangle ##############################
-
-    # dag_triangle = {'psi1': ['A', 'B'],
-    #                 'psi2': ['A', 'C'],
-    #                 'psi3': ['B', 'C']}
+    #
+    # dag_triangle = {'psiAB': ['A', 'B'],
+    #                 'psiAC': ['A', 'C'],
+    #                 'psiBC': ['B', 'C']}
     # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
     # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
-
+    #
     # scenario = NetworkScenario(dag_triangle, outcomes_per_party, settings_per_party)
-
+    #
     # ops = generate_ops(outcomes_per_party, settings_per_party)
     # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
     # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
     # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-
+    #
     # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
     # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
-
+    #
     # # Fix local dimensions
     # LOCAL_DIM = 2
     # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-
+    # print(Hilbert_space_dims)
+    #
+    # # TODO: something wrong with Hilbert_space_dims, missing objective_as_array
+    #
     # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
     #                  'psiAC': ['H_A_psiAC', 'H_C_psiAC'],
     #                  'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
     # povms_support = {'A': ['H_A_psiAB', 'H_A_psiAC'],
     #                  'B': ['H_B_psiBC', 'H_B_psiAB'],
     #                  'C': ['H_C_psiAC', 'H_C_psiBC']}
-
-
+    #
     # fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
     # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
+    #
+    # seesaw(outcomes_per_party=outcomes_per_party,
+    #        settings_per_party=settings_per_party,
+    #        objective_as_array=[],
+    #        Hilbert_space_dims=Hilbert_space_dims,
+    #        fixed_states=fixed_states,
+    #        fixed_povms=fixed_measurements,
+    #        state_support=state_support,
+    #        povms_support=povms_support)
 
     # print("Should be 2sqrt(2)=",
     #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
