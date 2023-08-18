@@ -330,14 +330,21 @@ class InflationProblem(object):
         # Use self._ortho_groups to label operators that are orthogonal as
         # incompatible as their product is zero, and they can never be 
         # observed together with non-zero probability.
+        offset = 0
         for ortho_group in self._ortho_groups:
-            for op1, op2 in combinations(ortho_group, 2):
-                i = self.mon_to_lexrepr(np.expand_dims(op1, axis=0))
-                j = self.mon_to_lexrepr(np.expand_dims(op2, axis=0))
-                self._compatible_measurements[i, j] = False
-                self._compatible_measurements[j, i] = False
-        for i in range(self._compatible_measurements.shape[0]):
-            self._compatible_measurements[i, i] = False
+            l = len(ortho_group)
+            block = np.arange(l)
+            block+= offset
+            self._compatible_measurements[np.ix_(block, block)] = False
+            offset+=l
+        # for ortho_group in self._ortho_groups:
+        #     for op1, op2 in combinations(ortho_group, 2):
+        #         i = self.mon_to_lexrepr(np.expand_dims(op1, axis=0))
+        #         j = self.mon_to_lexrepr(np.expand_dims(op2, axis=0))
+        #         self._compatible_measurements[i, j] = False
+        #         self._compatible_measurements[j, i] = False
+        # for i in range(self._compatible_measurements.shape[0]):
+        #     self._compatible_measurements[i, i] = False
 
         self._lexorder_for_factorization = np.array([
             self._inflation_indices_hash[op.tobytes()]
@@ -383,28 +390,55 @@ class InflationProblem(object):
     ###########################################################################
     # HELPER UTILITY FUNCTION                                    #
     ###########################################################################
+    # @cached_property
+    # def _subsets_of_compatible_mmnts_per_party(self):
+    #     compat_subsets_per_party = {}
+    #     for party in range(self.nr_parties):
+    #         _s_ = self._lexorder[:, 0] == party + 1
+    #         # party_lexorder = self._lexorder[_s_]
+    #         offset = np.argmax(_s_ == True)
+    #         party_compat = self._compatible_measurements[np.ix_(_s_, _s_)]
+    #         G = nx.from_numpy_array(party_compat)
+    #         cliques = nx.find_cliques(G)
+    #         compat_subsets_per_party[party] = [[offset + node for node in c] for c in cliques]
+    #     return compat_subsets_per_party
     @cached_property
-    def _subsets_of_compatible_mmnts_per_party(self):
-        compat_subsets_per_party = {}
-        for party in range(self.nr_parties):
-            _s_ = self._lexorder[:, 0] == party + 1
-            # party_lexorder = self._lexorder[_s_]
-            offset = np.argmax(_s_ == True)
-            party_compat = self._compatible_measurements[:, _s_][_s_, :]
-            G = nx.from_numpy_array(party_compat)
-            cliques = list(nx.find_cliques(G))
-            compat_subsets_per_party[party] = [[offset + node for node in c] for c in cliques]
-        return compat_subsets_per_party
+    def _party_positions_within_lexorder(self):
+        offset = 0
+        party_positions_within_lexorder = []
+        for ortho_groups in self._ortho_groups_per_party:
+            this_party_positions = []
+            for ortho_group in ortho_groups:
+                l = len(ortho_group)
+                block = np.arange(offset, offset+l)
+                this_party_positions.append(block)
+                offset+=l
+            party_positions_within_lexorder.append(this_party_positions)
+        # print("Party positions within lexorder:", party_positions_within_lexorder)
+        return party_positions_within_lexorder
+    def _subsets_of_compatible_mmnts_per_party(self,
+                                               party: int,
+                                               with_last_outcome: bool = False):
+        if with_last_outcome:
+            _s_ = list(chain.from_iterable(self._party_positions_within_lexorder[party]))
+        else:
+            _s_ = []
+            for positions in self._party_positions_within_lexorder[party]:
+                _s_.extend(positions[:-1])
+        party_compat = self._compatible_measurements[np.ix_(_s_, _s_)]
+        G = nx.from_numpy_array(party_compat)
+        raw_cliques = nx.find_cliques(G)
+        return [partsextractor(_s_, clique) for clique in raw_cliques]
+
     
     def _generate_compatible_monomials_given_party(self, party: int,
                                                   up_to_length: int = None,
                                                   with_last_outcome: bool = False):
         # The cliques will be all unique sets of compatible operators of
         # ALL lengths, given a scenario's compatibility matrix
-        cliques = self._subsets_of_compatible_mmnts_per_party[party]
-        # cliques = [sorted(c) for c in cliques]  # almost surely networkx returns 
-        #                                         # cliques as sorted nodes but
-        #                                         # for safety we sort them
+        cliques = self._subsets_of_compatible_mmnts_per_party(
+            party,
+            with_last_outcome=with_last_outcome)
         max_len_clique = max([len(c) for c in cliques])
         max_length = up_to_length if up_to_length != None else max_len_clique
         if max_length > max_len_clique and self.verbose > 0:
@@ -413,19 +447,17 @@ class InflationProblem(object):
             max_length = max_len_clique
         # Take combinations of all lengths up to the specified maximum
         # of all the cliques
-        unique_subsets = {ops for nr_ops in range(max_length + 1)
+        unique_subsets = {frozenset(ops) for nr_ops in range(max_length + 1)
                               for clique in cliques
                               for ops in combinations(clique, nr_ops)}
         # Sort them in ascending lexicographic order
-        unique_subsets = sorted([list(s) for s in unique_subsets],
+        unique_subsets = sorted((sorted(s) for s in unique_subsets),
                                 key=lambda x: (len(x), x))
         # Convert them to boolean vector encoding
-        unique_subsets_as_boolvecs = []
-        for mon_as_set in unique_subsets:
-            boolvec = np.zeros(self._lexorder.shape[0], dtype=bool)
-            boolvec[mon_as_set] = True
-            unique_subsets_as_boolvecs += [boolvec]
-        unique_subsets_as_boolvecs = np.vstack(unique_subsets_as_boolvecs)
+        unique_subsets_as_boolvecs = np.zeros(
+            (len(unique_subsets), len(self._lexorder)), dtype=bool)
+        for i, mon_as_set in enumerate(unique_subsets):
+            unique_subsets_as_boolvecs[i, mon_as_set] = True
         return unique_subsets_as_boolvecs
 
     @cached_property

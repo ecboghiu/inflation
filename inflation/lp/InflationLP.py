@@ -1104,7 +1104,6 @@ class InflationLP(object):
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         else:
-            from itertools import combinations
             # fake_outcome_cardinalities = self.outcome_cardinalities + 1 # We consider ALL outcomes when setting up the LP
             for party in range(self.nr_parties):
                 # for cliques_as_arrs in self.InflationProblem._subsets_of_compatible_mmnts_per_party[party]:
@@ -1134,7 +1133,8 @@ class InflationLP(object):
                 # boolvecs = np.vstack(
                 #     [self.mon_to_boolvec(op) for op in
                 #      chain.from_iterable(phys_mon)])
-                boolvecs = self.InflationProblem._generate_compatible_monomials_given_party(party)
+                boolvecs = self.InflationProblem._generate_compatible_monomials_given_party(party,
+                                                                                            with_last_outcome=True)
                 # ##################### TODO remove this, it doesn't help
                 # boolvecs = np.array(list(reversed(sorted([tuple(v) for v in boolvecs],
                 #                                          key=lambda x: (-sum(x), x)))))  # TODO: better sorting
