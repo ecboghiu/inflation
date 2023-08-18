@@ -133,8 +133,7 @@ class NetworkScenario:
         Hilbert_space_states, Hilbert_space_parties = process_DAG(self.dag)
         self.Hilbert_space_states  = Hilbert_space_states
         self.Hilbert_space_parties = Hilbert_space_parties
-        self.Hilbert_spaces = sorted(list(set(np.sum(np.array(list(self.Hilbert_space_states.values()) +
-                                                              list(self.Hilbert_space_parties.values()), dtype=object)))))
+        
                 
         Hilbert_space_order_states = flatten(Hilbert_space_states.values())
         Hilbert_space_order_povms  = flatten(Hilbert_space_parties.values())
@@ -142,6 +141,9 @@ class NetworkScenario:
                                                   Hilbert_space_order_povms)
         self.perm_states2povms = find_permutation(Hilbert_space_order_povms,
                                                   Hilbert_space_order_states)
+
+        self.Hilbert_spaces = sorted(Hilbert_space_order_states + 
+                                     Hilbert_space_order_povms)
 
 def permuteHilbertSpaces(state, state_dims, perm):
     _perm = [*perm, *(len(perm) + np.array(perm)).tolist()]
@@ -619,31 +621,31 @@ if __name__ == '__main__':
 
     ############################# CHSH #########################################
 
-    dag = {'psiAB': ['A', 'B']}
-    outcomes_per_party = {'A': 2, 'B': 2}
-    settings_per_party = {'A': 2, 'B': 2}
-    scenario = NetworkScenario(dag, outcomes_per_party, settings_per_party)
-    ops = generate_ops(outcomes_per_party, settings_per_party)
-    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
-    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
-    CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
+    # dag = {'psiAB': ['A', 'B']}
+    # outcomes_per_party = {'A': 2, 'B': 2}
+    # settings_per_party = {'A': 2, 'B': 2}
+    # scenario = NetworkScenario(dag, outcomes_per_party, settings_per_party)
+    # ops = generate_ops(outcomes_per_party, settings_per_party)
+    # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    # CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
+    # CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
 
-    # Fix local dimensions
-    LOCAL_DIM = 2
-    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+    # # Fix local dimensions
+    # LOCAL_DIM = 2
+    # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
 
-    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
-    povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
+    # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
+    # povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
 
-    seesaw(outcomes_per_party=outcomes_per_party,
-           settings_per_party=settings_per_party,
-           objective_as_array=CHSH_array,
-           Hilbert_space_dims=Hilbert_space_dims,
-           fixed_states={'psiAB': None},
-           fixed_povms={'A': [None, None], 'B': [None, None]},
-           state_support=state_support,
-           povms_support=povms_support)
+    # seesaw(outcomes_per_party=outcomes_per_party,
+    #        settings_per_party=settings_per_party,
+    #        objective_as_array=CHSH_array,
+    #        Hilbert_space_dims=Hilbert_space_dims,
+    #        fixed_states={'psiAB': None},
+    #        fixed_povms={'A': [None, None], 'B': [None, None]},
+    #        state_support=state_support,
+    #        povms_support=povms_support)
 
     # bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
     # bell_state = bell_state @ bell_state.T.conj()
@@ -742,48 +744,49 @@ if __name__ == '__main__':
     # assert abs(prob.value - 2*np.sqrt(2)) < 1e-7, "Optimal value is not 2sqrt(2) for Byb"
 
     # ############################# MERMIN Triangle ##############################
-    #
-    # dag_triangle = {'psiAB': ['A', 'B'],
-    #                 'psiAC': ['A', 'C'],
-    #                 'psiBC': ['B', 'C']}
-    # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
-    # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
-    #
-    # scenario = NetworkScenario(dag_triangle, outcomes_per_party, settings_per_party)
-    #
-    # ops = generate_ops(outcomes_per_party, settings_per_party)
-    # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
-    # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-    #
-    # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
-    # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
-    #
-    # # Fix local dimensions
-    # LOCAL_DIM = 2
-    # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-    # print(Hilbert_space_dims)
-    #
-    # # TODO: something wrong with Hilbert_space_dims, missing objective_as_array
-    #
-    # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
-    #                  'psiAC': ['H_A_psiAC', 'H_C_psiAC'],
-    #                  'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
-    # povms_support = {'A': ['H_A_psiAB', 'H_A_psiAC'],
-    #                  'B': ['H_B_psiBC', 'H_B_psiAB'],
-    #                  'C': ['H_C_psiAC', 'H_C_psiBC']}
-    #
-    # fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
-    # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
-    #
-    # seesaw(outcomes_per_party=outcomes_per_party,
-    #        settings_per_party=settings_per_party,
-    #        objective_as_array=[],
-    #        Hilbert_space_dims=Hilbert_space_dims,
-    #        fixed_states=fixed_states,
-    #        fixed_povms=fixed_measurements,
-    #        state_support=state_support,
-    #        povms_support=povms_support)
+    
+    dag_triangle = {'psiAB': ['A', 'B'],
+                    'psiAC': ['A', 'C'],
+                    'psiBC': ['B', 'C']}
+    outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
+    settings_per_party = {'A': 2, 'B': 2, 'C': 2}
+    
+    scenario = NetworkScenario(dag_triangle, outcomes_per_party, settings_per_party)
+    
+    ops = generate_ops(outcomes_per_party, settings_per_party)
+    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
+    
+    # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
+    MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
+    MERMIN_as_array = Bell_CG2prob(MERMIN, outcomes_per_party, settings_per_party)
+    
+    # Fix local dimensions
+    LOCAL_DIM = 2
+    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+    print(Hilbert_space_dims)
+    
+    # TODO: something wrong with Hilbert_space_dims, missing objective_as_array
+    
+    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
+                     'psiAC': ['H_A_psiAC', 'H_C_psiAC'],
+                     'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
+    povms_support = {'A': ['H_A_psiAB', 'H_A_psiAC'],
+                     'B': ['H_B_psiBC', 'H_B_psiAB'],
+                     'C': ['H_C_psiAC', 'H_C_psiBC']}
+    
+    fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
+    fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
+    
+    seesaw(outcomes_per_party=outcomes_per_party,
+           settings_per_party=settings_per_party,
+           objective_as_array=MERMIN_as_array,
+           Hilbert_space_dims=Hilbert_space_dims,
+           fixed_states=fixed_states,
+           fixed_povms=fixed_measurements,
+           state_support=state_support,
+           povms_support=povms_support)
 
     # print("Should be 2sqrt(2)=",
     #       see_saw(scenario, MERMIN, Hilbert_space_dims, fixed_states, fixed_measurements, state_support, povms_support))
