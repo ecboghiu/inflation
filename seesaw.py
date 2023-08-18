@@ -312,9 +312,11 @@ def compute_effective_Bell_operator(objective_fullprob,
                     # Partial trace over the hilbert spaces that are not being optimised over
                     # TODO: use qutip for now but this could be implemented in numpy
                     bell_operator[a, x] = qt.Qobj(bell_operator[a, x], dims=(final_povm_dims, final_povm_dims))
-                    bell_operator[a, x] = bell_operator[a, x].ptrace(*[i for i, support in enumerate(all_povm_supports)
+                    bell_operator[a, x] = bell_operator[a, x].ptrace([i for i, support in enumerate(all_povm_supports)
                                                                        if support in povm_support[optimised_party]])
                     bell_operator[a, x] = bell_operator[a, x].data.A
+                    # Make Hermitian to machine precision
+                    bell_operator[a, x] = (bell_operator[a, x] + bell_operator[a, x].conj().T) / 2
                     ### NOT WORKING WHAT FOLLOWS
                     # _op_ = bell_operator[a, x].copy().reshape((*final_povm_dims, *final_povm_dims))
                     # axes_to_sum_over = [i for i, support in enumerate(all_povm_supports)
@@ -335,13 +337,20 @@ def compute_effective_Bell_operator(objective_fullprob,
                 bell_operator += objective_fullprob[(*outs, *ins)] * mmnts
         bell_operator = permuteHilbertSpaces(bell_operator, final_povm_dims, perm_povms2states)
         bell_operator = full_state @ bell_operator
+        # Partial trace with QuTip
+        bell_operator = qt.Qobj(bell_operator, dims=(final_state_dims, final_state_dims))
+        bell_operator = bell_operator.ptrace([i for i, support in enumerate(all_state_supports)
+                                                if support in state_support[optimised_state]])
+        bell_operator = bell_operator.data.A
+        bell_operator = (bell_operator + bell_operator.conj().T) / 2  # Make Hermitian to machine precision
+        # ### NOT WORKING WHAT FOLLOWS
         # Partial trace over the hilbert spaces that are not being optimised over
-        _op_ = bell_operator.copy().reshape((*final_state_dims, *final_state_dims))
-        axes_to_sum_over = [i for i, support in enumerate(all_state_supports) if support not in state_support[optimised_state]]
-        axes_to_sum_over = tuple([*axes_to_sum_over, *(len(all_state_supports) + np.array(axes_to_sum_over)).tolist()])
-        _op_ = _op_.sum(axis=axes_to_sum_over)
-        _op_ = _op_.reshape((state_dims[optimised_state], state_dims[optimised_state]))
-        bell_operator = _op_
+        # _op_ = bell_operator.copy().reshape((*final_state_dims, *final_state_dims))
+        # axes_to_sum_over = [i for i, support in enumerate(all_state_supports) if support not in state_support[optimised_state]]
+        # axes_to_sum_over = tuple([*axes_to_sum_over, *(len(all_state_supports) + np.array(axes_to_sum_over)).tolist()])
+        # _op_ = _op_.sum(axis=axes_to_sum_over)
+        # _op_ = _op_.reshape((state_dims[optimised_state], state_dims[optimised_state]))
+        # bell_operator = _op_
 
     return bell_operator
 
