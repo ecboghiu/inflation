@@ -309,3 +309,68 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                                   for c in set_correct for e in c])
         assert set_correct == set_predicted, \
             "The physical monomials sets are not equal in 1 party nonfanout LP."
+            
+    def test_hybrid_lp_full_network_nonlocality(self):
+
+        from inflation import InflationProblem, InflationLP
+        scenario = InflationProblem({'lambda':     ['A', 'B'],
+                                     'NS':         ['B', 'C']},
+                                    [2, 4, 2], [3, 1, 3], 
+                                    inflation_level_per_source=[1, 2],
+                                    classical_sources=['lambda'],
+                                    verbose=1)
+        lp = InflationLP(scenario, nonfanout=True, verbose=1)
+        
+        def P_EJM(v, theta):
+            p_bell = np.expand_dims((0, 1, -1, 0), axis=1)/np.sqrt(2)
+            rho_v = v * p_bell @ p_bell.conj().T + (1 - v) * np.eye(4)/4
+            sigmax = np.array([[0, 1], [1, 0]])
+            sigmay = np.array([[0, -1j], [1j, 0]])
+            sigmaz = np.array([[1, 0], [0, -1]])
+            A = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
+                    for v in reversed(np.linalg.eigh(op)[1].T)] 
+                    for op in [sigmax, sigmay, sigmaz]]
+            C = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
+                    for v in reversed(np.linalg.eigh(op)[1].T)] 
+                    for op in [sigmax, sigmay, sigmaz]]
+            r_plus = (1 + np.exp(1j*theta))/np.sqrt(2)
+            r_minus = (1 - np.exp(1j*theta))/np.sqrt(2)
+            e00 = np.expand_dims([1, 0, 0, 0], axis=1)
+            e01 = np.expand_dims([0, 1, 0, 0], axis=1)
+            e10 = np.expand_dims([0, 0, 1, 0], axis=1)
+            e11 = np.expand_dims([0, 0, 0, 1], axis=1)
+            psi1 = 1/2 * (np.exp(-1j*np.pi/4)*e00 - r_plus * e01 
+                            - r_minus * e10 + np.exp(-3/4*np.pi*1j)*e11)
+            psi2 = 1/2 * (np.exp(1j*np.pi/4)*e00 + r_minus * e01 
+                            + r_plus * e10 + np.exp(3/4*np.pi*1j)*e11)
+            psi3 = 1/2 * (np.exp(-1j*np.pi*3/4)*e00 + r_minus * e01 
+                            + r_plus * e10 + np.exp(-1/4*np.pi*1j)*e11)
+            psi4 = 1/2 * (np.exp(1j*np.pi*3/4)*e00 - r_plus * e01 
+                            - r_minus * e10 + np.exp(np.pi*1j/4)*e11)
+            B = [ [psi @ psi.conj().T for psi in [psi1, psi2, psi3, psi4] ]]
+            
+            p = np.zeros((2, 4, 2, 3, 1, 3))
+            pauli = [sigmax, sigmay, sigmaz]
+            state = np.kron(rho_v, rho_v)
+            for a, b, c, x, y, z in np.ndindex(p.shape):
+                if not np.allclose(A[x][a], (np.eye(2)+(-1)**a * pauli[x])/2):
+                    print("Difference:", A[x][a] - (np.eye(2)+(-1)**a * pauli[x])/2)
+                if not np.allclose(C[z][c], (np.eye(2)+(-1)**c * pauli[z])/2):
+                    print("Difference:", C[z][c] - (np.eye(2)+(-1)**c * pauli[z])/2)
+                mmnt = np.kron(np.kron(A[x][a], B[y][b]), C[z][c])
+                p[a, b, c, x, y, z] = np.real(np.trace(state @ mmnt))
+            return p
+
+        best_theta = np.arccos(np.sqrt(5) / 3)
+        v_for_best_theta = 2 / np.sqrt(5)
+        epsilon = 1e-3
+        lp.set_distribution(P_EJM(v_for_best_theta + epsilon, best_theta))
+        lp.solve()
+        assert not lp.success, ("The LP is feasible for the EJM distribution " +
+                                "in a regime when it can be certified to be " +
+                                "full network nonlocal.")
+        lp.set_distribution(P_EJM(v_for_best_theta - epsilon, best_theta))
+        lp.solve()
+        assert lp.success, ("The LP is infeasible for the EJM distribution " + 
+                            "in a regime where inflation at this level " + 
+                            "is known to not certify full network nonlocality.")

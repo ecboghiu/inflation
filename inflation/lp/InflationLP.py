@@ -581,7 +581,12 @@ class InflationLP(object):
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
 
-    def set_values(self, values, **kwargs):
+    def set_values(self, values: Union[Dict[Union[CompoundMonomial,
+                      InternalAtomicMonomial,
+                      sp.core.symbol.Symbol,
+                      str],
+                      Union[float, sp.core.expr.Expr]],
+                      None], **kwargs):
         r"""Exactly like update_values, except it resets all known values to zero
         as an intermediate step
         """
