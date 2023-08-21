@@ -13,9 +13,10 @@ from typing import Any, Dict, List, Tuple, Union
 
 from .fast_npa import (apply_source_perm,
                        dot_mon,
-                       mon_is_zero,
+    # mon_is_zero,
                        mon_lexsorted,
-                       to_canonical,
+    # to_canonical,
+                       to_canonical_1d_internal,
                        to_name)
 from ..utils import format_permutations
 
@@ -81,11 +82,88 @@ def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
 ###############################################################################
 # FUNCTIONS FOR MOMENT MATRICES                                               #
 ###############################################################################
-def calculate_momentmatrix(cols: List,
-                           notcomm: np.ndarray,
-                           lexorder: np.ndarray,
-                           commuting: bool = False,
-                           verbose: int = 0) -> Tuple[np.ndarray, Dict]:
+# def calculate_momentmatrix_2d_internal(cols: List,
+#                                        notcomm: np.ndarray,
+#                                        lexorder: np.ndarray,
+#                                        commuting: bool = False,
+#                                        verbose: int = 0) -> Tuple[np.ndarray, Dict]:
+#     r"""Calculate the moment matrix. The function takes as input the generating
+#     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
+#     matrix where each row is an operator and the columns specify the operator
+#     labels/indices. The moment matrix is the inner product between all possible
+#     pairs of elements from the generating set. The program outputs the moment
+#     matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the
+#     index of the monomial that represents the result of the expectation value
+#     :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state
+#     :math:`\rho` after applying the substitutions. The program returns the
+#     moment matrix and the dictionary mapping each monomial in string
+#     representation to its integer representation.
+#
+#     Parameters
+#     ----------
+#     cols : List
+#         List of numpy.ndarray representing the generating set.
+#     notcomm : numpy.ndarray
+#         Matrix of commutation relations, given in the format specified by
+#         `inflation.quantum.fast_npa.commutation_matrix`.
+#     lexorder : numpy.ndarray
+#         Matrix with rows as operators where the index of the row gives
+#         the lexicographic order of the operator.
+#     commuting : bool, optional
+#         Whether the variables in the problem commute or not. By default
+#         ``False``.
+#     verbose : int, optional
+#         How much information to print. By default ``0``.
+#
+#     Returns
+#     -------
+#     Tuple[numpy.ndarray, Dict]
+#         The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores
+#         the integer representation of a monomial. The Dict is a mapping from
+#         string representation to integer representation.
+#     """
+#     nrcols = len(cols)
+#     canonical_mon_to_idx = dict()
+#     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
+#     varidx = 1  # We start from 1 because 0 is reserved for 0
+#     for (i, mon1), (j, mon2) in tqdm(
+#                             combinations_with_replacement(enumerate(cols), 2),
+#                             disable=not verbose,
+#                             desc="Calculating moment matrix",
+#                             total=int(nrcols*(nrcols+1)/2),
+#                                     ):
+#         mon_v1 = to_canonical(dot_mon(mon1, mon2),
+#                               notcomm,
+#                               lexorder,
+#                               commuting=commuting,
+#                               apply_only_commutations=False)
+#         if not mon_is_zero(mon_v1):
+#             if not commuting:
+#                 mon_v2 = to_canonical(np.flipud(mon_v1),
+#                                       notcomm,
+#                                       lexorder,
+#                                       commuting=commuting,
+#                                       apply_only_commutations=True)
+#                 mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
+#             else:
+#                 mon_hash = mon_v1.tobytes()
+#             try:
+#                 known_varidx = canonical_mon_to_idx[mon_hash]
+#                 momentmatrix[i, j] = known_varidx
+#                 momentmatrix[j, i] = known_varidx
+#             except KeyError:
+#                 canonical_mon_to_idx[mon_hash] = varidx
+#                 momentmatrix[i, j] = varidx
+#                 momentmatrix[j, i] = varidx
+#                 varidx += 1
+#     return momentmatrix, canonical_mon_to_idx
+
+def calculate_momentmatrix_1d_internal(cols: List,
+                                       notcomm: np.ndarray,
+                                       orthomat: np.ndarray,
+                                       commuting: bool = False,
+                                       verbose: int = 0) -> Tuple[
+    np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
@@ -101,13 +179,15 @@ def calculate_momentmatrix(cols: List,
     Parameters
     ----------
     cols : List
-        List of numpy.ndarray representing the generating set.
+        List of numpy.ndarray representing the generating set in 1d internal format.
     notcomm : numpy.ndarray
         Matrix of commutation relations, given in the format specified by
         `inflation.quantum.fast_npa.commutation_matrix`.
-    lexorder : numpy.ndarray
-        Matrix with rows as operators where the index of the row gives
-        the lexicographic order of the operator.
+    orthomat : numpy.ndarray
+        Matrix of orthogonality relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        are orthogonal, and 0 if they do.
     commuting : bool, optional
         Whether the variables in the problem commute or not. By default
         ``False``.
@@ -126,24 +206,26 @@ def calculate_momentmatrix(cols: List,
     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for (i, mon1), (j, mon2) in tqdm(
-                            combinations_with_replacement(enumerate(cols), 2),
-                            disable=not verbose,
-                            desc="Calculating moment matrix",
-                            total=int(nrcols*(nrcols+1)/2),
-                                    ):
-        mon_v1 = to_canonical(dot_mon(mon1, mon2),
-                              notcomm,
-                              lexorder,
-                              commuting=commuting)
-        if not mon_is_zero(mon_v1):
-            if not commuting:
-                mon_v2 = to_canonical(dot_mon(mon2, mon1),
-                                      notcomm,
-                                      lexorder,
-                                      commuting=commuting)
-                mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
+            combinations_with_replacement(enumerate(cols), 2),
+            disable=not verbose,
+            desc="Calculating moment matrix",
+            total=int(nrcols * (nrcols + 1) / 2),
+    ):
+        mon_v1 = to_canonical_1d_internal(dot_mon(mon1, mon2),
+                                          notcomm,
+                                          orthomat,
+                                          commuting=commuting,
+                                          apply_only_commutations=False)
+        if np.all(mon_v1):  # a zero indicates equal to zero scalar
+            if len(mon_v1) > 1 and (not commuting):
+                mon_v2 = to_canonical_1d_internal(np.flipud(mon_v1),
+                                                  notcomm,
+                                                  orthomat,
+                                                  commuting=commuting,
+                                                  apply_only_commutations=True)
+                mon_hash = min(tuple(mon_v1), tuple(mon_v2))
             else:
-                mon_hash = mon_v1.tobytes()
+                mon_hash = tuple(mon_v1)
             try:
                 known_varidx = canonical_mon_to_idx[mon_hash]
                 momentmatrix[i, j] = known_varidx
@@ -186,7 +268,7 @@ def to_symbol(mon: np.ndarray,
             return sympy.S.One
         res = sympy.S.One
         for mon in mon:
-            name = '_'.join([names[mon[0]-1]] +
+            name = '_'.join([names[mon[0] - 1]] +
                             [str(i) for i in mon.tolist()][1:])
             res *= sympy.Symbol(name, commutative=commutative)
         return res
@@ -385,7 +467,7 @@ def expand_moment_normalisation(moment: np.ndarray,
         # Operators that are involved in normalization equalities are
         # those which are unpacked in non-network scenarios
         if (not skip_party[party]
-            and operator[-1] == outcome_cardinalities[party] - 2):
+                and operator[-1] == outcome_cardinalities[party] - 2):
             operator_2d = np.expand_dims(operator, axis=0)
             prefix = moment[:k]
             suffix = moment[(k + 1):]
@@ -532,7 +614,7 @@ def party_physical_monomials(hypergraph: np.ndarray,
     template_mon = np.stack(tuple(inflation_equivalents.values()))
     del inflation_equivalents
     nr_possible_in = settings_per_party[party]
-    nr_possible_out = outputs_per_party[party] - 1 # We always use one less
+    nr_possible_out = outputs_per_party[party] - 1  # We always use one less
     new_monomials = np.broadcast_to(
         template_mon,
         (nr_possible_in ** max_monomial_length,

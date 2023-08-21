@@ -17,6 +17,7 @@ from scipy.sparse import lil_matrix
 from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
+from itertools import combinations
 
 from inflation import InflationProblem
 from .fast_npa import (nb_all_commuting_q,
@@ -24,11 +25,14 @@ from .fast_npa import (nb_all_commuting_q,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
                        reverse_mon,
-                       to_canonical)
+                       # to_canonical,
+                       to_canonical_1d_internal
+                       )
 from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
-                            calculate_momentmatrix,
+                            # calculate_momentmatrix_2d_internal,
+                            calculate_momentmatrix_1d_internal,
                             construct_normalization_eqs,
                             expand_moment_normalisation,
                             flatten_symbolic_powers,
@@ -117,7 +121,8 @@ class InflationSDP(object):
         self.network_scenario    = inflationproblem.is_network
         self._is_knowable_q_non_networks = inflationproblem._is_knowable_q_non_networks
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
-        self.factorize_monomial = inflationproblem.factorize_monomial_2d
+        self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
+        self.factorize_monomial_1d = inflationproblem.factorize_monomial_1d
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2
@@ -137,6 +142,16 @@ class InflationSDP(object):
         self._default_lexorder = lexorder[np.lexsort(np.rot90(lexorder))]
         self._lexorder = self._default_lexorder.copy()
         self._lexorder_len = len(self._lexorder)
+
+        #Construct orthogonality matrix for recognizing zeros
+        self._orthomat = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
+        for ((i, j), (op_i, op_j)) in zip(
+                combinations(range(self._lexorder_len), 2),
+                combinations(self._lexorder, 2),
+        ):
+            if (op_i[-1] != op_j[-1] and np.array_equal(op_i[:-1], op_j[:-1])):
+                self._orthomat[i, j] = True
+                self._orthomat[j, i] = True
 
         if (self._quantum_sources.size == 0) or commuting:
             self.all_operators_commute = True
@@ -252,6 +267,7 @@ class InflationSDP(object):
         self.One  = self.Monomial(self.identity_operator, idx=1)
 
         generating_monomials = self.build_columns(column_specification)
+
         # Generate dictionary to indices (used in dealing with symmetries and
         # column-level equalities)
         genmon_hash_to_index = {self._from_2dndarray(op): i
@@ -268,13 +284,18 @@ class InflationSDP(object):
         self.genmon_hash_to_index = genmon_hash_to_index
         self.n_columns            = len(generating_monomials)
         self.generating_monomials = generating_monomials
+        #TODO: Move conversion to 1d earlier, skip hashing
+        self.generating_monomials_1d = [nb_mon_to_lexrepr(op, self._lexorder) for op
+                                   in generating_monomials]
+        self.genmon_1d_to_index = {tuple(lexmon): i for i, lexmon in enumerate(self.generating_monomials_1d)}
         del generating_monomials, genmon_hash_to_index
+
         collect()
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
 
         # Calculate the moment matrix without the inflation symmetries
-        unsymmetrized_mm, unsymmetrized_corresp = self._build_momentmatrix()
+        unsymmetrized_mm, unsymmetrized_corresp = self._build_momentmatrix_1d_internal()
         symmetrization_required = np.any(self.inflation_levels - 1)
         additional_var = 0
         if self.verbose > 1:
@@ -844,6 +865,7 @@ class InflationSDP(object):
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ###########################################################################
+    #TODO: Natively return 1d-representation from build_columns
     def build_columns(self,
                       column_specification: Union[str,
                                                   List[List[int]],
@@ -1146,7 +1168,7 @@ class InflationSDP(object):
         :math:`\langle C^{1,0,1}_{z=0,c=0}\rangle`, after factorizing the input
         monomial and reducing the inflation indices of each of the factors.
         """
-        _factors = self.factorize_monomial(array2d, canonical_order=False)
+        _factors = self.factorize_monomial_2d(array2d, canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor)
                          for factor in _factors if len(factor)]
         mon = self._monomial_from_atoms(list_of_atoms)
@@ -1555,15 +1577,29 @@ class InflationSDP(object):
     def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
         """Wrapper method for building the moment matrix."""
         problem_arr, canonical_mon_as_bytes_to_idx = \
-            calculate_momentmatrix(self.generating_monomials,
-                                   self._notcomm,
-                                   self._lexorder,
-                                   commuting=self.all_operators_commute,
-                                   verbose=self.verbose)
+            calculate_momentmatrix_2d_internal(self.generating_monomials,
+                                               self._notcomm,
+                                               self._lexorder,
+                                               commuting=self.all_operators_commute,
+                                               verbose=self.verbose)
         idx_to_canonical_mon = {idx: self._to_2dndarray(mon_as_bytes)
                                 for (mon_as_bytes, idx) in
                                 canonical_mon_as_bytes_to_idx.items()}
         del canonical_mon_as_bytes_to_idx
+        return problem_arr, idx_to_canonical_mon
+
+    def _build_momentmatrix_1d_internal(self) -> Tuple[np.ndarray, Dict]:
+        """Wrapper method for building the moment matrix."""
+        problem_arr, canonical_lexmon_to_idx = \
+            calculate_momentmatrix_1d_internal(self.generating_monomials_1d,
+                                   self._notcomm,
+                                   self._orthomat,
+                                   commuting=self.all_operators_commute,
+                                   verbose=self.verbose)
+        #TODO: Return 1d representation, not 2d representation
+        idx_to_canonical_mon = {idx: self._lexorder[list(lexmon)]
+                                for (lexmon, idx) in
+                                canonical_lexmon_to_idx.items()}
         return problem_arr, idx_to_canonical_mon
 
     def _discover_normalization_eqns(self) -> List[Tuple[int, List[int]]]:
@@ -1961,6 +1997,7 @@ class InflationSDP(object):
     def _to_canonical_memoized(self,
                                array2d: np.ndarray,
                                apply_only_commutations=False) -> np.ndarray:
+        #TODO: Move to 1d representation in and out
         """Cached function to convert a monomial to its canonical form.
 
         It checks whether the input monomial's canonical form has already been
@@ -1988,10 +2025,13 @@ class InflationSDP(object):
                 self.canon_ndarray_from_hash[key] = array2d
                 return array2d
             else:
-                new_array2d = to_canonical(array2d, self._notcomm,
-                                           self._lexorder,
-                                           self.all_operators_commute,
-                                           apply_only_commutations)
+                lexmon = nb_mon_to_lexrepr(array2d, self._lexorder)
+                new_lexmon = to_canonical_1d_internal(lexmon,
+                                                       self._notcomm,
+                                                       self._orthomat,
+                                                       self.all_operators_commute,
+                                                       apply_only_commutations)
+                new_array2d = self._lexorder[new_lexmon]
                 new_key = self._from_2dndarray(new_array2d)
                 self.canon_ndarray_from_hash[key]     = new_array2d
                 self.canon_ndarray_from_hash[new_key] = new_array2d
