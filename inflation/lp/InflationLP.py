@@ -427,6 +427,21 @@ class InflationLP(object):
                         use_lpi_constraints=use_lpi_constraints,
                         only_specified_values=shared_randomness)
 
+
+    def _sanitize_dict(self, input_dict: Any) -> Dict:
+        if isinstance(input_dict, sp.core.expr.Expr):
+            if input_dict.free_symbols:
+                input_dict_copy = {k: float(v) for k, v in sp.expand(input_dict).as_coefficients_dict().items()}
+            else:
+                input_dict_copy = dict()
+        else:
+            input_dict_copy = input_dict
+        output_dict = defaultdict(int)
+        for k, v in input_dict_copy.items():
+            if not np.isclose(v, 0):
+                output_dict[self._sanitise_monomial(k)] += v
+        return output_dict
+
     def set_objective(self,
                       objective: Union[sp.core.expr.Expr,
                       dict,
@@ -458,14 +473,6 @@ class InflationLP(object):
             self.maximize = False
         if objective is None:
             return
-        elif isinstance(objective, sp.core.expr.Expr):
-            if objective.free_symbols:
-                objective_raw = sp.expand(objective).as_coefficients_dict()
-                objective_raw = {k: float(v)
-                                 for k, v in objective_raw.items()}
-            else:
-                objective_raw = defaultdict(int)
-            return self.set_objective(objective_raw, direction)
         else:
             if self.use_lpi_constraints and self.verbose > 0:
                 warn("You have the flag `use_lpi_constraints` set to True. Be "
@@ -473,11 +480,7 @@ class InflationLP(object):
                      + "will constrain the optimization to distributions with "
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
-            objective_dict = defaultdict(int)
-            for mon, coeff in objective.items():
-                if not np.isclose(coeff, 0):
-                    objective_dict[self._sanitise_monomial(mon)] += (sign * coeff)
-            self.objective = objective_dict
+            self.objective = {mon: (sign * coeff) for mon, coeff in self._sanitize_dict(objective).items()}
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
             assert len(surprising_objective_terms) == 0, \
@@ -1883,20 +1886,10 @@ class InflationLP(object):
             The keys (variables) can be strings, instances of
             `CompoundMonomial`, or monomials as 2D arrays.
         """
-        if not extra_equalities:
+        self.extra_equalities = []  # reset every time
+        if not extra_equalities or extra_equalities is None:
             return
-        sanitized_extra_equalities = []
-        for eq in extra_equalities:
-            sanitized_equality = dict()
-            for x, v in eq.items():
-                x = self._sanitise_monomial(x)
-                if x not in sanitized_equality:
-                    sanitized_equality[x] = v
-                else:
-                    # If monomial appears multiple times, sum the values
-                    sanitized_equality[x] += v
-            sanitized_extra_equalities.append(sanitized_equality)
-        self.extra_equalities = sanitized_extra_equalities
+        self.extra_equalities = [self._sanitize_dict(eq) for eq in extra_equalities]
 
     def _set_extra_inequalities(self,
                                 extra_inequalities: Union[list, None]) -> None:
@@ -1909,20 +1902,10 @@ class InflationLP(object):
              constraints. The keys (variables) can be strings, instances of
             `CompoundMonomial`, or monomials as 2D arrays.
         """
-        if not extra_inequalities:
+        self.extra_inequalities = []  # reset every time
+        if not extra_inequalities or extra_inequalities is None:
             return
-        sanitized_extra_inequalities = []
-        for ineq in extra_inequalities:
-            sanitized_inequality = dict()
-            for x, v in ineq.items():
-                x = self._sanitise_monomial(x)
-                if x not in sanitized_inequality:
-                    sanitized_inequality[x] = v
-                else:
-                    # If monomial appears multiple times, sum the values
-                    sanitized_inequality[x] += v
-            sanitized_extra_inequalities.append(sanitized_inequality)
-        self.extra_inequalities = sanitized_extra_inequalities
+        self.extra_inequalities = [self._sanitize_dict(ineq) for ineq in extra_inequalities]
 
     def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
         boolvec = self.blank_bool_vec.copy()
