@@ -354,10 +354,10 @@ class InflationSDP(object):
         self.compmonomial_from_idx = dict()
         if self.momentmatrix_has_a_zero:
             self.compmonomial_from_idx[0] = self.Zero
-        for (idx, mon) in tqdm(self.symmetrized_corresp.items(),
+        for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
                                disable=not self.verbose,
                                desc="Initializing monomials   "):
-            self.compmonomial_from_idx[idx] = self.Monomial_1d(mon, idx)
+            self.compmonomial_from_idx[idx] = self.Monomial_1d(lexmon, idx)
         self.first_free_idx = max(self.compmonomial_from_idx.keys()) + 1
 
         self.monomials = list(self.compmonomial_from_idx.values())
