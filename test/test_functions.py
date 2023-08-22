@@ -132,3 +132,49 @@ class TestFunctions(unittest.TestCase):
                                    ["A", "B"]),
                          truth,
                          "to_symbol is not working as expected.")
+
+
+class TestExtraConstraints(unittest.TestCase):
+    bellScenario = InflationProblem({"Lambda": ["A"]},
+                                    outcomes_per_party=[3],
+                                    settings_per_party=[2],
+                                    inflation_level_per_source=[1])
+    sdp = InflationSDP(bellScenario)
+    sdp.generate_relaxation("npa1")
+
+    compound_mon = sdp.monomials[-1]
+    sym_mon = sdp.measurements[0][0][0][0]
+    str_mon = "pA(0|0)"
+    int_mon = 0
+    sym_eq = Symbol("pA(0|0)") + 2 * Symbol("<A_1_0_0 A_1_1_0>")
+
+    extra_constraints = [{compound_mon: 1, sym_mon: 2, str_mon: 3, int_mon: 0},
+                         sym_eq]
+
+    def test_extra_equalities(self):
+        truth = 0
+        self.assertEqual(len(self.sdp.moment_equalities), truth,
+                         "The number of implicit equalities is incorrect.")
+        with self.subTest("Test extra equalities"):
+            self.sdp.set_extra_equalities(self.extra_constraints)
+            self.assertEqual(len(self.sdp.moment_equalities), truth + 2,
+                             "The number of implicit and extra equalities is "
+                             "incorrect.")
+        with self.subTest("Test reset extra equalities"):
+            self.sdp.reset("values")
+            self.assertEqual(len(self.sdp.moment_equalities), truth,
+                             "The extra equalities were not reset.")
+
+    def test_extra_inequalities(self):
+        truth = 0
+        self.assertEqual(len(self.sdp.moment_inequalities), truth,
+                         "The number of implicit inequalities is incorrect.")
+        with self.subTest("Test extra inequalities"):
+            self.sdp.set_extra_inequalities(self.extra_constraints)
+            self.assertEqual(len(self.sdp.moment_inequalities), truth + 2,
+                             "The number of implicit and extra inequalities "
+                             "is incorrect.")
+        with self.subTest("Test reset extra inequalities"):
+            self.sdp.reset("values")
+            self.assertEqual(len(self.sdp.moment_inequalities), truth,
+                             "The extra inequalities were not reset.")

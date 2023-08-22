@@ -7,7 +7,7 @@ instance (see arXiv:1909.10519).
 import numpy as np
 import sympy as sp
 
-from collections import Counter, deque
+from collections import Counter, deque, defaultdict
 from functools import reduce
 from gc import collect
 from itertools import chain, count, product, permutations, repeat
@@ -361,7 +361,7 @@ class InflationSDP(object):
 
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
-        self.moment_equalities = []
+        self.minimal_equalities = []
         if not self.network_scenario or self.supports_problem:
             self.column_level_equalities = self._discover_normalization_eqns()
             self.idx_level_equalities    = construct_normalization_eqs(
@@ -377,9 +377,9 @@ class InflationSDP(object):
                     itemgetter(*summation_idxs)(self.compmonomial_from_idx),
                     repeat(-1)
                 ))
-                self.moment_equalities.append(eq_dict)
+                self.minimal_equalities.append(eq_dict)
 
-        self.moment_inequalities = []
+        self.minimal_inequalities = []
         self.moment_upperbounds  = dict()
         self.moment_lowerbounds  = {m: 0. for m in self.physical_monomials}
 
@@ -388,6 +388,65 @@ class InflationSDP(object):
 
         self.maskmatrices = dict()
         self._relaxation_has_been_generated = True
+
+    def set_extra_equalities(self,
+                             extra_equalities: Union[list, None]) -> None:
+        """Set extra equality constraints for the SDP.
+
+        Parameters
+        ----------
+        extra_equalities : Union[list, None]
+            List of additional equality constraints in the form of dictionaries
+            (keys can be instances of `CompoundMonomial`, Symbols, strings, or
+            integers), or SymPy expressions.
+        """
+        self.extra_equalities = []  # reset every time
+        if not extra_equalities or extra_equalities is None:
+            return
+        self.extra_equalities = [self._sanitize_dict(eq)
+                                 for eq in extra_equalities]
+
+    def set_extra_inequalities(self,
+                               extra_inequalities: Union[list, None]) -> None:
+        """Set extra inequality constraints for the SDP.
+
+        Parameters
+        ----------
+        extra_inequalities : Union[list, None]
+            List of additional inequality constraints in the form of
+            dictionaries (keys can be instances of `CompoundMonomial`, Symbols,
+            strings, or integers) or SymPy expressions.
+        """
+        self.extra_inequalities = []  # reset every time
+        if not extra_inequalities or extra_inequalities is None:
+            return
+        self.extra_inequalities = [self._sanitize_dict(ineq)
+                                   for ineq in extra_inequalities]
+
+    def _sanitize_dict(self, input_dict: Any) -> Dict:
+        if isinstance(input_dict, sp.core.expr.Expr):
+            if input_dict.free_symbols:
+                input_dict_copy = {k: float(v) for k, v in sp.expand(
+                    input_dict).as_coefficients_dict().items()}
+            else:
+                input_dict_copy = dict()
+        else:
+            input_dict_copy = input_dict
+        output_dict = defaultdict(int)
+        for k, v in input_dict_copy.items():
+            if not np.isclose(v, 0):
+                output_dict[self._sanitise_monomial(k)] += v
+        return output_dict
+
+    @property
+    def moment_equalities(self) -> list[dict]:
+        """All equalities (minimal and extra) as one list of dictionaries."""
+        return self.minimal_equalities + self.extra_equalities
+
+    @property
+    def moment_inequalities(self) -> list[dict]:
+        """All inequalities (minimal and extra) as one list of dictionaries."""
+        return self.minimal_inequalities + self.extra_inequalities
 
     def set_bounds(self,
                    bounds: Union[dict, None],
@@ -1765,6 +1824,8 @@ class InflationSDP(object):
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
         self.known_moments[self.One] = 1.
+        self.extra_equalities = []
+        self.extra_inequalities = []
         collect()
 
     def _update_objective(self) -> None:
@@ -1909,10 +1970,10 @@ class InflationSDP(object):
                                          in self.semiknown_moments.items()},
                       "equalities": [{mon.name: coeff
                                           for mon, coeff in eq.items()}
-                                         for eq in self.moment_equalities],
+                                     for eq in self.minimal_equalities],
                       "inequalities": [{mon.name: coeff
                                         for mon, coeff in ineq.items()}
-                                       for ineq in self.moment_inequalities]
+                                       for ineq in self.minimal_inequalities]
                       }
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.

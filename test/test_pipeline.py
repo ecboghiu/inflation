@@ -410,7 +410,7 @@ class TestSDPOutput(unittest.TestCase):
                                 order=("A", "B", "C", "D"))
         sdp = InflationSDP(prob)
         sdp.generate_relaxation("npa2")
-        equalities = sdp.moment_equalities
+        equalities = sdp.minimal_equalities
 
         self.assertEqual(len(equalities), 738,
                          "Failing to obtain the correct number of implicit " +
