@@ -261,22 +261,31 @@ class InflationLP(object):
             eprint("Number of nontrivial inequality constraints in the LP:",
                     self.nof_collins_gisin_inequalities)
 
+        _monomials_as_lexorder = [tuple(self.mon_to_lexrepr(self._lexorder[bool_idx]))
+                                           for bool_idx in
+                                           self._monomials_as_lexboolvecs]
+
         # Associate Monomials to the remaining entries.
         _monomials = []
         _monomial_names = []
         _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
+        boolvec2mon = dict()
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
             mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
+            boolvec2mon[tuple(tuple(op) 
+                              for op in self._lexorder[mon_as_lexboolvec])] = mon
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
             # if mon in _compmonomial_to_idx:
             #     alt_id = _compmonomial_to_idx[mon]
             #     raise Exception(f"Two monomials are being mixed up! {idx}->{self._lexorder[self._monomials_as_lexboolvecs[idx]]} and \n {alt_id}->{self._lexorder[self._monomials_as_lexboolvecs[alt_id]]}")
+            if mon in _compmonomial_to_idx:
+                print(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
@@ -589,7 +598,12 @@ class InflationLP(object):
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
 
-    def set_values(self, values, **kwargs):
+    def set_values(self, values: Union[Dict[Union[CompoundMonomial,
+                      InternalAtomicMonomial,
+                      sp.core.symbol.Symbol,
+                      str],
+                      Union[float, sp.core.expr.Expr]],
+                      None], **kwargs):
         r"""Exactly like update_values, except it resets all known values to zero
         as an intermediate step
         """
@@ -1128,23 +1142,10 @@ class InflationLP(object):
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         else:
-            fake_outcome_cardinalities = self.outcome_cardinalities + 1 # We consider ALL outcomes when setting up the LP
             for party in range(self.nr_parties):
-                relevant_sources = np.flatnonzero(self.hypergraph[:, party])
-                relevant_inflevels = self.inflation_levels[relevant_sources]
-                max_mon_length = min(relevant_inflevels)
-                phys_mon = [party_physical_monomials(
-                    hypergraph=self.hypergraph,
-                    inflevels=self.inflation_levels,
-                    party=party,
-                    max_monomial_length=i,
-                    settings_per_party=self.setting_cardinalities,
-                    outputs_per_party=fake_outcome_cardinalities,
-                    lexorder=self._lexorder)
-                    for i in range(max_mon_length + 1)]
-                boolvecs = np.vstack(
-                    [self.mon_to_boolvec(op) for op in
-                     chain.from_iterable(phys_mon)])
+                boolvecs = \
+                    self.InflationProblem._generate_compatible_monomials_given_party(
+                        party, with_last_outcome=True)
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition

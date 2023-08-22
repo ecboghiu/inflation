@@ -10,7 +10,7 @@ import sympy as sp
 from collections import Counter, deque
 from functools import reduce
 from gc import collect
-from itertools import chain, count, product, permutations, repeat
+from itertools import chain, count, product, permutations, repeat, combinations
 from operator import itemgetter
 from numbers import Real
 from scipy.sparse import lil_matrix
@@ -97,8 +97,8 @@ class InflationSDP(object):
 
 
         self.outcome_cardinalities += self.has_children
-        self.setting_cardinalities = inflationproblem.settings_per_party
-        self._quantum_sources = inflationproblem._quantum_sources
+        self.setting_cardinalities = self.InflationProblem.settings_per_party
+        self._quantum_sources = self.InflationProblem._nonclassical_sources
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
@@ -138,20 +138,48 @@ class InflationSDP(object):
         self._lexorder = self._default_lexorder.copy()
         self._lexorder_len = len(self._lexorder)
 
+
+        # Translating the compatibility matrix of InflationProblem to
+        # a commutativity matrix for InflationSDP. 
+        # # InflationProblem has more operators in ._lexorder than InflationSDP
+        # This is because events with the last outcome are included in
+        # InflationProblem. We carefully avoid this by using .mon_to_lexrepr
+        # of InflationProblem on the operators in InflationSDP._lexorder
+        _comm = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
+        assert np.allclose(self._lexorder[0], self.zero_operator), \
+            "The first element of the lexorder should be the zero operator"
+        for i, j in np.ndindex(self._lexorder_len, self._lexorder_len):
+            if i > 0 and j > 0:  # Assuming first element is the zero operator
+                _i_infprob = self.InflationProblem.mon_to_lexrepr(
+                                    np.expand_dims(self._lexorder[i], axis=0))
+                _j_infprob = self.InflationProblem.mon_to_lexrepr(
+                                    np.expand_dims(self._lexorder[j], axis=0))
+                _comm[i, j] = \
+                    self.InflationProblem._compatible_measurements[_i_infprob,
+                                                                   _j_infprob]
+                _comm[j, i] = _comm[i, j]
+        # Invert commutation matrix to get non-commutation matrix
+        self._default_notcomm = np.invert(_comm)
+        # Making operators with the same setting but different outcome
+        # commute, as they are labeled as incompatible in InflationProblem
+        for ortho_group in self.InflationProblem._ortho_groups:
+            assert np.all(ortho_group[-1, -1] > ortho_group[:-1, -1]), \
+                "The last outcome should be the at the end of the ortho group"
+            for op1, op2 in combinations(ortho_group[:-1], 2):
+                i = nb_mon_to_lexrepr(np.expand_dims(op1, 0), self._lexorder)
+                j = nb_mon_to_lexrepr(np.expand_dims(op2, 0), self._lexorder)
+                self._default_notcomm[i, j] = False  # Different outputs commute
+                self._default_notcomm[j, i] = self._default_notcomm[i, j]
+        for i in range(self._default_notcomm.shape[0]):
+            self._default_notcomm[i, i] = False  # Operator commutes with itself
+            
+        self._notcomm = self._default_notcomm.copy() 
+        
         if (self._quantum_sources.size == 0) or commuting:
             self.all_operators_commute = True
-            self._quantum_sources = np.array([0])  # Dummy value, numba does
-                                                   # not like empty arrays
-            self._default_notcomm = np.zeros(
-                (self._lexorder_len, self._lexorder_len), dtype=bool)
-            self._notcomm = self._default_notcomm
             self.all_commuting_q = lambda mon: True
         else:
             self.all_operators_commute = False
-            self._default_notcomm = commutation_matrix(self._lexorder,
-                                                       self._quantum_sources,
-                                                       self.all_operators_commute)
-            self._notcomm = self._default_notcomm.copy()
             self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                                   self._lexorder,
                                                                   self._notcomm)
