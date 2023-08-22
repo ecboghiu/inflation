@@ -1735,7 +1735,6 @@ class InflationSDP(object):
         return column_level_equalities
 
     def _discover_inflation_symmetries(self) -> np.ndarray:
-        #TODO: Overhaul to use generating_monomials_1d and self.lexorder_symmetries
         """Calculates all the symmetries and applies them to the set of
         operators used to define the moment matrix. The new set of operators
         is a permutation of the old. The function outputs a list of all
@@ -1747,45 +1746,28 @@ class InflationSDP(object):
             The list of all permutations of the generating columns implied by
             the inflation symmetries.
         """
-        sources_with_copies = [source for source, inf_level
-                               in enumerate(self.inflation_levels)
-                               if inf_level > 1]
-        if len(sources_with_copies):
-            inflation_symmetries = []
-            identity_perm        = np.arange(self.n_columns, dtype=int)
-            for source in tqdm(sources_with_copies,
-                               disable=not self.verbose,
-                               desc="Calculating symmetries   ",
-                               leave=False,
-                               position=0):
-                one_source_symmetries = [identity_perm]
-                inf_level = self.inflation_levels[source]
-                perms = format_permutations(list(
-                    permutations(range(inf_level)))[1:])
-                permutation_failed = False
-                for permutation in perms:
-                    try:
-                        total_perm = np.empty(self.n_columns, dtype=int)
-                        for i, mon in enumerate(self.generating_monomials):
-                            new_mon = apply_source_perm(mon,
-                                                        source,
-                                                        permutation)
-                            new_mon = self._to_canonical_memoized(new_mon,
-                                                                  True)
-                            total_perm[i] = self.genmon_hash_to_index[
-                                                self._from_2dndarray(new_mon)]
-                        one_source_symmetries.append(total_perm)
-                    except KeyError:
-                        permutation_failed = True
-                inflation_symmetries.append(one_source_symmetries)
-            if permutation_failed and (self.verbose > 0):
-                warn("The generating set is not closed under source swaps."
-                     + " Some symmetries will not be implemented.")
-            inflation_symmetries = [reduce(np.take, perms) for perms in
-                                    product(*inflation_symmetries)]
-            return np.unique(inflation_symmetries[1:], axis=0)
-        else:
-            return np.empty((0, len(self.generating_monomials)), dtype=int)
+        discovered_symmetries = [np.arange(len(self.generating_monomials), dtype=int)]
+        permutation_failed = False
+        for inf_sym in self.lexorder_symmetries[1:]:
+            skip_this_one = False
+            try:
+                total_perm = np.empty(self.n_columns, dtype=int)
+                for i, lexmon in enumerate(self.generating_monomials_1d):
+                    new_lexmon = inf_sym[lexmon]
+                    new_lexmon_canon = self._to_canonical_memoized_1d(
+                        new_lexmon,
+                        apply_only_commutations=True)
+                    total_perm[i] = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
+            except KeyError:
+                permutation_failed = True
+                skip_this_one = True
+            if not skip_this_one:
+                discovered_symmetries.append(total_perm)
+        if permutation_failed and (self.verbose > 0):
+            warn("The generating set is not closed under source swaps."
+                 + " Some symmetries will not be implemented.")
+        return np.unique(discovered_symmetries, axis=0)[1:]
+
 
     def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:
         """Generates all the party operators in the quantum inflation.
