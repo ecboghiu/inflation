@@ -569,26 +569,29 @@ class InflationProblem(object):
                 [3, 4, 5, 0, 0, 0]]),
          array([[3, 6, 6, 0, 0, 0]])]
         """
-        if not self.ever_factorizes:
-            return (monomial_as_2darray,)
-        n = len(monomial_as_2darray)
-        if n <= 1:
-            return (monomial_as_2darray,)
-
-        inflation_indices_position = [self._inflation_indices_hash[
-            op.tobytes()] for op in monomial_as_2darray.astype(self._np_dtype)[:, 1:-2]]
-        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
-            :, inflation_indices_position]
-
-        component_labels = nb_classify_disconnected_components(adj_mat)
-        disconnected_components = tuple(
-            monomial_as_2darray[component_labels == i]
-            for i in range(component_labels.max(initial=0) + 1))
-
-        if canonical_order:
-            disconnected_components = tuple(sorted(disconnected_components,
-                                                   key=lambda x: x.tobytes()))
-        return disconnected_components
+        lexmon_factors = self.factorize_monomial_1d(self.mon_to_lexrepr(monomial_as_2darray),
+                                          canonical_order=canonical_order)
+        return tuple(self._lexorder[lexmon] for lexmon in lexmon_factors)
+        # if not self.ever_factorizes:
+        #     return (monomial_as_2darray,)
+        # n = len(monomial_as_2darray)
+        # if n <= 1:
+        #     return (monomial_as_2darray,)
+        #
+        # inflation_indices_position = [self._inflation_indices_hash[
+        #     op.tobytes()] for op in monomial_as_2darray.astype(self._np_dtype)[:, 1:-2]]
+        # adj_mat = self._inflation_indices_overlap[inflation_indices_position][
+        #     :, inflation_indices_position]
+        #
+        # component_labels = nb_classify_disconnected_components(adj_mat)
+        # disconnected_components = tuple(
+        #     monomial_as_2darray[component_labels == i]
+        #     for i in range(component_labels.max(initial=0) + 1))
+        #
+        # if canonical_order:
+        #     disconnected_components = tuple(sorted(disconnected_components,
+        #                                            key=lambda x: x.tobytes()))
+        # return disconnected_components
 
     def factorize_monomial_1d(self,
                               monomial_as_1darray: np.ndarray,
