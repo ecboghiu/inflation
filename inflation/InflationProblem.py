@@ -15,7 +15,7 @@ from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm)
 
-from .utils import format_permutations, partsextractor
+from .utils import format_permutations, partsextractor, perm_combiner
 from typing import Tuple, List, Union, Dict
 
 from functools import reduce, cached_property
@@ -317,9 +317,9 @@ class InflationProblem(object):
             for op in self._lexorder[:, 1:-2]],
             dtype=int)
 
-        # Discover the inflation symmetries
-        self.inf_symmetries = self.lexorder_perms_from_inflation()
-
+    @cached_property
+    def inf_symmetries(self):
+        return self.lexorder_perms_from_inflation()
 
 
     def __repr__(self):
@@ -678,14 +678,11 @@ class InflationProblem(object):
                     except KeyError:
                         permutation_failed = True
                         pass
-                lexorder_symmetries.append(one_source_symmetries)
+                lexorder_symmetries.append(np.asarray(one_source_symmetries, dtype=int))
             if permutation_failed and (self.verbose > 0):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
-            lexorder_symmetries = np.vstack([reduce(np.take, perms)
-                                             for perms in
-                                             product(*lexorder_symmetries)])
-            return lexorder_symmetries
+            return reduce(perm_combiner, lexorder_symmetries)
         else:
             return np.arange(self._nr_operators, dtype=int)[np.newaxis]
 
