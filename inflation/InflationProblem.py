@@ -337,14 +337,6 @@ class InflationProblem(object):
             block+= offset
             self._compatible_measurements[np.ix_(block, block)] = False
             offset+=l
-        # for ortho_group in self._ortho_groups:
-        #     for op1, op2 in combinations(ortho_group, 2):
-        #         i = self.mon_to_lexrepr(np.expand_dims(op1, axis=0))
-        #         j = self.mon_to_lexrepr(np.expand_dims(op2, axis=0))
-        #         self._compatible_measurements[i, j] = False
-        #         self._compatible_measurements[j, i] = False
-        # for i in range(self._compatible_measurements.shape[0]):
-        #     self._compatible_measurements[i, i] = False
 
         self._lexorder_for_factorization = np.array([
             self._inflation_indices_hash[op.tobytes()]
@@ -390,18 +382,7 @@ class InflationProblem(object):
     ###########################################################################
     # HELPER UTILITY FUNCTION                                    #
     ###########################################################################
-    # @cached_property
-    # def _subsets_of_compatible_mmnts_per_party(self):
-    #     compat_subsets_per_party = {}
-    #     for party in range(self.nr_parties):
-    #         _s_ = self._lexorder[:, 0] == party + 1
-    #         # party_lexorder = self._lexorder[_s_]
-    #         offset = np.argmax(_s_ == True)
-    #         party_compat = self._compatible_measurements[np.ix_(_s_, _s_)]
-    #         G = nx.from_numpy_array(party_compat)
-    #         cliques = nx.find_cliques(G)
-    #         compat_subsets_per_party[party] = [[offset + node for node in c] for c in cliques]
-    #     return compat_subsets_per_party
+    
     @cached_property
     def _party_positions_within_lexorder(self):
         offset = 0
@@ -414,8 +395,8 @@ class InflationProblem(object):
                 this_party_positions.append(block)
                 offset+=l
             party_positions_within_lexorder.append(this_party_positions)
-        # print("Party positions within lexorder:", party_positions_within_lexorder)
         return party_positions_within_lexorder
+    
     def _subsets_of_compatible_mmnts_per_party(self,
                                                party: int,
                                                with_last_outcome: bool = False):
@@ -430,7 +411,6 @@ class InflationProblem(object):
         raw_cliques = nx.find_cliques(G)
         return [partsextractor(_s_, clique) for clique in raw_cliques]
 
-    
     def _generate_compatible_monomials_given_party(self, party: int,
                                                   up_to_length: int = None,
                                                   with_last_outcome: bool = False):

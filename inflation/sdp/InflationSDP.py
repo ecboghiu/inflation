@@ -183,33 +183,6 @@ class InflationSDP(object):
             self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
                                                                   self._lexorder,
                                                                   self._notcomm)
-            
-        # if (self._quantum_sources.size == 0) or commuting:
-        #     self.all_operators_commute = True
-        #     self._quantum_sources = np.array([0])  # Dummy value, numba does
-        #                                            # not like empty arrays
-        #     self._default_notcomm = np.zeros(
-        #         (self._lexorder_len, self._lexorder_len), dtype=bool)
-        #     self._notcomm = self._default_notcomm
-        #     self.all_commuting_q = lambda mon: True
-        # else:
-        #     self.all_operators_commute = False
-        #     self._default_notcomm = \
-        #         np.invert(self.InflationProblem._compatible_measurements.copy())
-        #     # While orthogonal operators are not compatible, they commute
-        #     for ortho_group in self.InflationProblem._ortho_groups:
-        #         for op1, op2 in combinations(ortho_group, 2):
-        #             i = self.InflationProblem.mon_to_lexrepr(np.expand_dims(op1, axis=0))
-        #             j = self.InflationProblem.mon_to_lexrepr(np.expand_dims(op2, axis=0))
-        #             self._default_notcomm[i, j] = False
-        #             self._default_notcomm[j, i] = False
-        #     for i in range(self.InflationProblem._compatible_measurements.shape[0]):
-        #         self._default_notcomm[i, i] = False
-            
-        #     self._notcomm = self._default_notcomm.copy()
-        #     self.all_commuting_q = lambda mon: nb_all_commuting_q(mon,
-        #                                                           self._lexorder,
-        #                                                           self._notcomm)
 
 
         self.canon_ndarray_from_hash    = dict()

@@ -5,8 +5,7 @@ from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP, InflationLP
 from inflation.sdp.fast_npa import nb_remove_sandwich
-from inflation.sdp.quantum_tools import to_symbol, \
-                                        party_physical_monomials_via_cliques
+from inflation.sdp.quantum_tools import to_symbol
 from itertools import combinations, product, permutations
 
 

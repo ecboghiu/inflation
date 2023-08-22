@@ -4,8 +4,6 @@ import warnings
 from scipy.sparse import lil_matrix, coo_matrix, vstack
 from copy import deepcopy
 
-from inflation import InflationProblem, InflationLP, InflationSDP
-
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
 from inflation.lp.lp_utils import solveLP_sparse, solveLP_Mosek, to_sparse, \
     convert_dicts
