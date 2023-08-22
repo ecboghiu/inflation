@@ -1,4 +1,6 @@
 import unittest
+from typing import Union
+
 import numpy as np
 
 from sympy import Symbol
@@ -136,49 +138,72 @@ class TestFunctions(unittest.TestCase):
 
 
 class TestExtraConstraints(unittest.TestCase):
+    def _extra_equalities(self,
+                          problem: Union[InflationLP, InflationSDP],
+                          extra_constraints: list,
+                          truth: int):
+        self.assertEqual(len(problem.moment_equalities), truth,
+                         f"The number of implicit equalities is incorrect.")
+        with self.subTest("Test extra equalities"):
+            problem.set_extra_equalities(extra_constraints)
+            self.assertEqual(len(problem.moment_equalities), truth + 2,
+                             "The number of implicit and extra equalities is "
+                             "incorrect.")
+        with self.subTest("Test reset extra equalities"):
+            problem.reset("values")
+            self.assertEqual(len(problem.moment_equalities), truth,
+                             "The extra equalities were not reset.")
+
+    def _extra_inequalities(self,
+                            problem: Union[InflationLP, InflationSDP],
+                            extra_constraints: list,
+                            truth: int):
+        self.assertEqual(len(problem.moment_inequalities), truth,
+                         f"The number of implicit inequalities is incorrect.")
+        with self.subTest("Test extra inequalities"):
+            problem.set_extra_inequalities(extra_constraints)
+            self.assertEqual(len(problem.moment_inequalities), truth + 2,
+                             "The number of implicit and extra inequalities "
+                             "is incorrect.")
+        with self.subTest("Test reset extra inequalities"):
+            problem.reset("values")
+            self.assertEqual(len(problem.moment_inequalities), truth,
+                             "The extra inequalities were not reset.")
+
+
+class TestProblems(TestExtraConstraints):
     bellScenario = InflationProblem({"Lambda": ["A"]},
                                     outcomes_per_party=[3],
                                     settings_per_party=[2],
                                     inflation_level_per_source=[1])
-    sdp = InflationSDP(bellScenario)
-    sdp.generate_relaxation("npa1")
 
-    compound_mon = sdp.monomials[-1]
-    sym_mon = sdp.measurements[0][0][0][0]
-    str_mon = "pA(0|0)"
-    int_mon = 0
-    sym_eq = Symbol("pA(0|0)") + 2 * Symbol("<A_1_0_0 A_1_1_0>")
+    def test_lp(self):
+        lp = InflationLP(self.bellScenario)
+        compound_mon = lp.monomials[-1]
+        str_mon = "pA(0|0)"
+        int_mon = 1
+        sym_eq = Symbol("pA(0|0)") + 2 * Symbol("<A_1_0_0 A_1_1_0>")
+        extra_constraints = [{compound_mon: 3, str_mon: 2, int_mon: 1}, sym_eq]
+        args = {"problem": lp, "extra_constraints": extra_constraints,
+                "truth": 0}
+        self._extra_equalities(**args)
+        args["truth"] = 9
+        self._extra_inequalities(**args)
 
-    extra_constraints = [{compound_mon: 1, sym_mon: 2, str_mon: 3, int_mon: 0},
-                         sym_eq]
-
-    def test_extra_equalities(self):
-        truth = 0
-        self.assertEqual(len(self.sdp.moment_equalities), truth,
-                         "The number of implicit equalities is incorrect.")
-        with self.subTest("Test extra equalities"):
-            self.sdp.set_extra_equalities(self.extra_constraints)
-            self.assertEqual(len(self.sdp.moment_equalities), truth + 2,
-                             "The number of implicit and extra equalities is "
-                             "incorrect.")
-        with self.subTest("Test reset extra equalities"):
-            self.sdp.reset("values")
-            self.assertEqual(len(self.sdp.moment_equalities), truth,
-                             "The extra equalities were not reset.")
-
-    def test_extra_inequalities(self):
-        truth = 0
-        self.assertEqual(len(self.sdp.moment_inequalities), truth,
-                         "The number of implicit inequalities is incorrect.")
-        with self.subTest("Test extra inequalities"):
-            self.sdp.set_extra_inequalities(self.extra_constraints)
-            self.assertEqual(len(self.sdp.moment_inequalities), truth + 2,
-                             "The number of implicit and extra inequalities "
-                             "is incorrect.")
-        with self.subTest("Test reset extra inequalities"):
-            self.sdp.reset("values")
-            self.assertEqual(len(self.sdp.moment_inequalities), truth,
-                             "The extra inequalities were not reset.")
+    def test_sdp(self):
+        sdp = InflationSDP(self.bellScenario)
+        sdp.generate_relaxation("npa1")
+        compound_mon = sdp.monomials[-1]
+        sym_mon = sdp.measurements[0][0][0][0]
+        str_mon = "pA(0|0)"
+        int_mon = 1
+        sym_eq = Symbol("pA(0|0)") + 2 * Symbol("<A_1_0_0 A_1_1_0>")
+        extra_constraints = [
+            {compound_mon: 4, sym_mon: 3, str_mon: 2, int_mon: 1}, sym_eq]
+        args = {"problem": sdp, "extra_constraints": extra_constraints,
+                "truth": 0}
+        self._extra_equalities(**args)
+        self._extra_inequalities(**args)
 
 
 class TestPhysicalMonomialGeneration(unittest.TestCase):

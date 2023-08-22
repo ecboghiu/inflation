@@ -1313,7 +1313,7 @@ class InflationLP(object):
         #         collins_gisin_equalities.append(current_eq)
         #     return collins_gisin_equalities
 
-    @cached_property
+    @property
     def sparse_extra_equalities(self) -> coo_matrix:
         """Extra equalities in sparse matrix form."""
         eq_row, eq_col, eq_data = [], [], []
@@ -1381,7 +1381,7 @@ class InflationLP(object):
         return coo_matrix((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
-    @cached_property
+    @property
     def sparse_extra_inequalities(self) -> coo_matrix:
         """Extra inequalities in sparse matrix form."""
         ineq_row, ineq_col, ineq_data = [], [], []
@@ -1431,11 +1431,11 @@ class InflationLP(object):
 
 
 
-    @cached_property
+    @property
     def moment_equalities(self):
         return self._coo_mat_to_dict(self.sparse_equalities)
 
-    @cached_property
+    @property
     def moment_inequalities(self):
         return self._coo_mat_to_dict(self.sparse_inequalities)
 
@@ -1876,8 +1876,8 @@ class InflationLP(object):
         self.moment_lowerbounds = sanitized_lowerbounds
         # self._update_lowerbounds()
 
-    def _set_extra_equalities(self,
-                              extra_equalities: Union[list, None]) -> None:
+    def set_extra_equalities(self,
+                             extra_equalities: Union[list, None]) -> None:
         """Set extra equality constraints for the LP.
 
         Parameters
@@ -1892,8 +1892,8 @@ class InflationLP(object):
             return
         self.extra_equalities = [self._sanitize_dict(eq) for eq in extra_equalities]
 
-    def _set_extra_inequalities(self,
-                                extra_inequalities: Union[list, None]) -> None:
+    def set_extra_inequalities(self,
+                               extra_inequalities: Union[list, None]) -> None:
         """Set extra inequality constraints for the LP.
 
         Parameters
