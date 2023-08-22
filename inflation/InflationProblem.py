@@ -621,12 +621,12 @@ class InflationProblem(object):
 
         inflation_indices_position = self._lexorder_for_factorization[
             monomial_as_1darray]
-        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
-            :, inflation_indices_position]
+        unique_inflation_indices_positions, reversion_key = np.unique(inflation_indices_position, return_inverse=True)
+        adj_mat = self._inflation_indices_overlap[np.ix_(unique_inflation_indices_positions, unique_inflation_indices_positions)]
         component_labels = nb_classify_disconnected_components(adj_mat)
         # print(f"DEBUG: Component labels {component_labels}")
         nof_components = component_labels.max(initial=0) + 1
-        disconnected_components = tuple(monomial_as_1darray[component_labels == i]
+        disconnected_components = tuple(monomial_as_1darray[np.take(component_labels == i, reversion_key)]
             for i in range(nof_components))
 
         if canonical_order:
