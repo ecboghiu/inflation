@@ -3,7 +3,7 @@ import numpy as np
 
 from sympy import Symbol
 
-from inflation import InflationProblem, InflationSDP
+from inflation import InflationProblem, InflationSDP, InflationLP
 from inflation.sdp.fast_npa import nb_remove_sandwich
 from inflation.sdp.quantum_tools import to_symbol, \
                                         party_physical_monomials_via_cliques
@@ -223,9 +223,8 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
             (2, 0, 1, 3, 4)
         ).reshape((-1, max_monomial_length, nr_properties))
             
-    def test_physical_monomial_generation_1party_no_copies(self):
+    def test_physical_mon_gen_1party_no_copies(self):
         # Test for 1 party, no copies, nofanout
-        from inflation import InflationProblem, InflationLP
         scenario = InflationProblem({'r': ['A']}, (3,), (3,), (1, ))
         lp = InflationLP(scenario, nonfanout=True)
 
@@ -240,9 +239,8 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
             "The physical monomials sets are not equal " + 
             "in 1 party nonfanout LP.")
 
-    def test_physical_monomial_generation_1party_3_copies(self):
+    def test_physical_mon_gen_1party_3_copies(self):
         # Test for 1 party, 3 copies, nofanout
-        from inflation import InflationProblem, InflationLP
         scenario = InflationProblem({'r': ['A']}, (3,), (3,), (3, ))
         lp = InflationLP(scenario, nonfanout=True)
 
@@ -257,5 +255,41 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                        "The physical monomials sets are not equal " +
                        "in 1 party nonfanout LP.")
         
+    def test_physical_mon_gen_1party_2_nc_sources(self):
+        scenario = InflationProblem({'s': ['A'], 't': ['A']},
+                                    (3,), (3,), (3, 2))
+        lp = InflationLP(scenario, nonfanout=True)
+        physical_monomials = scenario._generate_compatible_monomials_given_party(0)
+
+        bool2lexorder = np.arange(lp._lexorder.shape[0])
+        set_predicted = {tuple(bool2lexorder[e]) 
+                         for e in physical_monomials}
+        set_correct = [self._old_party_physical_monomials(lp, 0, i)
+                       for i in range(1, min(lp.inflation_levels) + 1)]
+        set_correct = set([()] + [tuple(lp.mon_to_lexrepr(e)) 
+                                  for c in set_correct for e in c])
+        self.assertTrue(set_correct == set_predicted, 
+                       "The physical monomials sets are not equal " +
+                       "in 1 party nonfanout LP.")
+        
+        self.assertTrue(len(physical_monomials) == 253, 
+                        "Wrong number of physical monomials generated.")
+        
+    def test_physical_mon_gen_1party_2_hybrid_sources(self):
+        scenario = InflationProblem({'s': ['A'], 't': ['A']},
+                                    (3,), (2,), 
+                                    (3, 2),
+                                    classical_sources=['t'])
+        physical_monomials = scenario._generate_compatible_monomials_given_party(0)
+        self.assertTrue(len(physical_monomials) == 729, 
+                        "Wrong number of physical monomials generated.")
+        for boolmon in physical_monomials:
+            _s_ = np.nonzero(boolmon)[0]
+            _dim = _s_.size
+            if _dim > 0:
+                self.assertTrue(np.allclose(
+                    scenario._compatible_measurements[np.ix_(_s_, _s_)],
+                    np.ones((_dim,)*2)-np.eye(_dim)),
+                    "Measurements that are supposed to be compatible are not.")
 
             
