@@ -7,19 +7,23 @@ inflation.
 import numpy as np
 
 from itertools import (chain,
+                       combinations,
                        combinations_with_replacement,
                        product,
                        permutations)
 from warnings import warn
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
-                           apply_source_perm)
+                           apply_source_perm,
+                           commutation_matrix)
 
 from .utils import format_permutations, partsextractor
 from typing import Tuple, List, Union, Dict
 
 from functools import reduce, cached_property
 from tqdm import tqdm
+
+import networkx as nx
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -190,7 +194,7 @@ class InflationProblem(object):
         self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
-        self._quantum_sources, self._classical_sources = [], []
+        self._nonclassical_sources, self._classical_sources = [], []
         for ii, source in enumerate(self._actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
@@ -199,13 +203,13 @@ class InflationProblem(object):
                     if source in classical_sources:
                         self._classical_sources += [ii]
                     else:
-                        self._quantum_sources += [ii]
+                        self._nonclassical_sources += [ii]
                 else:
                     if classical_sources == "all":
                         self._classical_sources = range(self.nr_sources)
             else:
-                self._quantum_sources += [ii]
-        self._quantum_sources   = 1 + np.array(self._quantum_sources)
+                self._nonclassical_sources += [ii]
+        self._nonclassical_sources   = 1 + np.array(self._nonclassical_sources)
         self._classical_sources = 1 + np.array(self._classical_sources)
 
         assert self.hypergraph.shape[1] == self.nr_parties, \
@@ -244,7 +248,7 @@ class InflationProblem(object):
                 self.ever_factorizes = True
                 break
 
-        #Establish internal dtype
+        # Establish internal dtype
         self._np_dtype = np.find_common_type([
             np.min_scalar_type(np.max(self.settings_per_party)),
             np.min_scalar_type(np.max(self.outcomes_per_party)),
@@ -271,6 +275,7 @@ class InflationProblem(object):
         all_unique_inflation_indices = np.unique(
             np.vstack(self.inflation_indices_per_party),
             axis=0).astype(self._np_dtype)
+        
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
                                         in enumerate(
@@ -300,8 +305,9 @@ class InflationProblem(object):
                     for o in O_vals.flat:
                         measurements_per_party[i, s, o, -1] = o
             self.measurements.append(measurements_per_party)
+        
+        # Useful for LP
         self._ortho_groups_per_party = []
-         # Useful for LP
         for p, measurements_per_party in enumerate(self.measurements):
             _ortho_groups = []
             O_card = self.outcomes_per_party[p]
@@ -311,6 +317,26 @@ class InflationProblem(object):
         self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._nr_operators = len(self._lexorder)
+        
+        if self._nonclassical_sources.size == 0:
+            self._compatible_measurements = \
+                np.invert(np.zeros((self._lexorder.shape[0], self._lexorder.shape[0]),
+                                   dtype=bool))
+        else:
+            self._compatible_measurements = \
+                        np.invert(commutation_matrix(self._lexorder,
+                                                    self._nonclassical_sources,
+                                                    False))
+        # Use self._ortho_groups to label operators that are orthogonal as
+        # incompatible as their product is zero, and they can never be 
+        # observed together with non-zero probability.
+        offset = 0
+        for ortho_group in self._ortho_groups:
+            l = len(ortho_group)
+            block = np.arange(l)
+            block+= offset
+            self._compatible_measurements[np.ix_(block, block)] = False
+            offset+=l
 
         self._lexorder_for_factorization = np.array([
             self._inflation_indices_hash[op.tobytes()]
@@ -325,11 +351,11 @@ class InflationProblem(object):
     def __repr__(self):
         if len(self._classical_sources) == self.nr_sources:
             source_info = "All sources are classical."
-        elif len(self._quantum_sources) == self.nr_sources:
+        elif len(self._nonclassical_sources) == self.nr_sources:
             source_info = "All sources are quantum."
         else:
             classical_sources = self._actual_sources[self._classical_sources-1]
-            quantum_sources   = self._actual_sources[self._quantum_sources - 1]
+            quantum_sources   = self._actual_sources[self._nonclassical_sources - 1]
             if len(classical_sources) > 1:
                 extra_1 = "s"
                 extra_2 = "are"
@@ -356,6 +382,63 @@ class InflationProblem(object):
     ###########################################################################
     # HELPER UTILITY FUNCTION                                    #
     ###########################################################################
+    
+    @cached_property
+    def _party_positions_within_lexorder(self):
+        offset = 0
+        party_positions_within_lexorder = []
+        for ortho_groups in self._ortho_groups_per_party:
+            this_party_positions = []
+            for ortho_group in ortho_groups:
+                l = len(ortho_group)
+                block = np.arange(offset, offset+l)
+                this_party_positions.append(block)
+                offset+=l
+            party_positions_within_lexorder.append(this_party_positions)
+        return party_positions_within_lexorder
+    
+    def _subsets_of_compatible_mmnts_per_party(self,
+                                               party: int,
+                                               with_last_outcome: bool = False):
+        if with_last_outcome:
+            _s_ = list(chain.from_iterable(self._party_positions_within_lexorder[party]))
+        else:
+            _s_ = []
+            for positions in self._party_positions_within_lexorder[party]:
+                _s_.extend(positions[:-1])
+        party_compat = self._compatible_measurements[np.ix_(_s_, _s_)]
+        G = nx.from_numpy_array(party_compat)
+        raw_cliques = nx.find_cliques(G)
+        return [partsextractor(_s_, clique) for clique in raw_cliques]
+
+    def _generate_compatible_monomials_given_party(self, party: int,
+                                                  up_to_length: int = None,
+                                                  with_last_outcome: bool = False):
+        # The cliques will be all unique sets of compatible operators of
+        # ALL lengths, given a scenario's compatibility matrix
+        cliques = self._subsets_of_compatible_mmnts_per_party(
+            party,
+            with_last_outcome=with_last_outcome)
+        max_len_clique = max([len(c) for c in cliques])
+        max_length = up_to_length if up_to_length != None else max_len_clique
+        if max_length > max_len_clique and self.verbose > 0:
+            warn("The maximum length of physical monomials required is " +
+                 "larger than the maximum sequence of compatible operators")
+            max_length = max_len_clique
+        # Take combinations of all lengths up to the specified maximum
+        # of all the cliques
+        unique_subsets = {frozenset(ops) for nr_ops in range(max_length + 1)
+                              for clique in cliques
+                              for ops in combinations(clique, nr_ops)}
+        # Sort them in ascending lexicographic order
+        unique_subsets = sorted((sorted(s) for s in unique_subsets),
+                                key=lambda x: (len(x), x))
+        # Convert them to boolean vector encoding
+        unique_subsets_as_boolvecs = np.zeros(
+            (len(unique_subsets), len(self._lexorder)), dtype=bool)
+        for i, mon_as_set in enumerate(unique_subsets):
+            unique_subsets_as_boolvecs[i, mon_as_set] = True
+        return unique_subsets_as_boolvecs
 
     @cached_property
     def original_dag_events(self) -> np.ndarray:
