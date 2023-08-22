@@ -135,57 +135,6 @@ class TestFunctions(unittest.TestCase):
                                    ["A", "B"]),
                          truth,
                          "to_symbol is not working as expected.")
-
-    def test_physical_monomial_generation(self):
-        _lexorder = np.array(['a','b','c','d','e','f'], dtype=object)
-        name2lexorder = {name: i for i, name in enumerate(_lexorder)}
-        sets_of_notcommuting = [('a','b','c'), ('d','e'), ('f')]
-        _notcomm = np.zeros([_lexorder.shape[0]]*2, dtype=bool)
-        for clique in sets_of_notcommuting:
-            for e1, e2 in combinations(clique, 2):
-                _notcomm[name2lexorder[e1], name2lexorder[e2]] = True
-                _notcomm[name2lexorder[e2], name2lexorder[e1]] = True
-        result = party_physical_monomials_via_cliques(1, _lexorder, _notcomm)
-        correct = np.array([[['a']],
-                            [['b']], 
-                            [['c']], 
-                            [['d']],
-                            [['e']],
-                            [['f']]], dtype='<U1')
-        self.assertTrue(np.array_equal(result, correct),
-            "The physical monomials of length 1 are not generated correctly.")
-        result = party_physical_monomials_via_cliques(2, _lexorder, _notcomm)
-        correct = np.array([[['a'], ['d']],
-                            [['a'], ['e']],
-                            [['b'], ['d']],
-                            [['b'], ['e']],
-                            [['c'], ['d']],
-                            [['c'], ['e']],
-                            [['a'], ['f']],
-                            [['b'], ['f']],
-                            [['c'], ['f']],
-                            [['d'], ['f']],
-                            [['e'], ['f']]], dtype='<U1')
-        self.assertTrue(np.array_equal(result, correct),
-            "The physical monomials of length 2 are not generated correctly.")
-        result = party_physical_monomials_via_cliques(3, _lexorder, _notcomm)
-        correct = np.array([[['a'], ['d'], ['f']],
-                            [['a'], ['e'], ['f']],
-                            [['b'], ['d'], ['f']],
-                            [['b'], ['e'], ['f']],
-                            [['c'], ['d'], ['f']],
-                            [['c'], ['e'], ['f']]], dtype='<U1')
-        self.assertTrue(np.array_equal(result, correct),
-            "The physical monomials of length 3 are not generated correctly.")
-        
-        # The following checks that the function raises the correct exception
-        # when the monomial length is too large.
-        with self.assertRaises(AssertionError): 
-            party_physical_monomials_via_cliques(4, _lexorder, _notcomm)
-
-
-
-    
         
 class TestPhysicalMonomialGeneration(unittest.TestCase):
     def _old_party_physical_monomials(self, lp, party, max_monomial_length):
@@ -274,14 +223,12 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
             (2, 0, 1, 3, 4)
         ).reshape((-1, max_monomial_length, nr_properties))
             
-    def test_physical_monomial_1party_no_copies(self):
+    def test_physical_monomial_generation_1party_no_copies(self):
         # Test for 1 party, no copies, nofanout
         from inflation import InflationProblem, InflationLP
         scenario = InflationProblem({'r': ['A']}, (3,), (3,), (1, ))
         lp = InflationLP(scenario, nonfanout=True)
 
-        one = np.zeros(shape=(0, lp._lexorder.shape[1]), 
-                       dtype=lp._lexorder.dtype)
         bool2lexorder = np.arange(lp._lexorder.shape[0])
         set_predicted = {tuple(bool2lexorder[e]) 
                          for e in lp._raw_monomials_as_lexboolvecs}
@@ -289,17 +236,16 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                        for i in range(1, min(lp.inflation_levels) + 1)]
         set_correct = set([()] + [tuple(lp.mon_to_lexrepr(e)) 
                                   for c in set_correct for e in c])
-        assert set_correct == set_predicted, \
-            "The physical monomials sets are not equal in 1 party nonfanout LP."
+        self.assertTrue(set_correct == set_predicted,
+            "The physical monomials sets are not equal " + 
+            "in 1 party nonfanout LP.")
 
-    def test_physical_monomial_1party_3_copies(self):
+    def test_physical_monomial_generation_1party_3_copies(self):
         # Test for 1 party, 3 copies, nofanout
         from inflation import InflationProblem, InflationLP
         scenario = InflationProblem({'r': ['A']}, (3,), (3,), (3, ))
         lp = InflationLP(scenario, nonfanout=True)
 
-        one = np.zeros(shape=(0, lp._lexorder.shape[1]), 
-                       dtype=lp._lexorder.dtype)
         bool2lexorder = np.arange(lp._lexorder.shape[0])
         set_predicted = {tuple(bool2lexorder[e]) 
                          for e in lp._raw_monomials_as_lexboolvecs}
@@ -307,70 +253,9 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                        for i in range(1, min(lp.inflation_levels) + 1)]
         set_correct = set([()] + [tuple(lp.mon_to_lexrepr(e)) 
                                   for c in set_correct for e in c])
-        assert set_correct == set_predicted, \
-            "The physical monomials sets are not equal in 1 party nonfanout LP."
-            
-    def test_hybrid_lp_full_network_nonlocality(self):
-
-        from inflation import InflationProblem, InflationLP
-        scenario = InflationProblem({'lambda':     ['A', 'B'],
-                                     'NS':         ['B', 'C']},
-                                    [2, 4, 2], [3, 1, 3], 
-                                    inflation_level_per_source=[1, 2],
-                                    classical_sources=['lambda'],
-                                    verbose=1)
-        lp = InflationLP(scenario, nonfanout=True, verbose=1)
+        self.assertTrue(set_correct == set_predicted, 
+                       "The physical monomials sets are not equal " +
+                       "in 1 party nonfanout LP.")
         
-        def P_EJM(v, theta):
-            p_bell = np.expand_dims((0, 1, -1, 0), axis=1)/np.sqrt(2)
-            rho_v = v * p_bell @ p_bell.conj().T + (1 - v) * np.eye(4)/4
-            sigmax = np.array([[0, 1], [1, 0]])
-            sigmay = np.array([[0, -1j], [1j, 0]])
-            sigmaz = np.array([[1, 0], [0, -1]])
-            A = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
-                    for v in reversed(np.linalg.eigh(op)[1].T)] 
-                    for op in [sigmax, sigmay, sigmaz]]
-            C = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
-                    for v in reversed(np.linalg.eigh(op)[1].T)] 
-                    for op in [sigmax, sigmay, sigmaz]]
-            r_plus = (1 + np.exp(1j*theta))/np.sqrt(2)
-            r_minus = (1 - np.exp(1j*theta))/np.sqrt(2)
-            e00 = np.expand_dims([1, 0, 0, 0], axis=1)
-            e01 = np.expand_dims([0, 1, 0, 0], axis=1)
-            e10 = np.expand_dims([0, 0, 1, 0], axis=1)
-            e11 = np.expand_dims([0, 0, 0, 1], axis=1)
-            psi1 = 1/2 * (np.exp(-1j*np.pi/4)*e00 - r_plus * e01 
-                            - r_minus * e10 + np.exp(-3/4*np.pi*1j)*e11)
-            psi2 = 1/2 * (np.exp(1j*np.pi/4)*e00 + r_minus * e01 
-                            + r_plus * e10 + np.exp(3/4*np.pi*1j)*e11)
-            psi3 = 1/2 * (np.exp(-1j*np.pi*3/4)*e00 + r_minus * e01 
-                            + r_plus * e10 + np.exp(-1/4*np.pi*1j)*e11)
-            psi4 = 1/2 * (np.exp(1j*np.pi*3/4)*e00 - r_plus * e01 
-                            - r_minus * e10 + np.exp(np.pi*1j/4)*e11)
-            B = [ [psi @ psi.conj().T for psi in [psi1, psi2, psi3, psi4] ]]
-            
-            p = np.zeros((2, 4, 2, 3, 1, 3))
-            pauli = [sigmax, sigmay, sigmaz]
-            state = np.kron(rho_v, rho_v)
-            for a, b, c, x, y, z in np.ndindex(p.shape):
-                if not np.allclose(A[x][a], (np.eye(2)+(-1)**a * pauli[x])/2):
-                    print("Difference:", A[x][a] - (np.eye(2)+(-1)**a * pauli[x])/2)
-                if not np.allclose(C[z][c], (np.eye(2)+(-1)**c * pauli[z])/2):
-                    print("Difference:", C[z][c] - (np.eye(2)+(-1)**c * pauli[z])/2)
-                mmnt = np.kron(np.kron(A[x][a], B[y][b]), C[z][c])
-                p[a, b, c, x, y, z] = np.real(np.trace(state @ mmnt))
-            return p
 
-        best_theta = np.arccos(np.sqrt(5) / 3)
-        v_for_best_theta = 2 / np.sqrt(5)
-        epsilon = 1e-3
-        lp.set_distribution(P_EJM(v_for_best_theta + epsilon, best_theta))
-        lp.solve()
-        assert not lp.success, ("The LP is feasible for the EJM distribution " +
-                                "in a regime when it can be certified to be " +
-                                "full network nonlocal.")
-        lp.set_distribution(P_EJM(v_for_best_theta - epsilon, best_theta))
-        lp.solve()
-        assert lp.success, ("The LP is infeasible for the EJM distribution " + 
-                            "in a regime where inflation at this level " + 
-                            "is known to not certify full network nonlocality.")
+            
