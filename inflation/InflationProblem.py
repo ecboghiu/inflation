@@ -613,13 +613,11 @@ class InflationProblem(object):
             A tuple of ndarrays, where each array represents a picklist for an atomic monomial
             factor.
         """
-        if not self.ever_factorizes:
+        if (not self.ever_factorizes) or len(monomial_as_1darray) <= 1:
             return (monomial_as_1darray,)
 
-        inflation_indices_position = self._lexorder_for_factorization[monomial_as_1darray]
-        if len(inflation_indices_position) <= 1:
-            return (monomial_as_1darray,)
-
+        inflation_indices_position = self._lexorder_for_factorization[
+            monomial_as_1darray]
         adj_mat = self._inflation_indices_overlap[inflation_indices_position][
             :, inflation_indices_position]
         component_labels = nb_classify_disconnected_components(adj_mat)

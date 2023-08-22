@@ -90,11 +90,11 @@ class InternalAtomicMonomial(object):
         self.is_knowable = (self.is_zero
                             or self.is_one
                             or self.sdp._atomic_knowable_q(self.as_ndarray))
-        self.is_all_commuting = self.sdp.all_commuting_q(self.as_ndarray)
+        self.is_all_commuting = self.sdp.all_commuting_q_2d(self.as_ndarray)
         if self.is_all_commuting or self.n_operators <= 1:
             self.is_physical = True
         else:
-            self.is_physical = self.sdp.all_commuting_q(
+            self.is_physical = self.sdp.all_commuting_q_2d(
                 nb_remove_sandwich(self.as_ndarray))
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
