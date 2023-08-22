@@ -29,7 +29,7 @@ class TestWriters(unittest.TestCase):
     instrumental_infLP = InflationLP(instrumental,
                                      nonfanout=False,
                                      verbose=False,
-                                     use_only_equalities=True)
+                                     include_all_outcomes=True)
     instrumental_infLP.set_distribution(p)
     instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
                                      direction='max')

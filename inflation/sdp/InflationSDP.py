@@ -66,6 +66,7 @@ class InflationSDP(object):
     def __init__(self,
                  inflationproblem: InflationProblem,
                  supports_problem: bool = False,
+                 include_all_outcomes: bool = False,
                  commuting: bool = False,
                  verbose=None) -> None:
         """Constructor for the InflationSDP class.
@@ -78,24 +79,23 @@ class InflationSDP(object):
         else:
             self.verbose = inflationproblem.verbose
         self.InflationProblem = inflationproblem
-        self.names = self.InflationProblem.names
+        self.names = inflationproblem.names
         self.names_to_ints = {name: i + 1 for i, name in enumerate(self.names)}
         if self.verbose > 1:
-            print(self.InflationProblem)
+            print(inflationproblem)
 
         self.nr_parties = len(self.names)
-        self.nr_sources = self.InflationProblem.nr_sources
-        self.hypergraph = self.InflationProblem.hypergraph
-        self.inflation_levels = \
-            self.InflationProblem.inflation_level_per_source
-        self.has_children = self.InflationProblem.has_children
-        self.outcome_cardinalities = \
-            self.InflationProblem.outcomes_per_party.copy()
-        if self.supports_problem:
-            # Support problems must not use Collins-Gisin notation
-            self.has_children = np.ones(self.nr_parties, dtype=int)
-        else:
-            self.has_children = self.InflationProblem.has_children
+        self.nr_sources = inflationproblem.nr_sources
+        self.hypergraph = inflationproblem.hypergraph
+        self.inflation_levels = inflationproblem.inflation_level_per_source
+        self.has_children = inflationproblem.has_children
+        self.outcome_cardinalities = inflationproblem.outcomes_per_party.copy()
+        self.has_children = inflationproblem.has_children.copy()
+        if include_all_outcomes or supports_problem: # HACK to fix detection of incompatible supports. (Can be fixed upon adding set_extra_equalities)
+            self.has_children[:] = True
+
+
+
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = self.InflationProblem.settings_per_party
         self._quantum_sources = self.InflationProblem._nonclassical_sources
@@ -114,11 +114,10 @@ class InflationSDP(object):
                 prefix = ", "
             print()
         self.use_lpi_constraints = False
-        self.network_scenario    = self.InflationProblem.is_network
-        self._is_knowable_q_non_networks = \
-            self.InflationProblem._is_knowable_q_non_networks
-        self.rectify_fake_setting = self.InflationProblem.rectify_fake_setting
-        self.factorize_monomial = self.InflationProblem.factorize_monomial_2d
+        self.network_scenario    = inflationproblem.is_network
+        self._is_knowable_q_non_networks = inflationproblem._is_knowable_q_non_networks
+        self.rectify_fake_setting = inflationproblem.rectify_fake_setting
+        self.factorize_monomial = inflationproblem.factorize_monomial_2d
 
         self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = 1 + self.nr_sources + 2

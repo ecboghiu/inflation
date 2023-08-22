@@ -7,21 +7,34 @@ from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
 from inflation.utils import partsextractor, expand_sparse_vec, vstack
+import gurobipy as gp
 
+def drop_zero_rows(coo_mat: coo_matrix):
+    nz_rows, new_row = np.unique(coo_mat.row, return_inverse=True)
+    coo_mat.row[:] = new_row
+    coo_mat._shape = (len(nz_rows), coo_mat.shape[1])
 
-def solveLP(objective: Union[coo_matrix, Dict],
-            known_vars: Union[coo_matrix, Dict],
-            semiknown_vars: Dict,
-            inequalities: Union[coo_matrix, List[Dict]],
-            equalities: Union[coo_matrix, List[Dict]],
-            lower_bounds: Union[coo_matrix, Dict],
-            upper_bounds: Union[coo_matrix, Dict],
+def canonical_order(coo_mat: coo_matrix):
+    order = np.lexsort([coo_mat.col, coo_mat.row])
+    coo_mat.row[:] = np.asarray(coo_mat.row)[order]
+    coo_mat.col[:] = np.asarray(coo_mat.col)[order]
+    coo_mat.data[:] = np.asarray(coo_mat.data)[order]
+
+def solveLP(objective: Union[coo_matrix, Dict] = None,
+            known_vars: Union[coo_matrix, Dict] = None,
+            semiknown_vars: Dict = None,
+            inequalities: Union[coo_matrix, List[Dict]] = None,
+            equalities: Union[coo_matrix, List[Dict]] = None,
+            lower_bounds: Union[coo_matrix, Dict] = None,
+            upper_bounds: Union[coo_matrix, Dict] = None,
             solve_dual: bool = False,
             default_non_negative: bool = True,
-            feas_as_optim: bool = False,
+            relax_known_vars: bool = False,
+            relax_inequalities: bool = False,
             verbose: int = 0,
             solverparameters: Dict = None,
-            variables: List = None
+            variables: List = None,
+            **kwargs
             ) -> Dict:
     """Wrapper function that converts all dictionaries to sparse matrices to
     pass to the solver.
@@ -48,8 +61,14 @@ def solveLP(objective: Union[coo_matrix, Dict],
     default_non_negative : bool, optional
         Whether to set default primal variables as non-negative. By default,
         ``True``.
-    feas_as_optim : bool, optional
-        NOT IMPLEMENTED
+    relax_known_vars : bool, optional
+        Do feasibility as optimization where each known value equality becomes
+        two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +
+        lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda is a slack
+        variable. By default, ``False``.
+    relax_inequalities : bool, optional
+        Do feasibility as optimization where each inequality is relaxed by the
+        non-negative slack variable lambda. By default, ``False``.
     verbose : int, optional
         Verbosity. Higher means more messages. By default, 0.
     solverparameters : dict, optional
@@ -83,7 +102,7 @@ def solveLP(objective: Union[coo_matrix, Dict],
                     "equalities",
                     "lower_bounds",
                     "upper_bounds")
-    used_args = {k: v for k, v in solver_args
+    used_args = {k: v for k, v in solver_args.items()
                  if k in problem_args and v is not None}
     if all(issparse(arg) for arg in used_args.values()):
         assert variables is not None, "Variables must be declared when all " \
@@ -101,27 +120,30 @@ def solveLP(objective: Union[coo_matrix, Dict],
                 variables.update([x, x2])
             variables.update(known_vars)
             variables = sorted(variables)
-        solver_args.update(convert_dicts(**solver_args, variables=variables))
+            solver_args["variables"] = variables
+        solver_args.update(convert_dicts(**solver_args))
     else:
         assert variables is not None, "Variables must be declared when " \
                                       "arguments are of mixed form."
-        solver_args.update(convert_dicts(**solver_args, variables=variables))
+        solver_args.update(convert_dicts(**solver_args))
     solver_args.pop("semiknown_vars", None)
     return solveLP_sparse(**solver_args)
 
-
-def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
-                   known_vars: coo_matrix = coo_matrix([]),
-                   inequalities: coo_matrix = coo_matrix([]),
-                   equalities: coo_matrix = coo_matrix([]),
-                   lower_bounds: coo_matrix = coo_matrix([]),
-                   upper_bounds: coo_matrix = coo_matrix([]),
+blank_coo_matrix = coo_matrix((0,0), dtype=np.int8)
+def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
+                   known_vars: coo_matrix = blank_coo_matrix,
+                   inequalities: coo_matrix = blank_coo_matrix,
+                   equalities: coo_matrix = blank_coo_matrix,
+                   lower_bounds: coo_matrix = blank_coo_matrix,
+                   upper_bounds: coo_matrix = blank_coo_matrix,
                    solve_dual: bool = False,
                    default_non_negative: bool = True,
-                   feas_as_optim: bool = False,
+                   relax_known_vars: bool = False,
+                   relax_inequalities: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
-                   variables: List = None
+                   variables: List = None,
+                   **kwargs
                    ) -> Dict:
     """Internal function to solve an LP with the Mosek Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
@@ -147,8 +169,14 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
     default_non_negative : bool, optional
         Whether to set default primal variables as non-negative. By default,
         ``True``.
-    feas_as_optim : bool, optional
-        NOT IMPLEMENTED
+    relax_known_vars : bool, optional
+        Do feasibility as optimization where each known value equality becomes
+        two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +
+        lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda is a slack
+        variable. By default, ``False``.
+    relax_inequalities : bool, optional
+        Do feasibility as optimization where each inequality is relaxed by the
+        non-negative slack variable lambda. By default, ``False``.
     verbose : int, optional
         Verbosity. Higher means more messages. By default, 0.
     solverparameters : dict, optional
@@ -172,6 +200,10 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
         and response code.
     """
 
+    drop_zero_rows(inequalities)
+    drop_zero_rows(equalities)
+    canonical_order(known_vars)
+
     if verbose > 1:
         t0 = perf_counter()
         t_total = perf_counter()
@@ -179,6 +211,9 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
     # Since the value of infinity is ignored, define it for symbolic purposes
     inf = 0.0
+
+    if relax_known_vars or relax_inequalities:
+        default_non_negative = False
 
     with mosek.Env() as env:
         with mosek.Task(env) as task:
@@ -209,20 +244,79 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
 
             # Initialize constraint matrix
             constraints = vstack((inequalities, equalities))
+            # nof_primal_inequalities = 0
+            # if inequalities.nnz:
+            #     nof_primal_inequalities = inequalities.shape[0]
+            # nof_primal_equalities = 0
+            # if equalities.nnz:
+            #     nof_primal_equalities = equalities.shape[0]
+
+            nof_primal_inequalities = inequalities.shape[0]
+            nof_primal_equalities = equalities.shape[0]
+
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
+            nof_known_vars = known_vars.nnz
 
             # Initialize b vector (RHS of constraints)
             b = [0] * nof_primal_constraints
 
-            # Add known values as equality constraints to the constraint matrix
-            kv_matrix = expand_sparse_vec(known_vars, conversion_style="eq")
-            constraints = vstack((constraints, kv_matrix))
-            b.extend(known_vars.data)
 
+            if relax_inequalities:
+                # Add slack variable lambda to each inequality
+                cons_row = np.hstack(
+                    (constraints.row, np.arange(nof_primal_inequalities)))
+                cons_col = np.hstack(
+                    (constraints.col, np.repeat(nof_primal_variables,
+                                                nof_primal_inequalities)))
+                cons_data = np.hstack(
+                    (constraints.data, np.repeat(1, nof_primal_inequalities)))
+                constraints = coo_matrix((cons_data, (cons_row, cons_col)),
+                                         shape=(nof_primal_constraints,
+                                                nof_primal_variables + 1))
+
+            if relax_known_vars:
+                # Each known value is replaced by two inequalities with slacks
+                # ELIE VERSION
+                # kv_row = np.repeat(
+                #     np.arange(nof_known_vars * 2),
+                #     2)
+                # kv_col = np.empty((nof_known_vars * 4,), dtype=int)
+                # kv_col[0:(2*nof_known_vars):2] = np.arange(nof_known_vars)
+                # kv_col[(2 * nof_known_vars):(4 * nof_known_vars):2] = kv_col[0:(2*nof_known_vars):2]
+                # kv_col[1::2] = np.broadcast_to(nof_primal_variables, 2*nof_known_vars)
+                # kv_data = np.hstack((
+                #     np.broadcast_to(1, 2*nof_known_vars),
+                #     np.tile([1, -1], nof_known_vars)
+                # ))
+                # ERICA VERSION
+                kv_row = np.tile(
+                    np.arange(nof_known_vars * 2),
+                    2)
+                kv_col = np.hstack((
+                    np.tile(known_vars.col, 2),
+                    np.broadcast_to(nof_primal_variables, nof_known_vars * 2)
+                ))
+                kv_data = np.hstack((
+                    np.broadcast_to(1, nof_known_vars * 3),
+                    np.broadcast_to(-1, nof_known_vars)
+                ))
+
+                kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
+                                       shape=(nof_known_vars * 2,
+                                              nof_primal_variables + 1))
+                canonical_order(kv_matrix)
+                constraints.resize(*(nof_primal_constraints,
+                                     nof_primal_variables + 1))
+                b = np.hstack((b, np.tile(known_vars.data, 2)))
+            else:
+                # Add known values as equalities to the constraint matrix
+                kv_matrix = expand_sparse_vec(known_vars)
+                b = np.hstack((b, known_vars.data))
+                nof_primal_equalities += nof_known_vars
+
+            constraints = vstack((constraints, kv_matrix))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
-            nof_known_vars = known_vars.nnz
-            nof_primal_inequalities = inequalities.shape[0]
-            nof_primal_equalities = equalities.shape[0] + nof_known_vars
+
             nof_lb = lower_bounds.nnz
             nof_ub = upper_bounds.nnz
 
@@ -244,9 +338,10 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                                                conversion_style="eq")
                     ub_mat = expand_sparse_vec(upper_bounds,
                                                conversion_style="eq")
-                    ub_data = -ub_mat.data
-                    ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
-                                        shape=(nof_ub, nof_primal_variables))
+                    ub_mat.data[:] = -ub_mat.data # just a list of ones
+                    # ub_data = -ub_mat.data
+                    # ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
+                    #                     shape=(nof_ub, nof_primal_variables))
                     matrix = vstack((constraints, lb_mat, ub_mat),
                                     format='csr')
                     b_extra = np.concatenate(
@@ -260,24 +355,30 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     print("Sparse matrix reformat complete...")
 
                 # Set bound keys and values for constraints (primal objective)
-                blc = objective.toarray().ravel()
-                buc = objective.toarray().ravel()
+                if relax_known_vars or relax_inequalities:
+                    blc = buc = np.zeros(nof_primal_variables)
+                    blc[-1] = buc[-1] = -1
+                else:
+                    blc = buc = objective.toarray().ravel()
 
                 # Set constraint bounds corresponding to primal variable bounds
                 if default_non_negative:
                     bkc = [mosek.boundkey.lo] * nof_dual_constraints
                 else:
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
+                    # if relax_known_vars or relax_inequalities:
+                    #     bkc[-1] = mosek.boundkey.lo
 
                 # Set bound keys and values for variables
                 # Non-positivity for y corresponding to inequalities
                 bkx = [mosek.boundkey.up] * nof_primal_inequalities + \
-                      [mosek.boundkey.fr] * nof_primal_equalities + \
-                      [mosek.boundkey.up] * nof_primal_nontriv_bounds
-                blx = [-inf] * nof_dual_variables
-                bux = [0.0] * nof_primal_inequalities + \
-                      [+inf] * nof_primal_equalities + \
-                      [0.0] * nof_primal_nontriv_bounds
+                      [mosek.boundkey.fr] * nof_primal_equalities
+                bux = [0.0] * nof_dual_variables
+                blx = [0.0] * nof_dual_variables
+                if relax_known_vars:
+                    bkx.extend([mosek.boundkey.up] * nof_known_vars +
+                               [mosek.boundkey.lo] * nof_known_vars)
+                bkx.extend([mosek.boundkey.up] * nof_primal_nontriv_bounds)
 
                 # Set the objective sense
                 task.putobjsense(mosek.objsense.minimize)
@@ -291,12 +392,20 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 if verbose > 1:
                     print("Sparse matrix reformat complete...")
 
-                objective_vector = objective.toarray().ravel()
+                if relax_known_vars or relax_inequalities:
+                    # Minimize lambda
+                    objective_vector = np.zeros(nof_primal_variables)
+                    objective_vector[-1] = -1
+                else:
+                    objective_vector = objective.toarray().ravel()
 
                 # Set bound keys and values for constraints
                 # Ax >= b where b is 0
                 bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
                       [mosek.boundkey.fx] * nof_primal_equalities
+                if relax_known_vars:
+                    bkc.extend([mosek.boundkey.lo] * nof_known_vars +
+                               [mosek.boundkey.up] * nof_known_vars)
                 blc = buc = b
 
                 ub_col = upper_bounds.col
@@ -323,6 +432,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                     elif col in ub_col:
                         bkx[col] = mosek.boundkey.up
                         bux[col] = ub_data[col]
+                if relax_known_vars or relax_inequalities:
+                    bkx[-1] = mosek.boundkey.fr
 
                 # Set the objective sense
                 task.putobjsense(mosek.objsense.maximize)
@@ -363,6 +474,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 print("Pre-processing took",
                       format(perf_counter() - t0, ".4f"), "seconds.\n")
                 t0 = perf_counter()
+
+            task.writedata("debug.ptf")
 
             # Solve the problem
             if verbose > 0:
@@ -409,7 +522,10 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 print(f"   Termination code: {term_tuple}")
 
             # Extract the certificate as a sparse matrix: y.b - c.x <= 0
-            y_values = y_values[nof_primal_constraints - nof_known_vars:]
+            if relax_known_vars:
+                y_values = y_values[nof_primal_constraints - nof_known_vars*2:]
+            else:
+                y_values = y_values[nof_primal_constraints - nof_known_vars:]
             cert_row = [0] * nof_primal_variables
             cert_col = [*range(nof_primal_variables)]
             cert_data = [0] * nof_primal_variables
@@ -418,6 +534,8 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 cert_data[col] -= obj_data[col]
             for i, col in enumerate(known_vars.col):
                 cert_data[col] += y_values[i]
+                if relax_known_vars:
+                    cert_data[col] += y_values[i + nof_known_vars]
             sparse_certificate = coo_matrix((cert_data, (cert_row, cert_col)),
                                             shape=(1, nof_primal_variables))
 
@@ -444,6 +562,151 @@ def solveLP_sparse(objective: coo_matrix = coo_matrix([]),
                 "x": x_values,
                 "term_code": term_tuple
             }
+
+
+def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
+                 known_vars: coo_matrix = coo_matrix([]),
+                 inequalities: coo_matrix = coo_matrix([]),
+                 equalities: coo_matrix = coo_matrix([]),
+                 lower_bounds: coo_matrix = coo_matrix([]),
+                 upper_bounds: coo_matrix = coo_matrix([]),
+                 factorization_conditions: dict = None,
+                 default_non_negative: bool = True,
+                 relax_known_vars: bool = False,
+                 relax_inequalities: bool = False,
+                 verbose: int = 0,
+                 **kwargs
+                 ) -> Dict:
+    """Internal function to solve an LP with the Gurobi Optimizer API using
+    sparse matrices. Columns of each matrix correspond to a fixed order of
+    variables in the LP.
+
+    Parameters
+    ----------
+    objective : coo_matrix, optional
+        Objective function with coefficients as matrix entries.
+    known_vars : coo_matrix, optional
+        Known values of the monomials with values as matrix entries.
+    inequalities : coo_matrix, optional
+        Inequality constraints in matrix form.
+    equalities : coo_matrix, optional
+        Equality constraints in matrix form.
+    lower_bounds : coo_matrix, optional
+        Lower bounds of variables with bounds as matrix entries.
+    upper_bounds : coo_matrix, optional
+        Upper bounds of variables with bounds as matrix entries.
+    factorization_conditions : dict, optional
+        Allows one to specify that certain variables are equal to the product of other variables
+    default_non_negative : bool, optional
+        Whether to set default primal variables as non-negative. By default,
+        ``True``.
+    relax_known_vars : bool, optional
+        Do feasibility as optimization where each known value equality becomes
+        two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +
+        lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda is a slack
+        variable. By default, ``False``.
+    relax_inequalities : bool, optional
+        Do feasibility as optimization where each inequality is relaxed by the
+        non-negative slack variable lambda. By default, ``False``.
+    verbose : int, optional
+        Verbosity. Higher means more messages. By default, 0.
+
+    Returns
+    -------
+    dict
+        Primal objective value, problem status, success status, x values
+    """
+    if verbose > 1:
+        t0 = perf_counter()
+        t_total = perf_counter()
+        print("Starting pre-processing for the LP solver...")
+
+    env = gp.Env(empty=True)
+    if verbose == 0:
+        env.setParam('OutputFlag', 0)  # Supress output from solver
+    env.start()
+
+    # Create new model
+    m = gp.Model(env=env)
+
+    (nof_primal_inequalities, nof_primal_variables) = inequalities.shape
+    nof_primal_equalities = equalities.shape[0]
+    kv_matrix = expand_sparse_vec(known_vars)
+
+    # Create variables and set variable bounds
+    x = m.addMVar(shape=nof_primal_variables)
+    m.update()
+    if not default_non_negative:
+        x.lb = -gp.GRB.INFINITY
+    if lower_bounds.nnz > 0:
+        new_lb = x.lb
+        new_lb[lower_bounds.col] = lower_bounds.data
+        x.lb = new_lb
+    if upper_bounds.nnz > 0:
+        new_ub = x.ub
+        new_ub[upper_bounds.col] = upper_bounds.data
+        x.ub = new_ub
+
+    # Set objective
+    objective_vector = objective.toarray().ravel()
+    m.setObjective(objective_vector @ x, gp.GRB.MAXIMIZE)
+
+    # Add inequality constraint matrix
+    rhs_ineq = np.zeros(nof_primal_inequalities)
+    m.addConstr(inequalities @ x >= rhs_ineq, name="ineq")
+
+    # Add equality constraint matrix
+    rhs_eq = np.zeros(nof_primal_equalities)
+    m.addConstr(equalities @ x == rhs_eq, name="eq")
+
+    # Add known value constraint matrix
+    rhs_kv = known_vars.data
+    m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
+
+    # Add quadratic constraints
+    if factorization_conditions:
+        m.setParam("NonConvex", 2)
+        m.addConstrs((x[mon] == x[factors[0]] * x[factors[1]]
+                     for mon, factors in factorization_conditions.items()),
+                     name="fac")
+
+    collect()
+    if verbose > 1:
+        print("Pre-processing took",
+              format(perf_counter() - t0, ".4f"), "seconds.\n")
+        t0 = perf_counter()
+
+    # Solve the problem
+    if verbose > 0:
+        print("\nSolving the problem...\n")
+    m.optimize()
+    if verbose > 1:
+        print("Solving took", format(perf_counter() - t0, ".4f"),
+              "seconds.")
+
+    sc = gp.StatusConstClass
+    solution_statuses = {sc.__dict__[k]: k for k in sc.__dict__.keys()
+                         if 'A' <= k[0] <= 'Z'}
+    status_str = solution_statuses[m.Status]
+    if status_str == "OPTIMAL":
+        success = True
+        primal = m.ObjVal
+        x_values = x.X
+    else:
+        success = False
+        primal = None
+        x_values = None
+
+    if verbose > 1:
+        print("\nTotal execution time:",
+              format(perf_counter() - t_total, ".4f"), "seconds.")
+
+    return {
+        "primal_value": primal,
+        "status": status_str,
+        "success": success,
+        "x": x_values,
+    }
 
 
 def solveLP_Mosek(objective: Dict = None,
@@ -868,7 +1131,8 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
                   upper_bounds: Union[coo_matrix, Dict] = None,
                   solve_dual: bool = False,
                   default_non_negative: bool = True,
-                  feas_as_optim: bool = False,
+                  relax_known_vars: bool = False,
+                  relax_inequalities: bool = False,
                   verbose: int = 0,
                   solverparameters: Dict = None,
                   variables: List = None) -> Dict:

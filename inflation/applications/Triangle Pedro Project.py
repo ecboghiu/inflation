@@ -38,3 +38,42 @@ v, cert = max_within_feasible(triangle_lp,
                               "dual",
                               return_last_certificate=True)
 print("Critical visibility via dual cert:", v, f"\nCertificate:\n{cert}")
+
+triangle_lp.set_distribution(P_GHZ(Symbol("v")))
+symbolic_moments = triangle_lp.known_moments.copy()
+v, cert = max_within_feasible(triangle_lp,
+                              symbolic_moments,
+                              "bisection",
+                              return_last_certificate=True)
+print("Critical visibility via bisect:", v, f"\nCertificate:\n{cert}")
+
+# # Code that shows how relaxed feasibility gives infeasibility for some v
+# from scipy.optimize import bisect
+# def f(v):
+#     triangle_lp.set_distribution(P_GHZ(v))
+#     # triangle_lp.solve(feas_as_optim=True)
+#     triangle_lp.solve(relax_known_vars=True, relax_inequalities=True,)
+#     print("Status: ", v, triangle_lp.status, triangle_lp.objective_value)
+#     return triangle_lp.objective_value
+# bisect(f, 0, 1)
+
+
+#
+# triangle_lp.set_distribution(P_GHZ(0.5 + 0.02))
+# triangle_lp.solve(verbose=0)
+# print("Status: ", triangle_lp.status)
+# triangle_lp.set_distribution(P_GHZ(0.5 - 0.02))
+# triangle_lp.solve(verbose=0)
+# print("Status: ", triangle_lp.status)
+# triangle_lp.set_distribution(P_GHZ(np.sqrt(2)-0.98))
+# triangle_lp.solve(verbose=0)
+# print("Status: ", triangle_lp.status)
+# triangle_lp.set_distribution(P_GHZ(np.sqrt(2)-1.02))
+# triangle_lp.solve(verbose=0)
+# print("Status: ", triangle_lp.status)
+# triangle_lp.set_distribution(P_GHZ(0.99))
+# triangle_lp.solve(verbose=0)
+# print("Status: ", triangle_lp.status)
+# triangle_lp.set_distribution(P_GHZ(1))
+# triangle_lp.solve(verbose=0)
+# print("Status: ", triangle_lp.status)

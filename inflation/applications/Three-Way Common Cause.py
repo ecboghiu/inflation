@@ -16,7 +16,7 @@ Three_Way = InflationProblem({"U_ABC": ["A", "B", "C"],
 # Incompatible
 Three_Way_Unpacked = InflationLP(Three_Way,
                                  nonfanout=False,
-                                 use_only_equalities=True,
+                                 include_all_outcomes=True,
                                  verbose=2)
 semiknown_usage = False
 Three_Way_Unpacked.set_distribution(p_ABC, use_lpi_constraints=semiknown_usage)
@@ -38,7 +38,7 @@ print("Status: ", Three_Way_Unpacked.status)
 # Compatible
 Three_Way_Interrupted = InflationLP(Three_Way,
                                     nonfanout=True,
-                                    use_only_equalities=True,
+                                    include_all_outcomes=True,
                                     verbose=2)
 print(Three_Way_Interrupted.monomial_names)
 Three_Way_Interrupted.set_distribution(p_ABC,
