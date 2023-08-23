@@ -2144,7 +2144,7 @@ class InflationSDP(object):
                 self.canon_lexmon_from_hash[key] = lexmon
                 return lexmon
             else:
-                new_lexmon = to_canonical_1d_internal(np.asarray(lexmon, dtype=int),
+                new_lexmon = to_canonical_1d_internal(np.asarray(lexmon, dtype=np.int32),
                                                       self._notcomm,
                                                       self._orthomat,
                                                       self.all_operators_commute,
