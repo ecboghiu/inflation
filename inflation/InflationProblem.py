@@ -316,7 +316,7 @@ class InflationProblem(object):
         self._lexorder_for_factorization = np.array([
             self._inflation_indices_hash[op.tobytes()]
             for op in self._lexorder[:, 1:-2]],
-            dtype=int)
+            dtype=np.intc)
 
     @cached_property
     def inf_symmetries(self):
@@ -387,10 +387,10 @@ class InflationProblem(object):
     def mon_to_lexrepr(self, mon: np.ndarray) -> np.ndarray:
         ops_as_hashes = list(map(self._from_2dndarray, mon))
         try:
-            return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=int)
+            return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=np.intc)
             # return np.array([self._lexorder_lookup[op_hash] for op_hash in ops_as_hashes], dtype=int)
         except KeyError:
-            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder.")
+            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder \n{self._lexorder}.")
 
     def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
         """Obtains the bytes representation of an array. The library uses this
@@ -660,7 +660,7 @@ class InflationProblem(object):
         if len(sources_with_copies):
             permutation_failed = False
             lexorder_symmetries = []
-            identity_perm        = np.arange(self._nr_operators, dtype=int)
+            identity_perm        = np.arange(self._nr_operators, dtype=np.intc)
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
@@ -678,19 +678,19 @@ class InflationProblem(object):
                         new_order = np.fromiter(
                             (self._lexorder_lookup[op.tobytes()]
                              for op in adjusted_ops),
-                            dtype=int
+                            dtype=np.intc
                         )
                         one_source_symmetries.append(new_order)
                     except KeyError:
                         permutation_failed = True
                         pass
-                lexorder_symmetries.append(np.asarray(one_source_symmetries, dtype=int))
+                lexorder_symmetries.append(np.asarray(one_source_symmetries, dtype=np.intc))
             if permutation_failed and (self.verbose > 0):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
             return reduce(perm_combiner, lexorder_symmetries)
         else:
-            return np.arange(self._nr_operators, dtype=int)[np.newaxis]
+            return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
 
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates

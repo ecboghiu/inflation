@@ -1197,7 +1197,7 @@ class InflationSDP(object):
         """
         # HACK: The lexorder of InflationProblem is different from that in InflationSDP!
 
-        _factors = self.factorize_monomial_1d(np.asarray(lexmon, dtype=int) - 1,
+        _factors = self.factorize_monomial_1d(np.asarray(lexmon, dtype=np.intc) - 1,
                                               canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor + 1)
                          for factor in _factors if len(factor)]
@@ -1291,7 +1291,7 @@ class InflationSDP(object):
         output_variants = [tuple(self._to_canonical_memoized_1d(lexmon_variant,
                                                                 apply_only_commutations=True))
                            for lexmon_variant in permuted_variants]
-        representative = np.array(min(output_variants), dtype=int)
+        representative = np.array(min(output_variants), dtype=np.intc)
         return output_variants, representative
 
     def _monomial_from_atoms(self,
@@ -1690,7 +1690,7 @@ class InflationSDP(object):
                                    self._orthomat,
                                    commuting=self.all_operators_commute,
                                    verbose=self.verbose)
-        idx_to_canonical_lexmon = {idx: np.asarray(lexmon, dtype=int)
+        idx_to_canonical_lexmon = {idx: np.asarray(lexmon, dtype=np.intc)
                                 for (lexmon, idx) in
                                 canonical_lexmon_to_idx.items()}
         return problem_arr, idx_to_canonical_lexmon
