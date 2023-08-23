@@ -125,7 +125,7 @@ class InflationSDP(object):
 
         # self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = inflationproblem._nr_properties
-        self.np_dtype = inflationproblem._np_dtype
+        self.np_dtype = np.int32
         self.identity_operator = np.empty((0, self._nr_properties),
                                           dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties),
@@ -883,15 +883,25 @@ class InflationSDP(object):
         """
         columns = None
         if type(column_specification) == list:
-            # There are two possibilities: list of lists, or list of symbols
-            if type(column_specification[0]) in {list, np.ndarray}:
+            # There are two possibilities: list of lists, list of arrays 
+            # or list of symbols. If list of lists, then it is the party
+            # block encoding. If it is a list of arrays, then it can be either
+            # monomials in the 2d encoding, or the 1d encoding.
+            if type(column_specification[0]) == list:
+                # This is the standard specification for the helper
+                columns = self._build_cols_from_specs(column_specification)
+            elif type(column_specification[0]) in {np.ndarray}:
                 if len(np.array(column_specification[1]).shape) == 2:
-                    # This is the format that is later parsed by the program
-                    columns = [np.array(mon, dtype=self.np_dtype)
+                    # This is the 2d encoding, convert it to lexicographic repr
+                    columns = [nb_mon_to_lexrepr(np.array(mon,
+                                                          dtype=self.np_dtype),
+                                                 self._lexorder)
                                for mon in column_specification]
                 elif len(np.array(column_specification[1]).shape) == 1:
-                    # This is the standard specification for the helper
-                    columns = self._build_cols_from_specs(column_specification)
+                    # This is the 1d encoding, make sure the dtype is correct
+                    # for compatibility with numba
+                    columns = [np.array(mon, dtype=self.np_dtype)
+                               for mon in column_specification]
                 else:
                     raise Exception("The generating columns are not specified "
                                     + "in a valid format.")
@@ -906,11 +916,12 @@ class InflationSDP(object):
                             raise Exception(f"Column {col} is just a number. "
                                             + "Please use a valid format.")
                         else:
-                            columns.append(self.identity_operator)
+                            columns.append(np.array([], dtype=self.np_dtype))
                     elif type(col) in [sp.core.symbol.Symbol,
                                        sp.core.power.Pow,
                                        sp.core.mul.Mul]:
-                        columns.append(self._interpret_name(col))
+                        columns.append(nb_mon_to_lexrepr(self._interpret_name(col),
+                                                         self._lexorder))
                     else:
                         raise Exception(f"The column {col} is not specified " +
                                         "in a valid format.")
@@ -973,7 +984,8 @@ class InflationSDP(object):
                         col_specs += [operators]
                     columns = self._build_cols_from_specs(col_specs)
                 else:
-                    physical_monomials = []
+                    physical_monomials = [] # TODO
+                    
                     for freqs in party_freqs:
                         if freqs == [0] * self.nr_parties:
                             physical_monomials.append(self.identity_operator)
@@ -1010,15 +1022,8 @@ class InflationSDP(object):
             columns = [self._lexorder[lexrepr]
                        if lexrepr != [] else self.identity_operator
                        for lexrepr in sorted_mons]
-
-        columns = [np.asarray(col,
-                            dtype=self.np_dtype).reshape((-1,
-                                                          self._nr_properties))
-                   for col in columns]
-
-        # generating_monomials_1d = sorted(set(map(tuple, map(self.mon_to_lexrepr, columns))),
-        #                                  key=lambda x: (len(x), x))
-        self.generating_monomials_1d = list(map(self.mon_to_lexrepr, columns))
+        
+        self.generating_monomials_1d = columns
         self.genmon_1d_to_index = {tuple(lexmon): i for i, lexmon in
                                    enumerate(self.generating_monomials_1d)}
         if len(self.genmon_1d_to_index) != len(self.generating_monomials_1d):
@@ -1028,8 +1033,9 @@ class InflationSDP(object):
         self.n_columns = len(self.generating_monomials_1d)
         output = self.generating_monomials_1d
         if symbolic:
-            output = [reduce(sp.Mul, self.InflationProblem._lexrepr_to_symbols[lexmon-1]) for lexmon in
-                       self.generating_monomials_1d]
+            output = [reduce(sp.Mul, self.InflationProblem._lexrepr_to_symbols[lexmon-1])
+                      if lexmon.size > 0 else sp.S.One
+                      for lexmon in self.generating_monomials_1d ]
         return output
 
 
@@ -1596,9 +1602,9 @@ class InflationSDP(object):
         Returns
         -------
         numpy.ndarray
-            2D array encoding of the operator.
+            1D array encoding of the operator.
         """
-        components = op_string.split("_")
+        components = op_string.replace('∅','0').split("_")
         assert len(components) == self._nr_properties, \
             f"There need to be {self._nr_properties} properties to match " + \
             "the scenario."
@@ -1641,31 +1647,28 @@ class InflationSDP(object):
                                 else "".join([self.names[p] for p in specs]))
             print("Column structure:", "+".join(to_print))
 
+        _zero_lexorder = np.array([0], dtype=self.np_dtype)
         columns      = []
         seen_columns = set()
-        for block in col_specs:
-            if len(block) == 0:
-                columns.append(self.identity_operator)
-                seen_columns.add(self._from_2dndarray(self.identity_operator))
+        for block in tqdm(col_specs, desc="Generating columns  ",
+                          disable=not self.verbose):
+            if block == []:
+                seen_columns.add(tuple(nb_mon_to_lexrepr(self.identity_operator,
+                                                         self._lexorder)))
             else:
-                meas_ops = []
-                for party in block:
-                    meas_ops.append(flatten(self.measurements[party]))
-                for monomial_factors in product(*meas_ops):
-                    mon   = self._interpret_name(monomial_factors)
-                    canon = self._to_canonical_memoized(mon)
-                    if not np.array_equal(canon, 0):
-                        # If the block is [0, 0], and we have the monomial
-                        # A**2 which simplifies to A, then A could be included
-                        # in the block [0]. We use the convention that [0, 0]
-                        # represents all monomials of length 2 AFTER
-                        # simplifications, so we omit monomials of length 1.
-                        if canon.shape[0] == len(monomial_factors):
-                            key = self._from_2dndarray(canon)
-                            if key not in seen_columns:
-                                seen_columns.add(key)
-                                columns.append(canon)
-
+                meas_ops = [
+                    np.nonzero(np.logical_and(
+                        self._lexorder[:, 0] == party + 1,
+                        self._lexorder[:, -1] != \
+                            self.outcome_cardinalities[party] - 1))[0]
+                                for party in block]
+                for mon_lexrepr in product(*meas_ops):
+                    canon = self._to_canonical_memoized_1d(mon_lexrepr)
+                    if not np.array_equal(canon, _zero_lexorder):
+                        seen_columns.add(tuple(canon))
+        columns = sorted([c for c in seen_columns],
+                         key=lambda x: (len(x), x))
+        columns = [np.array(c, dtype=self.np_dtype) for c in columns]
         return columns
 
     # def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:
