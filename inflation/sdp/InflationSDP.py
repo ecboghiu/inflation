@@ -1000,11 +1000,13 @@ class InflationSDP(object):
                                         self.setting_cardinalities,
                                         self.outcome_cardinalities,
                                         self._lexorder)
+                                    physmons = [self.mon_to_lexrepr(mon)
+                                                for mon in physmons]
                                     physmons_per_party.append(physmons)
                             for monomial_parts in product(
                                     *physmons_per_party):
                                 physical_monomials.append(
-                                    self._to_canonical_memoized(
+                                    self._to_canonical_memoized_1d(
                                         np.concatenate(monomial_parts)))
                     columns = physical_monomials
             else:
@@ -1648,14 +1650,16 @@ class InflationSDP(object):
                                 else "".join([self.names[p] for p in specs]))
             print("Column structure:", "+".join(to_print))
 
-        _zero_lexorder = np.array([0], dtype=self.np_dtype)
+        _zero_lexorder = np.array([0], dtype=np.intc)
         columns      = []
         seen_columns = set()
         for block in tqdm(col_specs, desc="Generating columns  ",
                           disable=not self.verbose):
             if block == []:
-                seen_columns.add(tuple(nb_mon_to_lexrepr(self.identity_operator,
-                                                         self._lexorder)))
+                _id = nb_mon_to_lexrepr(self.identity_operator,
+                                                         self._lexorder)
+                seen_columns.add(tuple(_id))
+                columns += [_id]
             else:
                 meas_ops = [
                     np.nonzero(np.logical_and(
@@ -1666,10 +1670,13 @@ class InflationSDP(object):
                 for mon_lexrepr in product(*meas_ops):
                     canon = self._to_canonical_memoized_1d(mon_lexrepr)
                     if not np.array_equal(canon, _zero_lexorder):
-                        seen_columns.add(tuple(canon))
-        columns = sorted([c for c in seen_columns],
-                         key=lambda x: (len(x), x))
-        columns = [np.array(c, dtype=self.np_dtype) for c in columns]
+                        _hash = tuple(canon)
+                        if _hash not in seen_columns:
+                            seen_columns.add(tuple(canon))
+                            columns += [canon]
+        # columns = sorted([c for c in seen_columns],
+        #                  key=lambda x: (len(x), x))
+        # columns = [np.array(c, dtype=np.intc) for c in columns]
         return columns
 
     # def _build_momentmatrix(self) -> Tuple[np.ndarray, Dict]:

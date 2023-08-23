@@ -150,9 +150,12 @@ class TestMonomialGeneration(unittest.TestCase):
     def test_generation_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         columns  = oneParty.build_columns([[], [0, 0]])
-        truth    = np.array([[[1, 1, 0, 0], [1, 1, 1, 0]],
-                             [[1, 1, 1, 0], [1, 1, 0, 0]]], dtype=int)
-        truth    = [np.empty((0,4), dtype=int)] + [oneParty.mon_to_lexrepr(mon) for mon in truth]
+        truth    = [np.array([[1, 1, 0, 0]]),
+                    np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
+                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]]),
+                    np.array([[1, 1, 1, 0]])]
+        truth    = [np.empty((0,4), dtype=int)] + [oneParty.mon_to_lexrepr(mon) 
+                                                   for mon in truth]
         self.assertTrue(len(columns) == len(truth),
                         "Generating columns with identities is not producing "
                         + "the correct number of columns.")
@@ -561,12 +564,12 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_lpi_bounds(self):
         sdp  = InflationSDP(trivial)
-        cols = [[],
-                [[1, 2, 0, 0],
-                 [1, 2, 1, 0]],
-                [[1, 1, 0, 0],
+        cols = [np.array([]),
+                np.array([[1, 2, 0, 0],
+                 [1, 2, 1, 0]]),
+                np.array([[1, 1, 0, 0],
                  [1, 2, 0, 0],
-                 [1, 2, 1, 0]]]
+                 [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
         sdp.set_distribution(np.ones((2, 1)) / 2,
                              use_lpi_constraints=True)
@@ -582,10 +585,10 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_new_indices(self):
         sdp  = InflationSDP(trivial)
-        cols = [[],
-                [[1, 1, 0, 0],
-                 [1, 2, 0, 0],
-                 [1, 2, 1, 0]]]
+        cols = [np.array([]),
+                np.array([[1, 1, 0, 0],
+                          [1, 2, 0, 0],
+                          [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
         sdp.set_distribution(np.ones((2, 1)) / 2,
                              use_lpi_constraints=True)
@@ -724,13 +727,13 @@ class TestSymmetries(unittest.TestCase):
 
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(trivial_c)
-        col_structure = [[],
-                         [[1, 2, 0, 0], [1, 2, 1, 0]],
-                         [[1, 1, 0, 0], [1, 2, 0, 0]],
-                         [[1, 1, 1, 0], [1, 2, 0, 0]],
-                         [[1, 1, 0, 0], [1, 2, 1, 0]],
-                         [[1, 1, 1, 0], [1, 2, 1, 0]],
-                         [[1, 1, 0, 0], [1, 1, 1, 0]]]
+        col_structure = [np.array([]),
+                         np.array([[1, 2, 0, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 2, 0, 0]]),
+                         np.array([[1, 1, 1, 0], [1, 2, 0, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 1, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 1, 1, 0]])]
 
         scenario.generate_relaxation(col_structure)
         self.assertTrue(np.array_equal(scenario.columns_symmetries,
