@@ -1071,7 +1071,7 @@ class InflationSDP(object):
                     physical_monomials_as_boolvecs = reduce(nb_outer_bitwise_or, reversed(physmon_per_party))
                     columns = sorted((np.flatnonzero(boolvec).astype(np.intc)+1  # Adjust for sdp lexorder starting with zero
                                       for boolvec in physical_monomials_as_boolvecs
-                                      if (max_monomial_length and (boolvec.sum() <= max_monomial_length))) ,
+                                      if max_monomial_length == 0 or (boolvec.sum() <= max_monomial_length)),
                                                 key=lambda x: (len(x), tuple(x)))
             else:
                 raise Exception("I have not understood the format of the "
