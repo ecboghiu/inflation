@@ -1091,7 +1091,7 @@ class InflationSDP(object):
         output = self.generating_monomials_1d
         if symbolic:
             output = [reduce(sp.Mul,
-                             self.InflationProblem._lexrepr_to_symbols[lexmon],
+                             self._lexrepr_to_symbols[lexmon],
                              sp.S.One)
                       for lexmon in self.generating_monomials_1d ]
         return output
