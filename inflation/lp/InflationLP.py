@@ -261,22 +261,31 @@ class InflationLP(object):
             eprint("Number of nontrivial inequality constraints in the LP:",
                     self.nof_collins_gisin_inequalities)
 
+        _monomials_as_lexorder = [tuple(self.mon_to_lexrepr(self._lexorder[bool_idx]))
+                                           for bool_idx in
+                                           self._monomials_as_lexboolvecs]
+
         # Associate Monomials to the remaining entries.
         _monomials = []
         _monomial_names = []
         _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
+        boolvec2mon = dict()
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
             mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
+            boolvec2mon[tuple(tuple(op) 
+                              for op in self._lexorder[mon_as_lexboolvec])] = mon
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
             # if mon in _compmonomial_to_idx:
             #     alt_id = _compmonomial_to_idx[mon]
             #     raise Exception(f"Two monomials are being mixed up! {idx}->{self._lexorder[self._monomials_as_lexboolvecs[idx]]} and \n {alt_id}->{self._lexorder[self._monomials_as_lexboolvecs[alt_id]]}")
+            if mon in _compmonomial_to_idx:
+                print(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
@@ -427,6 +436,21 @@ class InflationLP(object):
                         use_lpi_constraints=use_lpi_constraints,
                         only_specified_values=shared_randomness)
 
+
+    def _sanitize_dict(self, input_dict: Any) -> Dict:
+        if isinstance(input_dict, sp.core.expr.Expr):
+            if input_dict.free_symbols:
+                input_dict_copy = {k: float(v) for k, v in sp.expand(input_dict).as_coefficients_dict().items()}
+            else:
+                input_dict_copy = dict()
+        else:
+            input_dict_copy = input_dict
+        output_dict = defaultdict(int)
+        for k, v in input_dict_copy.items():
+            if not np.isclose(v, 0):
+                output_dict[self._sanitise_monomial(k)] += v
+        return output_dict
+
     def set_objective(self,
                       objective: Union[sp.core.expr.Expr,
                       dict,
@@ -458,14 +482,6 @@ class InflationLP(object):
             self.maximize = False
         if objective is None:
             return
-        elif isinstance(objective, sp.core.expr.Expr):
-            if objective.free_symbols:
-                objective_raw = sp.expand(objective).as_coefficients_dict()
-                objective_raw = {k: float(v)
-                                 for k, v in objective_raw.items()}
-            else:
-                objective_raw = defaultdict(int)
-            return self.set_objective(objective_raw, direction)
         else:
             if self.use_lpi_constraints and self.verbose > 0:
                 warn("You have the flag `use_lpi_constraints` set to True. Be "
@@ -473,11 +489,7 @@ class InflationLP(object):
                      + "will constrain the optimization to distributions with "
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
-            objective_dict = defaultdict(int)
-            for mon, coeff in objective.items():
-                if not np.isclose(coeff, 0):
-                    objective_dict[self._sanitise_monomial(mon)] += (sign * coeff)
-            self.objective = objective_dict
+            self.objective = {mon: (sign * coeff) for mon, coeff in self._sanitize_dict(objective).items()}
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
             assert len(surprising_objective_terms) == 0, \
@@ -586,7 +598,12 @@ class InflationLP(object):
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
 
-    def set_values(self, values, **kwargs):
+    def set_values(self, values: Union[Dict[Union[CompoundMonomial,
+                      InternalAtomicMonomial,
+                      sp.core.symbol.Symbol,
+                      str],
+                      Union[float, sp.core.expr.Expr]],
+                      None], **kwargs):
         r"""Exactly like update_values, except it resets all known values to zero
         as an intermediate step
         """
@@ -1125,23 +1142,10 @@ class InflationLP(object):
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         else:
-            fake_outcome_cardinalities = self.outcome_cardinalities + 1 # We consider ALL outcomes when setting up the LP
             for party in range(self.nr_parties):
-                relevant_sources = np.flatnonzero(self.hypergraph[:, party])
-                relevant_inflevels = self.inflation_levels[relevant_sources]
-                max_mon_length = min(relevant_inflevels)
-                phys_mon = [party_physical_monomials(
-                    hypergraph=self.hypergraph,
-                    inflevels=self.inflation_levels,
-                    party=party,
-                    max_monomial_length=i,
-                    settings_per_party=self.setting_cardinalities,
-                    outputs_per_party=fake_outcome_cardinalities,
-                    lexorder=self._lexorder)
-                    for i in range(max_mon_length + 1)]
-                boolvecs = np.vstack(
-                    [self.mon_to_boolvec(op) for op in
-                     chain.from_iterable(phys_mon)])
+                boolvecs = \
+                    self.InflationProblem._generate_compatible_monomials_given_party(
+                        party, with_last_outcome=True)
                 lengths.append(len(boolvecs))
                 choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition
@@ -1309,7 +1313,7 @@ class InflationLP(object):
         #         collins_gisin_equalities.append(current_eq)
         #     return collins_gisin_equalities
 
-    @cached_property
+    @property
     def sparse_extra_equalities(self) -> coo_matrix:
         """Extra equalities in sparse matrix form."""
         eq_row, eq_col, eq_data = [], [], []
@@ -1377,7 +1381,7 @@ class InflationLP(object):
         return coo_matrix((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
-    @cached_property
+    @property
     def sparse_extra_inequalities(self) -> coo_matrix:
         """Extra inequalities in sparse matrix form."""
         ineq_row, ineq_col, ineq_data = [], [], []
@@ -1427,11 +1431,11 @@ class InflationLP(object):
 
 
 
-    @cached_property
+    @property
     def moment_equalities(self):
         return self._coo_mat_to_dict(self.sparse_equalities)
 
-    @cached_property
+    @property
     def moment_inequalities(self):
         return self._coo_mat_to_dict(self.sparse_inequalities)
 
@@ -1872,8 +1876,8 @@ class InflationLP(object):
         self.moment_lowerbounds = sanitized_lowerbounds
         # self._update_lowerbounds()
 
-    def _set_extra_equalities(self,
-                              extra_equalities: Union[list, None]) -> None:
+    def set_extra_equalities(self,
+                             extra_equalities: Union[list, None]) -> None:
         """Set extra equality constraints for the LP.
 
         Parameters
@@ -1883,23 +1887,13 @@ class InflationLP(object):
             The keys (variables) can be strings, instances of
             `CompoundMonomial`, or monomials as 2D arrays.
         """
-        if not extra_equalities:
+        self.extra_equalities = []  # reset every time
+        if not extra_equalities or extra_equalities is None:
             return
-        sanitized_extra_equalities = []
-        for eq in extra_equalities:
-            sanitized_equality = dict()
-            for x, v in eq.items():
-                x = self._sanitise_monomial(x)
-                if x not in sanitized_equality:
-                    sanitized_equality[x] = v
-                else:
-                    # If monomial appears multiple times, sum the values
-                    sanitized_equality[x] += v
-            sanitized_extra_equalities.append(sanitized_equality)
-        self.extra_equalities = sanitized_extra_equalities
+        self.extra_equalities = [self._sanitize_dict(eq) for eq in extra_equalities]
 
-    def _set_extra_inequalities(self,
-                                extra_inequalities: Union[list, None]) -> None:
+    def set_extra_inequalities(self,
+                               extra_inequalities: Union[list, None]) -> None:
         """Set extra inequality constraints for the LP.
 
         Parameters
@@ -1909,20 +1903,10 @@ class InflationLP(object):
              constraints. The keys (variables) can be strings, instances of
             `CompoundMonomial`, or monomials as 2D arrays.
         """
-        if not extra_inequalities:
+        self.extra_inequalities = []  # reset every time
+        if not extra_inequalities or extra_inequalities is None:
             return
-        sanitized_extra_inequalities = []
-        for ineq in extra_inequalities:
-            sanitized_inequality = dict()
-            for x, v in ineq.items():
-                x = self._sanitise_monomial(x)
-                if x not in sanitized_inequality:
-                    sanitized_inequality[x] = v
-                else:
-                    # If monomial appears multiple times, sum the values
-                    sanitized_inequality[x] += v
-            sanitized_extra_inequalities.append(sanitized_inequality)
-        self.extra_inequalities = sanitized_extra_inequalities
+        self.extra_inequalities = [self._sanitize_dict(ineq) for ineq in extra_inequalities]
 
     def mon_to_boolvec(self, mon: np.ndarray) -> np.ndarray:
         boolvec = self.blank_bool_vec.copy()

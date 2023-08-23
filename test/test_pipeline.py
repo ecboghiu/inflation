@@ -414,7 +414,7 @@ class TestSDPOutput(unittest.TestCase):
                                 order=("A", "B", "C", "D"))
         sdp = InflationSDP(prob)
         sdp.generate_relaxation("npa2")
-        equalities = sdp.moment_equalities
+        equalities = sdp.minimal_equalities
 
         self.assertEqual(len(equalities), 738,
                          "Failing to obtain the correct number of implicit " +
@@ -1057,4 +1057,60 @@ class TestEvans(TestPipelineLP):
                 "truth_eq": 9,
                 "GHZ": self.GHZ,
                 "crit_cutoff": 1}
+        self._run(**args)
+        
+
+class TestFullNN(TestPipelineLP):
+    scenario = InflationProblem({'lambda': ['A', 'B'],
+                                     'NS': ['B', 'C']},
+                                [2, 4, 2], [3, 1, 3], 
+                                inflation_level_per_source=[1, 2],
+                                classical_sources=['lambda'],)
+
+    def _prob_EJM(self, v, theta=0):
+        p_bell = np.expand_dims((0, 1, -1, 0), axis=1)/np.sqrt(2)
+        rho_v = v * p_bell @ p_bell.conj().T + (1 - v) * np.eye(4)/4
+        sigmax = np.array([[0, 1], [1, 0]])
+        sigmay = np.array([[0, -1j], [1j, 0]])
+        sigmaz = np.array([[1, 0], [0, -1]])
+        A = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
+                for v in reversed(np.linalg.eigh(op)[1].T)] 
+                for op in [sigmax, sigmay, sigmaz]]
+        C = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
+                for v in reversed(np.linalg.eigh(op)[1].T)] 
+                for op in [sigmax, sigmay, sigmaz]]
+        r_plus = (1 + np.exp(1j*theta))/np.sqrt(2)
+        r_minus = (1 - np.exp(1j*theta))/np.sqrt(2)
+        e00 = np.expand_dims([1, 0, 0, 0], axis=1)
+        e01 = np.expand_dims([0, 1, 0, 0], axis=1)
+        e10 = np.expand_dims([0, 0, 1, 0], axis=1)
+        e11 = np.expand_dims([0, 0, 0, 1], axis=1)
+        psi1 = 1/2 * (np.exp(-1j*np.pi/4)*e00 - r_plus * e01 
+                        - r_minus * e10 + np.exp(-3/4*np.pi*1j)*e11)
+        psi2 = 1/2 * (np.exp(1j*np.pi/4)*e00 + r_minus * e01 
+                        + r_plus * e10 + np.exp(3/4*np.pi*1j)*e11)
+        psi3 = 1/2 * (np.exp(-1j*np.pi*3/4)*e00 + r_minus * e01 
+                        + r_plus * e10 + np.exp(-1/4*np.pi*1j)*e11)
+        psi4 = 1/2 * (np.exp(1j*np.pi*3/4)*e00 - r_plus * e01 
+                        - r_minus * e10 + np.exp(np.pi*1j/4)*e11)
+        B = [ [psi @ psi.conj().T for psi in [psi1, psi2, psi3, psi4] ]]
+        
+        p = np.zeros((2, 4, 2, 3, 1, 3))
+        state = np.kron(rho_v, rho_v)
+        for a, b, c, x, y, z in np.ndindex(p.shape):
+            mmnt = np.kron(np.kron(A[x][a], B[y][b]), C[z][c])
+            p[a, b, c, x, y, z] = np.real(np.trace(state @ mmnt))
+        return p
+    
+    def test_fullnetworknonlocality_3partite_line(self):
+        lp = InflationLP(self.scenario, nonfanout=True)
+        
+        best_theta = np.arccos(np.sqrt(5) / 3)
+        v_for_best_theta = 2 / np.sqrt(5)
+        
+        args = {"scenario": lp,
+                "truth_columns": 2048,
+                "truth_eq": 0,
+                "GHZ": lambda x: self._prob_EJM(x, theta=best_theta),
+                "crit_cutoff": v_for_best_theta}
         self._run(**args)

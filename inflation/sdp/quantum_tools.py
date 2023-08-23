@@ -7,7 +7,8 @@ import numpy as np
 import sympy
 
 from copy import deepcopy
-from itertools import permutations, product, combinations_with_replacement
+from itertools import permutations, product, combinations_with_replacement, \
+                      combinations
 from tqdm import tqdm
 from typing import Any, Dict, List, Tuple, Union
 
@@ -539,7 +540,8 @@ def lexicographic_order(infSDP) -> Dict[str, int]:
                               commutative=False)] = i
     return lexorder
 
-
+# TODO remove this function once party_physical_monomials_via_cliques is fully
+# functional
 def party_physical_monomials(hypergraph: np.ndarray,
                              inflevels: np.ndarray,
                              party: int,
@@ -554,7 +556,7 @@ def party_physical_monomials(hypergraph: np.ndarray,
     Parameters
     ----------
     hypergraph : numpy.ndarray
-         Hypergraph of the scenario.
+        Hypergraph of the scenario.
     inflevels : np.ndarray
         The number of copies of each source in the inflated scenario.
     party : int
