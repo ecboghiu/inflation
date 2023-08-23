@@ -279,30 +279,7 @@ class InflationSDP(object):
         self.Zero = self.Monomial_2d(self.zero_operator, idx=0)
         self.One  = self.Monomial_2d(self.identity_operator, idx=1)
 
-        generating_monomials = self.build_columns(column_specification)
-
-        # Generate dictionary to indices (used in dealing with symmetries and
-        # column-level equalities)
-        genmon_hash_to_index = {self._from_2dndarray(op): i
-                                for i, op in enumerate(generating_monomials)}
-        # Check for duplicates
-        if len(genmon_hash_to_index) < len(generating_monomials):
-            generating_monomials = [generating_monomials[i]
-                                    for i in genmon_hash_to_index.values()]
-            genmon_hash_to_index = {hash: i for i, hash
-                                    in enumerate(genmon_hash_to_index.keys())}
-            if self.verbose > 0:
-                warn("Duplicates were detected in the list of generating " +
-                     "monomials and automatically removed.")
-        self.genmon_hash_to_index = genmon_hash_to_index
-        self.n_columns            = len(generating_monomials)
-        self.generating_monomials = generating_monomials
-        #TODO: Move conversion to 1d earlier, skip hashing
-        self.generating_monomials_1d = [nb_mon_to_lexrepr(op, self._lexorder) for op
-                                   in generating_monomials]
-        self.genmon_1d_to_index = {tuple(lexmon): i for i, lexmon in enumerate(self.generating_monomials_1d)}
-        del generating_monomials, genmon_hash_to_index
-
+        self.build_columns(column_specification)
         collect()
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
@@ -878,7 +855,7 @@ class InflationSDP(object):
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ###########################################################################
-    #TODO: Natively return 1d-representation from build_columns
+    #TODO: Natively avoid intermediate 2d-representation in build_columns
     def build_columns(self,
                       column_specification: Union[str,
                                                   List[List[int]],
@@ -1026,7 +1003,7 @@ class InflationSDP(object):
                             + "column specification")
 
         if not np.array_equal(self._lexorder, self._default_lexorder):
-            res_lexrepr = [nb_mon_to_lexrepr(mon, self._lexorder).tolist()
+            res_lexrepr = [self.mon_to_lexrepr(mon).tolist()
                            if (len(mon) or mon.shape[-1] == 1) else []
                            for mon in columns]
             sorted_mons = sorted(res_lexrepr, key=lambda x: (len(x), x))
@@ -1034,13 +1011,28 @@ class InflationSDP(object):
                        if lexrepr != [] else self.identity_operator
                        for lexrepr in sorted_mons]
 
-        columns = [np.array(col,
+        columns = [np.asarray(col,
                             dtype=self.np_dtype).reshape((-1,
                                                           self._nr_properties))
                    for col in columns]
+
+        # generating_monomials_1d = sorted(set(map(tuple, map(self.mon_to_lexrepr, columns))),
+        #                                  key=lambda x: (len(x), x))
+        self.generating_monomials_1d = list(map(self.mon_to_lexrepr, columns))
+        self.genmon_1d_to_index = {tuple(lexmon): i for i, lexmon in
+                                   enumerate(self.generating_monomials_1d)}
+        if len(self.genmon_1d_to_index) != len(self.generating_monomials_1d):
+            self.generating_monomials_1d = sorted(self.generating_monomials_1d, key=lambda x: (len(x), tuple(x)))
+            self.genmon_1d_to_index = {tuple(lexmon): i for i, lexmon in enumerate(self.generating_monomials_1d)}
+            warn("The generating set of monomials included duplicate elements.")
+        self.n_columns = len(self.generating_monomials_1d)
+        output = self.generating_monomials_1d
         if symbolic:
-            columns = [to_symbol(col, self.names) for col in columns]
-        return columns
+            output = [reduce(sp.Mul, self.InflationProblem._lexrepr_to_symbols[lexmon-1]) for lexmon in
+                       self.generating_monomials_1d]
+        return output
+
+
 
     def reset(self, which: Union[str, List[str]]) -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
@@ -1181,7 +1173,7 @@ class InflationSDP(object):
         :math:`\langle C^{1,0,1}_{z=0,c=0}\rangle`, after factorizing the input
         monomial and reducing the inflation indices of each of the factors.
         """
-        return self.Monomial_1d(nb_mon_to_lexrepr(array2d, self._lexorder), idx=idx)
+        return self.Monomial_1d(self.mon_to_lexrepr(array2d), idx=idx)
 
     def Monomial_1d(self, lexmon: np.ndarray, idx=-1) -> CompoundMonomial:
         r"""Create an instance of the `CompoundMonomial` class from a 1D array.
@@ -1392,7 +1384,7 @@ class InflationSDP(object):
             assert array.shape[-1] == self._nr_properties, \
                 "The input does not conform to the operator specification."
             canon_lexmon = self._to_canonical_memoized_1d(
-                nb_mon_to_lexrepr(array, self._lexorder))
+                self.mon_to_lexrepr(array))
             return self.Monomial_1d(canon_lexmon)
         elif isinstance(mon, str):
             try:
@@ -1704,6 +1696,7 @@ class InflationSDP(object):
         return problem_arr, idx_to_canonical_lexmon
 
     def _discover_normalization_eqns(self) -> List[Tuple[int, List[int]]]:
+        #TODO: Needs major overhaul to efficiently use 1d internal representation
         """Given the generating monomials, infer implicit normalization
         equalities between columns of the moment matrix. Each normalization
         equality is a two element tuple; the first element is an integer
@@ -1719,16 +1712,17 @@ class InflationSDP(object):
         """
         skip_party = [not i for i in self.has_children]
         column_level_equalities = []
-        for i, mon in enumerate(self.generating_monomials):
+        for i, lexmon in enumerate(self.generating_monomials_1d):
+            mon = self._lexorder[lexmon]
             eqs = expand_moment_normalisation(mon,
                                               self.outcome_cardinalities,
                                               skip_party)
             for eq in eqs:
                 try:
-                    eq_idxs = [self.genmon_hash_to_index[
-                                                self._from_2dndarray(eq[0])]]
-                    eq_idxs.append([self.genmon_hash_to_index[
-                                    self._from_2dndarray(m)] for m in eq[1]])
+                    eq_idxs = [self.genmon_1d_to_index[
+                                                tuple(self.mon_to_lexrepr(eq[0]))]]
+                    eq_idxs.append([self.genmon_1d_to_index[
+                                    tuple(self.mon_to_lexrepr(m))] for m in eq[1]])
                     column_level_equalities += [tuple(eq_idxs)]
                 except KeyError:
                     break
@@ -1746,7 +1740,7 @@ class InflationSDP(object):
             The list of all permutations of the generating columns implied by
             the inflation symmetries.
         """
-        discovered_symmetries = [np.arange(len(self.generating_monomials), dtype=int)]
+        discovered_symmetries = [np.arange(self.n_columns, dtype=int)]
         permutation_failed = False
         for inf_sym in self.lexorder_symmetries[1:]:
             skip_this_one = False
@@ -2108,7 +2102,7 @@ class InflationSDP(object):
                 self.canon_ndarray_from_hash[key] = array2d
                 return array2d
             else:
-                lexmon = nb_mon_to_lexrepr(array2d, self._lexorder)
+                lexmon = self.mon_to_lexrepr(array2d)
                 new_lexmon = to_canonical_1d_internal(lexmon,
                                                        self._notcomm,
                                                        self._orthomat,
@@ -2159,3 +2153,6 @@ class InflationSDP(object):
                 self.canon_lexmon_from_hash[key]     = new_lexmon
                 self.canon_lexmon_from_hash[new_key] = new_lexmon
                 return new_lexmon
+
+    def mon_to_lexrepr(self, mon: np.ndarray) -> np.ndarray:
+        return nb_mon_to_lexrepr(mon, self._lexorder)

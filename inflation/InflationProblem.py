@@ -5,6 +5,7 @@ inflation.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
+import sympy
 
 from itertools import (chain,
                        combinations_with_replacement,
@@ -421,6 +422,11 @@ class InflationProblem(object):
         #                                   + [str(i) for i in op[1:]])
         #         for op in self._lexorder]
         return np.array(as_list)
+
+    @cached_property
+    def _lexrepr_to_symbols(self):
+        return np.array([sympy.Symbol(name, commutative=False) for name in self._lexrepr_to_names],
+                        dtype=object)
 
     @cached_property
     def names_to_ints(self):
