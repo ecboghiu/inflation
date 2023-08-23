@@ -42,6 +42,7 @@ from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
 from ..utils import clean_coefficients, format_permutations
+from ..lp.numbafied import nb_outer_bitwise_or
 
 
 class InflationSDP(object):
@@ -1033,9 +1034,7 @@ class InflationSDP(object):
                     if spec == "local":
                         raise Exception("Please specify a precise local level")
                     else:
-                        # TODO does this make sense as default behaviour?
-                        lengths = [min(self.inflation_levels[party])
-                                   for party in self.hypergraph.T]
+                        lengths = [None] * self.nr_parties
                 elif len(lengths) == self.nr_parties:
                     lengths = [int(level) for level in lengths]
                 else:
@@ -1066,21 +1065,14 @@ class InflationSDP(object):
                         = [self.InflationProblem._generate_compatible_monomials_given_party(
                             party, up_to_length=length, with_last_outcome=False
                             )
-                            for length, party in zip(lengths, 
+                            for length, party in zip(lengths,
                                                      range(self.nr_parties))
                             ]
-                    # Adjust for the fact that the InflationSDP lexorder
-                    # includes the zero operator
-                    physmon_per_party = [np.pad(block, ((0, 0), (1, 0)))
-                                         for block in physmon_per_party]
-                    physical_monomials = [] 
-                    for physmons in product(*physmon_per_party):
-                        mon_bool = sum(physmons)
-                        if mon_bool.sum() <= max_monomial_length:
-                            physical_monomials += [np.nonzero(sum(physmons))[0]]
-                    columns = sorted(physical_monomials, 
+                    physical_monomials_as_boolvecs = reduce(nb_outer_bitwise_or, reversed(physmon_per_party))
+                    columns = sorted((np.flatnonzero(boolvec).astype(np.intc)+1  # Adjust for sdp lexorder starting with zero
+                                      for boolvec in physical_monomials_as_boolvecs
+                                      if (max_monomial_length and (boolvec.sum() <= max_monomial_length))) ,
                                                 key=lambda x: (len(x), tuple(x)))
-                    columns = physical_monomials
             else:
                 raise Exception("I have not understood the format of the "
                                 + "column specification")
