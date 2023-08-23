@@ -25,26 +25,23 @@ from .fast_npa import (nb_all_commuting_q,
                        commutation_matrix,
                        nb_mon_to_lexrepr,
                        reverse_mon,
-                       # to_canonical,
                        to_canonical_1d_internal
                        )
 from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
-                            # calculate_momentmatrix_2d_internal,
                             calculate_momentmatrix_1d_internal,
                             construct_normalization_eqs,
                             expand_moment_normalisation,
                             flatten_symbolic_powers,
                             generate_operators,
                             party_physical_monomials,
-                            reduce_inflation_indices,
-                            to_symbol)
+                            reduce_inflation_indices)
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
-from ..utils import flatten, clean_coefficients, format_permutations
+from ..utils import clean_coefficients, format_permutations
 
 
 class InflationSDP(object):
@@ -95,13 +92,13 @@ class InflationSDP(object):
         self.has_children = inflationproblem.has_children
         self.outcome_cardinalities = inflationproblem.outcomes_per_party.copy()
         self.has_children = inflationproblem.has_children.copy()
-        if include_all_outcomes or supports_problem: # HACK to fix detection of incompatible supports. (Can be fixed upon adding set_extra_equalities)
+        if include_all_outcomes or supports_problem:  # HACK to fix detection of incompatible supports. (Can be fixed upon adding set_extra_equalities)
             self.has_children[:] = True
 
 
         self.outcome_cardinalities += self.has_children
-        self.setting_cardinalities = self.InflationProblem.settings_per_party
-        self._quantum_sources = self.InflationProblem._nonclassical_sources
+        self.setting_cardinalities = inflationproblem.settings_per_party
+        self._quantum_sources = inflationproblem._nonclassical_sources
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
@@ -146,6 +143,12 @@ class InflationSDP(object):
         # inflationproblem._lexorder_for_factorization = _lexorder_for_factorization
         # inflationproblem._inflation_indices_overlap = nb_overlap_matrix(all_unique_inflation_indices)
 
+        self._lexrepr_to_names = np.hstack((["0"], inflationproblem._lexrepr_to_names))
+        self._lexrepr_to_symbols = np.hstack(([sp.S.Zero], inflationproblem._lexrepr_to_symbols))
+
+
+
+
         #Construct orthogonality matrix for recognizing zeros
         self._orthomat = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
         for ((i, j), (op_i, op_j)) in zip(
@@ -159,7 +162,7 @@ class InflationSDP(object):
         self._orthomat[0, :] = True
 
         # Translating the compatibility matrix of InflationProblem to
-        # a commutativity matrix for InflationSDP. 
+        # a commutativity matrix for InflationSDP.
         # # InflationProblem has more operators in ._lexorder than InflationSDP
         # This is because events with the last outcome are included in
         # InflationProblem. We carefully avoid this by using .mon_to_lexrepr
@@ -167,14 +170,14 @@ class InflationSDP(object):
         assert np.allclose(self._lexorder[0], self.zero_operator), \
             "The first element of the lexorder should be the zero operator"
         self._default_notcomm = \
-            np.pad(np.invert(self.InflationProblem._compatible_measurements + 
-                              self._orthomat[1:, 1:] + 
+            np.pad(np.invert(self.InflationProblem._compatible_measurements +
+                              self._orthomat[1:, 1:] +
                               np.eye(self._lexorder_len - 1, dtype=bool)
                               ),
                        ((1, 0), (1, 0)))
 
-        self._notcomm = self._default_notcomm.copy() 
-        
+        self._notcomm = self._default_notcomm.copy()
+
         if (self._quantum_sources.size == 0) or commuting:
             self.all_operators_commute = True
             self._quantum_sources = np.array([0])  # Dummy value, numba does
@@ -193,7 +196,7 @@ class InflationSDP(object):
             self.all_commuting_q_2d = lambda mon: nb_all_commuting_q(mon,
                                                                      self._lexorder,
                                                                      self._notcomm)
-            self.all_commuting_q_1d = lambda lexmon: not self._lexorder[np.ix_(lexmon, lexmon)].any()
+            self.all_commuting_q_1d = lambda lexmon: not self._notcomm[np.ix_(lexmon, lexmon)].any()
 
 
 
@@ -1088,15 +1091,6 @@ class InflationSDP(object):
         else:
             raise Exception("I have not understood the format of the "
                             + "column specification")
-
-        if not np.array_equal(self._lexorder, self._default_lexorder):
-            res_lexrepr = [self.mon_to_lexrepr(mon).tolist()
-                           if (len(mon) or mon.shape[-1] == 1) else []
-                           for mon in columns]
-            sorted_mons = sorted(res_lexrepr, key=lambda x: (len(x), x))
-            columns = [self._lexorder[lexrepr]
-                       if lexrepr != [] else self.identity_operator
-                       for lexrepr in sorted_mons]
         
         self.generating_monomials_1d = columns
         self.genmon_1d_to_index = {tuple(lexmon): i for i, lexmon in
@@ -1108,8 +1102,8 @@ class InflationSDP(object):
         self.n_columns = len(self.generating_monomials_1d)
         output = self.generating_monomials_1d
         if symbolic:
-            output = [reduce(sp.Mul, 
-                             self.InflationProblem._lexrepr_to_symbols[lexmon-1],
+            output = [reduce(sp.Mul,
+                             self.InflationProblem._lexrepr_to_symbols[lexmon],
                              sp.S.One)
                       for lexmon in self.generating_monomials_1d ]
         return output
@@ -1213,7 +1207,7 @@ class InflationSDP(object):
                 self.atomic_monomial_from_hash[key] = mon
                 return mon
             except KeyError:
-                mon = InternalAtomicMonomial(self, self._lexorder[repr_lexmon])
+                mon = InternalAtomicMonomial(self, repr_lexmon)
                 self.atomic_monomial_from_hash[key]     = mon
                 self.atomic_monomial_from_hash[new_key] = mon
                 return mon
@@ -1287,15 +1281,40 @@ class InflationSDP(object):
         mon.attach_idx(idx)
         return mon
 
-    def _conjugate_ndarray(self,
-                           mon: np.ndarray,
+    # def _conjugate_ndarray(self,
+    #                        mon: np.ndarray,
+    #                        apply_only_commutations=True) -> np.ndarray:
+    #     """Compute the canonical form of the conjugate of a monomial.
+    #
+    #     Parameters
+    #     ----------
+    #     mon : numpy.ndarray
+    #         Input monomial that cannot be further factorised.
+    #     apply_only_commutations : bool, optional
+    #         If ``True``, skip checking if monomial is zero and if there are
+    #         square projectors.
+    #
+    #     Returns
+    #     -------
+    #     numpy.ndarray
+    #         The canonical form of the conjugate of the input monomial under
+    #         relabelling through the inflation symmetries.
+    #     """
+    #     if self.all_commuting_q_2d(mon):
+    #         return mon
+    #     else:
+    #         return self._to_inflation_repr_2d(reverse_mon(mon),
+    #                                           apply_only_commutations)
+    #
+    def _conjugate_lexmon(self,
+                           lexmon: np.ndarray,
                            apply_only_commutations=True) -> np.ndarray:
         """Compute the canonical form of the conjugate of a monomial.
 
         Parameters
         ----------
         mon : numpy.ndarray
-            Input monomial that cannot be further factorised.
+            Input monomial that cannot be further factorised in 1d format
         apply_only_commutations : bool, optional
             If ``True``, skip checking if monomial is zero and if there are
             square projectors.
@@ -1306,10 +1325,10 @@ class InflationSDP(object):
             The canonical form of the conjugate of the input monomial under
             relabelling through the inflation symmetries.
         """
-        if self.all_commuting_q_2d(mon):
-            return mon
+        if self.all_commuting_q_1d(lexmon):
+            return lexmon
         else:
-            return self._to_inflation_repr_2d(reverse_mon(mon),
+            return self._to_inflation_repr_1d(reverse_mon(lexmon),
                                               apply_only_commutations)
 
     def _construct_mask_matrices(self) -> None:

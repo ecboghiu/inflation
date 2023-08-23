@@ -19,7 +19,8 @@ from .monomial_utils import (compute_marginal,
 
 @total_ordering
 class InternalAtomicMonomial(object):
-    __slots__ = ["as_ndarray",
+    __slots__ = ["as_lexmon",
+                 "as_ndarray",
                  "is_one",
                  "is_zero",
                  "is_knowable",
@@ -28,10 +29,13 @@ class InternalAtomicMonomial(object):
                  "n_operators",
                  "op_length",
                  "rectified_ndarray",
-                 "sdp"
+                 "sdp",
+                 "name",
+                 "symbol",
+                 "signature"
                  ]
 
-    def __init__(self, inflation_sdp_instance, array2d: np.ndarray):
+    def __init__(self, inflation_sdp_instance, lexmon: np.ndarray):
         r"""This class models a moment
         :math:`\langle Op_1 Op_2\dots Op_n\rangle` on the inflated problem,
         which cannot be decomposed into products of other moments. It is used
@@ -72,12 +76,13 @@ class InternalAtomicMonomial(object):
             methods specific to the inflation problem. E.g., when instantiating
             an internal atomic moment, the ``InflationSDP`` instance is used to
             check if it already contains such moment.
-        array2d : numpy.ndarray
-            A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D
-            array.
+        lexmon : numpy.ndarray
+            A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 1D
+            array lexmon.
         """
         self.sdp        = inflation_sdp_instance
-        self.as_ndarray = np.asarray(array2d, dtype=self.sdp.np_dtype)
+        self.as_lexmon  = np.asarray(lexmon, dtype=np.intc)
+        self.as_ndarray = self.sdp._lexorder[lexmon]
         self.n_operators, self.op_length = self.as_ndarray.shape
         assert self.op_length == self.sdp._nr_properties, \
             ("An AtomicMonomial should be a 2-d array where each row is a list"
@@ -85,7 +90,7 @@ class InternalAtomicMonomial(object):
              + "index corresponds to the party, the last one to the outcome, "
              + "the second-to-last to the setting, and the rest to the "
              + "inflation copies.")
-        self.is_zero     = mon_is_zero(self.as_ndarray)
+        self.is_zero     = mon_is_zero(self.as_ndarray)  #TODO: use orthogonality matrix
         self.is_one      = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
@@ -103,6 +108,10 @@ class InternalAtomicMonomial(object):
                                                       [0, -2, -1],
                                                       axis=1)),
                 dtype=int)
+
+        self.name = self._name
+        self.signature = self._signature
+        self.symbol = self._symbol
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -140,11 +149,15 @@ class InternalAtomicMonomial(object):
     @property
     def dagger(self):
         """Returns the adjoint of the Monomial."""
-        conjugate_ndarray   = self.sdp._conjugate_ndarray(self.as_ndarray)
-        conjugate_signature = self.sdp._from_2dndarray(conjugate_ndarray)
+
+        conjugate_lexmon = self.sdp._conjugate_lexmon(self.as_lexmon)
+        conjugate_signature = tuple(conjugate_lexmon)
         if conjugate_signature != self.signature:
             dagger = self.__copy__()
-            dagger.as_ndarray = conjugate_ndarray
+            dagger.as_lexmon = conjugate_lexmon
+            dagger.signature = conjugate_signature
+            dagger.as_ndarray = self.sdp._lexorder[conjugate_lexmon]
+            dagger.name = "<" + " ".join(self.sdp._lexrepr_to_names[dagger.as_lexmon]) + ">"
             return dagger
         else:
             return self
@@ -157,21 +170,24 @@ class InternalAtomicMonomial(object):
         return self == self.dagger
 
     @property
-    def name(self):
+    def _raw_name(self):
+        list_of_op_names = self.sdp._lexrepr_to_names[self.as_lexmon]
+        return "<" + " ".join(list_of_op_names) + ">"
+
+    @property
+    def _name(self):
         """A string representing the monomial. In case of knowable monomials,
         it is of the form ``p(outputs|inputs)``. Otherwise it represents the
         expectation value of the monomial with bracket notation.
         """
         if self.is_one:
             return "1"
-        elif self.is_zero:
-            return "0"
         elif self.is_knowable:
             # Use notation p(outputs|settings)
             # Convention in numpy monomial format is first party = 1
             party_indices = self.rectified_ndarray[:, 0] - 1
-            parties       = np.take(self.sdp.names, party_indices.tolist())
-            inputs  = [str(input) for input in self.rectified_ndarray[:, -2]]
+            parties = np.take(self.sdp.names, party_indices.tolist())
+            inputs = [str(input) for input in self.rectified_ndarray[:, -2]]
             outputs = [str(output) for output in self.rectified_ndarray[:, -1]]
             p_divider = ""
             # We will probably never have more than 1 digit cardinalities,
@@ -182,19 +198,15 @@ class InternalAtomicMonomial(object):
                     "(" + o_divider.join(outputs) +
                     "|" + i_divider.join(inputs) + ")")
         else:
-            # Use expectation value notation
-            operators = []
-            for op in self.as_ndarray:
-                operators.append("_".join([self.sdp.names[op[0] - 1]]
-                                          + [str(i) for i in op[1:]]))
-            return "<" + " ".join(operators) + ">"
+            return self._raw_name
 
     @property
-    def signature(self):
-        return self.sdp._from_2dndarray(self.as_ndarray)
+    def _signature(self):
+        # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
+        return tuple(self.as_lexmon)
 
     @property
-    def symbol(self):
+    def _symbol(self):
         """Return a sympy Symbol representing the monomial."""
         return symbol_from_atom_name(self.name)
 
@@ -335,6 +347,15 @@ class CompoundMonomial(object):
     def _symbols_of_factors(self):
         """Generate a sympy Symbol per factor in the Monomial."""
         return [factor.symbol for factor in self.factors]
+
+    @property
+    def as_lexmon(self):
+        if self.is_one:
+            return np.zeros(0, dtype=np.intc)
+        elif self.is_atomic:
+            return self.factors[0].as_lexmon
+        else:
+            return np.hstack([factor.as_lexmon for factor in self.factors]).astype(np.intc)
 
     def attach_idx(self, idx: int):
         """Assign an index to the Monomial. This is used when generating the
