@@ -56,9 +56,9 @@ class InternalAtomicMonomial(object):
         self.lp = inflation_lp_instance
         if as_1d_vec.dtype == bool:
             self.as_bool_vec = as_1d_vec
-            self.as_int_vec = np.flatnonzero(self.as_bool_vec).astype(int)
+            self.as_int_vec = np.flatnonzero(self.as_bool_vec).astype(np.intc)
         else:
-            self.as_int_vec = as_1d_vec.astype(int)
+            self.as_int_vec = np.asarray(as_1d_vec, np.intc)
             self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()
             self.as_bool_vec[self.as_int_vec] = True
 
@@ -147,9 +147,6 @@ class InternalAtomicMonomial(object):
     def _signature(self):
         # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
         return self.as_bool_vec.tobytes()
-        return tuple(sorted())
-
-
 
     @property
     def _symbol(self):
@@ -248,14 +245,14 @@ class CompoundMonomial(object):
 
         if self.is_one:
             self.as_bool_vec = np.zeros(0, dtype=bool)
-            self.as_int_vec = np.zeros(0, dtype=int)
+            self.as_int_vec = np.zeros(0, dtype=np.intc)
         elif self.is_atomic:
             self.as_bool_vec = self.factors[0].as_bool_vec
             self.as_int_vec = self.factors[0].as_int_vec
         else:
             self.as_bool_vec = reduce(np.bitwise_or,
                                       (factor.as_bool_vec for factor in self.factors))
-            self.as_int_vec = np.hstack([factor.as_int_vec for factor in self.factors]).astype(int)
+            self.as_int_vec = np.hstack([factor.as_int_vec for factor in self.factors]).astype(np.intc)
 
         self.name        = name_from_atom_names(self._names_of_factors)
         self.symbol      = symbol_prod(self._symbols_of_factors)
