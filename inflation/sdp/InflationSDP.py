@@ -1063,7 +1063,7 @@ class InflationSDP(object):
                 else:
                     physmon_per_party \
                         = [self.InflationProblem._generate_compatible_monomials_given_party(
-                            party, up_to_length=length, with_last_outcome=False
+                            party, up_to_length=length, with_last_outcome=self.has_children[party]
                             )
                             for length, party in zip(lengths,
                                                      range(self.nr_parties))
