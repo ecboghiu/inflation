@@ -182,6 +182,8 @@ class InternalAtomicMonomial(object):
         """
         if self.is_one:
             return "1"
+        elif self.is_zero:
+            return "0"
         elif self.is_knowable:
             # Use notation p(outputs|settings)
             # Convention in numpy monomial format is first party = 1
