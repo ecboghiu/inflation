@@ -138,7 +138,7 @@ class InflationSDP(object):
         self._default_lexorder = np.concatenate((self.zero_operator, inflationproblem._lexorder)).astype(self.np_dtype)
         self._lexorder = self._default_lexorder.copy()
         self._lexorder_len = len(self._lexorder)
-        self.lexorder_symmetries = np.pad(inflationproblem.inf_symmetries + 1, ((0,0), (1,0)))
+        self.lexorder_symmetries = np.pad(inflationproblem.lexorder_symmetries + 1, ((0, 0), (1, 0)))
         # HACK: Override inflationproblem's _lexorder_for_factorization attribute to make factorize_1d work
         # all_unique_inflation_indices, _lexorder_for_factorization  = np.unique(self._lexorder[:, 1:-2], axis=0, return_inverse=True)
         # inflationproblem._inflation_indices_hash = {op.tobytes(): i for i, op
@@ -297,12 +297,12 @@ class InflationSDP(object):
                   len(unsymmetrized_corresp) + additional_var)
 
         # Calculate the inflation symmetries
-        self.inflation_symmetries = self._discover_inflation_symmetries()
+        self.columns_symmetries = self._discover_columns_symmetries()
 
         # Apply the inflation symmetries to the moment matrix
         self.momentmatrix, self.orbits, representative_unsym_idxs = \
             apply_inflation_symmetries(unsymmetrized_mm,
-                                       self.inflation_symmetries,
+                                       self.columns_symmetries,
                                        self.verbose)
         self.symmetrized_corresp = \
             {self.orbits[idx]: unsymmetrized_corresp[idx]
@@ -1731,7 +1731,7 @@ class InflationSDP(object):
                     break
         return column_level_equalities
 
-    def _discover_inflation_symmetries(self) -> np.ndarray:
+    def _discover_columns_symmetries(self) -> np.ndarray:
         """Calculates all the symmetries and applies them to the set of
         operators used to define the moment matrix. The new set of operators
         is a permutation of the old. The function outputs a list of all

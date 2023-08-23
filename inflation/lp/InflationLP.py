@@ -102,7 +102,7 @@ class InflationLP(object):
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
         self._lexrange = np.arange(self._nr_operators)
-        self.lexorder_symmetries = inflationproblem.inf_symmetries
+        self.lexorder_symmetries = inflationproblem.lexorder_symmetries
         # self._lexorder_lookup = inflationproblem._lexorder_lookup
         self._from_2dndarray = inflationproblem._from_2dndarray
         self.mon_to_lexrepr = inflationproblem.mon_to_lexrepr

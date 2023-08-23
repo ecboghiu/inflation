@@ -319,8 +319,8 @@ class InflationProblem(object):
             dtype=np.intc)
 
     @cached_property
-    def inf_symmetries(self):
-        return self.lexorder_perms_from_inflation()
+    def lexorder_symmetries(self):
+        return self.discover_lexorder_symmetries()
 
 
     def __repr__(self):
@@ -643,7 +643,7 @@ class InflationProblem(object):
     ###########################################################################
     # FUNCTIONS PERTAINING TO SYMMETRY                                        #
     ###########################################################################
-    def lexorder_perms_from_inflation(self) -> np.ndarray:
+    def discover_lexorder_symmetries(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
         function outputs a list of all permutations.

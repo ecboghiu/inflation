@@ -733,7 +733,7 @@ class TestSymmetries(unittest.TestCase):
                          [[1, 1, 0, 0], [1, 1, 1, 0]]]
 
         scenario.generate_relaxation(col_structure)
-        self.assertTrue(np.array_equal(scenario.inflation_symmetries,
+        self.assertTrue(np.array_equal(scenario.columns_symmetries,
                                        [[0, 6, 2, 4, 3, 5, 1]]),
                         "The commutation relations of different copies are " +
                         "not applied properly after inflation symmetries.")
@@ -746,7 +746,7 @@ class TestSymmetries(unittest.TestCase):
         # bilocalSDP.genmon_hash_to_index = {
         #                         bilocalSDP._from_2dndarray(op): i
         #                         for i, op in enumerate(cols)}
-        syms = bilocalSDP._discover_inflation_symmetries()
+        syms = bilocalSDP._discover_columns_symmetries()
         # Make it a set so the order doesn't matter
         syms = set(tuple(s) for s in syms)
         # I simply copied the output at a time when we understand the code
