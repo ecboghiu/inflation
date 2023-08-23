@@ -90,7 +90,7 @@ class InternalAtomicMonomial(object):
              + "index corresponds to the party, the last one to the outcome, "
              + "the second-to-last to the setting, and the rest to the "
              + "inflation copies.")
-        self.is_zero     = mon_is_zero(self.as_ndarray)  #TODO: use orthogonality matrix
+        self.is_zero     = not np.all(self.as_lexmon)
         self.is_one      = (self.n_operators == 0)
         self.is_knowable = (self.is_zero
                             or self.is_one
