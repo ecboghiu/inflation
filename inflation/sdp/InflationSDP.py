@@ -146,9 +146,6 @@ class InflationSDP(object):
         # inflationproblem._lexorder_for_factorization = _lexorder_for_factorization
         # inflationproblem._inflation_indices_overlap = nb_overlap_matrix(all_unique_inflation_indices)
 
-
-
-
         #Construct orthogonality matrix for recognizing zeros
         self._orthomat = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
         for ((i, j), (op_i, op_j)) in zip(
@@ -161,41 +158,21 @@ class InflationSDP(object):
         self._orthomat[:, 0] = True
         self._orthomat[0, :] = True
 
-
         # Translating the compatibility matrix of InflationProblem to
         # a commutativity matrix for InflationSDP. 
         # # InflationProblem has more operators in ._lexorder than InflationSDP
         # This is because events with the last outcome are included in
         # InflationProblem. We carefully avoid this by using .mon_to_lexrepr
         # of InflationProblem on the operators in InflationSDP._lexorder
-        _comm = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
         assert np.allclose(self._lexorder[0], self.zero_operator), \
             "The first element of the lexorder should be the zero operator"
-        for i, j in np.ndindex(self._lexorder_len, self._lexorder_len):
-            if i > 0 and j > 0:  # Assuming first element is the zero operator
-                _i_infprob = self.InflationProblem.mon_to_lexrepr(
-                                    np.expand_dims(self._lexorder[i], axis=0))
-                _j_infprob = self.InflationProblem.mon_to_lexrepr(
-                                    np.expand_dims(self._lexorder[j], axis=0))
-                _comm[i, j] = \
-                    self.InflationProblem._compatible_measurements[_i_infprob,
-                                                                   _j_infprob]
-                _comm[j, i] = _comm[i, j]
-        # Invert commutation matrix to get non-commutation matrix
-        self._default_notcomm = np.invert(_comm)
-        # Making operators with the same setting but different outcome
-        # commute, as they are labeled as incompatible in InflationProblem
-        for ortho_group in self.InflationProblem._ortho_groups:
-            assert np.all(ortho_group[-1, -1] > ortho_group[:-1, -1]), \
-                "The last outcome should be the at the end of the ortho group"
-            for op1, op2 in combinations(ortho_group[:-1], 2):
-                i = nb_mon_to_lexrepr(np.expand_dims(op1, 0), self._lexorder)
-                j = nb_mon_to_lexrepr(np.expand_dims(op2, 0), self._lexorder)
-                self._default_notcomm[i, j] = False  # Different outputs commute
-                self._default_notcomm[j, i] = self._default_notcomm[i, j]
-        for i in range(self._default_notcomm.shape[0]):
-            self._default_notcomm[i, i] = False  # Operator commutes with itself
-            
+        self._default_notcomm = \
+            np.pad(np.invert(self.InflationProblem._compatible_measurements + 
+                              self._orthomat[1:, 1:] + 
+                              np.eye(self._lexorder_len - 1, dtype=bool)
+                              ),
+                       ((1, 0), (1, 0)))
+
         self._notcomm = self._default_notcomm.copy() 
         
         if (self._quantum_sources.size == 0) or commuting:
