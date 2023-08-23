@@ -594,14 +594,6 @@ class InflationSDP(object):
             self.maximize = False
         if objective is None:
             return
-        elif isinstance(objective, sp.core.expr.Expr):
-            if objective.free_symbols:
-                objective_raw = sp.expand(objective).as_coefficients_dict()
-                objective_raw = {k: float(v)
-                                 for k, v in objective_raw.items()}
-            else:
-                objective_raw = {self.One: float(objective)}
-            return self.set_objective(objective_raw, direction)
         else:
             if self.use_lpi_constraints and self.verbose > 0:
                 warn("You have the flag `use_lpi_constraints` set to True. Be "
@@ -609,13 +601,9 @@ class InflationSDP(object):
                      + "will constrain the optimization to distributions with "
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
-            objective_dict = {self.One: 0}
-            for mon, coeff in objective.items():
-                if not np.isclose(coeff, 0):
-                    mon = self._sanitise_monomial(mon)
-                    objective_dict[mon] = \
-                        objective_dict.get(mon, 0) + (sign * coeff)
-            self.objective = objective_dict
+            self.objective = {mon: (sign * coeff) for mon, coeff
+                              in self._sanitize_dict(objective).items()}
+            self.objective.setdefault(self.One, 0)
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.monomials}
             assert len(surprising_objective_terms) == 0, \
