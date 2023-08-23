@@ -125,7 +125,7 @@ class InflationSDP(object):
 
         # self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = inflationproblem._nr_properties
-        self.np_dtype = np.int32
+        self.np_dtype = inflationproblem._np_dtype
         self.identity_operator = np.empty((0, self._nr_properties),
                                           dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties),
@@ -900,7 +900,7 @@ class InflationSDP(object):
                 elif len(np.array(column_specification[1]).shape) == 1:
                     # This is the 1d encoding, make sure the dtype is correct
                     # for compatibility with numba
-                    columns = [np.array(mon, dtype=self.np_dtype)
+                    columns = [np.array(mon, dtype=np.intc)
                                for mon in column_specification]
                 else:
                     raise Exception("The generating columns are not specified "
@@ -916,7 +916,7 @@ class InflationSDP(object):
                             raise Exception(f"Column {col} is just a number. "
                                             + "Please use a valid format.")
                         else:
-                            columns.append(np.array([], dtype=self.np_dtype))
+                            columns.append(np.array([], dtype=np.intc))
                     elif type(col) in [sp.core.symbol.Symbol,
                                        sp.core.power.Pow,
                                        sp.core.mul.Mul]:
@@ -1033,8 +1033,9 @@ class InflationSDP(object):
         self.n_columns = len(self.generating_monomials_1d)
         output = self.generating_monomials_1d
         if symbolic:
-            output = [reduce(sp.Mul, self.InflationProblem._lexrepr_to_symbols[lexmon-1])
-                      if lexmon.size > 0 else sp.S.One
+            output = [reduce(sp.Mul, 
+                             self.InflationProblem._lexrepr_to_symbols[lexmon-1],
+                             sp.S.One)
                       for lexmon in self.generating_monomials_1d ]
         return output
 
