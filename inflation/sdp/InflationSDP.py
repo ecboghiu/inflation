@@ -1033,25 +1033,27 @@ class InflationSDP(object):
                     if spec == "local":
                         raise Exception("Please specify a precise local level")
                     else:
+                        # TODO does this make sense as default behaviour?
                         lengths = [min(self.inflation_levels[party])
                                    for party in self.hypergraph.T]
                 elif len(lengths) == self.nr_parties:
                     lengths = [int(level) for level in lengths]
                 else:
                     lengths = [int(lengths)] * self.nr_parties
-                max_length = sum(lengths)
-                # Determine maximum length
-                if ((max_monomial_length > 0)
-                        and (max_monomial_length < max_length)):
-                    max_length = max_monomial_length
 
-                party_freqs = sorted((list(pfreq)
-                                      for pfreq in product(
-                                       *[range(level + 1) for level in lengths]
-                                                           )
-                                      if sum(pfreq) <= max_length),
-                                     key=lambda x: (sum(x), [-p for p in x]))
                 if spec == "local":
+                    max_length = sum(lengths)
+                    # Determine maximum length
+                    if ((max_monomial_length > 0)
+                            and (max_monomial_length < max_length)):
+                        max_length = max_monomial_length
+
+                    party_freqs = sorted((list(pfreq)
+                                        for pfreq in product(
+                                        *[range(level + 1) for level in lengths]
+                                                            )
+                                        if sum(pfreq) <= max_length),
+                                        key=lambda x: (sum(x), [-p for p in x]))
                     col_specs = []
                     for pfreq in party_freqs:
                         operators = []
@@ -1060,30 +1062,24 @@ class InflationSDP(object):
                         col_specs += [operators]
                     columns = self._build_cols_from_specs(col_specs)
                 else:
-                    physical_monomials = [] # TODO
-                    
-                    for freqs in party_freqs:
-                        if freqs == [0] * self.nr_parties:
-                            physical_monomials.append(self.identity_operator)
-                        else:
-                            physmons_per_party = []
-                            for party, freq in enumerate(freqs):
-                                if freq > 0:
-                                    physmons = party_physical_monomials(
-                                        self.hypergraph,
-                                        self.inflation_levels,
-                                        party, freq,
-                                        self.setting_cardinalities,
-                                        self.outcome_cardinalities,
-                                        self._lexorder)
-                                    physmons = [self.mon_to_lexrepr(mon)
-                                                for mon in physmons]
-                                    physmons_per_party.append(physmons)
-                            for monomial_parts in product(
-                                    *physmons_per_party):
-                                physical_monomials.append(
-                                    self._to_canonical_memoized_1d(
-                                        np.concatenate(monomial_parts)))
+                    physmon_per_party \
+                        = [self.InflationProblem._generate_compatible_monomials_given_party(
+                            party, up_to_length=length, with_last_outcome=False
+                            )
+                            for length, party in zip(lengths, 
+                                                     range(self.nr_parties))
+                            ]
+                    # Adjust for the fact that the InflationSDP lexorder
+                    # includes the zero operator
+                    physmon_per_party = [np.pad(block, ((0, 0), (1, 0)))
+                                         for block in physmon_per_party]
+                    physical_monomials = [] 
+                    for physmons in product(*physmon_per_party):
+                        mon_bool = sum(physmons)
+                        if mon_bool.sum() <= max_monomial_length:
+                            physical_monomials += [np.nonzero(sum(physmons))[0]]
+                    columns = sorted(physical_monomials, 
+                                                key=lambda x: (len(x), tuple(x)))
                     columns = physical_monomials
             else:
                 raise Exception("I have not understood the format of the "
