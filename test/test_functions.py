@@ -361,3 +361,24 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                     scenario._compatible_measurements[np.ix_(_s_, _s_)],
                     np.ones((_dim,)*2)-np.eye(_dim)),
                     "Measurements that are supposed to be compatible are not.")
+                
+    def test_physical_mon_gen_beyond_networks(self):
+        scenario = InflationProblem({'lam': ['A', 'B'], 'A': ['B']},
+                                    (2, 2), (2, 1), 
+                                    (1,),
+                                    classical_sources=['lam'])
+        sdp = InflationSDP(scenario)
+        mons = sdp.build_columns("physical")
+        self.assertEqual(len(mons), 36,
+                         "Wrong number of physical monomials generated.")
+        mons = sdp.build_columns("physical", max_monomial_length=3)
+        self.assertEqual(len(mons), 32,
+                         ("Wrong number of physical monomials generated " + 
+                         "with max_monomial_length=3."))
+        mons = sdp.build_columns("physical12")
+        self.assertEqual(len(mons), 20,
+                         ("Wrong number of physical monomials generated " +
+                         "with maximum 1 operator of 'A' and 2 of 'B' "))
+        mons = sdp.build_columns("physical21")
+        self.assertEqual(len(mons), 27,
+                         "with maximum 2 operators for 'A' and 1 of 'B' ")
