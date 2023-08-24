@@ -102,8 +102,8 @@ class TestToCanonical(unittest.TestCase):
     def test_commutation(self):
         initial = 'A_2_1_0_0_0*A_1_2_0_0_0*B_1_0_1_0_0'
         correct = 'A_1_2_0_0_0*A_2_1_0_0_0*B_1_0_1_0_0'
-        self.assertEqual(self.sdp._sanitise_monomial(initial),
-                         self.sdp._sanitise_monomial(correct),
+        self.assertEqual(self.sdp._sanitise_moment(initial),
+                         self.sdp._sanitise_moment(correct),
                          "to_canonical has problems with bringing monomials " +
                          "to representative form.")
         
@@ -144,8 +144,8 @@ class TestToCanonical(unittest.TestCase):
     def test_ordering_parties(self):
         initial = 'A_1_1_0_0_0*A_1_2_0_0_0*C_0_2_1_0_0*B_1_0_2_0_0'
         correct = 'A_1_1_0_0_0*A_1_2_0_0_0*B_1_0_2_0_0*C_0_2_1_0_0'
-        self.assertEqual(self.sdp._sanitise_monomial(initial),
-                         self.sdp._sanitise_monomial(correct),
+        self.assertEqual(self.sdp._sanitise_moment(initial),
+                         self.sdp._sanitise_moment(correct),
                          "to_canonical fails to order parties correctly.")
 
 
@@ -157,29 +157,29 @@ class TestToRepr(unittest.TestCase):
     def test_commuting(self):
         initial = 'A_3_1_0_0_0*A_2_1_0_0_0*A_3_1_0_0_0'
         correct = 'A_1_1_0_0_0*A_2_1_0_0_0'
-        self.assertEqual(self.sdp_commuting._sanitise_monomial(initial),
-                         self.sdp_commuting._sanitise_monomial(correct),
+        self.assertEqual(self.sdp_commuting._sanitise_moment(initial),
+                         self.sdp_commuting._sanitise_moment(correct),
                          "Applying commutations to representative form fails.")
 
     def test_jump_sources(self):
         initial = 'A_3_1_0_0_0*A_2_1_0_0_0*A_3_1_0_0_0'
         correct = 'A_1_1_0_0_0*A_2_1_0_0_0*A_1_1_0_0_0'
-        self.assertEqual(self.sdp_noncommuting._sanitise_monomial(initial),
-                         self.sdp_noncommuting._sanitise_monomial(correct),
+        self.assertEqual(self.sdp_noncommuting._sanitise_moment(initial),
+                         self.sdp_noncommuting._sanitise_moment(correct),
                          "Skipping inflation indices when computing " +
                          "representatives fails.")
 
     def test_swap_all_sources(self):
         initial = 'A_1_1_0_0_0*A_2_2_0_0_0*B_2_0_1_0_0'
         correct = 'A_1_1_0_0_0*A_2_2_0_0_0*B_1_0_1_0_0'
-        self.assertEqual(self.sdp_noncommuting._sanitise_monomial(initial),
-                         self.sdp_noncommuting._sanitise_monomial(correct),
+        self.assertEqual(self.sdp_noncommuting._sanitise_moment(initial),
+                         self.sdp_noncommuting._sanitise_moment(correct),
                          "Swapping all sources and applying factorization " +
                          "commutations fails.")
 
     def test_swap_single_source(self):
         initial = 'A_1_1_0_0_0*A_2_2_0_0_0*B_1_0_2_0_0*B_2_0_1_0_0'
         correct = 'A_1_1_0_0_0*A_2_2_0_0_0*B_1_0_1_0_0*B_2_0_2_0_0'
-        self.assertEqual(self.sdp_noncommuting._sanitise_monomial(initial),
-                         self.sdp_noncommuting._sanitise_monomial(correct),
+        self.assertEqual(self.sdp_noncommuting._sanitise_moment(initial),
+                         self.sdp_noncommuting._sanitise_moment(correct),
                          "Swapping a single source fails.")

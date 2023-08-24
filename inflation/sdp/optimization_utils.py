@@ -15,11 +15,11 @@ from typing import Dict, Tuple, Union
 
 from inflation import InflationSDP
 from inflation.sdp.quantum_tools import make_numerical
-from inflation.sdp.monomial_classes import CompoundMonomial
+from inflation.sdp.monomial_classes import CompoundMomentSDP
 
 
 def max_within_feasible(sdp: InflationSDP,
-                        symbolic_values: Dict[CompoundMonomial,
+                        symbolic_values: Dict[CompoundMomentSDP,
                                               sp.core.expr.Expr],
                         method: str,
                         return_last_certificate=False,
@@ -36,7 +36,7 @@ def max_within_feasible(sdp: InflationSDP,
     ----------
     sdp : InflationSDP
         The SDP problem under which to carry the optimization.
-    symbolic_values : Dict[CompoundMonomial, Callable]
+    symbolic_values : Dict[CompoundMomentSDP, Callable]
         The correspondence between monomials in the SDP problem and symbolic
         expressions depending on the variable to be optimized.
     method : str
@@ -90,7 +90,7 @@ def max_within_feasible(sdp: InflationSDP,
 # OPTIMIZATION METHODS                                                        #
 ###############################################################################
 def _maximize_via_bisect(sdp: InflationSDP,
-                         symbolic_values: Dict[CompoundMonomial,
+                         symbolic_values: Dict[CompoundMomentSDP,
                                                sp.core.expr.Expr],
                          param: sp.core.symbol.Symbol,
                          **kwargs) -> Union[float,
@@ -103,7 +103,7 @@ def _maximize_via_bisect(sdp: InflationSDP,
     ----------
     sdp : InflationSDP
         The SDP problem under which to carry the optimization.
-    symbolic_values : Dict[CompoundMonomial, Callable]
+    symbolic_values : Dict[CompoundMomentSDP, Callable]
         The correspondence between monomials in the SDP problem and symbolic
         expressions depending on the variable to be optimized.
     param : sympy.core.symbol.Symbol
@@ -161,7 +161,7 @@ def _maximize_via_bisect(sdp: InflationSDP,
 
 
 def _maximize_via_dual(sdp: InflationSDP,
-                       symbolic_values: Dict[CompoundMonomial,
+                       symbolic_values: Dict[CompoundMomentSDP,
                                              sp.core.expr.Expr],
                        param: sp.core.symbol.Symbol,
                        **kwargs) -> Union[float,
@@ -177,7 +177,7 @@ def _maximize_via_dual(sdp: InflationSDP,
     ----------
     sdp : InflationSDP
         The SDP problem under which to carry the optimization.
-    symbolic_values : Dict[CompoundMonomial, Callable]
+    symbolic_values : Dict[CompoundMomentSDP, Callable]
         The correspondence between monomials in the SDP problem and symbolic
         expressions depending on the variable to be optimized.
     param : sympy.core.symbol.Symbol

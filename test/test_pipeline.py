@@ -170,7 +170,7 @@ class TestMonomialGeneration(unittest.TestCase):
 class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
     sdp.generate_relaxation("npa1")
-    physical_bounds = {m: 0. for m in sdp.physical_monomials}
+    physical_bounds = {m: 0. for m in sdp.hermitian_moments}
     del physical_bounds[sdp.One]
 
     def prepare_objects(self, infSDP):
@@ -494,8 +494,8 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong.")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
-                        (0.5+1e-2)/2 + (0.5-1e-2)/8),
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.moments[8]],
+                                   (0.5+1e-2) / 2 + (0.5-1e-2) / 8),
                         "Setting the distribution is failing.")
         sdp.solve()
         self.assertTrue(sdp.status in ["infeasible", "unknown"],
@@ -506,8 +506,8 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
-                        (0.5-1e-2)/2 + (0.5+1e-2)/8),
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.moments[8]],
+                                   (0.5-1e-2) / 2 + (0.5+1e-2) / 8),
                         "Re-setting the distribution is failing.")
         sdp.solve()
         self.assertEqual(sdp.status, "feasible",
@@ -594,7 +594,7 @@ class TestSDPOutput(unittest.TestCase):
                              use_lpi_constraints=True)
         new_mon_indices = np.array([semi[1][1].idx
                                     for semi in sdp.semiknown_moments.items()])
-        self.assertTrue(np.all(new_mon_indices > len(sdp.monomials)),
+        self.assertTrue(np.all(new_mon_indices > len(sdp.moments)),
                         "The new unknown monomials that appear when applying" +
                         " LPI constraints are not assigned correct indices.")
 

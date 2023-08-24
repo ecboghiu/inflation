@@ -66,31 +66,6 @@ def dot_mon(mon1: np.ndarray,
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_is_zero(mon: np.ndarray) -> bool_:
-    """Function which checks if a monomial is equivalent to the zero monomial.
-    This is the case if there is a product of two orthogonal projectors, or if
-    the monomial is equal to the canonical zero monomial.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial in 2d array format.
-
-    Returns
-    -------
-    bool
-        Whether the monomial evaluates to zero.
-    """
-    if len(mon) >= 1 and not np.any(mon.ravel()):
-        return True
-    for i in range(1, mon.shape[0]):
-        if ((mon[i, -1] != mon[i - 1, -1])
-                and np.array_equal(mon[i, :-1], mon[i - 1, :-1])):
-            return True
-    return False
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def mon_lexsorted(mon: np.ndarray,
                   lexorder: np.ndarray) -> np.ndarray:
     """Sorts a monomial lexicographically.
@@ -184,54 +159,6 @@ def nb_is_knowable(monomial: np.ndarray) -> bool_:
     for source in monomial.T[1:-2]:
         if len(np.unique(source[np.flatnonzero(source)])) > 1:
             return False
-    return True
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
-    r"""Determines whether a monomial is physical, this is, if it always has a
-    non-negative expectation value.
-
-    This code also supports the detection of "sandwiches", i.e., monomials
-    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
-    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
-    value of this term. However, note that :math:`A_1` can be absorbed into
-    :math:`| \psi \rangle` forming an unnormalised quantum state
-    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
-    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
-    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
-    the unknown normalisation, however we know it must be non-negative,
-    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
-    This simple example can be extended to various layers of sandwiching.
-
-    Parameters
-    ----------
-    monomial_in : numpy.ndarray
-        Input monomial in 2d array format.
-    sandwich_positivity : bool, optional
-        Whether to consider sandwiching. By default ``True``.
-
-    Returns
-    -------
-    bool
-        Whether the monomial has always non-negative expectation or not.
-    """
-    if len(monomial_in) <= 1:
-        return True
-    if sandwich_positivity:
-        monomial = nb_remove_sandwich(monomial_in)
-        if len(monomial) <= 1:
-            return True
-    else:
-        monomial = monomial_in
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party]
-        n = len(party_monomial)
-        if not n == 1:
-            component_labels = nb_monomial_to_components(party_monomial)
-            if np.max(component_labels) + 1 != n:
-                return False
     return True
 
 
@@ -352,21 +279,28 @@ def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
-    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
-    monomial represented by :math:`U A U^\dagger` into :math:`A`.
+def nb_indices_of_more_than_one_op_per_party_per_factor(monomial: np.ndarray,
+                                                        sandwich_positivity=True) -> np.ndarray:
+    r"""If sandwich_positivity=True, this removes sandwiching/pinching from the
+    monomial. This is, it converts the monomial represented by
+    :math:`U A U^\dagger` into :math:`A`.
+    Regardless, it then factorises the monomial into components, yielding
+    a boolean vector where True indicates an operator which appears in the same
+    factor as another of the same party.
 
     Parameters
     ----------
     monomial : numpy.ndarray
         Input monomial.
+    sandwich_positivity : bool, optional
+        Whether to consider sandwiching. By default ``True``.
 
     Returns
     -------
     numpy.ndarray
         The monomial without sandwiches.
     """
-    picklist = np.logical_not(np.ones(len(monomial), dtype=uint8_))
+    picklist = np.logical_not(np.ones(len(monomial)))
     parties = np.unique(monomial[:, 0])
     for party in parties:
         indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
@@ -376,12 +310,91 @@ def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
             indices_for_this_factor = np.flatnonzero(
                 party_monomial_comp_labels == i)
             factor = party_monomial[indices_for_this_factor]
-            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
-                indices_for_this_factor = indices_for_this_factor[1:-1]
-                factor = factor[1:-1]
-            picklist[indices_for_this_party[indices_for_this_factor]] = True
-    return monomial[picklist]
+            # We now only return factors with more than one operator for a single party!
+            if sandwich_positivity:
+                while len(factor) and np.array_equal(factor[0], factor[-1]):
+                    indices_for_this_factor = indices_for_this_factor[1:-1]
+                    factor = factor[1:-1]
+            if len(factor) > 1:
+                picklist[indices_for_this_party[indices_for_this_factor]] = True
+    # print(f"DEBUG: \ninput = {monomial}\n output = {picklist.astype(int)}")
+    return picklist
 
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
+    r"""Determines whether a monomial is physical, this is, if it always has a
+    non-negative expectation value.
+
+    This code also supports the detection of "sandwiches", i.e., monomials
+    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
+    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
+    value of this term. However, note that :math:`A_1` can be absorbed into
+    :math:`| \psi \rangle` forming an unnormalised quantum state
+    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
+    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
+    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
+    the unknown normalisation, however we know it must be non-negative,
+    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
+    This simple example can be extended to various layers of sandwiching.
+
+    Parameters
+    ----------
+    monomial_in : numpy.ndarray
+        Input monomial in 2d array format.
+    sandwich_positivity : bool, optional
+        Whether to consider sandwiching. By default ``True``.
+
+    Returns
+    -------
+    bool
+        Whether the monomial has always non-negative expectation or not.
+    """
+    return not nb_indices_of_more_than_one_op_per_party_per_factor(monomial_in,
+                                            sandwich_positivity=sandwich_positivity).any()
+
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def nb_indices_of_more_than_one_op_per_party_per_factor_1d(
+#         lexmon: np.ndarray,
+#         monomial: np.ndarray,
+#         sandwich_positivity=True) -> np.ndarray:
+#     #TODO: Avoid requiring double input!
+#     r"""If sandwich_positivity=True, this removes sandwiching/pinching from the
+#     monomial. This is, it converts the monomial represented by
+#     :math:`U A U^\dagger` into :math:`A`.
+#     Regardless, it then factorises the monomial into components, yielding
+#     a boolean vector where True indicates an operator which appears in the same
+#     factor as another of the same party.
+#
+#     Parameters
+#     ----------
+#     lexmon : numpy.ndarray
+#         Input monomial in 1d lexmon format.
+#     monomial : numpy.ndarray
+#         Input monomial in 2d array format.
+#
+#     Returns
+#     -------
+#     numpy.ndarray
+#         The lexmon without sandwiches.
+#     """
+#     picklist = np.logical_not(lexmon)
+#     parties = np.unique(monomial[:, 0])
+#     for party in parties:
+#         indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
+#         party_monomial = monomial[indices_for_this_party]
+#         party_lexmon = lexmon[indices_for_this_party]
+#         party_monomial_comp_labels = nb_monomial_to_components(party_monomial)
+#         for i in range(party_monomial_comp_labels.max() + 1):
+#             indices_for_this_factor = np.flatnonzero(
+#                 party_monomial_comp_labels == i)
+#             factor = party_lexmon[indices_for_this_factor]
+#             if sandwich_positivity:
+#                 while len(factor) and (factor[0] == factor[-1]):
+#                     indices_for_this_factor = indices_for_this_factor[1:-1]
+#                     factor = factor[1:-1]
+#             if len(factor) > 1:
+#                 picklist[indices_for_this_party[indices_for_this_factor]] = True
+#     return picklist
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
