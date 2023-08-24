@@ -32,10 +32,8 @@ from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix_1d_internal,
                             construct_normalization_eqs,
-                            expand_moment_normalisation,
                             flatten_symbolic_powers,
                             generate_operators,
-                            party_physical_monomials,
                             reduce_inflation_indices)
 from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
@@ -1801,22 +1799,43 @@ class InflationSDP(object):
             A list of normalization equalities between columns of the moment
         matrix.
         """
-        skip_party = [not i for i in self.has_children]
+        # skip_party = [not i for i in self.has_children]
+
+        # This will help us identify relevant operators with the last outcome
+        last_outcome_boolmask = np.array(
+            [self.has_children[op[0] - 1] and
+              op[-1] == self.outcome_cardinalities[op[0] - 1] - 2 # TODO -2 is a hack for using fake outcomes
+                                for op in self._lexorder], dtype=bool)
+        
+        # This will allow for easy substitution of operators with the last
+        # outcome with the rest of the operators orthogonal to it
+        lexmon_to_orthogroup = dict()
+        for group in self.InflationProblem._ortho_groups:
+            last_outcome_op = \
+                self.mon_to_lexrepr(np.expand_dims(group[-1], axis=0))[0]
+            lexmon_to_orthogroup[last_outcome_op] = \
+                np.concatenate([self.mon_to_lexrepr(np.expand_dims(m, axis=0))
+                                for m in group], dtype=np.intc)    
+        
         column_level_equalities = []
         for i, lexmon in enumerate(self.generating_monomials_1d):
-            mon = self._lexorder[lexmon]
-            eqs = expand_moment_normalisation(mon,
-                                              self.outcome_cardinalities,
-                                              skip_party)
-            for eq in eqs:
-                try:
-                    eq_idxs = [self.genmon_1d_to_index[
-                                                tuple(self.mon_to_lexrepr(eq[0]))]]
-                    eq_idxs.append([self.genmon_1d_to_index[
-                                    tuple(self.mon_to_lexrepr(m))] for m in eq[1]])
-                    column_level_equalities += [tuple(eq_idxs)]
-                except KeyError:
-                    break
+            last_outcome_ops = last_outcome_boolmask[lexmon]
+            if last_outcome_ops.sum() > 0:
+                eqs = []
+                for i, op in enumerate(lexmon):
+                    if last_outcome_ops[i]:
+                        lhs = np.delete(lexmon, i)  # returns new copy
+                        rhs = np.vstack((lexmon,)*len(lexmon_to_orthogroup[op]))
+                        rhs[:, i] = lexmon_to_orthogroup[op]
+                        eqs += [(lhs, list(rhs))]
+                for eq in eqs:
+                    try:
+                        eq_idxs = [self.genmon_1d_to_index[tuple(eq[0])]]
+                        eq_idxs.append([self.genmon_1d_to_index[tuple(m)]
+                                        for m in eq[1]])
+                        column_level_equalities += [tuple(eq_idxs)]
+                    except KeyError:
+                        break
         return column_level_equalities
 
     def _discover_columns_symmetries(self) -> np.ndarray:
