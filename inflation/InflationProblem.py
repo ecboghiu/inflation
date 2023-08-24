@@ -422,10 +422,12 @@ class InflationProblem(object):
             with_last_outcome=with_last_outcome)
         max_len_clique = max([len(c) for c in cliques])
         max_length = up_to_length if up_to_length != None else max_len_clique
-        if max_length > max_len_clique and self.verbose > 0:
-            warn("The maximum length of physical monomials required is " +
-                 "larger than the maximum sequence of compatible operators")
+        if max_length > max_len_clique:
             max_length = max_len_clique
+            if self.verbose > 0:
+                warn("The maximum length of physical monomials required is " +
+                     "larger than the maximum sequence of compatible operators")
+
         # Take combinations of all lengths up to the specified maximum
         # of all the cliques
         unique_subsets = {frozenset(ops) for nr_ops in range(max_length + 1)
