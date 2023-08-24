@@ -27,7 +27,7 @@ Evans = InflationProblem({"U_AB": ["A", "B"],
 
 Evans_Unpacked = InflationLP(Evans,
                              nonfanout=False,
-                             use_only_equalities=False,
+                             include_all_outcomes=False,
                              verbose=2)
 semiknown_usage = False
 Evans_Unpacked.set_distribution(p_Q, use_lpi_constraints=semiknown_usage)
