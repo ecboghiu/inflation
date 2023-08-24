@@ -7,7 +7,11 @@ from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
 from inflation.utils import partsextractor, expand_sparse_vec, vstack
-import gurobipy as gp
+try:
+    import gurobipy as gp
+except ModuleNotFoundError:
+    pass
+
 
 def drop_zero_rows(coo_mat: coo_matrix):
     nz_rows, new_row = np.unique(coo_mat.row, return_inverse=True)
