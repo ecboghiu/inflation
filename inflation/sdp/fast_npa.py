@@ -12,6 +12,7 @@ try:
     from numba import jit, prange
     from numba.types import bool_, void
     from numba.types import uint8 as uint8_
+    from numba.types import intc as int_
     nopython = True
 except ImportError:
     def jit(*args, **kwargs):
@@ -20,6 +21,7 @@ except ImportError:
     nopython = False
     prange   = range
     uint8_   = np.uint8
+    int_     = np.intc
     void     = None
 
 cache    = True
@@ -61,31 +63,6 @@ def dot_mon(mon1: np.ndarray,
     np.array([[4,5,6],[1,2,3],[7,8,9]])
     """
     return np.concatenate((reverse_mon(mon1), mon2))
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def mon_is_zero(mon: np.ndarray) -> bool_:
-    """Function which checks if a monomial is equivalent to the zero monomial.
-    This is the case if there is a product of two orthogonal projectors, or if
-    the monomial is equal to the canonical zero monomial.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial in 2d array format.
-
-    Returns
-    -------
-    bool
-        Whether the monomial evaluates to zero.
-    """
-    if len(mon) >= 1 and not np.any(mon.ravel()):
-        return True
-    for i in range(1, mon.shape[0]):
-        if ((mon[i, -1] != mon[i - 1, -1])
-                and np.array_equal(mon[i, :-1], mon[i - 1, :-1])):
-            return True
-    return False
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
@@ -137,12 +114,12 @@ def nb_classify_disconnected_components(adj_mat: np.ndarray) -> np.ndarray:
     # See https://stackoverflow.com/a/9112588 for inspiration of the method
     n = len(adj_mat)
     if n <= 1 or adj_mat.all():
-        return np.zeros(n, dtype=np.uint8)
-    component_labels = np.zeros(n, dtype=np.uint8)
+        return np.zeros((n,), dtype=uint8_)
+    component_labels = np.zeros((n,), dtype=uint8_)
     component_counter = 1
     for i in range(n):
         if not component_labels[i]:
-            old_component = np.logical_not(np.ones(n, dtype=np.uint8))
+            old_component = np.logical_not(np.ones((n,), dtype=uint8_))
             new_component = old_component.copy()
             new_component[i] = True
             search_next = np.logical_xor(new_component, old_component)
@@ -182,54 +159,6 @@ def nb_is_knowable(monomial: np.ndarray) -> bool_:
     for source in monomial.T[1:-2]:
         if len(np.unique(source[np.flatnonzero(source)])) > 1:
             return False
-    return True
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
-    r"""Determines whether a monomial is physical, this is, if it always has a
-    non-negative expectation value.
-
-    This code also supports the detection of "sandwiches", i.e., monomials
-    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
-    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
-    value of this term. However, note that :math:`A_1` can be absorbed into
-    :math:`| \psi \rangle` forming an unnormalised quantum state
-    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
-    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
-    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
-    the unknown normalisation, however we know it must be non-negative,
-    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
-    This simple example can be extended to various layers of sandwiching.
-
-    Parameters
-    ----------
-    monomial_in : numpy.ndarray
-        Input monomial in 2d array format.
-    sandwich_positivity : bool, optional
-        Whether to consider sandwiching. By default ``True``.
-
-    Returns
-    -------
-    bool
-        Whether the monomial has always non-negative expectation or not.
-    """
-    if len(monomial_in) <= 1:
-        return True
-    if sandwich_positivity:
-        monomial = nb_remove_sandwich(monomial_in)
-        if len(monomial) <= 1:
-            return True
-    else:
-        monomial = monomial_in
-    parties = np.unique(monomial[:, 0])
-    for party in parties:
-        party_monomial = monomial[monomial[:, 0] == party]
-        n = len(party_monomial)
-        if not n == 1:
-            component_labels = nb_monomial_to_components(party_monomial)
-            if np.max(component_labels) + 1 != n:
-                return False
     return True
 
 
@@ -279,7 +208,7 @@ def nb_mon_to_lexrepr(mon: np.ndarray,
         Monomial as array of integers, where each integer is the hash
         of the corresponding operator.
     """
-    lex = np.empty(mon.shape[0], dtype=lexorder.dtype)
+    lex = np.empty(mon.shape[0], dtype=int_)
     for i in prange(mon.shape[0]):
         lex[i] = nb_lexorder_idx(mon[i], lexorder)
     return lex
@@ -314,7 +243,7 @@ def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
     """
     n = len(monomial)
     if n <= 1:
-        return np.zeros(n, dtype=np.uint8)
+        return np.zeros(n, dtype=uint8_)
     return nb_classify_disconnected_components(nb_overlap_matrix(
         monomial[:, 1:-2]))
 
@@ -338,7 +267,7 @@ def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
         overlap.
     """
     n = len(inflation_indxs)
-    adj_mat = np.eye(n, dtype=np.bool_)
+    adj_mat = np.eye(n, dtype=bool_)
     for i in prange(1, n):
         inf_indices_i = inflation_indxs[i]
         for j in range(i):
@@ -350,21 +279,28 @@ def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
-    r"""Removes sandwiching/pinching from a monomial. This is, it converts the
-    monomial represented by :math:`U A U^\dagger` into :math:`A`.
+def nb_indices_of_more_than_one_op_per_party_per_factor(monomial: np.ndarray,
+                                                        sandwich_positivity=True) -> np.ndarray:
+    r"""If sandwich_positivity=True, this removes sandwiching/pinching from the
+    monomial. This is, it converts the monomial represented by
+    :math:`U A U^\dagger` into :math:`A`.
+    Regardless, it then factorises the monomial into components, yielding
+    a boolean vector where True indicates an operator which appears in the same
+    factor as another of the same party.
 
     Parameters
     ----------
     monomial : numpy.ndarray
         Input monomial.
+    sandwich_positivity : bool, optional
+        Whether to consider sandwiching. By default ``True``.
 
     Returns
     -------
     numpy.ndarray
         The monomial without sandwiches.
     """
-    picklist = np.logical_not(np.ones(len(monomial), dtype=np.uint8))
+    picklist = np.logical_not(np.ones(len(monomial)))
     parties = np.unique(monomial[:, 0])
     for party in parties:
         indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
@@ -374,12 +310,91 @@ def nb_remove_sandwich(monomial: np.ndarray) -> np.ndarray:
             indices_for_this_factor = np.flatnonzero(
                 party_monomial_comp_labels == i)
             factor = party_monomial[indices_for_this_factor]
-            while (len(factor) > 1) and np.array_equal(factor[0], factor[-1]):
-                indices_for_this_factor = indices_for_this_factor[1:-1]
-                factor = factor[1:-1]
-            picklist[indices_for_this_party[indices_for_this_factor]] = True
-    return monomial[picklist]
+            # We now only return factors with more than one operator for a single party!
+            if sandwich_positivity:
+                while len(factor) and np.array_equal(factor[0], factor[-1]):
+                    indices_for_this_factor = indices_for_this_factor[1:-1]
+                    factor = factor[1:-1]
+            if len(factor) > 1:
+                picklist[indices_for_this_party[indices_for_this_factor]] = True
+    # print(f"DEBUG: \ninput = {monomial}\n output = {picklist.astype(int)}")
+    return picklist
 
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_physical(monomial_in: np.ndarray, sandwich_positivity=True) -> bool_:
+    r"""Determines whether a monomial is physical, this is, if it always has a
+    non-negative expectation value.
+
+    This code also supports the detection of "sandwiches", i.e., monomials
+    of the form :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle` where
+    :math:`A_1` and :math:`A_2` do not commute. In principle we do not know the
+    value of this term. However, note that :math:`A_1` can be absorbed into
+    :math:`| \psi \rangle` forming an unnormalised quantum state
+    :math:`| \psi' \rangle`, thus :math:`\langle\psi'|A_2|\psi'\rangle`.
+    Note that while we know the value :math:`\langle\psi |A_2| \psi\rangle`,
+    we do not know :math:`\langle \psi' | A_2 | \psi' \rangle` because of
+    the unknown normalisation, however we know it must be non-negative,
+    :math:`\langle \psi | A_1 A_2 A_1 | \psi \rangle \geq 0`.
+    This simple example can be extended to various layers of sandwiching.
+
+    Parameters
+    ----------
+    monomial_in : numpy.ndarray
+        Input monomial in 2d array format.
+    sandwich_positivity : bool, optional
+        Whether to consider sandwiching. By default ``True``.
+
+    Returns
+    -------
+    bool
+        Whether the monomial has always non-negative expectation or not.
+    """
+    return not nb_indices_of_more_than_one_op_per_party_per_factor(monomial_in,
+                                            sandwich_positivity=sandwich_positivity).any()
+
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def nb_indices_of_more_than_one_op_per_party_per_factor_1d(
+#         lexmon: np.ndarray,
+#         monomial: np.ndarray,
+#         sandwich_positivity=True) -> np.ndarray:
+#     #TODO: Avoid requiring double input!
+#     r"""If sandwich_positivity=True, this removes sandwiching/pinching from the
+#     monomial. This is, it converts the monomial represented by
+#     :math:`U A U^\dagger` into :math:`A`.
+#     Regardless, it then factorises the monomial into components, yielding
+#     a boolean vector where True indicates an operator which appears in the same
+#     factor as another of the same party.
+#
+#     Parameters
+#     ----------
+#     lexmon : numpy.ndarray
+#         Input monomial in 1d lexmon format.
+#     monomial : numpy.ndarray
+#         Input monomial in 2d array format.
+#
+#     Returns
+#     -------
+#     numpy.ndarray
+#         The lexmon without sandwiches.
+#     """
+#     picklist = np.logical_not(lexmon)
+#     parties = np.unique(monomial[:, 0])
+#     for party in parties:
+#         indices_for_this_party = np.flatnonzero(monomial[:, 0] == party)
+#         party_monomial = monomial[indices_for_this_party]
+#         party_lexmon = lexmon[indices_for_this_party]
+#         party_monomial_comp_labels = nb_monomial_to_components(party_monomial)
+#         for i in range(party_monomial_comp_labels.max() + 1):
+#             indices_for_this_factor = np.flatnonzero(
+#                 party_monomial_comp_labels == i)
+#             factor = party_lexmon[indices_for_this_factor]
+#             if sandwich_positivity:
+#                 while len(factor) and (factor[0] == factor[-1]):
+#                     indices_for_this_factor = indices_for_this_factor[1:-1]
+#                     factor = factor[1:-1]
+#             if len(factor) > 1:
+#                 picklist[indices_for_this_party[indices_for_this_factor]] = True
+#     return picklist
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def remove_projector_squares(mon: np.ndarray) -> np.ndarray:
@@ -696,72 +711,72 @@ def nb_operators_commute(operator1: np.ndarray,
         return True
 
 
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def order_via_commutation(mon: np.ndarray,
+#                           notcomm: np.ndarray,
+#                           lexorder: np.ndarray,
+#                           commuting=False) -> np.ndarray:
+#     """Applies commutations between the operators forming a monomial until
+#     finding the smallest lexicographic representation.
+#
+#     Parameters
+#     ----------
+#     mon : numpy.ndarray
+#         Input monomial in 2D array format.
+#     notcomm : numpy.ndarray
+#         Matrix of commutation relations. Each operator can be identified by an
+#         integer `i` which also doubles as its lexicographic rank. Given two
+#         operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+#         do not commute, and 0 if they do.
+#     lexorder : numpy.ndarray
+#         A matrix where each row is an operator, and the `i`-th row stores
+#         the operator with lexicographic rank `i`.
+#     commuting : bool, optional
+#         Whether all the variables in the problem commute or not. By default
+#         ``False``.
+#
+#     Returns
+#     -------
+#     numpy.ndarray
+#         The monomial in canonical form with respect to some commutation
+#         relationships.
+#     """
+#     mon = np.asarray(mon, dtype=uint8_)
+#     if len(mon) <= 1:
+#         return mon
+#     else:
+#         if commuting:
+#             mon = mon_lexsorted(mon, lexorder)
+#             return mon
+#         else:
+#             lexmon = nb_mon_to_lexrepr(mon, lexorder)
+#             mon = nb_lexmon_to_canonical(lexmon, notcomm)
+#             mon = lexorder[mon]
+#             return mon
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def order_via_commutation(mon: np.ndarray,
-                          notcomm: np.ndarray,
-                          lexorder: np.ndarray,
-                          commuting=False) -> np.ndarray:
-    """Applies commutations between the operators forming a monomial until
-    finding the smallest lexicographic representation.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Input monomial in 2D array format.
-    notcomm : numpy.ndarray
-        Matrix of commutation relations. Each operator can be identified by an
-        integer `i` which also doubles as its lexicographic rank. Given two
-        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
-        do not commute, and 0 if they do.
-    lexorder : numpy.ndarray
-        A matrix where each row is an operator, and the `i`-th row stores
-        the operator with lexicographic rank `i`.
-    commuting : bool, optional
-        Whether all the variables in the problem commute or not. By default
-        ``False``.
-
-    Returns
-    -------
-    numpy.ndarray
-        The monomial in canonical form with respect to some commutation
-        relationships.
-    """
-    mon = np.asarray(mon, dtype=uint8_)
-    if len(mon) <= 1:
-        return mon
-    else:
-        if commuting:
-            mon = mon_lexsorted(mon, lexorder)
-            return mon
-        else:
-            lexmon = nb_mon_to_lexrepr(mon, lexorder)
-            mon = nb_lexmon_to_canonical(lexmon, notcomm)
-            mon = lexorder[mon]
-            return mon
-
-
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def to_canonical(mon: np.ndarray,
-                 notcomm: np.ndarray,
-                 lexorder: np.ndarray,
-                 commuting=False,
-                 apply_only_commutations=False) -> np.ndarray:
+def to_canonical_1d_internal(lexmon: np.ndarray,
+                             notcomm: np.ndarray,
+                             orthomat: np.ndarray,
+                             commuting=False,
+                             apply_only_commutations=False) -> np.ndarray:
     """Brings a monomial to canonical form with respect to commutations,
     removing square projectors, and identifying orthogonality.
 
     Parameters
     ----------
-    mon : numpy.ndarray
-        Input monomial in 2D array format.
+    lexmon : numpy.ndarray
+        Input monomial in 1D array format.
     notcomm : numpy.ndarray
         Matrix of commutation relations. Each operator can be identified by an
         integer `i` which also doubles as its lexicographic rank. Given two
         operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
         do not commute, and 0 if they do.
-    lexorder : numpy.ndarray
-        A matrix where each row is an operator, and the `i`-th row stores
-        the operator with lexicographic rank `i`.
+    orthomat : numpy.ndarray
+        Matrix of orthogonality relations. Each operator can be identified by an
+        integer `i` which also doubles as its lexicographic rank. Given two
+        operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+        are orthogonal, and 0 if they do.
     commuting : bool, optional
         Whether all the variables in the problem commute or not. By default
         ``False``.
@@ -775,16 +790,75 @@ def to_canonical(mon: np.ndarray,
         The monomial in canonical form with respect to some commutation
         relationships.
     """
-    mon = np.asarray(mon, dtype=uint8_)
-    if mon.shape[0] <= 1:
-        return mon
+    if len(lexmon) <= 1:
+        return lexmon
     else:
-        mon = order_via_commutation(mon, notcomm, lexorder, commuting)
-        if apply_only_commutations:
-            return mon
+        if commuting:
+            newlexmon = np.sort(lexmon)
         else:
-            mon = remove_projector_squares(mon)
-            if mon_is_zero(mon):
-                return np.asarray(0*mon[:1], dtype=uint8_)
-            else:
-                return mon
+            newlexmon = nb_lexmon_to_canonical(lexmon, notcomm)
+    if apply_only_commutations:
+        return newlexmon
+    else:
+        if lexmon_is_zero(newlexmon, orthomat):
+            newlexmon = np.zeros((1,), dtype=int_)
+        return remove_projector_squares(newlexmon)
+
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def lexmon_is_zero(lexmon: np.ndarray, orthomat: np.ndarray) -> bool_:
+    if np.array_equal(lexmon, [0]):
+        return True
+    for i in range(1, lexmon.shape[0]):
+        if orthomat[lexmon[i], lexmon[i-1]]:
+            return True
+    return False
+
+
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def to_canonical(mon: np.ndarray,
+#                  notcomm: np.ndarray,
+#                  lexorder: np.ndarray,
+#                  commuting=False,
+#                  apply_only_commutations=False) -> np.ndarray:
+#     """Brings a monomial to canonical form with respect to commutations,
+#     removing square projectors, and identifying orthogonality.
+#
+#     Parameters
+#     ----------
+#     mon : numpy.ndarray
+#         Input monomial in 2D array format.
+#     notcomm : numpy.ndarray
+#         Matrix of commutation relations. Each operator can be identified by an
+#         integer `i` which also doubles as its lexicographic rank. Given two
+#         operators with ranks `i`, `j`, ``notcomm[i, j]`` is 1 if the operators
+#         do not commute, and 0 if they do.
+#     lexorder : numpy.ndarray
+#         A matrix where each row is an operator, and the `i`-th row stores
+#         the operator with lexicographic rank `i`.
+#     commuting : bool, optional
+#         Whether all the variables in the problem commute or not. By default
+#         ``False``.
+#     apply_only_commutations : bool, optional
+#         If ``True``, skip the removal of projector squares and the test to see
+#         if the monomial is equal to zero. By default ``False``.
+#
+#     Returns
+#     -------
+#     numpy.ndarray
+#         The monomial in canonical form with respect to some commutation
+#         relationships.
+#     """
+#     mon = np.asarray(mon, dtype=uint8_)
+#     if mon.shape[0] <= 1:
+#         return mon
+#     else:
+#         mon = order_via_commutation(mon, notcomm, lexorder, commuting)
+#         if apply_only_commutations:
+#             return mon
+#         else:
+#             mon = remove_projector_squares(mon)
+#             if mon_is_zero(mon):
+#                 return np.asarray(0*mon[:1], dtype=uint8_)
+#             else:
+#                 return mon

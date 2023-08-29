@@ -6,33 +6,32 @@ import numpy as np
 from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP, InflationLP
-from inflation.sdp.fast_npa import nb_remove_sandwich
 from inflation.sdp.quantum_tools import to_symbol
 from itertools import product, permutations
 
 
 class TestFunctions(unittest.TestCase):
-    def test_remove_sandwich(self):
-        # <(A_111*A_121*A_111)*(A_332*A_312*A_342*A_312*A_332)*(B_011*B_012)>
-        monomial = np.array([[1, 1, 1, 1, 0, 0],
-                             [1, 1, 2, 1, 0, 0],
-                             [1, 1, 1, 1, 0, 0],
-                             [1, 3, 3, 2, 0, 0],
-                             [1, 3, 5, 2, 0, 0],
-                             [1, 3, 4, 2, 0, 0],
-                             [1, 3, 5, 2, 0, 0],
-                             [1, 3, 3, 2, 0, 0],
-                             [2, 0, 1, 1, 0, 0],
-                             [2, 0, 1, 2, 0, 0]])
-
-        delayered = nb_remove_sandwich(monomial)
-        correct = np.array([[1, 1, 2, 1, 0, 0],
-                            [1, 3, 4, 2, 0, 0],
-                            [2, 0, 1, 1, 0, 0],
-                            [2, 0, 1, 2, 0, 0]])
-
-        self.assertTrue(np.array_equal(delayered, correct),
-                        "Removal of complex sandwiches is not working.")
+    # def test_remove_sandwich(self):
+    #     # <(A_111*A_121*A_111)*(A_332*A_312*A_342*A_312*A_332)*(B_011*B_012)>
+    #     monomial = np.array([[1, 1, 1, 1, 0, 0],
+    #                          [1, 1, 2, 1, 0, 0],
+    #                          [1, 1, 1, 1, 0, 0],
+    #                          [1, 3, 3, 2, 0, 0],
+    #                          [1, 3, 5, 2, 0, 0],
+    #                          [1, 3, 4, 2, 0, 0],
+    #                          [1, 3, 5, 2, 0, 0],
+    #                          [1, 3, 3, 2, 0, 0],
+    #                          [2, 0, 1, 1, 0, 0],
+    #                          [2, 0, 1, 2, 0, 0]])
+    #
+    #     delayered = nb_remove_sandwich(monomial)
+    #     correct = np.array([[1, 1, 2, 1, 0, 0],
+    #                         [1, 3, 4, 2, 0, 0],
+    #                         [2, 0, 1, 1, 0, 0],
+    #                         [2, 0, 1, 2, 0, 0]])
+    #
+    #     self.assertTrue(np.array_equal(delayered, correct),
+    #                     "Removal of complex sandwiches is not working.")
 
     def test_sanitize(self):
         bellScenario = InflationProblem({"Lambda": ["A"]},
@@ -41,91 +40,91 @@ class TestFunctions(unittest.TestCase):
                                         inflation_level_per_source=[1])
         sdp = InflationSDP(bellScenario)
         sdp.generate_relaxation("npa1")
-        monom = sdp.monomials[-1]
-        self.assertEqual(monom, sdp._sanitise_monomial(monom),
+        monom = sdp.moments[-1]
+        self.assertEqual(monom, sdp._sanitise_moment(monom),
                          f"Sanitization of {monom} as a CompoundMonomial is " +
-                         f"giving {sdp._sanitise_monomial(monom)}.")
+                         f"giving {sdp._sanitise_moment(monom)}.")
         mon1  = sdp.measurements[0][0][0][0]
         mon2  = sdp.measurements[0][0][0][1]
         mon3  = sdp.measurements[0][0][1][0]
         # Tests for symbols and combinations
         mon   = mon1
-        truth = sdp.monomials[2]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[2]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} as a Symbol is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon = mon1**2
-        truth = sdp.monomials[2]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[2]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} as a Power is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = mon1*mon2
         truth = sdp.Zero
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} as a Mul is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = mon1*mon3
-        truth = sdp.monomials[6]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[6]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} as a Mul is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = mon3*mon1
-        truth = sdp.monomials[6]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[6]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} as a Mul is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         # Tests for array forms
         mon   = [[1, 1, 0, 0],
                  [1, 1, 1, 0]]
-        truth = sdp.monomials[6]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[6]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = [[1, 1, 1, 0],
                  [1, 1, 0, 0]]
-        truth = sdp.monomials[6]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[6]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = [[1, 1, 0, 0],
                  [1, 1, 0, 1]]
         truth = sdp.Zero
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = [[1, 1, 0, 0],
                  [1, 1, 0, 0]]
-        truth = sdp.monomials[2]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[2]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         # Tests for string forms
         mon   = "pA(0|0)"
-        truth = sdp.monomials[2]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[2]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = "<A_1_0_0 A_1_1_0>"
-        truth = sdp.monomials[6]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[6]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = "<A_1_1_0 A_1_0_0>"
-        truth = sdp.monomials[6]
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        truth = sdp.moments[6]
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         # Tests for number forms
         mon   = 0
         truth = sdp.Zero
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
         mon   = 1
         truth = sdp.One
-        self.assertEqual(sdp._sanitise_monomial(mon), truth,
+        self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
-                         f"{sdp._sanitise_monomial(mon)} instead of {truth}.")
+                         f"{sdp._sanitise_moment(mon)} instead of {truth}.")
 
     def test_to_symbol(self):
         truth = (Symbol("A_1_0_0", commutative=False)
@@ -193,7 +192,7 @@ class TestProblems(TestExtraConstraints):
     def test_sdp(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation("npa1")
-        compound_mon = sdp.monomials[-1]
+        compound_mon = sdp.moments[-1]
         sym_mon = sdp.measurements[0][0][0][0]
         str_mon = "pA(0|0)"
         int_mon = 1
@@ -361,3 +360,24 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                     scenario._compatible_measurements[np.ix_(_s_, _s_)],
                     np.ones((_dim,)*2)-np.eye(_dim)),
                     "Measurements that are supposed to be compatible are not.")
+                
+    def test_physical_mon_gen_beyond_networks(self):
+        scenario = InflationProblem({'lam': ['A', 'B'], 'A': ['B']},
+                                    (2, 2), (2, 1), 
+                                    (1,),
+                                    classical_sources=['lam'])
+        sdp = InflationSDP(scenario)
+        mons = sdp.build_columns("physical")
+        self.assertEqual(len(mons), 36,
+                         "Wrong number of physical monomials generated.")
+        mons = sdp.build_columns("physical", max_monomial_length=3)
+        self.assertEqual(len(mons), 32,
+                         ("Wrong number of physical monomials generated " + 
+                         "with max_monomial_length=3."))
+        mons = sdp.build_columns("physical12")
+        self.assertEqual(len(mons), 20,
+                         ("Wrong number of physical monomials generated " +
+                         "with maximum 1 operator of 'A' and 2 of 'B' "))
+        mons = sdp.build_columns("physical21")
+        self.assertEqual(len(mons), 27,
+                         "with maximum 2 operators for 'A' and 1 of 'B' ")

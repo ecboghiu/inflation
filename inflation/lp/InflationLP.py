@@ -24,7 +24,7 @@ from .numbafied import (nb_apply_lexorder_perm_to_lexboolvecs,
 from .writer_utils import write_to_lp, write_to_mps
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
-from .monomial_classes import InternalAtomicMonomial, CompoundMonomial
+from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from ..sdp.quantum_tools import (flatten_symbolic_powers,
                                  party_physical_monomials)
 from .lp_utils import solveLP, solve_Gurobi
@@ -66,6 +66,7 @@ class InflationLP(object):
                  verbose=None) -> None:
         """Constructor for the InflationLP class.
         """
+        self.problem_type = "lp"
         self.supports_problem = supports_problem
         if verbose is not None:
             if inflationproblem.verbose > verbose:
@@ -93,7 +94,7 @@ class InflationLP(object):
         self.private_setting_cardinalities = inflationproblem.private_settings_per_party
         self.expected_distro_shape = inflationproblem.expected_distro_shape
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
-        self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
+        # self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
         self.factorize_monomial_1d = inflationproblem.factorize_monomial_1d
         self._is_knowable_q_non_networks = \
             inflationproblem._is_knowable_q_non_networks
@@ -102,7 +103,7 @@ class InflationLP(object):
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
         self._lexrange = np.arange(self._nr_operators)
-        self.lexorder_symmetries = inflationproblem.inf_symmetries
+        self.lexorder_symmetries = inflationproblem.lexorder_symmetries
         # self._lexorder_lookup = inflationproblem._lexorder_lookup
         self._from_2dndarray = inflationproblem._from_2dndarray
         self.mon_to_lexrepr = inflationproblem.mon_to_lexrepr
@@ -499,7 +500,7 @@ class InflationLP(object):
             # self._update_objective()
 
     def update_values(self,
-                      values: Union[Dict[Union[CompoundMonomial,
+                      values: Union[Dict[Union[CompoundMoment,
                       InternalAtomicMonomial,
                       sp.core.symbol.Symbol,
                       str],
@@ -515,7 +516,7 @@ class InflationLP(object):
 
         Parameters
         ----------
-        values : Union[None, Dict[Union[CompoundMonomial, InternalAtomicMonomial, sympy.core.symbol.Symbol, str], float]]
+        values : Union[None, Dict[Union[CompoundMoment, InternalAtomicMonomial, sympy.core.symbol.Symbol, str], float]]
             The description of the variables to be assigned numerical values
             and the corresponding values. The keys can be either of the
             Monomial class, symbols or strings (which should be the name of
@@ -598,7 +599,7 @@ class InflationLP(object):
             del atomic_knowns, surprising_semiknowns
         self._cleanup_after_set_values()
 
-    def set_values(self, values: Union[Dict[Union[CompoundMonomial,
+    def set_values(self, values: Union[Dict[Union[CompoundMoment,
                       InternalAtomicMonomial,
                       sp.core.symbol.Symbol,
                       str],
@@ -922,7 +923,7 @@ class InflationLP(object):
                     self.atomic_monomial_from_hash[alt_key.tobytes()] = mon
                 return mon
 
-    def Monomial(self, array1d: np.ndarray, idx=-1) -> CompoundMonomial:
+    def Monomial(self, array1d: np.ndarray, idx=-1) -> CompoundMoment:
         r"""Create an instance of the `CompoundMonomial` class from a 2D array.
         An instance of `CompoundMonomial` is a collection of
         `InternalAtomicMonomial`.
@@ -937,7 +938,7 @@ class InflationLP(object):
 
         Returns
         -------
-        CompoundMonomial
+        CompoundMoment
             The monomial factorised into AtomicMonomials, all brought to
             representative form under inflation symmetries.
         """
@@ -950,7 +951,7 @@ class InflationLP(object):
 
     def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomial]
-                             ) -> CompoundMonomial:
+                             ) -> CompoundMoment:
         """Build an instance of `CompoundMonomial` from a list of instances
         of `InternalAtomicMonomial`.
 
@@ -961,7 +962,7 @@ class InflationLP(object):
 
         Returns
         -------
-        CompoundMonomial
+        CompoundMoment
             A `CompoundMonomial` with atomic factors given by `atoms`.
         """
         key = tuple(sorted(atoms))
@@ -969,7 +970,7 @@ class InflationLP(object):
             return self.monomial_from_atoms[key]
             # raise KeyError()
         except KeyError:
-            mon = CompoundMonomial(atoms)
+            mon = CompoundMoment(atoms)
             try:
                 mon.idx = self.first_free_idx
                 self.first_free_idx += 1
@@ -979,7 +980,7 @@ class InflationLP(object):
             self.monomial_from_name[mon.name] = mon  # TODO: Add simple name and complex name
             return mon
 
-    def _sanitise_monomial(self, mon: Any) -> CompoundMonomial:
+    def _sanitise_monomial(self, mon: Any) -> CompoundMoment:
         """Return a ``CompoundMonomial`` built from ``mon``, where ``mon`` can
         be either the name of a moment as a string, a SymPy variable, a
         monomial encoded as a 2D array, or an integer in case the moment is the
@@ -995,7 +996,7 @@ class InflationLP(object):
 
         Returns
         -------
-        CompoundMonomial
+        CompoundMoment
             Instance of ``CompoundMonomial`` built from ``mon``.
 
         Raises
@@ -1005,7 +1006,7 @@ class InflationLP(object):
         Exception
             If the type of ``mon`` is not supported.
         """
-        if isinstance(mon, CompoundMonomial):
+        if isinstance(mon, CompoundMoment):
             return mon
         elif isinstance(mon, InternalAtomicMonomial):
             return self._monomial_from_atoms([mon])
@@ -1036,6 +1037,7 @@ class InflationLP(object):
             try:
                 return self.monomial_from_name[mon]
             except KeyError:
+                print(f"Huh, as of now we only recognize \n{list(self.monomial_from_name.keys())}")
                 return self._sanitise_monomial(self._interpret_name(mon))
         elif isinstance(mon, Real):
             if np.isclose(float(mon), 1):
@@ -1098,7 +1100,7 @@ class InflationLP(object):
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
                 or set(factor_string).isdisjoint(set("| "))), \
             ("Monomial names must be between < > signs, or in conditional " +
-             "probability form.")
+             f"probability form, whereas input recieved was {factor_string}")
         if factor_string[0] == "<":
             operators = factor_string[1:-1].split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)

@@ -61,7 +61,8 @@ class TestMonomialGeneration(unittest.TestCase):
             C_0_1_0_0*C_0_2_0_0]
     actual_cols = []
     for col in cols:
-        actual_cols.append(bilocalSDP._interpret_name(col))
+        actual_cols.append(bilocalSDP.mon_to_lexrepr(bilocalSDP._interpret_name(col)))
+    actual_cols_2d = [bilocalSDP._lexorder[lexmon] for lexmon in actual_cols]
 
     def test_generating_columns_c(self):
         truth = 37
@@ -80,7 +81,7 @@ class TestMonomialGeneration(unittest.TestCase):
                          " were expected.")
 
     def test_generation_from_columns(self):
-        columns = bilocalSDP.build_columns(self.actual_cols)
+        columns = bilocalSDP.build_columns(self.actual_cols_2d)
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal, "The direct copying of columns is failing.")
@@ -99,16 +100,16 @@ class TestMonomialGeneration(unittest.TestCase):
         self.assertTrue(areequal,
                         "Parsing NPA levels with string description fails.")
         columns = bilocalSDP.build_columns("local2", max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in self.actual_cols))
         self.assertTrue(len(diff) == 0,
                         "Parsing local levels with string description fails.")
         columns = bilocalSDP.build_columns("local221", max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in self.actual_cols[:-1]))
         self.assertTrue(len(diff) == 0,
                         "Parsing local levels with individual string " +
@@ -117,26 +118,26 @@ class TestMonomialGeneration(unittest.TestCase):
                                            max_monomial_length=2)
         physical = (self.actual_cols[:22] + [self.actual_cols[24]]
                     + [self.actual_cols[26]] + self.actual_cols[32:])
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in physical))
         self.assertTrue(len(diff) == 0,
                         "Parsing physical levels with global string " +
                         "description fails.")
         columns = bilocalSDP.build_columns("physical", max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in physical))
         self.assertTrue(len(diff) == 0,
                         "Parsing physical levels without further " +
                         "description fails.")
         columns = bilocalSDP.build_columns("physical121",
                                            max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in (self.actual_cols[:9]
                                        + self.actual_cols[10:22]
                                        + [self.actual_cols[24]]
@@ -149,10 +150,12 @@ class TestMonomialGeneration(unittest.TestCase):
     def test_generation_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         columns  = oneParty.build_columns([[], [0, 0]])
-        truth    = [[],
-                    [[1, 1, 0, 0], [1, 1, 1, 0]],
-                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
-        truth    = [np.array(mon) for mon in truth]
+        truth    = [np.array([[1, 1, 0, 0]]),
+                    np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
+                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]]),
+                    np.array([[1, 1, 1, 0]])]
+        truth    = [np.empty((0,4), dtype=int)] + [oneParty.mon_to_lexrepr(mon) 
+                                                   for mon in truth]
         self.assertTrue(len(columns) == len(truth),
                         "Generating columns with identities is not producing "
                         + "the correct number of columns.")
@@ -160,13 +163,14 @@ class TestMonomialGeneration(unittest.TestCase):
                        for r in zip(columns, truth))
         self.assertTrue(areequal,
                         "The column generation is not capable of handling " +
-                        "monomials that reduce to the identity")
+                        "monomials that reduce to the identity" +
+                        f"\ngot: {columns} \nexpected: {truth}")
 
 
 class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
     sdp.generate_relaxation("npa1")
-    physical_bounds = {m: 0. for m in sdp.physical_monomials}
+    physical_bounds = {m: 0. for m in sdp.hermitian_moments}
     del physical_bounds[sdp.One]
 
     def prepare_objects(self, infSDP):
@@ -356,7 +360,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation("npa1")
-        self.assertEqual(len(sdp.generating_monomials), 5,
+        self.assertEqual(sdp.n_columns, 5,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here.
                          "The count of knowable moments is wrong.")
@@ -431,7 +435,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_GHZ_commuting(self):
         sdp = InflationSDP(self.cutInflation_c)
         sdp.generate_relaxation("local1")
-        self.assertEqual(len(sdp.generating_monomials), 18,
+        self.assertEqual(sdp.n_columns, 18,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here.
                          "The count of knowable moments is wrong.")
@@ -482,7 +486,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
         sdp.generate_relaxation("local1")
-        self.assertEqual(len(sdp.generating_monomials), 18,
+        self.assertEqual(sdp.n_columns, 18,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here.
                          "The count of knowable moments is wrong.")
@@ -490,8 +494,8 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong.")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
-                        (0.5+1e-2)/2 + (0.5-1e-2)/8),
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.moments[8]],
+                                   (0.5+1e-2) / 2 + (0.5-1e-2) / 8),
                         "Setting the distribution is failing.")
         sdp.solve()
         self.assertTrue(sdp.status in ["infeasible", "unknown"],
@@ -502,8 +506,8 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
-                        (0.5-1e-2)/2 + (0.5+1e-2)/8),
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.moments[8]],
+                                   (0.5-1e-2) / 2 + (0.5+1e-2) / 8),
                         "Re-setting the distribution is failing.")
         sdp.solve()
         self.assertEqual(sdp.status, "feasible",
@@ -560,12 +564,12 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_lpi_bounds(self):
         sdp  = InflationSDP(trivial)
-        cols = [[],
-                [[1, 2, 0, 0],
-                 [1, 2, 1, 0]],
-                [[1, 1, 0, 0],
+        cols = [np.array([]),
+                np.array([[1, 2, 0, 0],
+                 [1, 2, 1, 0]]),
+                np.array([[1, 1, 0, 0],
                  [1, 2, 0, 0],
-                 [1, 2, 1, 0]]]
+                 [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
         sdp.set_distribution(np.ones((2, 1)) / 2,
                              use_lpi_constraints=True)
@@ -581,16 +585,16 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_new_indices(self):
         sdp  = InflationSDP(trivial)
-        cols = [[],
-                [[1, 1, 0, 0],
-                 [1, 2, 0, 0],
-                 [1, 2, 1, 0]]]
+        cols = [np.array([]),
+                np.array([[1, 1, 0, 0],
+                          [1, 2, 0, 0],
+                          [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
         sdp.set_distribution(np.ones((2, 1)) / 2,
                              use_lpi_constraints=True)
         new_mon_indices = np.array([semi[1][1].idx
                                     for semi in sdp.semiknown_moments.items()])
-        self.assertTrue(np.all(new_mon_indices > len(sdp.monomials)),
+        self.assertTrue(np.all(new_mon_indices > len(sdp.moments)),
                         "The new unknown monomials that appear when applying" +
                         " LPI constraints are not assigned correct indices.")
 
@@ -723,44 +727,45 @@ class TestSymmetries(unittest.TestCase):
 
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(trivial_c)
-        col_structure = [[],
-                         [[1, 2, 0, 0], [1, 2, 1, 0]],
-                         [[1, 1, 0, 0], [1, 2, 0, 0]],
-                         [[1, 1, 1, 0], [1, 2, 0, 0]],
-                         [[1, 1, 0, 0], [1, 2, 1, 0]],
-                         [[1, 1, 1, 0], [1, 2, 1, 0]],
-                         [[1, 1, 0, 0], [1, 1, 1, 0]]]
+        col_structure = [np.array([]),
+                         np.array([[1, 2, 0, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 2, 0, 0]]),
+                         np.array([[1, 1, 1, 0], [1, 2, 0, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 1, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 1, 1, 0]])]
 
         scenario.generate_relaxation(col_structure)
-        self.assertTrue(np.array_equal(scenario.inflation_symmetries,
+        self.assertTrue(np.array_equal(scenario.columns_symmetries,
                                        [[0, 6, 2, 4, 3, 5, 1]]),
                         "The commutation relations of different copies are " +
                         "not applied properly after inflation symmetries.")
 
     def test_detected_symmetries(self):
         cols = bilocalSDP.build_columns('local1')
-        bilocalSDP.generating_monomials = cols
-        bilocalSDP.n_columns = len(cols)
-        bilocalSDP.genmon_hash_to_index = {
-                                bilocalSDP._from_2dndarray(op): i
-                                for i, op in enumerate(cols)}
-        syms = bilocalSDP._discover_inflation_symmetries()
+        # bilocalSDP.generating_monomials = cols
+        # bilocalSDP.generating_monomials_1d = list(map, bilocalSDP)
+        # bilocalSDP.n_columns = len(cols)
+        # bilocalSDP.genmon_hash_to_index = {
+        #                         bilocalSDP._from_2dndarray(op): i
+        #                         for i, op in enumerate(cols)}
+        syms = bilocalSDP._discover_columns_symmetries()
         # Make it a set so the order doesn't matter
         syms = set(tuple(s) for s in syms)
         # I simply copied the output at a time when we understand the code
         # to be working; this test simply detects if the code changes
-        syms_good = set(((0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
-                          13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
-                          27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
-                          39, 38, 37, 44, 43, 42, 41),
-                         (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
-                          12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
-                          22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
-                          34, 35, 36, 29, 30, 31, 32),
-                         (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
-                          11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
-                          23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
-                          35, 34, 33, 32, 31, 30, 29)))
+        syms_good = {(0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
+                      13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
+                      27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
+                      39, 38, 37, 44, 43, 42, 41),
+                     (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
+                      12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
+                      22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
+                      34, 35, 36, 29, 30, 31, 32),
+                     (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
+                      11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
+                      23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
+                      35, 34, 33, 32, 31, 30, 29)}
         self.assertEqual(syms, syms_good, "The symmetries are not being " +
                                           "detected correctly.")
 
@@ -769,8 +774,8 @@ class TestConstraintGeneration(unittest.TestCase):
     def test_norm_eqs_mon2index_mapping(self):
         sdp = InflationSDP(InflationProblem({'r': ['A']}, (3,), (3,), (3,)))
         sdp.generate_relaxation('npa2')
-        for i, mon in enumerate(sdp.generating_monomials):
-            self.assertTrue(i == sdp.genmon_hash_to_index[mon.tobytes()],
+        for i, lexmon in enumerate(sdp.generating_monomials_1d):
+            self.assertTrue(i == sdp.genmon_1d_to_index[tuple(lexmon)],
                             "Monomials in the generating list must be mapped "
                             + "to their index in the list under "
                             + "InflationSDP.genmon_hash_to_index for "

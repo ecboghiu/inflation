@@ -5,6 +5,7 @@ inflation.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
+import sympy
 
 from itertools import (chain,
                        combinations,
@@ -17,7 +18,7 @@ from .sdp.fast_npa import (nb_classify_disconnected_components,
                            apply_source_perm,
                            commutation_matrix)
 
-from .utils import format_permutations, partsextractor
+from .utils import format_permutations, partsextractor, perm_combiner
 from typing import Tuple, List, Union, Dict
 
 from functools import reduce, cached_property
@@ -341,11 +342,11 @@ class InflationProblem(object):
         self._lexorder_for_factorization = np.array([
             self._inflation_indices_hash[op.tobytes()]
             for op in self._lexorder[:, 1:-2]],
-            dtype=int)
+            dtype=np.intc)
 
-        # Discover the inflation symmetries
-        self.inf_symmetries = self.lexorder_perms_from_inflation()
-
+    @cached_property
+    def lexorder_symmetries(self):
+        return self.discover_lexorder_symmetries()
 
 
     def __repr__(self):
@@ -421,10 +422,12 @@ class InflationProblem(object):
             with_last_outcome=with_last_outcome)
         max_len_clique = max([len(c) for c in cliques])
         max_length = up_to_length if up_to_length != None else max_len_clique
-        if max_length > max_len_clique and self.verbose > 0:
-            warn("The maximum length of physical monomials required is " +
-                 "larger than the maximum sequence of compatible operators")
+        if max_length > max_len_clique:
             max_length = max_len_clique
+            if self.verbose > 0:
+                warn("The maximum length of physical monomials required is " +
+                     "larger than the maximum sequence of compatible operators")
+
         # Take combinations of all lengths up to the specified maximum
         # of all the cliques
         unique_subsets = {frozenset(ops) for nr_ops in range(max_length + 1)
@@ -469,10 +472,10 @@ class InflationProblem(object):
     def mon_to_lexrepr(self, mon: np.ndarray) -> np.ndarray:
         ops_as_hashes = list(map(self._from_2dndarray, mon))
         try:
-            return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=int)
+            return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=np.intc)
             # return np.array([self._lexorder_lookup[op_hash] for op_hash in ops_as_hashes], dtype=int)
         except KeyError:
-            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder.")
+            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder \n{self._lexorder}.")
 
     def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
         """Obtains the bytes representation of an array. The library uses this
@@ -504,6 +507,11 @@ class InflationProblem(object):
         #                                   + [str(i) for i in op[1:]])
         #         for op in self._lexorder]
         return np.array(as_list)
+
+    @cached_property
+    def _lexrepr_to_symbols(self):
+        return np.array([sympy.Symbol(name, commutative=False) for name in self._lexrepr_to_names],
+                        dtype=object)
 
     @cached_property
     def names_to_ints(self):
@@ -652,26 +660,29 @@ class InflationProblem(object):
                 [3, 4, 5, 0, 0, 0]]),
          array([[3, 6, 6, 0, 0, 0]])]
         """
-        if not self.ever_factorizes:
-            return (monomial_as_2darray,)
-        n = len(monomial_as_2darray)
-        if n <= 1:
-            return (monomial_as_2darray,)
-
-        inflation_indices_position = [self._inflation_indices_hash[
-            op.tobytes()] for op in monomial_as_2darray.astype(self._np_dtype)[:, 1:-2]]
-        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
-            :, inflation_indices_position]
-
-        component_labels = nb_classify_disconnected_components(adj_mat)
-        disconnected_components = tuple(
-            monomial_as_2darray[component_labels == i]
-            for i in range(component_labels.max(initial=0) + 1))
-
-        if canonical_order:
-            disconnected_components = tuple(sorted(disconnected_components,
-                                                   key=lambda x: x.tobytes()))
-        return disconnected_components
+        lexmon_factors = self.factorize_monomial_1d(self.mon_to_lexrepr(monomial_as_2darray),
+                                          canonical_order=canonical_order)
+        return tuple(self._lexorder[lexmon] for lexmon in lexmon_factors)
+        # if not self.ever_factorizes:
+        #     return (monomial_as_2darray,)
+        # n = len(monomial_as_2darray)
+        # if n <= 1:
+        #     return (monomial_as_2darray,)
+        #
+        # inflation_indices_position = [self._inflation_indices_hash[
+        #     op.tobytes()] for op in monomial_as_2darray.astype(self._np_dtype)[:, 1:-2]]
+        # adj_mat = self._inflation_indices_overlap[inflation_indices_position][
+        #     :, inflation_indices_position]
+        #
+        # component_labels = nb_classify_disconnected_components(adj_mat)
+        # disconnected_components = tuple(
+        #     monomial_as_2darray[component_labels == i]
+        #     for i in range(component_labels.max(initial=0) + 1))
+        #
+        # if canonical_order:
+        #     disconnected_components = tuple(sorted(disconnected_components,
+        #                                            key=lambda x: x.tobytes()))
+        # return disconnected_components
 
     def factorize_monomial_1d(self,
                               monomial_as_1darray: np.ndarray,
@@ -696,19 +707,17 @@ class InflationProblem(object):
             A tuple of ndarrays, where each array represents a picklist for an atomic monomial
             factor.
         """
-        if not self.ever_factorizes:
+        if (not self.ever_factorizes) or len(monomial_as_1darray) <= 1:
             return (monomial_as_1darray,)
 
-        inflation_indices_position = self._lexorder_for_factorization[monomial_as_1darray]
-        if len(inflation_indices_position) <= 1:
-            return (monomial_as_1darray,)
-
-        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
-            :, inflation_indices_position]
+        inflation_indices_position = self._lexorder_for_factorization[
+            monomial_as_1darray]
+        unique_inflation_indices_positions, reversion_key = np.unique(inflation_indices_position, return_inverse=True)
+        adj_mat = self._inflation_indices_overlap[np.ix_(unique_inflation_indices_positions, unique_inflation_indices_positions)]
         component_labels = nb_classify_disconnected_components(adj_mat)
         # print(f"DEBUG: Component labels {component_labels}")
         nof_components = component_labels.max(initial=0) + 1
-        disconnected_components = tuple(monomial_as_1darray[component_labels == i]
+        disconnected_components = tuple(monomial_as_1darray[np.take(component_labels == i, reversion_key)]
             for i in range(nof_components))
 
         if canonical_order:
@@ -719,7 +728,7 @@ class InflationProblem(object):
     ###########################################################################
     # FUNCTIONS PERTAINING TO SYMMETRY                                        #
     ###########################################################################
-    def lexorder_perms_from_inflation(self) -> np.ndarray:
+    def discover_lexorder_symmetries(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
         function outputs a list of all permutations.
@@ -736,7 +745,7 @@ class InflationProblem(object):
         if len(sources_with_copies):
             permutation_failed = False
             lexorder_symmetries = []
-            identity_perm        = np.arange(self._nr_operators, dtype=int)
+            identity_perm        = np.arange(self._nr_operators, dtype=np.intc)
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
@@ -754,22 +763,19 @@ class InflationProblem(object):
                         new_order = np.fromiter(
                             (self._lexorder_lookup[op.tobytes()]
                              for op in adjusted_ops),
-                            dtype=int
+                            dtype=np.intc
                         )
                         one_source_symmetries.append(new_order)
                     except KeyError:
                         permutation_failed = True
                         pass
-                lexorder_symmetries.append(one_source_symmetries)
+                lexorder_symmetries.append(np.asarray(one_source_symmetries, dtype=np.intc))
             if permutation_failed and (self.verbose > 0):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
-            lexorder_symmetries = np.vstack([reduce(np.take, perms)
-                                             for perms in
-                                             product(*lexorder_symmetries)])
-            return lexorder_symmetries
+            return reduce(perm_combiner, lexorder_symmetries)
         else:
-            return np.arange(self._nr_operators, dtype=int)[np.newaxis]
+            return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
 
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates
