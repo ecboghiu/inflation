@@ -726,8 +726,14 @@ def seesaw_l_norm(target_probability,
             
             for outs in np.ndindex(*outcome_cards):
                 for ins in np.ndindex(*setting_cards):
-                    expr = p[(*outs, *ins)] - target_probability[(*outs, *ins)]
-                    constraints += [ -l1_norm <= expr ] + [ expr <= l1_norm]
+                    # Pedro! Here you should make sure the objective only cares
+                    # about probability terms that are valid
+                    # for the 3 party scenario:
+                    a, b, c = outs
+                    x, y, z = ins
+                    if (x == b) and (z == b):
+                        expr = p[(*outs, *ins)] - target_probability[(*outs, *ins)]
+                        constraints += [ -l1_norm <= expr ] + [ expr <= l1_norm]
                     
             problem = cp.Problem(cp.Minimize(l1_norm), constraints)
             
@@ -795,8 +801,8 @@ if __name__ == '__main__':
                      'C': ['H_C_psiBC']}
 
     import qutip as qt
-    fixed_states = {'psiAB': None,
-                    'psiBC': None}
+    fixed_states = {'psiAB': qt.rand_dm(4).data.A,
+                    'psiBC': qt.rand_dm(4).data.A}
     fixed_measurements = {'A': [None, None],
                           'B': [None],
                           'C': [None, None]}
