@@ -481,7 +481,7 @@ def seesaw(outcomes_per_party,
     """
     parties = list(outcomes_per_party.keys())
     outcome_cards = list(outcomes_per_party.values())
-    setting_cards = list(settings_per_party.keys())
+    setting_cards = list(settings_per_party.values())
 
     povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup
                  in povms_support.items()}
@@ -625,8 +625,191 @@ def seesaw(outcomes_per_party,
                 old_value = new_value
     print("BEST VALUE: ", best_value)
     
+def seesaw_l_norm(target_probability,
+           outcomes_per_party,
+           settings_per_party,
+           Hilbert_space_dims,
+           fixed_states,
+           fixed_povms,
+           state_support,
+           povms_support,
+           nof_iterations=10):
+
+    parties = list(outcomes_per_party.keys())
+    outcome_cards = list(outcomes_per_party.values())
+    setting_cards = list(settings_per_party.values())
+
+    povm_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup
+                 in povms_support.items()}
+    state_dims = {s: np.prod([Hilbert_space_dims[h] for h in sup]) for s, sup
+                  in state_support.items()}
+
+    seesaw_states = fixed_states.copy()
+    seesaw_povms = deepcopy(fixed_povms)
+
+    # Create a list of CVXPY variables that we will optimise over, by checking
+    # which entries are 'None'. If an entry is 'None', add a string representing
+    # it to cvxpy_variables. Then, add to _cvxpy_states and _cvxpy_povms where
+    # the entry is 'None' either a random state and POVM for that setting
+    cvxpy_variables = []
+    for s in seesaw_states.keys():
+        if seesaw_states[s] is None:
+            # Keep that of this variable as we will optimise over it
+            cvxpy_variables += [s]
+        else:
+            # Check that the dimension corresponds to that deduced from Hilbert_space_dims
+            assert seesaw_states[s].shape == (state_dims[s], state_dims[s]), \
+                f"Dimension of fixed state {s} does not match that deduced from Hilbert_space_dims"
+    for party in parties:
+        _list_of_x = []
+        for x, povm in enumerate(seesaw_povms[party]):
+            if povm is None:
+                # Keep that of this variable as we will optimise over it, also
+                # keep track of the setting
+                _list_of_x += [x]
+            else:
+                # Check that the dimension corresponds to that deduced from Hilbert_space_dims
+                assert len(seesaw_povms[party][x]) == outcome_cards[
+                    party], "Number of outcomes is not correct"
+                assert seesaw_povms[party][x][0].shape == (
+                    povm_dims[party], povm_dims[party]), \
+                    f"Dimension of fixed POVM {party} does not match that deduced from Hilbert_space_dims"
+        cvxpy_variables += [(party, *_list_of_x)]
+
+    # Generate random sample states and povms and return the best value
+    best_value = 1e100
+    for iter_nr in range(1, nof_iterations):
+        # print(f"ITERATION {i}")
+        old_value = 1e100
+        for s in fixed_states:
+            if fixed_states[s] is None:
+                seesaw_states[s] = generate_random_mixed_state(state_dims[s])
+        for p in fixed_povms:
+            for j, x in enumerate(fixed_povms[p]):
+                if x is None:
+                    seesaw_povms[p][j] = generate_random_povm(povm_dims[p],
+                                                            outcomes_per_party[p])
+
+        # Iteratively optimize until objective value converges
+        for v in itertools.cycle(cvxpy_variables):
+            constraints = []
+            if isinstance(v, str):
+                seesaw_states[v] = cp.Variable(shape=(state_dims[v],)*2,
+                                               hermitian=True)
+                constraints += [seesaw_states[v] >> 0,
+                               cp.trace(seesaw_states[v]) == 1]
+            else:
+                for x in v[1:]:
+                    seesaw_povms[v[0]][x] = [cp.Variable(shape=(povm_dims[v[0]],)*2,
+                                                      hermitian=True)
+                                          for _ in range(outcomes_per_party[v[0]])]
+                    constraints += [sum(seesaw_povms[v[0]][x]) == np.eye(povm_dims[v[0]]),
+                                    *[e >> 0 for e in seesaw_povms[v[0]][x]]]
+            
+            p = np.zeros((*outcome_cards, *setting_cards), dtype=object)
+            for outs in np.ndindex(*outcome_cards):
+                for ins in np.ndindex(*setting_cards):
+                    list_of_mmnts = [seesaw_povms[p][ins[i]][outs[i]] 
+                                      for i, p in enumerate(parties)]
+                    mmnt = list_of_mmnts[0]
+                    for i in range(1, len(list_of_mmnts)):
+                        mmnt = cp.kron(mmnt, list_of_mmnts[i])
+                        
+                    list_of_states = list(seesaw_states.values())
+                    state = list_of_states[0]
+                    for i in range(1, len(list_of_states)):
+                        state = cp.kron(state, list_of_states[i])
+                    
+                    p[(*outs, *ins)] = cp.real(cp.trace(state @ mmnt))
+            
+            l1_norm = cp.Variable(nonneg=True)
+            
+            for outs in np.ndindex(*outcome_cards):
+                for ins in np.ndindex(*setting_cards):
+                    expr = p[(*outs, *ins)] - target_probability[(*outs, *ins)]
+                    constraints += [ -l1_norm <= expr ] + [ expr <= l1_norm]
+                    
+            problem = cp.Problem(cp.Minimize(l1_norm), constraints)
+            
+            problem.solve(verbose=False)
+            
+            if problem.status == 'optimal':
+                new_value = l1_norm.value
+                print(f"\nIteration: {iter_nr}. |p-p_target|_1 = {l1_norm.value}", end="")
+                
+                if isinstance(v, str):
+                    seesaw_states[v] = seesaw_states[v].value
+                elif isinstance(v, tuple):
+                    for x in v[1:]:
+                        as_values = [e.value for e in seesaw_povms[v[0]][x]]
+                        seesaw_povms[v[0]][x] = as_values.copy()
+            else:
+                print(f"Iteration: {iter_nr} Something went wrong solving the SDP.")
+                
+        
+            if abs(new_value - old_value) < 1e-7:
+                print(f"   Converged!", end="")
+                # print(seesaw_states)
+                # print(seesaw_povms)
+                best_value = new_value if new_value < best_value \
+                    else best_value
+                print(" Best: {best_value}", end="")
+                break
+            else:
+                old_value = new_value
+                
+            #### WHEN TO STOP
+            
+            if abs(best_value) < 1e-7:
+                print("BEST VALUE: ", best_value, seesaw_states, seesaw_povms)
+                return best_value, seesaw_states, seesaw_povms
+    return -1
+                
+            
+    
+    
     
 if __name__ == '__main__':
+    ############ l norm
+    
+    dag_global = {'psiAB': ['A', 'B'],
+                  'psiBC': ['B', 'C']}
+    outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
+    settings_per_party = {'A': 2, 'B': 1, 'C': 2}
+
+    scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
+
+    ops = generate_ops(outcomes_per_party, settings_per_party)
+    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
+
+    # Fix local dimensions
+    LOCAL_DIM = 2
+    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+
+    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
+                     'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
+    povms_support = {'A': ['H_A_psiAB'],
+                     'B': ['H_B_psiAB', 'H_B_psiBC'],
+                     'C': ['H_C_psiBC']}
+
+    import qutip as qt
+    fixed_states = {'psiAB': None,
+                    'psiBC': None}
+    fixed_measurements = {'A': [None, None],
+                          'B': [None],
+                          'C': [None, None]}
+
+    seesaw_l_norm(target_probability=1/8*np.ones((2, 2, 2, 2, 1, 2)),
+           outcomes_per_party=outcomes_per_party,
+           settings_per_party=settings_per_party,
+           Hilbert_space_dims=Hilbert_space_dims,
+           fixed_states=fixed_states,
+           fixed_povms=fixed_measurements,
+           state_support=state_support,
+           povms_support=povms_support,
+           nof_iterations=100)
 
     ############################# CHSH #########################################
 
@@ -802,39 +985,41 @@ if __name__ == '__main__':
 
     # ############################# MERMIN Global ##############################
 
-    dag_global = {'psiABC': ['A', 'B', 'C']}
-    outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
-    settings_per_party = {'A': 2, 'B': 2, 'C': 2}
+    # dag_global = {'psiABC': ['A', 'B', 'C']}
+    # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
+    # settings_per_party = {'A': 2, 'B': 2, 'C': 2}
 
-    scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
+    # scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
 
-    ops = generate_ops(outcomes_per_party, settings_per_party)
-    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
-    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
+    # ops = generate_ops(outcomes_per_party, settings_per_party)
+    # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
 
-    # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
-    MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
-    MERMIN_as_array = Bell_CG2prob(MERMIN, outcomes_per_party, settings_per_party)
+    # # # max should be 2*sqrt(2) for dag_triangle and 4 for dag_global
+    # MERMIN = A[1]*B[0]*C[0] + A[0]*B[1]*C[0] + A[0]*B[0]*C[1] - A[1]*B[1]*C[1]
+    # MERMIN_as_array = Bell_CG2prob(MERMIN, outcomes_per_party, settings_per_party)
 
-    # Fix local dimensions
-    LOCAL_DIM = 2
-    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+    # # Fix local dimensions
+    # LOCAL_DIM = 2
+    # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
 
-    state_support = {'psiABC': ['H_A_psiABC', 'H_B_psiABC', 'H_C_psiABC']}
-    povms_support = {'A': ['H_A_psiABC'],
-                     'B': ['H_B_psiABC'],
-                     'C': ['H_C_psiABC']}
+    # state_support = {'psiABC': ['H_A_psiABC', 'H_B_psiABC', 'H_C_psiABC']}
+    # povms_support = {'A': ['H_A_psiABC'],
+    #                  'B': ['H_B_psiABC'],
+    #                  'C': ['H_C_psiABC']}
 
+    # import qutip as qt
+    # fixed_states = {'psiABC': qt.rand_dm(8).data.A}
+    # fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
 
-    fixed_states = {'psiABC': None}
-    fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
-
-    seesaw(outcomes_per_party=outcomes_per_party,
-           settings_per_party=settings_per_party,
-           objective_as_array=MERMIN_as_array,
-           Hilbert_space_dims=Hilbert_space_dims,
-           fixed_states=fixed_states,
-           fixed_povms=fixed_measurements,
-           state_support=state_support,
-           povms_support=povms_support)
+    # seesaw(outcomes_per_party=outcomes_per_party,
+    #        settings_per_party=settings_per_party,
+    #        objective_as_array=MERMIN_as_array,
+    #        Hilbert_space_dims=Hilbert_space_dims,
+    #        fixed_states=fixed_states,
+    #        fixed_povms=fixed_measurements,
+    #        state_support=state_support,
+    #        povms_support=povms_support)
+    
+    
