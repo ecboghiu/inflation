@@ -207,7 +207,9 @@ class CompoundMoment(object):
                  "name",
                  "signature",
                  "symbol",
-                 "unknowable_factors"
+                 "unknowable_factors",
+                 "as_lexmon",
+                 "internal_type"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
@@ -233,6 +235,10 @@ class CompoundMoment(object):
         self.n_operators   = sum(factor.n_operators for factor in self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
+        if self.n_factors == 0:
+            self.as_lexmon = np.empty(0, dtype=np.intc)
+        else:
+            self.as_lexmon     = np.hstack([factor.as_lexmon for factor in self.factors])
 
         knowable_factors   = []
         unknowable_factors = []
@@ -258,17 +264,17 @@ class CompoundMoment(object):
         self.name        = name_from_atom_names(self._names_of_factors)
         self.symbol      = symbol_prod(self._symbols_of_factors)
         self.signature   = self.factors
+        self.internal_type = InternalAtomicMonomial
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
         if isinstance(other, self.__class__):
             return self.as_counter == other.as_counter
-        elif isinstance(other, InternalAtomicMonomial):
+        elif isinstance(other, self.internal_type):
             return (self.n_factors == 1) and other.__eq__(self.factors[0])
         else:
-            assert isinstance(other, self.__class__), \
-                (f"Expected object of class {self.__class__}, received {other}"
-                 + f" of class {type(other)}{list(map(type, other))}.")
+            raise Exception(f"Expected object of class {self.__class__}, received {other}"
+                 + f" of class {type(other)}.")
             return False
 
     def __hash__(self):

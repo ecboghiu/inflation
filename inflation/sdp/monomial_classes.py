@@ -147,6 +147,7 @@ class CompoundMomentSDP(CompoundMomentLP):
         conjugate_factors  = tuple(sorted(factor.dagger
                                           for factor in monomials))
         super().__init__(min(default_factors, conjugate_factors))
+        self.internal_type = InternalAtomicMonomialSDP
         # self.is_all_commuting = all(factor.is_all_commuting
         #                             for factor in self.factors)
         # self.is_physical = all(factor.is_physical
