@@ -738,7 +738,7 @@ class InflationSDP(object):
     def solve(self,
               interpreter="MOSEKFusion",
               feas_as_optim=False,
-              dualise=True,
+              solve_dual=True,
               solverparameters=None,
               solver_arguments={},
               verbose: int = -1) -> None:
@@ -762,7 +762,7 @@ class InflationSDP(object):
 
             The correspondence is that the result of (2) is positive if (1) is
             feasible, and negative otherwise. By default ``False``.
-        dualise : bool, optional
+        solve_dual : bool, optional
             Optimize the dual problem (recommended). By default ``True``.
         solverparameters : dict, optional
             Extra parameters to be sent to the solver. By default ``None``.
@@ -790,7 +790,7 @@ class InflationSDP(object):
         args.update({"feas_as_optim": feas_as_optim,
                      "verbose": real_verbose,
                      "solverparameters": solverparameters,
-                     "solve_dual": dualise})
+                     "solve_dual": solve_dual})
 
         self.solution_object = solveSDP_MosekFUSION(**args)
 
