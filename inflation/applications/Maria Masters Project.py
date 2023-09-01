@@ -52,7 +52,7 @@ simplest_bilocal_scenario = InflationProblem({
     "mu": ["b", "c"]},
     outcomes_per_party=[2, 2, 2],
     settings_per_party=[2, 1, 2],
-    inflation_level_per_source=[2, 2],
+    inflation_level_per_source=[1, 2],
     order=['a', 'b', 'c'],
     verbose=1)
 # quantum_bilocal_SDP = InflationSDP(simplest_bilocal_scenario)
