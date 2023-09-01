@@ -1,53 +1,97 @@
 import numpy as np
 
 
-def PR_box_with_visibility(a, b, x, y, v):
+def PR_box_with_visibility(a: int, b: int, x: int, y: int, v=np.sqrt(2)/2):
     return (1 + v * (-1) ** (a + b + x * y)) / 4
 
-
-def Anti_PR_box_with_visibility(a, b, x, y, v):
-    return (1 - v * (-1) ** (a + b + x * y)) / 4
-
-
-# for (x,y,a,b) in np.ndindex((2, 2, 2, 2)):
-#     print(f"P({a},{b}|{x},{y}) = {Anti_PR_box_with_visibility(a, b, x, y, 1)}")
-def NSBoxType1(v):
+def NSBoxType1(v=np.sqrt(2)/2):
     tripartite_box = np.zeros((2, 2, 2, 2, 1, 2), dtype=object)
-    for (x, y, a, b, c) in np.ndindex((2, 2, 2, 2, 2)):
-        tripartite_box[a, b, c, x, 0, y] = 1 / 2 * PR_box_with_visibility(a, b,
-                                                                          x, c,
-                                                                          v)
+    for (x, z, a, b, c) in np.ndindex((2, 2, 2, 2, 2)):
+        tripartite_box[a, b, c, x, 0, z] = 1 / 2 * PR_box_with_visibility(a, b, x, c, v)
     return tripartite_box
 
 
-def NSBoxType2(v, post_selection_probability=1 / 2):
+def NSBoxType2(v=np.sqrt(2)/2, post_selection_probability=1 / 4):
     tripartite_box = np.zeros((2, 2, 2, 2, 1, 2), dtype=object)
-    white_noise_box = np.ones((2, 2, 2, 2), dtype=object) / 4
-    for (x, y, a, c) in np.ndindex((2, 2, 2, 2)):
+    for (a, c, x, z) in np.ndindex((2, 2, 2, 2)):
         tripartite_box[
-            a, 0, c, x, 0, y] = post_selection_probability * PR_box_with_visibility(
-            a, c, x, y, v)
-    tripartite_box[:, 1, :, :, 0, :] = white_noise_box - tripartite_box[:, 0,
-                                                         :, :, 0, :]
+            a, 0, c, x, 0, z] = post_selection_probability * PR_box_with_visibility(
+            a, c, x, z, v)
+    tripartite_box[:, 1] = 1/4 - tripartite_box[:, 0]
     return tripartite_box
+def NSBoxHalfAndHalf(v=np.sqrt(2)/2, post_selection_probability=1 / 4):
+    return NSBoxType1(v) / 2 + NSBoxType2(v, post_selection_probability=post_selection_probability) / 2
 
-
-# def NSBoxType2b(v, post_selection_probability=1/2):
-#     tripartite_box = np.zeros((2,2,2,2,1,2), dtype=object)
-#     white_noise_box = np.ones((2,2,2,2), dtype=object)/4
-#     for (x,y,a,c) in np.ndindex((2, 2, 2, 2)):
-#         tripartite_box[a, 1, c, x, 0, y] = post_selection_probability * Anti_PR_box_with_visibility(a, c, x, y, v)
-#     tripartite_box[:, 0, :, :, 0, :] = white_noise_box - tripartite_box[:, 1, :, :, 0, :]
-#     return tripartite_box
-
-def NSBoxHalfAndHalf(v, post_selection_probability=1 / 2):
-    return NSBoxType1(v) / 2 + NSBoxType2(v,
-                                          post_selection_probability=post_selection_probability) / 2
-
+def NSBoxFrom1to2(w: float=1, v=np.sqrt(2)/2, post_selection_probability=1 / 2):
+    return (1-w)*NSBoxType1(v) + w*NSBoxType2(v, post_selection_probability=post_selection_probability)
 
 from inflation import InflationProblem, InflationSDP, InflationLP
 
-simplest_bilocal_scenario = InflationProblem({
+simplest_bilocal_scenario_no_inflation = InflationProblem({
+    "lambda": ["a", "b"],
+    "mu": ["b", "c"]},
+    outcomes_per_party=[2, 2, 2],
+    settings_per_party=[2, 1, 2],
+    inflation_level_per_source=[1, 1],
+    order=['a', 'b', 'c'],
+    verbose=1)
+
+# quantum_bilocal_SDP = InflationSDP(simplest_bilocal_scenario)
+# quantum_bilocal_SDP.generate_relaxation("physical")
+
+
+from sympy import Symbol
+from inflation.sdp.optimization_utils import max_within_feasible
+
+simplest_bilocal_lp = InflationLP(simplest_bilocal_scenario_no_inflation,
+                                  nonfanout=False,
+                                  verbose=2)
+
+simplest_bilocal_lp.set_distribution(
+    NSBoxFrom1to2(w=1/2, v=np.sqrt(2)/2, post_selection_probability=1 / 4))
+simplest_bilocal_lp.solve(interpreter="solve_Gurobi")
+#
+# #
+# # print("TESTING CHARLIES-OUTCOME-AS-BOB'S SETTING BOX")
+# # simplest_bilocal_lp.set_distribution(
+# #     NSBoxType1(v=Symbol("v")))
+# # symbolic_moments = simplest_bilocal_lp.known_moments.copy()
+# # v, cert = max_within_feasible(simplest_bilocal_lp,
+# #                               symbolic_moments,
+# #                               method="dual",
+# #                               return_last_certificate=True,
+# #                               verbose=1,
+# #                               solve_dual=True,
+# #                               use_lpi_constraints=False)
+# # print(f"Critical visibility via dual cert: {v}: via \n{cert}")
+# #
+# # print("TESTING POST-SELECTION BOX")
+# # simplest_bilocal_lp.set_distribution(
+# #     NSBoxType2(v=Symbol("v"), post_selection_probability=1 / 2))
+# # symbolic_moments = simplest_bilocal_lp.known_moments.copy()
+# # v, cert = max_within_feasible(simplest_bilocal_lp,
+# #                               symbolic_moments,
+# #                               method="dual",
+# #                               return_last_certificate=True,
+# #                               verbose=1,
+# #                               solve_dual=True,
+# #                               use_lpi_constraints=False)
+# # print(f"Critical visibility via dual cert: {v}: via \n{cert}")
+#
+# print("TESTING NOISY-PR mixture nonclassicality, post_selection_probability = 1/2")
+# simplest_bilocal_lp.set_distribution(
+#     NSBoxHalfAndHalf(v=Symbol("v"), post_selection_probability=1 / 2))
+# symbolic_moments = simplest_bilocal_lp.known_moments.copy()
+# v, cert = max_within_feasible(simplest_bilocal_lp,
+#                               symbolic_moments,
+#                               method="dual",
+#                               return_last_certificate=True,
+#                               verbose=1,
+#                               solve_dual=True,
+#                               use_lpi_constraints=False)
+# print(f"Critical visibility via dual cert: {v}: via \n{cert}")
+#
+simplest_bilocal_scenario_with_inflation = InflationProblem({
     "lambda": ["a", "b"],
     "mu": ["b", "c"]},
     outcomes_per_party=[2, 2, 2],
@@ -55,39 +99,19 @@ simplest_bilocal_scenario = InflationProblem({
     inflation_level_per_source=[1, 2],
     order=['a', 'b', 'c'],
     verbose=1)
-# quantum_bilocal_SDP = InflationSDP(simplest_bilocal_scenario)
-# quantum_bilocal_SDP.generate_relaxation("physical")
-# quantum_bilocal_SDP.set_distribution(NSBoxHalfAndHalf(v=1, post_selection_probability=1/2))
-# solution_raw = quantum_bilocal_SDP.solve(feas_as_optim=False)
-# print(f"Quantum inflation report: {solution_raw.status}")
-#
-from sympy import Symbol
-from inflation.sdp.optimization_utils import max_within_feasible
-import mosek
-
-simplest_bilocal_lp = InflationLP(simplest_bilocal_scenario,
+simple_bilocal_lp = InflationLP(simplest_bilocal_scenario_with_inflation,
                                   nonfanout=False,
-                                  verbose=0)
+                                  verbose=2)
 
-print("TESTING NOISY PR-MIXTURE")
-simplest_bilocal_lp.set_distribution(
-    NSBoxHalfAndHalf(v=Symbol("v"), post_selection_probability=1 / 2))
-symbolic_moments = simplest_bilocal_lp.known_moments.copy()
-v, cert = max_within_feasible(simplest_bilocal_lp,
-                              symbolic_moments,
-                              method="dual",
-                              return_last_certificate=True,
-                              verbose=1,
-                              solve_dual=True,
-                              use_lpi_constraints=False)
-print(f"Critical visibility via dual cert: {v}: via \n{cert}")
-
+simple_bilocal_lp.set_distribution(
+    NSBoxFrom1to2(w=1/2, v=np.sqrt(2)/2, post_selection_probability=1 / 4))
+simple_bilocal_lp.solve(interpreter="solve_Gurobi")
 print("\n")
-print("TESTING NOISY TSIRELSON-BOX-MIXTURE")
-simplest_bilocal_lp.set_distribution(
+print("TESTING NOISY-PR mixture nonclassicality, post_selection_probability = 1/4")
+simple_bilocal_lp.set_distribution(
     NSBoxHalfAndHalf(Symbol("v"), post_selection_probability=1 / 4))
-symbolic_moments = simplest_bilocal_lp.known_moments.copy()
-v, cert = max_within_feasible(simplest_bilocal_lp,
+symbolic_moments = simple_bilocal_lp.known_moments.copy()
+v, cert = max_within_feasible(simple_bilocal_lp,
                               symbolic_moments,
                               method="dual",
                               return_last_certificate=True,
@@ -97,3 +121,50 @@ v, cert = max_within_feasible(simplest_bilocal_lp,
                               # solverparameters={mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}
                               )
 print(f"Critical visibility via dual cert: {v}: via \n{cert}")
+
+# print("\n")
+# print("TESTING NOISY-PR mixture nonquantumness, post_selection_probability = 1/4")
+# quantum_bilocal_SDP.set_distribution(
+#     NSBoxHalfAndHalf(Symbol("v"), post_selection_probability=1 / 4))
+# symbolic_moments = quantum_bilocal_SDP.known_moments.copy()
+# v, cert = max_within_feasible(quantum_bilocal_SDP,
+#                               symbolic_moments,
+#                               method="dual",
+#                               return_last_certificate=True,
+#                               verbose=1,
+#                               solve_dual=True,
+#                               use_lpi_constraints=False,
+#                               # solverparameters={mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}
+#                               )
+# print(f"Critical visibility via dual cert: {v}: via \n{cert}")
+
+# print("\n")
+# print("TESTING noiseless Tsirelson Box mixtures")
+# simplest_bilocal_lp.set_distribution(
+#     NSBoxFrom1to2(Symbol("w"), v=np.sqrt(2)/2, post_selection_probability=1 / 4))
+# symbolic_moments = simplest_bilocal_lp.known_moments.copy()
+# w, cert = max_within_feasible(simplest_bilocal_lp,
+#                               symbolic_moments,
+#                               method="dual",
+#                               return_last_certificate=True,
+#                               verbose=1,
+#                               solve_dual=True,
+#                               use_lpi_constraints=False,
+#                               # solverparameters={mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}
+#                               )
+# print(f"Critical weight of postselection box: {w}: via \n{cert}")
+#
+# print("\nTESTING noiseless Tsirelson Box mixtures other way")
+# simplest_bilocal_lp.set_distribution(
+#     NSBoxFrom1to2(1-Symbol("w"), v=np.sqrt(2)/2, post_selection_probability=1 / 4))
+# symbolic_moments = simplest_bilocal_lp.known_moments.copy()
+# w, cert = max_within_feasible(simplest_bilocal_lp,
+#                               symbolic_moments,
+#                               method="dual",
+#                               return_last_certificate=True,
+#                               verbose=1,
+#                               solve_dual=True,
+#                               use_lpi_constraints=False,
+#                               # solverparameters={mosek.iparam.optimizer: mosek.optimizertype.dual_simplex}
+#                               )
+# print(f"Critical weight of charlie-as-setting box: {w}: via \n{cert}")
