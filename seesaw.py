@@ -510,6 +510,7 @@ def seesaw(outcomes_per_party,
             else:
                 old_value = new_value
     print("BEST VALUE: ", best_value)
+    return best_value, args
     
 def seesaw_l_norm(target_probability,
            outcomes_per_party,
