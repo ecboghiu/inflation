@@ -488,13 +488,13 @@ def seesaw(outcomes_per_party,
                 # Optimizing povms
                 BellOps_values = compute_effective_Bell_operator(
                     **args, variable_to_optimise_over=v)
-                for p, x in np.ndindex(settings_per_party[v[0]],
+                for x, a in np.ndindex(settings_per_party[v[0]],
                                        outcomes_per_party[v[0]]):
-                    BellOps[p, x].value = BellOps_values[p, x]
+                    BellOps[x, a].value = BellOps_values[x, a]
                 prob.solve(verbose=False)
                 vars_in_prob = prob.variables()
-                for j in range(outcomes_per_party[v[0]]):
-                    args["povms"][v[0]][j] = [j.value for j in
+                for x in range(settings_per_party[v[0]]):
+                    args["povms"][v[0]][x] = [Pa.value for Pa in
                                               vars_in_prob[:settings_per_party[v[0]]]]
                     vars_in_prob = vars_in_prob[settings_per_party[v[0]]:]
             new_value = prob.value
@@ -664,96 +664,96 @@ def seesaw_l_norm(target_probability,
 if __name__ == '__main__':
     ############ l norm
     
-    dag_global = {'psiAB': ['A', 'B'],
-                  'psiBC': ['B', 'C']}
-    outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
-    settings_per_party = {'A': 2, 'B': 1, 'C': 2}
+    # dag_global = {'psiAB': ['A', 'B'],
+    #               'psiBC': ['B', 'C']}
+    # outcomes_per_party = {'A': 2, 'B': 2, 'C': 2}
+    # settings_per_party = {'A': 2, 'B': 1, 'C': 2}
 
-    scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
+    # scenario = NetworkScenario(dag_global, outcomes_per_party, settings_per_party)
 
-    ops = generate_ops(outcomes_per_party, settings_per_party)
-    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
-    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
-
-    # Fix local dimensions
-    LOCAL_DIM = 2
-    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-
-    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
-                     'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
-    povms_support = {'A': ['H_A_psiAB'],
-                     'B': ['H_B_psiAB', 'H_B_psiBC'],
-                     'C': ['H_C_psiBC']}
-
-    import qutip as qt
-    fixed_states = {'psiAB': qt.rand_dm(4).data.A,
-                    'psiBC': qt.rand_dm(4).data.A}
-    fixed_measurements = {'A': [None, None],
-                          'B': [None],
-                          'C': [None, None]}
-
-    seesaw_l_norm(target_probability=1/8*np.ones((2, 2, 2, 2, 1, 2)),
-           outcomes_per_party=outcomes_per_party,
-           settings_per_party=settings_per_party,
-           Hilbert_space_dims=Hilbert_space_dims,
-           fixed_states=fixed_states,
-           fixed_povms=fixed_measurements,
-           state_support=state_support,
-           povms_support=povms_support,
-           nof_iterations=100)
-
-    ############################# CHSH #########################################
-
-    # dag = {'psiAB': ['A', 'B']}
-    # outcomes_per_party = {'A': 2, 'B': 2}
-    # settings_per_party = {'A': 2, 'B': 2}
-    # scenario = NetworkScenario(dag, outcomes_per_party, settings_per_party)
     # ops = generate_ops(outcomes_per_party, settings_per_party)
     # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
     # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    # CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
-    # CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
+    # C = [1 - 2*ops[2][x][0] for x in range(settings_per_party['C'])]
 
     # # Fix local dimensions
     # LOCAL_DIM = 2
     # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
 
-    # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
-    # povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
+    # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB'],
+    #                  'psiBC': ['H_B_psiBC', 'H_C_psiBC']}
+    # povms_support = {'A': ['H_A_psiAB'],
+    #                  'B': ['H_B_psiAB', 'H_B_psiBC'],
+    #                  'C': ['H_C_psiBC']}
 
-    # seesaw(outcomes_per_party=outcomes_per_party,
+    # import qutip as qt
+    # fixed_states = {'psiAB': qt.rand_dm(4).data.A,
+    #                 'psiBC': qt.rand_dm(4).data.A}
+    # fixed_measurements = {'A': [None, None],
+    #                       'B': [None],
+    #                       'C': [None, None]}
+
+    # seesaw_l_norm(target_probability=1/8*np.ones((2, 2, 2, 2, 1, 2)),
+    #        outcomes_per_party=outcomes_per_party,
     #        settings_per_party=settings_per_party,
-    #        objective_as_array=CHSH_array,
     #        Hilbert_space_dims=Hilbert_space_dims,
-    #        fixed_states={'psiAB': None},
-    #        fixed_povms={'A': [None, None], 'B': [None, None]},
+    #        fixed_states=fixed_states,
+    #        fixed_povms=fixed_measurements,
     #        state_support=state_support,
-    #        povms_support=povms_support)
+    #        povms_support=povms_support,
+    #        nof_iterations=100)
 
-    # bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
-    # bell_state = bell_state @ bell_state.T.conj()
-    # A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
-    # A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
-    # B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
-    # B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
-    # _A = [A0, A1]
-    # _B = [B0, B1]
-    #
-    # fixed_states = {'psiAB': bell_state}
-    # fixed_measurements = {'A': [A0, A1],
-    #                       'B': [B0, B1]}
-    #
-    # final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
-    # final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
-    # perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
-    # perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
-    # p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
-    #                               final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
-    #
-    #
-    # assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
-    #
+    ############################# CHSH #########################################
+
+    dag = {'psiAB': ['A', 'B']}
+    outcomes_per_party = {'A': 2, 'B': 2}
+    settings_per_party = {'A': 2, 'B': 2}
+    scenario = NetworkScenario(dag, outcomes_per_party, settings_per_party)
+    ops = generate_ops(outcomes_per_party, settings_per_party)
+    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
+    CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
+
+    # Fix local dimensions
+    LOCAL_DIM = 2
+    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+
+    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
+    povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
+
+    seesaw(outcomes_per_party=outcomes_per_party,
+           settings_per_party=settings_per_party,
+           objective_as_array=CHSH_array,
+           Hilbert_space_dims=Hilbert_space_dims,
+           fixed_states={'psiAB': None},
+           fixed_povms={'A': [None, None], 'B': [None, None]},
+           state_support=state_support,
+           povms_support=povms_support)
+
+    bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
+    bell_state = bell_state @ bell_state.T.conj()
+    A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
+    A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
+    B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
+    B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
+    _A = [A0, A1]
+    _B = [B0, B1]
+    
+    fixed_states = {'psiAB': bell_state}
+    fixed_measurements = {'A': [A0, A1],
+                          'B': [B0, B1]}
+    
+    final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
+    final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
+    perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
+    perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
+    p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
+                                  final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
+    
+    
+    assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
+    
     # ########## Compute reduced bell operator assuming state is the SDP variable
     #
     # BellOp_yb = compute_effective_Bell_operator(Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party),
