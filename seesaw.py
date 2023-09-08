@@ -361,10 +361,9 @@ def seesaw(outcomes_per_party,
            fixed_states,
            fixed_povms,
            state_support,
-           povms_support):
-    """
-
-    """
+           povms_support,
+           seesaw_max_iterations=10,
+           verbose=1):
     parties = list(outcomes_per_party.keys())
     party2idx = {p: i for i, p in enumerate(parties)}
     outcome_cards = list(outcomes_per_party.values())
@@ -374,6 +373,12 @@ def seesaw(outcomes_per_party,
                  in povms_support.items()}
     state_dims = {s: np.prod([Hilbert_space_dims[h] for h in sup]) for s, sup
                   in state_support.items()}
+    all_state_supports = flatten(list(state_support.values()))
+    all_povm_supports = flatten(list(povms_support.values()))    
+    final_state_dims = [Hilbert_space_dims[s] for s in all_state_supports]
+    final_povm_dims = [Hilbert_space_dims[s] for s in all_povm_supports]
+    perm_povms2states = find_permutation(all_state_supports, all_povm_supports)
+    perm_states2povms = find_permutation(all_povm_supports, all_state_supports)
 
     seesaw_states = deepcopy(fixed_states)
     seesaw_povms = deepcopy(fixed_povms)
@@ -405,7 +410,9 @@ def seesaw(outcomes_per_party,
                 assert seesaw_povms[party][x][0].shape == (
                     povm_dims[party], povm_dims[party]), \
                     f"Dimension of fixed POVM {party} does not match that deduced from Hilbert_space_dims"
-        cvxpy_variables += [(party, *_list_of_x)]
+        # cvxpy_variables += [(party, *_list_of_x)]
+        for x in _list_of_x:
+            cvxpy_variables += [(party, x)]
 
 
     # Set up problems and their parameters for each unknown value
@@ -473,8 +480,8 @@ def seesaw(outcomes_per_party,
 
     # Generate random sample states and povms and return the best value
     best_value = 0
-    for i in range(1, 6):
-        print(f"ITERATION {i}")
+    for i in range(1, seesaw_max_iterations):
+        print(f"ITERATION {i}. Choosing random initial states and POVMs.")
         old_value = 0
         for s in fixed_states:
             if fixed_states[s] is None:
@@ -486,44 +493,74 @@ def seesaw(outcomes_per_party,
                                                                outcomes_per_party[p])
 
         # Iteratively optimize until objective value converges
-        for v in itertools.cycle(cvxpy_variables):
-            BellOps = cvxpy_parameters[v]
-            prob = cvxpy_probs[v]
-            if isinstance(v, str):
-                # Optimizing state
-                BellOps.value = compute_effective_Bell_operator(
-                    **args, variable_to_optimise_over=v)
-                prob.solve(verbose=False)
-                args["states"][v] = prob.variables()[0].value
-            else:
-                # Optimizing povms
-                BellOps_values = compute_effective_Bell_operator(
-                    **args, variable_to_optimise_over=(v[0],*range(settings_per_party[v[0]])))
-                for x, a in np.ndindex(settings_per_party[v[0]],
-                                       outcomes_per_party[v[0]]):
-                    BellOps[a, x].value = BellOps_values[a, x]
-                prob.solve(verbose=False)
-                # vars_in_prob = prob.variables()
-                for x in v[1:]:
-                    args["povms"][v[0]][x] = [cvxpy_name2variable[str(v)+'_'+str(a)+str(x)].value for a in
-                                              range(outcomes_per_party[v[0]])]
-                    # args["povms"][v[0]][x] = [Pa.value for Pa in
-                    #                           vars_in_prob[:settings_per_party[v[0]]]]
-                    # vars_in_prob = vars_in_prob[settings_per_party[v[0]]:]
-            new_value = prob.value
-            print(prob.value)
+        LOOP_LIMIT = 100
+        for loop_index in range(LOOP_LIMIT):
+            # for v in itertools.cycle(cvxpy_variables):
+            for v in cvxpy_variables:
+                BellOps = cvxpy_parameters[v]
+                prob = cvxpy_probs[v]
+                if isinstance(v, str):
+                    # Optimizing state
+                    BellOps.value = compute_effective_Bell_operator(
+                        **args, variable_to_optimise_over=v)
+                    prob.solve(verbose=False)
+                    args["states"][v] = prob.variables()[0].value
+                else:
+                    # Optimizing povms
+                    BellOps_values = compute_effective_Bell_operator(
+                        **args, variable_to_optimise_over=(v[0],*range(settings_per_party[v[0]])))
+                    for x, a in np.ndindex(settings_per_party[v[0]],
+                                        outcomes_per_party[v[0]]):
+                        BellOps[a, x].value = BellOps_values[a, x]
+                    prob.solve(verbose=False)
+                    # vars_in_prob = prob.variables()
+                    for x in v[1:]:
+                        args["povms"][v[0]][x] = [cvxpy_name2variable[str(v)+'_'+str(a)+str(x)].value for a in
+                                                range(outcomes_per_party[v[0]])]
+                        # args["povms"][v[0]][x] = [Pa.value for Pa in
+                        #                           vars_in_prob[:settings_per_party[v[0]]]]
+                        # vars_in_prob = vars_in_prob[settings_per_party[v[0]]:]
+                new_value = prob.value
+                if verbose > 1:
+                    if new_value < old_value:
+                        print(f"WARNING: VALUE DECREASED by {abs(old_value-new_value)}")
+                
+            if verbose:
+                print(f"Sweep {loop_index}/{LOOP_LIMIT}: {prob.value}")
 
             if abs(new_value - old_value) < 1e-7:
-                print("CONVERGENCE")
-                print(args["states"])
-                print(args["povms"])
-                best_value = new_value if new_value > best_value \
-                    else best_value
+                if verbose:
+                    print("CONVERGENCE")
+                if new_value > best_value:
+                    best_value = new_value
+                    best_states = deepcopy(args["states"])
+                    # clean states
+                    for k, v in best_states.items():
+                        aux = best_states[k].copy().astype(np.clongdouble)
+                        aux = (aux + aux.T.conj()) / 2
+                        
+                    best_povms = deepcopy(args["povms"])
+                    best_probability = np_prob_from_states_povms(best_states,
+                                                                 best_povms,
+                                                                 outcomes_per_party,
+                                                                 settings_per_party,
+                                                                 final_state_dims,
+                                                                 final_povm_dims,
+                                                                 perm_states2povms,
+                                                                 perm_povms2states,
+                                                                 permute_states=True
+                                                                 )
+                    assert np.allclose(best_probability.flatten() @ objective_as_array.flatten(), best_value), \
+                        "Returned probability does not match found best value"
                 break
             else:
                 old_value = new_value
-    print("BEST VALUE: ", best_value)
-    return best_value, args
+    if verbose:
+        print("BEST VALUE: ", best_value)
+    if verbose > 1:
+        print(args["states"])
+        print(args["povms"])
+    return best_value, best_states, best_povms, best_probability
     
 def seesaw_l_norm(target_probability,
            outcomes_per_party,
@@ -721,56 +758,56 @@ if __name__ == '__main__':
 
     ############################# CHSH #########################################
 
-    # dag = {'psiAB': ['A', 'B']}
-    # outcomes_per_party = {'A': 2, 'B': 2}
-    # settings_per_party = {'A': 2, 'B': 2}
-    # scenario = NetworkScenario(dag, outcomes_per_party, settings_per_party)
-    # ops = generate_ops(outcomes_per_party, settings_per_party)
-    # A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
-    # B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
-    # CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
-    # CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
+    dag = {'psiAB': ['A', 'B']}
+    outcomes_per_party = {'A': 2, 'B': 2}
+    settings_per_party = {'A': 2, 'B': 2}
+    scenario = NetworkScenario(dag, outcomes_per_party, settings_per_party)
+    ops = generate_ops(outcomes_per_party, settings_per_party)
+    A = [1 - 2*ops[0][x][0] for x in range(settings_per_party['A'])]
+    B = [1 - 2*ops[1][x][0] for x in range(settings_per_party['B'])]
+    CHSH = A[0]*B[0] + A[0]*B[1] + A[1]*B[0] - A[1]*B[1]
+    CHSH_array = Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party)
 
-    # # Fix local dimensions
-    # LOCAL_DIM = 2
-    # Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
+    # Fix local dimensions
+    LOCAL_DIM = 2
+    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
 
-    # state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
-    # povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
+    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
+    povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
 
-    # bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
-    # bell_state = bell_state @ bell_state.T.conj()
-    # A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
-    # A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
-    # B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
-    # B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
-    # _A = [A0, A1]
-    # _B = [B0, B1]
+    bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
+    bell_state = bell_state @ bell_state.T.conj()
+    A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
+    A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
+    B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
+    B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
+    _A = [A0, A1]
+    _B = [B0, B1]
 
-    # seesaw(outcomes_per_party=outcomes_per_party,
-    #        settings_per_party=settings_per_party,
-    #        objective_as_array=CHSH_array,
-    #        Hilbert_space_dims=Hilbert_space_dims,
-    #        fixed_states={'psiAB': None},
-    #        fixed_povms={'A': [None, A1], 'B': [None, B1]},
-    #        state_support=state_support,
-    #        povms_support=povms_support)
+    seesaw(outcomes_per_party=outcomes_per_party,
+           settings_per_party=settings_per_party,
+           objective_as_array=CHSH_array,
+           Hilbert_space_dims=Hilbert_space_dims,
+           fixed_states={'psiAB': None},
+           fixed_povms={'A': [None, None], 'B': [None, None]},
+           state_support=state_support,
+           povms_support=povms_support)
 
 
     
-    # fixed_states = {'psiAB': bell_state}
-    # fixed_measurements = {'A': [A0, A1],
-    #                       'B': [B0, B1]}
+    fixed_states = {'psiAB': bell_state}
+    fixed_measurements = {'A': [A0, A1],
+                          'B': [B0, B1]}
     
-    # final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
-    # final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
-    # perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
-    # perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
-    # p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
-    #                               final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
+    final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
+    final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
+    perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
+    perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
+    p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
+                                  final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
     
     
-    # assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
+    assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
     
     # ########## Compute reduced bell operator assuming state is the SDP variable
     #
@@ -878,7 +915,7 @@ if __name__ == '__main__':
                      'B': ['H_B_psiBC', 'H_B_psiAB'],
                      'C': ['H_C_psiAC', 'H_C_psiBC']}
     
-    fixed_states = {'psiAB': None, 'psiAC': qt.rand_dm(4).data.A, 'psiBC': qt.rand_dm(4).data.A}
+    fixed_states = {'psiAB': None, 'psiAC': None, 'psiBC': None}
     fixed_measurements = {'A': [None, None], 'B': [None, None], 'C': [None, None]}
     
     value = seesaw(outcomes_per_party=outcomes_per_party,
