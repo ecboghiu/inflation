@@ -536,10 +536,17 @@ def seesaw(outcomes_per_party,
                     best_states = deepcopy(args["states"])
                     # clean states
                     for k, v in best_states.items():
-                        aux = best_states[k].copy().astype(np.clongdouble)
-                        aux = (aux + aux.T.conj()) / 2
+                        current_state = v.copy().astype(np.clongdouble)
+                        current_state = ((current_state + current_state.conj().T)/2).astype(np.cdouble)
+                        mineig = np.min(np.linalg.eigvalsh(current_state)).astype(np.clongdouble)
+                        if mineig < 0:
+                            current_state = 1/(1-mineig)*current_state + mineig/(mineig-1)*np.eye(current_state.shape[0])
+                        current_state /= np.trace(current_state)
+                        best_states[k] = current_state.astype(np.cdouble)
                         
                     best_povms = deepcopy(args["povms"])
+                    # clean povms TODO finish this
+                        
                     best_probability = np_prob_from_states_povms(best_states,
                                                                  best_povms,
                                                                  outcomes_per_party,
@@ -792,8 +799,6 @@ if __name__ == '__main__':
            fixed_povms={'A': [None, None], 'B': [None, None]},
            state_support=state_support,
            povms_support=povms_support)
-
-
     
     fixed_states = {'psiAB': bell_state}
     fixed_measurements = {'A': [A0, A1],
