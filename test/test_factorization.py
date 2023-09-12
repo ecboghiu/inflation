@@ -20,13 +20,13 @@ class TestFactorization(unittest.TestCase):
                              [3, 6, 6, 0, 0, 0],
                              [3, 4, 5, 0, 0, 0]])
         factorised = prob.factorize_monomial_2d(monomial, canonical_order=True)
-        correct    = np.array([np.array([[1, 0, 1, 1, 0, 0]]),
-                               np.array([[1, 0, 3, 3, 0, 0]]),
-                               np.array([[2, 1, 0, 2, 0, 0],
-                                         [3, 1, 4, 0, 0, 0]]),
-                               np.array([[3, 3, 5, 0, 0, 0],
-                                         [3, 4, 5, 0, 0, 0]]),
-                               np.array([[3, 6, 6, 0, 0, 0]])], dtype=object)
+        correct    = [np.array([[1, 0, 1, 1, 0, 0]]),
+                      np.array([[1, 0, 3, 3, 0, 0]]),
+                      np.array([[2, 1, 0, 2, 0, 0],
+                                [3, 1, 4, 0, 0, 0]]),
+                      np.array([[3, 3, 5, 0, 0, 0],
+                                [3, 4, 5, 0, 0, 0]]),
+                      np.array([[3, 6, 6, 0, 0, 0]])]
 
         self.assertEqual(len(correct), len(factorised),
                          "The factorization is not finding all factors.")
@@ -79,10 +79,10 @@ class TestFactorization(unittest.TestCase):
                                      "h2": ["v2", "v3"]},
                                 outcomes_per_party=[2, 2, 2],
                                 inflation_level_per_source=[2, 2])
-        A1C1 = np.array([[0, 1, 0, 0, 0],
-                         [2, 0, 1, 0, 0]])
-        A1C2 = np.array([[0, 1, 0, 0, 0],
-                         [2, 0, 2, 0, 0]])
+        A1C1 = np.array([[1, 1, 0, 0, 0],
+                         [3, 0, 1, 0, 0]])
+        A1C2 = np.array([[1, 1, 0, 0, 0],
+                         [3, 0, 2, 0, 0]])
 
         self.assertEqual(len(prob.factorize_monomial_2d(A1C1)),
                          len(prob.factorize_monomial_2d(A1C2)),

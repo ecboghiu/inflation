@@ -162,3 +162,9 @@ def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_matrix:
         return non_empty[0]
     else:
         return sps.coo_matrix([])
+
+def perm_combiner(old_perms: np.ndarray, new_perms: np.ndarray) -> np.ndarray:
+    combined = np.take(old_perms, new_perms, axis=1)
+    # combined = old_perms.T[new_perms.T]
+    new_shape = ((-1, new_perms.shape[1]))
+    return combined.reshape(new_shape)

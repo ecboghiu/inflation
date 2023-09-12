@@ -20,17 +20,21 @@ from functools import reduce
 
 @total_ordering
 class InternalAtomicMonomial(object):
-    __slots__ = ["as_int_vec",
-                 "as_bool_vec",
+    __slots__ = ["as_lexmon",
                  "as_2d_array",
                  "is_one",
+                 "is_zero",
                  "is_knowable",
+                 # "is_all_commuting",
+                 # "is_physical",
                  "n_operators",
+                 "op_length",
                  "rectified_ndarray",
-                 "lp",
+                 "context",
                  "name",
                  "symbol",
-                 "signature"
+                 "signature",
+                 # "as_bool_vec"
                  ]
 
     def __init__(self, inflation_lp_instance, as_1d_vec: np.ndarray):
@@ -53,20 +57,28 @@ class InternalAtomicMonomial(object):
             A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D
             array.
         """
-        self.lp = inflation_lp_instance
+        self.context = inflation_lp_instance
         if as_1d_vec.dtype == bool:
-            self.as_bool_vec = as_1d_vec
-            self.as_int_vec = np.flatnonzero(self.as_bool_vec).astype(int)
+            # self.as_bool_vec = as_1d_vec
+            self.as_lexmon = np.flatnonzero(as_1d_vec).astype(np.intc)
         else:
-            self.as_int_vec = as_1d_vec.astype(int)
-            self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()
-            self.as_bool_vec[self.as_int_vec] = True
+            self.as_lexmon = np.asarray(as_1d_vec, np.intc)
+            # self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()
+            # self.as_bool_vec[self.as_lexmon] = True
 
-        self.as_2d_array = inflation_lp_instance._lexorder[self.as_int_vec]
-        self.n_operators = len(self.as_int_vec)
+        self.as_2d_array = inflation_lp_instance._lexorder[self.as_lexmon]
+        self.n_operators = len(self.as_lexmon)
+        self.op_length = inflation_lp_instance._nr_properties
         self.is_one      = (self.n_operators == 0)
-        self.is_knowable = (self.is_one or
-                            self.lp._atomic_knowable_q(self.as_2d_array))
+        # Hack to account for different meanings of the zero position in the lexorder
+        if inflation_lp_instance.problem_type == "lp":
+            self.is_zero = False
+        elif inflation_lp_instance.problem_type == "sdp":
+            self.is_zero = not np.all(self.as_lexmon)
+        else:
+            raise NotImplementedError("InternalAtomicMonomial requires `lp` or `sdp` parent class.")
+        self.is_knowable = (self.is_one or self.is_zero or
+                            self.context._atomic_knowable_q(self.as_2d_array))
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -114,7 +126,7 @@ class InternalAtomicMonomial(object):
 
     @property
     def _raw_name(self):
-        list_of_op_names = self.lp._lexrepr_to_names[self.as_int_vec]
+        list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
         return "<" + " ".join(list_of_op_names) + ">"
 
     @property
@@ -125,11 +137,13 @@ class InternalAtomicMonomial(object):
         """
         if self.is_one:
             return "1"
+        elif self.is_zero:
+            return "0"
         elif self.is_knowable:
             # Use notation p(outputs|settings)
             # Convention in numpy monomial format is first party = 1
             party_indices = self.rectified_ndarray[:, 0] - 1
-            parties       = np.take(self.lp.names, party_indices.tolist())
+            parties       = np.take(self.context.names, party_indices.tolist())
             inputs  = [str(input) for input in self.rectified_ndarray[:, -2]]
             outputs = [str(output) for output in self.rectified_ndarray[:, -1]]
             p_divider = ""
@@ -146,10 +160,7 @@ class InternalAtomicMonomial(object):
     @property
     def _signature(self):
         # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
-        return self.as_bool_vec.tobytes()
-        return tuple(sorted())
-
-
+        return (self.n_operators, tuple(self.as_lexmon))
 
     @property
     def _symbol(self):
@@ -173,19 +184,22 @@ class InternalAtomicMonomial(object):
             The value of the corresponding probability (which can be a marginal
             involving only a few parties)
         """
-        return compute_marginal(prob_array, self.rectified_ndarray)
+        if self.is_zero:
+            return 0.
+        else:
+            return compute_marginal(prob_array, self.rectified_ndarray)
 
 
-class CompoundMonomial(object):
+class CompoundMoment(object):
     __slots__ = ["as_counter",
                  "factors",
                  "idx",
                  "is_atomic",
                  "is_knowable",
                  "is_one",
+                 "is_zero",
                  "knowability_status",
                  "knowable_factors",
-                 "mask_matrix",
                  "n_factors",
                  "n_knowable_factors",
                  "n_operators",
@@ -194,10 +208,8 @@ class CompoundMonomial(object):
                  "signature",
                  "symbol",
                  "unknowable_factors",
-                 "as_bool_vec",
-                 "as_int_vec"
-                 # "_names_of_factors",
-                 # "_symbols_of_factors"
+                 "as_lexmon",
+                 "internal_type"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
@@ -223,6 +235,10 @@ class CompoundMonomial(object):
         self.n_operators   = sum(factor.n_operators for factor in self.factors)
         self.is_atomic     = (self.n_factors <= 1)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
+        if self.n_factors == 0:
+            self.as_lexmon = np.empty(0, dtype=np.intc)
+        else:
+            self.as_lexmon     = np.hstack([factor.as_lexmon for factor in self.factors])
 
         knowable_factors   = []
         unknowable_factors = []
@@ -243,34 +259,22 @@ class CompoundMonomial(object):
             self.knowability_status = "Semi"
         self.is_one  = (all(factor.is_one for factor in self.factors)
                         or (self.n_factors == 0))
+        self.is_zero = any(factor.is_zero for factor in self.factors)
         self.as_counter  = Counter(self.factors)
-
-
-        if self.is_one:
-            self.as_bool_vec = np.zeros(0, dtype=bool)
-            self.as_int_vec = np.zeros(0, dtype=int)
-        elif self.is_atomic:
-            self.as_bool_vec = self.factors[0].as_bool_vec
-            self.as_int_vec = self.factors[0].as_int_vec
-        else:
-            self.as_bool_vec = reduce(np.bitwise_or,
-                                      (factor.as_bool_vec for factor in self.factors))
-            self.as_int_vec = np.hstack([factor.as_int_vec for factor in self.factors]).astype(int)
-
         self.name        = name_from_atom_names(self._names_of_factors)
         self.symbol      = symbol_prod(self._symbols_of_factors)
         self.signature   = self.factors
+        self.internal_type = InternalAtomicMonomial
 
     def __eq__(self, other):
         """Whether the Monomial is equal to the ``other`` Monomial."""
         if isinstance(other, self.__class__):
             return self.as_counter == other.as_counter
-        elif isinstance(other, InternalAtomicMonomial):
+        elif isinstance(other, self.internal_type):
             return (self.n_factors == 1) and other.__eq__(self.factors[0])
         else:
-            assert isinstance(other, self.__class__), \
-                (f"Expected object of class {self.__class__}, received {other}"
-                 + f" of class {type(other)}{list(map(type, other))}.")
+            raise Exception(f"Expected object of class {self.__class__}, received {other}"
+                 + f" of class {type(other)}.")
             return False
 
     def __hash__(self):
