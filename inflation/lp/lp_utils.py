@@ -568,12 +568,12 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             }
 
 
-def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
-                 known_vars: coo_matrix = coo_matrix([]),
-                 inequalities: coo_matrix = coo_matrix([]),
-                 equalities: coo_matrix = coo_matrix([]),
-                 lower_bounds: coo_matrix = coo_matrix([]),
-                 upper_bounds: coo_matrix = coo_matrix([]),
+def solve_Gurobi(objective: coo_matrix = blank_coo_matrix,
+                 known_vars: coo_matrix = blank_coo_matrix,
+                 inequalities: coo_matrix = blank_coo_matrix,
+                 equalities: coo_matrix = blank_coo_matrix,
+                 lower_bounds: coo_matrix = blank_coo_matrix,
+                 upper_bounds: coo_matrix = blank_coo_matrix,
                  factorization_conditions: dict = None,
                  default_non_negative: bool = True,
                  relax_known_vars: bool = False,
@@ -656,16 +656,19 @@ def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
     m.setObjective(objective_vector @ x, gp.GRB.MAXIMIZE)
 
     # Add inequality constraint matrix
-    rhs_ineq = np.zeros(nof_primal_inequalities)
-    m.addConstr(inequalities @ x >= rhs_ineq, name="ineq")
+    # rhs_ineq = np.zeros(nof_primal_inequalities)
+    if inequalities.shape[0]:
+        m.addConstr(inequalities @ x >= 0, name="ineq")
 
     # Add equality constraint matrix
-    rhs_eq = np.zeros(nof_primal_equalities)
-    m.addConstr(equalities @ x == rhs_eq, name="eq")
+    # rhs_eq = np.zeros(nof_primal_equalities)
+    if equalities.shape[0]:
+        m.addConstr(equalities @ x == 0, name="eq")
 
     # Add known value constraint matrix
     rhs_kv = known_vars.data
-    m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
+    if len(rhs_kv):
+        m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
 
     # Add quadratic constraints
     if factorization_conditions:
