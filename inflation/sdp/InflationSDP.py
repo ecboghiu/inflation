@@ -799,9 +799,11 @@ class InflationSDP(object):
             self.primal_objective = self.solution_object["primal_value"]
             self.objective_value  = self.solution_object["primal_value"]
             self.objective_value *= (1 if self.maximize else -1)
+            self.success = True
         else:
             self.primal_objective = self.status
             self.objective_value  = self.status
+            self.success = False
         collect()
 
     ###########################################################################

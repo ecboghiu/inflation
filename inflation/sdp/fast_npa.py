@@ -19,12 +19,11 @@ except ImportError:
         return lambda f: f
     bool_    = bool
     nopython = False
-    prange   = range
     uint8_   = np.uint8
     int_     = np.intc
     void     = None
-
-cache    = True
+prange   = range
+cache    = False
 if not nopython:
     from scipy.sparse.csgraph import connected_components
     bool_  = bool
@@ -188,7 +187,7 @@ def nb_lexorder_idx(operator: np.ndarray,
     print("nb_lexorder_idx: Operator not found in lexorder.")
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
+@jit(nopython=nopython, cache=cache)
 def nb_mon_to_lexrepr(mon: np.ndarray,
                       lexorder: np.ndarray) -> np.array:
     """Convert a monomial to its lexicographic representation, in the form of
@@ -248,7 +247,7 @@ def nb_monomial_to_components(monomial: np.ndarray) -> np.ndarray:
         monomial[:, 1:-2]))
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
+@jit(nopython=nopython, cache=cache)
 def nb_overlap_matrix(inflation_indxs: np.ndarray) -> np.ndarray:
     """Given a list of inflation indices for a number of operators, generate
     a boolean matrix whose entries denote whether the supports of the operator

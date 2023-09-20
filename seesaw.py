@@ -80,6 +80,36 @@ def Bell_CG2prob(belloperator, outcomes_per_party: dict, settings_per_party: dic
                 bell_prob[(*outs, *ins)] += float(coeff)*float(coeff2)
     return bell_prob
     
+def linear_inflation_cert_2_objective_array(certificate_as_probs,
+                                            outcomes_per_party,
+                                            settings_per_party
+                                            ):
+    import sympy as sp
+    names = list(outcomes_per_party.keys())
+    ops = generate_ops(outcomes_per_party, settings_per_party)
+    CG_symbolic = 0
+    for prob, coeff in sp.expand(certificate_as_probs).as_coefficients_dict().items():
+        if str(prob) == '1':
+            CG_symbolic += coeff
+        else:
+            prob_name = str(prob)
+            _jointnames = prob_name.split('(')[0][1:]
+            _marginal_names = []
+            for name in names:
+                idx = _jointnames.find(name)
+                if idx >= 0:
+                    _marginal_names += [_jointnames[idx:idx+len(name)]]
+                    # _jointnames = _jointnames[idx+len(name):]
+            outcomes, settings = prob_name.split('(')[1].split(')')[0].split('|')
+            outcomes = list(int(i) for i in outcomes)
+            settings = list(int(i) for i in settings)
+            monomial = 1
+            for name, outcome, setting in zip(_marginal_names, outcomes, settings):
+                monomial *= ops[names.index(name)][setting][outcome]
+            CG_symbolic += coeff * monomial
+            # print(prob, monomial)
+    return Bell_CG2prob(CG_symbolic, outcomes_per_party, settings_per_party)
+        
     
 def process_DAG(dag):
     # Build a list of Hilbert spaces, useful for getting permutations
@@ -243,6 +273,14 @@ def generate_random_povm(dim, nr_outcomes):
     povm_effects = _unitary2povm(U, nr_outcomes)
     return povm_effects
 
+def generate_random_pvm_rank1(dim, nr_outcomes):
+    assert nr_outcomes <= dim, "nr_outcomes must be smaller than dim"
+    basis = [qt.basis(dim, i).data.A for i in range(nr_outcomes - 1)]
+    basis = [ b @ b.T.conj() for b in basis ]
+    basis += [np.eye(dim) - sum(basis)]
+    U = qt.rand_unitary(dim, density=1).data.A
+    povm_effects = [ U @ b @ U.T.conj() for b in basis]
+    return povm_effects
 
 def compute_effective_Bell_operator(objective_fullprob, 
                                     states, 
@@ -258,7 +296,7 @@ def compute_effective_Bell_operator(objective_fullprob,
     parties = list(outcomes_per_party.keys())
     party2idx = {p: i for i, p in enumerate(parties)}
     
-    povms_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup in povms_support.items()}
+    povms_dims = {p: np.prod([Hilbert_space_dims[h] for h in sup]) for p, sup in povm_support.items()}
     state_dims = {s: np.prod([Hilbert_space_dims[h] for h in sup]) for s, sup in state_support.items()}
     
     all_state_supports = flatten(list(state_support.values()))
@@ -726,7 +764,9 @@ def seesaw_with_broadcasting(
            state_support,
            povms_support,
            seesaw_max_iterations=10,
-           verbose=1):
+           verbose=1,
+           seeded_states=None,
+           seeded_povms=None):
     parties = list(party2broadcast_cards.keys())
     outcomes_per_party = {}
     settings_per_party = {}
@@ -900,18 +940,24 @@ def seesaw_with_broadcasting(
             "Hilbert_space_dims": Hilbert_space_dims}
 
     # Generate random sample states and povms and return the best value
-    best_value = 0
-    for i in range(1, seesaw_max_iterations):
-        print(f"ITERATION {i}. Choosing random initial states and POVMs.")
+    best_value, best_states, best_povms, best_probability = 0, {}, {}, 0
+    for i in range(0, seesaw_max_iterations):
+        print(f"{i}/{seesaw_max_iterations}. Choosing random initial values for unseeded variables.")
         old_value = 0
         for s in fixed_states:
             if fixed_states[s] is None:
-                args["states"][s] = generate_random_mixed_state(state_dims[s])
+                if seeded_states[s] is None:
+                    args["states"][s] = generate_random_mixed_state(state_dims[s])
+                else:
+                    args["states"][s] = seeded_states[s]
         for p in fixed_povms:
             for j, x in enumerate(fixed_povms[p]):
                 if x is None:
-                    args["povms"][p][j] = generate_random_povm(povm_dims[p],
+                    if seeded_povms[p][j] is None:
+                        args["povms"][p][j] = generate_random_povm(povm_dims[p],
                                                                outcomes_per_party[p])
+                    else:
+                        args["povms"][p][j] = seeded_povms[p][j]
 
         # Iteratively optimize until objective value converges
         LOOP_LIMIT = 100
@@ -950,8 +996,8 @@ def seesaw_with_broadcasting(
                 print(f"Sweep {loop_index}/{LOOP_LIMIT}: {prob.value}")
 
             if abs(new_value - old_value) < 1e-7:
-                if verbose:
-                    print("CONVERGENCE")
+                # if verbose:
+                #     print("CONVERGENCE")
                 if new_value > best_value:
                     best_value = new_value
                     best_states = deepcopy(args["states"])
@@ -983,8 +1029,8 @@ def seesaw_with_broadcasting(
                 break
             else:
                 old_value = new_value
-    if verbose:
-        print("BEST VALUE: ", best_value)
+    # if verbose:
+    #     print("BEST VALUE: ", best_value)
     if verbose > 1:
         print(args["states"])
         print(args["povms"])
@@ -1088,7 +1134,7 @@ if __name__ == '__main__':
     
     # ########## Broadcasting
 
-    
+        
     outcomes_per_party = {'A': 2, 'B1': 2, 'B2': 2}
     settings_per_party = {'A': 3, 'B1': 2, 'B2': 2}
     ops = generate_ops(outcomes_per_party, settings_per_party)
@@ -1099,49 +1145,173 @@ if __name__ == '__main__':
     BROADCAST_CHSH = CHSH*(B1[0] + B1[1]) + 2*A[2]*(B1[1] - B1[0])
     BROADCAST_CHSH_array = Bell_CG2prob(BROADCAST_CHSH, outcomes_per_party, settings_per_party)
 
-    # Fix local dimensions
-    dag = {'psiAB': ['A', 'B']}
-    scenario = NetworkScenario(dag, {'A': 2, 'B': 2}, {'A': 2, 'B': 2})  # Here the outcomes are trash
     LOCAL_DIM = 2
-    Hilbert_space_dims = {H: LOCAL_DIM for H in scenario.Hilbert_spaces}
-
-    state_support = {'psiAB': ['H_A_psiAB', 'H_B_psiAB']}
-    povms_support = {'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']}
-
-    bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
-    bell_state = bell_state @ bell_state.T.conj()
-    A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
-    A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
-    B0 = [state.proj().data.A for state in (qt.sigmaz()+qt.sigmax()).eigenstates()[1]]
-    B1 = [state.proj().data.A for state in (qt.sigmaz()-qt.sigmax()).eigenstates()[1]]
-    _A = [A0, A1]
-    _B = [B0, B1]
-
-    seesaw_with_broadcasting(
-           party2broadcast_cards = {'A': (2, 3), 'B': [(4), (4)]},
-           objective_as_array_fine_grained=BROADCAST_CHSH_array,
-           Hilbert_space_dims=Hilbert_space_dims,
-           fixed_states={'psiAB': None},
-           fixed_povms={'A': [None, None, None], 'B': [None, None, None, None]},
-           state_support=state_support,
-           povms_support=povms_support)
-    
-    fixed_states = {'psiAB': bell_state}
-    fixed_measurements = {'A': [A0, A1],
-                          'B': [B0, B1]}
-    
+    Hilbert_space_dims = {'H_A_psiAB1B2': LOCAL_DIM, 'H_B1_psiAB1B2': LOCAL_DIM, 'H_B2_psiAB1B2': LOCAL_DIM}
+    state_support = {'psiAB1B2': ['H_A_psiAB1B2', 'H_B1_psiAB1B2', 'H_B2_psiAB1B2']}
+    povms_support = {'A': ['H_A_psiAB1B2'], 'B1': ['H_B1_psiAB1B2'], 'B2': ['H_B2_psiAB1B2']}
     final_state_dims = [Hilbert_space_dims[s] for s in flatten(list(state_support.values()))]
     final_povm_dims = [Hilbert_space_dims[s] for s in flatten(list(povms_support.values()))]
     perm_povms2states = find_permutation(flatten(list(state_support.values())), flatten(list(povms_support.values())))
     perm_states2povms = find_permutation(flatten(list(povms_support.values())), flatten(list(state_support.values())))
-    p = np_prob_from_states_povms(fixed_states, fixed_measurements, outcomes_per_party, settings_per_party,
-                                  final_state_dims, final_povm_dims, perm_states2povms, perm_povms2states, permute_states=False)
     
     
-    assert abs(p.flatten().T @ CHSH_array.flatten() - 2*np.sqrt(2))<1e-7, "2sqrt(2) is not achieved, initial mmnts are not good"
+    e1 = np.array([[1], [0]])
+    e2 = np.array([[0], [1]])
+    psi1 = (1/np.sqrt(2)) * (np.kron(e1, e1) - np.kron(e2, e2));
+    psi2 = (1/np.sqrt(2)) * (np.kron(e1, e2) + np.kron(e2, e1));
+    alpha = np.pi/8;
+    phi0 =  np.sin(alpha) * psi1 + np.cos(alpha) * psi2;
+    phi1 = -np.cos(alpha) * psi1 + np.sin(alpha) * psi2;
+    U = phi0 @ e1.T.conj() + phi1 @ e2.T.conj();    
+    U = np.kron(np.eye(2), U)
+
+    v = 1
+    bell_state = np.expand_dims(np.array([1, 0, 0, 1]), axis=1)/np.sqrt(2)
+    bell_state = bell_state @ bell_state.T.conj()
+    bell_state = v * bell_state + (1-v) * np.ones(4)/4
     
+    state = U @ bell_state @ U.T.conj()
     
+    A0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
+    A1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
+    A2 = [state.proj().data.A for state in qt.sigmay().eigenstates()[1]]
+    _A = [A0, A1, A2]
+    _angle_ = np.arctan2(1, np.sqrt(2))
+    B1_0 = [state.proj().data.A 
+            for state in (np.cos(_angle_) * qt.sigmax() + np.sin(_angle_) * qt.sigmay()).eigenstates()[1]]
+    B1_1 = [state.proj().data.A 
+            for state in (np.cos(_angle_) * qt.sigmax() - np.sin(_angle_) * qt.sigmay()).eigenstates()[1]]
+    _B1 = [B1_0, B1_1]
+    B2_0 = [state.proj().data.A for state in qt.sigmaz().eigenstates()[1]]
+    B2_1 = [state.proj().data.A for state in qt.sigmax().eigenstates()[1]]
+    _B2 = [B2_0, B2_1]
+    p_ideal = np.zeros((2, 2, 2, 3, 2, 2))
+    for a, b, c, x, y, z in np.ndindex(2, 2, 2, 3, 2, 2):
+        mmnt = np.kron(np.kron(_A[x][a], _B1[y][b]), _B2[z][c])
+        p_ideal[a, b, c, x, y, z] = np.real(np.trace(state @ mmnt))
+
+    from inflation import InflationLP, InflationSDP, InflationProblem
     
+    bell_scenario = InflationProblem(dag={'lam': ['A', 'B1', 'B2']},
+                                     outcomes_per_party=[2, 2, 2], 
+                                     settings_per_party=[3, 2, 2], 
+                                     classical_sources=['lam'],verbose=0)
+    bell_scenario_lp = InflationLP(bell_scenario)
+    
+    broadcast_scenario = InflationProblem(dag={'lam': ['A', 'B1', 'B2'],
+                                                'NS': ['B1', 'B2']},
+                                            outcomes_per_party=[2, 2, 2],
+                                            settings_per_party=[3, 2, 2],
+                                            classical_sources=['lam'])
+    broadcast_scenario_lp = InflationLP(broadcast_scenario, nonfanout=True)
+    
+    def run_lp(inflationlp_instance, prob):
+        inflationlp_instance.set_distribution(prob)
+        inflationlp_instance.solve()
+        return inflationlp_instance.success, inflationlp_instance.certificate_as_probs()
+
+    def build_broadcast_prob_fron_ns_povm(mmnts, state):
+        _prob = np.zeros((2, 2, 2, 3, 2, 2))
+        for a, b, x, y in np.ndindex(2, 4, 3, 4):
+            b1, b2 = np.unravel_index(b, [2, 2])
+            y1, y2 = np.unravel_index(y, [2, 2])
+            mmnt = np.kron(mmnts['A'][x][a], mmnts['B'][y][b])
+            _prob[a, b1, b2, x, y1, y2] = np.real(np.trace(state @ mmnt))
+        return _prob
+
+    v = 1
+    for ITER in range(20):
+        # Sample random until outside
+        success = True
+        MAX_i = 100
+        i = 0
+        while i < MAX_i:
+            print(f"...looking for a good initial point: {i}/{MAX_i}")
+            rand_states = {'psiAB': bell_state}
+            rand_isometry = qt.rand_unitary(4).data.A[:, :2]
+            IdA_x_rand_isometry =  np.kron(np.eye(2), rand_isometry)
+            rand_states['psiAB'] = IdA_x_rand_isometry @ rand_states['psiAB'] @ IdA_x_rand_isometry.T.conj()
+            rand_povms = {'A': [generate_random_pvm_rank1(LOCAL_DIM, 2),
+                                        generate_random_pvm_rank1(LOCAL_DIM, 2),
+                                        generate_random_pvm_rank1(LOCAL_DIM, 2)],
+                                'B1': [generate_random_pvm_rank1(LOCAL_DIM, 2),
+                                        generate_random_pvm_rank1(LOCAL_DIM, 2)],
+                                'B2': [generate_random_pvm_rank1(LOCAL_DIM, 2),
+                                        generate_random_pvm_rank1(LOCAL_DIM, 2)]}
+            prob = np_prob_from_states_povms(rand_states, rand_povms,
+                                          outcomes_per_party, settings_per_party,
+                                          final_state_dims, final_povm_dims,
+                                          perm_states2povms, perm_povms2states, permute_states=False)
+            
+            broadcast_rand_povms = {'A': rand_povms['A'], 'B': [[None]*4]*4}
+            for y, b in np.ndindex(4, 4):
+                b1, b2 = np.unravel_index(b, [2, 2])
+                y1, y2 = np.unravel_index(y, [2, 2])
+                broadcast_rand_povms['B'][y][b] = rand_isometry.conj().T @ np.kron(rand_povms['B1'][y1][b1], 
+                                                                                   rand_povms['B2'][y2][b2]) @ rand_isometry
+            success, cert = run_lp(broadcast_scenario_lp, prob)
+            BROADCAST_array = linear_inflation_cert_2_objective_array(cert,
+                                    outcomes_per_party, settings_per_party)
+            if (not success) and BROADCAST_array.flatten() @ prob.flatten() < 0-1e-6:
+                best_value, best_states, best_povms, best_probability = \
+                    BROADCAST_array.flatten() @ prob.flatten(), rand_states, rand_povms, prob
+                p1 =np_prob_from_states_povms({'A': IdA_x_rand_isometry @ bell_state @ IdA_x_rand_isometry.T.conj()}, rand_povms,
+                                          outcomes_per_party, settings_per_party,
+                                          final_state_dims, final_povm_dims,
+                                          perm_states2povms, perm_povms2states, permute_states=False)
+                p0 = np_prob_from_states_povms({'A': IdA_x_rand_isometry @ np.eye(4)/4 @ IdA_x_rand_isometry.T.conj()}, rand_povms,
+                                          outcomes_per_party, settings_per_party,
+                                          final_state_dims, final_povm_dims,
+                                          perm_states2povms, perm_povms2states, permute_states=False)
+                b1 = BROADCAST_array.flatten() @ p1.flatten()
+                b0 = BROADCAST_array.flatten() @ p0.flatten()
+                v_crit = b0/(b0-b1)
+                print(f"Found one! Violation: {BROADCAST_array.flatten() @ prob.flatten()} v_crit={v_crit}")
+                break
+            i += 1
+            if i >= MAX_i:
+                print(f"Couldn't find a good initial point after {MAX_i} tries.")
+                break;
+        BROADCAST_CHSH_array = -1*linear_inflation_cert_2_objective_array(cert,
+                                    outcomes_per_party, settings_per_party)
+        
+        
+        delta_v = 1e100
+        while delta_v > 1e-4:
+            seesaw_value, seesaw_states, seesaw_povms, seesaw_probability = \
+                seesaw_with_broadcasting(party2broadcast_cards = {'A': (2, 3), 'B': [(2, 2,), (2, 2,)]},
+                objective_as_array_fine_grained=BROADCAST_CHSH_array,
+                Hilbert_space_dims={'H_A_psiAB': LOCAL_DIM, 'H_B_psiAB': LOCAL_DIM},
+                fixed_states={'psiAB': v * bell_state + (1-v) * np.eye(4)/4},
+                fixed_povms={'A': [None, None, None], 'B': [None, None, None, None]},
+                state_support={'psiAB': ['H_A_psiAB', 'H_B_psiAB']},
+                povms_support={'A': ['H_A_psiAB'], 'B': ['H_B_psiAB']},
+                seesaw_max_iterations=1,
+                seeded_states=rand_states,
+                seeded_povms=broadcast_rand_povms)
+            if np.allclose(seesaw_value, 0):
+                break
+            else:
+                best_value, best_states, best_povms, best_probability = \
+                    seesaw_value, seesaw_states, seesaw_povms, seesaw_probability
+            success, cert = run_lp(broadcast_scenario_lp, best_probability.reshape((2, 2, 2, 3, 2, 2)))
+            BROADCAST_CHSH_array = -1*linear_inflation_cert_2_objective_array(cert,
+                                        outcomes_per_party, settings_per_party)
+            # assert np.isclose(-best_value, BROADCAST_CHSH_array.flatten() @ best_probability.flatten()), "Should be equal"
+            
+            p1 = build_broadcast_prob_fron_ns_povm(best_povms, bell_state)
+            p0 = build_broadcast_prob_fron_ns_povm(best_povms, np.eye(4)/4)
+            b1 = BROADCAST_CHSH_array.flatten() @ p1.flatten()
+            b0 = BROADCAST_CHSH_array.flatten() @ p0.flatten()
+            v_crit = b0/(b0-b1)
+            
+            v = v_crit*1.001
+            
+            delta_v = abs(v_crit - v)
+            print("#####################")
+            print(f"{ITER}, {success} {b0}, {b1}, {v_crit}->{v}")
+            print("#####################")
+        
     # ########## Compute reduced bell operator assuming state is the SDP variable
     #
     # BellOp_yb = compute_effective_Bell_operator(Bell_CG2prob(CHSH, outcomes_per_party, settings_per_party),

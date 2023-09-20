@@ -657,11 +657,13 @@ def solve_Gurobi(objective: coo_matrix = coo_matrix([]),
 
     # Add inequality constraint matrix
     rhs_ineq = np.zeros(nof_primal_inequalities)
-    m.addConstr(inequalities @ x >= rhs_ineq, name="ineq")
+    if inequalities.size > 0:
+        m.addConstr(inequalities @ x >= rhs_ineq, name="ineq")
 
     # Add equality constraint matrix
     rhs_eq = np.zeros(nof_primal_equalities)
-    m.addConstr(equalities @ x == rhs_eq, name="eq")
+    if equalities.size > 0:
+        m.addConstr(equalities @ x == rhs_eq, name="eq")
 
     # Add known value constraint matrix
     rhs_kv = known_vars.data
