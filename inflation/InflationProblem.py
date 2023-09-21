@@ -779,7 +779,7 @@ class InflationProblem(object):
 
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates
-        the action of the group on the set of generating monomials. The
+        the action of the group on the lexorder. The
         function outputs a list of all permutations.
 
         Parameters
