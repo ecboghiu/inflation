@@ -38,13 +38,13 @@ rZ = tuple(range(cardZ))
 
 def PR_box_with_visibility(a, b, x, y, v):
     return (1 + v * (-1) ** (a + b + x * y)) / 4
-def Charlie_as_Setting_For_Bob_Box(v: float=1):
+def Charlie_as_Setting_For_Bob_Box(v=np.sqrt(2)/2):
     tripartite_box = np.zeros((2, 2, 2, 2, 2), dtype=object)
     for (x, z, a, b, c) in np.ndindex(tripartite_box.shape):
         tripartite_box[a, b, c, x, z] = 1 / 2 * PR_box_with_visibility(a, b, x, c, v)
     return tripartite_box
 
-def Postselection_Box(v:float =1, post_selection_probability=1 / 2):
+def Postselection_Box(v=np.sqrt(2)/2, post_selection_probability=1/4):
     tripartite_box = np.zeros((2, 2, 2, 2, 2), dtype=object)
     # white_noise_box = np.ones((2, 2, 2, 2), dtype=object) / 4
     for (x, z, a, c) in np.ndindex((2, 2, 2, 2)):
@@ -54,10 +54,10 @@ def Postselection_Box(v:float =1, post_selection_probability=1 / 2):
     tripartite_box[:, 1] = 1/4 - tripartite_box[:, 0]
     return tripartite_box
 
-def NSBoxFrom1to2(w: float=1, v=np.sqrt(2)/2, post_selection_probability=1 / 2):
+def NSBoxFrom1to2(w: float=1, v=np.sqrt(2)/2, post_selection_probability=1/4):
     return (1-w)*Charlie_as_Setting_For_Bob_Box(v) + w*Postselection_Box(v, post_selection_probability=post_selection_probability)
 
-quantum_box = NSBoxFrom1to2(w=1/2, v=np.sqrt(2)/2, post_selection_probability=1 / 4)
+quantum_box = NSBoxFrom1to2(w=1/2, v=np.sqrt(2)/2, post_selection_probability=1/4)
 
 with gp.Env(empty=True) as env:
     # env.setParam('OutputFlag', 0) # To supress output
