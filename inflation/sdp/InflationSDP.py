@@ -44,22 +44,7 @@ from ..lp.numbafied import nb_outer_bitwise_or
 
 
 class InflationSDP(object):
-    """
-    Class for generating and solving an SDP relaxation for quantum inflation.
-
-    Parameters
-    ----------
-    inflationproblem : InflationProblem
-        Details of the scenario.
-    supports_problem : bool, optional
-        Whether to consider feasibility problems with distributions, or just
-        with the distribution's support. By default ``False``.
-    verbose : int, optional
-        Optional parameter for level of verbose:
-
-            * 0: quiet (default),
-            * 1: monitor level: track program process and show warnings,
-            * 2: debug level: show properties of objects created.
+    """Class for generating and solving an SDP relaxation for quantum inflation.
     """
     constant_term_name = "constant_term"
 
@@ -69,7 +54,22 @@ class InflationSDP(object):
                  include_all_outcomes: bool = False,
                  commuting: bool = False,
                  verbose=None) -> None:
-        """Constructor for the InflationSDP class.
+        """
+        Class for generating and solving an SDP relaxation for quantum inflation.
+
+        Parameters
+        ----------
+        inflationproblem : InflationProblem
+            Details of the scenario.
+        supports_problem : bool, optional
+            Whether to consider feasibility problems with distributions, or just
+            with the distribution's support. By default ``False``.
+        verbose : int, optional
+            Optional parameter for level of verbose:
+
+                * 0: quiet (default),
+                * 1: monitor level: track program process and show warnings,
+                * 2: debug level: show properties of objects created.
         """
         self.problem_type = "sdp"
         self.supports_problem = supports_problem
