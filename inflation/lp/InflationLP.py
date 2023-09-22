@@ -26,8 +26,7 @@ from .writer_utils import write_to_lp, write_to_mps
 
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMoment
-from ..sdp.quantum_tools import (flatten_symbolic_powers,
-                                 party_physical_monomials)
+from ..sdp.quantum_tools import flatten_symbolic_powers
 from .lp_utils import solveLP, solve_Gurobi
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \

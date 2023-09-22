@@ -6,17 +6,13 @@ matrices.
 import numpy as np
 import sympy
 
-from copy import deepcopy
-from itertools import permutations, product, combinations_with_replacement, \
-                      combinations
+from itertools import permutations, product, combinations_with_replacement
 from tqdm import tqdm
 from typing import Any, Dict, List, Tuple, Union
 
 from .fast_npa import (apply_source_perm,
                        dot_mon,
-    # mon_is_zero,
                        mon_lexsorted,
-    # to_canonical,
                        to_canonical_1d_internal,
                        to_name)
 from ..utils import format_permutations
@@ -25,6 +21,7 @@ from ..utils import format_permutations
 ###############################################################################
 # FUNCTIONS FOR MONOMIALS                                                     #
 ###############################################################################
+
 def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
                             ) -> List[sympy.core.symbol.Symbol]:
     """If we have powers of a monomial, such as A**3, return a list with
@@ -79,92 +76,12 @@ def reduce_inflation_indices(monomial: np.ndarray) -> np.ndarray:
         new_mon_padded_transposed[1 + source] = unique_positions
     return new_mon_padded_transposed.T[1:]
 
-
-###############################################################################
-# FUNCTIONS FOR MOMENT MATRICES                                               #
-###############################################################################
-# def calculate_momentmatrix_2d_internal(cols: List,
-#                                        notcomm: np.ndarray,
-#                                        lexorder: np.ndarray,
-#                                        commuting: bool = False,
-#                                        verbose: int = 0) -> Tuple[np.ndarray, Dict]:
-#     r"""Calculate the moment matrix. The function takes as input the generating
-#     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
-#     matrix where each row is an operator and the columns specify the operator
-#     labels/indices. The moment matrix is the inner product between all possible
-#     pairs of elements from the generating set. The program outputs the moment
-#     matrix as a 2d array. Entry :math:`(i,j)` of the moment matrix stores the
-#     index of the monomial that represents the result of the expectation value
-#     :math:`\text{Tr}(\rho\cdot M_i^\dagger M_j)` for an unknown quantum state
-#     :math:`\rho` after applying the substitutions. The program returns the
-#     moment matrix and the dictionary mapping each monomial in string
-#     representation to its integer representation.
-#
-#     Parameters
-#     ----------
-#     cols : List
-#         List of numpy.ndarray representing the generating set.
-#     notcomm : numpy.ndarray
-#         Matrix of commutation relations, given in the format specified by
-#         `inflation.quantum.fast_npa.commutation_matrix`.
-#     lexorder : numpy.ndarray
-#         Matrix with rows as operators where the index of the row gives
-#         the lexicographic order of the operator.
-#     commuting : bool, optional
-#         Whether the variables in the problem commute or not. By default
-#         ``False``.
-#     verbose : int, optional
-#         How much information to print. By default ``0``.
-#
-#     Returns
-#     -------
-#     Tuple[numpy.ndarray, Dict]
-#         The moment matrix :math:`\Gamma`, where each entry :math:`(i,j)` stores
-#         the integer representation of a monomial. The Dict is a mapping from
-#         string representation to integer representation.
-#     """
-#     nrcols = len(cols)
-#     canonical_mon_to_idx = dict()
-#     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
-#     varidx = 1  # We start from 1 because 0 is reserved for 0
-#     for (i, mon1), (j, mon2) in tqdm(
-#                             combinations_with_replacement(enumerate(cols), 2),
-#                             disable=not verbose,
-#                             desc="Calculating moment matrix",
-#                             total=int(nrcols*(nrcols+1)/2),
-#                                     ):
-#         mon_v1 = to_canonical(dot_mon(mon1, mon2),
-#                               notcomm,
-#                               lexorder,
-#                               commuting=commuting,
-#                               apply_only_commutations=False)
-#         if not mon_is_zero(mon_v1):
-#             if not commuting:
-#                 mon_v2 = to_canonical(np.flipud(mon_v1),
-#                                       notcomm,
-#                                       lexorder,
-#                                       commuting=commuting,
-#                                       apply_only_commutations=True)
-#                 mon_hash = min(mon_v1.tobytes(), mon_v2.tobytes())
-#             else:
-#                 mon_hash = mon_v1.tobytes()
-#             try:
-#                 known_varidx = canonical_mon_to_idx[mon_hash]
-#                 momentmatrix[i, j] = known_varidx
-#                 momentmatrix[j, i] = known_varidx
-#             except KeyError:
-#                 canonical_mon_to_idx[mon_hash] = varidx
-#                 momentmatrix[i, j] = varidx
-#                 momentmatrix[j, i] = varidx
-#                 varidx += 1
-#     return momentmatrix, canonical_mon_to_idx
-
 def calculate_momentmatrix_1d_internal(cols: List,
                                        notcomm: np.ndarray,
                                        orthomat: np.ndarray,
                                        commuting: bool = False,
-                                       verbose: int = 0) -> Tuple[
-    np.ndarray, Dict]:
+                                       verbose: int = 0
+                                       ) -> Tuple[np.ndarray, Dict]:
     r"""Calculate the moment matrix. The function takes as input the generating
     set :math:`\{M_i\}_i` encoded as a list of monomials. Each monomial is a
     matrix where each row is an operator and the columns specify the operator
@@ -278,6 +195,7 @@ def to_symbol(mon: np.ndarray,
 ###############################################################################
 # FUNCTIONS FOR INFLATIONS                                                    #
 ###############################################################################
+
 def apply_inflation_symmetries(momentmatrix: np.ndarray,
                                inflation_symmetries: np.ndarray,
                                verbose: bool = False
@@ -540,99 +458,6 @@ def lexicographic_order(infSDP) -> Dict[str, int]:
         lexorder[sympy.Symbol(to_name([op], infSDP.names),
                               commutative=False)] = i
     return lexorder
-
-# TODO remove this function once party_physical_monomials_via_cliques is fully
-# functional
-def party_physical_monomials(hypergraph: np.ndarray,
-                             inflevels: np.ndarray,
-                             party: int,
-                             max_monomial_length: int,
-                             settings_per_party: Tuple[int],
-                             outputs_per_party: Tuple[int],
-                             lexorder: np.ndarray
-                             ) -> np.ndarray:
-    """Generate all possible non-negative monomials for a given party composed
-    of at most ``max_monomial_length`` operators.
-
-    Parameters
-    ----------
-    hypergraph : numpy.ndarray
-        Hypergraph of the scenario.
-    inflevels : np.ndarray
-        The number of copies of each source in the inflated scenario.
-    party : int
-        Party index. NOTE: starting from 0
-    max_monomial_length : int
-        The maximum number of operators in the monomial.
-    settings_per_party : List[int]
-        List containing the cardinality of the input/measurement setting
-        of each party.
-    outputs_per_party : List[int]
-        List containing the cardinality of the output/measurement outcome
-        of each party.
-    lexorder : numpy.ndarray
-        A matrix storing the lexicographic order of operators. If an operator
-        has lexicographic rank `i`, then it is placed at the ``i``-th row of
-        lexorder.
-
-    Returns
-    -------
-    List[numpy.ndarray]
-        An array containing all possible positive monomials of the given
-        length.
-    """
-    hypergraph = np.asarray(hypergraph)
-    nr_sources = hypergraph.shape[0]
-    nr_properties = 1 + nr_sources + 2
-    relevant_sources = np.flatnonzero(hypergraph[:, party])
-    relevant_inflevels = inflevels[relevant_sources]
-
-    assert max_monomial_length <= min(relevant_inflevels), \
-        ("You cannot have a longer list of commuting operators" +
-         " than the minimum inflation level of said part.")
-
-    # The strategy is building an initial non-negative monomial and apply all
-    # inflation symmetries
-    initial_monomial = np.zeros(
-        (max_monomial_length, nr_properties), dtype=np.uint8)
-    if max_monomial_length == 0:
-        return initial_monomial[np.newaxis]
-    initial_monomial[:, 0] = 1 + party
-    for mon_idx in range(max_monomial_length):
-        initial_monomial[mon_idx, 1:-2] = hypergraph[:, party] * (1 + mon_idx)
-    inflation_equivalents = {initial_monomial.tobytes(): initial_monomial}
-    all_permutations_per_relevant_source = [
-        format_permutations(list(permutations(range(inflevel))))
-        for inflevel in relevant_inflevels.flat]
-    for permutation in product(*all_permutations_per_relevant_source):
-        permuted = initial_monomial.copy()
-        for perm_idx, source in enumerate(relevant_sources.flat):
-            permuted = mon_lexsorted(apply_source_perm(permuted,
-                                                       source,
-                                                       permutation[perm_idx]),
-                                     lexorder)
-        inflation_equivalents[permuted.tobytes()] = permuted
-
-    # Insert all combinations of inputs and outputs
-    template_mon = np.stack(tuple(inflation_equivalents.values()))
-    del inflation_equivalents
-    nr_possible_in = settings_per_party[party]
-    nr_possible_out = outputs_per_party[party] - 1  # We always use one less
-    new_monomials = np.broadcast_to(
-        template_mon,
-        (nr_possible_in ** max_monomial_length,
-         nr_possible_out ** max_monomial_length) + template_mon.shape).copy()
-    del template_mon
-    for i, input_slice in enumerate(product(range(nr_possible_in),
-                                            repeat=max_monomial_length)):
-        new_monomials[i, :, :, :, -2] = input_slice
-        for o, output_slice in enumerate(product(range(nr_possible_out),
-                                                 repeat=max_monomial_length)):
-            new_monomials[i, o, :, :, -1] = output_slice
-    return new_monomials.transpose(
-        (2, 0, 1, 3, 4)
-    ).reshape((-1, max_monomial_length, nr_properties))
-
 
 ###############################################################################
 # OTHER FUNCTIONS                                                             #
