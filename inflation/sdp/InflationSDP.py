@@ -116,7 +116,8 @@ class InflationSDP:
             print()
         self.use_lpi_constraints = False
         self.network_scenario    = inflationproblem.is_network
-        self._is_knowable_q_non_networks = inflationproblem._is_knowable_q_non_networks
+        self._is_knowable_q_non_networks = \
+            inflationproblem._is_knowable_q_non_networks
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
         # self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
         self.factorize_moment_1d = inflationproblem.factorize_monomial_1d
@@ -971,8 +972,8 @@ class InflationSDP:
                     elif type(col) in [sp.core.symbol.Symbol,
                                        sp.core.power.Pow,
                                        sp.core.mul.Mul]:
-                        columns.append(nb_mon_to_lexrepr(self._interpret_name(col),
-                                                         self._lexorder))
+                        columns.append(nb_mon_to_lexrepr(
+                            self._interpret_name(col), self._lexorder))
                     else:
                         raise Exception(f"The column {col} is not specified " +
                                         "in a valid format.")
@@ -1244,7 +1245,7 @@ class InflationSDP:
         """
         # HACK: The lexorder of InflationProblem is different from that 
         # in InflationSDP!
-        _factors = self.factorize_moment_1d(np.asarray(lexmon, dtype=np.intc) - 1,
+        _factors = self.factorize_moment_1d(np.asarray(lexmon, dtype=np.intc)-1,
                                             canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor + 1)
                          for factor in _factors if len(factor)]
@@ -1294,8 +1295,9 @@ class InflationSDP:
     def _inflation_orbit_and_rep_1d(self, lexmon: np.ndarray):
         permuted_variants = np.take(self.lexorder_symmetries, lexmon, axis=1)
         permuted_variants = np.unique(permuted_variants, axis=0).astype(int)
-        output_variants = [tuple(self._to_canonical_memoized_1d(lexmon_variant,
-                                                                apply_only_commutations=True))
+        output_variants = \
+            [tuple(self._to_canonical_memoized_1d(
+                lexmon_variant, apply_only_commutations=True))
                            for lexmon_variant in permuted_variants]
         representative = np.array(min(output_variants), dtype=np.intc)
         return output_variants, representative
@@ -1687,7 +1689,8 @@ class InflationSDP:
                     new_lexmon_canon = self._to_canonical_memoized_1d(
                         new_lexmon,
                         apply_only_commutations=True)
-                    total_perm[i] = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
+                    total_perm[i] \
+                        = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
             except KeyError:
                 permutation_failed = True
                 skip_this_one = True
