@@ -513,7 +513,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             cert_data = np.zeros((nof_primal_variables,))
             obj_data = objective.toarray().ravel()
             objective_unknown_cols = np.setdiff1d(objective.col, known_vars.col)
-            cert_data[objective_unknown_cols] = obj_data[objective_unknown_cols]
+            cert_data[objective_unknown_cols] = -obj_data[objective_unknown_cols]
             cert_data[known_vars.col] = y_values[:nof_known_vars] # Assumes known values coded as equalities
             if relax_known_vars:
                 cert_data[known_vars.col] += y_values[nof_known_vars:(2*nof_known_vars)]
