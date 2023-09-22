@@ -43,7 +43,7 @@ class InflationLP(object):
                  supports_problem: bool = False,
                  default_non_negative: bool = True,
                  include_all_outcomes: bool = False,
-                 verbose: int = 0) -> None:
+                 verbose: int = None) -> None:
         """
         Class for generating and solving an LP relaxation for fanout or 
         nonfanout inflation.
@@ -618,8 +618,8 @@ class InflationLP(object):
               relax_inequalities: bool = False,
               dualise: bool = True,
               solverparameters: dict = None,
-              verbose: int = 0,
-              default_non_negative: bool = False,
+              verbose: int = None,
+              default_non_negative: bool = None,
               **solver_arguments) -> None:
         r"""Call a solver on the SDP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
@@ -642,10 +642,9 @@ class InflationLP(object):
         solverparameters : dict, optional
             Extra parameters to be sent to the solver. By default ``None``.
         verbose : int, optional
-            Verbosity level. By default ``0``.
+            Verbosity level.
         default_non_negative : bool, optional
-            If ``True``, all variables are set to be non-negative by default. 
-            By default ``False``.
+            If ``True``, all variables are set to be non-negative by default.
         solver_arguments : dict, optional
             By default, solve will use the dictionary of LP keyword arguments
             given by ``_prepare_solver_arguments()``. However, a user may
