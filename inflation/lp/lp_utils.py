@@ -14,11 +14,13 @@ except ModuleNotFoundError:
 
 
 def drop_zero_rows(coo_mat: coo_matrix):
+    """Drops zero rows from a sparse matrix in place."""
     nz_rows, new_row = np.unique(coo_mat.row, return_inverse=True)
     coo_mat.row[:] = new_row
     coo_mat._shape = (len(nz_rows), coo_mat.shape[1])
 
 def canonical_order(coo_mat: coo_matrix):
+    """Puts a sparse matrix in canonical order in place."""
     order = np.lexsort([coo_mat.col, coo_mat.row])
     coo_mat.row[:] = np.asarray(coo_mat.row)[order]
     coo_mat.col[:] = np.asarray(coo_mat.col)[order]
@@ -248,12 +250,6 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
             # Initialize constraint matrix
             constraints = vstack((inequalities, equalities))
-            # nof_primal_inequalities = 0
-            # if inequalities.nnz:
-            #     nof_primal_inequalities = inequalities.shape[0]
-            # nof_primal_equalities = 0
-            # if equalities.nnz:
-            #     nof_primal_equalities = equalities.shape[0]
 
             nof_primal_inequalities = inequalities.shape[0]
             nof_primal_equalities = equalities.shape[0]
@@ -280,19 +276,6 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
             if relax_known_vars:
                 # Each known value is replaced by two inequalities with slacks
-                # ELIE VERSION
-                # kv_row = np.repeat(
-                #     np.arange(nof_known_vars * 2),
-                #     2)
-                # kv_col = np.empty((nof_known_vars * 4,), dtype=int)
-                # kv_col[0:(2*nof_known_vars):2] = np.arange(nof_known_vars)
-                # kv_col[(2 * nof_known_vars):(4 * nof_known_vars):2] = kv_col[0:(2*nof_known_vars):2]
-                # kv_col[1::2] = np.broadcast_to(nof_primal_variables, 2*nof_known_vars)
-                # kv_data = np.hstack((
-                #     np.broadcast_to(1, 2*nof_known_vars),
-                #     np.tile([1, -1], nof_known_vars)
-                # ))
-                # ERICA VERSION
                 kv_row = np.tile(
                     np.arange(nof_known_vars * 2),
                     2)
@@ -343,9 +326,6 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                     ub_mat = expand_sparse_vec(upper_bounds,
                                                conversion_style="eq")
                     ub_mat.data[:] = -ub_mat.data # just a list of ones
-                    # ub_data = -ub_mat.data
-                    # ub_mat = coo_matrix((ub_data, (ub_mat.row, ub_mat.col)),
-                    #                     shape=(nof_ub, nof_primal_variables))
                     matrix = vstack((constraints, lb_mat, ub_mat),
                                     format='csr')
                     b_extra = np.concatenate(
@@ -370,8 +350,6 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                     bkc = [mosek.boundkey.lo] * nof_dual_constraints
                 else:
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
-                    # if relax_known_vars or relax_inequalities:
-                    #     bkc[-1] = mosek.boundkey.lo
 
                 # Set bound keys and values for variables
                 # Non-positivity for y corresponding to inequalities
@@ -656,12 +634,10 @@ def solve_Gurobi(objective: coo_matrix = blank_coo_matrix,
     m.setObjective(objective_vector @ x, gp.GRB.MAXIMIZE)
 
     # Add inequality constraint matrix
-    # rhs_ineq = np.zeros(nof_primal_inequalities)
     if inequalities.shape[0]:
         m.addConstr(inequalities @ x >= 0, name="ineq")
 
     # Add equality constraint matrix
-    # rhs_eq = np.zeros(nof_primal_equalities)
     if equalities.shape[0]:
         m.addConstr(equalities @ x == 0, name="eq")
 
@@ -889,7 +865,6 @@ def solveLP_Mosek(objective: Dict = None,
             if solve_dual:
                 if verbose>1:
                     print("Proceeding with dual initialization...")
-                # matrix = A.tocsc(copy=False)
 
                 nof_primal_lower_bounds = len(lower_bounds)
                 nof_primal_nontriv_bounds = nof_primal_lower_bounds + \
@@ -1173,34 +1148,3 @@ def convert_dicts(objective: Union[coo_matrix, Dict] = None,
         else:
             sparse_args["equalities"] = semiknown_mat
     return sparse_args
-
-
-if __name__ == '__main__':
-    simple_lp = {
-        "objective": {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
-        "known_vars": {'1': 1},  # Define the variable that is the identity
-        "inequalities": [{'x': -1, '1': 2},  # 2 - x >= 0
-                         {'y': -1, '1': 5},  # 5 - y >= 0
-                         {'z': -1, '1': 1 / 2},  # 1/2 - z >= 0
-                         {'w': 1, '1': 1}],  # w >= -1
-        "equalities": [{'x': 1 / 2, 'y': 2, '1': -3}],  # x/2 + 2y - 3 = 0
-    }
-    raw_sol = solveLP_Mosek(**simple_lp, solve_dual=False)
-    raw_sol_d = solveLP_Mosek(**simple_lp, solve_dual=True)
-
-    obj = coo_matrix(([-2, 1, 1, 1], ([0, 0, 0, 0], [1, 2, 3, 4])),
-                     shape=(1, 5))
-    kv = coo_matrix(([1], ([0], [0])), shape=(1, 5))
-    ineq = coo_matrix(([2, -1, 5, -1, 0.5, -1, 1, 1],
-                       ([0, 0, 1, 1, 2, 2, 3, 3], [0, 2, 0, 3, 0, 4, 0, 1])),
-                      shape=(4, 5))
-    eq = coo_matrix(([-3, 0.5, 2], ([0, 0, 0], [0, 2, 3])), shape=(1, 5))
-    simple_lp_mat = {
-        "objective": obj,
-        "known_vars": kv,
-        "inequalities": ineq,
-        "equalities": eq,
-        "variables": ['1', 'w', 'x', 'y', 'z']
-    }
-    mat_sol = solveLP_sparse(solve_dual=False, **simple_lp_mat)
-    mat_sol_d = solveLP_sparse(solve_dual=True, **simple_lp_mat)
