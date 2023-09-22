@@ -70,8 +70,10 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
         status, dual certificate (as dictionary and sparse matrix), x values,
         and response code.
     """
-    # Save solver arguments
+    # Save solver arguments, unpacking kwargs
     solver_args = locals()
+    del solver_args['kwargs']
+    solver_args.update(kwargs)
 
     # Check type for arguments related to the problem
     problem_args = ("objective",
@@ -90,14 +92,19 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
         if variables is None:
             # Infer variables
             variables = set()
-            variables.update(objective)
-            for ineq in inequalities:
-                variables.update(ineq)
-            for eq in equalities:
-                variables.update(eq)
-            for x, (c, x2) in semiknown_vars.items():
-                variables.update([x, x2])
-            variables.update(known_vars)
+            if objective:
+                variables.update(objective)
+            if inequalities:
+                for ineq in inequalities:
+                    variables.update(ineq)
+            if equalities:
+                for eq in equalities:
+                    variables.update(eq)
+            if semiknown_vars:
+                for x, (c, x2) in semiknown_vars.items():
+                    variables.update([x, x2])
+            if known_vars:
+                variables.update(known_vars)
             variables = sorted(variables)
             solver_args["variables"] = variables
         solver_args.update(convert_dicts(**solver_args))
@@ -109,7 +116,7 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
     return solveLP_sparse(**solver_args)
 
 
-blank_coo_matrix = coo_matrix((0,0), dtype=np.int8)
+blank_coo_matrix = coo_matrix((0, 0), dtype=np.int8)
 def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                    known_vars: coo_matrix = blank_coo_matrix,
                    inequalities: coo_matrix = blank_coo_matrix,
@@ -122,8 +129,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                    relax_inequalities: bool = False,
                    verbose: int = 0,
                    solverparameters: Dict = None,
-                   variables: List = None,
-                   **kwargs
+                   variables: List = None
                    ) -> Dict:
     """Internal function to solve an LP with the Mosek Optimizer API using
     sparse matrices. Columns of each matrix correspond to a fixed order of
@@ -233,7 +239,6 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
             # Initialize b vector (RHS of constraints)
             b = [0] * nof_primal_constraints
-
 
             if relax_inequalities:
                 # Add slack variable lambda to each inequality
@@ -386,7 +391,8 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                         bkx[col] = mosek.boundkey.lo
                         blx[col] = lb_data[col]
                     elif col in ub_col:
-                        bkx[col] = mosek.boundkey.up
+                        bkx[col] = mosek.boundkey.ra if default_non_negative \
+                            else mosek.boundkey.up
                         bux[col] = ub_data[col]
                 if relax_known_vars or relax_inequalities:
                     bkx[-1] = mosek.boundkey.fr
@@ -595,8 +601,12 @@ def convert_dicts(semiknown_vars: Dict = None,
 
     assert variables is not None, "Variables must be passed."
 
+    args = locals()
+    del args['kwargs']
+    args.update(kwargs)
+
     # Arguments converted from dictionaries to sparse matrices
-    sparse_args = {k: to_sparse(arg, variables) for k, arg in locals().items()
+    sparse_args = {k: to_sparse(arg, variables) for k, arg in args.items()
                    if isinstance(arg, (dict, list)) and k != "semiknown_vars"
                    and k != "solverparameters" and k != "variables"}
 
