@@ -259,7 +259,7 @@ class TestReset(unittest.TestCase):
 
 
 class TestResetLP(unittest.TestCase):
-    lp = InflationLP(trivial)
+    lp = InflationLP(trivial, nonfanout=False)
     lp._generate_lp()
 
     def setUp(self) -> None:
@@ -645,7 +645,7 @@ class TestLPOutput(unittest.TestCase):
                     f"{lp.objective_value}.")
 
     def test_instrumental(self):
-        lp = InflationLP(TestSDPOutput.instrumental)
+        lp = InflationLP(TestSDPOutput.instrumental, nonfanout=False)
         with self.subTest(msg="Infeasible Bonet's inequality"):
             lp.set_distribution(TestSDPOutput.incompatible_dist)
             lp.solve(feas_as_optim=False)
@@ -671,7 +671,8 @@ class TestLPOutput(unittest.TestCase):
                              "scenario is not being recognized as such.")
 
     def test_supports(self):
-        lp = InflationLP(TestSDPOutput.bellScenario, supports_problem=True)
+        lp = InflationLP(TestSDPOutput.bellScenario, supports_problem=True,
+                         nonfanout=False)
         with self.subTest(msg="Incompatible support"):
             pr_support = np.zeros((2, 2, 2, 2))
             for a, b, x, y in np.ndindex(*pr_support.shape):

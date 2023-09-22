@@ -177,7 +177,7 @@ class TestProblems(TestExtraConstraints):
                                     inflation_level_per_source=[1])
 
     def test_lp(self):
-        lp = InflationLP(self.bellScenario)
+        lp = InflationLP(self.bellScenario, nonfanout=False)
         compound_mon = lp.monomials[-1]
         str_mon = "pA(0|0)"
         int_mon = 1
