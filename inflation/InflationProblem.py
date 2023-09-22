@@ -42,7 +42,7 @@ class InflationProblem:
                  outcomes_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
-                 classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
+                 classical_sources: Union[str, Tuple[str,...], List[str]]='all',
                  order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
         """Class for encoding relevant details concerning the causal compatibility
@@ -65,7 +65,7 @@ class InflationProblem:
             sources.
         classical_sources : Union[List[str], str], optional
             Names of the sources that are assumed to be classical. If ``'all'``,
-            it imposes that all sources are classical. By default empty. 
+            it imposes that all sources are classical. By default 'all'. 
         order : List[str], optional
             Name of each party. This also fixes the order in which party outcomes
             and settings are to appear in a conditional probability distribution.

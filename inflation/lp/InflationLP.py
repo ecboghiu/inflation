@@ -39,7 +39,7 @@ class InflationLP(object):
 
     def __init__(self,
                  inflationproblem: InflationProblem,
-                 nonfanout: bool = False,
+                 nonfanout: bool = True,
                  supports_problem: bool = False,
                  default_non_negative: bool = True,
                  include_all_outcomes: bool = False,
