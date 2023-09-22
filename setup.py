@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
-with open("VERSION.txt", "r") as f:
-    __version__ = f.read().strip()
+with open('inflation/_version.py') as f:
+    exec(f.read())
 
 setup(
     name="inflation",
-    version=__version__,
-    install_requires=["numpy", "sympy", "scipy", "numba", "mosek", "tqdm"],
+    version='1.0.0',
+    install_requires=["numpy", "sympy", "scipy", "numba", "mosek", "tqdm", "networkx"],
     extras_require={
         "docs": ["nbsphinx", "m2r2", "sphinx_rtd_theme", "sphinx_copybutton"]
     },
