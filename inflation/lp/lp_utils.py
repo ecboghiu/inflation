@@ -486,12 +486,12 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 primal = task.getdualobj(basic)
                 dual = task.getprimalobj(basic)
                 x_values = dict(zip(variables, yy))
-                y_values = xx
+                y_values = np.asarray(xx)
             else:
                 primal = task.getprimalobj(basic)
                 dual = task.getdualobj(basic)
                 x_values = dict(zip(variables, xx))
-                y_values = yy
+                y_values = np.asarray(yy)
 
             if solutionsta == mosek.solsta.optimal:
                 success = True
@@ -510,14 +510,13 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 y_values = y_values[nof_primal_constraints - nof_known_vars:]
             cert_row = [0] * nof_primal_variables
             cert_col = [*range(nof_primal_variables)]
-            cert_data = [0] * nof_primal_variables
+            cert_data = np.zeros((nof_primal_variables,))
             obj_data = objective.toarray().ravel()
-            for col in np.setdiff1d(objective.col, known_vars.col):
-                cert_data[col] -= obj_data[col]
-            for i, col in enumerate(known_vars.col):
-                cert_data[col] += y_values[i]
-                if relax_known_vars:
-                    cert_data[col] += y_values[i + nof_known_vars]
+            objective_unknown_cols = np.setdiff1d(objective.col, known_vars.col)
+            cert_data[objective_unknown_cols] = obj_data[objective_unknown_cols]
+            cert_data[known_vars.col] = y_values[:nof_known_vars] # Assumes known values coded as equalities
+            if relax_known_vars:
+                cert_data[known_vars.col] += y_values[nof_known_vars:(2*nof_known_vars)]
             sparse_certificate = coo_matrix((cert_data, (cert_row, cert_col)),
                                             shape=(1, nof_primal_variables))
 
