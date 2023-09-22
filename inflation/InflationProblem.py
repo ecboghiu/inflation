@@ -34,38 +34,8 @@ warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
     formatwarning_orig(msg, category, filename, lineno, line="")
 
 
-class InflationProblem(object):
-    """Class for encoding relevant details concerning the causal compatibility
-    scenario.
-
-    Parameters
-    ----------
-    dag : Dict[str, List[str]], optional
-        Dictionary where each key is a parent node, and the corresponding value
-        is a list of the corresponding children nodes. By default it is a
-        single source connecting all the parties.
-    outcomes_per_party : [np.ndarray, List[int], Tuple[int,...]]
-        Measurement outcome cardinalities.
-    settings_per_party : [np.ndarray, List[int], Tuple[int,...]], optional
-        Measurement setting cardinalities. By default ``1`` for all parties.
-    inflation_level_per_source : [int, List[int]], optional
-        Number of copies per source in the inflated graph. Source order is the
-        same as insertion order in `dag`. If an integer is provided, it is used
-        as the inflation level for all sources. By default ``1`` for all
-        sources.
-    classical_sources : Union[List[str], str], optional
-        Names of the sources that are assumed to be classical. If ``'all'``,
-        it imposes that all sources are classical. By default empty. 
-    order : List[str], optional
-        Name of each party. This also fixes the order in which party outcomes
-        and settings are to appear in a conditional probability distribution.
-        Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
-    verbose : int, optional
-        Optional parameter for level of verbose:
-
-        * 0: quiet (default),
-        * 1: monitor level: track program process and show warnings,
-        * 2: debug level: show properties of objects created.
+class InflationProblem:
+    """Class for encoding relevant details concerning the causal compatibility.
     """
     def __init__(self,
                  dag: Union[Dict, None]=None,
@@ -75,7 +45,37 @@ class InflationProblem(object):
                  classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
                  order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
-        """Initialize the InflationProblem class.
+        """Class for encoding relevant details concerning the causal compatibility
+        scenario.
+
+        Parameters
+        ----------
+        dag : Dict[str, List[str]], optional
+            Dictionary where each key is a parent node, and the corresponding value
+            is a list of the corresponding children nodes. By default it is a
+            single source connecting all the parties.
+        outcomes_per_party : [np.ndarray, List[int], Tuple[int,...]]
+            Measurement outcome cardinalities.
+        settings_per_party : [np.ndarray, List[int], Tuple[int,...]], optional
+            Measurement setting cardinalities. By default ``1`` for all parties.
+        inflation_level_per_source : [int, List[int]], optional
+            Number of copies per source in the inflated graph. Source order is the
+            same as insertion order in `dag`. If an integer is provided, it is used
+            as the inflation level for all sources. By default ``1`` for all
+            sources.
+        classical_sources : Union[List[str], str], optional
+            Names of the sources that are assumed to be classical. If ``'all'``,
+            it imposes that all sources are classical. By default empty. 
+        order : List[str], optional
+            Name of each party. This also fixes the order in which party outcomes
+            and settings are to appear in a conditional probability distribution.
+            Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
+        verbose : int, optional
+            Optional parameter for level of verbose:
+
+            * 0: quiet (default),
+            * 1: monitor level: track program process and show warnings,
+            * 2: debug level: show properties of objects created.
         """
         self.verbose = verbose
 
