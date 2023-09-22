@@ -6,7 +6,7 @@ with open('inflation/_version.py') as f:
 setup(
     name="inflation",
     version='1.0.0',
-    install_requires=["numpy", "sympy", "scipy", "numba", "mosek", "tqdm"],
+    install_requires=["numpy", "sympy", "scipy", "numba", "mosek", "tqdm", "networkx"],
     extras_require={
         "docs": ["nbsphinx", "m2r2", "sphinx_rtd_theme", "sphinx_copybutton"]
     },
