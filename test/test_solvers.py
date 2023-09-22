@@ -5,8 +5,8 @@ from scipy.sparse import lil_matrix, coo_matrix, vstack
 from copy import deepcopy
 
 from inflation.sdp.sdp_utils import solveSDP_MosekFUSION
-from inflation.lp.lp_utils import solveLP_sparse, solveLP_Mosek, to_sparse, \
-    convert_dicts
+from inflation.lp.lp_utils import solveLP_sparse, to_sparse, convert_dicts, \
+    solveLP
 
 simple_lp = {
     "objective": {'x': 1, 'y': 1, 'z': 1, 'w': -2},  # x + y + z - 2w
@@ -191,18 +191,12 @@ class TestLP(unittest.TestCase):
     def setup_LP_test_case(args):
         """Given problem arguments, set up dictionary of solutions from the
         solver."""
-        dict_primal_sol = solveLP_Mosek(**simple_lp, **args,
-                                        solve_dual=False)
-        dict_dual_sol = solveLP_Mosek(**simple_lp, **args,
-                                      solve_dual=True)
         args.update(convert_dicts(**args, variables=var))
         mat_primal_sol = solveLP_sparse(**simple_lp_mat, **args,
                                         variables=var, solve_dual=False)
         mat_dual_sol = solveLP_sparse(**simple_lp_mat, **args,
                                       variables=var, solve_dual=True)
         actual_sols = {
-            "dictionary, primal": dict_primal_sol,
-            "dictionary, dual": dict_dual_sol,
             "sparse, primal": mat_primal_sol,
             "sparse, dual": mat_dual_sol
         }
@@ -266,18 +260,18 @@ class TestSolverProcesses(unittest.TestCase):
                                              semiknown_vars={'z': (0.5, 'x')},
                                              solve_dual=True,
                                              process_constraints=True)
-        p_lp = solveLP_Mosek(**problem,
-                             semiknown_vars={},
-                             solve_dual=False)
-        p_lpi_lp = solveLP_Mosek(**problem,
-                                 semiknown_vars={'z': (0.5, 'x')},
-                                 solve_dual=False)
-        d_lp = solveLP_Mosek(**problem,
-                             semiknown_vars={},
-                             solve_dual=True)
-        d_lpi_lp = solveLP_Mosek(**problem,
-                                 semiknown_vars={'z': (0.5, 'x')},
-                                 solve_dual=True)
+        p_lp = solveLP(**problem, 
+                       semiknown_vars={},
+                       solve_dual=False)
+        p_lpi_lp = solveLP(**problem,
+                           semiknown_vars={'z': (0.5, 'x')}, 
+                           solve_dual=False)
+        d_lp = solveLP(**problem,
+                       semiknown_vars={},
+                       solve_dual=True)
+        d_lpi_lp = solveLP(**problem,
+                           semiknown_vars={'z': (0.5, 'x')},
+                           solve_dual=True)
 
         truth_obj, truth_obj_lpi = -52, -109/2
         truth_x =     {'x': 3, 'y': 24, 'z': 1, '1': 1}
@@ -348,11 +342,6 @@ class TestSolverProcesses(unittest.TestCase):
         d_lpi_process = solveSDP_MosekFUSION(**problem,
                                              solve_dual=True,
                                              process_constraints=True)
-        p_lpi_lp = solveLP_Mosek(**problem,
-                                 solve_dual=False)
-
-        d_lpi_lp = solveLP_Mosek(**problem,
-                                 solve_dual=True)
         p_lpi_lp_sparse = solveLP_sparse(**problem_mat,
                                          variables=var,
                                          solve_dual=False)
@@ -370,11 +359,9 @@ class TestSolverProcesses(unittest.TestCase):
                                for k, v in truth_x_lpi.items()])
         self.assertTrue(check(p_lpi["x"]), msg)
         self.assertTrue(check(p_lpi_process["x"]), msg)
-        self.assertTrue(check(p_lpi_lp["x"]), msg)
         self.assertTrue(check(p_lpi_lp_sparse["x"]), msg)
         self.assertTrue(check(d_lpi["x"]), msg)
         self.assertTrue(check(d_lpi_process["x"]), msg)
-        self.assertTrue(check(d_lpi_lp["x"]), msg)
         self.assertTrue(check(d_lpi_lp_sparse["x"]), msg)
 
         check = lambda x: np.isclose(x, truth_obj_lpi)
@@ -384,16 +371,12 @@ class TestSolverProcesses(unittest.TestCase):
             p_lpi['dual_value'],
             p_lpi_process['primal_value'],
             p_lpi_process['dual_value'],
-            p_lpi_lp['primal_value'],
-            p_lpi_lp['dual_value'],
             p_lpi_lp_sparse['primal_value'],
             p_lpi_lp_sparse['dual_value'],
             d_lpi_process['primal_value'],
             d_lpi_process['dual_value'],
             d_lpi['primal_value'],
             d_lpi['dual_value'],
-            d_lpi_lp['primal_value'],
-            d_lpi_lp['dual_value'],
             d_lpi_lp_sparse['primal_value'],
             d_lpi_lp_sparse['dual_value'],
         ]

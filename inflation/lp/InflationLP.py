@@ -27,7 +27,7 @@ from .writer_utils import write_to_lp, write_to_mps
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from ..sdp.quantum_tools import flatten_symbolic_powers
-from .lp_utils import solveLP, solve_Gurobi
+from .lp_utils import solveLP
 from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec
@@ -612,7 +612,6 @@ class InflationLP(object):
             return
 
     def solve(self,
-              interpreter: str = "solveLP_sparse",
               relax_known_vars: bool = False,
               relax_inequalities: bool = False,
               dualise: bool = True,
@@ -626,8 +625,6 @@ class InflationLP(object):
 
         Parameters
         ----------
-        interpreter : str, optional
-            The solver to be called. By default ``"solveLP_sparse"``.
         relax_known_vars : bool, optional
             Do feasibility as optimization where each known value equality
             becomes two relaxed inequality constraints. E.g., P(A) = 0.7
@@ -665,14 +662,7 @@ class InflationLP(object):
         else:
             real_default_non_negative = default_non_negative
 
-        QCP_interpreters = {"solve_Gurobi"}
-        LP_interpreters = {"solveLP_Mosek", "solveLP", "solveLP_sparse"}
-        sparse_interpreters = {"solveLP", "solveLP_sparse", "solve_Gurobi"}
-        is_qcp = (interpreter in QCP_interpreters)
-        if interpreter in sparse_interpreters:
-            args = self._prepare_solver_matrices(include_nonlinear=is_qcp)
-        else:
-            args = self._prepare_solver_arguments(include_nonlinear=is_qcp)
+        args = self._prepare_solver_matrices()
         
         # Still allow for 'feas_as_optim' as an argument
         if 'feas_as_optim' in solver_arguments:
@@ -691,10 +681,7 @@ class InflationLP(object):
                      "solverparameters": solverparameters,
                      "solve_dual": dualise})
 
-        if interpreter in QCP_interpreters:
-            self.solution_object = solve_Gurobi(**args)
-        else:
-            self.solution_object = solveLP(**args)
+        self.solution_object = solveLP(**args)
         self.success = self.solution_object["success"]
         self.status = self.solution_object["status"]
         if self.success:
@@ -929,7 +916,7 @@ class InflationLP(object):
 
         Parameters
         ----------
-        array2d : numpy.ndarray
+        array1d : numpy.ndarray
             Moment encoded as a 1D array of integers, relative to _lexorder
         idx : int, optional
             Assigns an integer index to the resulting monomial, which can be
@@ -1633,8 +1620,7 @@ class InflationLP(object):
                                          in self.semiknown_moments.items()}
 
     def _prepare_solver_matrices(self,
-                                 separate_bounds: bool = True,
-                                 include_nonlinear: bool = False) -> dict:
+                                 separate_bounds: bool = True) -> dict:
         """Convert arguments from dictionaries to sparse coo_matrix form to
         pass to the solver.
 
@@ -1644,9 +1630,6 @@ class InflationLP(object):
             Whether to have variable bounds as a separate item in
             ``solverargs`` (True) or absorb them into the inequalities (False).
             By default, ``True``.
-        include_nonlinear : bool, optional
-            Whether to include quadratic factorization conditions in the
-            solver arguments, by default, ``False``.
 
         Returns
         -------
@@ -1675,9 +1658,6 @@ class InflationLP(object):
                       "equalities": internal_equalities,
                       "inequalities": self.sparse_inequalities,
                       "variables": self.monomial_names}
-        if include_nonlinear:
-            solverargs["factorization_conditions"] = self.sparse_quadratic_factorization_conditions
-
         if separate_bounds:
             solverargs["lower_bounds"] = self.sparse_lowerbounds
             solverargs["upper_bounds"] = self.sparse_upperbounds
@@ -1691,8 +1671,7 @@ class InflationLP(object):
         return solverargs
 
     def _prepare_solver_arguments(self, 
-                                  separate_bounds: bool = True, 
-                                  include_nonlinear: bool = False) -> dict:
+                                  separate_bounds: bool = True) -> dict:
         """Prepare arguments to pass to the solver.
 
         The solver takes as input the following arguments, which are all
@@ -1713,9 +1692,6 @@ class InflationLP(object):
             Whether to have variable bounds as a separate item in
             ``solverargs`` (True) or absorb them into the inequalities (False).
             By default, ``True``.
-        include_nonlinear : bool, optional
-            Whether to include quadratic factorization conditions in the
-            solver arguments, by default, ``False``.
 
         Returns
         -------
@@ -1742,8 +1718,6 @@ class InflationLP(object):
                       "equalities": self.moment_equalities_by_name,
                       "inequalities": self.moment_inequalities_by_name
                       }
-        if include_nonlinear:
-            solverargs["factorization_conditions"] = self.quadratic_factorization_conditions_by_name
         # Add the constant 1 in case of unnormalized problems removed it
         solverargs["known_vars"][self.constant_term_name] = 1.
         if separate_bounds:
