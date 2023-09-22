@@ -359,6 +359,7 @@ def apply_inflation_symmetries(momentmatrix: np.ndarray,
         return sym_mm, orbits, repr_values
 
 
+# TODO @Cristian add this to InflationSDP
 def commutation_relations(infSDP):
     """Return a user-friendly representation of the commutation relations.
 
