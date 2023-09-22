@@ -34,38 +34,8 @@ warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
     formatwarning_orig(msg, category, filename, lineno, line="")
 
 
-class InflationProblem(object):
-    """Class for encoding relevant details concerning the causal compatibility
-    scenario.
-
-    Parameters
-    ----------
-    dag : Dict[str, List[str]], optional
-        Dictionary where each key is a parent node, and the corresponding value
-        is a list of the corresponding children nodes. By default it is a
-        single source connecting all the parties.
-    outcomes_per_party : [np.ndarray, List[int], Tuple[int,...]]
-        Measurement outcome cardinalities.
-    settings_per_party : [np.ndarray, List[int], Tuple[int,...]], optional
-        Measurement setting cardinalities. By default ``1`` for all parties.
-    inflation_level_per_source : [int, List[int]], optional
-        Number of copies per source in the inflated graph. Source order is the
-        same as insertion order in `dag`. If an integer is provided, it is used
-        as the inflation level for all sources. By default ``1`` for all
-        sources.
-    classical_sources : Union[List[str], str], optional
-        Names of the sources that are assumed to be classical. If ``'all'``,
-        it imposes that all sources are classical. By default empty. 
-    order : List[str], optional
-        Name of each party. This also fixes the order in which party outcomes
-        and settings are to appear in a conditional probability distribution.
-        Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
-    verbose : int, optional
-        Optional parameter for level of verbose:
-
-        * 0: quiet (default),
-        * 1: monitor level: track program process and show warnings,
-        * 2: debug level: show properties of objects created.
+class InflationProblem:
+    """Class for encoding relevant details concerning the causal compatibility.
     """
     def __init__(self,
                  dag: Union[Dict, None]=None,
@@ -75,7 +45,37 @@ class InflationProblem(object):
                  classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
                  order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
-        """Initialize the InflationProblem class.
+        """Class for encoding relevant details concerning the causal compatibility
+        scenario.
+
+        Parameters
+        ----------
+        dag : Dict[str, List[str]], optional
+            Dictionary where each key is a parent node, and the corresponding value
+            is a list of the corresponding children nodes. By default it is a
+            single source connecting all the parties.
+        outcomes_per_party : [np.ndarray, List[int], Tuple[int,...]]
+            Measurement outcome cardinalities.
+        settings_per_party : [np.ndarray, List[int], Tuple[int,...]], optional
+            Measurement setting cardinalities. By default ``1`` for all parties.
+        inflation_level_per_source : [int, List[int]], optional
+            Number of copies per source in the inflated graph. Source order is the
+            same as insertion order in `dag`. If an integer is provided, it is used
+            as the inflation level for all sources. By default ``1`` for all
+            sources.
+        classical_sources : Union[List[str], str], optional
+            Names of the sources that are assumed to be classical. If ``'all'``,
+            it imposes that all sources are classical. By default empty. 
+        order : List[str], optional
+            Name of each party. This also fixes the order in which party outcomes
+            and settings are to appear in a conditional probability distribution.
+            Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
+        verbose : int, optional
+            Optional parameter for level of verbose:
+
+            * 0: quiet (default),
+            * 1: monitor level: track program process and show warnings,
+            * 2: debug level: show properties of objects created.
         """
         self.verbose = verbose
 
@@ -310,7 +310,6 @@ class InflationProblem(object):
         # Useful for LP
         self._ortho_groups_per_party = []
         for p, measurements_per_party in enumerate(self.measurements):
-            _ortho_groups = []
             O_card = self.outcomes_per_party[p]
             self._ortho_groups_per_party.append(
                 measurements_per_party.reshape(
@@ -344,9 +343,7 @@ class InflationProblem(object):
             for op in self._lexorder[:, 1:-2]],
             dtype=np.intc)
 
-    @cached_property
-    def lexorder_symmetries(self):
-        return self.discover_lexorder_symmetries()
+
 
 
     def __repr__(self):
@@ -386,6 +383,7 @@ class InflationProblem(object):
     
     @cached_property
     def _party_positions_within_lexorder(self):
+        # TODO @Elie write docstring
         offset = 0
         party_positions_within_lexorder = []
         for ortho_groups in self._ortho_groups_per_party:
@@ -400,7 +398,27 @@ class InflationProblem(object):
     
     def _subsets_of_compatible_mmnts_per_party(self,
                                                party: int,
-                                               with_last_outcome: bool = False):
+                                               with_last_outcome: bool = False
+                                               ) -> list:
+        """Find all subsets of compatible operators for a given party. They
+        are returned as lists of sets of maximum length monomials (that is,
+        if AB is compatible and ABC is compatible, only ABC is returned as
+        AB is a subset of ABC).
+
+        Parameters
+        ----------
+        party : int
+            The party specifies as its position in the list of parties,
+            as specified by 'order'.
+        with_last_outcome : bool, optional
+            Whether the compatible measurements should include those that
+            have the last outcome, by default False
+
+        Returns
+        -------
+        list
+            List of lists of compatible operators of maximum length.
+        """
         if with_last_outcome:
             _s_ = list(chain.from_iterable(self._party_positions_within_lexorder[party]))
         else:
@@ -412,9 +430,38 @@ class InflationProblem(object):
         raw_cliques = nx.find_cliques(G)
         return [partsextractor(_s_, clique) for clique in raw_cliques]
 
-    def _generate_compatible_monomials_given_party(self, party: int,
-                                                  up_to_length: int = None,
-                                                  with_last_outcome: bool = False):
+    def _generate_compatible_monomials_given_party(self,
+                                                party: int,
+                                                up_to_length: int = None,
+                                                with_last_outcome: bool = False
+                                                  ) -> np.ndarray:
+        """Helper function to generate all compatible monomials given a party.
+        
+        While _subsets_of_compatible_mmnts_per_party returns maximum length
+        compatible operators, i.e., ABC but not AB, this function returns 
+        all lengths up to the specified maximum, i.e., if up_to_length=2,
+        for the compatible monomial ABC, the monomials A, B, C, AB, AC, BC, ABC
+        are returned.
+
+        Parameters
+        ----------
+        party : int
+            The party specifies as its position in the list of parties,
+            as specified by 'order'.
+        up_to_length : int, optional
+            _description_, by default None
+        with_last_outcome : bool, optional
+            Whether the compatible measurements should include those that
+            have the last outcome, by default False
+
+        Returns
+        -------
+        2D array
+            A 2D boolean array where each row is a compatible monomial,
+            and the columns are the lexorder indices of the operators.
+            If we have 4 operators in the lexorder, ABCD, then
+            [[1, 0, 1, 0], [0, 1, 1, 0]] corresponds to AC and BC.
+        """
         # The cliques will be all unique sets of compatible operators of
         # ALL lengths, given a scenario's compatibility matrix
         cliques = self._subsets_of_compatible_mmnts_per_party(
@@ -467,8 +514,17 @@ class InflationProblem(object):
         return np.vstack(original_dag_events).astype(self._np_dtype)
 
     @cached_property
-    def _lexorder_lookup(self):
+    def _lexorder_lookup(self) -> dict:
+        """Creates helper dictionary for quick lookup of lexorder indices.
+
+        Returns
+        -------
+        dict
+            Mapping an operator in .tobytes() for quick lookup of its index
+            in the lexorder.
+        """
         return {op.tobytes(): i for i, op in enumerate(self._lexorder)}
+    
     def mon_to_lexrepr(self, mon: np.ndarray) -> np.ndarray:
         ops_as_hashes = list(map(self._from_2dndarray, mon))
         try:
@@ -490,6 +546,14 @@ class InflationProblem(object):
 
     @cached_property
     def _lexrepr_to_names(self):
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        list
+            List of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
         # Use expectation value notation. As ndarray for rapid multiextract.
         as_list = []
         for op in self._lexorder:
@@ -503,18 +567,34 @@ class InflationProblem(object):
             char_list = [name] + inflation_indices_as_strs + [setting_as_str, outcome_as_str]
             op_as_str = "_".join(char_list)
             as_list.append(op_as_str)
-        # as_list = ["_".join([self.names[op[0] - 1]]
-        #                                   + [str(i) for i in op[1:]])
-        #         for op in self._lexorder]
         return np.array(as_list)
 
     @cached_property
     def _lexrepr_to_symbols(self):
+        """For each operator in the lexorder, create a sympy symbol with the 
+        same name as returned by InflationPRoblem._lexrepr_to_names()
+
+        Returns
+        -------
+        list
+            List of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
         return np.array([sympy.Symbol(name, commutative=False) for name in self._lexrepr_to_names],
                         dtype=object)
 
     @cached_property
-    def names_to_ints(self):
+    def names_to_ints(self) -> dict:
+        """Map party names to integers denoting their position in the list of
+        parties, as specified by 'order', offset by 1 (i.e., first party is 1).
+
+        Used for the 2D array representation of monomials.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping party names to integers.
+        """
         return {name: i + 1 for i, name in enumerate(self.names)}
 
     ###########################################################################
@@ -594,7 +674,7 @@ class InflationProblem(object):
         """
         new_mon = np.array(monomial, copy=False)
         for o in new_mon:
-            party_index        = o[0] - 1     # Parties start at 1 our notation
+            party_index        = o[0] - 1  # Parties start at 1 our notation
             effective_setting  = o[-2]
             o_private_settings = \
                 self.effective_to_parent_settings[
@@ -663,26 +743,6 @@ class InflationProblem(object):
         lexmon_factors = self.factorize_monomial_1d(self.mon_to_lexrepr(monomial_as_2darray),
                                           canonical_order=canonical_order)
         return tuple(self._lexorder[lexmon] for lexmon in lexmon_factors)
-        # if not self.ever_factorizes:
-        #     return (monomial_as_2darray,)
-        # n = len(monomial_as_2darray)
-        # if n <= 1:
-        #     return (monomial_as_2darray,)
-        #
-        # inflation_indices_position = [self._inflation_indices_hash[
-        #     op.tobytes()] for op in monomial_as_2darray.astype(self._np_dtype)[:, 1:-2]]
-        # adj_mat = self._inflation_indices_overlap[inflation_indices_position][
-        #     :, inflation_indices_position]
-        #
-        # component_labels = nb_classify_disconnected_components(adj_mat)
-        # disconnected_components = tuple(
-        #     monomial_as_2darray[component_labels == i]
-        #     for i in range(component_labels.max(initial=0) + 1))
-        #
-        # if canonical_order:
-        #     disconnected_components = tuple(sorted(disconnected_components,
-        #                                            key=lambda x: x.tobytes()))
-        # return disconnected_components
 
     def factorize_monomial_1d(self,
                               monomial_as_1darray: np.ndarray,
@@ -715,7 +775,6 @@ class InflationProblem(object):
         unique_inflation_indices_positions, reversion_key = np.unique(inflation_indices_position, return_inverse=True)
         adj_mat = self._inflation_indices_overlap[np.ix_(unique_inflation_indices_positions, unique_inflation_indices_positions)]
         component_labels = nb_classify_disconnected_components(adj_mat)
-        # print(f"DEBUG: Component labels {component_labels}")
         nof_components = component_labels.max(initial=0) + 1
         disconnected_components = tuple(monomial_as_1darray[np.take(component_labels == i, reversion_key)]
             for i in range(nof_components))
@@ -776,6 +835,18 @@ class InflationProblem(object):
             return reduce(perm_combiner, lexorder_symmetries)
         else:
             return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
+        
+    @cached_property
+    def lexorder_symmetries(self):
+        """Discover symmetries expressed as permutations of the lexorder.
+        
+        Returns
+        -------
+        numpy.ndarray[int]
+            The permutations of the lexicographic order implied by the inflation
+            symmetries.
+        """
+        return self.discover_lexorder_symmetries()
 
     def _elevate_distribution_symmetries(self, dist_syms: List) -> np.ndarray:
         """Given the action of a group on the original scenario, calculates
@@ -826,6 +897,7 @@ class InflationProblem(object):
         lexorder_symmetries = np.vstack(lexorder_symmetries)
         return lexorder_symmetries
 
+    # TODO @Elie this is currently not working?
     def _discover_graph_automorphisms(self) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Return a list of all party relabelling symmetries (each proceeded by
         its associated source relabelling symmetry) consistent with the
@@ -883,6 +955,7 @@ class InflationProblem(object):
                      ))
         return discovered_automorphisms
 
+    # TODO @Elie this is currently not working?
     #TASK: Obtain a list of all setting relabellings,
     # and all outcome-per-setting relabellings.
     def _possible_input_output_symmetries(self) -> List[np.ndarray]:
