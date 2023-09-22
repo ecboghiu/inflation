@@ -8,7 +8,6 @@ import numpy as np
 from functools import total_ordering, cached_property
 from typing import Tuple
 
-
 from ..lp.monomial_classes import InternalAtomicMonomial as InternalAtomicMonomialLP
 from ..lp.monomial_classes import CompoundMoment as CompoundMomentLP
 
@@ -61,14 +60,6 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
             array lexmon.
         """
         super().__init__(inflation_sdp_instance, lexmon)
-        # self.is_all_commuting = self.context.all_commuting_q_2d(self.as_2d_array)
-        # if self.is_all_commuting or self.n_operators <= 1:
-        #     self.is_physical = True
-        # else:
-        #     #TODO: change is_physical test to 1d
-        #     self.is_physical = self.context.all_commuting_q_2d(
-        #         nb_remove_sandwich(self.as_2d_array))
-        # self.is_hermitian = self.is_hermitian()
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -82,7 +73,9 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
         return result
 
     @cached_property
-    def is_all_commuting(self):
+    def is_all_commuting(self) -> bool:
+        """If the moment containts operators that all commute.
+        """
         return self.context.all_commuting_q_1d(self.as_lexmon)
 
     @cached_property
@@ -112,18 +105,7 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
             dagger.name = "<" + " ".join(
                 self.context._lexrepr_to_names[dagger.as_lexmon]) + ">"
             return dagger
-
-    # @property
-    # def is_physical(self):
-    #     if self.is_all_commuting or self.n_operators <= 1:
-    #         return True
-    #     else:
-    #         #TODO: change is_physical test to 100% 1d in fast_npa
-    #         return self.context.all_commuting_q_1d(
-    #             self.as_lexmon[nb_indices_of_more_than_one_op_per_party_per_factor_1d(self.as_lexmon, self.as_2d_array)])
-
-
-
+        
 class CompoundMomentSDP(CompoundMomentLP):
     def __init__(self, monomials: Tuple[InternalAtomicMonomialSDP]):
         r"""This class models moments :math:`\langle Op_1 Op_2\dots Op_n\rangle
@@ -148,19 +130,21 @@ class CompoundMomentSDP(CompoundMomentLP):
                                           for factor in monomials))
         super().__init__(min(default_factors, conjugate_factors))
         self.internal_type = InternalAtomicMonomialSDP
-        # self.is_all_commuting = all(factor.is_all_commuting
-        #                             for factor in self.factors)
-        # self.is_physical = all(factor.is_physical
-        #                             for factor in self.factors)
 
     @property
     def is_all_commuting(self):
+        """If all factors of the compount moment contain operators that all
+        commute."""
         return all(factor.is_all_commuting for factor in self.factors)
 
     @property
     def is_physical(self):
+        """If all factors of the compount moment contain monomials that are 
+        physical, i.e., products of positive operators that are positive."""
         return all(factor.is_physical for factor in self.factors)
 
     @cached_property
     def is_hermitian(self):
+        """If all factors of the compount moment contain monomials that are 
+        hermitian."""
         return all(factor.is_hermitian for factor in self.factors)
