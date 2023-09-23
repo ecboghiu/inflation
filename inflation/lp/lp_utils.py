@@ -436,7 +436,9 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                       format(perf_counter() - t0, ".4f"), "seconds.\n")
                 t0 = perf_counter()
 
-            task.writedata("debug.ptf")
+            if verbose > 1:
+                print("Writing problem to debug_lp.ptf...")
+                task.writedata("debug_lp.ptf")
 
             # Solve the problem
             if verbose > 0:
