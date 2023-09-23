@@ -529,7 +529,6 @@ class InflationProblem:
         ops_as_hashes = list(map(self._from_2dndarray, mon))
         try:
             return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=np.intc)
-            # return np.array([self._lexorder_lookup[op_hash] for op_hash in ops_as_hashes], dtype=int)
         except KeyError:
             raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder \n{self._lexorder}.")
 

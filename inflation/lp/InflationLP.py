@@ -1270,7 +1270,7 @@ class InflationLP(object):
 
     @cached_property
     def minimal_sparse_inequalities(self) -> coo_matrix:
-        """Given the generating monomials, infer conversion to 
+        """Given the generating monomials, inter conversion to 
         Collins-Gisin notation."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
