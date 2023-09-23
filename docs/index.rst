@@ -27,20 +27,26 @@ CasualInflation is free open-source software released under the `GNU General Pub
 
 How to cite
 ===========
-If you use Inflation in your work, please cite `Inflation's paper <https://www.arxiv.org/abs/2209.xxxxx>`_:
+If you use Inflation in your work, please cite `Inflation's paper <https://www.arxiv.org/abs/2211.04483>`_:
 
-  Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "Inflation: a Python package for classical and quantum causal compatibility", arXiv:2209.xxxxx
+  Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens, "Inflation: a Python package for classical and quantum causal compatibility", Quantum 7, 996 (2023), arXiv:2211.04483
 
 .. code-block:: html
 
-    @misc{2209.xxxxx,
-      doi = {10.48550/ARXIV.2209.xxxxx},
-      url = {https://arxiv.org/abs/2209.xxxxx},
+    @article{pythoninflation,
+      doi = {10.22331/q-2023-05-04-996},
+      url = {https://doi.org/10.22331/q-2023-05-04-996},
+      title = {Inflation: a {P}ython library for classical and quantum causal compatibility},
       author = {Boghiu, Emanuel-Cristian and Wolfe, Elie and Pozas-Kerstjens, Alejandro},
-      title = {{Inflation}: a {Python} package for classical and quantum causal compatibility},
-      publisher = {arXiv},
-      year = {2022},
-      copyright = {arXiv.org perpetual, non-exclusive license}
+      journal = {{Quantum}},
+      issn = {2521-327X},
+      publisher = {{Verein zur F{\"{o}}rderung des Open Access Publizierens in den Quantenwissenschaften}},
+      volume = {7},
+      pages = {996},
+      month = may,
+      year = {2023},
+      archivePrefix = {arXiv},
+      eprint = {2211.04483}
     }
 
 .. toctree::
