@@ -1,6 +1,6 @@
 """
-The module generates the semidefinite program associated to a quantum inflation
-instance (see arXiv:1909.10519).
+The module generates the linear programming relaxation associated to a fanout
+or non-fanout inflation instance (see arXiv:1707.06476).
 
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """

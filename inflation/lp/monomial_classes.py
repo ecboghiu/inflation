@@ -1,5 +1,6 @@
 """
-This file contains classes for defining the monomials inside a moment matrix.
+This file contains classes for defining probabilities of events or expectation
+values of monomials in convex programming relaxations of inflation.
 
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
@@ -14,8 +15,6 @@ from ..sdp.monomial_utils import (compute_marginal,
                                   name_from_atom_names,
                                   symbol_from_atom_name,
                                   symbol_prod)
-from functools import reduce
-# import methodtools
 
 
 @total_ordering

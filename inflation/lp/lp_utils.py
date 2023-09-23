@@ -1,3 +1,9 @@
+"""
+This file contains functions to interact with LP solvers.
+
+@authors: Erica Han, Elie Wolfe
+"""
+
 import sys
 import mosek
 import numpy as np

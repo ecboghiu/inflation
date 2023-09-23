@@ -1,3 +1,10 @@
+"""
+This file contains helper functions to save a linear programming relaxation
+problem to file.
+
+@authors: Erica Han, Elie Wolfe
+"""
+
 import mosek
 from copy import deepcopy
 
