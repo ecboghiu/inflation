@@ -69,8 +69,6 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                     equivalent_monomial_positions.append(lookup_dict[bitvec.tobytes()])
                 except KeyError:
                     pass
-            # equivalent_monomial_positions = np.sort(equivalent_monomial_positions)
-            # if i in equivalent_monomial_positions.flat:  # SHOULD ALWAYS HAPPEN!
             orbits[equivalent_monomial_positions] = i
     return orbits
 
