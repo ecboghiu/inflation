@@ -8,7 +8,7 @@ Introduction
 ************
 Inflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatibility between some observed data and a given causal relationship.
 
-Version 0.1 of this package implements the inflation technique for quantum causal compatibility. For details, see `Wolfe et al. "Quantum inflation: A general approach to quantum causal compatibility." Physical Review X 11 (2), 021043 (2021) <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043>`_. The inflation technique for classical causal compatibility will be implemented in a future update.
+Version 1.1 of this package implements the inflation technique for classical, quantum and post-quantum causal compatibility. For details, see `Wolfe et al. "Quantum inflation: A general approach to quantum causal compatibility." Physical Review X 11 (2), 021043 (2021) <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043>`_.
 
 Examples of use of this package include:
 
@@ -17,6 +17,7 @@ Examples of use of this package include:
 - Optimization over classical distributions.
 - Standard `Navascues-Pironio-Acin hierarchy <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401>`_.
 - Scenarios with partial information.
+- Possibilistic compatibility with a causal network.
 
 In the `Tutorial <https://ecboghiu.github.io/inflation/_build/html/tutorial.html>`_ and `Examples <https://ecboghiu.github.io/inflation/_build/html/examples.html>`_ all the above are explained in more detail.
 
