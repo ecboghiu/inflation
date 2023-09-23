@@ -370,18 +370,18 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 blc = buc = b
 
                 ub_col = upper_bounds.col
-                ub_data = upper_bounds.toarray().ravel()
+                ub_data = np.zeros(nof_primal_variables)
+                ub_data[ub_col] = upper_bounds.data
                 lb_col = lower_bounds.col
-                lb_data = lower_bounds.toarray().ravel()
+                lb_data = np.zeros(nof_primal_variables)
+                lb_data[lb_col] = lower_bounds.data
 
                 # Set bound keys and bound values for variables
+                blx = np.zeros(nof_primal_variables)
+                bux = np.zeros(nof_primal_variables)
+                bkx = [mosek.boundkey.fr] * nof_primal_variables
                 if default_non_negative:
-                    blx = np.zeros(nof_primal_variables)
-                    bkx = [mosek.boundkey.lo] * nof_primal_variables
-                else:
-                    blx = [-inf] * nof_primal_variables
-                    bkx = [mosek.boundkey.fr] * nof_primal_variables
-                bux = [+inf] * nof_primal_variables
+                    lb_col = np.arange(nof_primal_variables)
                 for col in range(nof_primal_variables):
                     if col in lb_col and col in ub_col:
                         bkx[col] = mosek.boundkey.ra
@@ -391,8 +391,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                         bkx[col] = mosek.boundkey.lo
                         blx[col] = lb_data[col]
                     elif col in ub_col:
-                        bkx[col] = mosek.boundkey.ra if default_non_negative \
-                            else mosek.boundkey.up
+                        bkx[col] = mosek.boundkey.up
                         bux[col] = ub_data[col]
                 if relax_known_vars or relax_inequalities:
                     bkx[-1] = mosek.boundkey.fr
