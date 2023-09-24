@@ -1082,7 +1082,7 @@ class InflationSDP:
 
 
 
-    def reset(self, which: Union[str, List[str]]) -> None:
+    def reset(self, which: Union[str, List[str]] = "all") -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
 
         Parameters
