@@ -438,7 +438,7 @@ class InflationLP(object):
         output_dict = defaultdict(int)
         for k, v in input_dict_copy.items():
             if not np.isclose(v, 0):
-                output_dict[self._sanitise_monomial(k)] += v
+                output_dict[self._sanitise_monomial(k)] += float(v)
         return output_dict
 
     def set_objective(self,

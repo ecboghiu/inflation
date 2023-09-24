@@ -451,7 +451,7 @@ class InflationSDP:
         output_dict = defaultdict(int)
         for k, v in input_dict_copy.items():
             if not np.isclose(v, 0):
-                output_dict[self._sanitise_moment(k)] += v
+                output_dict[self._sanitise_moment(k)] += float(v)
         return output_dict
 
     @property
