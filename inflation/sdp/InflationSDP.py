@@ -795,9 +795,17 @@ class InflationSDP:
                              clean: bool = True,
                              chop_tol: float = 1e-10,
                              round_decimals: int = 3) -> sp.core.add.Add:
-        """Give certificate as dictionary with monomials as keys and
-        their coefficients in the certificate as the values. The certificate
-        of incompatibility is ``cert < 0``.
+        """Give the polynomial certificate as a dictionary with monomials as
+        keys and their coefficients as values. The certificate of
+        incompatibility is read as ``cert < 0``. 
+        
+        If the certificate is evaluated on a point giving a negative value, this
+        guarantess that the compatibility test for the same point is infeasible
+        provided the set of constraints of the program does not change. Warning:
+        when using ``use_lpi_constraints=True`` the set of constraints depends
+        on the specified distribution, thus the certificate is not guaranteed to
+        apply.
+
 
         Parameters
         ----------
@@ -838,6 +846,13 @@ class InflationSDP:
                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert < 0``.
+        
+        If the certificate is evaluated on a point giving a negative value, this
+        guarantess that the compatibility test for the same point is infeasible
+        provided the set of constraints of the program does not change. Warning:
+        when using ``use_lpi_constraints=True`` the set of constraints depends
+        on the specified distribution, thus the certificate is not guaranteed to
+        apply.
 
         Parameters
         ----------
@@ -884,6 +899,13 @@ class InflationSDP:
         """Give the certificate as a string with the notation of the operators
         in the moment matrix. The expression is in the form such that
         satisfaction implies incompatibility.
+        
+        If the certificate is evaluated on a point giving a negative value, this
+        guarantess that the compatibility test for the same point is infeasible
+        provided the set of constraints of the program does not change. Warning:
+        when using ``use_lpi_constraints=True`` the set of constraints depends
+        on the specified distribution, thus the certificate is not guaranteed to
+        apply.
 
         Parameters
         ----------

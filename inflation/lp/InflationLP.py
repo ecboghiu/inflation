@@ -703,6 +703,13 @@ class InflationLP(object):
         """Give certificate as dictionary with monomials as keys and
         their coefficients in the certificate as the values. The certificate
         of incompatibility is ``cert < 0``.
+        
+        If the certificate is evaluated on a point giving a negative value, this
+        guarantess that the compatibility test for the same point is infeasible
+        provided the set of constraints of the program does not change. Warning:
+        when using ``use_lpi_constraints=True`` the set of constraints depends
+        on the specified distribution, thus the certificate is not guaranteed to
+        apply.
 
         Parameters
         ----------
@@ -743,6 +750,13 @@ class InflationLP(object):
                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert < 0``.
+
+        If the certificate is evaluated on a point giving a negative value, this
+        guarantess that the compatibility test for the same point is infeasible
+        provided the set of constraints of the program does not change. Warning:
+        when using ``use_lpi_constraints=True`` the set of constraints depends
+        on the specified distribution, thus the certificate is not guaranteed to
+        apply.
 
         Parameters
         ----------
@@ -789,6 +803,13 @@ class InflationLP(object):
         """Give the certificate as a string of a sum of probabilities. The
         expression is in the form such that its satisfaction implies
         incompatibility.
+        
+        If the certificate is evaluated on a point giving a negative value, this
+        guarantess that the compatibility test for the same point is infeasible
+        provided the set of constraints of the program does not change. Warning:
+        when using ``use_lpi_constraints=True`` the set of constraints depends
+        on the specified distribution, thus the certificate is not guaranteed to
+        apply.
 
         Parameters
         ----------
