@@ -696,6 +696,47 @@ class InflationLP(object):
     ###########################################################################
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES               #
     ###########################################################################
+    def certificate_as_dict(self,
+                             clean: bool = True,
+                             chop_tol: float = 1e-10,
+                             round_decimals: int = 3) -> sp.core.add.Add:
+        """Give certificate as dictionary with monomials as keys and
+        their coefficients in the certificate as the values. The certificate
+        of incompatibility is ``cert < 0``.
+
+        Parameters
+        ----------
+        clean : bool, optional
+            If ``True``, eliminate all coefficients that are smaller than
+            ``chop_tol``, normalise and round to the number of decimals
+            specified by ``round_decimals``. By default ``True``.
+        chop_tol : float, optional
+            Coefficients in the dual certificate smaller in absolute value are
+            set to zero. By default ``1e-10``.
+        round_decimals : int, optional
+            Coefficients that are not set to zero are rounded to the number of
+            decimals specified. By default ``3``.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the certificate in terms or probabilities and
+            marginals. The certificate of incompatibility is ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationSDP.solve()\" first.")
+        if len(self.semiknown_moments) > 0:
+            warn("Beware that, because the problem contains linearized " +
+                 "polynomial constraints, the certificate is not guaranteed " +
+                 "to apply to other distributions.")
+        if clean and not np.allclose(list(dual.values()), 0.):
+            dual = clean_coefficients(dual, chop_tol, round_decimals)
+
+        return {self.monomial_from_name[k]: v for k, v in dual.items()}
+    
     def certificate_as_probs(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
