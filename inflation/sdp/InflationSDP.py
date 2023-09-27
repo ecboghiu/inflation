@@ -419,7 +419,7 @@ class InflationSDP:
         self.extra_equalities = []  # reset every time
         if not extra_equalities or extra_equalities is None:
             return
-        self.extra_equalities = [self._sanitize_dict(eq)
+        self.extra_equalities = [self._sanitise_dict(eq)
                                  for eq in extra_equalities]
 
     def set_extra_inequalities(self,
@@ -436,23 +436,8 @@ class InflationSDP:
         self.extra_inequalities = []  # reset every time
         if not extra_inequalities or extra_inequalities is None:
             return
-        self.extra_inequalities = [self._sanitize_dict(ineq)
+        self.extra_inequalities = [self._sanitise_dict(ineq)
                                    for ineq in extra_inequalities]
-
-    def _sanitize_dict(self, input_dict: Any) -> Dict:
-        if isinstance(input_dict, sp.core.expr.Expr):
-            if input_dict.free_symbols:
-                input_dict_copy = {k: float(v) for k, v in sp.expand(
-                    input_dict).as_coefficients_dict().items()}
-            else:
-                input_dict_copy = dict()
-        else:
-            input_dict_copy = input_dict
-        output_dict = defaultdict(int)
-        for k, v in input_dict_copy.items():
-            if not np.isclose(v, 0):
-                output_dict[self._sanitise_moment(k)] += float(v)
-        return output_dict
 
     @property
     def moment_equalities(self) -> list[dict]:
@@ -590,7 +575,7 @@ class InflationSDP:
                      + "fixed marginals.")
             sign = (1 if self.maximize else -1)
             self.objective = {mon: (sign * coeff) for mon, coeff
-                              in self._sanitize_dict(objective).items()}
+                              in self._sanitise_dict(objective).items()}
             self.objective.setdefault(self.One, 0)
             surprising_objective_terms = {mon for mon in self.objective.keys()
                                           if mon not in self.moments}
@@ -1472,6 +1457,21 @@ class InflationSDP:
         else:
             raise Exception(f"sanitise_monomial: {moment} is of type " +
                             f"{type(moment)} and is not supported.")
+
+    def _sanitise_dict(self, input_dict: Any) -> Dict:
+        if isinstance(input_dict, sp.core.expr.Expr):
+            if input_dict.free_symbols:
+                input_dict_copy = {k: float(v) for k, v in sp.expand(
+                    input_dict).as_coefficients_dict().items()}
+            else:
+                input_dict_copy = dict()
+        else:
+            input_dict_copy = input_dict
+        output_dict = defaultdict(int)
+        for k, v in input_dict_copy.items():
+            if not np.isclose(v, 0):
+                output_dict[self._sanitise_moment(k)] += v
+        return output_dict
 
     def _to_inflation_repr_1d(self,
                               lexmon: np.ndarray,
