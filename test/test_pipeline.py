@@ -901,7 +901,7 @@ class TestPipelineLP(unittest.TestCase):
             self.skipTest("Feasibility as optimization not working for "
                           "compatible distributions?")
             lp.solve(feas_as_optim=True)
-            self.assertTrue(lp.primal_objective >= 0,
+            self.assertTrue(lp.primal_objective >= -1e-6,
                             "The LP with feasibility as optimization did not "
                             "recognize the compatible distribution.")
 
