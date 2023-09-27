@@ -61,8 +61,8 @@ class InflationLP(object):
             Whether to set all variables to be non-negative by default. By
             default ``True``.
         include_all_outcomes : bool, optional
-            Whether to include all outcomes in the LP, even if they are not
-            used in the scenario. By default ``False``.
+            Whether to include all outcomes in the LP, as opposed to using 
+            Collins-Gisin notation when possible. By default ``False``.
         verbose : int, optional
             Optional parameter for level of verbose:
                 * 0: quiet (default),
