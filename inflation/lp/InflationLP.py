@@ -1024,7 +1024,7 @@ class InflationLP(object):
             except AttributeError:
                 pass
             self.monomial_from_atoms[key] = mon
-            self.monomial_from_name[mon.name] = mon  # TODO: Add simple name and complex name
+            self.monomial_from_name[mon.name] = mon
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMoment:
