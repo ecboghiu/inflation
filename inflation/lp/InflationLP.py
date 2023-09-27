@@ -492,7 +492,7 @@ class InflationLP(object):
     def solve(self,
               relax_known_vars: bool = False,
               relax_inequalities: bool = False,
-              dualise: bool = True,
+              solve_dual: bool = True,
               solverparameters: dict = None,
               verbose: int = None,
               default_non_negative: bool = None,
@@ -511,7 +511,7 @@ class InflationLP(object):
         relax_inequalities : bool, optional
             Do feasibility as optimization where each inequality is relaxed by
             the non-negative slack variable lambda. By default, ``False``.
-        dualise : bool, optional
+        solve_dual : bool, optional
             Optimize the dual problem (recommended). By default ``False``.
         solverparameters : dict, optional
             Extra parameters to be sent to the solver. By default ``None``.
@@ -557,7 +557,7 @@ class InflationLP(object):
                      "verbose": real_verbose,
                      "default_non_negative": real_default_non_negative,
                      "solverparameters": solverparameters,
-                     "solve_dual": dualise})
+                     "solve_dual": solve_dual})
 
         self.solution_object = solveLP(**args)
         self.success = self.solution_object["success"]
