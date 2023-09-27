@@ -169,7 +169,7 @@ class InflationLP(object):
         # These next properties are reset during generate_lp, but are needed in
         # init so as to be able to test the Monomial constructor function
         # without generate_lp.
-        #TODO: Enable test of Monomial constructor without generate_lp!
+
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
