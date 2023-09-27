@@ -39,7 +39,7 @@ def convert_to_human_readable(problem):
     semiknown_replacer = np.vectorize(lambda x: semiknowns.get(x, str(x)))
     # Replacer for remaining symbols
     monomials = dict()
-    for mon in problem.monomials:
+    for mon in problem.moments:
         monomials[mon.idx] = mon.name.replace(", ", ";")
 
     def replace_known(monom):
@@ -157,7 +157,7 @@ def write_to_mat(problem, filename):
     upperbounds = [[mon.idx + offset, bnd]
                    for mon, bnd in problem.moment_upperbounds.items()]
     names       = np.array([[mon.idx + offset, mon.name]
-                             for mon in problem.monomials], dtype=object)
+                            for mon in problem.moments], dtype=object)
     equalities  = []
     for eq in problem.moment_equalities:
         equality = {'moments': np.array([mon.idx + offset for mon in eq]),

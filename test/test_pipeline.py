@@ -1,8 +1,9 @@
 import unittest
 import numpy as np
 import warnings
+from itertools import product
 
-from inflation import InflationProblem, InflationSDP
+from inflation import InflationProblem, InflationSDP, InflationLP
 
 bilocalDAG = {"h1": ["A", "B"], "h2": ["B", "C"]}
 bilocality = InflationProblem(dag=bilocalDAG,
@@ -60,7 +61,8 @@ class TestMonomialGeneration(unittest.TestCase):
             C_0_1_0_0*C_0_2_0_0]
     actual_cols = []
     for col in cols:
-        actual_cols.append(bilocalSDP._interpret_name(col))
+        actual_cols.append(bilocalSDP.mon_to_lexrepr(bilocalSDP._interpret_name(col)))
+    actual_cols_2d = [bilocalSDP._lexorder[lexmon] for lexmon in actual_cols]
 
     def test_generating_columns_c(self):
         truth = 37
@@ -79,7 +81,7 @@ class TestMonomialGeneration(unittest.TestCase):
                          " were expected.")
 
     def test_generation_from_columns(self):
-        columns = bilocalSDP.build_columns(self.actual_cols)
+        columns = bilocalSDP.build_columns(self.actual_cols_2d)
         areequal = all(np.array_equal(r[0].T, np.array(r[1]).T)
                        for r in zip(columns, self.actual_cols))
         self.assertTrue(areequal, "The direct copying of columns is failing.")
@@ -98,16 +100,16 @@ class TestMonomialGeneration(unittest.TestCase):
         self.assertTrue(areequal,
                         "Parsing NPA levels with string description fails.")
         columns = bilocalSDP.build_columns("local2", max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in self.actual_cols))
         self.assertTrue(len(diff) == 0,
                         "Parsing local levels with string description fails.")
         columns = bilocalSDP.build_columns("local221", max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in self.actual_cols[:-1]))
         self.assertTrue(len(diff) == 0,
                         "Parsing local levels with individual string " +
@@ -116,26 +118,26 @@ class TestMonomialGeneration(unittest.TestCase):
                                            max_monomial_length=2)
         physical = (self.actual_cols[:22] + [self.actual_cols[24]]
                     + [self.actual_cols[26]] + self.actual_cols[32:])
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in physical))
         self.assertTrue(len(diff) == 0,
                         "Parsing physical levels with global string " +
                         "description fails.")
         columns = bilocalSDP.build_columns("physical", max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in physical))
         self.assertTrue(len(diff) == 0,
                         "Parsing physical levels without further " +
                         "description fails.")
         columns = bilocalSDP.build_columns("physical121",
                                            max_monomial_length=2)
-        diff = set(bilocalSDP._from_2dndarray(col) for col in columns
+        diff = set(tuple(col) for col in columns
                    ).difference(
-                       set(bilocalSDP._from_2dndarray(col)
+                       set(tuple(col)
                            for col in (self.actual_cols[:9]
                                        + self.actual_cols[10:22]
                                        + [self.actual_cols[24]]
@@ -148,10 +150,12 @@ class TestMonomialGeneration(unittest.TestCase):
     def test_generation_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         columns  = oneParty.build_columns([[], [0, 0]])
-        truth    = [[],
-                    [[1, 1, 0, 0], [1, 1, 1, 0]],
-                    [[1, 1, 1, 0], [1, 1, 0, 0]]]
-        truth    = [np.array(mon) for mon in truth]
+        truth    = [np.array([[1, 1, 0, 0]]),
+                    np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
+                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]]),
+                    np.array([[1, 1, 1, 0]])]
+        truth    = [np.empty((0,4), dtype=int)] + [oneParty.mon_to_lexrepr(mon) 
+                                                   for mon in truth]
         self.assertTrue(len(columns) == len(truth),
                         "Generating columns with identities is not producing "
                         + "the correct number of columns.")
@@ -159,13 +163,14 @@ class TestMonomialGeneration(unittest.TestCase):
                        for r in zip(columns, truth))
         self.assertTrue(areequal,
                         "The column generation is not capable of handling " +
-                        "monomials that reduce to the identity")
+                        "monomials that reduce to the identity" +
+                        f"\ngot: {columns} \nexpected: {truth}")
 
 
 class TestReset(unittest.TestCase):
     sdp = InflationSDP(trivial)
     sdp.generate_relaxation("npa1")
-    physical_bounds = {m: 0. for m in sdp.physical_monomials}
+    physical_bounds = {m: 0. for m in sdp.hermitian_moments}
     del physical_bounds[sdp.One]
 
     def prepare_objects(self, infSDP):
@@ -253,6 +258,34 @@ class TestReset(unittest.TestCase):
                         "Resetting the bounds resets the objective function.")
 
 
+class TestResetLP(unittest.TestCase):
+    lp = InflationLP(trivial, nonfanout=False)
+    lp._generate_lp()
+
+    def setUp(self) -> None:
+        var1 = "<v_1_0_0 v_1_1_0>"
+        var2 = "pv(0|1)"
+        self.lp.set_objective({var1: 1}, "max")
+        self.lp.set_bounds({var1: 0.9}, "up")
+        self.lp.set_bounds({var1: 0.1}, "lo")
+        self.lp.set_values({var2: 0.5})
+
+    def test_reset_all(self):
+        self.lp.reset("all")
+        self.assertEqual(self.lp.moment_lowerbounds, dict(),
+                         "Resetting lower bounds failed.")
+        self.assertEqual(self.lp.moment_upperbounds, dict(),
+                         "Resetting upper bounds failed.")
+        self.assertEqual(self.lp.objective, dict(),
+                         "Resetting objective failed.")
+        self.assertEqual(self.lp.semiknown_moments, dict(),
+                         "Resetting known values failed to empty "
+                         "semiknown_moments.")
+        self.assertEqual(self.lp.known_moments, {self.lp.One: 1.},
+                         "Resetting known values failed to empty "
+                         "known_moments.")
+
+
 class TestSDPOutput(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -327,7 +360,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_CHSH(self):
         sdp = InflationSDP(self.bellScenario)
         sdp.generate_relaxation("npa1")
-        self.assertEqual(len(sdp.generating_monomials), 5,
+        self.assertEqual(sdp.n_columns, 5,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here.
                          "The count of knowable moments is wrong.")
@@ -381,7 +414,7 @@ class TestSDPOutput(unittest.TestCase):
                                 order=("A", "B", "C", "D"))
         sdp = InflationSDP(prob)
         sdp.generate_relaxation("npa2")
-        equalities = sdp.moment_equalities
+        equalities = sdp.minimal_equalities
 
         self.assertEqual(len(equalities), 738,
                          "Failing to obtain the correct number of implicit " +
@@ -402,7 +435,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_GHZ_commuting(self):
         sdp = InflationSDP(self.cutInflation_c)
         sdp.generate_relaxation("local1")
-        self.assertEqual(len(sdp.generating_monomials), 18,
+        self.assertEqual(sdp.n_columns, 18,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here.
                          "The count of knowable moments is wrong.")
@@ -414,6 +447,18 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.status, "infeasible",
                          "The commuting SDP is not identifying incompatible " +
                          "distributions.")
+        lp_fanout = InflationLP(self.cutInflation_c, nonfanout=False)
+        lp_fanout.set_distribution(self.GHZ(0.5 + 1e-2))
+        lp_fanout.solve()
+        self.assertEqual(lp_fanout.success, False,
+                         "The fanout LP is not identifying incompatible " +
+                         "distributions.")
+        lp_nonfanout = InflationLP(self.cutInflation_c, nonfanout=True)
+        lp_nonfanout.set_distribution(self.GHZ(0.5 + 1e-2))
+        lp_nonfanout.solve()
+        self.assertEqual(lp_nonfanout.success, False,
+                         "The nonfanout LP is not identifying incompatible " +
+                         "distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective <= 0,
                         "The commuting SDP with feasibility as optimization " +
@@ -423,6 +468,16 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.status, "feasible",
                          "The commuting SDP is not recognizing compatible " +
                          "distributions.")
+        lp_fanout.set_distribution(self.GHZ(0.5 - 1e-2))
+        lp_fanout.solve()
+        self.assertEqual(lp_fanout.success, True,
+                         "The fanout LP is not recognizing compatible " +
+                         "distributions.")
+        lp_nonfanout.set_distribution(self.GHZ(0.5 - 1e-2))
+        lp_nonfanout.solve()
+        self.assertEqual(lp_nonfanout.success, True,
+                         "The nonfanout LP is not identifying incompatible " +
+                         "distributions.")
         sdp.solve(feas_as_optim=True)
         self.assertTrue(sdp.primal_objective >= 0,
                         "The commuting SDP with feasibility as optimization " +
@@ -431,7 +486,7 @@ class TestSDPOutput(unittest.TestCase):
     def test_GHZ_NC(self):
         sdp = InflationSDP(self.cutInflation)
         sdp.generate_relaxation("local1")
-        self.assertEqual(len(sdp.generating_monomials), 18,
+        self.assertEqual(sdp.n_columns, 18,
                          "The number of generating columns is not correct.")
         self.assertEqual(sdp.n_knowable, 8 + 1,  # only '1' is included here.
                          "The count of knowable moments is wrong.")
@@ -439,8 +494,8 @@ class TestSDPOutput(unittest.TestCase):
                          "The count of unknowable moments is wrong.")
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
-                        (0.5+1e-2)/2 + (0.5-1e-2)/8),
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.moments[8]],
+                                   (0.5+1e-2) / 2 + (0.5-1e-2) / 8),
                         "Setting the distribution is failing.")
         sdp.solve()
         self.assertTrue(sdp.status in ["infeasible", "unknown"],
@@ -451,8 +506,8 @@ class TestSDPOutput(unittest.TestCase):
                         "The NC SDP with feasibility as optimization is not " +
                         "identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
-        self.assertTrue(np.isclose(sdp.known_moments[sdp.monomials[8]],
-                        (0.5-1e-2)/2 + (0.5+1e-2)/8),
+        self.assertTrue(np.isclose(sdp.known_moments[sdp.moments[8]],
+                                   (0.5-1e-2) / 2 + (0.5+1e-2) / 8),
                         "Re-setting the distribution is failing.")
         sdp.solve()
         self.assertEqual(sdp.status, "feasible",
@@ -509,12 +564,12 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_lpi_bounds(self):
         sdp  = InflationSDP(trivial)
-        cols = [[],
-                [[1, 2, 0, 0],
-                 [1, 2, 1, 0]],
-                [[1, 1, 0, 0],
+        cols = [np.array([]),
+                np.array([[1, 2, 0, 0],
+                 [1, 2, 1, 0]]),
+                np.array([[1, 1, 0, 0],
                  [1, 2, 0, 0],
-                 [1, 2, 1, 0]]]
+                 [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
         sdp.set_distribution(np.ones((2, 1)) / 2,
                              use_lpi_constraints=True)
@@ -530,16 +585,16 @@ class TestSDPOutput(unittest.TestCase):
 
     def test_new_indices(self):
         sdp  = InflationSDP(trivial)
-        cols = [[],
-                [[1, 1, 0, 0],
-                 [1, 2, 0, 0],
-                 [1, 2, 1, 0]]]
+        cols = [np.array([]),
+                np.array([[1, 1, 0, 0],
+                          [1, 2, 0, 0],
+                          [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
         sdp.set_distribution(np.ones((2, 1)) / 2,
                              use_lpi_constraints=True)
         new_mon_indices = np.array([semi[1][1].idx
                                     for semi in sdp.semiknown_moments.items()])
-        self.assertTrue(np.all(new_mon_indices > len(sdp.monomials)),
+        self.assertTrue(np.all(new_mon_indices > len(sdp.moments)),
                         "The new unknown monomials that appear when applying" +
                         " LPI constraints are not assigned correct indices.")
 
@@ -561,6 +616,80 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.status, "feasible",
                          "A feasible support for the Bell scenario is not " +
                          "being recognized as such.")
+
+
+class TestLPOutput(unittest.TestCase):
+    def test_bounds(self):
+        ub = 0.8
+        lb = 0.2
+        very_trivial = InflationProblem({"a": ["b"]}, outcomes_per_party=[2])
+        lp = InflationLP(very_trivial)
+        operator = np.asarray(lp.monomials).flatten()[1]
+        with self.subTest(msg="Setting upper bound"):
+            lp.set_objective({operator: 1}, "max")
+            lp.set_bounds({operator: ub}, "up")
+            lp.solve()
+            self.assertAlmostEqual(
+                lp.objective_value, ub,
+                msg=f"Setting upper bounds to monomials failed. The result "
+                    f"obtained for {{max x s.t. x <= {ub}}} is "
+                    f"{lp.objective_value}.")
+        with self.subTest(msg="Setting lower bound"):
+            lp.set_objective({operator: 1}, "min")
+            lp.set_bounds({operator: lb}, "lo")
+            lp.solve()
+            self.assertAlmostEqual(
+                lp.objective_value, lb,
+                msg=f"Setting lower bounds to monomials failed. The result "
+                    f"obtained for {{min x s.t. x >= {lb}}} is "
+                    f"{lp.objective_value}.")
+
+    def test_instrumental(self):
+        lp = InflationLP(TestSDPOutput.instrumental, nonfanout=False)
+        with self.subTest(msg="Infeasible Bonet's inequality"):
+            lp.set_distribution(TestSDPOutput.incompatible_dist)
+            lp.solve(feas_as_optim=False)
+            self.assertTrue(lp.status in ["prim_infeas_cer", "dual_infeas_cer",
+                                          "unknown"],
+                            "Failed to detect the infeasibility of the "
+                            "distribution that maximally violates Bonet's "
+                            "inequality.")
+        with self.subTest(msg="Infeasible normalization"):
+            unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
+            lp.set_distribution(unnormalized_dist)
+            lp.solve(feas_as_optim=False)
+            self.assertTrue(lp.status in ["prim_infeas_cer", "dual_infeas_cer",
+                                          "unknown"],
+                            "Failed to detect the infeasibility of a "
+                            "distribution that violates normalization.")
+        with self.subTest(msg="Feasible instrumental"):
+            compatible_dist = unnormalized_dist / 4
+            lp.set_distribution(compatible_dist)
+            lp.solve(feas_as_optim=False)
+            self.assertEqual(lp.status, "optimal",
+                             "A feasible distribution for the instrumental "
+                             "scenario is not being recognized as such.")
+
+    def test_supports(self):
+        lp = InflationLP(TestSDPOutput.bellScenario, supports_problem=True,
+                         nonfanout=False)
+        with self.subTest(msg="Incompatible support"):
+            pr_support = np.zeros((2, 2, 2, 2))
+            for a, b, x, y in np.ndindex(*pr_support.shape):
+                if x*y == (a + b) % 2:
+                    pr_support[a, b, x, y] = np.random.randn()
+            lp.set_distribution(pr_support)
+            lp.solve(feas_as_optim=False)
+            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer"],
+                          "Failed to detect the infeasibility of a support "
+                          "known to be incompatible.")
+        with self.subTest(msg="Compatible support"):
+            compatible_support = np.ones((2, 2, 2, 2), dtype=float)
+            lp.set_distribution(compatible_support)
+            lp.solve(feas_as_optim=False)
+            self.assertEqual(lp.status, "optimal",
+                             "A feasible support for the Bell scenario was "
+                             "not recognized as such.")
 
 
 class TestSymmetries(unittest.TestCase):
@@ -599,44 +728,45 @@ class TestSymmetries(unittest.TestCase):
 
     def test_commutations_after_symmetrization(self):
         scenario = InflationSDP(trivial_c)
-        col_structure = [[],
-                         [[1, 2, 0, 0], [1, 2, 1, 0]],
-                         [[1, 1, 0, 0], [1, 2, 0, 0]],
-                         [[1, 1, 1, 0], [1, 2, 0, 0]],
-                         [[1, 1, 0, 0], [1, 2, 1, 0]],
-                         [[1, 1, 1, 0], [1, 2, 1, 0]],
-                         [[1, 1, 0, 0], [1, 1, 1, 0]]]
+        col_structure = [np.array([]),
+                         np.array([[1, 2, 0, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 2, 0, 0]]),
+                         np.array([[1, 1, 1, 0], [1, 2, 0, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 1, 0], [1, 2, 1, 0]]),
+                         np.array([[1, 1, 0, 0], [1, 1, 1, 0]])]
 
         scenario.generate_relaxation(col_structure)
-        self.assertTrue(np.array_equal(scenario.inflation_symmetries,
+        self.assertTrue(np.array_equal(scenario.columns_symmetries,
                                        [[0, 6, 2, 4, 3, 5, 1]]),
                         "The commutation relations of different copies are " +
                         "not applied properly after inflation symmetries.")
 
     def test_detected_symmetries(self):
         cols = bilocalSDP.build_columns('local1')
-        bilocalSDP.generating_monomials = cols
-        bilocalSDP.n_columns = len(cols)
-        bilocalSDP.genmon_hash_to_index = {
-                                bilocalSDP._from_2dndarray(op): i
-                                for i, op in enumerate(cols)}
-        syms = bilocalSDP._discover_inflation_symmetries()
+        # bilocalSDP.generating_monomials = cols
+        # bilocalSDP.generating_monomials_1d = list(map, bilocalSDP)
+        # bilocalSDP.n_columns = len(cols)
+        # bilocalSDP.genmon_hash_to_index = {
+        #                         bilocalSDP._from_2dndarray(op): i
+        #                         for i, op in enumerate(cols)}
+        syms = bilocalSDP._discover_columns_symmetries()
         # Make it a set so the order doesn't matter
         syms = set(tuple(s) for s in syms)
         # I simply copied the output at a time when we understand the code
         # to be working; this test simply detects if the code changes
-        syms_good = set(((0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
-                          13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
-                          27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
-                          39, 38, 37, 44, 43, 42, 41),
-                         (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
-                          12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
-                          22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
-                          34, 35, 36, 29, 30, 31, 32),
-                         (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
-                          11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
-                          23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
-                          35, 34, 33, 32, 31, 30, 29)))
+        syms_good = {(0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14,
+                      13, 16, 15, 18, 17, 20, 19, 24, 23, 22, 21, 28,
+                      27, 26, 25, 32, 31, 30, 29, 36, 35, 34, 33, 40,
+                      39, 38, 37, 44, 43, 42, 41),
+                     (0, 2, 1, 5, 6, 3, 4, 7, 8, 15, 16, 13, 14, 11,
+                      12, 9, 10, 19, 20, 17, 18, 25, 26, 27, 28, 21,
+                      22, 23, 24, 41, 42, 43, 44, 37, 38, 39, 40, 33,
+                      34, 35, 36, 29, 30, 31, 32),
+                     (0, 2, 1, 6, 5, 4, 3, 8, 7, 16, 15, 14, 13, 12,
+                      11, 10, 9, 20, 19, 18, 17, 28, 27, 26, 25, 24,
+                      23, 22, 21, 44, 43, 42, 41, 40, 39, 38, 37, 36,
+                      35, 34, 33, 32, 31, 30, 29)}
         self.assertEqual(syms, syms_good, "The symmetries are not being " +
                                           "detected correctly.")
 
@@ -645,8 +775,8 @@ class TestConstraintGeneration(unittest.TestCase):
     def test_norm_eqs_mon2index_mapping(self):
         sdp = InflationSDP(InflationProblem({'r': ['A']}, (3,), (3,), (3,)))
         sdp.generate_relaxation('npa2')
-        for i, mon in enumerate(sdp.generating_monomials):
-            self.assertTrue(i == sdp.genmon_hash_to_index[mon.tobytes()],
+        for i, lexmon in enumerate(sdp.generating_monomials_1d):
+            self.assertTrue(i == sdp.genmon_1d_to_index[tuple(lexmon)],
                             "Monomials in the generating list must be mapped "
                             + "to their index in the list under "
                             + "InflationSDP.genmon_hash_to_index for "
@@ -720,3 +850,268 @@ class TestConstraintGeneration(unittest.TestCase):
                          out_good,
                          "Column equalities are not being " +
                          "properly lifted to moment inequalities.")
+
+
+class TestPipelineLP(unittest.TestCase):
+    def _monomial_generation(self, **args):
+        with self.subTest(msg="Testing monomial generation"):
+            raw_n_columns = args["scenario"].raw_n_columns
+            truth = args["truth_columns"]
+            self.assertEqual(raw_n_columns, truth,
+                             f"There are {raw_n_columns} columns but {truth} "
+                             f"were expected.")
+
+    def _equalities(self, **args):
+        with self.subTest(msg="Testing equalities"):
+            equalities = args["scenario"].moment_equalities
+            truth = args["truth_eq"]
+            self.assertEqual(len(equalities), truth,
+                             f"There are {len(equalities)} equalities but "
+                             f"{truth} were expected.")
+            self.assertTrue(all(set(equality.values()) == {-1, 1}
+                                for equality in equalities),
+                            "Some implicit equalities lack a nontrivial "
+                            "left-hand or right-hand side.")
+
+    def _GHZ(self, **args):
+        lp = args["scenario"]
+        GHZ = args["GHZ"]
+        crit_cutoff = args["crit_cutoff"]
+        with self.subTest(msg="Testing GHZ, incompatible distribution"):
+            lp.set_distribution(GHZ(crit_cutoff + 1e-2))
+            lp.solve()
+            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer",
+                                      "unknown"],
+                          "The LP did not identify the incompatible "
+                          "distribution.")
+        with self.subTest(msg="Testing GHZ, incompatible distribution, "
+                              "feasibility as optimization"):
+            lp.solve(feas_as_optim=True)
+            self.assertTrue(lp.primal_objective <= 0,
+                            "The LP with feasibility as optimization did not "
+                            "identify the incompatible distribution.")
+        with self.subTest(msg="Testing GHZ, compatible distribution"):
+            lp.set_distribution(GHZ(crit_cutoff - 1e-2))
+            lp.solve()
+            self.assertEqual(lp.status, "optimal",
+                             "The LP did not recognize the compatible "
+                             "distribution.")
+        with self.subTest(msg="Testing GHZ, compatible distribution, "
+                              "feasibility as optimization"):
+            # self.skipTest("Feasibility as optimization not working for "
+            #               "compatible distributions?")
+            lp.solve(feas_as_optim=True)
+            self.assertTrue(lp.primal_objective >= -1e-6,
+                            "The LP with feasibility as optimization did not "
+                            "recognize the compatible distribution.")
+
+    def _run(self, **args):
+        self._monomial_generation(**args)
+        self._equalities(**args)
+        self._GHZ(**args)
+
+
+class TestInstrumental(TestPipelineLP):
+    instrumental = InflationProblem({"U_AB": ["A", "B"],
+                                     "A": ["B"]},
+                                    outcomes_per_party=(2, 2),
+                                    settings_per_party=(2, 1),
+                                    inflation_level_per_source=(1,),
+                                    order=("A", "B"))
+
+    def GHZ(self, v):
+        dist = np.full((2, 2, 2, 1), (1 - v) / 4)
+        dist[0, 0, 0, 0] = dist[0, 1, 1, 0] = v + (1 - v) / 4
+        return dist
+
+    def test_instrumental_fanout(self):
+        inst = InflationLP(self.instrumental, nonfanout=False)
+        args = {"scenario": inst,
+                "truth_columns": 36,
+                "truth_eq": 20,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1/3}
+        self._run(**args)
+
+    def test_instrumental_nonfanout(self):
+        inst = InflationLP(self.instrumental, nonfanout=True)
+        args = {"scenario": inst,
+                "truth_columns": 15,
+                "truth_eq": 6,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1/3}
+        self._run(**args)
+
+
+class TestBell(TestPipelineLP):
+    bellScenario = InflationProblem({"Lambda": ["A", "B"]},
+                                    outcomes_per_party=[2, 2],
+                                    settings_per_party=[2, 2],
+                                    inflation_level_per_source=[1])
+
+    def _CHSH(self, **args):
+        lp = args["scenario"]
+        truth = args["truth_obj"]
+        lp.set_objective({1: 2.0,
+                          "pA(0|0)": -4.0,
+                          "pB(0|0)": -4.0,
+                          "pAB(00|11)": -4.0,
+                          "pAB(00|00)": 4.0,
+                          "pAB(00|01)": 4.0,
+                          "pAB(00|10)": 4.0}, "max")
+        with self.subTest(msg="Testing max CHSH"):
+            lp.solve()
+            self.assertAlmostEqual(lp.objective_value, truth,
+                                   msg=f"The LP is not recovering max(CHSH) = "
+                                       f"{truth}.")
+        # Biased CHSH?
+
+    def GHZ(self, v):
+        dist = np.full((2, 2, 2, 2), (1 - v) / 4)
+        dist[0, 0, 0, 0] = dist[0, 1, 1, 0] = v + (1 - v) / 4
+        return dist
+
+    def test_bell_fanout(self):
+        bell = InflationLP(self.bellScenario, nonfanout=False)
+        args = {"scenario": bell,
+                "truth_columns": 16,
+                "truth_obj": 2,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 0.2}
+        self._run(**args)
+        # self._CHSH(**args)
+
+    def test_bell_nonfanout(self):
+        bell = InflationLP(self.bellScenario, nonfanout=True)
+        args = {"scenario": bell,
+                "truth_columns": 9,
+                "truth_obj": 2,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 0.2}
+        self._run(**args)
+        # self._CHSH(**args)
+
+
+class TestTriangle(TestPipelineLP):
+    triangle = InflationProblem({"lambda": ["a", "b"],
+                                 "mu": ["b", "c"],
+                                 "sigma": ["a", "c"]},
+                                outcomes_per_party=[2, 2, 2],
+                                settings_per_party=[1, 1, 1],
+                                inflation_level_per_source=[1, 1, 1],
+                                order=['a', 'b', 'c'])
+
+    def GHZ(self, v):
+        dist = np.zeros((2, 2, 2, 1, 1, 1))
+        dist[0, 0, 0] = dist[1, 1, 1] = 1 / 2
+        return v * dist + (1 - v) / 8
+
+    def test_triangle_fanout(self):
+        triangle = InflationLP(self.triangle, nonfanout=False)
+        args = {"scenario": triangle,
+                "truth_columns": 8,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+
+    def test_triangle_nonfanout(self):
+        triangle = InflationLP(self.triangle, nonfanout=True)
+        args = {"scenario": triangle,
+                "truth_columns": 8,
+                "truth_eq": 0,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+
+
+class TestEvans(TestPipelineLP):
+    evans = InflationProblem({"U_AB": ["A", "B"],
+                              "U_BC": ["B", "C"],
+                              "B": ["A", "C"]},
+                             outcomes_per_party=(2, 2, 2),
+                             settings_per_party=(1, 1, 1),
+                             inflation_level_per_source=(1, 1),
+                             order=("A", "B", "C"))
+
+    def GHZ(self, v):
+        dist = np.zeros((2, 2, 2, 1, 1, 1))
+        for x, y, z in product(range(2), repeat=3):
+            dist[x, y, z] = (1 + v * (-1) ** (x + y + y * z)) / 8
+        return dist
+
+    def test_evans_fanout(self):
+        evans = InflationLP(self.evans, nonfanout=False)
+        args = {"scenario": evans,
+                "truth_columns": 48,
+                "truth_eq": 16,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+
+    def test_evans_nonfanout(self):
+        evans = InflationLP(self.evans, nonfanout=True)
+        args = {"scenario": evans,
+                "truth_columns": 27,
+                "truth_eq": 9,
+                "GHZ": self.GHZ,
+                "crit_cutoff": 1}
+        self._run(**args)
+        
+
+class TestFullNN(TestPipelineLP):
+    scenario = InflationProblem({'lambda': ['A', 'B'],
+                                     'NS': ['B', 'C']},
+                                [2, 4, 2], [3, 1, 3], 
+                                inflation_level_per_source=[1, 2],
+                                classical_sources=['lambda'],)
+
+    def _prob_EJM(self, v, theta=0):
+        p_bell = np.expand_dims((0, 1, -1, 0), axis=1)/np.sqrt(2)
+        rho_v = v * p_bell @ p_bell.conj().T + (1 - v) * np.eye(4)/4
+        sigmax = np.array([[0, 1], [1, 0]])
+        sigmay = np.array([[0, -1j], [1j, 0]])
+        sigmaz = np.array([[1, 0], [0, -1]])
+        A = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
+                for v in reversed(np.linalg.eigh(op)[1].T)] 
+                for op in [sigmax, sigmay, sigmaz]]
+        C = [[np.expand_dims(v, axis=1) @ np.expand_dims(v, axis=1).conj().T 
+                for v in reversed(np.linalg.eigh(op)[1].T)] 
+                for op in [sigmax, sigmay, sigmaz]]
+        r_plus = (1 + np.exp(1j*theta))/np.sqrt(2)
+        r_minus = (1 - np.exp(1j*theta))/np.sqrt(2)
+        e00 = np.expand_dims([1, 0, 0, 0], axis=1)
+        e01 = np.expand_dims([0, 1, 0, 0], axis=1)
+        e10 = np.expand_dims([0, 0, 1, 0], axis=1)
+        e11 = np.expand_dims([0, 0, 0, 1], axis=1)
+        psi1 = 1/2 * (np.exp(-1j*np.pi/4)*e00 - r_plus * e01 
+                        - r_minus * e10 + np.exp(-3/4*np.pi*1j)*e11)
+        psi2 = 1/2 * (np.exp(1j*np.pi/4)*e00 + r_minus * e01 
+                        + r_plus * e10 + np.exp(3/4*np.pi*1j)*e11)
+        psi3 = 1/2 * (np.exp(-1j*np.pi*3/4)*e00 + r_minus * e01 
+                        + r_plus * e10 + np.exp(-1/4*np.pi*1j)*e11)
+        psi4 = 1/2 * (np.exp(1j*np.pi*3/4)*e00 - r_plus * e01 
+                        - r_minus * e10 + np.exp(np.pi*1j/4)*e11)
+        B = [ [psi @ psi.conj().T for psi in [psi1, psi2, psi3, psi4] ]]
+        
+        p = np.zeros((2, 4, 2, 3, 1, 3))
+        state = np.kron(rho_v, rho_v)
+        for a, b, c, x, y, z in np.ndindex(p.shape):
+            mmnt = np.kron(np.kron(A[x][a], B[y][b]), C[z][c])
+            p[a, b, c, x, y, z] = np.real(np.trace(state @ mmnt))
+        return p
+    
+    def test_fullnetworknonlocality_3partite_line(self):
+        lp = InflationLP(self.scenario, nonfanout=True)
+        
+        best_theta = np.arccos(np.sqrt(5) / 3)
+        v_for_best_theta = 2 / np.sqrt(5)
+        
+        args = {"scenario": lp,
+                "truth_columns": 2048,
+                "truth_eq": 0,
+                "GHZ": lambda x: self._prob_EJM(x, theta=best_theta),
+                "crit_cutoff": v_for_best_theta}
+        self._run(**args)

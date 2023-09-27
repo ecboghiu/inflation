@@ -19,6 +19,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                          inequalities: List[Dict] = None,
                          equalities: List[Dict] = None,
                          solve_dual: bool = True,
+                         default_non_negative: bool = False,
                          feas_as_optim: bool = False,
                          verbose: int = 0,
                          solverparameters: Dict = {},
@@ -115,6 +116,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation. By
         default ``True``.
+    default_non_negative: bool, optional
+        Whether to set default primal variables as non-negative (True) or not
+        (False). By default, ``False``.
     feas_as_optim : bool, optional
         Whether to treat feasibility problems, where the objective is,
         constant, as an optimisation problem. By default ``False``.
@@ -318,6 +322,10 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             # Add constraints
             # ci + Tr Z Fi + \sum_j I_j A_ji + \sum_j E_j C_ji == 0
             ci_constraints = []
+            if default_non_negative:
+                domain = Domain.lessThan(0)
+            else:
+                domain = Domain.equalsTo(0)
             for i, x in enumerate(variables):
                 lhs = 0.0
                 if var_objective and x in var_objective:
@@ -340,14 +348,17 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 if var_equalities:
                     lhs = Expr.add(lhs, CtI[i])
                     CtI[i] = None
-                ci_constraints.append(M.constraint(f"c{i}",
-                                                   lhs,
-                                                   Domain.equalsTo(0)))
+                ci_constraints.append(M.constraint(f"c{i}", lhs, domain))
         else:
             # Set up the problem in primal formulation
 
             # Define variables
-            x_mosek = M.variable("x", len(variables), Domain.unbounded())
+            if default_non_negative:
+                domain = Domain.greaterThan(0)
+            else:
+                domain = Domain.unbounded()
+            x_mosek = M.variable("x", len(variables), domain)
+
 
             if var_inequalities:
                 b_mosek = Matrix.sparse(*b.shape,

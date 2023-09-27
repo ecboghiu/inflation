@@ -8,6 +8,8 @@ API Reference
 
    inflationsdp
 
+   inflationlp
+
    solvers
 
    optimization
