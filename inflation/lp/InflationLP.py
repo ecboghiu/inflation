@@ -1470,7 +1470,9 @@ class InflationLP(object):
         return self._coo_mat_to_dict(self.sparse_inequalities)
 
 
-    def _discover_inflation_orbits(self, _raw_monomials_as_lexboolvecs) -> np.ndarray:
+    def _discover_inflation_orbits(self, 
+                                   _raw_monomials_as_lexboolvecs: np.ndarray
+                                   ) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
         function outputs a list of all permutations.
