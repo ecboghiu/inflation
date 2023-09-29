@@ -440,12 +440,12 @@ class InflationSDP:
                                    for ineq in extra_inequalities]
 
     @property
-    def moment_equalities(self) -> list[dict]:
+    def moment_equalities(self) -> List[Dict]:
         """All equalities (minimal and extra) as one list of dictionaries."""
         return self.minimal_equalities + self.extra_equalities
 
     @property
-    def moment_inequalities(self) -> list[dict]:
+    def moment_inequalities(self) -> List[Dict]:
         """All inequalities (minimal and extra) as one list of dictionaries."""
         return self.minimal_inequalities + self.extra_inequalities
 
