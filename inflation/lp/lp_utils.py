@@ -13,6 +13,10 @@ from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
 from inflation.utils import partsextractor, expand_sparse_vec, vstack
+try:
+    import gurobipy as gp
+except ModuleNotFoundError:
+    pass
 
 
 def drop_zero_rows(coo_mat: coo_matrix):
@@ -530,6 +534,142 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 "x": x_values,
                 "term_code": term_tuple
             }
+
+
+def solve_Gurobi(objective: coo_matrix = blank_coo_matrix,
+                 known_vars: coo_matrix = blank_coo_matrix,
+                 inequalities: coo_matrix = blank_coo_matrix,
+                 equalities: coo_matrix = blank_coo_matrix,
+                 lower_bounds: coo_matrix = blank_coo_matrix,
+                 upper_bounds: coo_matrix = blank_coo_matrix,
+                 factorization_conditions: dict = None,
+                 default_non_negative: bool = True,
+                 verbose: int = 0,
+                 **kwargs
+                 ) -> Dict:
+    """Internal function to solve an LP with the Gurobi Optimizer API using
+    sparse matrices. Columns of each matrix correspond to a fixed order of
+    variables in the LP.
+    
+    Parameters
+    ----------
+    objective : coo_matrix, optional
+        Objective function with coefficients as matrix entries.
+    known_vars : coo_matrix, optional
+        Known values of the monomials with values as matrix entries.
+    inequalities : coo_matrix, optional
+        Inequality constraints in matrix form.
+    equalities : coo_matrix, optional
+        Equality constraints in matrix form.
+    lower_bounds : coo_matrix, optional
+        Lower bounds of variables with bounds as matrix entries.
+    upper_bounds : coo_matrix, optional
+        Upper bounds of variables with bounds as matrix entries.
+    factorization_conditions : dict, optional
+        Allows one to specify that certain variables are equal to the product of other variables
+    default_non_negative : bool, optional
+        Whether to set default primal variables as non-negative. By default,
+        ``True``.
+    verbose : int, optional
+        Verbosity. Higher means more messages. By default, 0.
+        
+    Returns
+    -------
+    dict
+        Primal objective value, problem status, success status, x values
+    """
+    if verbose > 1:
+        t0 = perf_counter()
+        t_total = perf_counter()
+        print("Starting pre-processing for the LP solver...")
+
+    env = gp.Env(empty=True)
+    if verbose == 0:
+        env.setParam('OutputFlag', 0)  # Supress output from solver
+    env.start()
+
+    # Create new model
+    m = gp.Model(env=env)
+
+    (nof_primal_inequalities, nof_primal_variables) = inequalities.shape
+    nof_primal_equalities = equalities.shape[0]
+    kv_matrix = expand_sparse_vec(known_vars)
+
+    # Create variables and set variable bounds
+    x = m.addMVar(shape=nof_primal_variables)
+    m.update()
+    if not default_non_negative:
+        x.lb = -gp.GRB.INFINITY
+    if lower_bounds.nnz > 0:
+        new_lb = x.lb
+        new_lb[lower_bounds.col] = lower_bounds.data
+        x.lb = new_lb
+    if upper_bounds.nnz > 0:
+        new_ub = x.ub
+        new_ub[upper_bounds.col] = upper_bounds.data
+        x.ub = new_ub
+
+    # Set objective
+    objective_vector = objective.toarray().ravel()
+    m.setObjective(objective_vector @ x, gp.GRB.MAXIMIZE)
+
+    # Add inequality constraint matrix
+    if inequalities.shape[0]:
+        m.addConstr(inequalities @ x >= 0, name="ineq")
+
+    # Add equality constraint matrix
+    if equalities.shape[0]:
+        m.addConstr(equalities @ x == 0, name="eq")
+
+    # Add known value constraint matrix
+    rhs_kv = known_vars.data
+    if len(rhs_kv):
+        m.addConstr(kv_matrix @ x == rhs_kv, name="kv")
+
+    # Add quadratic constraints
+    if factorization_conditions:
+        m.setParam("NonConvex", 2)
+        m.addConstrs((x[mon] == x[factors[0]] * x[factors[1]]
+                     for mon, factors in factorization_conditions.items()),
+                     name="fac")
+
+    collect()
+    if verbose > 1:
+        print("Pre-processing took",
+              format(perf_counter() - t0, ".4f"), "seconds.\n")
+        t0 = perf_counter()
+
+    # Solve the problem
+    if verbose > 0:
+        print("\nSolving the problem...\n")
+    m.optimize()
+    if verbose > 1:
+        print("Solving took", format(perf_counter() - t0, ".4f"),
+              "seconds.")
+
+    sc = gp.StatusConstClass
+    solution_statuses = {sc.__dict__[k]: k for k in sc.__dict__.keys()
+                         if 'A' <= k[0] <= 'Z'}
+    status_str = solution_statuses[m.Status]
+    if status_str == "OPTIMAL":
+        success = True
+        primal = m.ObjVal
+        x_values = x.X
+    else:
+        success = False
+        primal = None
+        x_values = None
+
+    if verbose > 1:
+        print("\nTotal execution time:",
+              format(perf_counter() - t_total, ".4f"), "seconds.")
+
+    return {
+        "primal_value": primal,
+        "status": status_str,
+        "success": success,
+        "x": x_values,
+    }
 
 
 def streamprinter(text: str) -> None:
