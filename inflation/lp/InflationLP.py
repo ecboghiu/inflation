@@ -534,6 +534,10 @@ class InflationLP(object):
                  "relax_known_vars=False, relax_inequalities=False, and "
                  "optimizing the objective...")
             relax_known_vars = relax_inequalities = False
+        if interpreter == "solve_Gurobi" and solve_dual is True:
+            warn("Gurobi does not support solving the dual problem. Use "
+                 "solveLP_sparse if you want to solve the dual problem. "
+                 "Setting solve_dual=False...")
         if verbose is None:
             real_verbose = self.verbose
         else:
