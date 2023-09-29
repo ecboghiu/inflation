@@ -516,6 +516,20 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 if np.isclose(certificate[x], 0):
                     del certificate[x]
 
+            # Problem-specific certificate
+            constraints_csr = constraints.tocsr()
+            constraints_as_str = []
+            for (row, b_value) in zip(constraints_csr, b):
+                c_as_str = ""
+                var_names = np.array(variables)[row.indices]
+                for (v, name) in zip(row.data, var_names):
+                    c_as_str += f"{v}*{name} + "
+                c_as_str = c_as_str[:-3]
+                if b_value != 0:
+                    c_as_str += f" - {b_value}"
+                constraints_as_str.append(c_as_str)
+            prob_cert = dict(zip(constraints_as_str, yy))
+
             if verbose > 1:
                 print("\nTotal execution time:",
                       format(perf_counter() - t_total, ".4f"), "seconds.")
@@ -528,7 +542,8 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 "dual_certificate": certificate,
                 "sparse_certificate": sparse_certificate,
                 "x": x_values,
-                "term_code": term_tuple
+                "term_code": term_tuple,
+                "problem_specific_certificate": prob_cert
             }
 
 
