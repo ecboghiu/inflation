@@ -234,10 +234,14 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 task.putintparam(mosek.iparam.log_sim, 0)
                 task.putintparam(mosek.iparam.log_intpnt, 0)
 
-            # Initialize constraint matrix
-            constraints = vstack((inequalities, equalities))
+            # Convert every equality constraint ax=0 to two inequality
+            # constraints ax>=0 and -ax<=0
+            eq_as_ineq = vstack((equalities, -equalities))
 
-            nof_primal_inequalities = inequalities.shape[0]
+            # Initialize constraint matrix
+            constraints = vstack((inequalities, eq_as_ineq))
+
+            nof_primal_inequalities = constraints.shape[0]
             nof_primal_equalities = equalities.shape[0]
 
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
@@ -279,14 +283,17 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 canonical_order(kv_matrix)
                 constraints.resize(*(nof_primal_constraints,
                                      nof_primal_variables + 1))
+                constraints = vstack((constraints, kv_matrix))
                 b = np.hstack((b, np.tile(known_vars.data, 2)))
+                variables = np.append(variables, "slack")
             else:
-                # Add known values as equalities to the constraint matrix
+                # Add known values as two inequalities to the constraint matrix
                 kv_matrix = expand_sparse_vec(known_vars)
-                b = np.hstack((b, known_vars.data))
+                kv_as_ineq = vstack((kv_matrix, -kv_matrix))
+                constraints = vstack((constraints, kv_as_ineq))
+                b = np.hstack((b, known_vars.data, -known_vars.data))
                 nof_primal_equalities += nof_known_vars
 
-            constraints = vstack((constraints, kv_matrix))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
 
             nof_lb = lower_bounds.nnz
@@ -337,9 +344,9 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                     bkc = [mosek.boundkey.fx] * nof_dual_constraints
 
                 # Set bound keys and values for variables
-                # Non-positivity for y corresponding to inequalities
-                bkx = [mosek.boundkey.up] * nof_primal_inequalities + \
-                      [mosek.boundkey.fr] * nof_primal_equalities
+                # Non-positivity for y corresponding to inequalities (all
+                # constraints are inequalities)
+                bkx = [mosek.boundkey.up] * nof_primal_constraints
                 bux = [0.0] * nof_dual_variables
                 blx = [0.0] * nof_dual_variables
                 if relax_known_vars:
@@ -368,8 +375,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
                 # Set bound keys and values for constraints
                 # Ax >= b where b is 0
-                bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
-                      [mosek.boundkey.fx] * nof_primal_equalities
+                bkc = [mosek.boundkey.lo] * nof_primal_constraints
                 if relax_known_vars:
                     bkc.extend([mosek.boundkey.lo] * nof_known_vars +
                                [mosek.boundkey.up] * nof_known_vars)
@@ -501,7 +507,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             obj_data = objective.toarray().ravel()
             objective_unknown_cols = np.setdiff1d(objective.col, known_vars.col)
             cert_data[objective_unknown_cols] = -obj_data[objective_unknown_cols]
-            cert_data[known_vars.col] = y_values[:nof_known_vars] # Assumes known values coded as equalities
+            cert_data[known_vars.col] = -y_values[:nof_known_vars] # Assumes known values coded as equalities
             if relax_known_vars:
                 cert_data[known_vars.col] += y_values[nof_known_vars:(2*nof_known_vars)]
             sparse_certificate = coo_matrix((cert_data, (cert_row, cert_col)),
@@ -519,16 +525,23 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             # Problem-specific certificate
             constraints_csr = constraints.tocsr()
             constraints_as_str = []
-            for (row, b_value) in zip(constraints_csr, b):
+            for i, (row, b_value) in enumerate(zip(constraints_csr, b)):
                 c_as_str = ""
                 var_names = np.array(variables)[row.indices]
                 for (v, name) in zip(row.data, var_names):
                     c_as_str += f"{v}*{name} + "
                 c_as_str = c_as_str[:-3]
-                if b_value != 0:
-                    c_as_str += f" - {b_value}"
+                if i < nof_primal_inequalities + nof_primal_equalities or \
+                        (i >= nof_primal_inequalities + 2 * nof_primal_equalities
+                         and i < nof_primal_inequalities + 2 * nof_primal_equalities + nof_known_vars):
+                    c_as_str = f"{b_value} <= " + c_as_str
+                else:
+                    c_as_str += f" <= {b_value}"
                 constraints_as_str.append(c_as_str)
-            prob_cert = dict(zip(constraints_as_str, yy))
+            if solve_dual:
+                prob_cert = dict(zip(constraints_as_str, xx))
+            else:
+                prob_cert = dict(zip(constraints_as_str, yy))
 
             if verbose > 1:
                 print("\nTotal execution time:",
