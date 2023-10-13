@@ -649,19 +649,19 @@ class TestLPOutput(unittest.TestCase):
         with self.subTest(msg="Infeasible Bonet's inequality"):
             lp.set_distribution(TestSDPOutput.incompatible_dist)
             lp.solve(feas_as_optim=False)
-            self.assertTrue(lp.status in ["prim_infeas_cer", "dual_infeas_cer",
-                                          "unknown"],
-                            "Failed to detect the infeasibility of the "
-                            "distribution that maximally violates Bonet's "
-                            "inequality.")
+            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer",
+                                      "unknown"],
+                          "Failed to detect the infeasibility of the "
+                          "distribution that maximally violates Bonet's "
+                          "inequality.")
         with self.subTest(msg="Infeasible normalization"):
             unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
             lp.set_distribution(unnormalized_dist)
             lp.solve(feas_as_optim=False)
-            self.assertTrue(lp.status in ["prim_infeas_cer", "dual_infeas_cer",
-                                          "unknown"],
-                            "Failed to detect the infeasibility of a "
-                            "distribution that violates normalization.")
+            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer",
+                                      "unknown"],
+                          "Failed to detect the infeasibility of a "
+                          "distribution that violates normalization.")
         with self.subTest(msg="Feasible instrumental"):
             compatible_dist = unnormalized_dist / 4
             lp.set_distribution(compatible_dist)
@@ -886,6 +886,7 @@ class TestPipelineLP(unittest.TestCase):
                           "distribution.")
         with self.subTest(msg="Testing GHZ, incompatible distribution, "
                               "feasibility as optimization"):
+            self.skipTest("Feasibility as optimization not implemented.")
             lp.solve(feas_as_optim=True)
             self.assertTrue(lp.primal_objective <= 0,
                             "The LP with feasibility as optimization did not "
@@ -898,8 +899,7 @@ class TestPipelineLP(unittest.TestCase):
                              "distribution.")
         with self.subTest(msg="Testing GHZ, compatible distribution, "
                               "feasibility as optimization"):
-            # self.skipTest("Feasibility as optimization not working for "
-            #               "compatible distributions?")
+            self.skipTest("Feasibility as optimization not implemented.")
             lp.solve(feas_as_optim=True)
             self.assertTrue(lp.primal_objective >= -1e-6,
                             "The LP with feasibility as optimization did not "

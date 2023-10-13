@@ -44,6 +44,7 @@ class TestWriters(unittest.TestCase):
             task.readdata("inst.lp")
             task.optimize()
             obj = task.getprimalobj(mosek.soltype.bas)
+        self.assertIsInstance(self.primal_value, float)
         self.assertAlmostEqual(self.primal_value, obj,
                                msg="The expected value and value when reading "
                                    "from LP are not equal.")
@@ -55,6 +56,7 @@ class TestWriters(unittest.TestCase):
             task.readdata("inst.mps")
             task.optimize()
             obj = task.getprimalobj(mosek.soltype.bas)
+        self.assertIsInstance(self.primal_value, float)
         self.assertAlmostEqual(self.primal_value, obj,
                                msg="The expected value and value when reading "
                                    "from MPS are not equal.")
