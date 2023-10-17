@@ -121,9 +121,259 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
     solver_args.pop("semiknown_vars", None)
     return solveLP_sparse(**solver_args)
 
+blank_coo_matrix = coo_matrix((0, 0), dtype=np.int8)
+
+def _mosek_solve_LP(cf, c, A, blc, buc, blx, bux, 
+                    solve_dual=None,
+                    solverparameters=None,
+                    verbose=0):
+    """Solve LP that is specified in the following form:
+    
+    max/min  cf + c.x
+    
+    s.t.     
+    
+    blc <= Ax <= buc
+    blx <= x <= bux
+    """
+    from collections import namedtuple
+    _DualNamedTuple = namedtuple("Dual", ["slc", "suc", "slx", "sux"])
+
+    assert len(c) == A.shape[1], "c and A must have the same number of columns"
+    assert len(blc) == len(buc), "blc and buc must have the same length"
+    assert len(blx) == len(bux), "blx and bux must have the same length"
+    assert len(c) == len(blx), "c and blx must have the same length"
+    
+    numcon = A.shape[0]
+    numvar = A.shape[1]
+    
+    # Since the value of infinity is ignored, we define it solely
+    # for symbolic purposes
+    inf = 0.0
+    with mosek.Env() as env:
+        with mosek.Task(env) as task:
+            # Set parameters for the solver depending on value type
+            if solverparameters:
+                for param, val in solverparameters.items():
+                    if isinstance(val, int):
+                        task.putintparam(param, val)
+                    elif isinstance(val, float):
+                        task.putdouparam(param, val)
+                    elif isinstance(val, str):
+                        task.putstrparam(param, val)
+            if solve_dual is None:
+                task.putintparam(mosek.iparam.sim_solve_form,
+                                 mosek.solveform.free)
+            else:
+                if solve_dual:
+                    task.putintparam(mosek.iparam.sim_solve_form,
+                                    mosek.solveform.dual)
+                else:
+                    task.putintparam(mosek.iparam.sim_solve_form,
+                                    mosek.solveform.primal)
+                
+            if verbose > 0:
+                # Attach a log stream printer to the task
+                task.set_Stream(mosek.streamtype.log, streamprinter)
+                task.putintparam(mosek.iparam.log_include_summary,
+                                 mosek.onoffkey.on)
+                task.putintparam(mosek.iparam.log_storage, 1)
+            if verbose < 2:
+                task.putintparam(mosek.iparam.log_sim, 0)
+                task.putintparam(mosek.iparam.log_intpnt, 0)
+                
+            task.appendcons(numcon)
+            task.appendvars(numvar)
+            
+            # Process bound keys for variables
+            _bkx, _bux, _blx = [], [], []
+            for l, u in zip(blx, bux):
+                if np.allclose(l, -np.inf):  # l = -inf
+                    _blx += [-inf]
+                    if np.allclose(u, np.inf):  
+                        # (l, u) = (-inf, +inf)
+                        _bkx += [mosek.boundkey.fr]
+                        _bux += [+inf]
+                    else:
+                        # (l, u) = (-inf, u)
+                        _bkx += [mosek.boundkey.up]
+                        _bux += [u]
+                else:
+                    _blx += [l]
+                    if np.allclose(u, np.inf):
+                        # (l, u) = (l, +inf)
+                        _bkx += [mosek.boundkey.lo]
+                        _bux += [+inf]
+                    else:
+                        # (l, u) = (l, u)
+                        _bux += [u]
+                        if np.allclose(l, u):
+                            _bkx += [mosek.boundkey.fx]
+                        else:
+                            _bkx += [mosek.boundkey.ra]
+                    
+            for j in range(numvar):
+                task.putvarbound(j, _bkx[j], _blx[j], _bux[j])
+                
+            # Add the A matrix
+            task.putaijlist(A.row, A.col, A.data)
+            
+            # Process bound keys for constraints
+            _bkc, _buc, _blc = [], [], []
+            for l, u in zip(blc, buc):
+                if np.allclose(l, -np.inf):  # l = -inf
+                    _blc += [-inf]
+                    if np.allclose(u, np.inf):  
+                        # (l, u) = (-inf, +inf)
+                        _bkc += [mosek.boundkey.fr]
+                        _buc += [+inf]
+                    else:
+                        # (l, u) = (-inf, u)
+                        _bkc += [mosek.boundkey.up]
+                        _buc += [u]
+                else:
+                    _blc += [l]
+                    if np.allclose(u, np.inf):
+                        # (l, u) = (l, +inf)
+                        _bkc += [mosek.boundkey.lo]
+                        _buc += [+inf]
+                    else:
+                        # (l, u) = (l, u)
+                        _buc += [u]
+                        if np.allclose(l, u):
+                            _bkc += [mosek.boundkey.fx]
+                        else:
+                            _bkc += [mosek.boundkey.ra]
+
+                    
+            for i in range(numcon):
+                task.putconbound(i, _bkc[i], _blc[i], _buc[i])
+                
+            for j in range(numvar):
+                task.putcj(j, c[j])
+            task.putobjsense(mosek.objsense.maximize)
+            
+            trmcode = task.optimize()
+            solsta = task.getsolsta(mosek.soltype.bas)
+            
+            primal = task.getprimalobj(mosek.soltype.bas)
+            dual = task.getdualobj(mosek.soltype.bas)
+            status_str = solsta.__repr__()
+            success = True if solsta == mosek.solsta.optimal else False
+            
+            (problemsta,
+             solutionsta,
+             skc,
+             skx,
+             skn,
+             xc,
+             xx,
+             yy,
+             slc,
+             suc,
+             slx,
+             sux,
+             snx) = task.getsolution(mosek.soltype.bas)
+            
+            duals = _DualNamedTuple(slc=slc, suc=suc, slx=slx, sux=sux)
+            x_values = np.array(xx)
+            term_tuple = mosek.Env.getcodedesc(trmcode)
+            
+    return {    "primal_value": primal,
+                "dual_value": dual,
+                "status": status_str,
+                "success": success,
+                "duals": duals,
+                "x": x_values,
+                "term_code": term_tuple
+            }
+                
+
+def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
+                   known_vars: coo_matrix = blank_coo_matrix,
+                   inequalities: coo_matrix = blank_coo_matrix,
+                   equalities: coo_matrix = blank_coo_matrix,
+                   lower_bounds: coo_matrix = blank_coo_matrix,
+                   upper_bounds: coo_matrix = blank_coo_matrix,
+                   solve_dual = False,
+                   default_non_negative: bool = True,
+                   relax_known_vars: bool = False,
+                   relax_inequalities: bool = False,
+                   verbose: int = 0,
+                   solverparameters: Dict = None,
+                   variables: List = None
+                   ) -> Dict:
+    drop_zero_rows(inequalities)
+    drop_zero_rows(equalities)
+    canonical_order(known_vars)
+
+    if verbose > 1:
+        t0 = perf_counter()
+        t_total = perf_counter()
+        print("Starting pre-processing for the LP solver...")
+        
+    c = objective.toarray().ravel()
+    
+    A = vstack((inequalities, equalities))
+    
+    numcon = A.shape[0]
+    numvar = len(variables)
+    
+    if default_non_negative:
+        blx, bux = [0]*numvar, [np.inf]*numvar
+    else:
+        blx, bux = [-np.inf]*numvar, [np.inf]*numvar
+    for i, l in zip(lower_bounds.col, lower_bounds.data):
+        blx[i] = l
+    for i, u in zip(upper_bounds.col, upper_bounds.data):
+        bux[i] = u
+    
+    # Override the bounds for the variables that are fixed
+    for i, fx in zip(known_vars.col, known_vars.data):
+        blx[i] = fx
+        bux[i] = fx
+    
+    blc, buc = [-np.inf]*numcon, [np.inf]*numcon
+    for j in range(inequalities.shape[0]):
+        # Inequalities are Ax>=0 , thus lower bound is 0, and upper is +inf
+        blc[j] = 0
+    for j in range(inequalities.shape[0],
+                   inequalities.shape[0] + equalities.shape[0]):
+        blc[j] = 0
+        buc[j] = 0
+
+    sol = _mosek_solve_LP(c, A, blc, buc, blx, bux,
+                           solve_dual=solve_dual,
+                           solverparameters=solverparameters,
+                           verbose=verbose)
+    
+    duals = sol["duals"]
+    slc, suc, slx, sux = duals
+    
+    # (l^c)^T s_l^c - (u^c)^T s_u^c + (l^x)^T s_l^x - (u^x)^T s_u^x + c^f
+    # (No constraint bounds appear in our LPs)
+    certificate = {x: slx[i] - sux[i] for i, x in enumerate(variables)}
+    certificate = {x: k for x, k in certificate.items() if not np.isclose(k, 0)}
+    
+    sparse_certificate = certificate
+    prob_cert = certificate
+
+    x_values = {x: sol["x"][i] for i, x in enumerate(variables)}
+    x_values = {x: k for x, k in x_values.items() if not np.isclose(k, 0)}
+    
+    return {    "primal_value": sol["primal_value"],
+                "dual_value": sol["dual_value"],
+                "status": sol["status"],
+                "success": sol["success"],
+                "dual_certificate": certificate,
+                "sparse_certificate": sparse_certificate,
+                "x": x_values,
+                "term_code": sol["term_code"],
+                "problem_specific_certificate": prob_cert
+            }
 
 blank_coo_matrix = coo_matrix((0, 0), dtype=np.int8)
-def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
+def _solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                    known_vars: coo_matrix = blank_coo_matrix,
                    inequalities: coo_matrix = blank_coo_matrix,
                    equalities: coo_matrix = blank_coo_matrix,
