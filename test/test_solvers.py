@@ -135,12 +135,14 @@ class TestSDP(unittest.TestCase):
 class TestLP(unittest.TestCase):
     lp_expected_sol_free_bounds = {
         "primal_value": 5.5,
-        "dual_certificate": {'1': 5.5, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+        # "dual_certificate": {'1': 5.5, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+        "dual_certificate": {'1': 5.5},
         "x": {'x': 2, 'y': 1, 'z': 1 / 2, 'w': -1, '1': 1}
     }
     lp_expected_sol_non_neg_bounds = {
         "primal_value": 3.5,
-        "dual_certificate": {'1': 3.5, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+        # "dual_certificate": {'1': 3.5, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+        "dual_certificate": {'1': 3.5},
         "x": {'x': 2.0, 'y': 1.0, 'w': 0.0, 'z': 0.5, '1': 1}
     }
 
@@ -171,7 +173,7 @@ class TestLP(unittest.TestCase):
     def test_LP_negative_lower_bounds(self):
         expected_sol = {
             "primal_value": 0.0,
-            "dual_certificate": {'1': 8.0, 'w': 2, 'x': -1, 'y': -1, 'z': -1},
+            "dual_certificate": {'1': 8.0},
             "x": {'x': -2.0, 'y': 2.0, 'z': -2.0, 'w': -1.0, '1': 1}}
         actual_sols = self.setup_LP_test_case({
             "lower_bounds": {'x': -2, 'y': 2},

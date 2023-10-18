@@ -249,6 +249,7 @@ def _mosek_solve_LP(cf, c, A, blc, buc, blx, bux,
             for i in range(numcon):
                 task.putconbound(i, _bkc[i], _blc[i], _buc[i])
                 
+            task.putcfix(cf)
             for j in range(numvar):
                 task.putcj(j, c[j])
             task.putobjsense(mosek.objsense.maximize)
@@ -319,10 +320,10 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
     numcon = A.shape[0]
     numvar = len(variables)
     
+    blx, bux = [-np.inf]*numvar, [np.inf]*numvar
     if default_non_negative:
-        blx, bux = [0]*numvar, [np.inf]*numvar
-    else:
-        blx, bux = [-np.inf]*numvar, [np.inf]*numvar
+        blx = [0]*numvar
+
     for i, l in zip(lower_bounds.col, lower_bounds.data):
         blx[i] = l
     for i, u in zip(upper_bounds.col, upper_bounds.data):
@@ -342,7 +343,8 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
         blc[j] = 0
         buc[j] = 0
 
-    sol = _mosek_solve_LP(c, A, blc, buc, blx, bux,
+    cf = 0
+    sol = _mosek_solve_LP(cf, c, A, blc, buc, blx, bux,
                            solve_dual=solve_dual,
                            solverparameters=solverparameters,
                            verbose=verbose)

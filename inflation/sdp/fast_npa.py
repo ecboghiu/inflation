@@ -23,7 +23,7 @@ except ImportError:
     int_     = np.intc
     void     = None
 
-cache    = True
+cache    = False
 if not nopython:
     from scipy.sparse.csgraph import connected_components
     bool_  = bool
