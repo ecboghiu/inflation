@@ -212,12 +212,7 @@ def _mosek_solve_LP(cf, c, A, blc, buc, blx, bux,
                         else:
                             _bkx += [mosek.boundkey.ra]
                     
-            for j in range(numvar):
-                task.putvarbound(j, _bkx[j], _blx[j], _bux[j])
-                
-            # Add the A matrix
-            task.putaijlist(A.row, A.col, A.data)
-            
+
             # Process bound keys for constraints
             _bkc, _buc, _blc = [], [], []
             for l, u in zip(blc, buc):
@@ -244,15 +239,46 @@ def _mosek_solve_LP(cf, c, A, blc, buc, blx, bux,
                             _bkc += [mosek.boundkey.fx]
                         else:
                             _bkc += [mosek.boundkey.ra]
-
-                    
-            for i in range(numcon):
-                task.putconbound(i, _bkc[i], _blc[i], _buc[i])
+                            
+            # for j in range(numvar):
+            #     task.putvarbound(j, _bkx[j], _blx[j], _bux[j])
                 
-            task.putcfix(cf)
-            for j in range(numvar):
-                task.putcj(j, c[j])
+            # # Add the A matrix
+            # task.putaijlist(A.row, A.col, A.data)
+                    
+            # for i in range(numcon):
+            #     task.putconbound(i, _bkc[i], _blc[i], _buc[i])
+                
+            # task.putcfix(cf)
+            # for j in range(numvar):
+            #     task.putcj(j, c[j])
+
+            matrix = A.tocsc(copy=False)
+            task.inputdata(# maxnumcon=
+                           numcon,
+                           # maxnumvar=
+                           numvar,
+                           # c=
+                           np.array(c),
+                           # cfix=
+                           cf,
+                           # aptrb=
+                           matrix.indptr[:-1],
+                           # aptre=
+                           matrix.indptr[1:],
+                           # asub=
+                           matrix.indices,
+                           # aval=
+                           matrix.data,
+                           _bkc,
+                           _blc,
+                           _buc,
+                           _bkx,
+                           _blx,
+                           _bux)
+            
             task.putobjsense(mosek.objsense.maximize)
+            
             
             trmcode = task.optimize()
             solsta = task.getsolsta(mosek.soltype.bas)
