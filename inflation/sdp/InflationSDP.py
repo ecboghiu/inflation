@@ -762,7 +762,7 @@ class InflationSDP:
                      "solve_dual": solve_dual})
 
         self.solution_object = solveSDP_MosekFUSION(**args)
-
+        self.success = self.solution_object["success"]
         self.status = self.solution_object["status"]
         if self.status == "feasible":
             self.primal_objective = self.solution_object["primal_value"]

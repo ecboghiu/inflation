@@ -454,43 +454,50 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                     xmat = G.level().reshape([mat_dim, mat_dim])
 
             status = M.getProblemStatus()
+            int_code, term_code = mosek.Env.getcodedesc(
+                mosek.rescode(int(M.getSolverIntInfo("optimizeResponse"))))
+
             if status == ProblemStatus.PrimalAndDualFeasible:
                 status_str = "feasible"
                 primal     = M.primalObjValue()
                 dual       = M.dualObjValue()
+                success = True
 
             elif status in [ProblemStatus.DualInfeasible,
                             ProblemStatus.PrimalInfeasible]:
                 status_str = "infeasible"
+                success = False
             elif status == ProblemStatus.Unknown:
                 status_str = "unknown"
-                code, desc = mosek.Env.getcodedesc(
-                    mosek.rescode(int(M.getSolverIntInfo("optimizeResponse"))))
-                error_message = f"Termination code {code}: {desc}"
+                error_message = f"Termination code {int_code}: {term_code}"
                 if verbose > 0:
                     print("The solution status is unknown.\n" + error_message)
-                return {"status": status_str, "error": error_message}
+                return {"status": status_str, "error": error_message,
+                        "term_code": term_code, "success": False}
             else:
                 status_str = "other"
                 error_message = ("Another unexpected problem, " +
                                  f"status {status} has been obtained.")
                 print(error_message)
-                return {"status": status_str, "error": error_message}
+                return {"status": status_str, "error": error_message, "term_code": term_code, "success": False}
         except OptimizeError as e:
             status_str = "other"
             error_message = f"Optimization failed. Error: {e}"
             print(error_message)
-            return {"status": status_str, "error": error_message}
+            return {"status": status_str, "error": error_message,
+                    "term_code": str(e), "success": False}
         except SolutionError as e:
             status_str = M.getProblemStatus()
             error_message = f"Solution status: {status_str}. Error: {e}"
             print(error_message)
-            return {"status": status_str, "error": error_message}
+            return {"status": status_str, "error": error_message,
+                    "term_code": str(e), "success": False}
         except Exception as e:
             status_str = "other"
             error_message = "Unexpected error: {0}".format(e)
             print(error_message)
-            return {"status": status_str, "error": error_message}
+            return {"status": status_str, "error": error_message,
+                    "term_code": str(e), "success": False}
 
         if status_str in ["feasible", "infeasible"]:
             certificate = {x: 0 for x in known_vars}
@@ -552,14 +559,20 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                                 var_equalities))
                                if violated])
 
-            vars_of_interest = {"primal_value": primal, "dual_value": dual,
-                                "status": status_str, "F": xmat, "Z": ymat,
+            vars_of_interest = {"primal_value": primal,
+                                "dual_value": dual,
+                                "status": status_str,
+                                "F": xmat,
+                                "Z": ymat,
                                 "dual_certificate": certificate,
-                                "x": x_values}
+                                "x": x_values,
+                                "term_code": term_code,
+                                "success": success
+            }
 
             return vars_of_interest
         else:
-            return {"status": status_str}
+            return {"status": status_str, "term_code": term_code, "success": False}
 
 
 def triu_indices(A: lil_matrix) -> Iterator[tuple[int, int]]:

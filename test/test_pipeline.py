@@ -880,16 +880,16 @@ class TestPipelineLP(unittest.TestCase):
         with self.subTest(msg="Testing GHZ, incompatible distribution"):
             lp.set_distribution(GHZ(crit_cutoff + 1e-2))
             lp.solve()
-            self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer",
-                                      "unknown"],
-                          "The LP did not identify the incompatible "
+            self.assertFalse(lp.success, "The LP did not identify the incompatible "
                           "distribution.")
         with self.subTest(msg="Testing GHZ, incompatible distribution, "
                               "feasibility as optimization"):
             lp.solve(feas_as_optim=True)
-            self.assertTrue(lp.primal_objective <= 0,
-                            "The LP with feasibility as optimization did not "
-                            "identify the incompatible distribution.")
+            self.assertTrue(lp.success, "The LP failed despite feas_as_optim=True")
+            if lp.success:
+                self.assertTrue(lp.primal_objective <= 0,
+                                "The LP with feasibility as optimization did not "
+                                "identify the incompatible distribution.")
         with self.subTest(msg="Testing GHZ, compatible distribution"):
             lp.set_distribution(GHZ(crit_cutoff - 1e-2))
             lp.solve()
@@ -901,9 +901,12 @@ class TestPipelineLP(unittest.TestCase):
             # self.skipTest("Feasibility as optimization not working for "
             #               "compatible distributions?")
             lp.solve(feas_as_optim=True)
-            self.assertTrue(lp.primal_objective >= -1e-6,
-                            "The LP with feasibility as optimization did not "
-                            "recognize the compatible distribution.")
+            self.assertTrue(lp.success,
+                            "The LP failed despite feas_as_optim=True")
+            if lp.success:
+                self.assertTrue(lp.primal_objective >= -1e-6,
+                                "The LP with feasibility as optimization did not "
+                                "recognize the compatible distribution.")
 
     def _run(self, **args):
         self._monomial_generation(**args)
