@@ -387,9 +387,13 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
             cTx_str, sTx_str = "", ""
             for i in range(nof_primal_variables):
-                cTx_str += f"{objective_vector[i]}*{x_sym[i]} + "
-                sTx_str += f"{slx[i]-sux[i]}*{x_sym[i]} + "
+                if not np.isclose(objective_vector[i], 0):
+                    cTx_str += f"{objective_vector[i]}*{x_sym[i]} + "
+                if not np.isclose(slx[i]-sux[i], 0):
+                    sTx_str += f"{slx[i]-sux[i]}*{x_sym[i]} + "
             cTx_str = cTx_str[:-3]
+            if cTx_str == "":
+                cTx_str = "0"
             sTx_str = sTx_str[:-3]
             if solve_dual:
                 prob_cert = cTx_str + " <= " + sTx_str
