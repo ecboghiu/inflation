@@ -249,19 +249,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
     kv_values[known_vars.col] = known_vars.data
 
     for i, (lb, ub, kv) in enumerate(zip(lb_values, ub_values, kv_values)):
-        if kv:
-            if lb is not None and ub is not None:
-                assert lb <= kv <= ub, \
-                    f"The known value for {variables[i]} is outside the " \
-                    f"upper and lower bounds set for {variables[i]}."
-            elif lb is not None:
-                assert lb <= kv, \
-                    f"The known value for {variables[i]} is lower than the " \
-                    f"lower bound set for {variables[i]}."
-            elif ub is not None:
-                assert kv <= ub, \
-                    f"The known value for {variables[i]} is higher than the " \
-                    f"upper bound set for {variables[i]}."
+        if kv is not None:
             bkx[i] = mosek.boundkey.fx
             blx[i] = bux[i] = kv
         elif lb is not None and ub is not None:
