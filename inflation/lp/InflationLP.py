@@ -490,8 +490,7 @@ class InflationLP(object):
                                    for ineq in extra_inequalities]
 
     def solve(self,
-              relax_known_vars: bool = False,
-              relax_inequalities: bool = False,
+              relaxation: bool = False,
               solve_dual: bool = True,
               solverparameters: dict = None,
               verbose: int = None,
@@ -503,12 +502,7 @@ class InflationLP(object):
 
         Parameters
         ----------
-        relax_known_vars : bool, optional
-            Do feasibility as optimization where each known value equality
-            becomes two relaxed inequality constraints. E.g., P(A) = 0.7
-            becomes P(A) + lambda >= 0.7 and P(A) - lambda <= 0.7, where lambda
-            is a slack variable. By default, ``False``.
-        relax_inequalities : bool, optional
+        relaxation : bool, optional
             Do feasibility as optimization where each inequality is relaxed by
             the non-negative slack variable lambda. By default, ``False``.
         solve_dual : bool, optional
@@ -524,13 +518,11 @@ class InflationLP(object):
             given by ``_prepare_solver_arguments()``. However, a user may
             manually override these arguments by passing their own here.
         """
-        if (relax_known_vars or relax_inequalities) and \
-                len(self.objective) > 0:
+        if relaxation and len(self.objective) > 0:
             warn("You have a non-trivial objective, but set to solve a "
                  "feasibility problem as optimization. Setting "
-                 "relax_known_vars=False, relax_inequalities=False, and "
-                 "optimizing the objective...")
-            relax_known_vars = relax_inequalities = False
+                 "relaxation=False and optimizing the objective...")
+            relaxation = False
         if verbose is None:
             real_verbose = self.verbose
         else:
@@ -545,15 +537,14 @@ class InflationLP(object):
         # Still allow for 'feas_as_optim' as an argument
         if 'feas_as_optim' in solver_arguments:
             if solver_arguments["feas_as_optim"]:
-                relax_known_vars = relax_inequalities = True
+                relaxation = True
                 del solver_arguments["feas_as_optim"]
             else:
-                relax_known_vars = relax_inequalities = False
+                relaxation = False
                 del solver_arguments["feas_as_optim"]
         args.update(solver_arguments)
 
-        args.update({"relax_known_vars": relax_known_vars,
-                     "relax_inequalities": relax_inequalities,
+        args.update({"relaxation": relaxation,
                      "verbose": real_verbose,
                      "default_non_negative": real_default_non_negative,
                      "solverparameters": solverparameters,
