@@ -826,7 +826,7 @@ class InflationProblem(object):
         lexorder_symmetries = np.vstack(lexorder_symmetries)
         return lexorder_symmetries
 
-    def _discover_graph_automorphisms(self) -> List[Tuple[np.ndarray, np.ndarray]]:
+    def _possible_party_relabelling_symmetries(self) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Return a list of all party relabelling symmetries (each proceeded by
         its associated source relabelling symmetry) consistent with the
         graphical symmetries of the original DAG, subject to matching
@@ -885,7 +885,7 @@ class InflationProblem(object):
 
     #TASK: Obtain a list of all setting relabellings,
     # and all outcome-per-setting relabellings.
-    def _possible_input_output_symmetries(self) -> List[np.ndarray]:
+    def _possible_setting_specific_outcome_relabelling_symmetries(self) -> List[np.ndarray]:
         """
         Yields all possible setting relabellings paired with all possible
         setting-dependant outcome relabellings as
@@ -953,3 +953,7 @@ class InflationProblem(object):
                                       product(*possible_syms_per_party)])
 
         return np.take(self.original_dag_events, orig_order_perms, axis=0)
+
+    #TODO
+    def _possible_party_specific_setting_relabelling_symmetries(self) -> List[np.ndarray]:
+
