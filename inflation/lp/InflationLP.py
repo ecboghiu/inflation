@@ -1229,7 +1229,7 @@ class InflationLP(object):
                 choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition
         if self.verbose > 0:
-            eprint(f"About to generate {np.prod(lengths)} probability placeholders...")
+            eprint(f"About to generate {np.prod(np.asarray(lengths, dtype=object))} probability placeholders...")
 
         choices_to_combine_CG = []
         choices_to_combine_global = []
