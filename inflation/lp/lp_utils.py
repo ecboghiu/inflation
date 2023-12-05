@@ -332,9 +332,9 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
                 # Set constraint bounds corresponding to primal variable bounds
                 if default_non_negative:
-                    bkc = [mosek.boundkey.lo] * nof_dual_constraints
+                    bkc = np.broadcast_to(mosek.boundkey.lo, nof_dual_constraints)
                 else:
-                    bkc = [mosek.boundkey.fx] * nof_dual_constraints
+                    bkc = np.broadcast_to(mosek.boundkey.fx, nof_dual_constraints)
 
                 # Set bound keys and values for variables
                 # Non-positivity for y corresponding to inequalities
@@ -368,11 +368,15 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
                 # Set bound keys and values for constraints
                 # Ax >= b where b is 0
-                bkc = [mosek.boundkey.lo] * nof_primal_inequalities + \
-                      [mosek.boundkey.fx] * nof_primal_equalities
+                bkc = np.hstack((np.broadcast_to(mosek.boundkey.lo, nof_primal_inequalities),
+                                 np.broadcast_to(mosek.boundkey.fx,
+                                                 nof_primal_equalities)
+                                 ))
                 if relax_known_vars:
-                    bkc.extend([mosek.boundkey.lo] * nof_known_vars +
-                               [mosek.boundkey.up] * nof_known_vars)
+                    bkc = np.hstack((bkc,
+                                     np.repeat([mosek.boundkey.lo, mosek.boundkey.up],
+                                                     nof_known_vars)
+                                     ))
                 blc = buc = b
 
                 ub_col = upper_bounds.col
@@ -385,20 +389,21 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                 # Set bound keys and bound values for variables
                 blx = np.zeros(nof_primal_variables)
                 bux = np.zeros(nof_primal_variables)
-                bkx = [mosek.boundkey.fr] * nof_primal_variables
+                ub_col = np.asarray(upper_bounds.col)
+                lb_col = np.asarray(lower_bounds.col)
+                lb_data = lower_bounds.data
                 if default_non_negative:
-                    lb_col = np.arange(nof_primal_variables)
-                for col in range(nof_primal_variables):
-                    if col in lb_col and col in ub_col:
-                        bkx[col] = mosek.boundkey.ra
-                        blx[col] = lb_data[col]
-                        bux[col] = ub_data[col]
-                    elif col in lb_col:
-                        bkx[col] = mosek.boundkey.lo
-                        blx[col] = lb_data[col]
-                    elif col in ub_col:
-                        bkx[col] = mosek.boundkey.up
-                        bux[col] = ub_data[col]
+                    bkx = np.repeat(mosek.boundkey.lo, nof_primal_variables)
+                    bkx[ub_col] = mosek.boundkey.ra
+                else:
+                    bkx = np.repeat(mosek.boundkey.fr, nof_primal_variables)
+                    bkx[np.setdiff1d(lb_col, ub_col)] = mosek.boundkey.lo
+                    bkx[np.setdiff1d(ub_col, lb_col)] = mosek.boundkey.up
+                    bkx[np.intersect1d(ub_col, lb_col)] = mosek.boundkey.ra
+                blx[lb_col] = lb_data
+                bux[ub_col] = upper_bounds.data
+
+
                 if relax_known_vars or relax_inequalities:
                     bkx[-1] = mosek.boundkey.fr
 
