@@ -622,13 +622,12 @@ class InflationProblem:
             Whether the monomial can be assigned a knowable probability.
         """
         # Parties start at 1 in our notation
-        parties_in_play    = np.asarray(monomial)[:, 0] - 1
-        parents_referenced = set()
-        for p in parties_in_play:
-            parents_referenced.update(self.parents_per_party[p])
-        if not parents_referenced.issubset(parties_in_play):
-            # Case of not an ancestrally closed set
-            return False
+        parties_in_play = np.asarray(monomial)[:, 0] - 1
+        parties_absent_bitvector    = np.ones(self.nr_parties, dtype=bool)
+        parties_absent_bitvector[parties_in_play] = False
+        for p in parties_in_play.flat:
+            if parties_absent_bitvector[self.parents_per_party[p]].any():
+                return False # Case of not an ancestrally closed set
         # Parties start at 1 in our notation
         outcomes_by_party = {(o[0] - 1): o[-1] for o in monomial}
         for o in monomial:
@@ -637,9 +636,9 @@ class InflationProblem:
             o_nonprivate_settings = \
                 self.effective_to_parent_settings[
                                   party_index][effective_setting][1:]
-            for i, p_o in enumerate(self.parents_per_party[party_index]):
-                if not o_nonprivate_settings[i] == outcomes_by_party[p_o]:
-                    return False
+            outcomes_of_parent_parties = partsextractor(outcomes_by_party, self.parents_per_party[party_index])
+            if not np.array_equal(outcomes_of_parent_parties, o_nonprivate_settings):
+                return False
         else:
             return True
 
