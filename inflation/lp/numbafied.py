@@ -17,7 +17,7 @@ except ImportError:
     nopython = False
     prange   = range
 
-cache    = True
+cache    = False
 if not nopython:
     bool_  = bool
     int_ = int
