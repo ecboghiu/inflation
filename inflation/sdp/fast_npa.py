@@ -622,9 +622,9 @@ def nb_operators_commute(operator1: np.ndarray,
     operator2 : numpy.ndarray
         Operator as an array of integers.
     quantum_sources : numpy.ndarray
-        List of integers denoting the columns of the 2D array operator 
+        Bitvector denoting the columns of the 2D array operator
         that encode inflation indices for sources that are quantum mechanical.
-        If the first element of the array is -1, then all sources are classical.
+        If all elements are False (i.e. 0), then all sources are classical.
 
     Returns
     -------
@@ -644,23 +644,31 @@ def nb_operators_commute(operator1: np.ndarray,
                              np.array([1, 1, 2, 0, 0]),  np.array([2]))
     True
     """
-    if operator1[0] != operator2[0]:  
-        # Different parties commute.
+    # Case 0: Different parties commute
+    if operator1[0] != operator2[0]:
         return True
-    if np.array_equal(operator1[1:-1], operator2[1:-1]):  
-        # If all sources & settings are equal, then the operators commute.
+    sources1 = operator1[1:-2]
+    sources2 = operator2[1:-2]
+    common_sources = np.logical_and(sources1, sources2)
+    common_quantum_sources = np.logical_and(common_sources, quantum_sources)
+    # Case 1: no common quantum source TYPE
+    if not common_quantum_sources.any():
         return True
-    if quantum_sources[0] != -1:  # <- ! This convention is used to denote an 
-                                  # empty array,instead of using empty arrays,
-                                  # for numba compatibility.
-        # If any of the sources is quantum, then the operators commute if
-        # they do not overlap on a quantum source.
-        return not nb_exists_shared_source(operator1[quantum_sources],
-                                           operator2[quantum_sources])
-    else:
-        # If all the sources being measured are classical, then the 
-        # operators commute.
+    # Case 2: yes common quantum source TYPE, but different INDICES across all quantum source
+    if np.subtract(sources1[common_quantum_sources],
+                   sources2[common_quantum_sources]).all():
         return True
+    # Case 3: overlapping quantum source type and index, but not all sources match indices
+    if not np.array_equal(sources1[common_sources],
+                          sources2[common_sources]):
+        return False
+    # Case 4: All sources of type common to both operators match indices
+    # # Case 4a: different parties
+    # if operator1[0] != operator2[0]:
+    #     return True
+    # Case 4b: Same party (check the settings)
+    return operator1[-2] == operator2[-2]
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_canonical_1d_internal(lexmon: np.ndarray,
