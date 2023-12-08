@@ -166,20 +166,13 @@ class InflationSDP:
         assert np.allclose(self._lexorder[0], self.zero_operator), \
             "The first element of the lexorder should be the zero operator"
         self._default_notcomm = \
-            np.pad(np.invert(self.InflationProblem._compatible_measurements +
-                              self._orthomat[1:, 1:] +
-                              np.eye(self._lexorder_len - 1, dtype=bool)),
+            np.pad(inflationproblem._default_notcomm,
                        ((1, 0), (1, 0)))
 
-        self._notcomm = self._default_notcomm.copy()
-
-        if (self._quantum_sources.size == 0) or commuting:
-            self.all_operators_commute = True
-            self._quantum_sources = np.array([0])  # Dummy value, numba does
-                                                   # not like empty arrays
-            self._default_notcomm = np.zeros(
-                (self._lexorder_len, self._lexorder_len), dtype=bool)
-            self._notcomm = self._default_notcomm
+        self.all_operators_commute = commuting or (not self._default_notcomm.any())
+        if self.all_operators_commute:
+            self._quantum_sources = np.zeros_like(self._quantum_sources)
+            self._notcomm = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
             self.all_commuting_q_2d = lambda mon: True
             self.all_commuting_q_1d = lambda lexmon: True
         else:

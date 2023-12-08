@@ -195,23 +195,19 @@ class InflationProblem:
         self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
-        self._nonclassical_sources, self._classical_sources = [], []
+        if classical_sources == "all":
+            self._classical_sources = np.ones(self.nr_sources, dtype=bool)
+        else:
+            self._classical_sources = np.zeros(self.nr_sources, dtype=bool)
         for ii, source in enumerate(self._actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
+        if not isinstance(classical_sources, str):
             if classical_sources:
-                if not isinstance(classical_sources, str):
+                for ii, source in enumerate(self._actual_sources):
                     if source in classical_sources:
-                        self._classical_sources += [ii]
-                    else:
-                        self._nonclassical_sources += [ii]
-                else:
-                    if classical_sources == "all":
-                        self._classical_sources = range(self.nr_sources)
-            else:
-                self._nonclassical_sources += [ii]
-        self._nonclassical_sources   = 1 + np.array(self._nonclassical_sources)
-        self._classical_sources = 1 + np.array(self._classical_sources)
+                        self._classical_sources[ii] = True
+        self._nonclassical_sources = np.logical_not(self._classical_sources)
 
         assert self.hypergraph.shape[1] == self.nr_parties, \
             ("The number of parties derived from the DAG is "
@@ -318,15 +314,15 @@ class InflationProblem:
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._nr_operators = len(self._lexorder)
         
-        if self._nonclassical_sources.size == 0:
-            self._compatible_measurements = \
-                np.invert(np.zeros((self._lexorder.shape[0], self._lexorder.shape[0]),
-                                   dtype=bool))
+        if self._nonclassical_sources.any():
+            self._default_notcomm = commutation_matrix(self._lexorder,
+                                                       self._nonclassical_sources,
+                                                       False)
         else:
-            self._compatible_measurements = \
-                        np.invert(commutation_matrix(self._lexorder,
-                                                    self._nonclassical_sources,
-                                                    False))
+            self._default_notcomm = np.zeros(
+                (self._lexorder.shape[0], self._lexorder.shape[0]),
+                dtype=bool)
+        self._compatible_measurements = np.invert(self._default_notcomm)
         # Use self._ortho_groups to label operators that are orthogonal as
         # incompatible as their product is zero, and they can never be 
         # observed together with non-zero probability.
@@ -347,13 +343,13 @@ class InflationProblem:
 
 
     def __repr__(self):
-        if len(self._classical_sources) == self.nr_sources:
+        if self._classical_sources.all():
             source_info = "All sources are classical."
-        elif len(self._nonclassical_sources) == self.nr_sources:
+        elif self._nonclassical_sources.all():
             source_info = "All sources are quantum."
         else:
-            classical_sources = self._actual_sources[self._classical_sources-1]
-            quantum_sources   = self._actual_sources[self._nonclassical_sources - 1]
+            classical_sources = self._actual_sources[self._classical_sources]
+            quantum_sources   = self._actual_sources[self._nonclassical_sources]
             if len(classical_sources) > 1:
                 extra_1 = "s"
                 extra_2 = "are"

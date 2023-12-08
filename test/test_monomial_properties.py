@@ -115,26 +115,26 @@ class TestToCanonical(unittest.TestCase):
         self.assertFalse(nb_operators_commute(
                             np.array([1, 1, 1, 0, 0]),
                             np.array([1, 1, 2, 0, 0]),
-                            np.array([1, 2])),  # both sources quantum
+                            np.array([1, 1], dtype=bool)),  # both sources quantum
                         "nb_operators_commute fails to identify " +
                         "non-commutativty when overlapping on quantum sources.")
         self.assertTrue(nb_operators_commute(
                             np.array([1, 1, 1, 0, 0]),
                             np.array([1, 1, 2, 0, 0]),
-                            np.array([2])),  # first source classical
+                            np.array([0, 1], dtype=bool)),  # first source classical
                         "nb_operators_commute fails to identify " +
                         "commutativity when overlapping on classical sources.")
         self.assertTrue(nb_operators_commute(
                             np.array([1, 1, 1, 0, 0]),
                             np.array([1, 1, 2, 1, 0]),
-                            np.array([2])),  # first source classical
+                            np.array([0, 1], dtype=bool)),  # first source classical
                         "nb_operators_commute fails to identify " +
                         "commutativity when overlapping on classical sources "+
                         "with different settings for the operators.")
         self.assertTrue(nb_operators_commute(
                             np.array([1, 1, 1, 0, 0]),
                             np.array([1, 1, 1, 1, 0]),
-                            np.array([-1])),  # both sources classical
+                            np.array([0, 0], dtype=bool)),  # both sources classical
                         "nb_operators_commute fails to identify " +
                         "commutativity when overlapping on classical sources "+
                         "with different settings for the operators.")
