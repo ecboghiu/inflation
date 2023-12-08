@@ -19,10 +19,7 @@ from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
 from inflation import InflationProblem
-from .fast_npa import (nb_all_commuting_q,
-                       commutation_matrix,
-                       nb_mon_to_lexrepr,
-                       reverse_mon,
+from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal
                        )
 from .fast_npa import nb_is_knowable as is_knowable
@@ -37,7 +34,7 @@ from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
-from ..utils import clean_coefficients
+from ..utils import clean_coefficients, partsextractor
 from ..lp.numbafied import nb_outer_bitwise_or
 
 
@@ -125,6 +122,7 @@ class InflationSDP:
         # self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = inflationproblem._nr_properties
         self.np_dtype = inflationproblem._np_dtype
+        self._astuples_dtype = inflationproblem._astuples_dtype
         self.identity_operator = np.empty((0, self._nr_properties),
                                           dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties),
@@ -136,6 +134,7 @@ class InflationSDP:
         self._nr_operators = inflationproblem._nr_operators + 1
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._lexorder = self._default_lexorder.copy()
+        self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
         self.lexorder_symmetries = \
             np.pad(inflationproblem.lexorder_symmetries + 1, ((0, 0), (1, 0)))
@@ -176,16 +175,11 @@ class InflationSDP:
             self.all_commuting_q_2d = lambda mon: True
             self.all_commuting_q_1d = lambda lexmon: True
         else:
-            self.all_operators_commute = False
-            self._default_notcomm = \
-                commutation_matrix(self._lexorder, self._quantum_sources,
-                                   self.all_operators_commute)
             self._notcomm = self._default_notcomm.copy()
-            self.all_commuting_q_2d = \
-                lambda mon: nb_all_commuting_q(mon, self._lexorder,
-                                               self._notcomm)
             self.all_commuting_q_1d = \
                 lambda lexmon: not self._notcomm[np.ix_(lexmon, lexmon)].any()
+            self.all_commuting_q_2d = \
+                lambda mon: self.all_commuting_q_1d(self.mon_to_lexrepr(mon))
 
         self.canon_lexmon_from_hash     = dict()
         self.canonsym_lexmon_from_hash  = dict()
@@ -986,9 +980,7 @@ class InflationSDP:
             elif type(column_specification[0]) in {np.ndarray}:
                 if len(np.array(column_specification[1]).shape) == 2:
                     # This is the 2d encoding, convert it to lexicographic repr
-                    columns = [nb_mon_to_lexrepr(np.array(mon,
-                                                          dtype=self.np_dtype),
-                                                 self._lexorder)
+                    columns = [self.mon_to_lexrepr(mon)
                                for mon in column_specification]
                 elif len(np.array(column_specification[1]).shape) == 1:
                     # This is the 1d encoding, make sure the dtype is correct
@@ -1013,8 +1005,8 @@ class InflationSDP:
                     elif type(col) in [sp.core.symbol.Symbol,
                                        sp.core.power.Pow,
                                        sp.core.mul.Mul]:
-                        columns.append(nb_mon_to_lexrepr(
-                            self._interpret_name(col), self._lexorder))
+                        columns.append(self.mon_to_lexrepr(
+                            self._interpret_name(col)))
                     else:
                         raise Exception(f"The column {col} is not specified " +
                                         "in a valid format.")
@@ -1634,8 +1626,7 @@ class InflationSDP:
         for block in tqdm(col_specs, desc="Generating columns  ",
                           disable=not self.verbose):
             if block == []:
-                _id = nb_mon_to_lexrepr(self.identity_operator,
-                                                         self._lexorder)
+                _id = self.mon_to_lexrepr(self.identity_operator)
                 seen_columns.add(tuple(_id))
                 columns += [_id]
             else:
@@ -2174,4 +2165,6 @@ class InflationSDP:
         np.ndarray
             Monomial in the 1D lexicographic form.
         """
-        return nb_mon_to_lexrepr(mon, self._lexorder)
+        template = np.empty(len(mon), dtype=object)
+        template[:] = np.asarray(mon, self.np_dtype).ravel().view(self._astuples_dtype)
+        return np.array(partsextractor(self.op_to_lexrepr_dict, template), dtype=np.intc)
