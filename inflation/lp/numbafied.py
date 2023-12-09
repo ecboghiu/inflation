@@ -17,12 +17,12 @@ except ImportError:
     nopython = False
     prange   = range
 
-cache    = False
+cache    = True
 if not nopython:
     bool_  = bool
     int_ = int
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython, parallel=True)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                            lexorder: np.ndarray) -> np.array:
     """Convert a monomial to its lexicographic representation, in the form of
@@ -52,7 +52,7 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-@jit(nopython=True, cache=cache, forceobj=False, parallel=False)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
     # Note: dictionary creation seems wasteful,
@@ -72,12 +72,12 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
             orbits[equivalent_monomial_positions] = i
     return orbits
 
-@jit(nopython=True, cache=cache, forceobj=False, parallel=False)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
     temp = np.bitwise_or(a[:, np.newaxis], b[np.newaxis]).astype(bool)
     return temp.reshape((-1, *temp.shape[2:]))
 
-@jit(nopython=True, cache=cache, forceobj=False, parallel=False)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_xor(a: np.ndarray, b: np.ndarray):
     temp = np.bitwise_xor(a[:, np.newaxis], b[np.newaxis]).astype(bool)
     return temp.reshape((-1, *temp.shape[2:]))
