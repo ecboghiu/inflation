@@ -23,7 +23,7 @@ except ImportError:
     int_     = np.intc
     void     = None
 
-cache    = False
+cache    = True
 if not nopython:
     from scipy.sparse.csgraph import connected_components
     bool_  = bool
@@ -559,7 +559,7 @@ def nb_exists_shared_source(inf_indices1: np.ndarray,
                            inf_indices2[common_sources]).all()
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+@jit(nopython=nopython, cache=False, forceobj=not nopython)
 def nb_lexmon_to_canonical(lexmon: np.ndarray,
                            notcomm: np.ndarray) -> np.ndarray:
     """Brings a monomial, input as the indices of the operators in the
@@ -670,7 +670,7 @@ def nb_operators_commute(operator1: np.ndarray,
     return operator1[-2] == operator2[-2]
 
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+@jit(nopython=nopython, cache=False, forceobj=not nopython)
 def to_canonical_1d_internal(lexmon: np.ndarray,
                              notcomm: np.ndarray,
                              orthomat: np.ndarray,
