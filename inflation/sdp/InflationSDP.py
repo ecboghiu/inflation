@@ -20,7 +20,7 @@ from warnings import warn
 
 from inflation import InflationProblem
 from .fast_npa import (reverse_mon,
-                       to_canonical_1d_internal
+                       to_canonical_1d_internal, nb_mon_to_lexrepr
                        )
 from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomialSDP, CompoundMomentSDP
@@ -122,7 +122,7 @@ class InflationSDP:
         # self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = inflationproblem._nr_properties
         self.np_dtype = inflationproblem._np_dtype
-        self._astuples_dtype = inflationproblem._astuples_dtype
+        # self._astuples_dtype = inflationproblem._astuples_dtype
         self.identity_operator = np.empty((0, self._nr_properties),
                                           dtype=self.np_dtype)
         self.zero_operator = np.zeros((1, self._nr_properties),
@@ -2165,6 +2165,7 @@ class InflationSDP:
         np.ndarray
             Monomial in the 1D lexicographic form.
         """
-        template = np.empty(len(mon), dtype=object)
-        template[:] = np.asarray(mon, self.np_dtype).ravel().view(self._astuples_dtype)
-        return np.array(partsextractor(self.op_to_lexrepr_dict, template), dtype=np.intc)
+        # template = np.empty(len(mon), dtype=object)
+        # template[:] = np.asarray(mon, self.np_dtype).ravel().view(self._astuples_dtype)
+        # return np.array(partsextractor(self.op_to_lexrepr_dict, template), dtype=np.intc)
+        return nb_mon_to_lexrepr(mon, self._lexorder)
