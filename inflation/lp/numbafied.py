@@ -7,7 +7,7 @@ import numpy as np
 
 try:
     from numba import jit, prange, bool_
-    from numba.types import int as int_
+    from numba.types import int_
     nopython = True
 except ImportError:
     def jit(*args, **kwargs):
@@ -52,14 +52,14 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
     # Note: dictionary creation seems wasteful,
     # but this function is not called within loops.
     lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                    enumerate(monomials_as_lexboolvecs)}
-    orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int_) - 1
+    orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int) - 1
     for i, default_lexboolvec in enumerate(monomials_as_lexboolvecs):
         if orbits[i] == -1:
             alternative_lexboolvecs = default_lexboolvec[lexorder_perms]
@@ -72,12 +72,12 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
             orbits[equivalent_monomial_positions] = i
     return orbits
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
     temp = np.bitwise_or(a[:, np.newaxis], b[np.newaxis]).astype(bool)
     return temp.reshape((-1, *temp.shape[2:]))
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_xor(a: np.ndarray, b: np.ndarray):
     temp = np.bitwise_xor(a[:, np.newaxis], b[np.newaxis]).astype(bool)
     return temp.reshape((-1, *temp.shape[2:]))
