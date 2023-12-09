@@ -558,7 +558,7 @@ def nb_exists_shared_source(inf_indices1: np.ndarray,
     return not np.subtract(inf_indices1[common_sources],
                            inf_indices2[common_sources]).all()
 
-
+# Node: cache is set to False because of a bug in numba
 @jit(nopython=nopython, cache=False, forceobj=not nopython)
 def nb_lexmon_to_canonical(lexmon: np.ndarray,
                            notcomm: np.ndarray) -> np.ndarray:
@@ -669,7 +669,8 @@ def nb_operators_commute(operator1: np.ndarray,
     # Case 4b: Same party (check the settings)
     return operator1[-2] == operator2[-2]
 
-
+# Node: cache is set to False because of a bug in numba, which affects
+# nb_lexmon_to_canonical which this function uses
 @jit(nopython=nopython, cache=False, forceobj=not nopython)
 def to_canonical_1d_internal(lexmon: np.ndarray,
                              notcomm: np.ndarray,
