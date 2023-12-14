@@ -282,6 +282,7 @@ class InflationProblem:
 
         # Create the measurements (formerly generate_parties)
         self._nr_properties = 1 + self.nr_sources + 2
+        self._astuples_dtype = np.dtype(list(zip(['']*self._nr_properties, [self._np_dtype]*self._nr_properties)))
         self.measurements = list()
         for p in range(self.nr_parties):
             O_vals = np.arange(self.outcomes_per_party[p],
