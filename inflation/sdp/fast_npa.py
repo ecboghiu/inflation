@@ -557,9 +557,8 @@ def nb_exists_shared_source(inf_indices1: np.ndarray,
         return False
     return not np.subtract(inf_indices1[common_sources],
                            inf_indices2[common_sources]).all()
-
-# Node: cache is set to False because of a bug in numba
-@jit(nopython=nopython, cache=False, forceobj=not nopython)
+    
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_lexmon_to_canonical(lexmon: np.ndarray,
                            notcomm: np.ndarray) -> np.ndarray:
     """Brings a monomial, input as the indices of the operators in the
@@ -579,34 +578,50 @@ def nb_lexmon_to_canonical(lexmon: np.ndarray,
     numpy.ndarray
         Monomial in canonical form with respect to commutations.
     """
-    if lexmon.shape[0] <= 1:
-        return lexmon
-
-    # Take only the rows and columns of notcomm that appear in the monomial,
-    # in the correct order.
-    sub_notcomm = notcomm[lexmon, :][:, lexmon]
-    if not sub_notcomm.any():
-        return np.sort(lexmon)
-    if sub_notcomm.all():
-        return lexmon
-    minimum = lexmon[0]
-    minimum_idx = 0
-    for op in range(1, lexmon.shape[0]):
-        # Find the lowest position where we can move op
-        nc_ops_position = np.where(sub_notcomm[op, :op] == 1)[0]
-        if nc_ops_position.size < 1:
-            if lexmon[op] < minimum:
-                minimum_idx = op
-                minimum     = lexmon[op]
-    if minimum <= lexmon[0]:
-        m1 = np.array([lexmon[minimum_idx]])
-        m2 = np.concatenate((lexmon[:minimum_idx],
-                             lexmon[minimum_idx + 1:]))
-        return np.concatenate((m1, nb_lexmon_to_canonical(m2, notcomm)))
-    else:
-        m1 = np.array([lexmon[0]])
-        m2 = lexmon[1:]
-        return np.concatenate((m1, nb_lexmon_to_canonical(m2, notcomm)))
+    result = np.empty((0,), dtype=int_)
+    leftover = lexmon
+    while leftover.shape[0] > 1:
+        lexmon = leftover
+        ########################################################################
+        # A subroutine that splits lexmon into two monomials, m1 and m2,
+        # such that m1 is appended to result, and m2 is the new lexmon for a 
+        # new iteration of the while loop.
+        # This subroutine should be defined in a function but numba 
+        # gives problems with returning tuples (m1,m2) from functions. 
+        if lexmon.shape[0] <= 1:
+            m1, m2 = lexmon, np.empty((0,), dtype=int_)
+        else:
+            # Take only the rows and columns of notcomm that appear in the
+            # monomial, in the correct order.
+            sub_notcomm = notcomm[lexmon, :][:, lexmon]
+            if sub_notcomm.all():
+                m1, m2 = lexmon, np.empty((0,), dtype=int_)
+            elif not sub_notcomm.any():
+                m1, m2 = np.sort(lexmon), np.empty((0,), dtype=int_)
+            else:
+                minimum = lexmon[0]
+                minimum_idx = 0
+                for op in range(1, lexmon.shape[0]):
+                    # Find the lowest position where we can move op
+                    nc_ops_position = np.where(sub_notcomm[op, :op] == 1)[0]
+                    if nc_ops_position.size < 1:
+                        if lexmon[op] < minimum:
+                            minimum_idx = op
+                            minimum     = lexmon[op]
+                if minimum <= lexmon[0]:
+                    m1 = np.array([lexmon[minimum_idx]])
+                    m2 = np.concatenate((lexmon[:minimum_idx],
+                                        lexmon[minimum_idx + 1:]))
+                else:
+                    m1 = np.array([lexmon[0]])
+                    m2 = lexmon[1:]
+        ########################################################################
+        result = np.concatenate((result, m1))
+        leftover = m2
+    # Depending on how the while loop ends, we may have a leftover monomial
+    if leftover.shape[0] != 0:
+        result = np.concatenate((result, leftover))
+    return result
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_operators_commute(operator1: np.ndarray,
@@ -671,7 +686,7 @@ def nb_operators_commute(operator1: np.ndarray,
 
 # Node: cache is set to False because of a bug in numba, which affects
 # nb_lexmon_to_canonical which this function uses
-@jit(nopython=nopython, cache=False, forceobj=not nopython)
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def to_canonical_1d_internal(lexmon: np.ndarray,
                              notcomm: np.ndarray,
                              orthomat: np.ndarray,
