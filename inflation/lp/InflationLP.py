@@ -39,6 +39,7 @@ class InflationLP(object):
     def __init__(self,
                  inflationproblem: InflationProblem,
                  nonfanout: bool = True,
+                 local_level: int = None,
                  supports_problem: bool = False,
                  default_non_negative: bool = True,
                  include_all_outcomes: bool = False,
@@ -54,6 +55,9 @@ class InflationLP(object):
         nonfanout : bool, optional
             Whether to consider only nonfanout inflation (GPT problem) or
             fanout inflation (classical problem). By default ``False``.
+        local_level : int, optional
+            If specified, do not assume nonnegative probability distribution
+             over all variables, but only over marginal sets of limited size.
         supports_problem : bool, optional
             Whether to consider feasibility problems with distributions, or 
             just with the distribution's support. By default ``False``.
@@ -77,7 +81,11 @@ class InflationLP(object):
             self.verbose = verbose
         else:
             self.verbose = inflationproblem.verbose
-        self.nonfanout = nonfanout
+        self.local_level = local_level
+        if not nonfanout:
+            assert not inflationproblem._default_notcomm.any(), \
+                "You appear to be requesting fanout (classical)" \
+                    + " inflation, \nbut have not specified classical_sources=`all`."
         self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)
@@ -1215,18 +1223,14 @@ class InflationLP(object):
         """
         choices_to_combine = []
         lengths = []
-        if not self.nonfanout:
-            for raw_boolarray in self._all_ortho_groups_as_boolarrays:
-                boolvecs = np.pad(raw_boolarray, ((1, 0), (0, 0)))
-                lengths.append(len(boolvecs))
-                choices_to_combine.append(boolvecs)
-        else:
-            for party in range(self.nr_parties):
-                boolvecs = \
-                    self.InflationProblem._generate_compatible_monomials_given_party(
-                        party, with_last_outcome=True)
-                lengths.append(len(boolvecs))
-                choices_to_combine.append(boolvecs)
+        for party in range(self.nr_parties):
+            boolvecs = \
+                self.InflationProblem._generate_compatible_monomials_given_party(
+                    party,
+                    up_to_length=self.local_level,
+                    with_last_outcome=True)
+            lengths.append(len(boolvecs))
+            choices_to_combine.append(boolvecs)
         # Use reduce to take outer combinations, using bitwise addition
         if self.verbose > 0:
             eprint(f"About to generate {np.prod(np.asarray(lengths, dtype=object))} probability placeholders...")
