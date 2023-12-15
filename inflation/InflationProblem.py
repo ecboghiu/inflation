@@ -65,7 +65,7 @@ class InflationProblem:
             sources.
         classical_sources : Union[List[str], str], optional
             Names of the sources that are assumed to be classical. If ``'all'``,
-            it imposes that all sources are classical. By default 'all'. 
+            it imposes that all sources are classical. By default an empty tuple.
         order : List[str], optional
             Name of each party. This also fixes the order in which party outcomes
             and settings are to appear in a conditional probability distribution.
