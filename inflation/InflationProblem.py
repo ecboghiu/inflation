@@ -43,6 +43,7 @@ class InflationProblem:
                  settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
+                 intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
                  order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
         """Class for encoding relevant details concerning the causal compatibility
@@ -66,7 +67,10 @@ class InflationProblem:
         classical_sources : Union[List[str], str], optional
             Names of the sources that are assumed to be classical. If ``'all'``,
             it imposes that all sources are classical. By default an empty tuple.
-        order : List[str], optional
+        intermediate_latents: Tuple[str], optional
+            Designates non-exogynous nodes in the DAG with these names as latent,
+            in addition to all exogynous nodes.
+        order : Tuple[str], optional
             Name of each party. This also fixes the order in which party outcomes
             and settings are to appear in a conditional probability distribution.
             Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
@@ -107,7 +111,7 @@ class InflationProblem:
         # Assign names to the visible variables
         names_have_been_set_yet = False
         if dag:
-            implicit_names = set(map(str, chain.from_iterable(dag.values())))
+            implicit_names = set(map(str, chain.from_iterable(dag.values()))).difference(intermediate_latents)
             assert len(implicit_names) == self.nr_parties, \
                 ("You must provide a number of outcomes for the following "
                  + f"{len(implicit_names)} variables: {implicit_names}")
@@ -148,33 +152,47 @@ class InflationProblem:
                 warn("The DAG must be a non-empty dictionary with parent "
                      + "variables as keys and lists of children as values. "
                      + "Defaulting to one global source.")
-            self.dag = {"h_global": self.names}
+            self.dag = {"h_global": set(self.names)}
         else:
-            self.dag = {str(parent): tuple(map(str, children)) for
+            #Sources are nodes with children but not parents
+            self.dag = {str(parent): set(map(str, children)) for
                         parent, children in dag.items()}
 
         # Unpacking of visible nodes with children
-        nodes_with_children = list(self.dag.keys())
+        nodes_with_children_as_list = list(self.dag.keys())
+        nodes_with_children = set(nodes_with_children_as_list)
+        self._actual_sources = sorted(
+            nodes_with_children.difference(self.names, intermediate_latents),
+            key=nodes_with_children_as_list.index)
+        self.nr_sources = len(self._actual_sources)
+        parties_with_children = nodes_with_children.intersection(self.names)
+
+
         self.has_children   = np.zeros(self.nr_parties, dtype=bool)
         self.is_network     = set(nodes_with_children).isdisjoint(self.names)
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties),
                                     dtype=bool)
-        for parent in nodes_with_children:
-            if parent in self.names:
-                ii = names_to_integers[parent]
-                self.has_children[ii] = True
-                for child in dag[parent]:
+        for parent in parties_with_children:
+            ii = names_to_integers[parent]
+            self.has_children[ii] = True
+            observable_children = set(self.dag[parent])
+            while observable_children:
+                child = observable_children.pop()
+                if child in self.names:
                     jj = names_to_integers[child]
                     adjacency_matrix[ii, jj] = True
+                    continue
+                assert child in intermediate_latents, f"Error, {child} is not a recognized party or intermediate latent."
+                observable_children.update(self.dag[child])
+
         # Compute number of settings for the unpacked variables
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
         settings_per_party_lst = [[s] for s in self.private_settings_per_party]
         for party_idx, party_parents_idxs in enumerate(self.parents_per_party):
             settings_per_party_lst[party_idx].extend(
-                np.take(self.outcomes_per_party, party_parents_idxs)
-                                                     )
+                np.take(self.outcomes_per_party, party_parents_idxs))
         self.settings_per_party = np.asarray(
             [np.prod(multisetting) for multisetting in settings_per_party_lst],
             dtype=int)
@@ -189,19 +207,45 @@ class InflationProblem:
         self.effective_to_parent_settings = effective_to_parent_settings
 
         # Create network corresponding to the unpacked scenario
-        self._actual_sources  = np.array(
-            [source for source in nodes_with_children
-                    if source not in self.names])
-        self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
-        for ii, source in enumerate(self._actual_sources):
-            pos = [names_to_integers[party] for party in self.dag[source]]
-            self.hypergraph[ii, pos] = 1
-        assert self.hypergraph.shape[1] == self.nr_parties, \
-            ("The number of parties derived from the DAG is "
-             + f"{self.hypergraph.shape[1]} and from the specification of "
-             + f"outcomes it is {self.nr_parties} instead.")
+        self.sources_to_check_for_party_pair_commutation = np.zeros((self.nr_parties, self.nr_parties, self.nr_sources),
+                                    dtype=bool)
+        for source_idx, source in enumerate(self._actual_sources):
+            children = self.dag[source]
+            observable_children = children.intersection(self.names)
+            latent_children = children.difference(self.names)
+            latents_explored_already = latent_children.copy()
+            assert latent_children.issubset(intermediate_latents), f"{latent_children.difference(intermediate_latents)} are not a recognized party or intermediate latent."
+            for child in observable_children:
+                child_idx = names_to_integers[child]
+                self.hypergraph[source_idx, child_idx] = 1
+                self.sources_to_check_for_party_pair_commutation[child_idx, child_idx, source_idx] = True
+            for intermediate_latent in latent_children:
+                starting_children = self.dag[intermediate_latent]
+                observable_descendants_via_this_latent = starting_children.intersection(self.names)
+                latents_still_to_explore = starting_children.difference(self.names)
+                assert latents_still_to_explore.issubset(intermediate_latents), f"{latents_still_to_explore.difference(intermediate_latents)} are not a recognized party or intermediate latent."
+                assert latents_still_to_explore.isdisjoint(latents_explored_already), f"Cycle detected among intermediate latents."
+                latents_explored_already.update(latents_still_to_explore)
+                while latents_still_to_explore:
+                    next_latent = latents_still_to_explore.pop()
+                    next_children = self.dag[next_latent]
+                    observable_descendants_via_this_latent.update(next_children.intersection(self.names))
+                    new_latents = next_children.difference(self.names)
+                    assert new_latents.issubset(intermediate_latents), f"{new_latents.difference(intermediate_latents)} are not a recognized party or intermediate latent."
+                    assert new_latents.isdisjoint(latents_explored_already), f"Cycle detected among intermediate latents."
+                    latents_explored_already.update(new_latents)
+                for desc in observable_descendants_via_this_latent:
+                    desc_idx = names_to_integers[desc]
+                    self.hypergraph[source_idx, desc_idx] = 1
+                    for desc2 in observable_descendants_via_this_latent:
+                        desc2_idx = names_to_integers[desc2]
+                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx] = True
+
+
+        assert np.sum(self.hypergraph, axis=0).all(), \
+            ("There appears to be a party with no sources in its past. This is not allowed.")
 
         if not inflation_level_per_source:
             if self.verbose > 0:
