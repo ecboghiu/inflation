@@ -368,6 +368,7 @@ class InflationProblem:
         if self._nonclassical_sources.any():
             self._default_notcomm = commutation_matrix(self._lexorder,
                                                        self._nonclassical_sources,
+                                                       self.sources_to_check_for_party_pair_commutation,
                                                        False)
         else:
             self._default_notcomm = np.zeros(

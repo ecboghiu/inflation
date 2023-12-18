@@ -112,32 +112,40 @@ class TestToCanonical(unittest.TestCase):
         
         # Two source scenario. Two operators with overlap on the first source, 
         # with the first source being classical.
+        # No intermediate latents.
+        pairwise_source_info = np.zeros((2, 2, 2), dtype=bool)
+        for i in range(2):
+            pairwise_source_info[i, i] = True
         self.assertFalse(nb_operators_commute(
-                            np.array([1, 1, 1, 0, 0]),
-                            np.array([1, 1, 2, 0, 0]),
-                            np.array([1, 1], dtype=bool)),  # both sources quantum
-                        "nb_operators_commute fails to identify " +
-                        "non-commutativty when overlapping on quantum sources.")
+            np.array([1, 1, 1, 0, 0]),
+            np.array([1, 1, 2, 0, 0]),
+            np.array([1, 1], dtype=bool),  # both sources quantum
+            sources_to_check_for_pairwise=pairwise_source_info),
+            "nb_operators_commute fails to identify " +
+            "non-commutativty when overlapping on quantum sources.")
         self.assertTrue(nb_operators_commute(
-                            np.array([1, 1, 1, 0, 0]),
-                            np.array([1, 1, 2, 0, 0]),
-                            np.array([0, 1], dtype=bool)),  # first source classical
-                        "nb_operators_commute fails to identify " +
-                        "commutativity when overlapping on classical sources.")
+            np.array([1, 1, 1, 0, 0]),
+            np.array([1, 1, 2, 0, 0]),
+            np.array([0, 1], dtype=bool),  # first source classical
+            sources_to_check_for_pairwise=pairwise_source_info),
+            "nb_operators_commute fails to identify " +
+            "commutativity when overlapping on classical sources.")
         self.assertTrue(nb_operators_commute(
-                            np.array([1, 1, 1, 0, 0]),
-                            np.array([1, 1, 2, 1, 0]),
-                            np.array([0, 1], dtype=bool)),  # first source classical
-                        "nb_operators_commute fails to identify " +
-                        "commutativity when overlapping on classical sources "+
-                        "with different settings for the operators.")
+            np.array([1, 1, 1, 0, 0]),
+            np.array([1, 1, 2, 1, 0]),
+            np.array([0, 1], dtype=bool),  # first source classical
+            sources_to_check_for_pairwise=pairwise_source_info),
+            "nb_operators_commute fails to identify " +
+            "commutativity when overlapping on classical sources " +
+            "with different settings for the operators.")
         self.assertTrue(nb_operators_commute(
-                            np.array([1, 1, 1, 0, 0]),
-                            np.array([1, 1, 1, 1, 0]),
-                            np.array([0, 0], dtype=bool)),  # both sources classical
-                        "nb_operators_commute fails to identify " +
-                        "commutativity when overlapping on classical sources "+
-                        "with different settings for the operators.")
+            np.array([1, 1, 1, 0, 0]),
+            np.array([1, 1, 1, 1, 0]),
+            np.array([0, 0], dtype=bool),  # both sources classical
+            sources_to_check_for_pairwise=pairwise_source_info),
+            "nb_operators_commute fails to identify " +
+            "commutativity when overlapping on classical sources " +
+            "with different settings for the operators.")
         
 
 
