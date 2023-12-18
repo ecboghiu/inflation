@@ -65,7 +65,7 @@ class InflationProblem:
             sources.
         classical_sources : Union[List[str], str], optional
             Names of the sources that are assumed to be classical. If ``'all'``,
-            it imposes that all sources are classical. By default 'all'. 
+            it imposes that all sources are classical. By default an empty tuple.
         order : List[str], optional
             Name of each party. This also fixes the order in which party outcomes
             and settings are to appear in a conditional probability distribution.
@@ -195,20 +195,9 @@ class InflationProblem:
         self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
-        if classical_sources == "all":
-            self._classical_sources = np.ones(self.nr_sources, dtype=bool)
-        else:
-            self._classical_sources = np.zeros(self.nr_sources, dtype=bool)
         for ii, source in enumerate(self._actual_sources):
             pos = [names_to_integers[party] for party in self.dag[source]]
             self.hypergraph[ii, pos] = 1
-        if not isinstance(classical_sources, str):
-            if classical_sources:
-                for ii, source in enumerate(self._actual_sources):
-                    if source in classical_sources:
-                        self._classical_sources[ii] = True
-        self._nonclassical_sources = np.logical_not(self._classical_sources)
-
         assert self.hypergraph.shape[1] == self.nr_parties, \
             ("The number of parties derived from the DAG is "
              + f"{self.hypergraph.shape[1]} and from the specification of "
@@ -314,7 +303,24 @@ class InflationProblem:
         self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._nr_operators = len(self._lexorder)
-        
+
+        self._lexorder_for_factorization = np.array([
+            self._inflation_indices_hash[op.tobytes()]
+            for op in self._lexorder[:, 1:-2]],
+            dtype=np.intc)
+
+        # Here we set up compatible measurements
+        if classical_sources == "all":
+            self._classical_sources = np.ones(self.nr_sources, dtype=bool)
+        else:
+            self._classical_sources = np.zeros(self.nr_sources, dtype=bool)
+        if not isinstance(classical_sources, (str, type(None))):
+            if classical_sources:
+                for ii, source in enumerate(self._actual_sources):
+                    if source in classical_sources:
+                        self._classical_sources[ii] = True
+        self._nonclassical_sources = np.logical_not(self._classical_sources)
+
         if self._nonclassical_sources.any():
             self._default_notcomm = commutation_matrix(self._lexorder,
                                                        self._nonclassical_sources,
@@ -334,13 +340,6 @@ class InflationProblem:
             block+= offset
             self._compatible_measurements[np.ix_(block, block)] = False
             offset+=l
-
-        self._lexorder_for_factorization = np.array([
-            self._inflation_indices_hash[op.tobytes()]
-            for op in self._lexorder[:, 1:-2]],
-            dtype=np.intc)
-
-
 
 
     def __repr__(self):
