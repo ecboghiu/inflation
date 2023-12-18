@@ -259,7 +259,7 @@ class TestReset(unittest.TestCase):
 
 
 class TestResetLP(unittest.TestCase):
-    lp = InflationLP(trivial, nonfanout=False)
+    lp = InflationLP(trivial_c, nonfanout=False)
     lp._generate_lp()
 
     def setUp(self) -> None:
@@ -307,6 +307,11 @@ class TestSDPOutput(unittest.TestCase):
                                     outcomes_per_party=[2, 2],
                                     settings_per_party=[2, 2],
                                     inflation_level_per_source=[1])
+    bellScenario_c = InflationProblem({"Lambda": ["A", "B"]},
+                                      outcomes_per_party=[2, 2],
+                                      settings_per_party=[2, 2],
+                                      inflation_level_per_source=[1],
+                                      classical_sources='all')
 
     cutInflation = InflationProblem({"lambda": ["a", "b"],
                                      "mu": ["b", "c"],
@@ -329,6 +334,13 @@ class TestSDPOutput(unittest.TestCase):
                                     settings_per_party=(3, 1),
                                     inflation_level_per_source=(1,),
                                     order=("A", "B"))
+    instrumental_c = InflationProblem({"U_AB": ["A", "B"],
+                                       "A": ["B"]},
+                                      outcomes_per_party=(2, 2),
+                                      settings_per_party=(3, 1),
+                                      inflation_level_per_source=(1,),
+                                      order=("A", "B"),
+                                      classical_sources='all')
 
     incompatible_dist = np.array([[[[0.5], [0.5], [0.0]],
                                    [[0.0], [0.0], [0.5]]],
@@ -645,7 +657,7 @@ class TestLPOutput(unittest.TestCase):
                     f"{lp.objective_value}.")
 
     def test_instrumental(self):
-        lp = InflationLP(TestSDPOutput.instrumental, nonfanout=False)
+        lp = InflationLP(TestSDPOutput.instrumental_c, nonfanout=False)
         with self.subTest(msg="Infeasible Bonet's inequality"):
             lp.set_distribution(TestSDPOutput.incompatible_dist)
             lp.solve(feas_as_optim=False)
@@ -671,7 +683,7 @@ class TestLPOutput(unittest.TestCase):
                              "scenario is not being recognized as such.")
 
     def test_supports(self):
-        lp = InflationLP(TestSDPOutput.bellScenario, supports_problem=True,
+        lp = InflationLP(TestSDPOutput.bellScenario_c, supports_problem=True,
                          nonfanout=False)
         with self.subTest(msg="Incompatible support"):
             pr_support = np.zeros((2, 2, 2, 2))
@@ -918,6 +930,13 @@ class TestInstrumental(TestPipelineLP):
                                     settings_per_party=(2, 1),
                                     inflation_level_per_source=(1,),
                                     order=("A", "B"))
+    instrumental_c = InflationProblem({"U_AB": ["A", "B"],
+                                       "A": ["B"]},
+                                      outcomes_per_party=(2, 2),
+                                      settings_per_party=(2, 1),
+                                      inflation_level_per_source=(1,),
+                                      order=("A", "B"),
+                                      classical_sources='all')
 
     def GHZ(self, v):
         dist = np.full((2, 2, 2, 1), (1 - v) / 4)
@@ -925,7 +944,7 @@ class TestInstrumental(TestPipelineLP):
         return dist
 
     def test_instrumental_fanout(self):
-        inst = InflationLP(self.instrumental, nonfanout=False)
+        inst = InflationLP(self.instrumental_c, nonfanout=False)
         args = {"scenario": inst,
                 "truth_columns": 36,
                 "truth_eq": 20,
@@ -948,6 +967,11 @@ class TestBell(TestPipelineLP):
                                     outcomes_per_party=[2, 2],
                                     settings_per_party=[2, 2],
                                     inflation_level_per_source=[1])
+    bellScenario_c = InflationProblem({"Lambda": ["A", "B"]},
+                                      outcomes_per_party=[2, 2],
+                                      settings_per_party=[2, 2],
+                                      inflation_level_per_source=[1],
+                                      classical_sources='all')
 
     def _CHSH(self, **args):
         lp = args["scenario"]
@@ -972,7 +996,7 @@ class TestBell(TestPipelineLP):
         return dist
 
     def test_bell_fanout(self):
-        bell = InflationLP(self.bellScenario, nonfanout=False)
+        bell = InflationLP(self.bellScenario_c, nonfanout=False)
         args = {"scenario": bell,
                 "truth_columns": 16,
                 "truth_obj": 2,
@@ -1035,6 +1059,14 @@ class TestEvans(TestPipelineLP):
                              settings_per_party=(1, 1, 1),
                              inflation_level_per_source=(1, 1),
                              order=("A", "B", "C"))
+    evans_c = InflationProblem({"U_AB": ["A", "B"],
+                                "U_BC": ["B", "C"],
+                                "B": ["A", "C"]},
+                               outcomes_per_party=(2, 2, 2),
+                               settings_per_party=(1, 1, 1),
+                               inflation_level_per_source=(1, 1),
+                               order=("A", "B", "C"),
+                               classical_sources='all')
 
     def GHZ(self, v):
         dist = np.zeros((2, 2, 2, 1, 1, 1))
@@ -1043,7 +1075,7 @@ class TestEvans(TestPipelineLP):
         return dist
 
     def test_evans_fanout(self):
-        evans = InflationLP(self.evans, nonfanout=False)
+        evans = InflationLP(self.evans_c, nonfanout=False)
         args = {"scenario": evans,
                 "truth_columns": 48,
                 "truth_eq": 16,

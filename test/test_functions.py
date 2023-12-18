@@ -175,9 +175,14 @@ class TestProblems(TestExtraConstraints):
                                     outcomes_per_party=[3],
                                     settings_per_party=[2],
                                     inflation_level_per_source=[1])
+    bellScenario_c = InflationProblem({"Lambda": ["A"]},
+                                    outcomes_per_party=[3],
+                                    settings_per_party=[2],
+                                    inflation_level_per_source=[1],
+                                    classical_sources='all')
 
     def test_lp(self):
-        lp = InflationLP(self.bellScenario, nonfanout=False)
+        lp = InflationLP(self.bellScenario_c, nonfanout=False)
         compound_mon = lp.monomials[-1]
         str_mon = "pA(0|0)"
         int_mon = 1
@@ -341,7 +346,7 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                        "The physical monomials sets are not equal " +
                        "in 1 party nonfanout LP.")
         
-        self.assertTrue(len(physical_monomials) == 253, 
+        self.assertEqual(253, len(physical_monomials),
                         "Wrong number of physical monomials generated.")
         
     def test_physical_mon_gen_1party_2_hybrid_sources(self):
@@ -350,7 +355,7 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                                     (3, 2),
                                     classical_sources=['t'])
         physical_monomials = scenario._generate_compatible_monomials_given_party(0)
-        self.assertTrue(len(physical_monomials) == 729, 
+        self.assertEqual(729, len(physical_monomials),
                         "Wrong number of physical monomials generated.")
         for boolmon in physical_monomials:
             _s_ = np.nonzero(boolmon)[0]
