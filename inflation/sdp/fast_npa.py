@@ -557,7 +557,6 @@ def nb_exists_shared_source(inf_indices1: np.ndarray,
         return False
     return not np.subtract(inf_indices1[common_sources],
                            inf_indices2[common_sources]).all()
-    
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_lexmon_to_canonical(lexmon: np.ndarray,
                            notcomm: np.ndarray) -> np.ndarray:
@@ -584,10 +583,10 @@ def nb_lexmon_to_canonical(lexmon: np.ndarray,
         lexmon = leftover
         ########################################################################
         # A subroutine that splits lexmon into two monomials, m1 and m2,
-        # such that m1 is appended to result, and m2 is the new lexmon for a 
+        # such that m1 is appended to result, and m2 is the new lexmon for a
         # new iteration of the while loop.
-        # This subroutine should be defined in a function but numba 
-        # gives problems with returning tuples (m1,m2) from functions. 
+        # This subroutine should be defined in a function but numba
+        # gives problems with returning tuples (m1,m2) from functions.
         if lexmon.shape[0] <= 1:
             m1, m2 = lexmon, np.empty((0,), dtype=int_)
         else:
