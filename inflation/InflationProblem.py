@@ -43,7 +43,8 @@ class InflationProblem:
                  settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
-                 intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
+                 nonclassical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
+                 classical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
                  order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
         """Class for encoding relevant details concerning the causal compatibility
@@ -67,9 +68,13 @@ class InflationProblem:
         classical_sources : Union[List[str], str], optional
             Names of the sources that are assumed to be classical. If ``'all'``,
             it imposes that all sources are classical. By default an empty tuple.
-        intermediate_latents: Tuple[str], optional
-            Designates non-exogynous nodes in the DAG with these names as latent,
-            in addition to all exogynous nodes.
+        nonclassical_intermediate_latents: Tuple[str], optional
+            Designates non-exogynous nodes in the DAG with these names as
+            nonclassical latent, in addition to all exogynous nodes other than
+            those specifically indicates as classical.
+        classical_intermediate_latents: Tuple[str], optional
+            Designates non-exogynous nodes in the DAG with these names as
+            a classical-type latent, alongside any latents from classical_sources.
         order : Tuple[str], optional
             Name of each party. This also fixes the order in which party outcomes
             and settings are to appear in a conditional probability distribution.
@@ -111,7 +116,7 @@ class InflationProblem:
         # Assign names to the visible variables
         names_have_been_set_yet = False
         if dag:
-            implicit_names = set(map(str, chain.from_iterable(dag.values()))).difference(intermediate_latents)
+            implicit_names = set(map(str, chain.from_iterable(dag.values()))).difference(nonclassical_intermediate_latents)
             assert len(implicit_names) == self.nr_parties, \
                 ("You must provide a number of outcomes for the following "
                  + f"{len(implicit_names)} variables: {implicit_names}")
@@ -154,20 +159,38 @@ class InflationProblem:
                      + "Defaulting to one global source.")
             self.dag = {"h_global": set(self.names)}
         else:
-            #Sources are nodes with children but not parents
+            # Sources are nodes with children but not parents
             self.dag = {str(parent): set(map(str, children)) for
                         parent, children in dag.items()}
 
-        # Unpacking of visible nodes with children
+        # Internal record of intermediate latents
+        self.classical_intermediate_latents = set(classical_intermediate_latents)
+        self.nonclassical_intermediate_latents = set(nonclassical_intermediate_latents)
+        assert self.classical_intermediate_latents.isdisjoint(self.nonclassical_intermediate_latents), "An intermediate latent cannot be both classical and nonclassical."
+        self.intermediate_latents = self.classical_intermediate_latents.union(self.nonclassical_intermediate_latents)
+
+
+        # Distinguishing between classical versus nonclassical sources
         nodes_with_children_as_list = list(self.dag.keys())
         nodes_with_children = set(nodes_with_children_as_list)
         self._actual_sources = sorted(
-            nodes_with_children.difference(self.names, intermediate_latents),
+            nodes_with_children.difference(self.names, self.intermediate_latents),
             key=nodes_with_children_as_list.index)
         self.nr_sources = len(self._actual_sources)
+        if classical_sources == "all":
+            self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
+        else:
+            self._classical_sources = np.zeros(self.nr_sources, dtype=np.uint8)
+        if not isinstance(classical_sources, (str, type(None))):
+            if classical_sources:
+                assert set(classical_sources).issubset(self._actual_sources), "Some specified classical source cannot be found in the DAG."
+                for ii, source in enumerate(self._actual_sources):
+                    if source in classical_sources:
+                        self._classical_sources[ii] = 1
+        self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
+
+        # Unpacking of visible nodes with children
         parties_with_children = nodes_with_children.intersection(self.names)
-
-
         self.has_children   = np.zeros(self.nr_parties, dtype=bool)
         self.is_network     = set(nodes_with_children).isdisjoint(self.names)
         names_to_integers = {party: position
@@ -178,14 +201,10 @@ class InflationProblem:
             ii = names_to_integers[parent]
             self.has_children[ii] = True
             observable_children = set(self.dag[parent])
-            while observable_children:
-                child = observable_children.pop()
-                if child in self.names:
-                    jj = names_to_integers[child]
-                    adjacency_matrix[ii, jj] = True
-                    continue
-                assert child in intermediate_latents, f"Error, {child} is not a recognized party or intermediate latent."
-                observable_children.update(self.dag[child])
+            assert observable_children.issubset(self.names), "At this time InflationProblem does not accept DAGs with observed nodes pointing to intermediate latents."
+            for child in observable_children:
+                jj = names_to_integers[child]
+                adjacency_matrix[ii, jj] = True
 
         # Compute number of settings for the unpacked variables
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
@@ -209,39 +228,31 @@ class InflationProblem:
         # Create network corresponding to the unpacked scenario
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
+        # We need to distinguish between quantum versus classical sources.
+        # We use the internal convention that +1 indicates a shared classical source
+        # whereas +2 indicates a shared quantum sources
         self.sources_to_check_for_party_pair_commutation = np.zeros((self.nr_parties, self.nr_parties, self.nr_sources),
-                                    dtype=bool)
+                                    dtype=np.uint8)
         for source_idx, source in enumerate(self._actual_sources):
+            quantum_source_bonus = self._nonclassical_sources[source_idx]
             children = self.dag[source]
             observable_children = children.intersection(self.names)
             latent_children = children.difference(self.names)
-            latents_explored_already = latent_children.copy()
-            assert latent_children.issubset(intermediate_latents), f"{latent_children.difference(intermediate_latents)} are not a recognized party or intermediate latent."
+            assert latent_children.issubset(self.intermediate_latents), f"{latent_children.difference(self.intermediate_latents)} are not all a recognized party or an intermediate latent."
             for child in observable_children:
                 child_idx = names_to_integers[child]
                 self.hypergraph[source_idx, child_idx] = 1
-                self.sources_to_check_for_party_pair_commutation[child_idx, child_idx, source_idx] = True
+                self.sources_to_check_for_party_pair_commutation[child_idx, child_idx, source_idx] = 1 + quantum_source_bonus
             for intermediate_latent in latent_children:
-                starting_children = self.dag[intermediate_latent]
-                observable_descendants_via_this_latent = starting_children.intersection(self.names)
-                latents_still_to_explore = starting_children.difference(self.names)
-                assert latents_still_to_explore.issubset(intermediate_latents), f"{latents_still_to_explore.difference(intermediate_latents)} are not a recognized party or intermediate latent."
-                assert latents_still_to_explore.isdisjoint(latents_explored_already), f"Cycle detected among intermediate latents."
-                latents_explored_already.update(latents_still_to_explore)
-                while latents_still_to_explore:
-                    next_latent = latents_still_to_explore.pop()
-                    next_children = self.dag[next_latent]
-                    observable_descendants_via_this_latent.update(next_children.intersection(self.names))
-                    new_latents = next_children.difference(self.names)
-                    assert new_latents.issubset(intermediate_latents), f"{new_latents.difference(intermediate_latents)} are not a recognized party or intermediate latent."
-                    assert new_latents.isdisjoint(latents_explored_already), f"Cycle detected among intermediate latents."
-                    latents_explored_already.update(new_latents)
+                observable_descendants_via_this_latent = self.dag[intermediate_latent]
+                assert observable_descendants_via_this_latent.issubset(self.names), "At this time InflationProblem does not accept DAGs with intermediate latents pointing to other intermediate latents."
+                quantum_connection_bonus = np.logical_and(intermediate_latent in self.nonclassical_intermediate_latents, quantum_source_bonus).astype(np.uint8)
                 for desc in observable_descendants_via_this_latent:
                     desc_idx = names_to_integers[desc]
                     self.hypergraph[source_idx, desc_idx] = 1
                     for desc2 in observable_descendants_via_this_latent:
                         desc2_idx = names_to_integers[desc2]
-                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx] = True
+                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx] = 1 + quantum_connection_bonus
 
 
         assert np.sum(self.hypergraph, axis=0).all(), \
@@ -354,20 +365,8 @@ class InflationProblem:
             dtype=np.intc)
 
         # Here we set up compatible measurements
-        if classical_sources == "all":
-            self._classical_sources = np.ones(self.nr_sources, dtype=bool)
-        else:
-            self._classical_sources = np.zeros(self.nr_sources, dtype=bool)
-        if not isinstance(classical_sources, (str, type(None))):
-            if classical_sources:
-                for ii, source in enumerate(self._actual_sources):
-                    if source in classical_sources:
-                        self._classical_sources[ii] = True
-        self._nonclassical_sources = np.logical_not(self._classical_sources)
-
         if self._nonclassical_sources.any():
             self._default_notcomm = commutation_matrix(self._lexorder,
-                                                       self._nonclassical_sources,
                                                        self.sources_to_check_for_party_pair_commutation,
                                                        False)
         else:

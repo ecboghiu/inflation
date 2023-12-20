@@ -458,7 +458,6 @@ def apply_source_perm(monomial: np.ndarray,
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def commutation_matrix(lexorder: np.ndarray,
-                       quantum_sources: np.ndarray,
                        sources_to_check_for_pairwise: np.ndarray,
                        commuting=False) -> np.ndarray:
     """Build a matrix encoding of which operators commute according to the
@@ -497,7 +496,6 @@ def commutation_matrix(lexorder: np.ndarray,
             for j in range(i + 1, lexorder.shape[0]):
                 notcomm[i, j] = not nb_operators_commute(lexorder[i],
                                                          lexorder[j],
-                                                         quantum_sources,
                                                          sources_to_check_for_pairwise)
         notcomm = notcomm + notcomm.T
     return notcomm
@@ -628,7 +626,6 @@ def nb_lexmon_to_canonical(lexmon: np.ndarray,
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_operators_commute(operator1: np.ndarray,
                          operator2: np.ndarray,
-                         quantum_sources: np.ndarray,
                          sources_to_check_for_pairwise: np.ndarray
                          ) -> bool_:
     """Determine if two operators commute. Currently, this only takes into
@@ -640,13 +637,9 @@ def nb_operators_commute(operator1: np.ndarray,
         Operator as an array of integers.
     operator2 : numpy.ndarray
         Operator as an array of integers.
-    quantum_sources : numpy.ndarray
-        Bitvector denoting the columns of the 2D array operator
-        that encode inflation indices for sources that are quantum mechanical.
-        If all elements are False (i.e. 0), then all sources are classical.
     sources_to_check_for_pairwise: numpy.ndarray
         A 3-index tensor boolean array which keep track of which pairs of parties
-        have which quantum sources in common via intermediate quantum latents.
+        have which quantum or classical sources in common via intermediate latents.
 
     Returns
     -------
@@ -658,19 +651,20 @@ def nb_operators_commute(operator1: np.ndarray,
     --------
     A^11_00 does not commute with A^12_00 because they overlap on source 1.
     >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
-                             np.array([1, 1, 2, 0, 0]),  np.array([True, True]))
+                             np.array([1, 1, 2, 0, 0]),  np.array([[[2,2],[0,0]],[[0,0],[2,2]]))
     False
     
     A^11_00 commutes with A^12_00 because source 1 is classical.
     >>> nb_operators_commute(np.array([1, 1, 1, 0, 0]),
-                             np.array([1, 1, 2, 0, 0]),  np.array([False, True]))
+                             np.array([1, 1, 2, 0, 0]),  np.array([[[1,2],[0,0]],[[0,0],[1,2]]))
     True
     """
     # Case 0: Different parties commute
     party1 = operator1[0] - 1
     party2 = operator2[0] - 1
-    common_source_positions_all = sources_to_check_for_pairwise[party1, party2]
-    common_source_positions_quantum = np.logical_and(common_source_positions_all, quantum_sources)
+    relevant_sources = sources_to_check_for_pairwise[party1, party2]
+    common_source_positions_all = np.greater_equal(relevant_sources, 1)
+    common_source_positions_quantum = np.greater_equal(relevant_sources, 2)
 
     # Case 1: no common quantum source TYPE
     if not common_source_positions_quantum.any():
