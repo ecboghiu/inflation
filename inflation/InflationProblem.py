@@ -252,7 +252,9 @@ class InflationProblem:
                     self.hypergraph[source_idx, desc_idx] = 1
                     for desc2 in observable_descendants_via_this_latent:
                         desc2_idx = names_to_integers[desc2]
-                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx] = 1 + quantum_connection_bonus
+                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx] = max(
+                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx],
+                            1 + quantum_connection_bonus)
 
 
         assert np.sum(self.hypergraph, axis=0).all(), \
