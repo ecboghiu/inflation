@@ -15,6 +15,7 @@ try:
     from numba.types import intc as int_
     nopython = True
 except ImportError:
+    print("Warning: NOT using Numba for JIT compilation.")
     def jit(*args, **kwargs):
         return lambda f: f
     bool_    = bool
