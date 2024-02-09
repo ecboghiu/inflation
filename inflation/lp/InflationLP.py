@@ -409,7 +409,8 @@ class InflationLP(object):
                 remaining_mons = (mon for mon in self.monomials
                                   if not mon.is_atomic)
             surprising_semiknowns = set()
-            for mon in remaining_mons:
+            for mon in tqdm(list(remaining_mons), disable=not self.verbose,
+                                 desc="Evaluating monomials    "):
                 value, unknown_factors, known_status = mon.evaluate(
                     atomic_knowns,
                     self.use_lpi_constraints)
@@ -1123,6 +1124,8 @@ class InflationLP(object):
             if self.verbose > 0:
                 eprint("Initiating symmetry calculation...")
             orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs)
+            if self.verbose > 1:
+                eprint("Halfway through symmetry calculations...")
             old_reps_CG, unique_indices_CG, inverse_CG = np.unique(
                 orbits,
                 return_index=True,
