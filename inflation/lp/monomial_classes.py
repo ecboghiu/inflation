@@ -31,7 +31,7 @@ class InternalAtomicMonomial(object):
                  "rectified_ndarray",
                  "context",
                  "name",
-                 "symbol",
+                 # "symbol",
                  "signature",
                  # "as_bool_vec"
                  ]
@@ -88,7 +88,7 @@ class InternalAtomicMonomial(object):
 
         self.name = self._name
         self.signature = self._signature
-        self.symbol = self._symbol
+        # self.symbol = self._symbol
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -162,7 +162,7 @@ class InternalAtomicMonomial(object):
         return (self.n_operators, tuple(self.as_lexmon))
 
     @property
-    def _symbol(self):
+    def symbol(self):
         """Return a sympy Symbol representing the monomial."""
         return symbol_from_atom_name(self.name)
 
@@ -205,7 +205,7 @@ class CompoundMoment(object):
                  "n_unknowable_factors",
                  "name",
                  "signature",
-                 "symbol",
+                 # "symbol",
                  "unknowable_factors",
                  "as_lexmon",
                  "internal_type"
@@ -241,11 +241,12 @@ class CompoundMoment(object):
 
         knowable_factors   = []
         unknowable_factors = []
-        for factor in self.factors:
+        self.as_counter = Counter(self.factors)
+        for factor, power in self.as_counter.items():
             if factor.is_knowable:
-                knowable_factors.append(factor)
+                knowable_factors.extend([factor] * power)
             else:
-                unknowable_factors.append(factor)
+                unknowable_factors.extend([factor] * power)
         self.knowable_factors     = tuple(knowable_factors)
         self.unknowable_factors   = tuple(unknowable_factors)
         self.n_knowable_factors   = len(self.knowable_factors)
@@ -259,9 +260,9 @@ class CompoundMoment(object):
         self.is_one  = (all(factor.is_one for factor in self.factors)
                         or (self.n_factors == 0))
         self.is_zero = any(factor.is_zero for factor in self.factors)
-        self.as_counter  = Counter(self.factors)
+
         self.name        = name_from_atom_names(self._names_of_factors)
-        self.symbol      = symbol_prod(self._symbols_of_factors)
+        # self.symbol      = symbol_prod(self._symbols_of_factors)
         self.signature   = self.factors
         self.internal_type = InternalAtomicMonomial
 
@@ -301,6 +302,10 @@ class CompoundMoment(object):
     def _symbols_of_factors(self):
         """Generate a sympy Symbol per factor in the Monomial."""
         return [factor.symbol for factor in self.factors]
+
+    @property
+    def symbol(self):
+        return symbol_prod(self._symbols_of_factors)
 
     def attach_idx(self, idx: int):
         """Assign an index to the Monomial. This is used when generating the
