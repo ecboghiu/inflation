@@ -74,8 +74,7 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
 
     @cached_property
     def is_all_commuting(self) -> bool:
-        """If the moment containts operators that all commute.
-        """
+        """If the moment contains operators that all commute."""
         return self.context.all_commuting_q_1d(self.as_lexmon)
 
     @cached_property
@@ -88,8 +87,7 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
     @cached_property
     def is_hermitian(self) -> bool:
         """Whether the atomic monomial is equivalent to its conjugate
-         under inflation symmetries and commutation.
-        """
+         under inflation symmetries and commutation."""
         return np.array_equal(self.as_lexmon, self.conjugate_lexmon)
 
     @property
