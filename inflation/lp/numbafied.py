@@ -52,15 +52,6 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-# def bitvec_to_int(bitvec: np.ndarray) -> int_:
-#     val = 0
-#     for b in bitvec.flat:
-#         val = np.left_shift(val, 1)
-#         val = np.bitwise_or(val, b)
-#     return val
-
-
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
