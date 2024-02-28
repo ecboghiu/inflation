@@ -8,19 +8,15 @@ import numpy as np
 try:
     from numba import jit, prange, bool_
     from numba.types import int_
-    from numba.typed import Dict, List, Set
-    empty_dict = Dict.empty(key_type=int_, value_type=int_)
     nopython = True
 except ImportError:
+    print("Warning: NOT using Numba for JIT compilation.")
     def jit(*args, **kwargs):
         return lambda f: f
     bool_    = bool
     int_     = int
     nopython = False
     prange   = range
-    empty_dict = dict()
-    List = list
-    Set = set
 cache    = True
 if not nopython:
     bool_  = bool
@@ -56,37 +52,26 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def bitvec_to_int(bitvec: np.ndarray) -> int_:
-    val = 0
-    for b in bitvec.flat:
-        val = np.left_shift(val, 1)
-        val = np.bitwise_or(val, b)
-    return val
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def bitvec_to_int(bitvec: np.ndarray) -> int_:
+#     val = 0
+#     for b in bitvec.flat:
+#         val = np.left_shift(val, 1)
+#         val = np.bitwise_or(val, b)
+#     return val
 
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
-    # Note: dictionary creation seems wasteful,
-    # but this function is not called within loops.
-    lookup_dict = empty_dict.copy()
-    for i, bitvec in enumerate(monomials_as_lexboolvecs):
-        lookup_dict[bitvec_to_int(bitvec)] = i
-    lookup_dict_keys = Set(lookup_dict.keys())
-    # lookup_dict = {bitvec_to_int(bitvec): i for i, bitvec in
-    #                enumerate(monomials_as_lexboolvecs)}
     orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int_) - 1
     for i, default_lexboolvec in enumerate(monomials_as_lexboolvecs):
         if orbits[i] == -1:
-            # alternative_lexboolvecs = default_lexboolvec[lexorder_perms]
-            equivalent_monomial_positions = List()
             for perm in lexorder_perms:
-                bitvec = default_lexboolvec[perm]
-                bitvec_as_int = bitvec_to_int(bitvec)
-                if bitvec_as_int in lookup_dict_keys:
-                    equivalent_monomial_positions.append(lookup_dict[bitvec_as_int])
-            orbits[equivalent_monomial_positions] = i
+                negated_xor = np.logical_not(np.logical_xor(
+                    default_lexboolvec[np.newaxis, perm],
+                    monomials_as_lexboolvecs).sum(axis=1))
+                orbits[negated_xor] = i
     return orbits
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
