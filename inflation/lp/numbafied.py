@@ -6,7 +6,7 @@ compilation in numba.
 import numpy as np
 
 try:
-    from numba import jit, prange, bool_
+    from numba import jit, bool_
     from numba.types import int_
     nopython = True
 except ImportError:
@@ -44,7 +44,7 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
     """
     length = lexorder.shape[0]
     in_lex = np.zeros(length, dtype=bool_)
-    for i in prange(length):
+    for i in range(length):
         standard_op = lexorder[i]
         for op in mon:
             if np.array_equal(op, standard_op):
@@ -56,13 +56,19 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
     orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int_) - 1
-    for i, default_lexboolvec in enumerate(monomials_as_lexboolvecs):
+    length = monomials_as_lexboolvecs.shape[0]
+    for i in range(length):
+        target_vec = monomials_as_lexboolvecs[i]
         if orbits[i] == -1:
+            include_mask = (orbits == -1)
             for perm in lexorder_perms:
-                negated_xor = np.logical_not(np.logical_xor(
-                    default_lexboolvec[np.newaxis, perm],
-                    monomials_as_lexboolvecs).sum(axis=1))
-                orbits[negated_xor] = i
+                target_vec_permuted = target_vec[perm]
+                for j in range(length):
+                    if include_mask[j]:
+                        if np.array_equal(target_vec_permuted,
+                                          monomials_as_lexboolvecs[j]):
+                            orbits[j] = i
+                            break
     return orbits
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
