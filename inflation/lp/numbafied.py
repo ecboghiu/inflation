@@ -52,15 +52,6 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-# def bitvec_to_int(bitvec: np.ndarray) -> int_:
-#     val = 0
-#     for b in bitvec.flat:
-#         val = np.left_shift(val, 1)
-#         val = np.bitwise_or(val, b)
-#     return val
-
-
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                                           lexorder_perms: np.ndarray) -> np.ndarray:
@@ -73,6 +64,18 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
                     monomials_as_lexboolvecs).sum(axis=1))
                 orbits[negated_xor] = i
     return orbits
+
+# def nb_apply_lexorder_perm_to_lexboolvecs_no_numba(monomials_as_lexboolvecs: np.ndarray,
+#                                           lexorder_perms: np.ndarray) -> np.ndarray:
+#     orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int) - 1
+#     reshaped_monomials = monomials_as_lexboolvecs.T[np.newaxis]
+#     for i, default_lexboolvec in enumerate(monomials_as_lexboolvecs):
+#         if orbits[i] == -1:
+#             negated_xor = np.logical_not(np.logical_xor(
+#                 np.atleast_3d(default_lexboolvec[lexorder_perms]),
+#                 reshaped_monomials).any(axis=1))
+#             orbits[np.nonzero(negated_xor)[-1]] = i
+#     return orbits
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
