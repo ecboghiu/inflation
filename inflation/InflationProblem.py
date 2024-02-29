@@ -113,10 +113,16 @@ class InflationProblem:
             (self.outcomes_per_party,
              self.private_settings_per_party)).tolist())
 
+        # Internal record of intermediate latents
+        self.classical_intermediate_latents = set(map(str,classical_intermediate_latents))
+        self.nonclassical_intermediate_latents = set(map(str,nonclassical_intermediate_latents))
+        assert self.classical_intermediate_latents.isdisjoint(self.nonclassical_intermediate_latents), "An intermediate latent cannot be both classical and nonclassical."
+        self.intermediate_latents = self.classical_intermediate_latents.union(self.nonclassical_intermediate_latents)
+
         # Assign names to the visible variables
         names_have_been_set_yet = False
         if dag:
-            implicit_names = set(map(str, chain.from_iterable(dag.values()))).difference(nonclassical_intermediate_latents)
+            implicit_names = set(map(str, chain.from_iterable(dag.values()))).difference(self.intermediate_latents)
             assert len(implicit_names) == self.nr_parties, \
                 ("You must provide a number of outcomes for the following "
                  + f"{len(implicit_names)} variables: {implicit_names}")
@@ -162,12 +168,6 @@ class InflationProblem:
             # Sources are nodes with children but not parents
             self.dag = {str(parent): set(map(str, children)) for
                         parent, children in dag.items()}
-
-        # Internal record of intermediate latents
-        self.classical_intermediate_latents = set(classical_intermediate_latents)
-        self.nonclassical_intermediate_latents = set(nonclassical_intermediate_latents)
-        assert self.classical_intermediate_latents.isdisjoint(self.nonclassical_intermediate_latents), "An intermediate latent cannot be both classical and nonclassical."
-        self.intermediate_latents = self.classical_intermediate_latents.union(self.nonclassical_intermediate_latents)
 
 
         # Distinguishing between classical versus nonclassical sources
