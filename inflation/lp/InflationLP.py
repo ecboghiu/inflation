@@ -85,7 +85,8 @@ class InflationLP(object):
         if not nonfanout:
             assert not inflationproblem._default_notcomm.any(), \
                 "You appear to be requesting fanout (classical)" \
-                    + " inflation, \nbut have not specified classical_sources=`all`."
+                    + " inflation, \nbut have not specified classical_sources=`all`." \
+                    + "\nNote that the `nonfanout` keyword argument is deprecated as of release 2.0.0"
         self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)

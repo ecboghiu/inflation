@@ -168,14 +168,17 @@ class InflationSDP:
             np.pad(inflationproblem._default_notcomm,
                        ((1, 0), (1, 0)))
 
-        self.all_operators_commute = commuting or (not self._default_notcomm.any())
+        self._notcomm = self._default_notcomm.copy()
+        self.all_operators_commute = not self._notcomm.any()
+        if commuting:
+            assert self.all_operators_commute, \
+                "You appear to be requesting commuting (classical)" \
+                    + " inflation, \nbut have not specified classical_sources=`all`." \
+                    + "\nNote that the `commuting` keyword argument has been deprecated as of release 2.0.0"
         if self.all_operators_commute:
-            self._quantum_sources = np.zeros_like(self._quantum_sources)
-            self._notcomm = np.zeros((self._lexorder_len, self._lexorder_len), dtype=bool)
             self.all_commuting_q_2d = lambda mon: True
             self.all_commuting_q_1d = lambda lexmon: True
         else:
-            self._notcomm = self._default_notcomm.copy()
             self.all_commuting_q_1d = \
                 lambda lexmon: not self._notcomm[np.ix_(lexmon, lexmon)].any()
             self.all_commuting_q_2d = \
