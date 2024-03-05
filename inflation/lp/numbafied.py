@@ -73,14 +73,14 @@ def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
-    a_adj = a[:, np.newaxis]
+    a_adj = np.expand_dims(a, 1)
     b_adj = b.reshape((1,)+b.shape)
     temp = np.logical_or(a_adj, b_adj)
     return temp.reshape((-1, *temp.shape[2:]))
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_xor(a: np.ndarray, b: np.ndarray):
-    a_adj = a[:, np.newaxis]
+    a_adj = np.expand_dims(a, 1)
     b_adj = b.reshape((1,)+b.shape)
     temp = np.logical_xor(a_adj, b_adj)
     return temp.reshape((-1, *temp.shape[2:]))
