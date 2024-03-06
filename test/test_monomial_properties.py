@@ -195,7 +195,7 @@ class TestToRepr(unittest.TestCase):
 class TestCommutations(unittest.TestCase):
     scenario = InflationProblem(dag={"s1": ["A", "B", "l1", "l2"],
                                      "s2": ["C", "D"],
-                                     "s3": ["l2"],
+                                     "s3": ["l1", "l2"],
                                      "l1": ["C", "D"],
                                      "l2": ["B", "E"]},
                                 outcomes_per_party=[2, 2, 2, 2, 2],
@@ -262,30 +262,32 @@ class TestCommutations(unittest.TestCase):
         # The CD case. Here we only have commutation if the nonclassical copies
         # are disjoint
         op1_init = np.where(np.all(self.order == self.meas[2][0,0,0], axis=1))[0]
-        op1_end  = np.where(np.all(self.order == self.meas[2][3,-1,-1], axis=1))[0]
-        op2_init = np.where(np.all(self.order == self.meas[3][-4,0,0], axis=1))[0]
+        op1_end  = np.where(np.all(self.order == self.meas[2][0,-1,-1], axis=1))[0]
+        op2_init = np.where(np.all(self.order == self.meas[3][-1,0,0], axis=1))[0]
         op2_end  = np.where(np.all(self.order == self.meas[3][-1,-1,-1], axis=1))[0]
         op1_init, op1_end = op1_init.item(), op1_end.item()
         op2_init, op2_end = op2_init.item(), op2_end.item()
         self.assertEqual(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1].sum(),
                          0,
                          "Operators for separate parties with classical and " \
-                         + " nonclassical parents do not commute when " \
+                         + "nonclassical parents do not commute when " \
                          + "measuring on different nonclassical copies.")
 
     def test_nonclassical_latent(self):
         # When two parties share a common nonclassical latent ancestor, their
-        # operators over the exact same copies do not commute.
+        # operators do not commute only when the quantum copy indices partially
+        # overlap.
         op1_init = np.where(np.all(self.order == self.meas[2][0,0,0], axis=1))[0]
         op1_end  = np.where(np.all(self.order == self.meas[2][0,-1,-1], axis=1))[0]
-        op2_init = np.where(np.all(self.order == self.meas[3][0,0,0], axis=1))[0]
-        op2_end  = np.where(np.all(self.order == self.meas[3][0,-1,-1], axis=1))[0]
+        op2_init = np.where(np.all(self.order == self.meas[3][1,0,0], axis=1))[0]
+        op2_end  = np.where(np.all(self.order == self.meas[3][1,-1,-1], axis=1))[0]
         op1_init, op1_end = op1_init.item(), op1_end.item()
         op2_init, op2_end = op2_init.item(), op2_end.item()
+        print(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1])
         self.assertTrue(
             np.all(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1]),
-            "Operators for parties with a common nonclassical latent " + \
-            "ancestor commute for same nonclassical copies.")
+            "Operators for parties with common nonclassical latent " + \
+            "ancestors commute for partially overlapping nonclassical copies.")
 
     def test_classical_latent(self):
         # When two parties share a common classical latent ancestor, their
