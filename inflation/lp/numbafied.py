@@ -53,23 +53,30 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
     return in_lex
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
-def nb_apply_lexorder_perm_to_lexboolvecs(monomials_as_lexboolvecs: np.ndarray,
-                                          lexorder_perms: np.ndarray) -> np.ndarray:
-    orbits = np.zeros(len(monomials_as_lexboolvecs), dtype=int_) - 1
-    length = monomials_as_lexboolvecs.shape[0]
-    for i in range(length):
+def _nb_identify_orbit(monomials_as_lexboolvecs: np.ndarray,
+                       lexorder_perms: np.ndarray,
+                       orbits: np.ndarray,
+                       i: int) -> None:
+    """
+    Sets orbits[j] = i iff monomials_as_lexboolvecs[j] is
+    in the orbit of monomials_as_lexboolvecs[i].
+    """
+    if orbits[i] == -1:
         target_vec = monomials_as_lexboolvecs[i]
-        if orbits[i] == -1:
-            include_mask = (orbits == -1)
-            for perm in lexorder_perms:
-                target_vec_permuted = target_vec[perm]
-                for j in range(length):
-                    if include_mask[j]:
-                        if np.array_equal(target_vec_permuted,
-                                          monomials_as_lexboolvecs[j]):
+        length = monomials_as_lexboolvecs.shape[0]
+        for perm in lexorder_perms:
+            target_vec_permuted = target_vec[perm]
+            for j in range(i, length):
+                orbit_j = orbits[j]
+                never_hit = (orbit_j == -1)
+                hit_by_other_permutation = (orbit_j == i)
+                if never_hit or hit_by_other_permutation:
+                    if np.array_equal(target_vec_permuted,
+                                      monomials_as_lexboolvecs[j]):
+                        if never_hit:
                             orbits[j] = i
-                            break
-    return orbits
+                        break
+
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):

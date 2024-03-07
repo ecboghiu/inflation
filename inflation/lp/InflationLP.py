@@ -19,7 +19,7 @@ from scipy.sparse import coo_matrix, vstack
 
 from inflation import InflationProblem
 
-from .numbafied import (nb_apply_lexorder_perm_to_lexboolvecs,
+from .numbafied import (_nb_identify_orbit,
                         nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
 from .writer_utils import write_to_lp, write_to_mps
@@ -1491,9 +1491,14 @@ class InflationLP(object):
             symmetries.
         """
         if len(self.lexorder_symmetries) > 1:
-            orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-                _raw_monomials_as_lexboolvecs,
-                lexorder_perms=self.lexorder_symmetries)
+            orbits = np.full(self.raw_n_columns, -1, dtype=int)
+            for i in tqdm(range(self.raw_n_columns),
+                          disable=not self.verbose,
+                          total=self.raw_n_columns,
+                          desc="Calculating orbits...             "):
+                _nb_identify_orbit(_raw_monomials_as_lexboolvecs,
+                                   self.lexorder_symmetries,  # Only using non-identity symmetries
+                                   orbits, i)
             return orbits
         else:
             return np.arange(self.raw_n_columns, dtype=int)
