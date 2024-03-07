@@ -362,7 +362,9 @@ class InflationLP(object):
             some Monomial).
         use_lpi_constraints : bool
             Specification whether linearized polynomial constraints (see, e.g.,
-            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+            Eq. (D6) in `arXiv:2203.16543
+            <https://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
+            By default ``False``.
         only_specified_values : bool
             Specifies whether one wishes to fix only the variables provided
             (``True``), or also the variables containing products of the
