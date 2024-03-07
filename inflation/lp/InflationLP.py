@@ -1490,18 +1490,19 @@ class InflationLP(object):
             The orbits of the generating columns implied by the inflation
             symmetries.
         """
+        nof_bitvecs_to_parse = len(_raw_monomials_as_lexboolvecs)
         if len(self.lexorder_symmetries) > 1:
-            orbits = np.full(self.raw_n_columns, -1, dtype=int)
-            for i in tqdm(range(self.raw_n_columns),
+            orbits = np.full(nof_bitvecs_to_parse, -1, dtype=int)
+            for i in tqdm(range(nof_bitvecs_to_parse),
                           disable=not self.verbose,
-                          total=self.raw_n_columns,
+                          total=nof_bitvecs_to_parse,
                           desc="Calculating orbits...             "):
                 _nb_identify_orbit(_raw_monomials_as_lexboolvecs,
                                    self.lexorder_symmetries,  # Only using non-identity symmetries
                                    orbits, i)
             return orbits
         else:
-            return np.arange(self.raw_n_columns, dtype=int)
+            return np.arange(nof_bitvecs_to_parse, dtype=int)
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #
