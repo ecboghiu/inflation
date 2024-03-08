@@ -19,8 +19,7 @@ from scipy.sparse import coo_matrix, vstack
 
 from inflation import InflationProblem
 
-from .numbafied import (_nb_identify_orbit,
-                        nb_outer_bitwise_or,
+from .numbafied import (nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
 from .writer_utils import write_to_lp, write_to_mps
 
@@ -1492,15 +1491,26 @@ class InflationLP(object):
             symmetries.
         """
         nof_bitvecs_to_parse = len(_raw_monomials_as_lexboolvecs)
+        hash_table = {bitvec.tobytes(): i for i, bitvec in enumerate(_raw_monomials_as_lexboolvecs)}
         if len(self.lexorder_symmetries) > 1:
+            non_identity_symmetries = self.lexorder_symmetries[1:]
             orbits = np.full(nof_bitvecs_to_parse, -1, dtype=int)
             for i in tqdm(range(nof_bitvecs_to_parse),
                           disable=not self.verbose,
                           total=nof_bitvecs_to_parse,
                           desc="Calculating orbits...             "):
-                _nb_identify_orbit(_raw_monomials_as_lexboolvecs,
-                                   self.lexorder_symmetries,  # Only using non-identity symmetries
-                                   orbits, i)
+                if orbits[i] == -1:
+                    orbits[i] = i
+                    initial = _raw_monomials_as_lexboolvecs[i]
+                    variants = initial[non_identity_symmetries]
+                    variant_hashes = {variant.tobytes() for variant in variants}.difference({initial.tobytes()})
+                    remaining_orbit = []
+                    for variant_hash in variant_hashes:
+                        try:
+                            remaining_orbit.append(hash_table[variant_hash])
+                        except KeyError:
+                            continue
+                    orbits[remaining_orbit] = i
             return orbits
         else:
             return np.arange(nof_bitvecs_to_parse, dtype=int)
