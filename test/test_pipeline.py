@@ -885,30 +885,31 @@ class TestPipelineLP(unittest.TestCase):
                             "Some implicit equalities lack a nontrivial "
                             "left-hand or right-hand side.")
 
-    def _GHZ(self, **args):
+    def _test_a_visibility(self, **args):
         lp = args["scenario"]
-        GHZ = args["GHZ"]
+        dist_func = args["dist_func"]
+        dist_name = args["dist_name"]
         crit_cutoff = args["crit_cutoff"]
         with self.subTest(msg="Testing GHZ, incompatible distribution"):
-            lp.set_distribution(GHZ(crit_cutoff + 1e-2))
+            lp.set_distribution(dist_func(crit_cutoff + 1e-2))
             lp.solve()
             self.assertIn(lp.status, ["prim_infeas_cer", "dual_infeas_cer",
                                       "unknown"],
                           "The LP did not identify the incompatible "
                           "distribution.")
-        with self.subTest(msg="Testing GHZ, incompatible distribution, "
+        with self.subTest(msg=f"Testing {dist_name}, incompatible distribution, "
                               "feasibility as optimization"):
             lp.solve(feas_as_optim=True)
             self.assertTrue(lp.primal_objective <= 0,
                             "The LP with feasibility as optimization did not "
                             "identify the incompatible distribution.")
-        with self.subTest(msg="Testing GHZ, compatible distribution"):
-            lp.set_distribution(GHZ(crit_cutoff - 1e-2))
+        with self.subTest(msg=f"Testing {dist_name}, compatible distribution"):
+            lp.set_distribution(dist_func(crit_cutoff - 1e-2))
             lp.solve()
             self.assertEqual(lp.status, "optimal",
                              "The LP did not recognize the compatible "
                              "distribution.")
-        with self.subTest(msg="Testing GHZ, compatible distribution, "
+        with self.subTest(msg=f"Testing {dist_name}, compatible distribution, "
                               "feasibility as optimization"):
             # self.skipTest("Feasibility as optimization not working for "
             #               "compatible distributions?")
@@ -920,7 +921,7 @@ class TestPipelineLP(unittest.TestCase):
     def _run(self, **args):
         self._monomial_generation(**args)
         self._equalities(**args)
-        self._GHZ(**args)
+        self._test_a_visibility(**args)
 
 
 class TestInstrumental(TestPipelineLP):
@@ -938,7 +939,7 @@ class TestInstrumental(TestPipelineLP):
                                       order=("A", "B"),
                                       classical_sources='all')
 
-    def GHZ(self, v):
+    def p_Pearl_Violating(self, v):
         dist = np.full((2, 2, 2, 1), (1 - v) / 4)
         dist[0, 0, 0, 0] = dist[0, 1, 1, 0] = v + (1 - v) / 4
         return dist
@@ -948,7 +949,8 @@ class TestInstrumental(TestPipelineLP):
         args = {"scenario": inst,
                 "truth_columns": 36,
                 "truth_eq": 20,
-                "GHZ": self.GHZ,
+                "dist_func": self.p_Pearl_Violating,
+                "dist_name": "Instrumental noisy e-sep violating",
                 "crit_cutoff": 1/3}
         self._run(**args)
 
@@ -957,7 +959,8 @@ class TestInstrumental(TestPipelineLP):
         args = {"scenario": inst,
                 "truth_columns": 15,
                 "truth_eq": 6,
-                "GHZ": self.GHZ,
+                "dist_func": self.p_Pearl_Violating,
+                "dist_name": "Instrumental noisy e-sep violating",
                 "crit_cutoff": 1/3}
         self._run(**args)
 
@@ -990,7 +993,7 @@ class TestBell(TestPipelineLP):
                                        f"{truth}.")
         # Biased CHSH?
 
-    def GHZ(self, v):
+    def p_Signalling_to_Bob(self, v):
         dist = np.full((2, 2, 2, 2), (1 - v) / 4)
         dist[0, 0, 0, 0] = dist[0, 1, 1, 0] = v + (1 - v) / 4
         return dist
@@ -1001,7 +1004,8 @@ class TestBell(TestPipelineLP):
                 "truth_columns": 16,
                 "truth_obj": 2,
                 "truth_eq": 0,
-                "GHZ": self.GHZ,
+                "dist_func": self.p_Signalling_to_Bob,
+                "dist_name": "Noisy Signalling to Bob",
                 "crit_cutoff": 0.2}
         self._run(**args)
         # self._CHSH(**args)
@@ -1012,7 +1016,8 @@ class TestBell(TestPipelineLP):
                 "truth_columns": 9,
                 "truth_obj": 2,
                 "truth_eq": 0,
-                "GHZ": self.GHZ,
+                "dist_func": self.p_Signalling_to_Bob,
+                "dist_name": "Noisy Signalling to Bob",
                 "crit_cutoff": 0.2}
         self._run(**args)
         # self._CHSH(**args)
@@ -1037,7 +1042,8 @@ class TestTriangle(TestPipelineLP):
         args = {"scenario": triangle,
                 "truth_columns": 8,
                 "truth_eq": 0,
-                "GHZ": self.GHZ,
+                "dist_func": self.GHZ,
+                "dist_name": "Noisy GHZ",
                 "crit_cutoff": 1}
         self._run(**args)
 
@@ -1046,7 +1052,8 @@ class TestTriangle(TestPipelineLP):
         args = {"scenario": triangle,
                 "truth_columns": 8,
                 "truth_eq": 0,
-                "GHZ": self.GHZ,
+                "dist_func": self.GHZ,
+                "dist_name": "Noisy GHZ",
                 "crit_cutoff": 1}
         self._run(**args)
 
@@ -1068,7 +1075,7 @@ class TestEvans(TestPipelineLP):
                                order=("A", "B", "C"),
                                classical_sources='all')
 
-    def GHZ(self, v):
+    def p_Evans_esep_violating(self, v):
         dist = np.zeros((2, 2, 2, 1, 1, 1))
         for x, y, z in product(range(2), repeat=3):
             dist[x, y, z] = (1 + v * (-1) ** (x + y + y * z)) / 8
@@ -1079,7 +1086,8 @@ class TestEvans(TestPipelineLP):
         args = {"scenario": evans,
                 "truth_columns": 48,
                 "truth_eq": 16,
-                "GHZ": self.GHZ,
+                "dist_func": self.p_Evans_esep_violating,
+                "dist_name": "Noisy Evans Incompatible",
                 "crit_cutoff": 1}
         self._run(**args)
 
@@ -1088,7 +1096,8 @@ class TestEvans(TestPipelineLP):
         args = {"scenario": evans,
                 "truth_columns": 27,
                 "truth_eq": 9,
-                "GHZ": self.GHZ,
+                "dist_func": self.p_Evans_esep_violating,
+                "dist_name": "Noisy Evans Incompatible",
                 "crit_cutoff": 1}
         self._run(**args)
         
@@ -1144,6 +1153,7 @@ class TestFullNN(TestPipelineLP):
         args = {"scenario": lp,
                 "truth_columns": 2048,
                 "truth_eq": 0,
-                "GHZ": lambda x: self._prob_EJM(x, theta=best_theta),
+                "dist_func": lambda x: self._prob_EJM(x, theta=best_theta),
+                "dist_name": "Noisy EJM",
                 "crit_cutoff": v_for_best_theta}
         self._run(**args)
