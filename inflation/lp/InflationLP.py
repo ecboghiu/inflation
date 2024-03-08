@@ -1129,7 +1129,8 @@ class InflationLP(object):
             # Calculate the inflation symmetries
             if self.verbose > 0:
                 eprint("Initiating symmetry calculation...")
-            orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs)
+            orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs,
+                                                     raw_hash_table=self._raw_lookup_dict)
             if self.verbose > 1:
                 eprint("Halfway through symmetry calculations...")
             old_reps_CG, unique_indices_CG, inverse_CG = np.unique(
@@ -1137,6 +1138,7 @@ class InflationLP(object):
                 return_index=True,
                 return_inverse=True)
             self.num_CG = len(old_reps_CG)
+
             orbits_non_CG = self._discover_inflation_orbits(
                 self._raw_monomials_as_lexboolvecs_non_CG)
             old_reps_non_CG, unique_indices_non_CG, inverse_non_CG = np.unique(
@@ -1484,7 +1486,8 @@ class InflationLP(object):
 
 
     def _discover_inflation_orbits(self, 
-                                   _raw_monomials_as_lexboolvecs: np.ndarray
+                                   _raw_monomials_as_lexboolvecs: np.ndarray,
+                                   raw_hash_table=False
                                    ) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
@@ -1498,8 +1501,11 @@ class InflationLP(object):
         """
         nof_bitvecs_to_parse = len(_raw_monomials_as_lexboolvecs)
         if len(self.lexorder_symmetries) > 1:
-            hash_table = {bitvec.tobytes(): i for i, bitvec in
-                          enumerate(_raw_monomials_as_lexboolvecs)}
+            if not raw_hash_table:
+                hash_table = {bitvec.tobytes(): i for i, bitvec in
+                              enumerate(_raw_monomials_as_lexboolvecs)}
+            else:
+                hash_table = raw_hash_table
             non_identity_symmetries = self.lexorder_symmetries[1:]
             orbits = np.full(nof_bitvecs_to_parse, -1, dtype=int)
             for i in tqdm(range(nof_bitvecs_to_parse),
