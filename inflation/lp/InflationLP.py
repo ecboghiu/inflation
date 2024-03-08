@@ -381,6 +381,12 @@ class InflationLP(object):
                  + "linearized polynomial constraints will constrain the "
                  + "optimization to distributions with fixed marginals.")
         for mon, value in values.items():
+            try:  # We do this to deal with NaNs (such as in undefined supports)
+                  # in a way that is also compatible with symbolic values.
+                if np.isnan(value):
+                    continue
+            except TypeError:
+                pass
             mon = self._sanitise_monomial(mon)
             self.known_moments[mon] = value
         if not only_specified_values:

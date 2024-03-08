@@ -624,6 +624,12 @@ class InflationSDP:
         # not commute with each other, so we display a warning.
         non_all_commuting_moments = set()
         for moment, value in values.items():
+            try:  # We do this to deal with NaNs (such as in undefined supports)
+                  # in a way that is also compatible with symbolic values.
+                if np.isnan(value):
+                    continue
+            except TypeError:
+                pass
             moment = self._sanitise_moment(moment)
             self.known_moments[moment] = value
             if (self.verbose > 0) and (not moment.is_all_commuting):
