@@ -1491,8 +1491,9 @@ class InflationLP(object):
             symmetries.
         """
         nof_bitvecs_to_parse = len(_raw_monomials_as_lexboolvecs)
-        hash_table = {bitvec.tobytes(): i for i, bitvec in enumerate(_raw_monomials_as_lexboolvecs)}
         if len(self.lexorder_symmetries) > 1:
+            hash_table = {bitvec.tobytes(): i for i, bitvec in
+                          enumerate(_raw_monomials_as_lexboolvecs)}
             non_identity_symmetries = self.lexorder_symmetries[1:]
             orbits = np.full(nof_bitvecs_to_parse, -1, dtype=int)
             for i in tqdm(range(nof_bitvecs_to_parse),
@@ -1502,8 +1503,9 @@ class InflationLP(object):
                 if orbits[i] == -1:
                     orbits[i] = i
                     initial = _raw_monomials_as_lexboolvecs[i]
+                    initial_hash = initial.tobytes()
                     variants = initial[non_identity_symmetries]
-                    variant_hashes = {variant.tobytes() for variant in variants}.difference({initial.tobytes()})
+                    variant_hashes = {variant.tobytes() for variant in variants}.difference({initial_hash})
                     remaining_orbit = []
                     for variant_hash in variant_hashes:
                         try:
