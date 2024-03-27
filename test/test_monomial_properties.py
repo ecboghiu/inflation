@@ -217,57 +217,64 @@ class TestCommutations(unittest.TestCase):
     def test_same_nonclassical(self):
         # The operators corresponding to different measurements of a same party
         # fed by nonclassical sources do not commute. Take for example A.
-        op1_init = np.where(np.all(self.order == self.meas[0][0,0,0], axis=1))[0]
-        op1_end  = np.where(np.all(self.order == self.meas[0][0,0,-1], axis=1))[0]
-        op2_init = np.where(np.all(self.order == self.meas[0][0,-1,0], axis=1))[0]
-        op2_end  = np.where(np.all(self.order == self.meas[0][0,-1,-1], axis=1))[0]
-        op1_init, op1_end = op1_init.item(), op1_end.item()
-        op2_init, op2_end = op2_init.item(), op2_end.item()
+        op1_init = np.where(np.all(self.order == self.meas[0][0,0,0], axis=1))
+        op1_end  = np.where(np.all(self.order == self.meas[0][0,0,-1], axis=1))
+        op2_init = np.where(np.all(self.order == self.meas[0][0,-1,0], axis=1))
+        op2_end  = np.where(np.all(self.order == self.meas[0][0,-1,-1], axis=1))
+        op1_init, op1_end = op1_init[0].item(), op1_end[0].item()
+        op2_init, op2_end = op2_init[0].item(), op2_end[0].item()
         self.assertTrue(
             np.all(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1]),
-            "Operators for different measurement of a same party commute.")
+            "Operators for different measurements of a same party commute.")
         
     def test_same_classical(self):
         # All operators corresponding to a same party fed by classical sources
         # commute. Take for example E.
-        op1_init = np.where(np.all(self.order == self.meas[-1][0,0,0], axis=1))[0]
-        op1_end  = np.where(np.all(self.order == self.meas[-1][-1,-1,-1], axis=1))[0]
-        op1_init, op1_end = op1_init.item(), op1_end.item()
+        op1_init = np.where(np.all(self.order == self.meas[-1][0,0,0], axis=1))
+        op1_end = np.where(np.all(self.order == self.meas[-1][-1,-1,-1], axis=1))
+        op1_init, op1_end = op1_init[0].item(), op1_end[0].item()
         self.assertEqual(
             np.sum(self.notcomm[op1_init:op1_end+1, op1_init:op1_end+1]),
             0,
             "Operators of a classical party do not commute.")
 
     def test_source_parties(self):
-        # We restrict to the case of parties connected (or not) by a source.
-        # Regardless of the nature of the sources, they should commute. This
-        # applies to all pairs of parties, except BE (connected by a classical
-        # latent, tretated later), and CD (connected by a quantum latent and a
-        # classical source, so they only commute if the nonclassical copies do
-        # not overlap, treated later)
+        # We restrict to the case of parties not connected by intermediate
+        # latents. Regardless of the nature of the sources, they should commute.
+        # This applies to all pairs of parties, except BE (connected by a
+        # classical latent, tretated later), and CD (connected by a quantum
+        # latent and a classical source, so they only commute if the
+        # nonclassical copies do not overlap, treated later)
         for pair in [[0, 1], [0, 2], [0, 3], [0, 4],
                      [1, 2], [1, 3], [2, 4], [3, 4]]:
-            op1_init = np.where(np.all(self.order == self.meas[pair[0]][0,0,0], axis=1))[0]
-            op1_end  = np.where(np.all(self.order == self.meas[pair[0]][-1,-1,-1], axis=1))[0]
-            op2_init = np.where(np.all(self.order == self.meas[pair[1]][0,0,0], axis=1))[0]
-            op2_end  = np.where(np.all(self.order == self.meas[pair[1]][-1,-1,-1], axis=1))[0]
-            op1_init, op1_end = op1_init.item(), op1_end.item()
-            op2_init, op2_end = op2_init.item(), op2_end.item()
-            self.assertEqual(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1].sum(),
+            op1_init = np.where(np.all(self.order == self.meas[pair[0]][0,0,0],
+                                       axis=1))
+            op1_end = np.where(np.all(self.order == self.meas[pair[0]][-1,-1,-1],
+                                      axis=1))
+            op2_init = np.where(np.all(self.order == self.meas[pair[1]][0,0,0],
+                                       axis=1))
+            op2_end = np.where(np.all(self.order == self.meas[pair[1]][-1,-1,-1],
+                                      axis=1))
+            op1_init, op1_end = op1_init[0].item(), op1_end[0].item()
+            op2_init, op2_end = op2_init[0].item(), op2_end[0].item()
+            self.assertEqual(self.notcomm[op1_init:op1_end+1,
+                                          op2_init:op2_end+1].sum(),
                              0,
                              "Operators for separate parties " + \
-                             f"{chr(65+pair[0])} and {chr(65+pair[1])} do not commute.")
+                             f"{chr(65+pair[0])} and {chr(65+pair[1])} " + \
+                             "do not commute.")
     
     def test_classical_nonclassical_sources(self):
         # The CD case. Here we only have commutation if the nonclassical copies
         # are disjoint
-        op1_init = np.where(np.all(self.order == self.meas[2][0,0,0], axis=1))[0]
-        op1_end  = np.where(np.all(self.order == self.meas[2][0,-1,-1], axis=1))[0]
-        op2_init = np.where(np.all(self.order == self.meas[3][-1,0,0], axis=1))[0]
-        op2_end  = np.where(np.all(self.order == self.meas[3][-1,-1,-1], axis=1))[0]
-        op1_init, op1_end = op1_init.item(), op1_end.item()
-        op2_init, op2_end = op2_init.item(), op2_end.item()
-        self.assertEqual(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1].sum(),
+        op1_init = np.where(np.all(self.order == self.meas[2][0,0,0], axis=1))
+        op1_end  = np.where(np.all(self.order == self.meas[2][0,-1,-1], axis=1))
+        op2_init = np.where(np.all(self.order == self.meas[3][-1,0,0], axis=1))
+        op2_end = np.where(np.all(self.order == self.meas[3][-1,-1,-1], axis=1))
+        op1_init, op1_end = op1_init[0].item(), op1_end[0].item()
+        op2_init, op2_end = op2_init[0].item(), op2_end[0].item()
+        self.assertEqual(self.notcomm[op1_init:op1_end+1,
+                                      op2_init:op2_end+1].sum(),
                          0,
                          "Operators for separate parties with classical and " \
                          + "nonclassical parents do not commute when " \
@@ -276,14 +283,13 @@ class TestCommutations(unittest.TestCase):
     def test_nonclassical_latent(self):
         # When two parties share a common nonclassical latent ancestor, their
         # operators do not commute only when the quantum copy indices partially
-        # overlap.
-        op1_init = np.where(np.all(self.order == self.meas[2][0,0,0], axis=1))[0]
-        op1_end  = np.where(np.all(self.order == self.meas[2][0,-1,-1], axis=1))[0]
-        op2_init = np.where(np.all(self.order == self.meas[3][1,0,0], axis=1))[0]
-        op2_end  = np.where(np.all(self.order == self.meas[3][1,-1,-1], axis=1))[0]
-        op1_init, op1_end = op1_init.item(), op1_end.item()
-        op2_init, op2_end = op2_init.item(), op2_end.item()
-        print(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1])
+        # overlap. This is the case of CD too.
+        op1_init = np.where(np.all(self.order == self.meas[2][0,0,0], axis=1))
+        op1_end  = np.where(np.all(self.order == self.meas[2][0,-1,-1], axis=1))
+        op2_init = np.where(np.all(self.order == self.meas[3][1,0,0], axis=1))
+        op2_end  = np.where(np.all(self.order == self.meas[3][1,-1,-1], axis=1))
+        op1_init, op1_end = op1_init[0].item(), op1_end[0].item()
+        op2_init, op2_end = op2_init[0].item(), op2_end[0].item()
         self.assertTrue(
             np.all(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1]),
             "Operators for parties with common nonclassical latent " + \
@@ -292,12 +298,12 @@ class TestCommutations(unittest.TestCase):
     def test_classical_latent(self):
         # When two parties share a common classical latent ancestor, their
         # operators should always commute. This is the case for BE.
-        op1_init = np.where(np.all(self.order == self.meas[1][0,0,0], axis=1))[0]
-        op1_end  = np.where(np.all(self.order == self.meas[1][-1,-1,-1], axis=1))[0]
-        op2_init = np.where(np.all(self.order == self.meas[4][0,0,0], axis=1))[0]
-        op2_end  = np.where(np.all(self.order == self.meas[4][-1,-1,-1], axis=1))[0]
-        op1_init, op1_end = op1_init.item(), op1_end.item()
-        op2_init, op2_end = op2_init.item(), op2_end.item()
+        op1_init = np.where(np.all(self.order == self.meas[1][0,0,0], axis=1))
+        op1_end = np.where(np.all(self.order == self.meas[1][-1,-1,-1], axis=1))
+        op2_init = np.where(np.all(self.order == self.meas[4][0,0,0], axis=1))
+        op2_end = np.where(np.all(self.order == self.meas[4][-1,-1,-1], axis=1))
+        op1_init, op1_end = op1_init[0].item(), op1_end[0].item()
+        op2_init, op2_end = op2_init[0].item(), op2_end[0].item()
         self.assertEqual(
             np.sum(self.notcomm[op1_init:op1_end+1, op2_init:op2_end+1]),
             0,
