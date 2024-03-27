@@ -50,7 +50,7 @@ class InternalAtomicMonomial(object):
         inflation_lp_instance : InflationLP
             An instance of the ``InflationLP`` class. It is used to access
             methods specific to the inflation problem. E.g., when instantiating
-            an internal atomic moment, the ``InflationSDP`` instance is used to
+            an internal atomic moment, the ``InflationLP`` instance is used to
             check if it already contains such moment.
         array2d : numpy.ndarray
             A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D
