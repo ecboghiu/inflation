@@ -19,8 +19,7 @@ from scipy.sparse import coo_matrix, vstack
 
 from inflation import InflationProblem
 
-from .numbafied import (nb_apply_lexorder_perm_to_lexboolvecs,
-                        nb_outer_bitwise_or,
+from .numbafied import (nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
 from .writer_utils import write_to_lp, write_to_mps
 
@@ -85,7 +84,8 @@ class InflationLP(object):
         if not nonfanout:
             assert not inflationproblem._default_notcomm.any(), \
                 "You appear to be requesting fanout (classical)" \
-                    + " inflation, \nbut have not specified classical_sources=`all`."
+                    + " inflation, \nbut have not specified classical_sources=`all`." \
+                    + "\nNote that the `nonfanout` keyword argument is deprecated as of release 2.0.0"
         self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)
@@ -383,6 +383,12 @@ class InflationLP(object):
                  + "linearized polynomial constraints will constrain the "
                  + "optimization to distributions with fixed marginals.")
         for mon, value in values.items():
+            try:  # We do this to deal with NaNs (such as in undefined supports)
+                  # in a way that is also compatible with symbolic values.
+                if np.isnan(value):
+                    continue
+            except TypeError:
+                pass
             mon = self._sanitise_monomial(mon)
             self.known_moments[mon] = value
         if not only_specified_values:
@@ -1125,7 +1131,8 @@ class InflationLP(object):
             # Calculate the inflation symmetries
             if self.verbose > 0:
                 eprint("Initiating symmetry calculation...")
-            orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs)
+            orbits = self._discover_inflation_orbits(self._raw_monomials_as_lexboolvecs,
+                                                     raw_hash_table=self._raw_lookup_dict)
             if self.verbose > 1:
                 eprint("Halfway through symmetry calculations...")
             old_reps_CG, unique_indices_CG, inverse_CG = np.unique(
@@ -1133,6 +1140,7 @@ class InflationLP(object):
                 return_index=True,
                 return_inverse=True)
             self.num_CG = len(old_reps_CG)
+
             orbits_non_CG = self._discover_inflation_orbits(
                 self._raw_monomials_as_lexboolvecs_non_CG)
             old_reps_non_CG, unique_indices_non_CG, inverse_non_CG = np.unique(
@@ -1480,7 +1488,8 @@ class InflationLP(object):
 
 
     def _discover_inflation_orbits(self, 
-                                   _raw_monomials_as_lexboolvecs: np.ndarray
+                                   _raw_monomials_as_lexboolvecs: np.ndarray,
+                                   raw_hash_table=False
                                    ) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials. The new set of operators is a permutation of the old. The
@@ -1492,13 +1501,35 @@ class InflationLP(object):
             The orbits of the generating columns implied by the inflation
             symmetries.
         """
+        nof_bitvecs_to_parse = len(_raw_monomials_as_lexboolvecs)
         if len(self.lexorder_symmetries) > 1:
-            orbits = nb_apply_lexorder_perm_to_lexboolvecs(
-                _raw_monomials_as_lexboolvecs,
-                lexorder_perms=self.lexorder_symmetries)
+            if not raw_hash_table:
+                hash_table = {bitvec.tobytes(): i for i, bitvec in
+                              enumerate(_raw_monomials_as_lexboolvecs)}
+            else:
+                hash_table = raw_hash_table
+            non_identity_symmetries = self.lexorder_symmetries[1:]
+            orbits = np.full(nof_bitvecs_to_parse, -1, dtype=int)
+            for i in tqdm(range(nof_bitvecs_to_parse),
+                          disable=not self.verbose,
+                          total=nof_bitvecs_to_parse,
+                          desc="Calculating orbits...             "):
+                if orbits[i] == -1:
+                    orbits[i] = i
+                    initial = _raw_monomials_as_lexboolvecs[i]
+                    initial_hash = initial.tobytes()
+                    variants = initial[non_identity_symmetries]
+                    variant_hashes = {variant.tobytes() for variant in variants}.difference({initial_hash})
+                    remaining_orbit = []
+                    for variant_hash in variant_hashes:
+                        try:
+                            remaining_orbit.append(hash_table[variant_hash])
+                        except KeyError:
+                            continue
+                    orbits[remaining_orbit] = i
             return orbits
         else:
-            return np.arange(self.raw_n_columns, dtype=int)
+            return np.arange(nof_bitvecs_to_parse, dtype=int)
 
     ###########################################################################
     # HELPER FUNCTIONS FOR ENSURING CONSISTENCY                               #

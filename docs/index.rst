@@ -15,6 +15,8 @@ Examples of use of this package include:
 - Causal compatibility with classical, quantum, non-signaling, and hybrid models.
 - Feasibility problems and extraction of certificates.
 - Optimization of Bell operators.
+- Optimization over classical distributions.
+- Handling of bilayer (i.e., networks) and multilayer causal structures.
 - Standard `Navascues-Pironio-Acin hierarchy <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401>`_.
 - Scenarios with partial information.
 - Possibilistic compatibility with a causal network.

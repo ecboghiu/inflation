@@ -14,7 +14,7 @@ Provides
 from .InflationProblem import InflationProblem
 from .sdp.InflationSDP import InflationSDP
 from .lp.InflationLP import InflationLP
-from .sdp.optimization_utils import max_within_feasible
+from .optimization_utils import max_within_feasible
 from ._about import about
 from ._version import __version__
 
