@@ -292,12 +292,11 @@ class InflationProblem:
                 break
 
         # Establish internal dtype
-        self._np_dtype = np.find_common_type([
+        self._np_dtype = np.result_type(*[
             np.min_scalar_type(np.max(self.settings_per_party)),
             np.min_scalar_type(np.max(self.outcomes_per_party)),
             np.min_scalar_type(self.nr_parties + 1),
-            np.min_scalar_type(np.max(self.inflation_level_per_source) + 1)],
-            [])
+            np.min_scalar_type(np.max(self.inflation_level_per_source) + 1)])
 
         # Create all the different possibilities for inflation indices
         self.inflation_indices_per_party = list()
