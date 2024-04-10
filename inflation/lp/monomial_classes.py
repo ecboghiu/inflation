@@ -387,3 +387,14 @@ class CompoundMoment(object):
                 if np.isclose(known_value, 0):
                     known_status = "Known"
         return known_value, unknown_factors, known_status
+
+    def __copy__(self):
+        """Make a copy of the CompoundMonomial"""
+        cls = self.__class__
+        result = cls.__new__(cls)
+        for attr in self.__slots__:
+            try:
+                result.__setattr__(attr, self.__getattribute__(attr))
+            except AttributeError:
+                pass
+        return result
