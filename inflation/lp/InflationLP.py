@@ -592,7 +592,7 @@ class InflationLP(object):
     def certificate_as_dict(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
+                             round_decimals: int = 3) -> dict:
         """Give certificate as dictionary with monomials as keys and
         their coefficients in the certificate as the values. The certificate
         of incompatibility is ``cert < 0``.
