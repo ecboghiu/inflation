@@ -777,7 +777,7 @@ class InflationSDP:
     def certificate_as_dict(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
+                             round_decimals: int = 3) -> dict:
         """Give the polynomial certificate as a dictionary with monomials as
         keys and their coefficients as values. The certificate of
         incompatibility is read as ``cert < 0``. 
