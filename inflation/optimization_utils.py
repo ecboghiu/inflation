@@ -25,7 +25,7 @@ def max_within_feasible(program: Union[InflationLP, InflationSDP],
                         method: str,
                         return_last_certificate=False,
                         **kwargs) -> Union[float,
-                                           Tuple[float, sp.core.add.Add]]:
+                                           Tuple[float, dict]]:
     """Maximize a single real variable within the set of feasible moment
     matrices determined by an ``InflationSDP``. The dependence of the moment
     matrices in the variable is specified by an assignment of monomials in the
@@ -62,7 +62,7 @@ def max_within_feasible(program: Union[InflationLP, InflationSDP],
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs). This is the output
         when ``return_last_certificate=False``.
-    Tuple[float, sympy.core.add.Add]
+    Tuple[float, dict]
         The maximum value that the parameter can take under the set of
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs), and a corresponding
@@ -164,8 +164,8 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
         if verbose:
             print(f"Parameter = {value:<6.4g}   " +
                   f"Maximum smallest eigenvalue: {program.objective_value:10.4g}")
-        discovered_certificate = program.certificate_as_probs()
-        if discovered_certificate.free_symbols:
+        discovered_certificate = program.certificate_as_dict()
+        if len(discovered_certificate):  # Checking if certificate has any nonzero coefficients
             discovered_certificates.append((value, discovered_certificate))
         return program.objective_value+precision/2048
     crit_param = bisect(f, bounds[0], bounds[1], **bisect_kwargs, full_output=False)
@@ -209,7 +209,7 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs). This is the output
         when ``return_last_certificate=False``.
-    Tuple[float, sympy.core.add.Add]
+    Tuple[float, dict]
         The maximum value that the parameter can take under the set of
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs), and a corresponding
@@ -261,7 +261,7 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
                             constraints=constraints,
                             options={'disp': False})
         new_ub = solution['x'][0]
-        discovered_certificates.append((new_ub , program.certificate_as_probs()))
+        discovered_certificates.append((new_ub , program.certificate_as_dict()))
         if verbose:
             print(f"Current critical value: {new_ub} (seeded by {old_ub+precision})")
     crit_param = max(new_ub, old_ub)
