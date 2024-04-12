@@ -42,7 +42,7 @@ class InflationProblem:
                  outcomes_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
-                 classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
+                 classical_sources: Union[str, Tuple[str,...], List[str], None]=tuple(),
                  nonclassical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
                  classical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
                  order: Union[Tuple[str,...], List[str]]=tuple(),
