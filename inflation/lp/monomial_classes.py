@@ -10,6 +10,7 @@ from collections import Counter
 from functools import total_ordering
 from numbers import Real
 from typing import Dict, List, Tuple
+from copy import deepcopy
 
 from ..sdp.monomial_utils import (compute_marginal,
                                   name_from_atom_names,
@@ -145,7 +146,7 @@ class InternalAtomicMonomial(object):
             return "0"
         if self.is_do_conditional:
             uncleaned_ops = self.context.InflationProblem._lexrepr_to_dicts[self.as_legacy_lexmon]
-            cleaned_ops = [{k: v for k, v in op.items()} for op in uncleaned_ops.flat]
+            cleaned_ops = [deepcopy(op) for op in uncleaned_ops.flat]
             for op in uncleaned_ops.flat:
                 p = op["Party"]
                 o = op["Outcome"]
@@ -154,7 +155,6 @@ class InternalAtomicMonomial(object):
                                            alt_op["Do Values"].items()
                                            if not (k==p and o==v)}
             list_of_op_names = [self.context.InflationProblem._interpretation_to_name(op, include_copy_indices=False) for op in cleaned_ops]
-            # list_of_op_names = self.context._lexrepr_to_copy_index_free_names[self.as_lexmon]
         else:
             list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
         if self.is_all_commuting:
