@@ -95,6 +95,7 @@ class InflationLP(object):
         self.names = inflationproblem.names
         self.names_to_ints = inflationproblem.names_to_ints
         self._lexrepr_to_names = inflationproblem._lexrepr_to_names
+        self._lexrepr_to_copy_index_free_names = inflationproblem._lexrepr_to_copy_index_free_names
         self.nr_sources = inflationproblem.nr_sources
         self.nr_parties = inflationproblem.nr_parties
         self.hypergraph = inflationproblem.hypergraph

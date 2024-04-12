@@ -141,6 +141,8 @@ class InflationSDP:
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names))
+        self._lexrepr_to_copy_index_free_names = \
+            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names))
         self._lexrepr_to_symbols = \
             np.hstack(([sp.S.Zero], inflationproblem._lexrepr_to_symbols))
 

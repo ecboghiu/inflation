@@ -15,6 +15,7 @@ from ..sdp.monomial_utils import (compute_marginal,
                                   name_from_atom_names,
                                   symbol_from_atom_name,
                                   symbol_prod)
+from ..sdp.fast_npa import nb_is_knowable as is_do_conditional
 
 
 @total_ordering
@@ -23,9 +24,8 @@ class InternalAtomicMonomial(object):
                  "as_2d_array",
                  "is_one",
                  "is_zero",
+                 "is_do_conditional",
                  "is_knowable",
-                 # "is_all_commuting",
-                 # "is_physical",
                  "n_operators",
                  "op_length",
                  "rectified_ndarray",
@@ -76,6 +76,8 @@ class InternalAtomicMonomial(object):
             self.is_zero = not np.all(self.as_lexmon)
         else:
             raise NotImplementedError("InternalAtomicMonomial requires `lp` or `sdp` parent class.")
+        self.is_do_conditional = (self.is_one or self.is_zero or
+                                  is_do_conditional(self.as_2d_array))
         self.is_knowable = (self.is_one or self.is_zero or
                             self.context._atomic_knowable_q(self.as_2d_array))
         # Save also array with the original setting, not just the effective one
@@ -125,8 +127,11 @@ class InternalAtomicMonomial(object):
 
     @property
     def _raw_name(self):
-        list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
-        return "<" + " ".join(list_of_op_names) + ">"
+        if self.is_do_conditional:
+            list_of_op_names = self.context._lexrepr_to_copy_index_free_names[self.as_lexmon]
+        else:
+            list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
+        return "P[" + " & ".join(list_of_op_names) + "]"
 
     @property
     def _name(self):
@@ -194,6 +199,7 @@ class CompoundMoment(object):
                  "factors",
                  "idx",
                  "is_atomic",
+                 "is_do_conditional",
                  "is_knowable",
                  "is_one",
                  "is_zero",
@@ -233,6 +239,7 @@ class CompoundMoment(object):
         self.n_factors     = len(self.factors)
         self.n_operators   = sum(factor.n_operators for factor in self.factors)
         self.is_atomic     = (self.n_factors <= 1)
+        self.is_do_conditional = all(factor.is_do_conditional for factor in self.factors)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
         if self.n_factors == 0:
             self.as_lexmon = np.empty(0, dtype=np.intc)
