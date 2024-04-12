@@ -547,7 +547,6 @@ class TestSDPOutput(unittest.TestCase):
                          "distribution that violates normalization.")
         compat_dist = unnormalized_dist / 4
         sdp.set_distribution(compat_dist)
-        print(sdp.known_moments)
         sdp.solve(feas_as_optim=False)
         self.assertEqual(sdp.status, "feasible",
                          "A feasible distribution for the instrumental " +
