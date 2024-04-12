@@ -145,14 +145,14 @@ class InternalAtomicMonomial(object):
             return "0"
         if self.is_do_conditional:
             uncleaned_ops = self.context.InflationProblem._lexrepr_to_dicts[self.as_legacy_lexmon]
-            cleaned_ops = uncleaned_ops.tolist()
+            cleaned_ops = [{k: v for k, v in op.items()} for op in uncleaned_ops.flat]
             for op in uncleaned_ops.flat:
                 p = op["Party"]
                 o = op["Outcome"]
                 for alt_op in cleaned_ops:
-                    do_vals = alt_op["Do Values"]
-                    new_do_vals = {k: v for k, v in do_vals.items() if not (p==k and o==v)}
-                    alt_op["Do Values"] = new_do_vals
+                    alt_op["Do Values"] = {k: v for k, v in
+                                           alt_op["Do Values"].items()
+                                           if not (k==p and o==v)}
             list_of_op_names = [self.context.InflationProblem._interpretation_to_name(op, include_copy_indices=False) for op in cleaned_ops]
             # list_of_op_names = self.context._lexrepr_to_copy_index_free_names[self.as_lexmon]
         else:
