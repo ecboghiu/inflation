@@ -31,6 +31,7 @@ class InternalAtomicMonomial(object):
                  "rectified_ndarray",
                  "context",
                  "name",
+                 "legacy_name",
                  "is_all_commuting",
                  "signature"
                  ]
@@ -95,6 +96,7 @@ class InternalAtomicMonomial(object):
                 dtype=int)
 
         self.name = self._name
+        self.legacy_name = self._raw_name
         self.signature = self._signature
         # self.symbol = self._symbol
 
@@ -131,20 +133,37 @@ class InternalAtomicMonomial(object):
         """Return the name of the Monomial."""
         return self.name
 
+    @property
+    def as_legacy_lexmon(self):
+        return self.as_lexmon
 
     @property
-    def _raw_name(self):
+    def _name(self):
+        if self.is_one:
+            return "1"
+        elif self.is_zero:
+            return "0"
         if self.is_do_conditional:
-            list_of_op_names = self.context._lexrepr_to_copy_index_free_names[self.as_lexmon]
+            uncleaned_ops = self.context.InflationProblem._lexrepr_to_dicts[self.as_legacy_lexmon]
+            cleaned_ops = uncleaned_ops.tolist()
+            for op in uncleaned_ops.flat:
+                p = op["Party"]
+                o = op["Outcome"]
+                for alt_op in cleaned_ops:
+                    do_vals = alt_op["Do Values"]
+                    new_do_vals = {k: v for k, v in do_vals.items() if not (p==k and o==v)}
+                    alt_op["Do Values"] = new_do_vals
+            list_of_op_names = [self.context.InflationProblem._interpretation_to_name(op, include_copy_indices=False) for op in cleaned_ops]
+            # list_of_op_names = self.context._lexrepr_to_copy_index_free_names[self.as_lexmon]
         else:
             list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
         if self.is_all_commuting:
-            return "P[" + " & ".join(list_of_op_names) + "]"
+            return "P[" + " ".join(list_of_op_names) + "]"
         else:
             return "<" + " ".join(list_of_op_names) + ">"
 
     @property
-    def _name(self):
+    def _raw_name(self):
         """A string representing the monomial. In case of knowable monomials,
         it is of the form ``p(outputs|inputs)``. Otherwise it represents the
         expectation value of the monomial with bracket notation.
@@ -169,7 +188,7 @@ class InternalAtomicMonomial(object):
                     "(" + o_divider.join(outputs) +
                     "|" + i_divider.join(inputs) + ")")
         else:
-            return self._raw_name
+            return self._name
 
     @property
     def _signature(self):
@@ -220,8 +239,8 @@ class CompoundMoment(object):
                  "n_operators",
                  "n_unknowable_factors",
                  "name",
+                 "legacy_name",
                  "signature",
-                 # "symbol",
                  "unknowable_factors",
                  "as_lexmon",
                  "internal_type"
@@ -279,6 +298,7 @@ class CompoundMoment(object):
         self.is_zero = any(factor.is_zero for factor in self.factors)
 
         self.name        = name_from_atom_names(self._names_of_factors)
+        self.legacy_name = name_from_atom_names(self._legacy_names_of_factors)
         # self.symbol      = symbol_prod(self._symbols_of_factors)
         self.signature   = self.factors
         self.internal_type = InternalAtomicMonomial
@@ -314,6 +334,11 @@ class CompoundMoment(object):
     def _names_of_factors(self):
         """Return the names of each of the factors in the Monomial."""
         return [factor.name for factor in self.factors]
+
+    @property
+    def _legacy_names_of_factors(self):
+        """Return the legacy names of each of the factors in the Monomial."""
+        return [factor.legacy_name for factor in self.factors]
 
     @property
     def _symbols_of_factors(self):

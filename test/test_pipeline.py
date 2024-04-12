@@ -263,7 +263,7 @@ class TestResetLP(unittest.TestCase):
     lp._generate_lp()
 
     def setUp(self) -> None:
-        var1 = "P[v_0=0 & v_1=0]"
+        var1 = "P[v_0=0 v_1=0]"
         var2 = "pv(0|1)"
         self.lp.set_objective({var1: 1}, "max")
         self.lp.set_bounds({var1: 0.9}, "up")
@@ -547,6 +547,7 @@ class TestSDPOutput(unittest.TestCase):
                          "distribution that violates normalization.")
         compat_dist = unnormalized_dist / 4
         sdp.set_distribution(compat_dist)
+        print(sdp.known_moments)
         sdp.solve(feas_as_optim=False)
         self.assertEqual(sdp.status, "feasible",
                          "A feasible distribution for the instrumental " +

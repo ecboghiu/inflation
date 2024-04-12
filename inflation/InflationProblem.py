@@ -602,16 +602,16 @@ class InflationProblem:
         return np.any(self.inflation_level_per_source > 1)
 
     @cached_property
-    def _lexrepr_to_dicts(self) -> List:
+    def _lexrepr_to_dicts(self) -> np.ndarray:
         """Map 1D array lexorder encoding of a monomial, to a string representation.
 
         Returns
         -------
-        list
-            List of the same length as lexorder, where the i-th element is the
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
             dictionary interpretation of the i-th operator in the lexorder.
         """
-        return [self._interpret_operator(op) for op in self._lexorder]
+        return np.array([self._interpret_operator(op) for op in self._lexorder])
 
     @cached_property
     def _lexrepr_to_names(self) -> np.ndarray:
@@ -626,7 +626,7 @@ class InflationProblem:
         return np.asarray([self._interpretation_to_name(
             op_dict,
             include_copy_indices=self._any_inflation)
-                for op_dict in self._lexrepr_to_dicts])
+                for op_dict in self._lexrepr_to_dicts.flat])
 
     @cached_property
     def _lexrepr_to_copy_index_free_names(self) -> np.ndarray:
@@ -644,7 +644,7 @@ class InflationProblem:
             return np.asarray([self._interpretation_to_name(
                 op_dict,
                 include_copy_indices=False)
-                for op_dict in self._lexrepr_to_dicts])
+                for op_dict in self._lexrepr_to_dicts.flat])
 
     @cached_property
     def _lexrepr_to_all_names(self) -> np.ndarray:
@@ -660,7 +660,7 @@ class InflationProblem:
         """
         old_names_v1 = [self._interpretation_to_name_old(op_dict,
                                                          replace_trivial_setting=True)
-                        for op_dict in self._lexrepr_to_dicts]
+                        for op_dict in self._lexrepr_to_dicts.flat]
         old_names_v2 = [legacy_name.replace('∅','0') for legacy_name in old_names_v1]
         return np.stack((
             self._lexrepr_to_names,

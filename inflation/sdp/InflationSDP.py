@@ -1393,6 +1393,7 @@ class InflationSDP:
                 pass
             self.monomial_from_atoms[atoms]   = mon
             self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
             return mon
 
     def _sanitise_moment(self, moment: Any) -> CompoundMomentSDP:

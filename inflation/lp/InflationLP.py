@@ -936,6 +936,7 @@ class InflationLP(object):
                 pass
             self.monomial_from_atoms[key] = mon
             self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMoment:

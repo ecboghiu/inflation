@@ -72,6 +72,10 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
                 pass
         return result
 
+    @property
+    def as_legacy_lexmon(self):
+        return self.as_lexmon-1  #Adjusted for SDP
+
     @cached_property
     def conjugate_lexmon(self):
         if self.is_all_commuting:
