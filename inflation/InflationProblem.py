@@ -720,26 +720,33 @@ class InflationProblem:
         non_private_setting_dict = dict(zip(parents_in_play_as_names, outcomes_of_parents))
         interpretation["Do Values"] = non_private_setting_dict
         interpretation["Copy Indices"] = op[1:-2]
+        relevant_slots = np.logical_and(
+            self.inflation_level_per_source > 0,
+            interpretation["Copy Indices"] > 0
+        )
+        interpretation["Relevant Copy Indices"] = interpretation["Copy Indices"][relevant_slots]
         return interpretation
 
     @staticmethod
     def _interpretation_to_name(op: dict, include_copy_indices=True) -> str:
         op_as_str = op["Party"]
+        if not op["Private Setting is Trivial"]:
+            op_as_str += '_'+str(op["Private Setting"])
         if include_copy_indices:
+            if len(op["Relevant Copy Indices"]):
+                copy_index_string = '^{'
+                copy_index_string += ','.join(map(str,op["Relevant Copy Indices"].flat))
+                copy_index_string += '}'
+                op_as_str += copy_index_string
+
             copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
             op_as_str += copy_indices_string
         op_as_str += f"={op['Outcome']}"
-        if len(op["Do Values"]) or not op["Private Setting is Trivial"]:
-            op_as_str += '|'
         if len(op["Do Values"]):
-            op_as_str += "do("
-            for p, v in op["Do Values"].items():
-                op_as_str += f"{p}={v}"
-            op_as_str += ")"
-            if not op["Private Setting is Trivial"]:
-                op_as_str += ","
-        if not op["Private Setting is Trivial"]:
-            op_as_str += str(op["Private Setting"])
+            do_values_string = "|do("
+            do_values_string += ','.join((f"{p}={v}" for p, v in op["Do Values"].items()))
+            do_values_string += ')'
+            op_as_str += do_values_string
         return op_as_str
 
     @staticmethod

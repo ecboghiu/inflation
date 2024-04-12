@@ -263,7 +263,7 @@ class TestResetLP(unittest.TestCase):
     lp._generate_lp()
 
     def setUp(self) -> None:
-        var1 = "P[v=0|0 & v=0|1]"
+        var1 = "P[v_0=0 & v_1=0]"
         var2 = "pv(0|1)"
         self.lp.set_objective({var1: 1}, "max")
         self.lp.set_bounds({var1: 0.9}, "up")
