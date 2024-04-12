@@ -602,19 +602,31 @@ class InflationProblem:
         return np.any(self.inflation_level_per_source > 1)
 
     @cached_property
-    def _lexrepr_to_names(self) -> np.ndarray:
+    def _lexrepr_to_dicts(self) -> List:
         """Map 1D array lexorder encoding of a monomial, to a string representation.
 
         Returns
         -------
         list
             List of the same length as lexorder, where the i-th element is the
+            dictionary interpretation of the i-th operator in the lexorder.
+        """
+        return [self._interpret_operator(op) for op in self._lexorder]
+
+    @cached_property
+    def _lexrepr_to_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
             string representation of the i-th operator in the lexorder.
         """
         return np.asarray([self._interpretation_to_name(
-            self._interpret_operator(op),
+            op_dict,
             include_copy_indices=self._any_inflation)
-                for op in self._lexorder])
+                for op_dict in self._lexrepr_to_dicts])
 
     @cached_property
     def _lexrepr_to_copy_index_free_names(self) -> np.ndarray:
@@ -622,42 +634,40 @@ class InflationProblem:
 
         Returns
         -------
-        list
-            List of the same length as lexorder, where the i-th element is the
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
             string representation of the i-th operator in the lexorder.
         """
         if not self._any_inflation:
             return self._lexrepr_to_names
         else:
             return np.asarray([self._interpretation_to_name(
-                self._interpret_operator(op),
+                op_dict,
                 include_copy_indices=False)
-                for op in self._lexorder])
+                for op_dict in self._lexrepr_to_dicts])
 
     @cached_property
-    def _lexrepr_to_names_old(self) -> np.ndarray:
-        """Map 1D array lexorder encoding of a monomial, to a string representation.
+    def _lexrepr_to_all_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial to
+        a variety of possible string representations.
 
         Returns
         -------
-        list
-            List of the same length as lexorder, where the i-th element is the
-            string representation of the i-th operator in the lexorder.
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is a
+            collection of string representations of the i-th operator in the
+            lexorder.
         """
-        # Use expectation value notation. As ndarray for rapid multiextract.
-        as_list = []
-        for op in self._lexorder:
-            name = self.names[op[0] - 1]
-            inflation_indices_as_strs = [str(i) for i in op[1:-2]]
-            if self.settings_per_party[op[0]-1] == 1:
-                setting_as_str = '∅'
-            else:
-                setting_as_str = str(op[-2])
-            outcome_as_str = str(op[-1])
-            char_list = [name] + inflation_indices_as_strs + [setting_as_str, outcome_as_str]
-            op_as_str = "_".join(char_list)
-            as_list.append(op_as_str)
-        return np.array(as_list)
+        old_names_v1 = [self._interpretation_to_name_old(op_dict,
+                                                         replace_trivial_setting=True)
+                        for op_dict in self._lexrepr_to_dicts]
+        old_names_v2 = [legacy_name.replace('∅','0') for legacy_name in old_names_v1]
+        return np.stack((
+            self._lexrepr_to_names,
+            self._lexrepr_to_copy_index_free_names,
+            old_names_v1,
+            old_names_v2
+        ), 1)
 
     @cached_property
     def _lexrepr_to_symbols(self) -> np.ndarray:
@@ -698,6 +708,8 @@ class InflationProblem:
         outcome_int = op[-1]
         interpretation["Outcome"] = outcome_int
         setting_as_single_int = op[-2]
+        interpretation["Composite Setting"] = setting_as_single_int
+        interpretation["Composite Setting is Trivial"] = (self.settings_per_party[party_int] == 1)
         setting_as_tuple = self.effective_to_parent_settings[party_int][setting_as_single_int]
         private_setting = setting_as_tuple[0]
         interpretation["Private Setting"] = private_setting
@@ -729,9 +741,20 @@ class InflationProblem:
         if not op["Private Setting is Trivial"]:
             op_as_str += str(op["Private Setting"])
         return op_as_str
-    #
-    # def _interpret_monomial_1d(self):
-    #
+
+    @staticmethod
+    def _interpretation_to_name_old(op: dict, replace_trivial_setting=True) -> str:
+        op_as_str = op["Party"]
+        copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
+        op_as_str += copy_indices_string
+        if replace_trivial_setting and op["Composite Setting is Trivial"]:
+            op_as_str += "_∅"
+        else:
+            op_as_str += "_" + str(op["Composite Setting"])
+        op_as_str += "_" + str(op['Outcome'])
+        return op_as_str
+
+
 
     def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array

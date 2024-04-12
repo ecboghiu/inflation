@@ -96,6 +96,10 @@ class InflationLP(object):
         self.names_to_ints = inflationproblem.names_to_ints
         self._lexrepr_to_names = inflationproblem._lexrepr_to_names
         self._lexrepr_to_copy_index_free_names = inflationproblem._lexrepr_to_copy_index_free_names
+        self.op_from_name = dict()
+        for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
+            for op_name in op_names:
+                self.op_from_name.setdefault(op_name, i)
         self.nr_sources = inflationproblem.nr_sources
         self.nr_parties = inflationproblem.nr_parties
         self.hypergraph = inflationproblem.hypergraph
@@ -1065,11 +1069,17 @@ class InflationLP(object):
             2D array encoding of the input atomic moment.
         """
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
+                or (factor_string[0:1] == "P[" and factor_string[-1] == "]")
                 or set(factor_string).isdisjoint(set("| "))), \
             ("Monomial names must be between < > signs, or in conditional " +
-             f"probability form, whereas input recieved was {factor_string}")
-        if factor_string[0] == "<":
-            operators = factor_string[1:-1].split(" ")
+             f"probability form, whereas input received was {factor_string}")
+        if factor_string[-1] in {'>', ')', "]", "}"}:
+            cleaned_factor_string = factor_string[:-1]
+            substrings_to_kill = {"P[", "P(", "p[", "p(", "<"}
+            for substring in substrings_to_kill:
+                cleaned_factor_string = cleaned_factor_string.replace(substring, '')
+            cleaned_factor_string = cleaned_factor_string.replace( ' & ',' ')
+            operators = cleaned_factor_string.split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
                                    for op_string in operators))
         else:
@@ -1088,12 +1098,7 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the operator.
         """
-        components = op_string.replace('∅','0').split("_")
-        assert len(components) == self._nr_properties, \
-            f"There need to be {self._nr_properties} properties to match " + \
-            "the scenario."
-        components[0] = self.names_to_ints[components[0]]
-        return np.array([int(s) for s in components], dtype=self.np_dtype)
+        return self._lexorder[self.op_from_name[op_string]]
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE LP                            #
