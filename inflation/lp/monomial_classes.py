@@ -15,7 +15,7 @@ from ..sdp.monomial_utils import (compute_marginal,
                                   name_from_atom_names,
                                   symbol_from_atom_name,
                                   symbol_prod)
-from ..sdp.fast_npa import nb_is_knowable as is_do_conditional
+from .numbafied import nb_is_do_conditional as is_do_conditional
 
 
 @total_ordering
@@ -31,9 +31,8 @@ class InternalAtomicMonomial(object):
                  "rectified_ndarray",
                  "context",
                  "name",
-                 # "symbol",
-                 "signature",
-                 # "as_bool_vec"
+                 "is_all_commuting",
+                 "signature"
                  ]
 
     def __init__(self, inflation_lp_instance, as_1d_vec: np.ndarray):
@@ -76,10 +75,17 @@ class InternalAtomicMonomial(object):
             self.is_zero = not np.all(self.as_lexmon)
         else:
             raise NotImplementedError("InternalAtomicMonomial requires `lp` or `sdp` parent class.")
-        self.is_do_conditional = (self.is_one or self.is_zero or
-                                  is_do_conditional(self.as_2d_array))
-        self.is_knowable = (self.is_one or self.is_zero or
-                            self.context._atomic_knowable_q(self.as_2d_array))
+        if self.is_one or self.is_zero:
+            self.is_all_commuting = True
+            self.is_do_conditional = True
+            self.is_knowable = True
+        else:
+            self.is_all_commuting = inflation_lp_instance.all_commuting_q_1d(self.as_lexmon)
+            self.is_do_conditional = is_do_conditional(self.as_2d_array)
+            if self.is_do_conditional and self.is_all_commuting:
+                self.is_knowable = self.context._atomic_knowable_q(self.as_2d_array)
+            else:
+                self.is_knowable = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
             self.rectified_ndarray = np.asarray(
@@ -125,13 +131,17 @@ class InternalAtomicMonomial(object):
         """Return the name of the Monomial."""
         return self.name
 
+
     @property
     def _raw_name(self):
         if self.is_do_conditional:
             list_of_op_names = self.context._lexrepr_to_copy_index_free_names[self.as_lexmon]
         else:
             list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
-        return "P[" + " & ".join(list_of_op_names) + "]"
+        if self.is_all_commuting:
+            return "P[" + " & ".join(list_of_op_names) + "]"
+        else:
+            return "<" + " ".join(list_of_op_names) + ">"
 
     @property
     def _name(self):

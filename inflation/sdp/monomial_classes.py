@@ -73,11 +73,6 @@ class InternalAtomicMonomialSDP(InternalAtomicMonomialLP):
         return result
 
     @cached_property
-    def is_all_commuting(self) -> bool:
-        """If the moment contains operators that all commute."""
-        return self.context.all_commuting_q_1d(self.as_lexmon)
-
-    @cached_property
     def conjugate_lexmon(self):
         if self.is_all_commuting:
             return self.as_lexmon

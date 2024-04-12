@@ -65,3 +65,26 @@ def nb_outer_bitwise_xor(a: np.ndarray, b: np.ndarray):
     b_adj = b.reshape((1,)+b.shape)
     temp = np.logical_xor(a_adj, b_adj)
     return temp.reshape((-1, *temp.shape[2:]))
+
+@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+def nb_is_do_conditional(monomial: np.ndarray) -> bool_:
+    """Determine whether a given atomic monomial admits an identification with
+    a do conditional of the original scenario.
+
+    Parameters
+    ----------
+    monomial : np.ndarray
+        List of operators, denoted each by a list of indices
+
+    Returns
+    -------
+    bool
+        Whether the monomial is knowable or not.
+    """
+    if len(monomial) <= 1:
+        return True
+    # Mappable monomials have at most one copy of each source in the DAG
+    for source in monomial.T[1:-2]:
+        if len(np.unique(source[np.flatnonzero(source)])) > 1:
+            return False
+    return True
