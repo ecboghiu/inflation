@@ -6,7 +6,7 @@ values of monomials in convex programming relaxations of inflation.
 """
 import numpy as np
 
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import total_ordering
 from numbers import Real
 from typing import Dict, List, Tuple
@@ -146,10 +146,12 @@ class InternalAtomicMonomial(object):
             return "0"
         if self.is_do_conditional:
             uncleaned_ops = self.context.InflationProblem._lexrepr_to_dicts[self.as_legacy_lexmon]
-            cleaned_ops = [deepcopy(op) for op in uncleaned_ops.flat]
+            ambigous_outcome_dict = defaultdict(set)
             for op in uncleaned_ops.flat:
-                p = op["Party"]
-                o = op["Outcome"]
+                ambigous_outcome_dict[op["Party"]].add(op["Outcome"])
+            parties_with_unambigous_outcomes = [(p, s.pop()) for p, s in ambigous_outcome_dict.items() if len(s)==1]
+            cleaned_ops = [deepcopy(op) for op in uncleaned_ops.flat]
+            for (p, o) in parties_with_unambigous_outcomes:
                 for alt_op in cleaned_ops:
                     alt_op["Do Values"] = {k: v for k, v in
                                            alt_op["Do Values"].items()
