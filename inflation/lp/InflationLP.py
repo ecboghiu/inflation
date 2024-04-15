@@ -1822,14 +1822,18 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
+        # Rectification in the event of unnormalized problem
+        variables = self.monomial_names.tolist()
+        if {1, self.constant_term_name}.isdisjoint(self.known_vars_by_name):
+            self.known_vars_by_name[self.constant_term_name] = 1.
+            if self.constant_term_name not in variables:
+                variables.append(self.constant_term_name)
         solverargs = {"objective": self.objective_by_name,
                       "known_vars": self.known_vars_by_name,
                       "semiknown_vars": self.semiknown_by_name,
                       "equalities": self.moment_equalities_by_name,
-                      "inequalities": self.moment_inequalities_by_name
-                      }
-        # Add the constant 1 in case of unnormalized problems removed it
-        solverargs["known_vars"][self.constant_term_name] = 1.
+                      "inequalities": self.moment_inequalities_by_name,
+                      "variables": variables}
         if separate_bounds:
             solverargs["lower_bounds"] = self.lowerbounds_by_name
             solverargs["upper_bounds"] = self.upperbounds_by_name
