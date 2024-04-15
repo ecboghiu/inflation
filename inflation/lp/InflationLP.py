@@ -241,12 +241,20 @@ class InflationLP(object):
             self._set_lowerbounds(bounds)
 
     @cached_property
+    def atomic_monomials(self):
+        """Returns the knowable atoms."""
+        return [m for m in self.monomials if m.is_atomic]
+
+    @cached_property
     def knowable_atoms(self):
         """Returns the knowable atoms."""
-        _knowable_atoms = set()
-        for mon in self.monomials:
-            _knowable_atoms.update(mon.knowable_factors)
-        return _knowable_atoms
+        return [m for m in self.atomic_monomials if m.is_knowable]
+
+    @cached_property
+    def do_conditional_atoms(self):
+        """Returns the atomic monomials which correspond to do conditionals."""
+        return [m for m in self.atomic_monomials if
+                (m.is_do_conditional and not m.is_knowable)]
 
     @cached_property
     def factorization_conditions(self):
