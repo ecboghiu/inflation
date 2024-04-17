@@ -5,31 +5,30 @@ or non-fanout inflation instance (see arXiv:1707.06476).
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 
-import numpy as np
-import sympy as sp
-
 from collections import Counter, defaultdict
+from functools import reduce, cached_property
 from gc import collect
 from itertools import chain
 from numbers import Real
-from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
+
+import numpy as np
+import sympy as sp
 from scipy.sparse import coo_matrix, vstack
+from tqdm import tqdm
 
 from inflation import InflationProblem
-
+from .lp_utils import solveLP
+from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from .numbafied import (nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
 from .writer_utils import write_to_lp, write_to_mps
-
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
-from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from ..sdp.quantum_tools import flatten_symbolic_powers
-from .lp_utils import solveLP
-from functools import reduce, cached_property
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec
+
 
 class InflationLP(object):
     constant_term_name = "constant_term"

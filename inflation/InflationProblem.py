@@ -4,31 +4,28 @@ arXiv:1609.00672 and arXiv:1707.06476 for the original description of
 inflation.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import numpy as np
-import sympy
-
+import warnings
+from functools import reduce, cached_property
 from itertools import (chain,
                        combinations,
                        combinations_with_replacement,
-                       product,
                        permutations)
+from typing import Tuple, List, Union, Dict
 from warnings import warn
+
+import networkx as nx
+import numpy as np
+import sympy
+from tqdm import tqdm
+
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm,
                            commutation_matrix)
-
 from .utils import format_permutations, partsextractor, perm_combiner
-from typing import Tuple, List, Union, Dict
-
-from functools import reduce, cached_property
-from tqdm import tqdm
-
-import networkx as nx
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
-import warnings
 formatwarning_orig = warnings.formatwarning
 warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
     formatwarning_orig(msg, category, filename, lineno, line="")

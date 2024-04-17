@@ -4,25 +4,25 @@ instance (see arXiv:1909.10519).
 
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import numpy as np
-import sympy as sp
-
 from collections import Counter, deque, defaultdict
 from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
-from operator import itemgetter
 from numbers import Real
-from scipy.sparse import lil_matrix
-from tqdm import tqdm
+from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
+import numpy as np
+import sympy as sp
+from scipy.sparse import lil_matrix
+from tqdm import tqdm
+
 from inflation import InflationProblem
+from .fast_npa import nb_is_knowable as is_knowable
 from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal
                        )
-from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomialSDP, CompoundMomentSDP
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix_1d_internal,
@@ -34,8 +34,8 @@ from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
-from ..utils import clean_coefficients, partsextractor
 from ..lp.numbafied import nb_outer_bitwise_or
+from ..utils import clean_coefficients, partsextractor
 
 
 class InflationSDP:
