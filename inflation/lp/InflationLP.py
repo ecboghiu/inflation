@@ -87,16 +87,10 @@ class InflationLP(object):
                     + " inflation, \nbut have not specified classical_sources=`all`." \
                     + "\nNote that the `nonfanout` keyword argument is deprecated as of release 2.0.0"
 
-        self._notcomm = inflationproblem._default_notcomm.copy()
-        self.all_operators_commute = not self._notcomm.any()
-        if self.all_operators_commute:
-            self.all_commuting_q_2d = lambda mon: True
-            self.all_commuting_q_1d = lambda lexmon: True
-        else:
-            self.all_commuting_q_1d = \
-                lambda lexmon: not self._notcomm[np.ix_(lexmon, lexmon)].any()
-            self.all_commuting_q_2d = \
-                lambda mon: self.all_commuting_q_1d(self.mon_to_lexrepr(mon))
+        self.all_operators_commute = True
+        self.all_commuting_q_2d = lambda mon: True
+        self.all_commuting_q_1d = lambda lexmon: True
+
         self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)
