@@ -8,7 +8,7 @@ import numpy as np
 import sympy as sp
 
 from collections import Counter, deque, defaultdict
-from functools import reduce
+from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
 from operator import itemgetter
@@ -340,13 +340,6 @@ class InflationSDP:
         
         assert all(v == 1 for v in Counter(self.monomials).values()), \
             "Multiple indices are being associated to the same monomial"
-        
-        knowable_atoms = set()
-        for mon in self.moments:
-            knowable_atoms.update(mon.knowable_factors)
-        self.knowable_atoms = [self._moment_from_atoms([atom])
-                               for atom in knowable_atoms]
-        del knowable_atoms
 
         _counter = Counter([mon.knowability_status for mon in self.moments])
         self.n_knowable           = _counter["Knowable"]
@@ -492,6 +485,25 @@ class InflationSDP:
             self._reset_lowerbounds()
             self.moment_lowerbounds.update(sanitized_bounds)
         self._update_bounds(bound_type)
+
+    @cached_property
+    def atomic_monomials(self):
+        """Returns the atomic monomials."""
+        atoms = set()
+        for mon in self.moments:
+            atoms.update(mon.factors)
+        return [self._monomial_from_atoms([atom]) for atom in sorted(atoms)]
+
+    @cached_property
+    def knowable_atoms(self):
+        """Returns the knowable atoms."""
+        return [m for m in self.atomic_monomials if m.is_knowable]
+
+    @cached_property
+    def do_conditional_atoms(self):
+        """Returns the atomic monomials which correspond to do conditionals."""
+        return [m for m in self.atomic_monomials if
+                (m.is_do_conditional and not m.is_knowable)]
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -680,7 +692,7 @@ class InflationSDP:
                 elif known_status == "Semi":
                     if self.use_lpi_constraints:
                         unknown_mon = \
-                            self._moment_from_atoms(unknown_factors)
+                            self._monomial_from_atoms(unknown_factors)
                         self.semiknown_moments[moment] = (value, unknown_mon)
                         if self.verbose > 0:
                             if unknown_mon not in self.moments:
@@ -1299,7 +1311,7 @@ class InflationSDP:
                                             canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor + 1)
                          for factor in _factors if len(factor)]
-        mon = self._moment_from_atoms(list_of_atoms)
+        mon = self._monomial_from_atoms(list_of_atoms)
         mon.attach_idx(idx)
         return mon
 
@@ -1352,7 +1364,7 @@ class InflationSDP:
         representative = np.array(min(output_variants), dtype=np.intc)
         return output_variants, representative
 
-    def _moment_from_atoms(self,
+    def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomialSDP]
                              ) -> CompoundMomentSDP:
         """Build an instance of `CompoundMonomial` from a list of instances
@@ -1424,6 +1436,8 @@ class InflationSDP:
         """
         if isinstance(moment, CompoundMomentSDP):
             return moment
+        elif isinstance(moment, InternalAtomicMonomialSDP):
+            return self._monomial_from_atoms([moment])
         elif isinstance(moment, (sp.core.symbol.Symbol,
                                  sp.core.power.Pow,
                                  sp.core.mul.Mul)):
