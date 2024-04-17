@@ -190,7 +190,8 @@ class InternalAtomicMonomial(object):
                     "(" + o_divider.join(outputs) +
                     "|" + i_divider.join(inputs) + ")")
         else:
-            return self._name
+            return "<" + " ".join(self.context.InflationProblem._lexrepr_to_all_names[
+                self.as_legacy_lexmon, 2]) + ">"
 
     @property
     def _signature(self):
