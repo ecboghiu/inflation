@@ -27,10 +27,9 @@ from ..sdp.fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from ..sdp.quantum_tools import flatten_symbolic_powers
 from .lp_utils import solveLP
-from functools import reduce
+from functools import reduce, cached_property
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec
-from functools import cached_property
 
 class InflationLP(object):
     constant_term_name = "constant_term"
@@ -236,7 +235,7 @@ class InflationLP(object):
 
     @cached_property
     def atomic_monomials(self):
-        """Returns the knowable atoms."""
+        """Returns the atomic monomials."""
         return [m for m in self.monomials if m.is_atomic]
 
     @cached_property
