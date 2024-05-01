@@ -196,7 +196,7 @@ class InflationLP(object):
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
         r"""Set numerical lower or upper bounds on the moments generated in the
-        SDP relaxation. The bounds are at the level of the SDP variables,
+        LP relaxation. The bounds are at the level of the LP variables,
         and do not take into consideration non-convex constraints. E.g., two
         individual lower bounds, :math:`p_A(0|0) \geq 0.1` and
         :math:`p_B(0|0) \geq 0.1` do not directly impose the constraint
@@ -269,7 +269,7 @@ class InflationLP(object):
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must be appear in the
             same order as specified by the ``order`` parameter in the
-            ``InflationProblem`` used to instantiate ``InflationSDP``.
+            ``InflationProblem`` used to instantiate ``InflationLP``.
         use_lpi_constraints : bool, optional
             Specification whether linearized polynomial constraints (see,
             e.g., Eq. (D6) in `arXiv:2203.16543
@@ -362,7 +362,9 @@ class InflationLP(object):
             some Monomial).
         use_lpi_constraints : bool
             Specification whether linearized polynomial constraints (see, e.g.,
-            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+            Eq. (D6) in `arXiv:2203.16543
+            <https://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
+            By default ``False``.
         only_specified_values : bool
             Specifies whether one wishes to fix only the variables provided
             (``True``), or also the variables containing products of the
@@ -512,7 +514,7 @@ class InflationLP(object):
               verbose: int = None,
               default_non_negative: bool = None,
               **solver_arguments) -> None:
-        r"""Call a solver on the SDP relaxation. Upon successful solution, it
+        r"""Call a solver on the LP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
 
@@ -627,7 +629,7 @@ class InflationLP(object):
             dual = self.solution_object["dual_certificate"]
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
+                            "a problem. Call \"InflationLP.solve()\" first.")
         if len(self.semiknown_moments) > 0:
             warn("Beware that, because the problem contains linearized " +
                  "polynomial constraints, the certificate is not guaranteed " +
@@ -691,6 +693,7 @@ class InflationLP(object):
             The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
+
         return self.probs_from_dict(self.certificate_as_dict(
                 clean=clean,
                 chop_tol=chop_tol,
@@ -835,7 +838,7 @@ class InflationLP(object):
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ##########################################################################
     def reset(self, which: Union[str, List[str]] = "all") -> None:
-        """Reset the various user-specifiable objects in the inflation SDP.
+        """Reset the various user-specifiable objects in the inflation LP.
 
         Parameters
         ----------
@@ -859,7 +862,7 @@ class InflationLP(object):
                 self._reset_values()
             else:
                 raise Exception(f"The attribute {which} is not part of " +
-                                "InflationSDP.")
+                                "InflationLP.")
         else:
             for attr in which:
                 self.reset(attr)
@@ -1663,7 +1666,7 @@ class InflationLP(object):
         collect()
 
     def _reset_solution(self) -> None:
-        """Resets class attributes storing the solution to the SDP
+        """Resets class attributes storing the solution to the LP
         relaxation."""
         for attribute in {"primal_objective",
                           "objective_value",
@@ -1840,12 +1843,12 @@ class InflationLP(object):
         """Prepare arguments to pass to the solver.
 
         The solver takes as input the following arguments, which are all
-        dicts with keys as scalar SDP variables:
+        dicts with keys as scalar LP variables:
             * "objective": dict with values the coefficient of the key
             variable in the objective function.
             * "known_vars": scalar variables that are fixed to be constant.
             * "semiknown_vars": if applicable, linear proportionality
-            constraints between variables in the SDP.
+            constraints between variables in the LP.
             * "equalities": list of dicts where each dict gives the
             coefficients of the keys in a linear equality constraint.
             * "inequalities": list of dicts where each dict gives the
@@ -1866,7 +1869,7 @@ class InflationLP(object):
         Raises
         ------
         Exception
-            If the SDP relaxation has not been calculated yet.
+            If the LP relaxation has not been calculated yet.
         """
         if not self._lp_has_been_generated:
             raise Exception("LP is not generated yet. " +
@@ -1925,7 +1928,7 @@ class InflationLP(object):
                                                             axis=1))
 
     def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
-        """Set upper bounds for variables in the SDP relaxation.
+        """Set upper bounds for variables in the LP relaxation.
 
         Parameters
         ----------
@@ -1951,7 +1954,7 @@ class InflationLP(object):
         self.moment_upperbounds = sanitized_upperbounds
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
-        """Set lower bounds for variables in the SDP relaxation.
+        """Set lower bounds for variables in the LP relaxation.
 
         Parameters
         ----------
