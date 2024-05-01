@@ -885,20 +885,11 @@ class InflationSDP:
             round_decimals=round_decimals))
 
     def string_from_dict(self,
-                         dict_with_monomial_keys: dict,
-                         clean: bool = True,
-                         round_decimals: int = 3) -> str:
+                         dict_with_monomial_keys: dict) -> str:
         """Converts a monomial dictionary into a string.
 
         Parameters
         ----------
-        clean : bool, optional
-            If ``True``, eliminate all coefficients that are smaller than
-            ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``True``.
-        round_decimals : int, optional
-            Coefficients that are not set to zero are formatted to the number
-            of decimals specified. By default ``3``.
         dict_with_monomial_keys : Dict[sympy.Symbol, float]
             Dictionary with monomials and associated coefficients.
 
@@ -907,30 +898,24 @@ class InflationSDP:
         str
             The expression of the certificate in string form.
         """
-        chop_tol = 10 ** (-round_decimals)
         as_dict = self._sanitise_dict(dict_with_monomial_keys)
-        if clean:
-            as_dict = clean_coefficients(as_dict, chop_tol, round_decimals)
         # Watch out for when "1" is note the same as "constant_term"
         constant_value = as_dict.pop(self.Constant_Term,
                                      as_dict.pop(self.One, 0.)
                                      )
         if constant_value:
-            polynomial_as_str = "{0:.{prec}f}".format(constant_value,
-                                                      prec=round_decimals)
+            polynomial_as_str = str(constant_value)
         else:
             polynomial_as_str = ""
         for mon, coeff in as_dict.items():
-            if mon.is_zero or np.abs(coeff) <= chop_tol:
+            if mon.is_zero or np.isclose(np.abs(coeff), 0):
                 continue
             else:
                 polynomial_as_str += "+" if coeff >= 0 else "-"
                 if np.isclose(abs(coeff), 1):
                     polynomial_as_str += mon.name
                 else:
-                    polynomial_as_str += "{0:.{prec}f}*{1}".format(abs(coeff),
-                                                                   mon.name,
-                                                                   prec=round_decimals)
+                    polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
         return polynomial_as_str[1:] if polynomial_as_str[
                                             0] == "+" else polynomial_as_str
 
@@ -972,9 +957,7 @@ class InflationSDP:
             self.certificate_as_dict(
                 clean=clean,
                 chop_tol=chop_tol,
-                round_decimals=round_decimals),
-            round_decimals=round_decimals,
-            clean=False) + " < 0"
+                round_decimals=round_decimals)) + " < 0"
 
     def evaluate_polynomial(self, polynomial: dict, prob_array: np.ndarray):
         """Evaluate the certificate of infeasibility in a target probability
