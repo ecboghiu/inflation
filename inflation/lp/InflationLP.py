@@ -639,8 +639,20 @@ class InflationLP(object):
         return {self.monomial_from_name[k]: v for k, v in dual.items()
                 if not self.monomial_from_name[k].is_zero}
 
-    def probs_from_dict(self, dict_with_monomial_keys: dict) -> sp.core.add.Add:
-        "Converts a monomial dictionary into a SymPy expression."
+    def probs_from_dict(self,
+                        dict_with_monomial_keys: dict) -> sp.core.add.Add:
+        """Converts a monomial dictionary into a SymPy expression.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the polynomial encoded in the dictionary.
+        """
         polynomial = sp.S.Zero
         for mon, coeff in self._sanitise_dict(dict_with_monomial_keys).items():
             polynomial += coeff * mon.symbol
@@ -689,6 +701,7 @@ class InflationLP(object):
                          clean: bool = True,
                          round_decimals: int = 3) -> str:
         """Converts a monomial dictionary into a string.
+
         Parameters
         ----------
         clean : bool, optional
@@ -698,12 +711,19 @@ class InflationLP(object):
         round_decimals : int, optional
             Coefficients that are not set to zero are formatted to the number
             of decimals specified. By default ``3``.
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        str
+            The expression of the certificate in string form.
         """
         chop_tol = 10 ** (-round_decimals)
         as_dict = self._sanitise_dict(dict_with_monomial_keys)
         if clean:
             as_dict = clean_coefficients(as_dict, chop_tol, round_decimals)
-        # Watch out for when "1" is note the same as "constant_term
+        # Watch out for when "1" is note the same as "constant_term"
         constant_value = as_dict.pop(self.Constant_Term,
                                      as_dict.pop(self.One, 0.)
                                      )
