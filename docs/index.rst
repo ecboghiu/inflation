@@ -20,6 +20,7 @@ Examples of use of this package include:
 - Standard `Navascues-Pironio-Acin hierarchy <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401>`_.
 - Scenarios with partial information.
 - Possibilistic compatibility with a causal network.
+- Estimation of do-conditionals and causal strengths.
 
 In the `Tutorial <https://ecboghiu.github.io/inflation/_build/html/tutorial.html>`_ and `Examples <https://ecboghiu.github.io/inflation/_build/html/examples.html>`_ all the above are explained in more detail.
 
