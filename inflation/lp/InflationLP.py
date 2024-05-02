@@ -180,7 +180,7 @@ class InflationLP(object):
 
         self._atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
-        self.monomial_from_name         = dict()
+        self.monomial_from_name = dict()
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._generate_lp()
 
@@ -594,13 +594,13 @@ class InflationLP(object):
     def certificate_as_dict(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
+                             round_decimals: int = 3) -> dict:
         """Give certificate as dictionary with monomials as keys and
         their coefficients in the certificate as the values. The certificate
         of incompatibility is ``cert < 0``.
 
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -621,8 +621,8 @@ class InflationLP(object):
 
         Returns
         -------
-        sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
+        dict
+            The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
         try:
@@ -634,10 +634,31 @@ class InflationLP(object):
             warn("Beware that, because the problem contains linearized " +
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
+        if np.allclose(list(dual.values()), 0.):
+            return dict()
+        if clean:
             dual = clean_coefficients(dual, chop_tol, round_decimals)
+        return {self.monomial_from_name[k]: v for k, v in dual.items()
+                if not self.monomial_from_name[k].is_zero}
 
-        return {self.monomial_from_name[k]: v for k, v in dual.items()}
+    def probs_from_dict(self,
+                        dict_with_monomial_keys: dict) -> sp.core.add.Add:
+        """Converts a monomial dictionary into a SymPy expression.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the polynomial encoded in the dictionary.
+        """
+        polynomial = sp.S.Zero
+        for mon, coeff in self._sanitise_dict(dict_with_monomial_keys).items():
+            polynomial += coeff * mon.symbol
+        return polynomial
 
     def certificate_as_probs(self,
                              clean: bool = True,
@@ -647,7 +668,7 @@ class InflationLP(object):
         of incompatibility is ``cert < 0``.
 
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -669,27 +690,49 @@ class InflationLP(object):
         Returns
         -------
         sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
+            The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationLP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        polynomial = sp.S.Zero
-        for mon_name, coeff in dual.items():
-            if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
-                coeff = int(coeff)
-            polynomial += coeff * self.names_to_symbols[mon_name]
-        return polynomial
+        return self.probs_from_dict(self.certificate_as_dict(
+                clean=clean,
+                chop_tol=chop_tol,
+                round_decimals=round_decimals))
+
+    def string_from_dict(self,
+                         dict_with_monomial_keys) -> str:
+        """Converts a monomial dictionary into a string.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        str
+            The expression of the certificate in string form.
+        """
+        as_dict = self._sanitise_dict(dict_with_monomial_keys)
+        # Watch out for when "1" is note the same as "constant_term"
+        constant_value = as_dict.pop(self.Constant_Term,
+                                     as_dict.pop(self.One, 0.)
+                                     )
+        if constant_value:
+            polynomial_as_str = str(constant_value)
+        else:
+            polynomial_as_str = ""
+        for mon, coeff in as_dict.items():
+            if mon.is_zero or np.isclose(np.abs(coeff), 0):
+                continue
+            else:
+                polynomial_as_str += "+" if coeff >= 0 else "-"
+                if np.isclose(abs(coeff), 1):
+                    polynomial_as_str += mon.name
+                else:
+                    polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
+        return polynomial_as_str[1:] if polynomial_as_str[0
+                                            ] == "+" else polynomial_as_str
 
     def certificate_as_string(self,
                               clean: bool = True,
@@ -700,7 +743,7 @@ class InflationLP(object):
         incompatibility.
 
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -725,40 +768,71 @@ class InflationLP(object):
             The certificate in terms of probabilities and marginals. The
             certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationLP.solve()\" first.")
+        return self.string_from_dict(
+            self.certificate_as_dict(
+                clean=clean,
+                chop_tol=chop_tol,
+                round_decimals=round_decimals)) + " < 0"
 
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
+    def evaluate_polynomial(self, polynomial: dict, prob_array: np.ndarray):
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
 
-        rest_of_dual = dual.copy()
-        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
-        constant_value += rest_of_dual.pop(self.One.name, 0)
-        if constant_value:
-            if clean:
-                cert = "{0:.{prec}f}".format(constant_value,
-                                             prec=round_decimals)
-            else:
-                cert = str(constant_value)
-        else:
-            cert = ""
-        for mon_name, coeff in rest_of_dual.items():
-            if mon_name != "0":
-                cert += "+" if coeff >= 0 else "-"
-                if np.isclose(abs(coeff), 1):
-                    cert += mon_name
-                else:
-                    if clean:
-                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
-                                                          mon_name,
-                                                          prec=round_decimals)
-                    else:
-                        cert += f"{abs(coeff)}*{mon_name}"
-        cert += " < 0"
-        return cert[1:] if cert[0] == "+" else cert
+        Parameters
+        ----------
+        polynomial : dict
+            A dictionary of monomials with coefficients as values.
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        return sum((atom.compute_marginal(prob_array) * val
+                    for atom, val in self._sanitise_dict(polynomial).items()))
+
+
+    def evaluate_certificate(self, prob_array: np.ndarray) -> float:
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
+
+        Parameters
+        ----------
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        if self.use_lpi_constraints:
+            warn("You have used LPI constraints to obtain the certificate. " +
+                 "Be aware that, because of that, the certificate may not be " +
+                 "valid for other distributions.")
+        return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
@@ -1115,7 +1189,9 @@ class InflationLP(object):
 
         self._atomic_monomial_from_hash = dict()
         self.monomial_from_atoms = dict()
-        self.monomial_from_name = dict()
+        self.Constant_Term = self.One.__copy__()
+        self.Constant_Term.name = self.constant_term_name
+        self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
         (self._raw_monomials_as_lexboolvecs,
          self._raw_monomials_as_lexboolvecs_non_CG) = self._build_raw_lexboolvecs()
