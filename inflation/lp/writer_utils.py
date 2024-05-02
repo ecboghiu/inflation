@@ -7,7 +7,6 @@ problem to file.
 
 import mosek
 from copy import deepcopy
-import numpy as np
 
 
 def write_to_lp(args: dict, filename: str) -> None:

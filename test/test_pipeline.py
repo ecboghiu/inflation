@@ -755,13 +755,7 @@ class TestSymmetries(unittest.TestCase):
                         "not applied properly after inflation symmetries.")
 
     def test_detected_symmetries(self):
-        cols = bilocalSDP.build_columns('local1')
-        # bilocalSDP.generating_monomials = cols
-        # bilocalSDP.generating_monomials_1d = list(map, bilocalSDP)
-        # bilocalSDP.n_columns = len(cols)
-        # bilocalSDP.genmon_hash_to_index = {
-        #                         bilocalSDP._from_2dndarray(op): i
-        #                         for i, op in enumerate(cols)}
+        bilocalSDP.build_columns('local1')
         syms = bilocalSDP._discover_columns_symmetries()
         # Make it a set so the order doesn't matter
         syms = set(tuple(s) for s in syms)

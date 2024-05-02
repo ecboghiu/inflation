@@ -1142,8 +1142,6 @@ class InflationSDP:
                       for lexmon in self.generating_monomials_1d ]
         return output
 
-
-
     def reset(self, which: Union[str, List[str]] = "all") -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
 
