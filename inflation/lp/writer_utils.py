@@ -20,14 +20,15 @@ def write_to_lp(args: dict, filename: str) -> None:
     filename : str
         The file to write to.
     """
-    (objective,
-     known_vars,
-     semiknown_vars,
-     internal_equalities,
-     inequalities,
-     lower_bounds,
-     upper_bounds,
-     variables) = process_arguments(args)
+    processed_args = process_arguments(args)
+    objective = processed_args["objective"]
+    known_vars = processed_args["known_vars"]
+    internal_equalities = processed_args["equalities"]
+    inequalities = processed_args["inequalities"]
+    lower_bounds = processed_args["lower_bounds"]
+    upper_bounds = processed_args["upper_bounds"]
+    variables = processed_args["variables"]
+
 
     # Write problem to file
     f = open(filename, "w")
@@ -68,14 +69,14 @@ def write_to_mps(args: dict, filename: str) -> None:
     filename : str
         The file to write to.
     """
-    (objective,
-     known_vars,
-     semiknown_vars,
-     internal_equalities,
-     inequalities,
-     lower_bounds,
-     upper_bounds,
-     variables) = process_arguments(args)
+    processed_args = process_arguments(args)
+    objective = processed_args["objective"]
+    known_vars = processed_args["known_vars"]
+    internal_equalities = processed_args["equalities"]
+    inequalities = processed_args["inequalities"]
+    lower_bounds = processed_args["lower_bounds"]
+    upper_bounds = processed_args["upper_bounds"]
+    variables = processed_args["variables"]
 
     # Exclude constraints in which variables are all known values
     internal_equalities = [eq for eq in internal_equalities
@@ -165,7 +166,7 @@ def lp_to_mps(args: dict, filename: str) -> None:
         t.writedata(filename)
 
 
-def process_arguments(args: dict) -> tuple:
+def process_arguments(args: dict) -> dict:
     """Helper function that processes arguments and variables in preparation
     for writing.
 
@@ -176,63 +177,37 @@ def process_arguments(args: dict) -> tuple:
 
     Returns
     -------
-    tuple
-        Processed objective, known_vars, semiknown_vars, internal_equalities,
+    dict
+        Processed objective, known_vars, internal_equalities,
         inequalities, lower_bounds, upper_bounds, variables
     """
-    args = deepcopy(args)
-    objective = args.get('objective')
-    known_vars = args.get('known_vars')
-    if known_vars is None:
-        known_vars = {}
-    semiknown_vars = args.get('semiknown_vars')
-    if semiknown_vars is None:
-        semiknown_vars = {}
-    equalities = args.get('equalities')
-    if equalities is None:
-        equalities = []
-    inequalities = args.get('inequalities')
-    if inequalities is None:
-        inequalities = []
-    lower_bounds = args.get('lower_bounds')
-    if lower_bounds is None:
-        lower_bounds = {}
-    upper_bounds = args.get('upper_bounds')
-    if upper_bounds is None:
-        upper_bounds = {}
+    old_variables = args["variables"]
+    old_equalities = deepcopy(args["equalities"])
+    old_semiknown = args["semiknown_vars"]
+    for x, (c, x2) in old_semiknown.items():
+        old_equalities.append({x: 1, x2: -c})
+    old_inequalities = args["inequalities"]
+    old_known_vars = args["known_vars"]
+    old_objective = args.get("objective", {})
+    old_lower_bounds = args.get("lower_bounds", {})
+    old_upper_bounds = args.get("upper_bounds", {})
+    var_idx =  {x: f"x{i}" for i, x in enumerate(old_variables)}
+    new_variables = list(var_idx.values())
+    new_equalities = [{var_idx[x]: c for x, c in eq.items()} for eq in  old_equalities]
+    new_inequalities = [{var_idx[x]: c for x, c in ineq.items()} for ineq in old_inequalities]
+    new_known_vars = {var_idx[x]: c for x, c in old_known_vars.items()}
+    new_lower_bounds = {var_idx[x]: c for x, c in old_lower_bounds.items()}
+    new_upper_bounds = {var_idx[x]: c for x, c in old_upper_bounds.items()}
+    new_objective = {var_idx[x]: c for x, c in old_objective.items()}
 
-    # Process semiknown variables
-    internal_equalities = equalities.copy()
-    for x, (c, x2) in semiknown_vars.items():
-        internal_equalities.append({x: 1, x2: -c})
-
-    # Set variables (excluding known variables)
-    variables = set()
-    variables.update(objective)
-    for ineq in inequalities:
-        variables.update(ineq)
-    for eq in internal_equalities:
-        variables.update(eq)
-    variables.difference_update(known_vars)
-
-    # Replace variable names (LP file cannot have <, >, etc.)
-    var_index = {x: f"x{i}" for i, x in enumerate(variables)}
-    for x in set(objective).difference(known_vars):
-        objective[var_index[x]] = objective.pop(x)
-    for ineq in inequalities:
-        for x in set(ineq).difference(known_vars):
-            ineq[var_index[x]] = ineq.pop(x)
-    for eq in internal_equalities:
-        for x in set(eq).difference(known_vars):
-            eq[var_index[x]] = eq.pop(x)
-    for x in set(lower_bounds).difference(known_vars):
-        lower_bounds[var_index[x]] = lower_bounds.pop(x)
-    for x in set(upper_bounds).difference(known_vars):
-        upper_bounds[var_index[x]] = upper_bounds.pop(x)
-    variables = list(var_index.values())
-
-    return objective, known_vars, semiknown_vars, internal_equalities, \
-        inequalities, lower_bounds, upper_bounds, variables
+    return {
+        "objective": new_objective,
+        "variables": new_variables,
+        "equalities": new_equalities,
+        "inequalities": new_inequalities,
+        "known_vars": new_known_vars,
+        "lower_bounds": new_lower_bounds,
+        "upper_bounds": new_upper_bounds}
 
 
 def format_constraint_lp(known_vars: dict,

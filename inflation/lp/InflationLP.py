@@ -5,32 +5,30 @@ or non-fanout inflation instance (see arXiv:1707.06476).
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 
-import numpy as np
-import sympy as sp
-
 from collections import Counter, defaultdict
+from functools import reduce, cached_property
 from gc import collect
 from itertools import chain
 from numbers import Real
-from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
+
+import numpy as np
+import sympy as sp
 from scipy.sparse import coo_matrix, vstack
+from tqdm import tqdm
 
 from inflation import InflationProblem
-
+from .lp_utils import solveLP
+from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from .numbafied import (nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
 from .writer_utils import write_to_lp, write_to_mps
-
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
-from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from ..sdp.quantum_tools import flatten_symbolic_powers
-from .lp_utils import solveLP
-from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec
-from functools import cached_property
+
 
 class InflationLP(object):
     constant_term_name = "constant_term"
@@ -86,6 +84,11 @@ class InflationLP(object):
                 "You appear to be requesting fanout (classical)" \
                     + " inflation, \nbut have not specified classical_sources=`all`." \
                     + "\nNote that the `nonfanout` keyword argument is deprecated as of release 2.0.0"
+
+        self.all_operators_commute = True
+        self.all_commuting_q_2d = lambda mon: True
+        self.all_commuting_q_1d = lambda lexmon: True
+
         self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)
@@ -95,6 +98,11 @@ class InflationLP(object):
         self.names = inflationproblem.names
         self.names_to_ints = inflationproblem.names_to_ints
         self._lexrepr_to_names = inflationproblem._lexrepr_to_names
+        self._lexrepr_to_copy_index_free_names = inflationproblem._lexrepr_to_copy_index_free_names
+        self.op_from_name = dict()
+        for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
+            for op_name in op_names:
+                self.op_from_name.setdefault(op_name, i)
         self.nr_sources = inflationproblem.nr_sources
         self.nr_parties = inflationproblem.nr_parties
         self.hypergraph = inflationproblem.hypergraph
@@ -225,12 +233,20 @@ class InflationLP(object):
             self._set_lowerbounds(bounds)
 
     @cached_property
+    def atomic_monomials(self):
+        """Returns the atomic monomials."""
+        return [m for m in self.monomials if m.is_atomic]
+
+    @cached_property
     def knowable_atoms(self):
         """Returns the knowable atoms."""
-        _knowable_atoms = set()
-        for mon in self.monomials:
-            _knowable_atoms.update(mon.knowable_factors)
-        return _knowable_atoms
+        return [m for m in self.atomic_monomials if m.is_knowable]
+
+    @cached_property
+    def do_conditional_atoms(self):
+        """Returns the atomic monomials which correspond to do conditionals."""
+        return [m for m in self.atomic_monomials if
+                (m.is_do_conditional and not m.is_knowable)]
 
     @cached_property
     def factorization_conditions(self):
@@ -994,6 +1010,7 @@ class InflationLP(object):
                 pass
             self.monomial_from_atoms[key] = mon
             self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMoment:
@@ -1138,11 +1155,17 @@ class InflationLP(object):
             2D array encoding of the input atomic moment.
         """
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
+                or (factor_string[0:1] == "P[" and factor_string[-1] == "]")
                 or set(factor_string).isdisjoint(set("| "))), \
             ("Monomial names must be between < > signs, or in conditional " +
-             f"probability form, whereas input recieved was {factor_string}")
-        if factor_string[0] == "<":
-            operators = factor_string[1:-1].split(" ")
+             f"probability form, whereas input received was {factor_string}")
+        if factor_string[-1] in {'>', ')', "]", "}"}:
+            cleaned_factor_string = factor_string[:-1]
+            substrings_to_kill = {"P[", "P(", "p[", "p(", "<"}
+            for substring in substrings_to_kill:
+                cleaned_factor_string = cleaned_factor_string.replace(substring, '')
+            cleaned_factor_string = cleaned_factor_string.replace( ' & ',' ')
+            operators = cleaned_factor_string.split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
                                    for op_string in operators))
         else:
@@ -1161,12 +1184,7 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the operator.
         """
-        components = op_string.replace('∅','0').split("_")
-        assert len(components) == self._nr_properties, \
-            f"There need to be {self._nr_properties} properties to match " + \
-            "the scenario."
-        components[0] = self.names_to_ints[components[0]]
-        return np.array([int(s) for s in components], dtype=self.np_dtype)
+        return self._lexorder[self.op_from_name[op_string]]
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE LP                            #
@@ -1880,14 +1898,18 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
+        # Rectification in the event of unnormalized problem
+        variables = self.monomial_names.tolist()
+        if {1, self.constant_term_name}.isdisjoint(self.known_vars_by_name):
+            self.known_vars_by_name[self.constant_term_name] = 1.
+            if self.constant_term_name not in variables:
+                variables.append(self.constant_term_name)
         solverargs = {"objective": self.objective_by_name,
                       "known_vars": self.known_vars_by_name,
                       "semiknown_vars": self.semiknown_by_name,
                       "equalities": self.moment_equalities_by_name,
-                      "inequalities": self.moment_inequalities_by_name
-                      }
-        # Add the constant 1 in case of unnormalized problems removed it
-        solverargs["known_vars"][self.constant_term_name] = 1.
+                      "inequalities": self.moment_inequalities_by_name,
+                      "variables": variables}
         if separate_bounds:
             solverargs["lower_bounds"] = self.lowerbounds_by_name
             solverargs["upper_bounds"] = self.upperbounds_by_name

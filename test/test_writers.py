@@ -31,7 +31,7 @@ class TestWriters(unittest.TestCase):
                                      verbose=False,
                                      include_all_outcomes=True)
     instrumental_infLP.set_distribution(p)
-    instrumental_infLP.set_objective(objective={'<B_1_0_1>': 1},
+    instrumental_infLP.set_objective(objective={'P[B=1|do(A=0)]': 1},
                                      direction='max')
     instrumental_infLP.solve()
     args = instrumental_infLP._prepare_solver_arguments(separate_bounds=True)

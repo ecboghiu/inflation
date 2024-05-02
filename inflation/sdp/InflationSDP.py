@@ -4,25 +4,25 @@ instance (see arXiv:1909.10519).
 
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import numpy as np
-import sympy as sp
-
 from collections import Counter, deque, defaultdict
-from functools import reduce
+from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
-from operator import itemgetter
 from numbers import Real
-from scipy.sparse import lil_matrix
-from tqdm import tqdm
+from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
+import numpy as np
+import sympy as sp
+from scipy.sparse import lil_matrix
+from tqdm import tqdm
+
 from inflation import InflationProblem
+from .fast_npa import nb_is_knowable as is_knowable
 from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal
                        )
-from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomialSDP, CompoundMomentSDP
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix_1d_internal,
@@ -34,8 +34,8 @@ from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
-from ..utils import clean_coefficients, partsextractor
 from ..lp.numbafied import nb_outer_bitwise_or
+from ..utils import clean_coefficients, partsextractor
 
 
 class InflationSDP:
@@ -141,6 +141,12 @@ class InflationSDP:
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names))
+        self._lexrepr_to_copy_index_free_names = \
+            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names))
+        self.op_from_name = {"0": 0}
+        for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
+            for op_name in op_names:
+                self.op_from_name.setdefault(op_name, i+1)
         self._lexrepr_to_symbols = \
             np.hstack(([sp.S.Zero], inflationproblem._lexrepr_to_symbols))
 
@@ -337,13 +343,6 @@ class InflationSDP:
         
         assert all(v == 1 for v in Counter(self.monomials).values()), \
             "Multiple indices are being associated to the same monomial"
-        
-        knowable_atoms = set()
-        for mon in self.moments:
-            knowable_atoms.update(mon.knowable_factors)
-        self.knowable_atoms = [self._moment_from_atoms([atom])
-                               for atom in knowable_atoms]
-        del knowable_atoms
 
         _counter = Counter([mon.knowability_status for mon in self.moments])
         self.n_knowable           = _counter["Knowable"]
@@ -489,6 +488,25 @@ class InflationSDP:
             self._reset_lowerbounds()
             self.moment_lowerbounds.update(sanitized_bounds)
         self._update_bounds(bound_type)
+
+    @cached_property
+    def atomic_monomials(self):
+        """Returns the atomic monomials."""
+        atoms = set()
+        for mon in self.moments:
+            atoms.update(mon.factors)
+        return [self._monomial_from_atoms([atom]) for atom in sorted(atoms)]
+
+    @cached_property
+    def knowable_atoms(self):
+        """Returns the knowable atoms."""
+        return [m for m in self.atomic_monomials if m.is_knowable]
+
+    @cached_property
+    def do_conditional_atoms(self):
+        """Returns the atomic monomials which correspond to do conditionals."""
+        return [m for m in self.atomic_monomials if
+                (m.is_do_conditional and not m.is_knowable)]
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -677,7 +695,7 @@ class InflationSDP:
                 elif known_status == "Semi":
                     if self.use_lpi_constraints:
                         unknown_mon = \
-                            self._moment_from_atoms(unknown_factors)
+                            self._monomial_from_atoms(unknown_factors)
                         self.semiknown_moments[moment] = (value, unknown_mon)
                         if self.verbose > 0:
                             if unknown_mon not in self.moments:
@@ -1192,8 +1210,6 @@ class InflationSDP:
                       for lexmon in self.generating_monomials_1d ]
         return output
 
-
-
     def reset(self, which: Union[str, List[str]] = "all") -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
 
@@ -1361,7 +1377,7 @@ class InflationSDP:
                                             canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor + 1)
                          for factor in _factors if len(factor)]
-        mon = self._moment_from_atoms(list_of_atoms)
+        mon = self._monomial_from_atoms(list_of_atoms)
         mon.attach_idx(idx)
         return mon
 
@@ -1414,7 +1430,7 @@ class InflationSDP:
         representative = np.array(min(output_variants), dtype=np.intc)
         return output_variants, representative
 
-    def _moment_from_atoms(self,
+    def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomialSDP]
                              ) -> CompoundMomentSDP:
         """Build an instance of `CompoundMonomial` from a list of instances
@@ -1455,6 +1471,7 @@ class InflationSDP:
                 pass
             self.monomial_from_atoms[atoms]   = mon
             self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
             return mon
 
     def _sanitise_moment(self, moment: Any) -> CompoundMomentSDP:
@@ -1485,6 +1502,8 @@ class InflationSDP:
         """
         if isinstance(moment, CompoundMomentSDP):
             return moment
+        elif isinstance(moment, InternalAtomicMonomialSDP):
+            return self._monomial_from_atoms([moment])
         elif isinstance(moment, (sp.core.symbol.Symbol,
                                  sp.core.power.Pow,
                                  sp.core.mul.Mul)):
@@ -1632,11 +1651,18 @@ class InflationSDP:
             2D array encoding of the input atomic moment.
         """
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
+                or (factor_string[0:1] == "P[" and factor_string[-1] == "]")
                 or set(factor_string).isdisjoint(set("| "))), \
             ("Monomial names must be between < > signs, or in conditional " +
-             "probability form.")
-        if factor_string[0] == "<":
-            operators = factor_string[1:-1].split(" ")
+             f"probability form, whereas input received was {factor_string}")
+        if factor_string[-1] in {'>', ')', "]", "}"}:
+            cleaned_factor_string = factor_string[:-1]
+            substrings_to_kill = {"P[", "P(", "p[", "p(", "<"}
+            for substring in substrings_to_kill:
+                cleaned_factor_string = cleaned_factor_string.replace(
+                    substring, '')
+            cleaned_factor_string = cleaned_factor_string.replace(' & ', ' ')
+            operators = cleaned_factor_string.split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
                                    for op_string in operators))
         else:
@@ -1653,14 +1679,9 @@ class InflationSDP:
         Returns
         -------
         numpy.ndarray
-            1D array encoding of the operator.
+            2D array encoding of the operator.
         """
-        components = op_string.replace('∅','0').split("_")
-        assert len(components) == self._nr_properties, \
-            f"There need to be {self._nr_properties} properties to match " + \
-            "the scenario."
-        components[0] = self.names_to_ints[components[0]]
-        return np.array([int(s) for s in components], dtype=self.np_dtype)
+        return self._lexorder[self.op_from_name[op_string]]
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
