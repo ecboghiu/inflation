@@ -189,6 +189,7 @@ class InflationLP(object):
         self._atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name = dict()
+        self.monomial_from_symbol = dict()
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._generate_lp()
 
@@ -233,9 +234,26 @@ class InflationLP(object):
             self._set_lowerbounds(bounds)
 
     @cached_property
+    def atomic_factors(self):
+        atoms = set()
+        for mon in self.monomials:
+            atoms.update(mon.factors)
+        return sorted(atoms)
+
+    @cached_property
     def atomic_monomials(self):
         """Returns the atomic monomials."""
-        return [m for m in self.monomials if m.is_atomic]
+        return [self._monomial_from_atoms([atom]) for atom in
+                self.atomic_factors]
+
+    @cached_property
+    def atom_from_name(self):
+        """Returns the atomic monomials."""
+        lookup_dict = dict()
+        for atom in self.atomic_factors:
+            lookup_dict[atom.name] = atom
+            lookup_dict[atom.legacy_name] = atom
+        return lookup_dict
 
     @cached_property
     def knowable_atoms(self):
@@ -1011,6 +1029,7 @@ class InflationLP(object):
             self.monomial_from_atoms[key] = mon
             self.monomial_from_name[mon.name] = mon
             self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
+            self.monomial_from_symbol[mon.symbol] = mon
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMoment:
@@ -1045,16 +1064,20 @@ class InflationLP(object):
             return self._monomial_from_atoms([mon])
         elif isinstance(mon, (sp.core.symbol.Symbol,
                               sp.core.power.Pow,
-                              sp.core.mul.Mul)):
-            symbols = flatten_symbolic_powers(mon)
-            if len(symbols) == 1:
-                try:
-                    return self.monomial_from_name[str(symbols[0])]
-                except KeyError:
-                    pass
-            array = np.concatenate([self._interpret_atomic_string(str(op))
-                                    for op in symbols])
-            return self._sanitise_monomial(array)
+                              sp.core.mul.Mul,
+                              sp.core.symbol.Expr)):
+            try:
+                return self.monomial_from_symbol[mon]
+            except KeyError:
+                symbols = flatten_symbolic_powers(mon)
+                if len(symbols) == 1:
+                    try:
+                        return self.monomial_from_name[str(symbols[0])]
+                    except KeyError:
+                        pass
+                array = np.concatenate([self._interpret_atomic_string(str(op))
+                                        for op in symbols])
+                return self._sanitise_monomial(array)
         elif isinstance(mon, (tuple, list, np.ndarray)):
             array = np.asarray(mon, dtype=self.np_dtype)
             assert array.ndim <= 2, \
@@ -1126,16 +1149,23 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the input moment.
         """
-        if isinstance(monomial, sp.core.symbol.Expr):
-            factors = [str(factor)
-                       for factor in flatten_symbolic_powers(monomial)]
-        elif str(monomial) == '1':
+        if str(monomial) == '1':
             return self.identity_operator
+        elif isinstance(monomial, str):
+            try:
+                return self.monomial_from_name[monomial]
+            except KeyError:
+                factors = monomial.split("*")
         elif isinstance(monomial, tuple) or isinstance(monomial, list):
             factors = [str(factor) for factor in monomial]
+        elif isinstance(monomial, sp.core.symbol.Expr):
+            try:
+                return self.monomial_from_symbol[monomial]
+            except KeyError:
+                factors = [str(factor)
+                           for factor in flatten_symbolic_powers(monomial)]
         else:
-            assert "^" not in monomial, "Cannot interpret exponents."
-            factors = monomial.split("*")
+            raise Exception(f'Cannot interpret monomial with name {monomial} of type {type(monomial)}')
         return np.vstack(tuple(self._interpret_atomic_string(factor_string)
                                for factor_string in factors))
 
@@ -1154,6 +1184,10 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the input atomic moment.
         """
+        try:
+            return self.atom_from_name[factor_string].as_2d_array
+        except (KeyError, AttributeError):
+            pass
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
                 or (factor_string[0:1] == "P[" and factor_string[-1] == "]")
                 or set(factor_string).isdisjoint(set("| "))), \
