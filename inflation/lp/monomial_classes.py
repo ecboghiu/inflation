@@ -100,7 +100,7 @@ class InternalAtomicMonomial(object):
         self.name = self._name
         self.legacy_name = self._raw_name
         self.signature = self._signature
-        self.symbol = self._symbol
+        self.symbol = symbol_from_atom_name(self.name)
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -199,11 +199,6 @@ class InternalAtomicMonomial(object):
         # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
         return (self.n_operators, tuple(self.as_lexmon))
 
-    @property
-    def symbol(self):
-        """Return a sympy Symbol representing the monomial."""
-        return symbol_from_atom_name(self.name)
-
     def compute_marginal(self, prob_array: np.ndarray) -> float:
         """Given a probability distribution, compute the numerical value of
         the Monomial.
@@ -247,7 +242,8 @@ class CompoundMoment(object):
                  "signature",
                  "unknowable_factors",
                  "as_lexmon",
-                 "internal_type"
+                 "internal_type",
+                 "symbol"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
@@ -301,9 +297,12 @@ class CompoundMoment(object):
                         or (self.n_factors == 0))
         self.is_zero = any(factor.is_zero for factor in self.factors)
 
-        self.name        = name_from_atom_names(self._names_of_factors)
-        self.legacy_name = name_from_atom_names(self._legacy_names_of_factors)
-        # self.symbol      = symbol_prod(self._symbols_of_factors)
+        self.name        = name_from_atom_names([factor.name
+                                                 for factor in self.factors])
+        self.legacy_name = name_from_atom_names([factor.legacy_name
+                                                 for factor in self.factors])
+        self.symbol      = symbol_prod([factor.symbol
+                                        for factor in self.factors])
         self.signature   = self.factors
         self.internal_type = InternalAtomicMonomial
 
@@ -333,25 +332,6 @@ class CompoundMoment(object):
     def __str__(self):
         """Return the name of the Monomial."""
         return self.name
-
-    @property
-    def _names_of_factors(self):
-        """Return the names of each of the factors in the Monomial."""
-        return [factor.name for factor in self.factors]
-
-    @property
-    def _legacy_names_of_factors(self):
-        """Return the legacy names of each of the factors in the Monomial."""
-        return [factor.legacy_name for factor in self.factors]
-
-    @property
-    def _symbols_of_factors(self):
-        """Generate a sympy Symbol per factor in the Monomial."""
-        return [factor.symbol for factor in self.factors]
-
-    @property
-    def symbol(self):
-        return symbol_prod(self._symbols_of_factors)
 
     def attach_idx(self, idx: int):
         """Assign an index to the Monomial. This is used when generating the
