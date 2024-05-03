@@ -41,11 +41,7 @@ def flatten_symbolic_powers(monomial: sympy.core.symbol.Symbol
     factors_expanded = []
     for factor in factors:
         base, exp = factor.as_base_exp()
-        if exp == 1:
-            factors_expanded.append(base)
-        elif exp > 1:
-            for _ in range(exp):
-                factors_expanded.append(base)
+        factors_expanded.extend([base] * exp)
     factors = factors_expanded
     return factors
 
