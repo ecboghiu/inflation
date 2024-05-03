@@ -34,7 +34,8 @@ class InternalAtomicMonomial(object):
                  "name",
                  "legacy_name",
                  "is_all_commuting",
-                 "signature"
+                 "signature",
+                 "symbol"
                  ]
 
     def __init__(self, inflation_lp_instance, as_1d_vec: np.ndarray):
@@ -99,7 +100,7 @@ class InternalAtomicMonomial(object):
         self.name = self._name
         self.legacy_name = self._raw_name
         self.signature = self._signature
-        # self.symbol = self._symbol
+        self.symbol = self._symbol
 
     def __copy__(self):
         """Make a copy of the Monomial"""
