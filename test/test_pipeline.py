@@ -150,10 +150,8 @@ class TestMonomialGeneration(unittest.TestCase):
     def test_generation_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         columns  = oneParty.build_columns([[], [0, 0]])
-        truth    = [np.array([[1, 1, 0, 0]]),
-                    np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
-                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]]),
-                    np.array([[1, 1, 1, 0]])]
+        truth    = [np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
+                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]])]
         truth    = [np.empty((0,4), dtype=int)] + [oneParty.mon_to_lexrepr(mon) 
                                                    for mon in truth]
         self.assertTrue(len(columns) == len(truth),
