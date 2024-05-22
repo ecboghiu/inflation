@@ -1090,7 +1090,7 @@ class InflationSDP:
         """
         columns = None
         if type(column_specification) == list:
-            # There are two possibilities: list of lists, list of arrays 
+            # There are three possibilities: list of lists, list of arrays 
             # or list of symbols. If list of lists, then it is the party
             # block encoding. If it is a list of arrays, then it can be either
             # monomials in the 2d encoding, or the 1d encoding.
@@ -1758,7 +1758,8 @@ class InflationSDP:
                                 for party in block]
                 for mon_lexrepr in product(*meas_ops):
                     canon = self._to_canonical_memoized_1d(mon_lexrepr)
-                    if not np.array_equal(canon, _zero_lexorder):
+                    if (not np.array_equal(canon, _zero_lexorder)
+                        and len(canon) == len(block)):
                         _hash = tuple(canon)
                         if _hash not in seen_columns:
                             seen_columns.add(tuple(canon))
