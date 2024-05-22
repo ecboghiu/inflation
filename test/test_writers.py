@@ -164,7 +164,7 @@ class TestSDPWriters(unittest.TestCase):
 
         # Assert that the file contains the objective function
         self.assertTrue(np.array_equal(objective, [[3, self.c1], [6, self.c2]]),
-                        "The objective function is not recognized.")
+                        "The objective function is not correct.")
 
         # Assert that the file contains the variable constraints
         self.assertTrue(np.array_equal(known_moments, [[1, 0],
@@ -229,7 +229,7 @@ class TestSDPWriters(unittest.TestCase):
         # Assert that the file contains the objective function
         objective = contents.split("\n")[4]
         self.assertTrue(objective[0] == '{' and objective[-1] == '}',
-                        "The objective function is not recognized.")
+                        "The objective function is not created.")
         self.assertTrue(float(objective.split(",")[0][1:]) == self.c1
                         and float(objective.split(",")[2]) == self.c2,
                         "The objective function is not correct.")
