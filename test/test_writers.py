@@ -6,7 +6,8 @@ import numpy as np
 
 from inflation import InflationProblem, InflationLP, InflationSDP
 from inflation.lp.writer_utils import write_to_lp, write_to_mps
-from inflation.sdp.writer_utils import write_to_sdpa
+from inflation.sdp.writer_utils import write_to_mat, write_to_sdpa
+from scipy.io import loadmat
 
 
 class TestLPWriters(unittest.TestCase):
@@ -64,6 +65,10 @@ class TestLPWriters(unittest.TestCase):
         os.remove(f"inst.{self.ext}")
 
 class TestSDPWriters(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore", category=UserWarning)
+
     # Create an example problem
     scenario = InflationProblem({"Lambda": ["A"]},
                                 outcomes_per_party=[3],
@@ -84,6 +89,73 @@ class TestSDPWriters(unittest.TestCase):
     sdp.set_extra_equalities([{"P[A_0=0]": c2, "P[A_0=1]": -c1}])
     sdp.set_extra_inequalities([{"P[A_0=0]": c1, "P[A_0=1]": -c2}])
 
+    def test_write_to_mat(self):
+        self.ext = 'mat'
+        # Write the problem to a file
+        write_to_mat(self.sdp, 'inst.mat')
+
+        # Read the contents of the file
+        contents = loadmat('inst.mat')
+
+        moments_idx2name    = contents['moments_idx2name']
+        momentmatrix        = contents['momentmatrix']
+        known_moments       = contents['known_moments']
+        semiknown_moments   = contents['semiknown_moments']
+        objective           = contents['objective']
+        moment_lowerbounds  = contents['moment_lowerbounds']
+        moment_upperbounds  = contents['moment_upperbounds']
+        moment_equalities   = contents['moment_equalities']
+        moment_inequalities = contents['moment_inequalities']
+
+        # Assert that the file contains the expected number of variables
+        nvars = (len(moments_idx2name) - len(known_moments)
+                 - len(semiknown_moments))
+        self.assertEqual(nvars, 661,
+                         "The number of variables is not correct.")
+
+        # Assert that the file contains the objective function
+        self.assertTrue(np.array_equal(objective, [[3, self.c1], [6, self.c2]]),
+                        "The objective function is not recognized.")
+
+        # Assert that the file contains the variable constraints
+        self.assertTrue(np.array_equal(known_moments, [[1, 0],
+                                                       [2, 1],
+                                                       [5, self.v],
+                                                       [18, self.v**2]]),
+                        "The variable constraints are not implemented/correct.")
+        
+        # Assert that the file contains LPI constraints
+        self.assertTrue(all(semiknown_moments[:,1] == self.v),
+                        "The LPI constraints are not implemented/correct.")
+
+        # Assert that the file contains the upper bounds
+        self.assertTrue(np.array_equal(moment_upperbounds, [[4, self.ub]]),
+                        "The upper bounds are not implemented/correct.")
+
+        # Assert that the file contains the lower bounds
+        self.assertTrue(len(moment_lowerbounds) == 168
+                        and np.array_equal(moment_lowerbounds[1], [4, self.lb])
+                        and sum(moment_lowerbounds[:, 1]) == self.lb,
+                        "The lower bounds are not implemented/correct.")
+
+        # Assert that the file contains the moment equalities
+        self.assertEqual(len(moment_equalities), 1,
+                         "The moment equalities are not implemented.")
+        
+        eq = moment_equalities[0][0][0][0]
+        self.assertTrue(np.array_equal(eq[0], [[3, 4]])
+                        and np.array_equal(eq[1], [[self.c2, -self.c1]]),
+                        "The moment equalities are not correct.")
+
+        # Assert that the file contains the moment inequalities
+        self.assertEqual(len(moment_inequalities), 1,
+                         "The moment inequalities are not implemented.")
+        
+        ineq = moment_inequalities[0][0][0][0]
+        self.assertTrue(np.array_equal(ineq[0], [[3, 4]])
+                        and np.array_equal(ineq[1], [[self.c1, -self.c2]]),
+                        "The moment inequalities are not correct.")
+        
     def test_write_to_sdpa(self):
         self.ext = 'dat-s'
         # Write the problem to a file
