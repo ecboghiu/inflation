@@ -253,7 +253,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             C[i, var2index[x]] = equality[x]
         d[i, 0] = float(sum([equality[x] * known_vars[x]
                              for x in eq_vars.intersection(known_vars)]))
-
     collect()
     if verbose > 1:
         print("Pre-processing took",
@@ -276,8 +275,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 # of an expression (A^T I)_i, so we do it manually row by row.
                 A = A.tocsr()
                 AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
-                for i in range(len(variables)):
-                    slice_ = A[:, i]
+                for var in variables:
+                    slice_ = A[:, var2index[var]]
                     sparse_slice = Matrix.sparse(*slice_.shape,
                                                  *slice_.nonzero(),
                                                  slice_[slice_.nonzero()].A[0])
@@ -286,8 +285,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 E = M.variable("E", len(var_equalities), Domain.unbounded())
                 C = C.tocsr()
                 CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
-                for i in range(len(variables)):
-                    slice_ = C[:, i]
+                for var in variables:
+                    slice_ = C[:, var2index[var]]
                     sparse_slice = Matrix.sparse(*slice_.shape,
                                                  *slice_.nonzero(),
                                                  slice_[slice_.nonzero()].A[0])
