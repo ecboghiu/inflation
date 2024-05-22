@@ -82,7 +82,7 @@ class TestSDPWriters(unittest.TestCase):
     sdp.set_bounds({"P[A_0=1]": 0.3}, "lo")
     sdp.set_values({"P[A_1=0]": v}, use_lpi_constraints=True)
     sdp.set_extra_equalities([{"P[A_0=0]": c2, "P[A_0=1]": -c1}])
-    sdp.set_extra_inequalities([{"P[A_1=0]": c1, "P[A_1=1]": -c2}])
+    sdp.set_extra_inequalities([{"P[A_0=0]": c1, "P[A_0=1]": -c2}])
 
     def test_write_to_sdpa(self):
         self.ext = 'dat-s'
@@ -100,9 +100,9 @@ class TestSDPWriters(unittest.TestCase):
         vars, blocks, struct = contents.split("\n")[1:4]
         self.assertTrue(vars == "661 = number of vars",
                         "The number of variables is not correct.")
-        self.assertTrue(blocks == "4 = number of blocks",
+        self.assertTrue(blocks == "5 = number of blocks",
                         "The number of blocks is not correct.")
-        self.assertTrue(struct == "(137,-1,-141,-2) = BlockStructure",
+        self.assertTrue(struct == "(137,-1,-141,-2,-1) = BlockStructure",
                         "The block structure is not correct.")
 
         # Assert that the file contains the objective function
@@ -137,6 +137,11 @@ class TestSDPWriters(unittest.TestCase):
                       + f"2\t4\t1\t1\t{-self.c1}\n"
                       + f"2\t4\t2\t2\t{self.c1}", contents,
                       "The moment equalities are not implemented/correct.")
+
+        # Assert that the file contains the moment inequalities
+        self.assertIn(f"1\t5\t1\t1\t{self.c1}\n2\t5\t1\t1\t{-self.c2}\n",
+                      contents,
+                      "The moment inequalities are not implemented/correct.")
 
     def tearDown(self):
         os.remove(f"inst.{self.ext}")
