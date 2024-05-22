@@ -98,7 +98,23 @@ def convert_to_human_readable(problem):
                 else:
                     equality += f"{abs(coeff)}*{monom.name}"
         equalities.append(equality[1:] if equality[0] == "+" else equality)
-    return objective, matrix, bounds.tolist(), equalities
+    
+    ### Process inequalities
+    inequalities = []
+    for ineq in problem.moment_inequalities:
+        inequality = ""
+        for monom, coeff in ineq.items():
+            inequality += "+" if coeff > 0 else "-"
+            if monom == problem.One:
+                inequality += str(abs(coeff))
+            else:
+                if np.isclose(abs(coeff), 1):
+                    inequality += monom.name
+                else:
+                    inequality += f"{abs(coeff)}*{monom.name}"
+        inequalities.append(inequality[1:] if inequality[0] == "+"
+                            else inequality)
+    return objective, matrix, bounds.tolist(), equalities, inequalities
 
 
 def write_to_csv(problem, filename):
@@ -112,7 +128,8 @@ def write_to_csv(problem, filename):
     filename : str
         The name of the file to write the CSV table to.
     """
-    objective, matrix, bounds, equalities = convert_to_human_readable(problem)
+    objective, matrix, bounds, equalities, inequalities \
+        = convert_to_human_readable(problem)
     f = open(filename, "w")
     f.write("Objective: " + objective + "\n")
     for matrix_line in matrix:
@@ -127,6 +144,10 @@ def write_to_csv(problem, filename):
     f.write("\nEqualities (format: line = 0):\n")
     for equality in equalities:
         f.write(equality)
+        f.write("\n")
+    f.write("\nInequalities (format: line >= 0):\n")
+    for inequality in inequalities:
+        f.write(inequality)
         f.write("\n")
     f.close()
 
