@@ -6,7 +6,7 @@ import numpy as np
 
 from inflation import InflationProblem, InflationLP, InflationSDP
 from inflation.lp.writer_utils import write_to_lp, write_to_mps
-from inflation.sdp.writer_utils import write_to_mat, write_to_sdpa
+from inflation.sdp.writer_utils import write_to_csv, write_to_mat, write_to_sdpa
 from scipy.io import loadmat
 
 
@@ -89,6 +89,55 @@ class TestSDPWriters(unittest.TestCase):
     sdp.set_extra_equalities([{"P[A_0=0]": c2, "P[A_0=1]": -c1}])
     sdp.set_extra_inequalities([{"P[A_0=0]": c1, "P[A_0=1]": -c2}])
 
+    def test_write_to_csv(self):
+        self.ext = 'csv'
+        # Write the problem to a file
+        write_to_csv(self.sdp, 'inst.csv')
+
+        # Read the contents of the file
+        with open('inst.csv', 'r') as file:
+            contents = file.read()
+
+        # Assert that the file contains the objective function
+        self.assertIn(f"Objective: {self.c1}*P[A_0=0]{self.c2}*P[A_1=1]",
+                      contents,
+                      "The objective function is not exported.")
+
+        # Assert that the file contains the variable constraints
+        self.assertEqual(float(contents.split("\n")[1].split(",")[3]), self.v,
+                        "The variable constraints are not implemented/correct.")
+        
+        # Assert that the file contains LPI constraints
+        self.assertEqual(contents.split("\n")[1].split(",")[13],
+                         f"{self.v}*P[A_0=0]",
+                         "The LPI constraints are not implemented/correct.")
+
+        # Checks on bounds
+        bounds = contents.split("\n")[140:308]
+        lbs = list(float(b.split(",")[1]) for b in bounds)
+        ubs = [b.split(",")[2] for b in bounds]
+        
+        # Assert that the file contains the upper bounds
+        self.assertIn(str(self.ub), ubs,
+                      "The upper bounds are not implemented/correct.")
+
+        # Assert that the file contains the lower bounds
+        self.assertTrue(sum(lbs) == self.lb,
+                        "The lower bounds are not implemented/correct.")
+
+        # Assert that the file contains the moment equalities
+        self.assertIn(f"{self.c2}*P[A_0=0]-{self.c1}*P[A_0=1]", contents,
+                      "The moment equalities are not implemented.")
+        
+        # Assert that the file contains the moment inequalities
+        self.assertIn(f"{self.c1}*P[A_0=0]+{abs(self.c2)}*P[A_0=1]", contents,
+                      "The moment inequalities are not implemented.")
+        
+        # ineq = moment_inequalities[0][0][0][0]
+        # self.assertTrue(np.array_equal(ineq[0], [[3, 4]])
+        #                 and np.array_equal(ineq[1], [[self.c1, -self.c2]]),
+        #                 "The moment inequalities are not correct.")
+        
     def test_write_to_mat(self):
         self.ext = 'mat'
         # Write the problem to a file
