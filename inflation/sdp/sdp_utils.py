@@ -190,11 +190,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         Fi[lam] = -1 * eye(mat_dim).tolil()
         var_objective = {lam: 1}
 
-    # Calculate c0, the constant part of the var_objective.
-    c0 = 0. + float(sum([var_objective[x] * known_vars[x]
-                         for x in set(var_objective).intersection(known_vars)])
-                    )
-
     # Calculate F0, the constant part of the matrix variable.
     if mask_matrices:
         F0 = lil_matrix((mat_dim, mat_dim), dtype=float) + \
@@ -229,6 +224,11 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         for x, (c, x2) in semiknown_vars.items():
             var_equalities.append({x: 1, x2: -c})
             variables.add(x2)
+
+    # Calculate c0, the constant part of the var_objective.
+    c0 = 0. + float(sum([var_objective[x] * known_vars[x]
+                         for x in set(var_objective).intersection(known_vars)])
+                    )
 
     # 'var2index' should be computed after there is no more further modification
     # to 'variables' or any of the constraint or objective dictionaries
@@ -359,7 +359,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 domain = Domain.unbounded()
             x_mosek = M.variable("x", len(variables), domain)
 
-
             if var_inequalities:
                 b_mosek = Matrix.sparse(*b.shape,
                                         *b.nonzero(),
@@ -373,6 +372,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                                         b_mosek),
                                                Domain.greaterThan(0))
                 del b_mosek, A_mosek
+
             if var_equalities:
                 d_mosek = Matrix.sparse(*d.shape,
                                         *d.nonzero(),
