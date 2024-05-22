@@ -51,7 +51,7 @@ def convert_to_human_readable(problem):
     known_replacer = np.vectorize(replace_known)
     for ii, row in enumerate(matrix):
         for jj, col in enumerate(row):
-            matrix[ii,jj] = constants.get(col, col)
+            matrix[ii, jj] = constants.get(col, col)
     matrix = semiknown_replacer(matrix)
     matrix = np.triu(known_replacer(matrix).astype(object))
 
@@ -102,11 +102,15 @@ def convert_to_human_readable(problem):
 
 
 def write_to_csv(problem, filename):
-    """Export the problem in a human-readable form in a CSV table.
+    """
+    Export the problem in a human-readable form in a CSV table.
 
-    :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflation.InflationSDP`
-    :type filename: str
+    Parameters
+    ----------
+    problem : :class:`inflation.InflationSDP`
+        The SDP relaxation to write.
+    filename : str
+        The name of the file to write the CSV table to.
     """
     objective, matrix, bounds, equalities = convert_to_human_readable(problem)
     f = open(filename, "w")
@@ -128,11 +132,46 @@ def write_to_csv(problem, filename):
 
 
 def write_to_mat(problem, filename):
-    """Export the problem to MATLAB .mat file.
+    """
+    Export the problem to MATLAB .mat file.
 
-    :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflation.InflationSDP`
-    :type filename: str
+    Parameters
+    ----------
+    problem : inflation.InflationSDP
+        The SDP relaxation to write.
+    filename : str
+        The filename of the MATLAB .mat file to be created.
+
+    Notes
+    -----
+    MATLAB does not like 0s, so we shift all values by 1 if the variable 0
+    exists.
+
+    The exported MATLAB .mat file contains the following variables:
+    - moments_idx2name : numpy.ndarray
+        An array containing the indices and names of the moments.
+    - momentmatrix : numpy.ndarray
+        The moment matrix with the offset applied.
+    - objective : list
+        A list of lists containing the indices and coefficients of the objective
+        moments.
+    - known_moments : list
+        A list of lists containing the indices and values of the known moments.
+    - semiknown_moments : numpy.ndarray
+        A 2D array containing the indices, factors, and final indices of the
+        semi-known moments.
+    - moment_lowerbounds : list
+        A list of lists containing the indices and lower bounds of the moments.
+    - moment_upperbounds : list
+        A list of lists containing the indices and upper bounds of the moments.
+    - moment_equalities : list
+        A list of dictionaries representing moment equalities, where each
+        dictionary contains the indices and coefficients of the moments involved
+        in the equality.
+    - moment_inequalities : list
+        A list of dictionaries representing moment inequalities, where each
+        dictionary contains the indices and coefficients of the moments involved
+        in the inequality.
     """
     # MATLAB does not like 0s, so we shift all by 1 if the variable 0 exists
     offset = 1 if problem.momentmatrix_has_a_zero else 0
@@ -185,12 +224,25 @@ def write_to_mat(problem, filename):
 
 
 def write_to_sdpa(problem, filename):
-    """Export the problem to a file in .dat-s format. See specifications at
-    http://euler.nmt.edu/~brian/sdplib/FORMAT.
+    """
+    Export the problem to a file in .dat-s format, per as
+    http://euler.nmt.edu/~brian/sdplib/FORMAT
 
-    :param problem: The SDP relaxation to write.
-    :type problem: :class:`inflation.InflationSDP`
-    :type filename: str
+    Parameters
+    ----------
+    problem : inflation.InflationSDP
+        The SDP relaxation to write.
+    filename : str
+        The filename to write the SDP problem to.
+
+    Notes
+    -----
+    This function exports the given SDP relaxation problem to a file in the
+    .dat-s format. The .dat-s format is a specific format used by the SDPA
+    software for semidefinite programming.
+
+    For more information about the .dat-s format, see the specifications at:
+    http://euler.nmt.edu/~brian/sdplib/FORMAT
     """
     # Compute actual number of variables: all in the moment matrix, minus those
     # with known values, minus those that participate in LPI constraints, plus
