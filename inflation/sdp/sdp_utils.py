@@ -327,7 +327,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 domain = Domain.equalsTo(0)
             for i, x in enumerate(variables):
                 lhs = 0.0
-                if var_objective and x in var_objective:
+                if var_objective and x in set(var_objective
+                                              ).difference(known_vars):
                     ci  = float(var_objective[x])
                     lhs += ci
                 try:
