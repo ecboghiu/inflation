@@ -2,6 +2,7 @@
 The module creates the inflation scenario associated to a causal structure. See
 arXiv:1609.00672 and arXiv:1707.06476 for the original description of
 inflation.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import warnings

@@ -1,5 +1,6 @@
 """
 This file contains the functions to send the problems to SDP solvers.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 from __future__ import annotations

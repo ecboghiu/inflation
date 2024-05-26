@@ -1,6 +1,7 @@
 """
 This file contains helper functions to write and export the problems to various
 formats.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np

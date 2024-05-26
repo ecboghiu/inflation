@@ -2,6 +2,7 @@
 This file contains helper functions to manipulate monomials and generate moment
 matrices. The functions in this file can be accelerated by JIT compilation in
 numba.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np

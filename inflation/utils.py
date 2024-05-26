@@ -1,5 +1,6 @@
 """
 This file contains auxiliary functions of general purpose
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 from __future__ import print_function

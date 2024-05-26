@@ -4,6 +4,7 @@ variables under the constraint that the InflationLP or InflationSDP instance
 they implicitly define must be feasible. Useful for exploring the set of
 parametrically-defined distribution for which quantum inflation (at specific
 hierarchy levels) is
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np

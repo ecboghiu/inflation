@@ -1,6 +1,7 @@
 """
 This file contains helper functions to manipulate monomials and generate moment
 matrices.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
