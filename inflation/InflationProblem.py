@@ -186,6 +186,20 @@ class InflationProblem:
                         self._classical_sources[ii] = 1
         self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
 
+        # Test if any quantum intermediate latent has fully classical parents.
+        # This case is not yet supported.
+        is_classical_source = dict(zip(self._actual_sources,
+                                       self._classical_sources))
+        for latent in self.nonclassical_intermediate_latents:
+            parents = [parent for parent, children in self.dag.items()
+                       if latent in children]
+            if all([is_classical_source[parent] for parent in parents]):
+                raise NotImplementedError(
+                    f"The node {latent} is a quantum intermediate latent node "
+                    + f"with all classical parents ({', '.join(parents)}). "
+                    + "Quantum intermediate latents with all classical parents "
+                    + "are not yet supported.")
+
         # Unpacking of visible nodes with children
         parties_with_children = nodes_with_children.intersection(self.names)
         self.has_children   = np.zeros(self.nr_parties, dtype=bool)
