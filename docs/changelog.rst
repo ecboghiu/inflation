@@ -5,11 +5,11 @@ Changelog
 2.0.0 - 2024-06-01
 ******************
 
-* Added support for linear programming relaxations of causal scenarios, via `InflationLP`. This allows to run inflation hierarchies bounding the sets of classical and no-signaling correlations, per [J. Causal Inference 7(2), 2019](https://doi.org/10.1515/jci-2017-0020) ([arXiv:1609.00672](https://arxiv.org/abs/1609.00672))
+* Added support for linear programming relaxations of causal scenarios, via ``InflationLP``. This allows to run inflation hierarchies bounding the sets of classical and no-signaling correlations, per `J. Causal Inference 7(2), 2019 <https://doi.org/10.1515/jci-2017-0020>`_ (`arXiv:1609.00672 <https://arxiv.org/abs/1609.00672>`_)
 
-* Added support for hybrid scenarios with sources of different nature, via the `classical_sources` argument to `InflationProblem`. Currently supported: classical-no-signaling (via `InflationLP`) and classical-quantum (via `InflationSDP`).
+* Added support for hybrid scenarios with sources of different nature, via the ``classical_sources`` argument to ``InflationProblem``. Currently supported: classical-no-signaling (via ``InflationLP``) and classical-quantum (via ``InflationSDP``).
 
-* Added support for possibilistic-type feasibility problems (via `supports_problem` in `InflationLP` and `InflationSDP`).
+* Added support for possibilistic-type feasibility problems (via ``supports_problem`` in ``InflationLP`` and ``InflationSDP``).
 
 * Added initial support for structures with multiple layers of latent variables.
 
