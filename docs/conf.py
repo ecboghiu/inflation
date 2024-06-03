@@ -18,12 +18,10 @@ sys.path.insert(0, os.path.abspath(".."))
 
 project = "Inflation"
 author = "Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens"
-copyright = "2022, " + author
+copyright = "2024, " + author
 
 # The full version, including alpha/beta/rc tags
-with open('../inflation/_version.py') as f:
-    exec(f.read())
-    release = __version__
+release = "2.0.0"
 
 # -- General configuration ---------------------------------------------------
 

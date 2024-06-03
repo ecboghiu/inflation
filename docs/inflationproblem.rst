@@ -2,4 +2,4 @@ InflationProblem Class
 ======================
 
 .. autoclass:: inflation.InflationProblem
-   :members: factorize_monomial, rectify_fake_setting
+   :members: rectify_fake_setting, factorize_monomial_2d, factorize_monomial_1d, discover_lexorder_symmetries

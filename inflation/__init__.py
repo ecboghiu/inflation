@@ -6,14 +6,19 @@ Provides
     arXiv:1707.06476 and arXiv:1909.10519).
  2. A tool for setting up and solving feasibility and optimization problems
     over probability distributions compatible with quantum causal scenarios.
+ 3. A tool for setting up and solving feasibility and optimization problems
+    over probability distributions compatible with theory-independent and
+    classical causal scenarios
 """
 
 from .InflationProblem import InflationProblem
 from .sdp.InflationSDP import InflationSDP
-from .sdp.optimization_utils import max_within_feasible
+from .lp.InflationLP import InflationLP
+from .optimization_utils import max_within_feasible
 from ._about import about
 from ._version import __version__
 
 __all__ = ["InflationProblem",
            "InflationSDP",
+           "InflationLP",
            "max_within_feasible"]
