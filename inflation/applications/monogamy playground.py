@@ -20,24 +20,24 @@ print(tripartite_Bell._lexorder)
 print("Before manually adjusting noncommutation relations:")
 print(tripartite_Bell._default_notcomm.astype(int))
 n_ops = tripartite_Bell._nr_operators
-for i, j in np.ndindex((n_ops,n_ops)):
-    op_i = tripartite_Bell._lexorder[i]
-    op_j = tripartite_Bell._lexorder[j]
-    if (op_i[0] == 2) and (op_j[0] == 3):
-        y_B = op_i[-2]
-        x_C, y_C = np.divmod(op_j[-2], 2)
-        if y_B != y_C:
-            tripartite_Bell._default_notcomm[i, j] = True
-            tripartite_Bell._default_notcomm[j, i] = True
 # for i, j in np.ndindex((n_ops,n_ops)):
 #     op_i = tripartite_Bell._lexorder[i]
 #     op_j = tripartite_Bell._lexorder[j]
-#     if (op_i[0] == 1) and (op_j[0] == 3):
-#         x_A = op_i[-2]
+#     if (op_i[0] == 2) and (op_j[0] == 3):
+#         y_B = op_i[-2]
 #         x_C, y_C = np.divmod(op_j[-2], 2)
-#         if x_A != x_C:
+#         if y_B != y_C:
 #             tripartite_Bell._default_notcomm[i, j] = True
 #             tripartite_Bell._default_notcomm[j, i] = True
+for i, j in np.ndindex((n_ops,n_ops)):
+    op_i = tripartite_Bell._lexorder[i]
+    op_j = tripartite_Bell._lexorder[j]
+    if (op_i[0] == 1) and (op_j[0] == 3):
+        x_A = op_i[-2]
+        x_C, y_C = np.divmod(op_j[-2], 2)
+        if x_A != x_C:
+            tripartite_Bell._default_notcomm[i, j] = True
+            tripartite_Bell._default_notcomm[j, i] = True
 print("After manually adjusting noncommutation relations:")
 print(tripartite_Bell._default_notcomm.astype(int))
 
@@ -45,7 +45,7 @@ v = 1 / np.sqrt(2)
 P_Dani = np.full((2,2,2,2,2,4), fill_value=np.nan)
 for a,b,c,x,y in np.ndindex(2,2,2,2,2):
     z = 2*x + y
-    if a != c:
+    if b != c:
         P_Dani[a, b, c, x, y, z] = 0
     else:
         P_Dani[a, b, c, x, y, z] = (1 / 4) * ((1 + (v) * ((-1) ** (a + b + x * y))))
@@ -54,7 +54,7 @@ for x, y in np.ndindex((2,2)):
     print(P_Dani[:, :, :, x, y, z])
 
 one_intermediate_latent_SDP = InflationSDP(tripartite_Bell, verbose=2, include_all_outcomes=True)
-one_intermediate_latent_SDP.generate_relaxation("local1")
+one_intermediate_latent_SDP.generate_relaxation("npa2")
 
 one_intermediate_latent_SDP.set_distribution(P_Dani)
 print(one_intermediate_latent_SDP.known_moments)
