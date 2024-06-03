@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <title>&lt;no title&gt; &mdash; Inflation 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script src="_static/clipboard.min.js"></script>
         <script src="_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -31,11 +33,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> CausalInflation
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -59,15 +65,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">CausalInflation</a>
+          <a href="#">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>&lt;no title&gt;</li>
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/contents.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -77,31 +83,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<div class="toctree-wrapper compound">
+  <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a><ul>
@@ -116,22 +98,25 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial.html#Encoding-the-inflation-problem">Encoding the inflation problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Generating-the-SDP-relaxation">Generating the SDP relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Generating-the-relaxation:-example-with-quantum-compatibility">Generating the relaxation: example with quantum compatibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial.html#Running-a-feasibility-problem">Running a feasibility problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial.html#Running-an-optimisation-problem">Running an optimisation problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Inflations-for-different-physical-models">Inflations for different physical models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial.html#References">References</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Compatibility-problems">Compatibility problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#Characterization-of-classical-correlations">Characterization of classical correlations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Scenarios-with-classical-sources">Scenarios with classical sources</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Optimization-of-Bell-operators">Optimization of Bell operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Standard-NPA-hierarchy">Standard NPA hierarchy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Feasibility-with-limited-information">Feasibility with limited information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Using-certificates-of-infeasibility-to-speed-up-optimization-of-scalars">Using certificates of infeasibility to speed up optimization of scalars</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Non-negative-operators-as-generating-monomials">Non-negative operators as generating monomials</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Linearized-polynomial-identification-constraints">Linearized polynomial identification constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Non-network-scenarios">Non-network scenarios</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#Feasibility-based-on-distribution-supports">Feasibility based on distribution supports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#Estimation-of-causal-strengths">Estimation of causal strengths</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#References">References</a></li>
 </ul>
 </li>
@@ -148,14 +133,17 @@
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationlp.html">InflationLP Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html">Optimization helpers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="changelog.html#id1">0.1.0 - 2022-07-31</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id1">2.0.0 - 2024-06-01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id2">1.0.0 - 2022-11-28</a></li>
 </ul>
 </li>
 </ul>
@@ -171,7 +159,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

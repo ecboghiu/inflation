@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Changelog &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <title>Changelog &mdash; Inflation 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script src="_static/clipboard.min.js"></script>
         <script src="_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -31,11 +33,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -51,7 +57,8 @@
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#id1">0.1.0 - 2022-07-31</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">2.0.0 - 2024-06-01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">1.0.0 - 2022-11-28</a></li>
 </ul>
 </li>
 </ul>
@@ -62,15 +69,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Changelog</li>
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Changelog</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/changelog.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -80,34 +87,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="changelog">
+  <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this heading"></a></h1>
 <section id="id1">
-<h2>0.1.0 - 2022-07-31<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<h2>2.0.0 - 2024-06-01<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Added support for linear programming relaxations of causal scenarios, via <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code>. This allows to run inflation hierarchies bounding the sets of classical and no-signaling correlations, per <a class="reference external" href="https://doi.org/10.1515/jci-2017-0020">J. Causal Inference 7(2), 2019</a> (<a class="reference external" href="https://arxiv.org/abs/1609.00672">arXiv:1609.00672</a>)</p></li>
+<li><p>Added support for hybrid scenarios with sources of different nature, via the <code class="docutils literal notranslate"><span class="pre">classical_sources</span></code> argument to <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>. Currently supported: classical-no-signaling (via <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code>) and classical-quantum (via <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>).</p></li>
+<li><p>Added support for possibilistic-type feasibility problems (via <code class="docutils literal notranslate"><span class="pre">supports_problem</span></code> in <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code> and <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>).</p></li>
+<li><p>Added initial support for structures with multiple layers of latent variables.</p></li>
+<li><p>Improved support for structures with visible-to-visible connections, using the notation of do-conditionals.</p></li>
+<li><p>Improved handling of certificates. This makes them easier to manipulate and evaluate.</p></li>
+<li><p>Revamped the description of monomials. This makes the codes faster and consume less memory.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>1.0.0 - 2022-11-28<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>Initial release.</p></li>
 </ul>
@@ -124,7 +119,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
