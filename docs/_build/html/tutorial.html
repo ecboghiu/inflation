@@ -1,22 +1,25 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <title>Tutorial &mdash; Inflation 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script src="_static/clipboard.min.js"></script>
         <script src="_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -34,11 +37,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -51,16 +58,17 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Encoding-the-inflation-problem">Encoding the inflation problem</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Basics-of-causal-diagrams">Basics of causal diagrams</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#The-quantum-tripartite-line-and-an-inflation">The quantum tripartite line and an inflation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Quantum-causal-compatibility-and-an-inflation">Quantum causal compatibility and an inflation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#The-tripartite-line-network">The tripartite line network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Causal-compatibility-and-inflation">Causal compatibility and inflation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Creating-an-instance-of-InflationProblem">Creating an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Generating-the-SDP-relaxation">Generating the SDP relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Generating-the-relaxation:-example-with-quantum-compatibility">Generating the relaxation: example with quantum compatibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Running-a-feasibility-problem">Running a feasibility problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Running-an-optimisation-problem">Running an optimisation problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Inflations-for-different-physical-models">Inflations for different physical models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#References">References</a></li>
 </ul>
 </li>
@@ -77,15 +85,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Tutorial</li>
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tutorial</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/tutorial.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -95,332 +103,56 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
-
-
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
-
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt .copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-.jp-RenderedHTMLCommon table,
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-.jp-RenderedHTMLCommon thead,
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-.jp-RenderedHTMLCommon tr,
-.jp-RenderedHTMLCommon th,
-.jp-RenderedHTMLCommon td,
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-.jp-RenderedHTMLCommon th,
-div.rendered_html th {
-  font-weight: bold;
-}
-.jp-RenderedHTMLCommon tbody tr:nth-child(odd),
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-.jp-RenderedHTMLCommon tbody tr:hover,
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="Tutorial">
+  <section id="Tutorial">
 <h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this heading"></a></h1>
-<p>The CausalInflation package contains implementations of the inflation technique for causal compatibility. Currently it only supports the quantum inflation method of [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>]. In the future, we plan adding support to the inflation hierarchy for classical causal compatibility of [<a class="reference external" href="https://www.arxiv.org/abs/1609.00672">2</a>] and dedicated parts for analysing theory-independent correlations. The implementation of CausalInflation follows an object-oriented
-design. The workflow comprises of three main steps:</p>
+<p>The Inflation package contains implementations of the inflation technique for causal compatibility. It supports the linear-programming technique of [<a class="reference external" href="https://www.arxiv.org/abs/1609.00672">1</a>], that is used for compatibility with classical and theory-independent models, and the semidefinite-programming method of [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">2</a>], that is used for compatibility with classical and quantum models. It also supports hybrid scenarios where the systems distributed by
+different sources are described by different physical theories. The implementation of Inflation follows an object-oriented design. The workflow comprises of three main steps:</p>
 <ul class="simple">
 <li><p>Encode the causal scenario and desired inflation as an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>.</p></li>
-<li><p>Generate the associated optimization problem for classical, quantum, or theory-independent inflation (currently, only <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code> is available).</p></li>
+<li><p>Generate the associated optimization problem for classical, quantum, or theory-independent inflation, via <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code> or <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code> depending on the goal.</p></li>
 <li><p>Export the problem to a file and/or solve it.</p></li>
 </ul>
-<p>We will now go through the steps above in more detail. This tutorial is available on the <a class="reference external" href="https://ecboghiu.github.io/inflation/">documentation webpage</a> and it can also be downloaded as a ready-to-run <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/examples/tutorial.ipynb">Jupyter Notebook</a> from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>. If already familiar with quantum inflation, the quickest way to get started is to run some examples from the
+<p>We will now go through the steps above in more detail. This tutorial is available on the <a class="reference external" href="https://ecboghiu.github.io/inflation/">documentation webpage</a> and it can also be downloaded as a ready-to-run <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/examples/tutorial.ipynb">Jupyter Notebook</a> from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a>. If already familiar with inflation, the quickest way to get started is to run some examples from the
 <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section, which can also be downloaded as a <a class="reference external" href="https://github.com/ecboghiu/inflation/blob/main/docs/examples.ipynb">Jupyter Notebook</a>.</p>
 <p>We start by importing everything that we will need:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">causalinflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationSDP</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">inflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span><span class="p">,</span> <span class="n">InflationLP</span><span class="p">,</span> <span class="n">InflationSDP</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 </pre></div>
 </div>
 </div>
 <section id="Encoding-the-inflation-problem">
 <h2>Encoding the inflation problem<a class="headerlink" href="#Encoding-the-inflation-problem" title="Permalink to this heading"></a></h2>
-<p>The first object of interest is <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationproblem.html#causalinflation.InflationProblem">InflationProblem</a>. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform.</p>
+<p>The first object of interest is <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationproblem.html#inflation.InflationProblem">InflationProblem</a>. When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform.</p>
 <section id="Basics-of-causal-diagrams">
 <h3>Basics of causal diagrams<a class="headerlink" href="#Basics-of-causal-diagrams" title="Permalink to this heading"></a></h3>
 <p>Causal relationships are encoded through a Bayesian Directed Acyclic Graph, or DAG for short. The nodes of the graph represent random variables, which can be either observable (visible) or unobservable (hidden). Directed arrows encode causal influences between nodes. Arrows point from parent nodes to the nodes causally influenced by them, called children nodes. The acyclicity property avoids the presence of causal loops.</p>
 <p>For applications to physics, another class of random variables is often considered called “settings”. These correspond to observable variables on whose outcome we condition in order to obtain the observed data. For example, this might correspond to measuring one property of a system versus another in an experiment. Furthermore, in physics we also have sources generating quantum correlations. These are modeled through the presence of quantum unobservable variables, which represent quantum
 systems. Arrows going into a quantum node represent controlling the corresponding quantum system. Arrows going out of the quantum node represent the children of the quantum node generating statistics by measuring the quantum system.</p>
 </section>
-<section id="The-quantum-tripartite-line-and-an-inflation">
-<h3>The quantum tripartite line and an inflation<a class="headerlink" href="#The-quantum-tripartite-line-and-an-inflation" title="Permalink to this heading"></a></h3>
-<p>As an example, let us consider the quantum tripartite line, or “quantum bilocality scenario” [<a class="reference external" href="https://arxiv.org/abs/1112.4502">3</a>], which corresponds to the scenario where three space-like separated parties (<span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>) measure two quantum systems <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> that never interacted in the past. The subindex of the quantum states indicates which parties have access to and can measure that state. This is a simple scenario where entanglement
-swapping [<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">4</a>] can be performed, which is at the heart of the quantum teleportation protocol [<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">5</a>]. The corresponding DAG is:</p>
-<center><p><img alt="f7a8cad7c6564423a21361ccccfac4ba" class="no-scaled-link" src="_images/bilocal.png" style="width: 400px;" /></p>
-</center><p>We have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two hidden quantum variables <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> of unbounded dimension denoting the physical systems sent to the parties, and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>. We assume all observed variables have cardinality 2, i.e., <span class="math notranslate nohighlight">\(a,b,c,x,y,z \in \{0, 1\}\)</span>, where lower case denotes specific values that the random variables (in upper case) can take. In this causal scenario,
-correlations are generated by measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span>. Notice that the probability distribution is not conditioned on <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> as they are hidden variables.</p>
+<section id="The-tripartite-line-network">
+<h3>The tripartite line network<a class="headerlink" href="#The-tripartite-line-network" title="Permalink to this heading"></a></h3>
+<p>As an example, let us consider the tripartite line, or “bilocality scenario” [<a class="reference external" href="https://arxiv.org/abs/1112.4502">3</a>], which corresponds to the scenario where three space-like separated parties (<span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>) measure two physical systems <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> that never interacted in the past. The subindex of the systems indicates which parties have access to and can measure that state. This is a simple scenario where, for instance, entanglement swapping
+[<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">4</a>] can be performed, which is at the heart of the quantum teleportation protocol [<a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">5</a>]. The corresponding DAG is:</p>
+<center><p><img alt="65d9e12eba0c47e4a4b3f9f6481059ce" class="no-scaled-link" src="_images/bilocal.png" style="width: 400px;" /></p>
+</center><p>We have three observed random variables, <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>, two latent variables <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> denoting the physical systems sent to the parties, and three setting variables, <span class="math notranslate nohighlight">\(X\)</span>, <span class="math notranslate nohighlight">\(Y\)</span> and <span class="math notranslate nohighlight">\(Z\)</span>. We assume all observed variables have cardinality 2, i.e., <span class="math notranslate nohighlight">\(a,b,c,x,y,z \in \{0, 1\}\)</span>, where lower case denotes specific values that the random variables (in upper case) can take. In this causal scenario, correlations are generated by
+measuring the systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span>. Notice that the probability distribution is not conditioned on <span class="math notranslate nohighlight">\(\rho_{AB}\)</span>, <span class="math notranslate nohighlight">\(\rho_{BC}\)</span> as they are latent variables.</p>
 </section>
-<section id="Quantum-causal-compatibility-and-an-inflation">
-<h3>Quantum causal compatibility and an inflation<a class="headerlink" href="#Quantum-causal-compatibility-and-an-inflation" title="Permalink to this heading"></a></h3>
-<p>One of the fundamental questions to ask is whether a given a probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the quantum sources <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. The quantum inflation technique is one technique that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario
-where we take two copies of each source, as in the following figure:</p>
-<center><p><img alt="02b39b8ea22941bfb2102ff19c6c98bf" class="no-scaled-link" src="_images/bilocalityinflation.png" style="width: 400px;" /></p>
-</center><p>Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the NPA hierarchy [<a class="reference external" href="https://arxiv.org/abs/0803.4290">6</a>]. The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., <span class="math notranslate nohighlight">\(\rho_{AB}{=}\rho_{AB}^1{=}\rho_{AB}^2\)</span>. If the SDP is infeasible, then we can conclude that
-the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>].</p>
+<section id="Causal-compatibility-and-inflation">
+<h3>Causal compatibility and inflation<a class="headerlink" href="#Causal-compatibility-and-inflation" title="Permalink to this heading"></a></h3>
+<p>One of the fundamental questions to ask is whether a given a probability distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the sources <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>. Inflation techniques are general methods that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario where we take two
+copies of each source, as in the following figure:</p>
+<center><p><img alt="d129c988570943989ba9284393206fd8" class="no-scaled-link" src="_images/bilocalityinflation.png" style="width: 400px;" /></p>
+</center><p>Depending on the nature of the systems distributed by the sources, the parties will be able to perform different operations on them. If the systems are classical, the parties can clone them and feed them to copies of their measurement devices. If they are quantum, the systems cannot be cloned, but the parties can choose on which copies of the systems to perform their measurements. If they are general physical states, then the parties can only use complete copies of the measurement devices and
+just feed one copy of each of the corresponding systems to each of them. These different operations are exploited to relax the independence conditions to symmetry conditions, that give rise to problems that can be formulated in terms of linear programming (in the case of classical and theory-independent models [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>]) or semidefinite programming (in the case of quantum models [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">2</a>]) using the NPA hierarchy
+[<a class="reference external" href="https://arxiv.org/abs/0803.4290">6</a>]. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., <span class="math notranslate nohighlight">\(\rho_{AB}{=}\rho_{AB}^1{=}\rho_{AB}^2\)</span>. If the feasible region of the LP or SDP is empty, then we can conclude that the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</span> is incompatible with the particular realization in the causal graph, and furthermore, we get an analytical certificate. This certificate can be understood as a Bell-like inequality
+for the class of models considered in the particular network. For more details, see [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">1</a>] and [<a class="reference external" href="https://www.arxiv.org/abs/1909.10519">2</a>].</p>
 <section id="Creating-an-instance-of-InflationProblem">
 <h4>Creating an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code><a class="headerlink" href="#Creating-an-instance-of-InflationProblem" title="Permalink to this heading"></a></h4>
-<p>The first step in using CausalInflation is encoding the scenario to be analyzed. This is done by providing a description of the target DAG, as well as the cardinalities of its visible variables (and optionally a number of possible measurement settings for each one). Also, one must specify the inflation that shall be constructed, by providing the amount of copies of each of the latent variables in the DAG that the inflation will contain. All this information is passed to an instance of
+<p>The first step in using Inflation is encoding the scenario to be analyzed. This is done by providing a description of the target DAG, as well as the cardinalities of its visible variables (and optionally a number of possible measurement settings for each one). Also, one must specify the inflation that shall be constructed, by providing the amount of copies of each of the latent variables in the DAG that the inflation will contain. All this information is passed to an instance of
 <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> as follows:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -434,15 +166,17 @@ the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</
 </pre></div>
 </div>
 </div>
-<p>The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the corresponding children nodes. In <code class="docutils literal notranslate"><span class="pre">outcomes_per_party</span></code> and <code class="docutils literal notranslate"><span class="pre">settings_per_party</span></code> we specify the cardinalities of visible nodes. The paremeter <code class="docutils literal notranslate"><span class="pre">inflation_level_per_source</span></code> determines how many copies of the quantum sources we consider in the inflated graph.</p>
-<p>Internally, CausalInflation handles scenarios as networks, which are bipartite DAGs with one layer of visible nodes (the outcomes) and another layer of both visible (the settings) and latent (the sources) nodes. If the DAG contains visible-to-visible connections (such as in the instrumental scenario [<a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">7</a>]), <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> automatically finds an equivalent network and keeps track of the correspondence when setting values and bounds.</p>
+<p>The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the corresponding children nodes. In <code class="docutils literal notranslate"><span class="pre">outcomes_per_party</span></code> and <code class="docutils literal notranslate"><span class="pre">settings_per_party</span></code> we specify the cardinalities of visible nodes. The parameter <code class="docutils literal notranslate"><span class="pre">inflation_level_per_source</span></code> determines how many copies of the quantum sources we consider in the inflated graph. Another important argument is <code class="docutils literal notranslate"><span class="pre">classical_sources</span></code>, that allows to determine which of the sources will be assumed to be classical. This
+will be important for problems involving compatibility with classical causal models, and with hybrid models.</p>
+<p>Internally, Inflation handles scenarios as networks, which are bipartite DAGs with one layer of visible nodes (the outcomes) and another layer of both visible (the settings) and latent (the sources) nodes. If the DAG contains visible-to-visible connections (such as in the instrumental scenario [<a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">7</a>]), <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> automatically finds an equivalent network and keeps track of the correspondence when setting values and bounds.</p>
 </section>
 </section>
 </section>
-<section id="Generating-the-SDP-relaxation">
-<h2>Generating the SDP relaxation<a class="headerlink" href="#Generating-the-SDP-relaxation" title="Permalink to this heading"></a></h2>
-<p>Once the scenario is set up, the next step is generating the associated characterization of distributions admitting a realization in the inflation. Currently CausalInflation supports the characterization of classical and quantum probability distributions via <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP">InflationSDP</a>, which generates the characterizations as semidefinite programs. It is an object that takes as input an instance of
-<code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
+<section id="Generating-the-relaxation:-example-with-quantum-compatibility">
+<h2>Generating the relaxation: example with quantum compatibility<a class="headerlink" href="#Generating-the-relaxation:-example-with-quantum-compatibility" title="Permalink to this heading"></a></h2>
+<p>For the sake of simplicity, we are going to consider the specific problem of compatibility with quantum models in the bilocality scenario. For examples of other types of inflations, see the end of this page.</p>
+<p>Once the scenario is set up, the next step is generating the associated characterization of distributions admitting a realization in the inflation. In order to consider compatibility with quantum models, one needs to use the object <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP">InflationSDP</a>, which generates the corresponding characterizations as semidefinite programs.
+<a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP">InflationSDP</a> is an object that takes as input an instance of <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -451,8 +185,7 @@ the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</
 </pre></div>
 </div>
 </div>
-<p>By default, the characterization is assumed to be of quantum correlations. Restricting to classical correlations is possible by passing the argument <code class="docutils literal notranslate"><span class="pre">commuting=True</span></code> to <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>.</p>
-<p>The first main method, <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.generate_relaxation">InflationSDP.generate_relaxation()</a> generates the SDP relaxation of the chosen inflation.</p>
+<p>The first main method, <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.generate_relaxation">InflationSDP.generate_relaxation</a> generates the SDP relaxation of the chosen inflation.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -461,15 +194,15 @@ the distribution <span class="math notranslate nohighlight">\(p(a,b,c|x,y,z)\)</
 </pre></div>
 </div>
 </div>
-<p>In the above example, we have chosen NPA hierarchy level 2. For the meaning of these levels, see [<a class="reference external" href="https://arxiv.org/abs/0803.4290">6</a>]. For other hierarchies that we support, see the documentation of <code class="docutils literal notranslate"><span class="pre">InflationSDP.generate_relaxation()</span></code> method, or the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section. The important thing to know is that the higher the hierarchy level, the tighter is the SDP relaxation (at the cost of needing more computational
-resources).</p>
+<p>In the above example, we have chosen NPA hierarchy level 2. For the meaning of these levels, see [<a class="reference external" href="https://arxiv.org/abs/0803.4290">6</a>]. For other hierarchies that we support, see the documentation of <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.generate_relaxation">InflationSDP.generate_relaxation</a>, or the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section. The important thing to know is that the higher the
+hierarchy level, the tighter is the SDP relaxation (at the cost of needing more computational resources).</p>
 </section>
 <section id="Running-a-feasibility-problem">
 <h2>Running a feasibility problem<a class="headerlink" href="#Running-a-feasibility-problem" title="Permalink to this heading"></a></h2>
 <p>If we have a specific distribution in mind, we can test whether such distribution can be generated in a certain causal structure. We can consider for the example the 2PR distribution, which is defined as</p>
 <div class="math notranslate nohighlight">
 \[P_{\text{2PR}}(abc|xyz) := \frac{1+ (-1)^{a+b+c+xy+yz}}{8}\]</div>
-<p>and it is known to be incompatible with the quantum tripartite line scenario. We impose the corresponding constraints on the semidefinite program with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.set_distribution">InflationSDP.set_distribution</a> and then we attempt to solve the program:</p>
+<p>and it is known to be incompatible with the quantum tripartite line scenario. We impose the corresponding constraints on the semidefinite program with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.set_distribution">InflationSDP.set_distribution</a> and then we attempt to solve the program:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -495,11 +228,11 @@ resources).</p>
 </pre></div></div>
 </div>
 <p>The problem status is reported as infeasible, therefore this serves as a proof that the 2PR distribution cannot be generated by measuring two independent quantum states, <span class="math notranslate nohighlight">\(\rho_{AB}\)</span> and <span class="math notranslate nohighlight">\(\rho_{BC}\)</span>, in the tripartite line scenario.</p>
-<p>We can also export the problem with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.write_to_file">InflationSDP.write_to_file()</a> method and run it with another solver. Currently, supported formats are <code class="docutils literal notranslate"><span class="pre">.mat</span></code> for MATLAB, <code class="docutils literal notranslate"><span class="pre">.dat-s</span></code> for various solvers and platforms (for instance, <a class="reference external" href="https://yalmip.github.io">Yalmip</a>), and <code class="docutils literal notranslate"><span class="pre">.csv</span></code> for a human-readable output.</p>
+<p>We can also export the problem with <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.write_to_file">InflationSDP.write_to_file</a> method and run it with another solver. Currently, supported formats are <code class="docutils literal notranslate"><span class="pre">.mat</span></code> for MATLAB, <code class="docutils literal notranslate"><span class="pre">.dat-s</span></code> for various solvers and platforms (for instance, <a class="reference external" href="https://yalmip.github.io">Yalmip</a>), and <code class="docutils literal notranslate"><span class="pre">.csv</span></code> for a human-readable output.</p>
 </section>
 <section id="Running-an-optimisation-problem">
 <h2>Running an optimisation problem<a class="headerlink" href="#Running-an-optimisation-problem" title="Permalink to this heading"></a></h2>
-<p>CausalInflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:</p>
+<p>Inflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:</p>
 <div class="math notranslate nohighlight">
 \[\text{Mermin} = \langle A_1 B_0 C_0 \rangle +  \langle A_0 B_1 C_0 \rangle +  \langle A_0 B_0 C_1 \rangle -  \langle A_1 B_1 C_1 \rangle\]</div>
 <p>over the tripartite line scenario:</p>
@@ -531,15 +264,83 @@ resources).</p>
 </pre></div></div>
 </div>
 <p>We get that the value of the Mermin Bell operator cannot achieve a value greater than <span class="math notranslate nohighlight">\(\approx 3.4616\)</span> in the quantum tripartite line scenario. This is less than the algebraic value of <span class="math notranslate nohighlight">\(4\)</span> which is achievable when using tripartite quantum states distributed to <span class="math notranslate nohighlight">\(A\)</span>, <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(C\)</span>.</p>
+</section>
+<section id="Inflations-for-different-physical-models">
+<h2>Inflations for different physical models<a class="headerlink" href="#Inflations-for-different-physical-models" title="Permalink to this heading"></a></h2>
+<p>The example discussed above deals with considering quantum models of the distributions of interest. However, it is also possible to consider classical models, and theory-independent (also known as <em>non-signaling</em>) models of physical systems. In order to characterize these, one needs to use the object <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationlp.html#inflation.InflationLP">InflationLP</a>, which generates the corresponding characterizations as linear programs. The usage of
+<a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationlp.html#inflation.InflationLP">InflationLP</a> is similar to that of <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP">InflationSDP</a>. Below we show an example of how to use both objects to bound the maximum visibility for which the Popoescu-Rohrlich box admits classical, quantum, and theory-independent models. This is, we will consider how large the parameter <span class="math notranslate nohighlight">\(v\)</span> in the distribution</p>
+<div class="math notranslate nohighlight">
+\[P_v(a,b|x,y) = \frac14 \left[ 1 + v(-1)^{a+b+xy}\right]\]</div>
+<p>can achieve in different models of physical systems.</p>
+<p>In order to do this we will use the auxiliary function <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/optimization.html#inflation.sdp.optimization_utils.max_within_feasible">max_within_feasible</a>, which is explained in more detail in Example 5 in the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> page.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">inflation</span> <span class="kn">import</span> <span class="n">max_within_feasible</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Symbol</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">PR</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;object&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">p</span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">v</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">+</span><span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span>
+    <span class="k">return</span> <span class="n">p</span>
+
+<span class="c1"># The different scenarios</span>
+<span class="n">bell</span>      <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;l&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">]}</span>
+<span class="n">outcomes</span>  <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="n">settings</span>  <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="n">inflation</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c1"># Classical</span>
+<span class="n">classicalScenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="n">bell</span><span class="p">,</span>
+                                     <span class="n">outcomes_per_party</span><span class="o">=</span><span class="n">outcomes</span><span class="p">,</span>
+                                     <span class="n">settings_per_party</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span>
+                                     <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="n">inflation</span><span class="p">,</span>
+                                     <span class="n">classical_sources</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+
+<span class="c1"># Quantum and theory-independent</span>
+<span class="n">nonclassicalScenario</span> <span class="o">=</span> <span class="n">InflationProblem</span><span class="p">(</span><span class="n">dag</span><span class="o">=</span><span class="n">bell</span><span class="p">,</span>
+                                        <span class="n">outcomes_per_party</span><span class="o">=</span><span class="n">outcomes</span><span class="p">,</span>
+                                        <span class="n">settings_per_party</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span>
+                                        <span class="n">inflation_level_per_source</span><span class="o">=</span><span class="n">inflation</span><span class="p">)</span>
+
+<span class="c1"># The numerical characterizations</span>
+<span class="n">classical</span>    <span class="o">=</span> <span class="n">InflationLP</span><span class="p">(</span><span class="n">classicalScenario</span><span class="p">)</span>
+<span class="n">quantum</span>      <span class="o">=</span> <span class="n">InflationSDP</span><span class="p">(</span><span class="n">nonclassicalScenario</span><span class="p">)</span>
+<span class="n">quantum</span><span class="o">.</span><span class="n">generate_relaxation</span><span class="p">(</span><span class="s1">&#39;npa1&#39;</span><span class="p">)</span>
+<span class="n">nonsignaling</span> <span class="o">=</span> <span class="n">InflationLP</span><span class="p">(</span><span class="n">nonclassicalScenario</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">problem</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[[</span><span class="n">classical</span><span class="p">,</span> <span class="s1">&#39;classical&#39;</span><span class="p">],</span>
+                      <span class="p">[</span><span class="n">quantum</span><span class="p">,</span> <span class="s1">&#39;quantum&#39;</span><span class="p">],</span>
+                      <span class="p">[</span><span class="n">nonsignaling</span><span class="p">,</span> <span class="s1">&#39;nonsignaling&#39;</span><span class="p">]]:</span>
+    <span class="n">problem</span><span class="o">.</span><span class="n">set_distribution</span><span class="p">(</span><span class="n">PR</span><span class="p">(</span><span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;v&quot;</span><span class="p">)))</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">max_within_feasible</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">known_moments</span><span class="p">,</span> <span class="s2">&quot;bisection&quot;</span><span class="p">,</span>
+                            <span class="n">bounds</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="o">+</span><span class="mf">1e-5</span><span class="p">])</span>     <span class="c1"># For numerical stability</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(Upper bound to) maximum v in </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> teories: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(Upper bound to) maximum v in classical teories: 0.4999439642333985
+(Upper bound to) maximum v in quantum teories: 0.7070993560791016
+(Upper bound to) maximum v in nonsignaling teories: 0.9999489642333985
+</pre></div></div>
+</div>
 <p>For more examples and features of the package, check out the <a class="reference external" href="https://ecboghiu.github.io/inflation/_build/html/examples.html">Examples</a> section.</p>
 </section>
 <section id="References">
 <h2>References<a class="headerlink" href="#References" title="Permalink to this heading"></a></h2>
-<p>[1] E. Wolfe, A. Pozas-Kerstjens, M. Grinberg, D. Rosset, A. Acín, and Miguel Navascués, <em>Quantum Inflation: A General Approach to Quantum Causal Compatibility</em>, <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Phys. Rev. X 11, 021043 (2021)</a>, <a class="reference external" href="https://www.arxiv.org/abs/1909.10519">arXiv:1909.10519</a>.</p>
-<p>[2] E. Wolfe, R. W. Spekkens, and T. Fritz, <em>The Inflation Technique for Causal Inference with Latent Variables</em>, <a class="reference external" href="https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/">J. Causal Inference 7, 20170020 (2019)</a>, <a class="reference external" href="https://www.arxiv.org/abs/1609.00672">arXiv:1609.00672</a>.</p>
-<p>[3] C. Branciard, D. Rosset, N. Gisin, and S. Pironio, <em>Bilocal versus non-bilocal correlations in entanglement swapping experiments</em>, <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119">Phys. Rev. A 85, 032119 (2012)</a>, <a class="reference external" href="https://arxiv.org/abs/1112.4502">arXiv:1112.4502</a>.</p>
-<p>[4] M. Żukowski, A. Zeilinger, M. A. Horne, and A. K. Ekert, <em>“Event-ready-detectors” Bell experiment via entanglement swapping</em>. <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">Phys. Rev. Lett. 71, 4287</a>.</p>
-<p>[5] C. H. Bennett, G. Brassard, C. Crépeau, R. Jozsa, A. Peres, and W. K. Wootters, <em>Teleporting an unknown quantum state via dual classical and Einstein-Podolsky-Rosen channels</em>, <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">Phys. Rev. Lett. 70, 1895 (1993)</a>.</p>
+<p>[1] E. Wolfe, R. W. Spekkens, and T. Fritz, <em>The inflation technique for causal inference with latent variables</em>, <a class="reference external" href="https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/">J. Causal Inference 7, 20170020 (2019)</a>, <a class="reference external" href="https://www.arxiv.org/abs/1609.00672">arXiv:1609.00672</a>.</p>
+<p>[2] E. Wolfe, A. Pozas-Kerstjens, M. Grinberg, D. Rosset, A. Acín, and Miguel Navascués, <em>Quantum inflation: A general approach to quantum causal compatibility</em>, <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043">Phys. Rev. X 11, 021043 (2021)</a>, <a class="reference external" href="https://www.arxiv.org/abs/1909.10519">arXiv:1909.10519</a>.</p>
+<p>[3] C. Branciard, D. Rosset, N. Gisin, and S. Pironio, <em>Bilocal versus non-bilocal correlations in entanglement swapping experiments</em>, <a class="reference external" href="https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119">Phys. Rev. A 85, 032119 (2012)</a>, <a class="reference external" href="https://arxiv.org/abs/1112.4502">arXiv:1112.4502</a>.</p>
+<p>[4] M. Żukowski, A. Zeilinger, M. A. Horne, and A. K. Ekert, <em>“Event-ready-detectors” Bell experiment via entanglement swapping</em>. <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287">Phys. Rev. Lett. 71, 4287</a>.</p>
+<p>[5] C. H. Bennett, G. Brassard, C. Crépeau, R. Jozsa, A. Peres, and W. K. Wootters, <em>Teleporting an unknown quantum state via dual classical and Einstein-Podolsky-Rosen channels</em>, <a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895">Phys. Rev. Lett. 70, 1895 (1993)</a>.</p>
 <p>[6] M. Navascués, S. Pironio, and A. Acín, <em>A convergent hierarchy of semidefinite programs characterizing the set of quantum correlations</em>, <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013">New J. Phys. 10 073013</a>, <a class="reference external" href="https://arxiv.org/abs/0803.4290">arXiv:0803.4290</a>.</p>
 <p>[7] T. Van Himbeeck, J. Bohr Brask, S. Pironio, R. Ramanathan, A. Belén Sainz, and E. Wolfe, <em>Quantum violations in the Instrumental scenario and their relations to the Bell scenario</em>, <a class="reference external" href="https://quantum-journal.org/papers/q-2019-09-16-186/">Quantum 3, 186 (2019)</a>, <a class="reference external" href="https://arxiv.org/abs/1804.04119">arXiv:1804.04119</a>.</p>
 </section>
@@ -556,7 +357,7 @@ resources).</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

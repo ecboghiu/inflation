@@ -1,5 +1,5 @@
 InflationProblem Class
 ======================
 
-.. autoclass:: causalinflation.InflationProblem
-   :members: rectify_fake_setting
+.. autoclass:: inflation.InflationProblem
+   :members: rectify_fake_setting, factorize_monomial_2d, factorize_monomial_1d, discover_lexorder_symmetries
