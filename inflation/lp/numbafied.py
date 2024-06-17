@@ -21,6 +21,7 @@ cache    = True
 if not nopython:
     bool_  = bool
     int_ = int
+from sparse import GCXS
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_mon_to_lexrepr_bool(mon: np.ndarray,
@@ -52,12 +53,26 @@ def nb_mon_to_lexrepr_bool(mon: np.ndarray,
                 break
     return in_lex
 
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
-    a_adj = np.expand_dims(a, 1)
-    b_adj = b.reshape((1,)+b.shape)
-    temp = np.logical_or(a_adj, b_adj)
-    return temp.reshape((-1, *temp.shape[2:]))
+    if type(a) == np.ndarray:
+        a = GCXS(a)
+    if type(b) == np.ndarray:
+        b = GCXS(b)
+    a_adj = a.reshape((a.shape[0], 1) + a.shape[1:])
+    b_adj = b.reshape((1, ) + b.shape)
+    temp = a_adj + b_adj
+    return temp.reshape((-1, *temp.shape[2:]))#.todense()
+
+
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# def nb_outer_bitwise_or(a: np.ndarray, b: np.ndarray):
+#     print('------------')
+#     print('a', a)
+#     print('b', b)
+#     a_adj = np.expand_dims(a, 1)
+#     b_adj = b.reshape((1,)+b.shape)
+#     temp = np.logical_or(a_adj, b_adj)
+#     return temp.reshape((-1, *temp.shape[2:]))
 
 @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def nb_outer_bitwise_xor(a: np.ndarray, b: np.ndarray):

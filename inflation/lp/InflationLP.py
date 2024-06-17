@@ -1388,10 +1388,26 @@ class InflationLP(object):
                                  reversed(choices_to_combine_CG))
         raw_boolvecs_global = reduce(nb_outer_bitwise_or,
                                      reversed(choices_to_combine_global))
-        return (raw_boolvecs_CG[np.argsort(raw_boolvecs_CG.sum(axis=1))],
-                raw_boolvecs_global[np.argsort(np.matmul(raw_boolvecs_global,
-                                                         self._boolvec_for_CG_ineqs.astype(int))
-                                               )])
+
+        # Deal with edge case when reduce is not applied
+        if type(raw_boolvecs_CG) == np.ndarray:
+            return (raw_boolvecs_CG[
+                        np.argsort(raw_boolvecs_CG.sum(axis=1))]
+                    ,
+                    raw_boolvecs_global[np.argsort(
+                        np.matmul(raw_boolvecs_global,
+                                  self._boolvec_for_CG_ineqs.astype(int)))]
+                    )
+        else:
+            return (raw_boolvecs_CG[
+                        np.argsort(raw_boolvecs_CG.sum(axis=1).todense()
+                                   )].todense()
+                    ,
+                    raw_boolvecs_global[np.argsort(
+                        np.matmul(raw_boolvecs_global,
+                                  self._boolvec_for_CG_ineqs.astype(int))
+                                  )].todense()
+                    )
 
     @cached_property
     def minimal_sparse_equalities(self) -> coo_matrix:
@@ -1493,6 +1509,11 @@ class InflationLP(object):
                     adjustments = reduce(nb_outer_bitwise_or,
                                          (alternatives_as_boolarrays[i] for i in
                                           critical_values_in_boovec.flat))
+                    # Deal with edge case when reduce is not applied
+                    try:
+                        adjustments = adjustments.todense()
+                    except AttributeError:
+                        pass
                     terms_as_boolvecs = np.bitwise_or(
                         absent_c_boolvec[np.newaxis],
                         adjustments)
@@ -1501,7 +1522,7 @@ class InflationLP(object):
                     terms_as_idxs = self.inverse[terms_as_rawidx]
                     true_signs = np.power(-1, signs)
 
-                    ineq_row.extend([nof_inequalities] * len(signs))
+                    ineq_row.extend([nof_inequalities] * signs.shape[0])
                     ineq_col.extend(terms_as_idxs.flat)
                     ineq_data.extend(true_signs.flat)
                 else:
