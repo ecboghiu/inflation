@@ -171,9 +171,9 @@ class InflationProblem:
         # Distinguishing between classical versus nonclassical sources
         nodes_with_children_as_list = list(self.dag.keys())
         nodes_with_children = set(nodes_with_children_as_list)
-        self._actual_sources = sorted(
+        self._actual_sources = np.asarray(sorted(
             nodes_with_children.difference(self.names, self.intermediate_latents),
-            key=nodes_with_children_as_list.index)
+            key=nodes_with_children_as_list.index))
         self.nr_sources = len(self._actual_sources)
         if classical_sources == "all":
             self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
