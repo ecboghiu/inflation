@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InflationLP Class &mdash; Inflation 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Interfaces with solvers" href="solvers.html" />
+    <link rel="prev" title="InflationSDP Class" href="inflationsdp.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">InflationLP Class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#inflation.InflationLP"><code class="docutils literal notranslate"><span class="pre">InflationLP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP._generate_lp"><code class="docutils literal notranslate"><span class="pre">InflationLP._generate_lp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.certificate_as_dict"><code class="docutils literal notranslate"><span class="pre">InflationLP.certificate_as_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.certificate_as_probs"><code class="docutils literal notranslate"><span class="pre">InflationLP.certificate_as_probs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.certificate_as_string"><code class="docutils literal notranslate"><span class="pre">InflationLP.certificate_as_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.evaluate_certificate"><code class="docutils literal notranslate"><span class="pre">InflationLP.evaluate_certificate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.reset"><code class="docutils literal notranslate"><span class="pre">InflationLP.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.set_bounds"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_bounds()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.set_distribution"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_distribution()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.set_objective"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_objective()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.set_values"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.solve"><code class="docutils literal notranslate"><span class="pre">InflationLP.solve()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.update_values"><code class="docutils literal notranslate"><span class="pre">InflationLP.update_values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.InflationLP.write_to_file"><code class="docutils literal notranslate"><span class="pre">InflationLP.write_to_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html">Optimization helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API Reference</a></li>
+      <li class="breadcrumb-item active">InflationLP Class</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/inflationlp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="inflationlp-class">
+<h1>InflationLP Class<a class="headerlink" href="#inflationlp-class" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="inflation.InflationLP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.</span></span><span class="sig-name descname"><span class="pre">InflationLP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inflationproblem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem" title="inflation.InflationProblem.InflationProblem"><span class="pre">InflationProblem</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonfanout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supports_problem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_non_negative</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_all_outcomes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP._generate_lp">
+<span class="sig-name descname"><span class="pre">_generate_lp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP._generate_lp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP._generate_lp" title="Permalink to this definition"></a></dt>
+<dd><p>Creates the LP associated with the inflation problem.</p>
+<p>In the inflated graph there are many symmetries coming from invariance
+under swaps of the copied sources, which are used to remove variables
+from the LP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.certificate_as_dict">
+<span class="sig-name descname"><span class="pre">certificate_as_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.certificate_as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.certificate_as_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Give certificate as dictionary with monomials as keys and
+their coefficients in the certificate as the values. The certificate
+of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
+<p>If the certificate is evaluated on a point giving a negative value, this
+guarantees that the compatibility test for the same point is infeasible
+provided the set of constraints of the program does not change. Warning:
+when using <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints=True</span></code> the set of constraints depends
+on the specified distribution, thus the certificate is not guaranteed to
+apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
+<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
+specified by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>chop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Coefficients in the dual certificate smaller in absolute value are
+set to zero. By default <code class="docutils literal notranslate"><span class="pre">1e-10</span></code>.</p></li>
+<li><p><strong>round_decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – Coefficients that are not set to zero are rounded to the number of
+decimals specified. By default <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The expression of the certificate in terms of probabilities and
+marginals. The certificate of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.certificate_as_probs">
+<span class="sig-name descname"><span class="pre">certificate_as_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Add</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.certificate_as_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.certificate_as_probs" title="Permalink to this definition"></a></dt>
+<dd><p>Give certificate as symbolic sum of probabilities. The certificate
+of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
+<p>If the certificate is evaluated on a point giving a negative value, this
+guarantees that the compatibility test for the same point is infeasible
+provided the set of constraints of the program does not change. Warning:
+when using <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints=True</span></code> the set of constraints depends
+on the specified distribution, thus the certificate is not guaranteed to
+apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
+<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
+specified by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>chop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Coefficients in the dual certificate smaller in absolute value are
+set to zero. By default <code class="docutils literal notranslate"><span class="pre">1e-10</span></code>.</p></li>
+<li><p><strong>round_decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – Coefficients that are not set to zero are rounded to the number of
+decimals specified. By default <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The expression of the certificate in terms of probabilities and
+marginals. The certificate of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sympy.core.add.Add</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.certificate_as_string">
+<span class="sig-name descname"><span class="pre">certificate_as_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chop_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_decimals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.certificate_as_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.certificate_as_string" title="Permalink to this definition"></a></dt>
+<dd><p>Give the certificate as a string of a sum of probabilities. The
+expression is in the form such that its satisfaction implies
+incompatibility.</p>
+<p>If the certificate is evaluated on a point giving a negative value, this
+guarantees that the compatibility test for the same point is infeasible
+provided the set of constraints of the program does not change. Warning:
+when using <code class="docutils literal notranslate"><span class="pre">use_lpi_constraints=True</span></code> the set of constraints depends
+on the specified distribution, thus the certificate is not guaranteed to
+apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, eliminate all coefficients that are smaller than
+<code class="docutils literal notranslate"><span class="pre">chop_tol</span></code>, normalise and round to the number of decimals
+specified by <code class="docutils literal notranslate"><span class="pre">round_decimals</span></code>. By default, <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>chop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Coefficients in the dual certificate smaller in absolute value are
+set to zero. By default, <code class="docutils literal notranslate"><span class="pre">1e-10</span></code>.</p></li>
+<li><p><strong>round_decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – Coefficients that are not set to zero are rounded to the number of
+decimals specified. By default, <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The certificate in terms of probabilities and marginals. The
+certificate of incompatibility is <code class="docutils literal notranslate"><span class="pre">cert</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.evaluate_certificate">
+<span class="sig-name descname"><span class="pre">evaluate_certificate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.evaluate_certificate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.evaluate_certificate" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate the certificate of infeasibility in a target probability
+distribution. If the evaluation is a negative value, the distribution is
+not compatible with the causal structure. Warning: when using
+<code class="docutils literal notranslate"><span class="pre">use_lpi_constraints=True</span></code> the set of constraints depends on the
+specified distribution, thus the certificate is not guaranteed to apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prob_array</strong> (<em>numpy.ndarray</em>) – Multidimensional array encoding the distribution, which is
+called as <code class="docutils literal notranslate"><span class="pre">prob_array[a,b,c,...,x,y,z,...]</span></code> where
+<span class="math notranslate nohighlight">\(a,b,c,\dots\)</span> are outputs and <span class="math notranslate nohighlight">\(x,y,z,\dots\)</span> are
+inputs. Note: even if the inputs have cardinality 1 they must
+be specified, and the corresponding axis dimensions are 1.
+The parties’ outcomes and measurements must appear in the
+same order as specified by the <code class="docutils literal notranslate"><span class="pre">order</span></code> parameter in the
+<code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> used to instantiate <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The evaluation of the certificate of infeasibility in prob_array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'all'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.reset" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the various user-specifiable objects in the inflation LP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>which</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – The objects to be reset. It can be fed as a single string or a list
+of them. Options include <code class="docutils literal notranslate"><span class="pre">&quot;bounds&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;lowerbounds&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;upperbounds&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;objective&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;values&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;all&quot;</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.set_bounds">
+<span class="sig-name descname"><span class="pre">set_bounds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'up'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.set_bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.set_bounds" title="Permalink to this definition"></a></dt>
+<dd><p>Set numerical lower or upper bounds on the moments generated in the
+LP relaxation. The bounds are at the level of the LP variables,
+and do not take into consideration non-convex constraints. E.g., two
+individual lower bounds, <span class="math notranslate nohighlight">\(p_A(0|0) \geq 0.1\)</span> and
+<span class="math notranslate nohighlight">\(p_B(0|0) \geq 0.1\)</span> do not directly impose the constraint
+<span class="math notranslate nohighlight">\(p_A(0|0)*p_B(0|0) \geq 0.01\)</span>, which should be set manually if
+needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bounds</strong> (<em>Union</em><em>[</em><em>dict</em><em>, </em><em>None</em><em>]</em>) – A dictionary with keys as monomials and values being the bounds.
+The keys can be either CompoundMonomial objects, or names (<cite>str</cite>)
+of Monomial objects.</p></li>
+<li><p><strong>bound_type</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies whether we are setting upper (<code class="docutils literal notranslate"><span class="pre">&quot;up&quot;</span></code>) or lower
+(<code class="docutils literal notranslate"><span class="pre">&quot;lo&quot;</span></code>) bounds, by default “up”.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="bp">self</span><span class="o">.</span><span class="n">set_bounds</span><span class="p">({</span><span class="s2">&quot;pAB(00|00)&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span> <span class="s2">&quot;lo&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.set_distribution">
+<span class="sig-name descname"><span class="pre">set_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shared_randomness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.set_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.set_distribution" title="Permalink to this definition"></a></dt>
+<dd><p>Set numerically all the knowable (and optionally semiknowable)
+moments according to the probability distribution specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prob_array</strong> (<em>numpy.ndarray</em>) – Multidimensional array encoding the distribution, which is
+called as <code class="docutils literal notranslate"><span class="pre">prob_array[a,b,c,...,x,y,z,...]</span></code> where
+<span class="math notranslate nohighlight">\(a,b,c,\dots\)</span> are outputs and <span class="math notranslate nohighlight">\(x,y,z,\dots\)</span> are
+inputs. Note: even if the inputs have cardinality 1 they must
+be specified, and the corresponding axis dimensions are 1.
+The parties’ outcomes and measurements must be appear in the
+same order as specified by the <code class="docutils literal notranslate"><span class="pre">order</span></code> parameter in the
+<code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code> used to instantiate <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code>.</p></li>
+<li><p><strong>use_lpi_constraints</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specification whether linearized polynomial constraints (see,
+e.g., Eq. (D6) in <a class="reference external" href="https://www.arxiv.org/abs/2203.16543/">arXiv:2203.16543</a>) will be imposed or
+not. By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>shared_randomness</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specification whether higher order monomials may be calculated.
+If universal shared randomness is present (i.e., the flag is
+<code class="docutils literal notranslate"><span class="pre">True</span></code>), only atomic monomials are assigned numerical values.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.set_objective">
+<span class="sig-name descname"><span class="pre">set_objective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Expr</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'max'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.set_objective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.set_objective" title="Permalink to this definition"></a></dt>
+<dd><p>Set or change the objective function of the polynomial optimization
+problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>objective</strong> (<em>Union</em><em>[</em><em>sp.core.expr.Expr</em><em>, </em><em>dict</em><em>, </em><em>None</em><em>]</em>) – The objective function, either as a combination of sympy symbols,
+as a dictionary with keys the monomials or their names, and as
+values the corresponding coefficients, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for clearing
+a previous objective.</p></li>
+<li><p><strong>direction</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the optimization (<code class="docutils literal notranslate"><span class="pre">&quot;max&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;min&quot;</span></code>). By default
+<code class="docutils literal notranslate"><span class="pre">&quot;max&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.set_values">
+<span class="sig-name descname"><span class="pre">set_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment" title="inflation.lp.monomial_classes.CompoundMoment"><span class="pre">CompoundMoment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><span class="pre">InternalAtomicMonomial</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Symbol</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Expr</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.set_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.set_values" title="Permalink to this definition"></a></dt>
+<dd><p>Exactly like update_values, except it resets all known values to
+zero as an intermediate step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>values</strong> (<em>Union</em><em>[</em><em>None</em><em>, </em><em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment" title="inflation.lp.monomial_classes.CompoundMoment"><em>CompoundMoment</em></a><em>, </em><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><em>InternalAtomicMonomial</em></a><em>, </em><em>sympy.core.symbol.Symbol</em><em>, </em><em>str</em><em>]</em><em>, </em><em>float</em><em>]</em><em>]</em>) – The description of the variables to be assigned numerical values
+and the corresponding values. The keys can be either of the
+Monomial class, symbols or strings (which should be the name of
+some Monomial).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">relax_known_vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relax_inequalities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solve_dual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solverparameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_non_negative</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">solver_arguments</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.solve" title="Permalink to this definition"></a></dt>
+<dd><p>Call a solver on the LP relaxation. Upon successful solution, it
+returns the primal and dual objective values along with the solution
+matrices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>relax_known_vars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Do feasibility as optimization where each known value equality
+becomes two relaxed inequality constraints. E.g., P(A) = 0.7
+becomes P(A) + lambda &gt;= 0.7 and P(A) - lambda &lt;= 0.7, where lambda
+is a slack variable. By default, <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>relax_inequalities</strong> (<em>bool</em><em>, </em><em>optional</em>) – Do feasibility as optimization where each inequality is relaxed by
+the non-negative slack variable lambda. By default, <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>solve_dual</strong> (<em>bool</em><em>, </em><em>optional</em>) – Optimize the dual problem (recommended). By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>solverparameters</strong> (<em>dict</em><em>, </em><em>optional</em>) – Extra parameters to be sent to the solver. By default <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – Verbosity level.</p></li>
+<li><p><strong>default_non_negative</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, all variables are set to be non-negative by default.</p></li>
+<li><p><strong>solver_arguments</strong> (<em>dict</em><em>, </em><em>optional</em>) – By default, solve will use the dictionary of LP keyword arguments
+given by <code class="docutils literal notranslate"><span class="pre">_prepare_solver_arguments()</span></code>. However, a user may
+manually override these arguments by passing their own here.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.update_values">
+<span class="sig-name descname"><span class="pre">update_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment" title="inflation.lp.monomial_classes.CompoundMoment"><span class="pre">CompoundMoment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><span class="pre">InternalAtomicMonomial</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Symbol</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Expr</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_specified_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.update_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.update_values" title="Permalink to this definition"></a></dt>
+<dd><p>Directly assign numerical values to variables in the generating set.
+This is done via a dictionary where keys are the variables to have
+numerical values assigned (either in their operator form, in string
+form, or directly referring to the variable in the generating set), and
+the values are the corresponding numerical quantities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> (<em>Union</em><em>[</em><em>None</em><em>, </em><em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment" title="inflation.lp.monomial_classes.CompoundMoment"><em>CompoundMoment</em></a><em>, </em><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><em>InternalAtomicMonomial</em></a><em>, </em><em>sympy.core.symbol.Symbol</em><em>, </em><em>str</em><em>]</em><em>, </em><em>float</em><em>]</em><em>]</em>) – The description of the variables to be assigned numerical values
+and the corresponding values. The keys can be either of the
+Monomial class, symbols or strings (which should be the name of
+some Monomial).</p></li>
+<li><p><strong>use_lpi_constraints</strong> (<em>bool</em>) – <p>Specification whether linearized polynomial constraints (see, e.g.,
+Eq. (D6) in <a class="reference external" href="https://www.arxiv.org/abs/2203.16543/">arXiv:2203.16543</a>) will be imposed or not.
+By default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</p></li>
+<li><p><strong>only_specified_values</strong> (<em>bool</em>) – Specifies whether one wishes to fix only the variables provided
+(<code class="docutils literal notranslate"><span class="pre">True</span></code>), or also the variables containing products of the
+monomials fixed (<code class="docutils literal notranslate"><span class="pre">False</span></code>). Regardless of this flag, unknowable
+variables can also be fixed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationLP.write_to_file">
+<span class="sig-name descname"><span class="pre">write_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/inflation/lp/InflationLP.html#InflationLP.write_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationLP.write_to_file" title="Permalink to this definition"></a></dt>
+<dd><p>Exports the problem to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Name of the exported file. If no file format is specified, it
+defaults to the LP format. Supported formats are <code class="docutils literal notranslate"><span class="pre">.lp</span></code> (LP) and
+<code class="docutils literal notranslate"><span class="pre">.mps</span></code> (MPS).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="inflationsdp.html" class="btn btn-neutral float-left" title="InflationSDP Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="solvers.html" class="btn btn-neutral float-right" title="Interfaces with solvers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -6,6 +6,7 @@ monomial_classes.py.
 """
 import numpy as np
 import sympy
+import re
 
 from collections import Counter
 from typing import List
@@ -99,7 +100,9 @@ def symbol_from_atom_name(atomic_name: str) -> sympy.core.symbol.Symbol:
     elif atomic_name == "0":
         return sympy.S.Zero
     else:
-        return sympy.Symbol(atomic_name, commutative=True)
+        new_name = re.sub("_[^=]*=", lambda x:  x.group(0).replace('_','_{').replace('=', '}{=}'), atomic_name)
+        new_name = new_name.replace(' ',',')
+        return sympy.Symbol(new_name, commutative=True)
 
 
 def symbol_prod(atomic_symbols: List[sympy.core.symbol.Symbol]

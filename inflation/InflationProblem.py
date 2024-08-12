@@ -2,66 +2,87 @@
 The module creates the inflation scenario associated to a causal structure. See
 arXiv:1609.00672 and arXiv:1707.06476 for the original description of
 inflation.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import numpy as np
-
-from itertools import chain, combinations_with_replacement
+import warnings
+from functools import reduce, cached_property
+from itertools import (chain,
+                       combinations,
+                       combinations_with_replacement,
+                       permutations)
+from typing import Tuple, List, Union, Dict
 from warnings import warn
+
+import networkx as nx
+import numpy as np
+import sympy
+from tqdm import tqdm
+
 from .sdp.fast_npa import (nb_classify_disconnected_components,
-                           nb_overlap_matrix)
-from typing import Union, Tuple
+                           nb_overlap_matrix,
+                           apply_source_perm,
+                           commutation_matrix)
+from .utils import format_permutations, partsextractor, perm_combiner
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
-import warnings
 formatwarning_orig = warnings.formatwarning
 warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
     formatwarning_orig(msg, category, filename, lineno, line="")
 
 
-class InflationProblem(object):
-    """Class for encoding relevant details concerning the causal compatibility
-    scenario.
-
-    Parameters
-    ----------
-    dag : Dict[str, List[str]], optional
-        Dictionary where each key is a parent node, and the corresponding value
-        is a list of the corresponding children nodes. By default it is a
-        single source connecting all the parties.
-    outcomes_per_party : List[int]
-        Measurement outcome cardinalities.
-    settings_per_party : List[int], optional
-        Measurement setting cardinalities. By default ``1`` for all parties.
-    inflation_level_per_source : [int, List[int]], optional
-        Number of copies per source in the inflated graph. Source order is the
-        same as insertion order in `dag`. If an integer is provided, it is used
-        as the inflation level for all sources. By default ``1`` for all
-        sources.
-    classical_sources : Union[List[str], str], optional
-        Names of the sources that are assumed to be classical. If ``'all'``,
-        it imposes that all sources are classical. By default empty. 
-    order : List[str], optional
-        Name of each party. This also fixes the order in which party outcomes
-        and settings are to appear in a conditional probability distribution.
-        Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
-    verbose : int, optional
-        Optional parameter for level of verbose:
-
-        * 0: quiet (default),
-        * 1: monitor level: track program process and show warnings,
-        * 2: debug level: show properties of objects created.
+class InflationProblem:
+    """Class for encoding relevant details concerning the causal compatibility.
     """
     def __init__(self,
-                 dag=None,
-                 outcomes_per_party=tuple(),
-                 settings_per_party=tuple(),
-                 inflation_level_per_source=tuple(),
-                 classical_sources: Union[str, Tuple]=tuple(),
-                 order=tuple(),
+                 dag: Union[Dict, None]=None,
+                 outcomes_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
+                 settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
+                 inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
+                 classical_sources: Union[str, Tuple[str,...], List[str], None]=tuple(),
+                 nonclassical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
+                 classical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
+                 order: Union[Tuple[str,...], List[str]]=tuple(),
                  verbose=0):
-        """Initialize the InflationProblem class.
+        """Class for encoding relevant details concerning the causal compatibility
+        scenario.
+
+        Parameters
+        ----------
+        dag : Dict[str, List[str]], optional
+            Dictionary where each key is a parent node, and the corresponding value
+            is a list of the corresponding children nodes. By default it is a
+            single source connecting all the parties.
+        outcomes_per_party : [np.ndarray, List[int], Tuple[int,...]]
+            Measurement outcome cardinalities.
+        settings_per_party : [np.ndarray, List[int], Tuple[int,...]], optional
+            Measurement setting cardinalities. By default ``1`` for all parties.
+        inflation_level_per_source : [int, List[int]], optional
+            Number of copies per source in the inflated graph. Source order is the
+            same as insertion order in `dag`. If an integer is provided, it is used
+            as the inflation level for all sources. By default ``1`` for all
+            sources.
+        classical_sources : Union[List[str], str], optional
+            Names of the sources that are assumed to be classical. If ``'all'``,
+            it imposes that all sources are classical. By default an empty tuple.
+        nonclassical_intermediate_latents: Tuple[str], optional
+            Designates non-exogynous nodes in the DAG with these names as
+            nonclassical latent, in addition to all exogynous nodes other than
+            those specifically indicates as classical.
+        classical_intermediate_latents: Tuple[str], optional
+            Designates non-exogynous nodes in the DAG with these names as
+            a classical-type latent, alongside any latents from classical_sources.
+        order : Tuple[str], optional
+            Name of each party. This also fixes the order in which party outcomes
+            and settings are to appear in a conditional probability distribution.
+            Default is alphabetical order and labels, e.g., ``['A', 'B', ...]``.
+        verbose : int, optional
+            Optional parameter for level of verbose:
+
+            * 0: quiet (default),
+            * 1: monitor level: track program process and show warnings,
+            * 2: debug level: show properties of objects created.
         """
         self.verbose = verbose
 
@@ -85,10 +106,21 @@ class InflationProblem(object):
                  + "These lists must have the same length and equal to the "
                  + "number of visible variables in the scenario.")
 
+        # Record expected shape of input distributions
+        self.expected_distro_shape = tuple(np.hstack(
+            (self.outcomes_per_party,
+             self.private_settings_per_party)).tolist())
+
+        # Internal record of intermediate latents
+        self.classical_intermediate_latents = set(map(str,classical_intermediate_latents))
+        self.nonclassical_intermediate_latents = set(map(str,nonclassical_intermediate_latents))
+        assert self.classical_intermediate_latents.isdisjoint(self.nonclassical_intermediate_latents), "An intermediate latent cannot be both classical and nonclassical."
+        self.intermediate_latents = self.classical_intermediate_latents.union(self.nonclassical_intermediate_latents)
+
         # Assign names to the visible variables
         names_have_been_set_yet = False
         if dag:
-            implicit_names = set(map(str, chain.from_iterable(dag.values())))
+            implicit_names = set(map(str, chain.from_iterable(dag.values()))).difference(self.intermediate_latents)
             assert len(implicit_names) == self.nr_parties, \
                 ("You must provide a number of outcomes for the following "
                  + f"{len(implicit_names)} variables: {implicit_names}")
@@ -129,33 +161,69 @@ class InflationProblem(object):
                 warn("The DAG must be a non-empty dictionary with parent "
                      + "variables as keys and lists of children as values. "
                      + "Defaulting to one global source.")
-            self.dag = {"h_global": self.names}
+            self.dag = {"h_global": set(self.names)}
         else:
-            self.dag = {str(parent): tuple(map(str, children)) for
+            # Sources are nodes with children but not parents
+            self.dag = {str(parent): set(map(str, children)) for
                         parent, children in dag.items()}
 
+
+        # Distinguishing between classical versus nonclassical sources
+        nodes_with_children_as_list = list(self.dag.keys())
+        nodes_with_children = set(nodes_with_children_as_list)
+        self._actual_sources = sorted(
+            nodes_with_children.difference(self.names, self.intermediate_latents),
+            key=nodes_with_children_as_list.index)
+        self.nr_sources = len(self._actual_sources)
+        if classical_sources == "all":
+            self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
+        else:
+            self._classical_sources = np.zeros(self.nr_sources, dtype=np.uint8)
+        if not isinstance(classical_sources, (str, type(None))):
+            if classical_sources:
+                assert set(classical_sources).issubset(self._actual_sources), "Some specified classical source cannot be found in the DAG."
+                for ii, source in enumerate(self._actual_sources):
+                    if source in classical_sources:
+                        self._classical_sources[ii] = 1
+        self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
+
+        # Test if any quantum intermediate latent has fully classical parents.
+        # This case is not yet supported.
+        is_classical_source = dict(zip(self._actual_sources,
+                                       self._classical_sources))
+        for latent in self.nonclassical_intermediate_latents:
+            parents = [parent for parent, children in self.dag.items()
+                       if latent in children]
+            if all([is_classical_source[parent] for parent in parents]):
+                raise NotImplementedError(
+                    f"The node {latent} is a quantum intermediate latent node "
+                    + f"with all classical parents ({', '.join(parents)}). "
+                    + "Quantum intermediate latents with all classical parents "
+                    + "are not yet supported.")
+
         # Unpacking of visible nodes with children
-        nodes_with_children = list(self.dag.keys())
-        self.has_children   = np.zeros(self.nr_parties, dtype=int)
+        parties_with_children = nodes_with_children.intersection(self.names)
+        self.has_children   = np.zeros(self.nr_parties, dtype=bool)
         self.is_network     = set(nodes_with_children).isdisjoint(self.names)
         names_to_integers = {party: position
                              for position, party in enumerate(self.names)}
         adjacency_matrix = np.zeros((self.nr_parties, self.nr_parties),
-                                    dtype=np.uint8)
-        for parent in nodes_with_children:
-            if parent in self.names:
-                ii = names_to_integers[parent]
-                self.has_children[ii] = 1
-                for child in dag[parent]:
-                    jj = names_to_integers[child]
-                    adjacency_matrix[ii, jj] = 1
+                                    dtype=bool)
+        for parent in parties_with_children:
+            ii = names_to_integers[parent]
+            self.has_children[ii] = True
+            observable_children = set(self.dag[parent])
+            assert observable_children.issubset(self.names), "At this time InflationProblem does not accept DAGs with observed nodes pointing to intermediate latents."
+            for child in observable_children:
+                jj = names_to_integers[child]
+                adjacency_matrix[ii, jj] = True
+
         # Compute number of settings for the unpacked variables
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
         settings_per_party_lst = [[s] for s in self.private_settings_per_party]
         for party_idx, party_parents_idxs in enumerate(self.parents_per_party):
             settings_per_party_lst[party_idx].extend(
-                np.take(self.outcomes_per_party, party_parents_idxs)
-                                                     )
+                np.take(self.outcomes_per_party, party_parents_idxs))
         self.settings_per_party = np.asarray(
             [np.prod(multisetting) for multisetting in settings_per_party_lst],
             dtype=int)
@@ -170,34 +238,39 @@ class InflationProblem(object):
         self.effective_to_parent_settings = effective_to_parent_settings
 
         # Create network corresponding to the unpacked scenario
-        self._actual_sources  = np.array(
-            [source for source in nodes_with_children
-                    if source not in self.names])
-        self.nr_sources = len(self._actual_sources)
         self.hypergraph = np.zeros((self.nr_sources, self.nr_parties),
                                    dtype=np.uint8)
-        self._quantum_sources, self._classical_sources = [], []
-        for ii, source in enumerate(self._actual_sources):
-            pos = [names_to_integers[party] for party in self.dag[source]]
-            self.hypergraph[ii, pos] = 1
-            if classical_sources:
-                if not isinstance(classical_sources, str):
-                    if source in classical_sources:
-                        self._classical_sources += [ii]
-                    else:
-                        self._quantum_sources += [ii]
-                else:
-                    if classical_sources == "all":
-                        self._classical_sources = range(self.nr_sources)
-            else:
-                self._quantum_sources += [ii]
-        self._quantum_sources   = 1 + np.array(self._quantum_sources)
-        self._classical_sources = 1 + np.array(self._classical_sources)
+        # We need to distinguish between quantum versus classical sources.
+        # We use the internal convention that +1 indicates a shared classical source
+        # whereas +2 indicates a shared quantum sources
+        self.sources_to_check_for_party_pair_commutation = np.zeros((self.nr_parties, self.nr_parties, self.nr_sources),
+                                    dtype=np.uint8)
+        for source_idx, source in enumerate(self._actual_sources):
+            quantum_source_bonus = self._nonclassical_sources[source_idx]
+            children = self.dag[source]
+            observable_children = children.intersection(self.names)
+            latent_children = children.difference(self.names)
+            assert latent_children.issubset(self.intermediate_latents), f"{latent_children.difference(self.intermediate_latents)} are not all a recognized party or an intermediate latent."
+            for child in observable_children:
+                child_idx = names_to_integers[child]
+                self.hypergraph[source_idx, child_idx] = 1
+                self.sources_to_check_for_party_pair_commutation[child_idx, child_idx, source_idx] = 1 + quantum_source_bonus
+            for intermediate_latent in latent_children:
+                observable_descendants_via_this_latent = self.dag[intermediate_latent]
+                assert observable_descendants_via_this_latent.issubset(self.names), "At this time InflationProblem does not accept DAGs with intermediate latents pointing to other intermediate latents."
+                quantum_connection_bonus = np.logical_and(intermediate_latent in self.nonclassical_intermediate_latents, quantum_source_bonus).astype(np.uint8)
+                for desc in observable_descendants_via_this_latent:
+                    desc_idx = names_to_integers[desc]
+                    self.hypergraph[source_idx, desc_idx] = 1
+                    for desc2 in observable_descendants_via_this_latent:
+                        desc2_idx = names_to_integers[desc2]
+                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx] = max(
+                        self.sources_to_check_for_party_pair_commutation[desc_idx, desc2_idx, source_idx],
+                            1 + quantum_connection_bonus)
 
-        assert self.hypergraph.shape[1] == self.nr_parties, \
-            ("The number of parties derived from the DAG is "
-             + f"{self.hypergraph.shape[1]} and from the specification of "
-             + f"outcomes it is {self.nr_parties} instead.")
+
+        assert np.sum(self.hypergraph, axis=0).all(), \
+            ("There appears to be a party with no sources in its past. This is not allowed.")
 
         if not inflation_level_per_source:
             if self.verbose > 0:
@@ -229,33 +302,111 @@ class InflationProblem(object):
                 or (not np.all(just_one_copy[sources_are_shared]))):
                 self.ever_factorizes = True
                 break
+
+        # Establish internal dtype
+        self._np_dtype = np.result_type(*[
+            np.min_scalar_type(np.max(self.settings_per_party)),
+            np.min_scalar_type(np.max(self.outcomes_per_party)),
+            np.min_scalar_type(self.nr_parties + 1),
+            np.min_scalar_type(np.max(self.inflation_level_per_source) + 1)])
+
         # Create all the different possibilities for inflation indices
-        inflation_indices = list()
-        for active_sources in np.unique(self.hypergraph.T, axis=0):
+        self.inflation_indices_per_party = list()
+        for party in range(self.nr_parties):
+            inflation_indices = list()
+            active_sources =self.hypergraph[:, party]
             num_copies = np.multiply(active_sources,
                                      self.inflation_level_per_source)
             # Put non-participating and non-inflated on equal footing
             num_copies = np.maximum(num_copies, 1)
             for increase_from_base in np.ndindex(*num_copies):
-                inflation_indxs = active_sources + np.array(increase_from_base,
-                                                            dtype=np.uint8)
+                inflation_indxs = active_sources + np.array(
+                    increase_from_base, dtype=self._np_dtype)
                 inflation_indices.append(inflation_indxs)
+            self.inflation_indices_per_party.append(
+                np.vstack(inflation_indices))
+
+        all_unique_inflation_indices = np.unique(
+            np.vstack(self.inflation_indices_per_party),
+            axis=0).astype(self._np_dtype)
+        
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
-                                        in enumerate(inflation_indices)}
+                                        in enumerate(
+                all_unique_inflation_indices)}
         self._inflation_indices_overlap = nb_overlap_matrix(
-            np.asarray(inflation_indices, dtype=np.uint8))
-        assert len(self._inflation_indices_hash) == len(inflation_indices), \
-            "Error: duplicated inflation index pattern."
+            np.asarray(all_unique_inflation_indices, dtype=self._np_dtype))
+
+        # Create the measurements (formerly generate_parties)
+        self._nr_properties = 1 + self.nr_sources + 2
+        self._astuples_dtype = np.dtype(list(zip(['']*self._nr_properties, [self._np_dtype]*self._nr_properties)))
+        self.measurements = list()
+        for p in range(self.nr_parties):
+            O_vals = np.arange(self.outcomes_per_party[p],
+                               dtype=self._np_dtype)
+            S_vals = np.arange(self.settings_per_party[p],
+                               dtype=self._np_dtype)
+            I_vals = self.inflation_indices_per_party[p]
+            # TODO: Use broadcasting instead of nested for loops
+            measurements_per_party = np.empty(
+                (len(I_vals), len(S_vals), len(O_vals), self._nr_properties),
+                dtype=self._np_dtype)
+            measurements_per_party[:, :, :, 0] = p + 1
+            for i, inf_idxs in enumerate(I_vals):
+                measurements_per_party[i, :, :, 1:(self.nr_sources + 1)] = \
+                    inf_idxs
+                for s in S_vals.flat:
+                    measurements_per_party[i, s, :, -2] = s
+                    for o in O_vals.flat:
+                        measurements_per_party[i, s, o, -1] = o
+            self.measurements.append(measurements_per_party)
+        
+        # Useful for LP
+        self._ortho_groups_per_party = []
+        for p, measurements_per_party in enumerate(self.measurements):
+            O_card = self.outcomes_per_party[p]
+            self._ortho_groups_per_party.append(
+                measurements_per_party.reshape(
+                    (-1, O_card, self._nr_properties)))
+        self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
+        self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
+        self._nr_operators = len(self._lexorder)
+
+        self._lexorder_for_factorization = np.array([
+            self._inflation_indices_hash[op.tobytes()]
+            for op in self._lexorder[:, 1:-2]],
+            dtype=np.intc)
+
+        # Here we set up compatible measurements
+        if self._nonclassical_sources.any():
+            self._default_notcomm = commutation_matrix(self._lexorder,
+                                                       self.sources_to_check_for_party_pair_commutation,
+                                                       False)
+        else:
+            self._default_notcomm = np.zeros(
+                (self._lexorder.shape[0], self._lexorder.shape[0]),
+                dtype=bool)
+        self._compatible_measurements = np.invert(self._default_notcomm)
+        # Use self._ortho_groups to label operators that are orthogonal as
+        # incompatible as their product is zero, and they can never be 
+        # observed together with non-zero probability.
+        offset = 0
+        for ortho_group in self._ortho_groups:
+            l = len(ortho_group)
+            block = np.arange(l)
+            block+= offset
+            self._compatible_measurements[np.ix_(block, block)] = False
+            offset+=l
+
 
     def __repr__(self):
-        if len(self._classical_sources) == self.nr_sources:
+        if self._classical_sources.all():
             source_info = "All sources are classical."
-        elif len(self._quantum_sources) == self.nr_sources:
+        elif self._nonclassical_sources.all():
             source_info = "All sources are quantum."
         else:
-            classical_sources = self._actual_sources[self._classical_sources-1]
-            quantum_sources   = self._actual_sources[self._quantum_sources - 1]
+            classical_sources = self._actual_sources[self._classical_sources]
+            quantum_sources   = self._actual_sources[self._nonclassical_sources]
             if len(classical_sources) > 1:
                 extra_1 = "s"
                 extra_2 = "are"
@@ -279,6 +430,351 @@ class InflationProblem(object):
                 str(self.inflation_level_per_source) +
                 " inflation copies per source. " + source_info)
 
+    ###########################################################################
+    # HELPER UTILITY FUNCTION                                    #
+    ###########################################################################
+    
+    @cached_property
+    def _party_positions_within_lexorder(self):
+        # TODO @Elie write docstring
+        offset = 0
+        party_positions_within_lexorder = []
+        for ortho_groups in self._ortho_groups_per_party:
+            this_party_positions = []
+            for ortho_group in ortho_groups:
+                l = len(ortho_group)
+                block = np.arange(offset, offset+l)
+                this_party_positions.append(block)
+                offset+=l
+            party_positions_within_lexorder.append(this_party_positions)
+        return party_positions_within_lexorder
+    
+    def _subsets_of_compatible_mmnts_per_party(self,
+                                               party: int,
+                                               with_last_outcome: bool = False
+                                               ) -> list:
+        """Find all subsets of compatible operators for a given party. They
+        are returned as lists of sets of maximum length monomials (that is,
+        if AB is compatible and ABC is compatible, only ABC is returned as
+        AB is a subset of ABC).
+
+        Parameters
+        ----------
+        party : int
+            The party specifies as its position in the list of parties,
+            as specified by 'order'.
+        with_last_outcome : bool, optional
+            Whether the compatible measurements should include those that
+            have the last outcome, by default False
+
+        Returns
+        -------
+        list
+            List of lists of compatible operators of maximum length.
+        """
+        if with_last_outcome:
+            _s_ = list(chain.from_iterable(self._party_positions_within_lexorder[party]))
+        else:
+            _s_ = []
+            for positions in self._party_positions_within_lexorder[party]:
+                _s_.extend(positions[:-1])
+        party_compat = self._compatible_measurements[np.ix_(_s_, _s_)]
+        G = nx.from_numpy_array(party_compat)
+        raw_cliques = nx.find_cliques(G)
+        return [partsextractor(_s_, clique) for clique in raw_cliques]
+
+    def _generate_compatible_monomials_given_party(self,
+                                                party: int,
+                                                up_to_length: int = None,
+                                                with_last_outcome: bool = False
+                                                  ) -> np.ndarray:
+        """Helper function to generate all compatible monomials given a party.
+        
+        While _subsets_of_compatible_mmnts_per_party returns maximum length
+        compatible operators, i.e., ABC but not AB, this function returns 
+        all lengths up to the specified maximum, i.e., if up_to_length=2,
+        for the compatible monomial ABC, the monomials A, B, C, AB, AC, BC, ABC
+        are returned.
+
+        Parameters
+        ----------
+        party : int
+            The party specifies as its position in the list of parties,
+            as specified by 'order'.
+        up_to_length : int, optional
+            _description_, by default None
+        with_last_outcome : bool, optional
+            Whether the compatible measurements should include those that
+            have the last outcome, by default False
+
+        Returns
+        -------
+        2D array
+            A 2D boolean array where each row is a compatible monomial,
+            and the columns are the lexorder indices of the operators.
+            If we have 4 operators in the lexorder, ABCD, then
+            [[1, 0, 1, 0], [0, 1, 1, 0]] corresponds to AC and BC.
+        """
+        # The cliques will be all unique sets of compatible operators of
+        # ALL lengths, given a scenario's compatibility matrix
+        cliques = self._subsets_of_compatible_mmnts_per_party(
+            party,
+            with_last_outcome=with_last_outcome)
+        max_len_clique = max([len(c) for c in cliques])
+        max_length = up_to_length if up_to_length != None else max_len_clique
+        if max_length > max_len_clique:
+            max_length = max_len_clique
+            if self.verbose > 0:
+                warn("The maximum length of physical monomials required is " +
+                     "larger than the maximum sequence of compatible operators")
+
+        # Take combinations of all lengths up to the specified maximum
+        # of all the cliques
+        unique_subsets = {frozenset(ops) for nr_ops in range(max_length + 1)
+                              for clique in cliques
+                              for ops in combinations(clique, nr_ops)}
+        # Sort them in ascending lexicographic order
+        unique_subsets = sorted((sorted(s) for s in unique_subsets),
+                                key=lambda x: (len(x), x))
+        # Convert them to boolean vector encoding
+        unique_subsets_as_boolvecs = np.zeros(
+            (len(unique_subsets), len(self._lexorder)), dtype=bool)
+        for i, mon_as_set in enumerate(unique_subsets):
+            unique_subsets_as_boolvecs[i, mon_as_set] = True
+        return unique_subsets_as_boolvecs
+
+    @cached_property
+    def original_dag_events(self) -> np.ndarray:
+        """
+        Creates the analog of a lexorder for the original DAG.
+        """
+        original_dag_events = []
+        for p in range(self.nr_parties):
+            O_vals = np.arange(self.outcomes_per_party[p],
+                               dtype=self._np_dtype)
+            S_vals = np.arange(self.private_settings_per_party[p],
+                               dtype=self._np_dtype)
+            events_per_party = np.empty(
+                (len(S_vals), len(O_vals), 3),
+                dtype=self._np_dtype)
+            events_per_party[::, :, 0] = p + 1
+            for s in S_vals.flat:
+                events_per_party[s, :, -2] = s
+                for o in O_vals.flat:
+                    events_per_party[s, o, -1] = o
+            original_dag_events.extend(
+                events_per_party.reshape((-1, 3)))
+        return np.vstack(original_dag_events).astype(self._np_dtype)
+
+    @cached_property
+    def _lexorder_lookup(self) -> dict:
+        """Creates helper dictionary for quick lookup of lexorder indices.
+
+        Returns
+        -------
+        dict
+            Mapping an operator in .tobytes() for quick lookup of its index
+            in the lexorder.
+        """
+        return {op.tobytes(): i for i, op in enumerate(self._lexorder)}
+    
+    def mon_to_lexrepr(self, mon: np.ndarray) -> np.ndarray:
+        ops_as_hashes = list(map(self._from_2dndarray, mon))
+        try:
+            return np.array(partsextractor(self._lexorder_lookup, ops_as_hashes), dtype=np.intc)
+        except KeyError:
+            raise Exception(f"Failed to interpret\n{mon}\n relative to specified lexorder \n{self._lexorder}.")
+
+    def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
+        """Obtains the bytes representation of an array. The library uses this
+        representation as hashes for the corresponding monomials.
+
+        Parameters
+        ----------
+        array2d : numpy.ndarray
+            Monomial encoded as a 2D array.
+        """
+        return np.asarray(array2d, dtype=self._np_dtype).tobytes()
+
+    @cached_property
+    def _lexrepr_to_dicts(self):
+        """Map 1D array lexorder encoding of a monomial, to a dict representation.
+
+        Returns
+        -------
+        list
+            List of the same length as lexorder, where the i-th element is the
+            dictionary representation of the i-th operator in the lexorder.
+        """
+        return [self._interpret_operator(op) for op in self._lexorder]
+
+
+    @cached_property
+    def _any_inflation(self) -> bool:
+        return np.any(self.inflation_level_per_source > 1)
+
+    @cached_property
+    def _lexrepr_to_dicts(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
+            dictionary interpretation of the i-th operator in the lexorder.
+        """
+        return np.array([self._interpret_operator(op) for op in self._lexorder])
+
+    @cached_property
+    def _lexrepr_to_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
+        return np.asarray([self._interpretation_to_name(
+            op_dict,
+            include_copy_indices=self._any_inflation)
+                for op_dict in self._lexrepr_to_dicts.flat])
+
+    @cached_property
+    def _lexrepr_to_copy_index_free_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
+        if not self._any_inflation:
+            return self._lexrepr_to_names
+        else:
+            return np.asarray([self._interpretation_to_name(
+                op_dict,
+                include_copy_indices=False)
+                for op_dict in self._lexrepr_to_dicts.flat])
+
+    @cached_property
+    def _lexrepr_to_all_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial to
+        a variety of possible string representations.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is a
+            collection of string representations of the i-th operator in the
+            lexorder.
+        """
+        old_names_v1 = [self._interpretation_to_name_old(op_dict,
+                                                         replace_trivial_setting=True)
+                        for op_dict in self._lexrepr_to_dicts.flat]
+        old_names_v2 = [legacy_name.replace('∅','0') for legacy_name in old_names_v1]
+        return np.stack((
+            self._lexrepr_to_names,
+            self._lexrepr_to_copy_index_free_names,
+            old_names_v1,
+            old_names_v2
+        ), 1)
+
+    @cached_property
+    def _lexrepr_to_symbols(self) -> np.ndarray:
+        """For each operator in the lexorder, create a sympy symbol with the 
+        same name as returned by InflationPRoblem._lexrepr_to_names()
+
+        Returns
+        -------
+        list
+            List of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
+        return np.array([sympy.Symbol(name, commutative=False) for name in self._lexrepr_to_names],
+                        dtype=object)
+
+    @cached_property
+    def names_to_ints(self) -> dict:
+        """Map party names to integers denoting their position in the list of
+        parties, as specified by 'order', offset by 1 (i.e., first party is 1).
+
+        Used for the 2D array representation of monomials.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping party names to integers.
+        """
+        return {name: i + 1 for i, name in enumerate(self.names)}
+
+    ###########################################################################
+    # FUNCTIONS PERTAINING TO KNOWABILITY                                     #
+    ###########################################################################
+    def _interpret_operator(self, op: np.ndarray) -> dict:
+        interpretation = dict()
+        party_int = op[0] -1
+        interpretation["Party as Integer"] = party_int
+        interpretation["Party"] = self.names[party_int]
+        outcome_int = op[-1]
+        interpretation["Outcome"] = outcome_int
+        setting_as_single_int = op[-2]
+        interpretation["Composite Setting"] = setting_as_single_int
+        interpretation["Composite Setting is Trivial"] = (self.settings_per_party[party_int] == 1)
+        setting_as_tuple = self.effective_to_parent_settings[party_int][setting_as_single_int]
+        private_setting = setting_as_tuple[0]
+        interpretation["Private Setting"] = private_setting
+        interpretation["Private Setting is Trivial"] = (self.private_settings_per_party[party_int] == 1)
+        outcomes_of_parents = setting_as_tuple[1:]
+        parents_in_play_as_ints = self.parents_per_party[party_int]
+        parents_in_play_as_names = partsextractor(self.names, parents_in_play_as_ints)
+        non_private_setting_dict = dict(zip(parents_in_play_as_names, outcomes_of_parents))
+        interpretation["Do Values"] = non_private_setting_dict
+        interpretation["Copy Indices"] = op[1:-2]
+        relevant_slots = np.logical_and(
+            self.inflation_level_per_source > 0,
+            interpretation["Copy Indices"] > 0
+        )
+        interpretation["Relevant Copy Indices"] = interpretation["Copy Indices"][relevant_slots]
+        return interpretation
+
+    @staticmethod
+    def _interpretation_to_name(op: dict, include_copy_indices=True) -> str:
+        op_as_str = op["Party"]
+        if not op["Private Setting is Trivial"]:
+            op_as_str += '_'+str(op["Private Setting"])
+        if include_copy_indices:
+            if len(op["Relevant Copy Indices"]):
+                copy_index_string = '^{'
+                copy_index_string += ','.join(map(str,op["Relevant Copy Indices"].flat))
+                copy_index_string += '}'
+                op_as_str += copy_index_string
+
+            copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
+            op_as_str += copy_indices_string
+        op_as_str += f"={op['Outcome']}"
+        if len(op["Do Values"]):
+            do_values_string = "|do("
+            do_values_string += ','.join((f"{p}={v}" for p, v in op["Do Values"].items()))
+            do_values_string += ')'
+            op_as_str += do_values_string
+        return op_as_str
+
+    @staticmethod
+    def _interpretation_to_name_old(op: dict, replace_trivial_setting=True) -> str:
+        op_as_str = op["Party"]
+        copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
+        op_as_str += copy_indices_string
+        if replace_trivial_setting and op["Composite Setting is Trivial"]:
+            op_as_str += "_∅"
+        else:
+            op_as_str += "_" + str(op["Composite Setting"])
+        op_as_str += "_" + str(op['Outcome'])
+        return op_as_str
+
+
+
     def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array
         form) corresponds to a knowable probability. The function assumes that
@@ -301,13 +797,12 @@ class InflationProblem(object):
             Whether the monomial can be assigned a knowable probability.
         """
         # Parties start at 1 in our notation
-        parties_in_play    = np.asarray(monomial)[:, 0] - 1
-        parents_referenced = set()
-        for p in parties_in_play:
-            parents_referenced.update(self.parents_per_party[p])
-        if not parents_referenced.issubset(parties_in_play):
-            # Case of not an ancestrally closed set
-            return False
+        parties_in_play = np.asarray(monomial)[:, 0] - 1
+        parties_absent_bitvector    = np.ones(self.nr_parties, dtype=bool)
+        parties_absent_bitvector[parties_in_play] = False
+        for p in parties_in_play.flat:
+            if parties_absent_bitvector[self.parents_per_party[p]].any():
+                return False # Case of not an ancestrally closed set
         # Parties start at 1 in our notation
         outcomes_by_party = {(o[0] - 1): o[-1] for o in monomial}
         for o in monomial:
@@ -316,86 +811,11 @@ class InflationProblem(object):
             o_nonprivate_settings = \
                 self.effective_to_parent_settings[
                                   party_index][effective_setting][1:]
-            for i, p_o in enumerate(self.parents_per_party[party_index]):
-                if not o_nonprivate_settings[i] == outcomes_by_party[p_o]:
-                    return False
+            outcomes_of_parent_parties = partsextractor(outcomes_by_party, self.parents_per_party[party_index])
+            if not np.array_equal(outcomes_of_parent_parties, o_nonprivate_settings):
+                return False
         else:
             return True
-
-    def factorize_monomial(self,
-                           monomial: np.ndarray,
-                           canonical_order=False) -> Tuple[np.ndarray, ...]:
-        """Split a moment/expectation value into products of moments according
-        to the support of the operators within the moment. The moment is
-        encoded as a 2d array where each row is an operator. If
-        ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is
-        ``C``, and row 4 is ``B``. In each row, the columns encode the
-        following information:
-
-          * First column: The party index, *starting from 1* (e.g., 1 for
-            ``A``, 2 for ``B``, etc.)
-          * Last two columns: The input ``x`` starting from zero, and then the
-            output ``a`` starting from zero.
-          * In between: This encodes the support of the operator. There are as
-            many columns as sources/quantum states. Column `j` represents
-            source `j-1` (-1 because the first column represents the party). If
-            the value is 0, then this operator does not measure this source. If
-            the value is, e.g., 2, then this operator is acting on copy 2 of
-            source `j-1`.
-
-        The output is a tuple of ndarrays where each array represents another
-        monomial s.t. their product is equal to the original monomial.
-
-        Parameters
-        ----------
-        monomial : numpy.ndarray
-            Monomial in 2d array form.
-        canonical_order: bool, optional
-            Whether to return the different factors in a canonical order.
-
-        Returns
-        -------
-        Tuple[numpy.ndarray]
-            A tuple of ndarrays, where each array represents an atomic monomial
-            factor.
-        Examples
-        --------
-        >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
-                                 [2, 1, 0, 2, 0, 0],
-                                 [1, 0, 3, 3, 0, 0],
-                                 [3, 3, 5, 0, 0, 0],
-                                 [3, 1, 4, 0, 0, 0],
-                                 [3, 6, 6, 0, 0, 0],
-                                 [3, 4, 5, 0, 0, 0]])
-        >>> factorised = factorize_monomial(monomial)
-        [array([[1, 0, 1, 1, 0, 0]]),
-         array([[1, 0, 3, 3, 0, 0]]),
-         array([[2, 1, 0, 2, 0, 0],
-                [3, 1, 4, 0, 0, 0]]),
-         array([[3, 3, 5, 0, 0, 0],
-                [3, 4, 5, 0, 0, 0]]),
-         array([[3, 6, 6, 0, 0, 0]])]
-        """
-        if not self.ever_factorizes:
-            return (monomial,)
-        n = len(monomial)
-        if n <= 1:
-            return (monomial,)
-
-        inflation_indices_position = [self._inflation_indices_hash[
-            op.tobytes()] for op in monomial.astype(np.uint8)[:, 1:-2]]
-        adj_mat = self._inflation_indices_overlap[inflation_indices_position][
-            :, inflation_indices_position]
-
-        component_labels = nb_classify_disconnected_components(adj_mat)
-        disconnected_components = tuple(
-            monomial[component_labels == i]
-            for i in range(component_labels.max(initial=0) + 1))
-
-        if canonical_order:
-            disconnected_components = tuple(sorted(disconnected_components,
-                                                   key=lambda x: x.tobytes()))
-        return disconnected_components
 
     def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
         """When constructing the monomials in a non-network scenario, we rely
@@ -427,10 +847,176 @@ class InflationProblem(object):
         """
         new_mon = np.array(monomial, copy=False)
         for o in new_mon:
-            party_index        = o[0] - 1     # Parties start at 1 our notation
+            party_index        = o[0] - 1  # Parties start at 1 our notation
             effective_setting  = o[-2]
             o_private_settings = \
                 self.effective_to_parent_settings[
                                    party_index][effective_setting][0]
             o[-2] = o_private_settings
         return new_mon
+
+    ###########################################################################
+    # FUNCTIONS PERTAINING TO FACTORIZATION                                   #
+    ###########################################################################
+
+    def factorize_monomial_2d(self,
+                              monomial_as_2darray: np.ndarray,
+                              canonical_order=False) -> Tuple[np.ndarray, ...]:
+        """Split a moment/expectation value into products of moments according
+        to the support of the operators within the moment. The moment is
+        encoded as a 2d array where each row is an operator. If
+        ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is
+        ``C``, and row 4 is ``B``. In each row, the columns encode the
+        following information:
+
+          * First column: The party index, *starting from 1* (e.g., 1 for
+            ``A``, 2 for ``B``, etc.)
+          * Last two columns: The input ``x`` starting from zero, and then the
+            output ``a`` starting from zero.
+          * In between: This encodes the support of the operator. There are as
+            many columns as sources/quantum states. Column `j` represents
+            source `j-1` (-1 because the first column represents the party). If
+            the value is 0, then this operator does not measure this source. If
+            the value is, e.g., 2, then this operator is acting on copy 2 of
+            source `j-1`.
+
+        The output is a tuple of ndarrays where each array represents another
+        monomial s.t. their product is equal to the original monomial.
+
+        Parameters
+        ----------
+        monomial_as_2darray : numpy.ndarray
+            Monomial in 2d array form.
+        canonical_order: bool, optional
+            Whether to return the different factors in a canonical order.
+
+        Returns
+        -------
+        Tuple[numpy.ndarray]
+            A tuple of ndarrays, where each array represents an atomic monomial
+            factor.
+        Examples
+        --------
+        >>> monomial = np.array([[1, 0, 1, 1, 0, 0],
+                                 [2, 1, 0, 2, 0, 0],
+                                 [1, 0, 3, 3, 0, 0],
+                                 [3, 3, 5, 0, 0, 0],
+                                 [3, 1, 4, 0, 0, 0],
+                                 [3, 6, 6, 0, 0, 0],
+                                 [3, 4, 5, 0, 0, 0]])
+        >>> factorised = factorize_monomial(monomial_as_2darray)
+        [array([[1, 0, 1, 1, 0, 0]]),
+         array([[1, 0, 3, 3, 0, 0]]),
+         array([[2, 1, 0, 2, 0, 0],
+                [3, 1, 4, 0, 0, 0]]),
+         array([[3, 3, 5, 0, 0, 0],
+                [3, 4, 5, 0, 0, 0]]),
+         array([[3, 6, 6, 0, 0, 0]])]
+        """
+        lexmon_factors = self.factorize_monomial_1d(self.mon_to_lexrepr(monomial_as_2darray),
+                                          canonical_order=canonical_order)
+        return tuple(self._lexorder[lexmon] for lexmon in lexmon_factors)
+
+    def factorize_monomial_1d(self,
+                              monomial_as_1darray: np.ndarray,
+                              canonical_order=False) -> Tuple[np.ndarray, ...]:
+        """Split a moment/expectation value into products of moments according
+        to the support of the operators within the moment. The moment is
+        encoded as a 1d array representing elements of the lexorder.
+
+        The output is a tuple of ndarrays where each array represents another
+        monomial s.t. their product is equal to the original monomial.
+
+        Parameters
+        ----------
+        monomial_as_1darray : numpy.ndarray
+            Monomial in 1d array form.
+        canonical_order: bool, optional
+            Whether to return the different factors in a canonical order.
+
+        Returns
+        -------
+        Tuple[numpy.ndarray]
+            A tuple of ndarrays, where each array represents a picklist for an atomic monomial
+            factor.
+        """
+        if (not self.ever_factorizes) or len(monomial_as_1darray) <= 1:
+            return (monomial_as_1darray,)
+
+        inflation_indices_position = self._lexorder_for_factorization[
+            monomial_as_1darray]
+        unique_inflation_indices_positions, reversion_key = np.unique(inflation_indices_position, return_inverse=True)
+        adj_mat = self._inflation_indices_overlap[np.ix_(unique_inflation_indices_positions, unique_inflation_indices_positions)]
+        component_labels = nb_classify_disconnected_components(adj_mat)
+        nof_components = component_labels.max(initial=0) + 1
+        disconnected_components = tuple(monomial_as_1darray[np.take(component_labels == i, reversion_key)]
+            for i in range(nof_components))
+
+        if canonical_order:
+            disconnected_components = tuple(sorted(disconnected_components,
+                                                   key=lambda x: x.tobytes()))
+        return disconnected_components
+
+    ###########################################################################
+    # FUNCTIONS PERTAINING TO SYMMETRY                                        #
+    ###########################################################################
+    def discover_lexorder_symmetries(self) -> np.ndarray:
+        """Calculates all the symmetries pertaining to the set of generating
+        monomials. The new set of operators is a permutation of the old. The
+        function outputs a list of all permutations.
+
+        Returns
+        -------
+        numpy.ndarray[int]
+            The permutations of the lexicographic order implied by the inflation
+            symmetries.
+        """
+        sources_with_copies = [source for source, inf_level
+                               in enumerate(self.inflation_level_per_source)
+                               if inf_level > 1]
+        if len(sources_with_copies):
+            permutation_failed = False
+            lexorder_symmetries = []
+            identity_perm        = np.arange(self._nr_operators, dtype=np.intc)
+            for source in tqdm(sources_with_copies,
+                               disable=not self.verbose,
+                               desc="Calculating symmetries   ",
+                               leave=True,
+                               position=0):
+                one_source_symmetries = [identity_perm]
+                inf_level = self.inflation_level_per_source[source]
+                perms = format_permutations(list(
+                    permutations(range(inf_level)))[1:])
+                for permutation in perms:
+                    adjusted_ops = apply_source_perm(self._lexorder,
+                                                     source,
+                                                     permutation)
+                    try:
+                        new_order = np.fromiter(
+                            (self._lexorder_lookup[op.tobytes()]
+                             for op in adjusted_ops),
+                            dtype=np.intc
+                        )
+                        one_source_symmetries.append(new_order)
+                    except KeyError:
+                        permutation_failed = True
+                        pass
+                lexorder_symmetries.append(np.asarray(one_source_symmetries, dtype=np.intc))
+            if permutation_failed and (self.verbose > 0):
+                warn("The generating set is not closed under source swaps."
+                     + " Some symmetries will not be implemented.")
+            return reduce(perm_combiner, lexorder_symmetries)
+        else:
+            return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
+        
+    @cached_property
+    def lexorder_symmetries(self):
+        """Discover symmetries expressed as permutations of the lexorder.
+        
+        Returns
+        -------
+        numpy.ndarray[int]
+            The permutations of the lexicographic order implied by the inflation
+            symmetries.
+        """
+        return self.discover_lexorder_symmetries()

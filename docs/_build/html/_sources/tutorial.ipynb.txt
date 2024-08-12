@@ -11,13 +11,13 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The CausalInflation package contains implementations of the inflation technique for causal compatibility. Currently it only supports the quantum inflation method of [[1](https://www.arxiv.org/abs/1909.10519)]. In the future, we plan adding support to the inflation hierarchy for classical causal compatibility of [[2](https://www.arxiv.org/abs/1609.00672)] and dedicated parts for analysing theory-independent correlations. The implementation of CausalInflation follows an object-oriented design. The workflow comprises of three main steps:\n",
+    "The Inflation package contains implementations of the inflation technique for causal compatibility. It supports the linear-programming technique of [[1](https://www.arxiv.org/abs/1609.00672)], that is used for compatibility with classical and theory-independent models, and the semidefinite-programming method of [[2](https://www.arxiv.org/abs/1909.10519)], that is used for compatibility with classical and quantum models. It also supports hybrid scenarios where the systems distributed by different sources are described by different physical theories. The implementation of Inflation follows an object-oriented design. The workflow comprises of three main steps:\n",
     "\n",
     "* Encode the causal scenario and desired inflation as an instance of `InflationProblem`.\n",
-    "* Generate the associated optimization problem for classical, quantum, or theory-independent inflation (currently, only `InflationSDP` is available).\n",
+    "* Generate the associated optimization problem for classical, quantum, or theory-independent inflation, via `InflationLP` or `InflationSDP` depending on the goal.\n",
     "* Export the problem to a file and/or solve it.\n",
     "\n",
-    "We will now go through the steps above in more detail. This tutorial is available on the [documentation webpage](https://ecboghiu.github.io/inflation/) and it can also be downloaded as a ready-to-run [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/examples/tutorial.ipynb) from the [GitHub repository](https://github.com/ecboghiu/inflation). If already familiar with quantum inflation, the quickest way to get started is to run some examples from the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section, which can also be downloaded as a [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/docs/examples.ipynb).\n",
+    "We will now go through the steps above in more detail. This tutorial is available on the [documentation webpage](https://ecboghiu.github.io/inflation/) and it can also be downloaded as a ready-to-run [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/examples/tutorial.ipynb) from the [GitHub repository](https://github.com/ecboghiu/inflation). If already familiar with inflation, the quickest way to get started is to run some examples from the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section, which can also be downloaded as a [Jupyter Notebook](https://github.com/ecboghiu/inflation/blob/main/docs/examples.ipynb).\n",
     "\n",
     "We start by importing everything that we will need:"
    ]
@@ -28,7 +28,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "from causalinflation import InflationProblem, InflationSDP\n",
+    "from inflation import InflationProblem, InflationLP, InflationSDP\n",
     "import numpy as np"
    ]
   },
@@ -38,7 +38,7 @@
    "source": [
     "## Encoding the inflation problem \n",
     "\n",
-    "The first object of interest is [InflationProblem](https://ecboghiu.github.io/inflation/_build/html/inflationproblem.html#causalinflation.InflationProblem). When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform.\n",
+    "The first object of interest is [InflationProblem](https://ecboghiu.github.io/inflation/_build/html/inflationproblem.html#inflation.InflationProblem). When instantiating it, we pass all the relevant information about the causal scenario and the type of inflation we want to perform.\n",
     "\n",
     "#### Basics of causal diagrams\n",
     "\n",
@@ -46,25 +46,27 @@
     "\n",
     "For applications to physics, another class of random variables is often considered called \"settings\". These correspond to observable variables on whose outcome we condition in order to obtain the observed data. For example, this might correspond to measuring one property of a system versus another in an experiment. Furthermore, in physics we also have sources generating quantum correlations. These are modeled through the presence of quantum unobservable variables, which represent quantum systems. Arrows going into a quantum node represent controlling the corresponding quantum system. Arrows going out of the quantum node represent the children of the quantum node generating statistics by measuring the quantum system.\n",
     "\n",
-    "#### The quantum tripartite line and an inflation\n",
+    "#### The tripartite line network\n",
     "\n",
-    "As an example, let us consider the quantum tripartite line, or \"quantum bilocality scenario\" [[3](https://arxiv.org/abs/1112.4502)], which corresponds to the scenario where three space-like separated parties ($A$, $B$ and $C$) measure two quantum systems $\\rho_{AB}$, $\\rho_{BC}$ that never interacted in the past. The subindex of the quantum states indicates which parties have access to and can measure that state. This is a simple scenario where entanglement swapping [[4](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287)] can be performed, which is at the heart of the quantum teleportation protocol [[5](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895)]. The corresponding DAG is:\n",
+    "As an example, let us consider the tripartite line, or \"bilocality scenario\" [[3](https://arxiv.org/abs/1112.4502)], which corresponds to the scenario where three space-like separated parties ($A$, $B$ and $C$) measure two physical systems $\\rho_{AB}$, $\\rho_{BC}$ that never interacted in the past. The subindex of the systems indicates which parties have access to and can measure that state. This is a simple scenario where, for instance, entanglement swapping [[4](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.71.4287)] can be performed, which is at the heart of the quantum teleportation protocol [[5](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.70.1895)]. The corresponding DAG is:\n",
     "\n",
     "<center> <img src=\"./figures/bilocal.png\" width=\"400\" /> </center> \n",
     "\n",
-    "We have three observed random variables, $A$, $B$ and $C$, two hidden quantum variables $\\rho_{AB}$ and $\\rho_{BC}$ of unbounded dimension denoting the physical systems sent to the parties, and three setting variables, $X$, $Y$ and $Z$. We assume all observed variables have cardinality 2, i.e., $a,b,c,x,y,z \\in \\{0, 1\\}$, where lower case denotes specific values that the random variables (in upper case) can take. In this causal scenario, correlations are generated by measuring the quantum systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution $p(a,b,c|x,y,z)$. Notice that the probability distribution is not conditioned on $\\rho_{AB}$, $\\rho_{BC}$ as they are hidden variables.\n",
+    "We have three observed random variables, $A$, $B$ and $C$, two latent variables $\\rho_{AB}$ and $\\rho_{BC}$ denoting the physical systems sent to the parties, and three setting variables, $X$, $Y$ and $Z$. We assume all observed variables have cardinality 2, i.e., $a,b,c,x,y,z \\in \\{0, 1\\}$, where lower case denotes specific values that the random variables (in upper case) can take. In this causal scenario, correlations are generated by measuring the systems conditioned on the values of the settings. These correlations are encoded in the joint probability distribution $p(a,b,c|x,y,z)$. Notice that the probability distribution is not conditioned on $\\rho_{AB}$, $\\rho_{BC}$ as they are latent variables.\n",
     "\n",
-    "#### Quantum causal compatibility and an inflation\n",
+    "#### Causal compatibility and inflation\n",
     "\n",
-    "One of the fundamental questions to ask is whether a given a probability distribution $p(a,b,c|x,y,z)$ is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the quantum sources $\\rho_{AB}$ and $\\rho_{BC}$. The quantum inflation technique is one technique that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario where we take two copies of each source, as in the following figure:\n",
+    "One of the fundamental questions to ask is whether a given a probability distribution $p(a,b,c|x,y,z)$ is compatible with a given causal scenario. The challenge in answering this question comes from the assumption of statistical independence of the sources $\\rho_{AB}$ and $\\rho_{BC}$. Inflation techniques are general methods that can give an answer to this question by relaxing the independence constraint. Let us consider an inflation of the bilocal scenario where we take two copies of each source, as in the following figure:\n",
     "\n",
     "<center>  <img src=\"./figures/bilocalityinflation.png\" width=\"400\" /> </center> \n",
     "\n",
-    "Compatibility of the probability distribution with the inflated graph can be relaxed to a semidefinite program (SDP) using the NPA hierarchy [[6](https://arxiv.org/abs/0803.4290)]. The independence of the sources is relaxed to a collection of symmetries that can be applied to the SDP. These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., $\\rho_{AB}{=}\\rho_{AB}^1{=}\\rho_{AB}^2$. If the SDP is infeasible, then we can conclude that the distribution $p(a,b,c|x,y,z)$ is incompatible with this causal graph, and furthermore, we get an analytical certificate. For more details, see [[1](https://www.arxiv.org/abs/1909.10519)]. \n",
+    "Depending on the nature of the systems distributed by the sources, the parties will be able to perform different operations on them. If the systems are classical, the parties can clone them and feed them to copies of their measurement devices. If they are quantum, the systems cannot be cloned, but the parties can choose on which copies of the systems to perform their measurements. If they are general physical states, then the parties can only use complete copies of the measurement devices and just feed one copy of each of the corresponding systems to each of them.\n",
+    "These different operations are exploited to relax the independence conditions to symmetry conditions, that give rise to problems that can be formulated in terms of linear programming (in the case of classical and theory-independent models [[1](https://www.arxiv.org/abs/1909.10519)]) or semidefinite programming (in the case of quantum models [[2](https://www.arxiv.org/abs/1909.10519)]) using the NPA hierarchy [[6](https://arxiv.org/abs/0803.4290)].\n",
+    "These symmetries arise from the extra sources in the inflated graph being copies of the original sources, e.g., $\\rho_{AB}{=}\\rho_{AB}^1{=}\\rho_{AB}^2$. If the feasible region of the LP or SDP is empty, then we can conclude that the distribution $p(a,b,c|x,y,z)$ is incompatible with the particular realization in the causal graph, and furthermore, we get an analytical certificate. This certificate can be understood as a Bell-like inequality for the class of models considered in the particular network. For more details, see [[1](https://www.arxiv.org/abs/1909.10519)] and [[2](https://www.arxiv.org/abs/1909.10519)].\n",
     "\n",
     "### Creating an instance of `InflationProblem`\n",
     "\n",
-    "The first step in using CausalInflation is encoding the scenario to be analyzed. This is done by providing a description of the target DAG, as well as the cardinalities of its visible variables (and optionally a number of possible measurement settings for each one). Also, one must specify the inflation that shall be constructed, by providing the amount of copies of each of the latent variables in the DAG that the inflation will contain. All this information is passed to an instance of `InflationProblem` as follows:"
+    "The first step in using Inflation is encoding the scenario to be analyzed. This is done by providing a description of the target DAG, as well as the cardinalities of its visible variables (and optionally a number of possible measurement settings for each one). Also, one must specify the inflation that shall be constructed, by providing the amount of copies of each of the latent variables in the DAG that the inflation will contain. All this information is passed to an instance of `InflationProblem` as follows:"
    ]
   },
   {
@@ -88,13 +90,15 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the corresponding children nodes. In `outcomes_per_party` and `settings_per_party` we specify the cardinalities of visible nodes. The paremeter `inflation_level_per_source` determines how many copies of the quantum sources we consider in the inflated graph.\n",
+    "The DAG is written as a dictionary where the keys are parent nodes, and the values are lists of the corresponding children nodes. In `outcomes_per_party` and `settings_per_party` we specify the cardinalities of visible nodes. The parameter `inflation_level_per_source` determines how many copies of the quantum sources we consider in the inflated graph. Another important argument is `classical_sources`, that allows to determine which of the sources will be assumed to be classical. This will be important for problems involving compatibility with classical causal models, and with hybrid models.\n",
     "\n",
-    "Internally, CausalInflation handles scenarios as networks, which are bipartite DAGs with one layer of visible nodes (the outcomes) and another layer of both visible (the settings) and latent (the sources) nodes. If the DAG contains visible-to-visible connections (such as in the instrumental scenario [[7](https://quantum-journal.org/papers/q-2019-09-16-186/)]), `InflationProblem` automatically finds an equivalent network and keeps track of the correspondence when setting values and bounds.\n",
+    "Internally, Inflation handles scenarios as networks, which are bipartite DAGs with one layer of visible nodes (the outcomes) and another layer of both visible (the settings) and latent (the sources) nodes. If the DAG contains visible-to-visible connections (such as in the instrumental scenario [[7](https://quantum-journal.org/papers/q-2019-09-16-186/)]), `InflationProblem` automatically finds an equivalent network and keeps track of the correspondence when setting values and bounds.\n",
     "\n",
-    "## Generating the SDP relaxation\n",
+    "## Generating the relaxation: example with quantum compatibility\n",
     "\n",
-    "Once the scenario is set up, the next step is generating the associated characterization of distributions admitting a realization in the inflation. Currently CausalInflation supports the characterization of classical and quantum probability distributions via [InflationSDP](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP), which generates the characterizations as semidefinite programs. It is an object that takes as input an instance of `InflationProblem`:"
+    "For the sake of simplicity, we are going to consider the specific problem of compatibility with quantum models in the bilocality scenario. For examples of other types of inflations, see the end of this page.\n",
+    "\n",
+    "Once the scenario is set up, the next step is generating the associated characterization of distributions admitting a realization in the inflation. In order to consider compatibility with quantum models, one needs to use the object [InflationSDP](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP), which generates the corresponding characterizations as semidefinite programs. [InflationSDP](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP) is an object that takes as input an instance of `InflationProblem`:"
    ]
   },
   {
@@ -110,9 +114,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "By default, the characterization is assumed to be of quantum correlations. Restricting to classical correlations is possible by passing the argument `commuting=True` to `InflationSDP`.\n",
-    "\n",
-    "The first main method, [InflationSDP.generate_relaxation()](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.generate_relaxation) generates the SDP relaxation of the chosen inflation."
+    "The first main method, [InflationSDP.generate_relaxation](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.generate_relaxation) generates the SDP relaxation of the chosen inflation."
    ]
   },
   {
@@ -128,7 +130,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "In the above example, we have chosen NPA hierarchy level 2. For the meaning of these levels, see [[6](https://arxiv.org/abs/0803.4290)]. For other hierarchies that we support, see the documentation of `InflationSDP.generate_relaxation()` method, or the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section. The important thing to know is that the higher the hierarchy level, the tighter is the SDP relaxation (at the cost of needing more computational resources)."
+    "In the above example, we have chosen NPA hierarchy level 2. For the meaning of these levels, see [[6](https://arxiv.org/abs/0803.4290)]. For other hierarchies that we support, see the documentation of [InflationSDP.generate_relaxation](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.generate_relaxation), or the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section. The important thing to know is that the higher the hierarchy level, the tighter is the SDP relaxation (at the cost of needing more computational resources)."
    ]
   },
   {
@@ -141,7 +143,7 @@
     "\n",
     "$$ P_{\\text{2PR}}(abc|xyz) := \\frac{1+ (-1)^{a+b+c+xy+yz}}{8} $$\n",
     "\n",
-    "and it is known to be incompatible with the quantum tripartite line scenario. We impose the corresponding constraints on the semidefinite program with [InflationSDP.set_distribution](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.set_distribution) and then we attempt to solve the program:"
+    "and it is known to be incompatible with the quantum tripartite line scenario. We impose the corresponding constraints on the semidefinite program with [InflationSDP.set_distribution](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.set_distribution) and then we attempt to solve the program:"
    ]
   },
   {
@@ -177,7 +179,7 @@
    "source": [
     "The problem status is reported as infeasible, therefore this serves as a proof that the 2PR distribution cannot be generated by measuring two independent quantum states, $\\rho_{AB}$ and $\\rho_{BC}$, in the tripartite line scenario.\n",
     "\n",
-    "We can also export the problem with [InflationSDP.write_to_file()](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#causalinflation.InflationSDP.write_to_file) method and run it with another solver. Currently, supported formats are `.mat` for MATLAB, `.dat-s` for various solvers and platforms (for instance, [Yalmip](https://yalmip.github.io)), and `.csv` for a human-readable output."
+    "We can also export the problem with [InflationSDP.write_to_file](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP.write_to_file) method and run it with another solver. Currently, supported formats are `.mat` for MATLAB, `.dat-s` for various solvers and platforms (for instance, [Yalmip](https://yalmip.github.io)), and `.csv` for a human-readable output."
    ]
   },
   {
@@ -186,7 +188,7 @@
    "source": [
     "## Running an optimisation problem\n",
     "\n",
-    "CausalInflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:\n",
+    "Inflation also supports the optimization of objective functions over the sets of distributions compatible with a given inflation. This is useful for finding bounds of Bell operators in complex multipartite scenarios. For example, we can calculate upper bounds on the value of the Mermin inequality, defined as:\n",
     "\n",
     "$$ \\text{Mermin} = \\langle A_1 B_0 C_0 \\rangle +  \\langle A_0 B_1 C_0 \\rangle +  \\langle A_0 B_0 C_1 \\rangle -  \\langle A_1 B_1 C_1 \\rangle $$\n",
     "\n",
@@ -234,6 +236,81 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
+    "## Inflations for different physical models\n",
+    "\n",
+    "The example discussed above deals with considering quantum models of the distributions of interest. However, it is also possible to consider classical models, and theory-independent (also known as _non-signaling_) models of physical systems. In order to characterize these, one needs to use the object [InflationLP](https://ecboghiu.github.io/inflation/_build/html/inflationlp.html#inflation.InflationLP), which generates the corresponding characterizations as linear programs. The usage of [InflationLP](https://ecboghiu.github.io/inflation/_build/html/inflationlp.html#inflation.InflationLP) is similar to that of [InflationSDP](https://ecboghiu.github.io/inflation/_build/html/inflationsdp.html#inflation.InflationSDP). Below we show an example of how to use both objects to bound the maximum visibility for which the Popoescu-Rohrlich box admits classical, quantum, and theory-independent models. This is, we will consider how large the parameter $v$ in the distribution\n",
+    "\n",
+    "$$ P_v(a,b|x,y) = \\frac14 \\left[ 1 + v(-1)^{a+b+xy}\\right] $$\n",
+    "\n",
+    "can achieve in different models of physical systems.\n",
+    "\n",
+    "In order to do this we will use the auxiliary function [max_within_feasible](https://ecboghiu.github.io/inflation/_build/html/optimization.html#inflation.sdp.optimization_utils.max_within_feasible), which is explained in more detail in Example 5 in the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) page."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(Upper bound to) maximum v in classical teories: 0.4999439642333985\n",
+      "(Upper bound to) maximum v in quantum teories: 0.7070993560791016\n",
+      "(Upper bound to) maximum v in nonsignaling teories: 0.9999489642333985\n"
+     ]
+    }
+   ],
+   "source": [
+    "from inflation import max_within_feasible\n",
+    "from sympy import Symbol\n",
+    "import numpy as np\n",
+    "\n",
+    "def PR(v):\n",
+    "    p = np.zeros((2, 2, 2, 2), dtype=\"object\")\n",
+    "    for a,b,x,y in np.ndindex((2,2,2,2)):\n",
+    "        p[a,b,x,y] = (1 + v*(-1)**(a+b+x*y)) / 4\n",
+    "    return p\n",
+    "\n",
+    "# The different scenarios\n",
+    "bell      = {\"l\": [\"A\", \"B\"]}\n",
+    "outcomes  = [2, 2]\n",
+    "settings  = [2, 2]\n",
+    "inflation = [2]\n",
+    "\n",
+    "# Classical\n",
+    "classicalScenario = InflationProblem(dag=bell,\n",
+    "                                     outcomes_per_party=outcomes,\n",
+    "                                     settings_per_party=settings,\n",
+    "                                     inflation_level_per_source=inflation,\n",
+    "                                     classical_sources='all')\n",
+    "\n",
+    "# Quantum and theory-independent\n",
+    "nonclassicalScenario = InflationProblem(dag=bell,\n",
+    "                                        outcomes_per_party=outcomes,\n",
+    "                                        settings_per_party=settings,\n",
+    "                                        inflation_level_per_source=inflation)\n",
+    "\n",
+    "# The numerical characterizations\n",
+    "classical    = InflationLP(classicalScenario)\n",
+    "quantum      = InflationSDP(nonclassicalScenario)\n",
+    "quantum.generate_relaxation('npa1')\n",
+    "nonsignaling = InflationLP(nonclassicalScenario)\n",
+    "\n",
+    "for problem, name in [[classical, 'classical'],\n",
+    "                      [quantum, 'quantum'],\n",
+    "                      [nonsignaling, 'nonsignaling']]:\n",
+    "    problem.set_distribution(PR(Symbol(\"v\")))\n",
+    "    v = max_within_feasible(problem, problem.known_moments, \"bisection\",\n",
+    "                            bounds=[0, 1+1e-5])     # For numerical stability \n",
+    "    print(f\"(Upper bound to) maximum v in {name} teories: {v}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
     "For more examples and features of the package, check out the [Examples](https://ecboghiu.github.io/inflation/_build/html/examples.html) section."
    ]
   },
@@ -243,9 +320,9 @@
    "source": [
     "## References\n",
     "\n",
-    "[1] E. Wolfe, A. Pozas-Kerstjens, M. Grinberg, D. Rosset, A. Acín, and Miguel Navascués, *Quantum Inflation: A General Approach to Quantum Causal Compatibility*, [Phys. Rev. X 11, 021043 (2021)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043), [arXiv:1909.10519](https://www.arxiv.org/abs/1909.10519).\n",
+    "[1] E. Wolfe, R. W. Spekkens, and T. Fritz, *The inflation technique for causal inference with latent variables*, [J. Causal Inference 7, 20170020 (2019)](https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/), [arXiv:1609.00672](https://www.arxiv.org/abs/1609.00672).\n",
     "\n",
-    "[2] E. Wolfe, R. W. Spekkens, and T. Fritz, *The Inflation Technique for Causal Inference with Latent Variables*, [J. Causal Inference 7, 20170020 (2019)](https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/), [arXiv:1609.00672](https://www.arxiv.org/abs/1609.00672).\n",
+    "[2] E. Wolfe, A. Pozas-Kerstjens, M. Grinberg, D. Rosset, A. Acín, and Miguel Navascués, *Quantum inflation: A general approach to quantum causal compatibility*, [Phys. Rev. X 11, 021043 (2021)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043), [arXiv:1909.10519](https://www.arxiv.org/abs/1909.10519).\n",
     "\n",
     "[3] C. Branciard, D. Rosset, N. Gisin, and S. Pironio, *Bilocal versus non-bilocal correlations in entanglement swapping experiments*, [Phys. Rev. A 85, 032119 (2012)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.85.032119), [arXiv:1112.4502](https://arxiv.org/abs/1112.4502).\n",
     "\n",
@@ -255,8 +332,13 @@
     "\n",
     "[6] M. Navascués, S. Pironio, and A. Acín, *A convergent hierarchy of semidefinite programs characterizing the set of quantum correlations*, [New J. Phys. 10 073013](https://iopscience.iop.org/article/10.1088/1367-2630/10/7/073013), [arXiv:0803.4290](https://arxiv.org/abs/0803.4290).\n",
     "\n",
-    "[7] T. Van Himbeeck, J. Bohr Brask, S. Pironio, R. Ramanathan, A. Belén Sainz, and E. Wolfe, *Quantum violations in the Instrumental scenario and their relations to the Bell scenario*, [Quantum 3, 186 (2019)](https://quantum-journal.org/papers/q-2019-09-16-186/), [arXiv:1804.04119](https://arxiv.org/abs/1804.04119).\n"
+    "[7] T. Van Himbeeck, J. Bohr Brask, S. Pironio, R. Ramanathan, A. Belén Sainz, and E. Wolfe, *Quantum violations in the Instrumental scenario and their relations to the Bell scenario*, [Quantum 3, 186 (2019)](https://quantum-journal.org/papers/q-2019-09-16-186/), [arXiv:1804.04119](https://arxiv.org/abs/1804.04119)."
    ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": []
   }
  ],
  "metadata": {
@@ -275,7 +357,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.9.13"
+   "version": "3.9.18"
   },
   "vscode": {
    "interpreter": {

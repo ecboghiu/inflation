@@ -1,12 +1,13 @@
 from setuptools import setup, find_packages
 
-with open("VERSION.txt", "r") as f:
-    __version__ = f.read().strip()
+with open('inflation/_version.py') as f:
+    exec(f.read())
 
 setup(
     name="inflation",
     version=__version__,
-    install_requires=["numpy", "sympy", "scipy", "numba", "mosek", "tqdm"],
+    install_requires=["mosek>=10", "networkx", "numba", "numpy",
+                      "scipy", "sympy", "tqdm"],
     extras_require={
         "docs": ["nbsphinx", "m2r2", "sphinx_rtd_theme", "sphinx_copybutton"]
     },
@@ -15,7 +16,7 @@ setup(
     description="Implementations of the Inflation Technique for Causal Inference",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     packages=find_packages(exclude=["test", "doc*", "example*"]),
     license="GNU GPL v. 3.0",
     url="https://github.com/ecboghiu/inflation",

@@ -1,5 +1,6 @@
 """
 This file contains the functions to send the problems to SDP solvers.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 from __future__ import annotations
@@ -19,6 +20,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                          inequalities: List[Dict] = None,
                          equalities: List[Dict] = None,
                          solve_dual: bool = True,
+                         default_non_negative: bool = False,
                          feas_as_optim: bool = False,
                          verbose: int = 0,
                          solverparameters: Dict = {},
@@ -115,6 +117,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     solve_dual : bool, optional
         Whether to solve the dual (True) or primal (False) formulation. By
         default ``True``.
+    default_non_negative: bool, optional
+        Whether to set default primal variables as non-negative (True) or not
+        (False). By default, ``False``.
     feas_as_optim : bool, optional
         Whether to treat feasibility problems, where the objective is,
         constant, as an optimisation problem. By default ``False``.
@@ -186,11 +191,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         Fi[lam] = -1 * eye(mat_dim).tolil()
         var_objective = {lam: 1}
 
-    # Calculate c0, the constant part of the var_objective.
-    c0 = 0. + float(sum([var_objective[x] * known_vars[x]
-                         for x in set(var_objective).intersection(known_vars)])
-                    )
-
     # Calculate F0, the constant part of the matrix variable.
     if mask_matrices:
         F0 = lil_matrix((mat_dim, mat_dim), dtype=float) + \
@@ -226,6 +226,11 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             var_equalities.append({x: 1, x2: -c})
             variables.add(x2)
 
+    # Calculate c0, the constant part of the var_objective.
+    c0 = 0. + float(sum([var_objective[x] * known_vars[x]
+                         for x in set(var_objective).intersection(known_vars)])
+                    )
+
     # 'var2index' should be computed after there is no more further modification
     # to 'variables' or any of the constraint or objective dictionaries
     var2index = {x: i for i, x in enumerate(variables)}
@@ -249,7 +254,6 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             C[i, var2index[x]] = equality[x]
         d[i, 0] = float(sum([equality[x] * known_vars[x]
                              for x in eq_vars.intersection(known_vars)]))
-
     collect()
     if verbose > 1:
         print("Pre-processing took",
@@ -272,8 +276,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 # of an expression (A^T I)_i, so we do it manually row by row.
                 A = A.tocsr()
                 AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
-                for i in range(len(variables)):
-                    slice_ = A[:, i]
+                for var in variables:
+                    slice_ = A[:, var2index[var]]
                     sparse_slice = Matrix.sparse(*slice_.shape,
                                                  *slice_.nonzero(),
                                                  slice_[slice_.nonzero()].A[0])
@@ -282,8 +286,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 E = M.variable("E", len(var_equalities), Domain.unbounded())
                 C = C.tocsr()
                 CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
-                for i in range(len(variables)):
-                    slice_ = C[:, i]
+                for var in variables:
+                    slice_ = C[:, var2index[var]]
                     sparse_slice = Matrix.sparse(*slice_.shape,
                                                  *slice_.nonzero(),
                                                  slice_[slice_.nonzero()].A[0])
@@ -318,9 +322,14 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             # Add constraints
             # ci + Tr Z Fi + \sum_j I_j A_ji + \sum_j E_j C_ji == 0
             ci_constraints = []
+            if default_non_negative:
+                domain = Domain.lessThan(0)
+            else:
+                domain = Domain.equalsTo(0)
             for i, x in enumerate(variables):
                 lhs = 0.0
-                if var_objective and x in var_objective:
+                if var_objective and x in set(var_objective
+                                              ).difference(known_vars):
                     ci  = float(var_objective[x])
                     lhs += ci
                 try:
@@ -340,14 +349,16 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 if var_equalities:
                     lhs = Expr.add(lhs, CtI[i])
                     CtI[i] = None
-                ci_constraints.append(M.constraint(f"c{i}",
-                                                   lhs,
-                                                   Domain.equalsTo(0)))
+                ci_constraints.append(M.constraint(f"c{i}", lhs, domain))
         else:
             # Set up the problem in primal formulation
 
             # Define variables
-            x_mosek = M.variable("x", len(variables), Domain.unbounded())
+            if default_non_negative:
+                domain = Domain.greaterThan(0)
+            else:
+                domain = Domain.unbounded()
+            x_mosek = M.variable("x", len(variables), domain)
 
             if var_inequalities:
                 b_mosek = Matrix.sparse(*b.shape,
@@ -362,6 +373,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                                         b_mosek),
                                                Domain.greaterThan(0))
                 del b_mosek, A_mosek
+
             if var_equalities:
                 d_mosek = Matrix.sparse(*d.shape,
                                         *d.nonzero(),

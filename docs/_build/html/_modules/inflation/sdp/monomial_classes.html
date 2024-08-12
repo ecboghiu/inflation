@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>inflation.sdp.monomial_classes &mdash; Inflation 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../contents.html" class="icon icon-home">
+            Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">inflation.sdp.monomial_classes</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for inflation.sdp.monomial_classes</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains classes for defining the monomials inside a moment matrix.</span>
+
+<span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">total_ordering</span><span class="p">,</span> <span class="n">cached_property</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">..lp.monomial_classes</span> <span class="kn">import</span> <span class="n">InternalAtomicMonomial</span> <span class="k">as</span> <span class="n">InternalAtomicMonomialLP</span>
+<span class="kn">from</span> <span class="nn">..lp.monomial_classes</span> <span class="kn">import</span> <span class="n">CompoundMoment</span> <span class="k">as</span> <span class="n">CompoundMomentLP</span>
+
+
+<div class="viewcode-block" id="InternalAtomicMonomialSDP"><a class="viewcode-back" href="../../../monomials.html#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP">[docs]</a><span class="nd">@total_ordering</span>
+<span class="k">class</span> <span class="nc">InternalAtomicMonomialSDP</span><span class="p">(</span><span class="n">InternalAtomicMonomialLP</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_sdp_instance</span><span class="p">,</span> <span class="n">lexmon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models a moment</span>
+<span class="sd">        :math:`\langle Op_1 Op_2\dots Op_n\rangle` on the inflated problem,</span>
+<span class="sd">        which cannot be decomposed into products of other moments. It is used</span>
+<span class="sd">        as a building block for the ``CompoundMonomial`` class. It is</span>
+<span class="sd">        initialized with a 2D array representing a moment and an an instance of</span>
+<span class="sd">        ``InflationSDP``, used for methods that depend on the scenario.</span>
+
+<span class="sd">        2D Array encoding</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        A moment :math:`M=\langle Op_1 Op_2\dots Op_n\rangle` can be specified</span>
+<span class="sd">        by a 2D array with `n` rows, one for each operator :math:`Op_k`.</span>
+<span class="sd">        Row `k` contains a list of integers which encode information about the</span>
+<span class="sd">        operator :math:`Opk`.</span>
+<span class="sd">         * The first integer is an index in ``{1,...,nr_parties}``, indicating</span>
+<span class="sd">           the party, where `nr_parties` is the number of parties in the DAG.</span>
+<span class="sd">         * The second-to-last and last integers encode the setting and the</span>
+<span class="sd">           outcome of the operator, respectively.</span>
+<span class="sd">         * The remaining positions ``i`` indicate on which copy of the source</span>
+<span class="sd">           ``i-1`` (-1 because the first index encodes the party) the operator</span>
+<span class="sd">           is acting, with value ``0`` representing no support on the</span>
+<span class="sd">           ``i-1``-th source.</span>
+
+<span class="sd">        For example, the moment</span>
+<span class="sd">        :math:`\langle A^{0,2,1}_{x=2,a=3} C^{2,0,1}_{z=4,c=5}\rangle`, where</span>
+<span class="sd">        the complete list of parties is ``[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;]`` corresponds to the</span>
+<span class="sd">        following array:</span>
+
+<span class="sd">        &gt;&gt;&gt; m = np.array([[1, 0, 2, 1, 2, 3],</span>
+<span class="sd">                          [3, 2, 0, 1, 4, 5]])</span>
+
+<span class="sd">        Given that this moment is knowable and can be associated with a</span>
+<span class="sd">        probability, it is given the name ``&quot;pAC(35|24)&quot;``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        inflation_sdp_instance : InflationSDP</span>
+<span class="sd">            An instance of the ``InflationSDP`` class. It is used to access</span>
+<span class="sd">            methods specific to the inflation problem. E.g., when instantiating</span>
+<span class="sd">            an internal atomic moment, the ``InflationSDP`` instance is used to</span>
+<span class="sd">            check if it already contains such moment.</span>
+<span class="sd">        lexmon : numpy.ndarray</span>
+<span class="sd">            A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 1D</span>
+<span class="sd">            array lexmon.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inflation_sdp_instance</span><span class="p">,</span> <span class="n">lexmon</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a copy of the Monomial&quot;&quot;&quot;</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">attr</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">as_legacy_lexmon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="o">-</span><span class="mi">1</span>  <span class="c1">#Adjusted for SDP</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">conjugate_lexmon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_all_commuting</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_conjugate_lexmon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_hermitian</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the atomic monomial is equivalent to its conjugate</span>
+<span class="sd">         under inflation symmetries and commutation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">conjugate_lexmon</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dagger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the adjoint of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_hermitian</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dagger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__copy__</span><span class="p">()</span>
+            <span class="n">dagger</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conjugate_lexmon</span>
+            <span class="n">dagger</span><span class="o">.</span><span class="n">signature</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conjugate_lexmon</span><span class="p">))</span>
+            <span class="n">dagger</span><span class="o">.</span><span class="n">as_2d_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conjugate_lexmon</span><span class="p">]</span>
+            <span class="n">dagger</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;&lt;&quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_lexrepr_to_names</span><span class="p">[</span><span class="n">dagger</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;&gt;&quot;</span>
+            <span class="k">return</span> <span class="n">dagger</span></div>
+        
+<div class="viewcode-block" id="CompoundMomentSDP"><a class="viewcode-back" href="../../../monomials.html#inflation.sdp.monomial_classes.CompoundMomentSDP">[docs]</a><span class="k">class</span> <span class="nc">CompoundMomentSDP</span><span class="p">(</span><span class="n">CompoundMomentLP</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomials</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">InternalAtomicMonomialSDP</span><span class="p">]):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models moments :math:`\langle Op_1 Op_2\dots Op_n\rangle</span>
+<span class="sd">        =\langle Op_i\dots\rangle\langle Op_{i&#39;}\dots\rangle` on the inflated</span>
+<span class="sd">        problem that are products of other moments. It is built from a tuple of</span>
+<span class="sd">        instances of the ``InternalAtomicMonomial`` class.</span>
+
+<span class="sd">        At initialisation, a moment is classified into knowable, semi-knowable</span>
+<span class="sd">        or unknowable based on the knowability of each of the atomic moments</span>
+<span class="sd">        (which in turn is determined through methods of the</span>
+<span class="sd">        ``InternalAtomicMonomial`` class). This class also computes names for</span>
+<span class="sd">        the moment, provides the ability to compare (in)equivalence, and to</span>
+<span class="sd">        assign numerical values to a moment given a probability distribution.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        monomials : tuple of InternalAtomicMonomialSDP</span>
+<span class="sd">            The atomic moments that make up the compound moment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">default_factors</span>    <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">monomials</span><span class="p">))</span>
+        <span class="n">conjugate_factors</span>  <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">dagger</span>
+                                          <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">monomials</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">default_factors</span><span class="p">,</span> <span class="n">conjugate_factors</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">internal_type</span> <span class="o">=</span> <span class="n">InternalAtomicMonomialSDP</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_all_commuting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If all factors of the compount moment contain operators that all</span>
+<span class="sd">        commute.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_all_commuting</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_physical</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If all factors of the compount moment contain monomials that are </span>
+<span class="sd">        physical, i.e., products of positive operators that are positive.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_physical</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">is_hermitian</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If all factors of the compount moment contain monomials that are </span>
+<span class="sd">        hermitian.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_hermitian</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
