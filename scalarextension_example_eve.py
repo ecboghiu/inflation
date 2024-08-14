@@ -30,7 +30,7 @@ evans_eavesdropped = InflationProblem(dag={"rhoABE": ["A", "B", "E"],
 
 
 sdp = InflationSDP(evans_eavesdropped, verbose=1)
-sdp.generate_relaxation("npa5")
+sdp.generate_relaxation("npa4")
 ###
 sdp.relax_nonlinear_constraints()
 
