@@ -43,3 +43,5 @@ sdp.relax_nonlinear_constraints(use_higherorder_inflation_terms=False)
 ###
 sdp.set_distribution(P_2PR(1), use_lpi_constraints=True)
 bisect(min_eigenvalue, 0, 1, xtol=1e-4)
+
+print(sdp.moments)

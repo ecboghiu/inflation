@@ -565,7 +565,7 @@ class InflationSDP:
             
             # Write the extra monomials to add to the generating set
             scalar_times_operator = []
-            for m in _pre_scalar_times_operator:
+            for m in tqdm(_pre_scalar_times_operator, desc="Scalar extension: discovering new columns"):
                 scalar = m.factors[0]
                 try:
                     operator = self._lexorder[self.compmonomial_to_ndarray[
@@ -603,7 +603,7 @@ class InflationSDP:
             # NOTE: Here we are assuming that the moment matrix is real.
             # so we only compute the new moments in the upper triangle.
             columns_old_dot_new = []
-            for s, op in scalar_times_operator:
+            for s, op in tqdm(scalar_times_operator, desc="Scalar extension: new columns times original generating set"):
                 col_idx_of_op = generating_mon_to_col_idx[op.tobytes()]
                 col_of_op = new_momentmatrix[:, col_idx_of_op]
                 mons_in_colum = [idx_to_monomial[i] for i in col_of_op]
@@ -624,7 +624,7 @@ class InflationSDP:
             # Build the inner products between the new monomials
             nr_new_mons = len(scalar_times_operator)
             corner_matrix = np.zeros((nr_new_mons, nr_new_mons), dtype=int)
-            for i in range(nr_new_mons):
+            for i in tqdm(range(nr_new_mons), "Scalar extension: new columns times new columns"):
                 for j in range(i, nr_new_mons):
                     s1, op1 = scalar_times_operator[i]
                     s2, op2 = scalar_times_operator[j]
