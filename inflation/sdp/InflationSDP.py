@@ -19,18 +19,13 @@ from scipy.sparse import lil_matrix
 from tqdm import tqdm
 
 from inflation import InflationProblem
-from .fast_npa import (nb_all_commuting_q,
-                       apply_source_perm,
-                       commutation_matrix,
-                       nb_mon_to_lexrepr,
-                       reverse_mon,
-                       to_canonical,
+from .fast_npa import (commutation_matrix,
                        nb_lexorder_idx,
-                       nb_overlap_matrix)
+                       nb_overlap_matrix,
+                       reverse_mon,
+                       to_canonical_1d_internal,
+                       nb_all_commuting_q)
 from .fast_npa import nb_is_knowable as is_knowable
-from .fast_npa import (reverse_mon,
-                       to_canonical_1d_internal
-                       )
 from .monomial_classes import InternalAtomicMonomialSDP, CompoundMomentSDP
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix_1d_internal,
@@ -408,7 +403,7 @@ class InflationSDP:
         self._relaxation_has_been_generated = True
 
     def relax_nonlinear_constraints(self,
-                                use_higherorder_inflation_terms: bool = True
+                                use_higherorder_inflation_terms: bool = False
                                     ) -> None:
         """Regenerates the moment matrix to include extra columns that
         relax nonlinear constraints in the problem. This uses variations of 
@@ -436,21 +431,28 @@ class InflationSDP:
         # Map compound monomials to their 2dndarray
         self.compmonomial_to_ndarray = \
             {m: self.symmetrized_corresp[idx] 
-                for idx, m in self.compmonomial_from_idx.items()}
+                for idx, m in self.compmoment_from_idx.items()}
         
         products_of_unknown_moments = [m for m in self.monomials
                                         if (m.n_factors > 1 and
                                             m not in self.known_moments)]
         
+        if len(products_of_unknown_moments) == 0:
+            if self.verbose > 0:
+                warn("No nonlinear equality constraints of the form " + 
+                     "m=m1*...*m2 found to relax, where m, m1, m2 are " +
+                     "monomials.")
+            return
+        
         # If some of these products are the expectation value of one of
         # the monomials from the generating set, remove them, as this 
         # will simpy lead to duplicated columns.
         generating_monomials_compmons = \
-                    [self.Monomial(m) for m in self.generating_monomials]
+                    [self.Moment_1d(m) for m in self.generating_monomials_1d]
         products_of_unknown_moments = \
                             [m for m in products_of_unknown_moments 
                             if m not in generating_monomials_compmons]
-        
+
         if self.use_lpi_constraints:
             # If we use LPI constraints, then we are exactly implementing 
             # part of the constraints. We filter and remove all atomic moments
@@ -470,7 +472,7 @@ class InflationSDP:
             products_of_unknown_moments = [m
                                            for m in products_of_unknown_moments 
                                            if m.n_factors > 1]
-            
+        
         # Assume we have  <x>*<y>*<z> as a nonlinear constraint. With scalar
         # extension we can add the operators <x>*y*z where y*z is an 
         # operator and not an expected value. This relaxes the product
@@ -486,7 +488,7 @@ class InflationSDP:
                                       self._monomial_from_atoms(m.factors[i:]) 
                                       for m in products_of_unknown_moments
                                       for i in range(m.n_factors)]))
-        
+
         if use_higherorder_inflation_terms:
             extra_monomials_generating_set = []
             _highest_inflation_index = max(self.inflation_levels)
@@ -542,22 +544,29 @@ class InflationSDP:
                 nb_overlap_matrix(np.asarray(inflation_indices, dtype=np.uint8))
             
             print(extra_monomials_generating_set)
+            # Convert extra_monomials_generating_set from 2D array to 1D array 
+            # as list of operator indexes
+            extra_monomials_generating_set = [self.mon_to_lexrepr(mon)
+                               for mon in extra_monomials_generating_set]
             # Generate the SDP again with the extra generating monomials
-            self.generate_relaxation(self.generating_monomials + 
+            self.generate_relaxation(self.generating_monomials_1d + 
                                         extra_monomials_generating_set)
         else:
+            # Older code which works with 2D encoding of monomials
+            generating_monomials = [self._lexorder[m] 
+                                    for m in self.generating_monomials_1d]
             new_momentmatrix = self.momentmatrix.copy()
             generating_mon_to_col_idx = {m.tobytes(): col_idx 
-                 for col_idx, m in enumerate(self.generating_monomials)}
-            idx_to_monomial = {m.idx: m for m in self.monomials}
+                 for col_idx, m in enumerate(generating_monomials)}
+            idx_to_monomial = {m.idx: m for m in self.moments}
             
             # Write the extra monomials to add to the generating set
             scalar_times_operator = []
             for m in _pre_scalar_times_operator:
                 scalar = m.factors[0]
                 try:
-                    operator = self.compmonomial_to_ndarray[
-                                self._monomial_from_atoms(m.factors[1:])] 
+                    operator = self._lexorder[self.compmonomial_to_ndarray[
+                                self._monomial_from_atoms(m.factors[1:])]]
                     col_idx_of_operator = \
                         generating_mon_to_col_idx[operator.tobytes()]
                     scalar_times_operator += [(scalar, operator)]
@@ -569,7 +578,27 @@ class InflationSDP:
                               "extension.")
             
             # Build the new columns corresponding to the product of the 
-            # new monomials with old monomials, but not with themselves
+            # new monomials with old monomials, but not with themselves.
+            # Given a generating monomial from scalar extension, <s>*op,
+            # we first find the column index of op in the already built 
+            # moment matrix, then we take a slice of this index and pick
+            # all the moments. Then we take the CompoundMonomial form of
+            # these moments and build new instances with the scalar s.
+            # For example, if we have as generating set [Id, A, B],
+            # the moment matrix is:
+            # [[1, <A>, <B>], 
+            # [<A>, <A>, <AB>], 
+            # [<B>, <AB>, <B>]].
+            # Assume we want to expand the generating set with <s>*A.
+            # tr (S_i^\dagger * (<s>*A)) = <s>*tr S_i^\dagger * A.
+            # which is just <s> times the column A in the original moment 
+            # matrix. The remaining column is (<s>*A)^\dagger * (<s>*A):
+             # [[1, <A>, <B>, <s>*A], 
+            # [<A>, <A>, <AB>, <s>*A], 
+            # [<B>, <AB>, <B>, <s>*<AB>],
+            # [<s>*A, <s>*A, <s>*<AB>, <s>^\dagger <s> <A>]].
+            # NOTE: Here we are assuming that the moment matrix is real.
+            # so we only compute the new moments in the upper triangle.
             columns_old_dot_new = []
             for s, op in scalar_times_operator:
                 col_idx_of_op = generating_mon_to_col_idx[op.tobytes()]
@@ -584,6 +613,10 @@ class InflationSDP:
                         self.monomials += [new_mon]
                     mons_in_new_column += [new_mon.idx]
                 columns_old_dot_new += [mons_in_new_column]
+            
+            # redundancy in the package, we have both self.moments and
+            # self.monomials
+            self.moments = self.monomials  
                 
             # Build the inner products between the new monomials
             nr_new_mons = len(scalar_times_operator)
@@ -609,9 +642,13 @@ class InflationSDP:
                     corner_matrix[i, j] = new_mon.idx
                     corner_matrix[j, i] = new_mon.idx
                     
+            # redundancy in the package, we have both self.moments and
+            # self.monomials
+            self.moments = self.monomials  
+                    
             # Now add the new columns to the moment matrix
             # [[Old       , New_cols]]
-            #  [New_cols.T, cornet_matrix]]]           
+            #  [New_cols.T, corner_matrix]]]           
             columns_old_dot_new = np.array(columns_old_dot_new).T
             new_momentmatrix = np.concatenate((new_momentmatrix,
                                                columns_old_dot_new), axis=1)
@@ -626,8 +663,8 @@ class InflationSDP:
          
         # In order to update the values or semiknowns that can involve new
         # monomials
-        self.set_values(self.known_moments, 
-                        use_lpi_constraints=self.use_lpi_constraints)
+        # self.set_values(self.known_moments, 
+        #                 use_lpi_constraints=self.use_lpi_constraints)
 
     def set_extra_equalities(self,
                              extra_equalities: Union[list, None]) -> None:
