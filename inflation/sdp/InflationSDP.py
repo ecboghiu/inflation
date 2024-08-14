@@ -431,7 +431,7 @@ class InflationSDP:
         # Map compound monomials to their 2dndarray
         self.compmonomial_to_ndarray = \
             {m: self.symmetrized_corresp[idx] 
-                for idx, m in self.compmoment_from_idx.items()}
+                for idx, m in self.compmoment_from_idx.items() if idx != 0}
         
         products_of_unknown_moments = [m for m in self.monomials
                                         if (m.n_factors > 1 and
@@ -452,6 +452,9 @@ class InflationSDP:
         products_of_unknown_moments = \
                             [m for m in products_of_unknown_moments 
                             if m not in generating_monomials_compmons]
+
+        products_of_unknown_moments = [m for m in products_of_unknown_moments 
+                                       if m.knowability_status != 'Semi']
 
         if self.use_lpi_constraints:
             # If we use LPI constraints, then we are exactly implementing 
