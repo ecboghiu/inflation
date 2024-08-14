@@ -30,7 +30,7 @@ evans_eavesdropped = InflationProblem(dag={"rhoABE": ["A", "B", "E"],
 
 
 sdp = InflationSDP(evans_eavesdropped, verbose=1)
-sdp.generate_relaxation("npa4")
+sdp.generate_relaxation("npa5")
 ###
 sdp.relax_nonlinear_constraints()
 
@@ -49,7 +49,7 @@ for a, c in np.ndindex(2, 2):
 values={ m.name : m.compute_marginal(P) for m in sdp.knowable_atoms if "E" not in m.name}
 
 sdp.update_values(values, use_lpi_constraints=True)
-sdp.set_objective(A0 - E0)
+sdp.set_objective(A0*E0 + (1-A0)*(1-E0))
 
-sdp.solve()
-
+sdp.solve(verbose=1)
+print(sdp.objective_value)
