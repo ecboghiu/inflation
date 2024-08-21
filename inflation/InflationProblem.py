@@ -405,8 +405,8 @@ class InflationProblem:
         elif self._nonclassical_sources.all():
             source_info = "All sources are quantum."
         else:
-            classical_sources = self._actual_sources[self._classical_sources]
-            quantum_sources   = self._actual_sources[self._nonclassical_sources]
+            classical_sources = self._actual_sources[self._classical_sources.astype(bool)]
+            quantum_sources   = self._actual_sources[self._nonclassical_sources.astype(bool)]
             if len(classical_sources) > 1:
                 extra_1 = "s"
                 extra_2 = "are"
