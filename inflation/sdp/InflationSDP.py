@@ -48,7 +48,7 @@ class InflationSDP:
                  supports_problem: bool = False,
                  include_all_outcomes: bool = False,
                  commuting: bool = False,
-                 verbose: int = 0) -> None:
+                 verbose: int = None) -> None:
         """
         Class for generating and solving an SDP relaxation for quantum inflation.
 
