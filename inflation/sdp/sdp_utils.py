@@ -166,7 +166,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     var_inequalities = [] if inequalities is None else deepcopy(inequalities)
     var_equalities   = [] if equalities   is None else deepcopy(equalities)
 
-    Fi = {k: v.asformat('lil', copy=False).astype(float, copy=False)
+    Fi = {k: v.asformat('dok', copy=False).astype(float, copy=False)
           for k, v in mask_matrices.items()}
     mat_dim = next(iter(Fi.values())).shape[0] if Fi else 0
 
@@ -301,19 +301,19 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if mask_matrices:
                 F0_mosek = Matrix.sparse(*F0.shape,
                                          *F0.nonzero(),
-                                         F0[F0.nonzero()].A[0])
+                                         np.fromiter(F0.asformat('dok').values(), F0.dtype))
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(Z, F0_mosek))
                 del F0_mosek
             if var_inequalities:
                 b_mosek = Matrix.sparse(*b.shape,
                                         *b.nonzero(),
-                                        b[b.nonzero()].A[0])
+                                        np.fromiter(b.values(), b.dtype))
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(I, b_mosek))
                 del b_mosek
             if var_equalities:
                 d_mosek = Matrix.sparse(*d.shape,
                                         *d.nonzero(),
-                                        d[d.nonzero()].A[0])
+                                        np.fromiter(d.values(), d.dtype))
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(E, d_mosek))
                 del d_mosek
 
@@ -339,8 +339,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                             Matrix.sparse(
                                                 *F.shape,
                                                 *F.nonzero(),
-                                                F[F.nonzero()].A[
-                                                    0])))
+                                                np.fromiter(F.values(), F.dtype))))
                 except KeyError:
                     pass
                 if var_inequalities:
@@ -505,7 +504,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if mask_matrices:
                 for x in set(Fi).intersection(known_vars):
                     support = Fi[x].nonzero()
-                    certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
+                    certificate[x] = np.dot(ymat[support], Fi[x][support].toarray().ravel())
 
             # + I · b
             if var_inequalities:
