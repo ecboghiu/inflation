@@ -130,7 +130,7 @@ class InflationSDP:
 
         self._default_lexorder = np.concatenate((self.zero_operator, 
                                                  inflationproblem._lexorder)
-                                                ).astype(self.np_dtype)
+                                                ).astype('int8')
         self._nr_operators = inflationproblem._nr_operators + 1
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._lexorder = self._default_lexorder.copy()
