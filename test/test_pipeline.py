@@ -287,7 +287,6 @@ class TestResetLP(unittest.TestCase):
 class TestSDPOutput(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
     def GHZ(self, v):
