@@ -328,7 +328,7 @@ class InflationSDP:
         collect()
 
         self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one = \
-            np.in1d([0, 1], self.momentmatrix.ravel())
+            np.isin([0, 1], self.momentmatrix.ravel())
 
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
