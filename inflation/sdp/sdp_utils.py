@@ -200,9 +200,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
     # Calculate F0, the constant part of the matrix variable.
     F0 = lil_matrix((mat_dim, mat_dim), dtype=float)
-    vars_with_known_mask_matrices = set(Fi).intersection(known_vars)
-    if vars_with_known_mask_matrices:
-        F0 += sum(known_vars[x] * Fi[x] for x in vars_with_known_mask_matrices)
+    F0 += sum(known_vars[x] * Fi[x] for x in set(Fi).intersection(known_vars))
 
     if process_constraints:
         # For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j
