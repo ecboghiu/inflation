@@ -15,7 +15,7 @@ from warnings import warn
 
 import numpy as np
 import sympy as sp
-from scipy.sparse import lil_matrix
+from scipy.sparse import coo_array
 from tqdm import tqdm
 
 from inflation import InflationProblem
@@ -1437,7 +1437,7 @@ class InflationSDP:
         if self._relaxation_has_been_generated:
             if self.n_columns > 0:
                 self.maskmatrices = {
-                    mon: lil_matrix(self.momentmatrix == mon.idx)
+                    mon: coo_array(self.momentmatrix == mon.idx)
                     for mon in tqdm(self.moments,
                                     disable=not self.verbose,
                                     desc="Assigning mask matrices  ")
@@ -2150,7 +2150,7 @@ class InflationSDP:
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
             solverargs["inequalities"].append(ub)
-        solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
+        solverargs["mask_matrices"][self.constant_term_name] = coo_array(
             (self.n_columns, self.n_columns))
         return solverargs
 
