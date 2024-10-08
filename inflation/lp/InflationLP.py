@@ -596,7 +596,8 @@ class InflationLP(object):
         # Still allow for 'feas_as_optim' as an argument
         if 'feas_as_optim' in solver_arguments:
             if solver_arguments["feas_as_optim"]:
-                relax_known_vars = relax_inequalities = True
+                relax_known_vars = False
+                relax_inequalities = True
                 del solver_arguments["feas_as_optim"]
             else:
                 relax_known_vars = relax_inequalities = False
