@@ -1321,8 +1321,8 @@ class InflationLP(object):
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
-            if mon in _compmonomial_to_idx:
-                print(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])
+            # Commented out line below used for internal debugging only.
+            # assert mon not in _compmonomial_to_idx, f"Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index."
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
