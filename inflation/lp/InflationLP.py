@@ -1474,46 +1474,45 @@ class InflationLP(object):
          notation as needed."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
-        if np.any(self._boolvec_for_CG_ineqs):
-            alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
-                                          for v, r in zip(
-                    np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
-                    self._CG_adjusting_ortho_groups_as_boolarrays)}
-            alternatives_as_signs = {
-                i: np.count_nonzero(bool_array, axis=1).astype(bool)
-                for i, bool_array in alternatives_as_boolarrays.items()}
-            for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                                 disable=not self.verbose,
-                                 desc="Discovering inequalities   "):
-                critical_boolvec_intersection = np.bitwise_and(bool_vec,
-                                                               self._boolvec_for_CG_ineqs)
-                if critical_boolvec_intersection.any():
-                    absent_c_boolvec = bool_vec.copy()
-                    absent_c_boolvec[critical_boolvec_intersection] = False
-                    critical_values_in_boovec = np.flatnonzero(
-                        critical_boolvec_intersection)
-                    signs = reduce(nb_outer_bitwise_xor,
-                                   (alternatives_as_signs[i] for i in
-                                    critical_values_in_boovec.flat))
-                    adjustments = reduce(nb_outer_bitwise_or,
-                                         (alternatives_as_boolarrays[i] for i in
-                                          critical_values_in_boovec.flat))
-                    terms_as_boolvecs = np.bitwise_or(
-                        absent_c_boolvec[np.newaxis],
-                        adjustments)
-                    terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()]
-                                       for term_boolvec in terms_as_boolvecs]
-                    terms_as_idxs = self.inverse[terms_as_rawidx]
-                    true_signs = np.power(-1, signs)
+        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+                                      for v, r in zip(
+                np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
+                self._CG_adjusting_ortho_groups_as_boolarrays)}
+        alternatives_as_signs = {
+            i: np.count_nonzero(bool_array, axis=1).astype(bool)
+            for i, bool_array in alternatives_as_boolarrays.items()}
+        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+                             disable=not self.verbose,
+                             desc="Discovering inequalities   "):
+            critical_boolvec_intersection = np.bitwise_and(bool_vec,
+                                                           self._boolvec_for_CG_ineqs)
+            if critical_boolvec_intersection.any():
+                absent_c_boolvec = bool_vec.copy()
+                absent_c_boolvec[critical_boolvec_intersection] = False
+                critical_values_in_boovec = np.flatnonzero(
+                    critical_boolvec_intersection)
+                signs = reduce(nb_outer_bitwise_xor,
+                               (alternatives_as_signs[i] for i in
+                                critical_values_in_boovec.flat))
+                adjustments = reduce(nb_outer_bitwise_or,
+                                     (alternatives_as_boolarrays[i] for i in
+                                      critical_values_in_boovec.flat))
+                terms_as_boolvecs = np.bitwise_or(
+                    absent_c_boolvec[np.newaxis],
+                    adjustments)
+                terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()]
+                                   for term_boolvec in terms_as_boolvecs]
+                terms_as_idxs = self.inverse[terms_as_rawidx]
+                true_signs = np.power(-1, signs)
 
-                    ineq_row.extend([nof_inequalities] * len(signs))
-                    ineq_col.extend(terms_as_idxs.flat)
-                    ineq_data.extend(true_signs.flat)
-                else:
-                    ineq_row.append(nof_inequalities)
-                    ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
-                    ineq_data.append(1)
-                nof_inequalities += 1
+                ineq_row.extend([nof_inequalities] * len(signs))
+                ineq_col.extend(terms_as_idxs.flat)
+                ineq_data.extend(true_signs.flat)
+            else:
+                ineq_row.append(nof_inequalities)
+                ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
+                ineq_data.append(1)
+            nof_inequalities += 1
         return coo_matrix((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
