@@ -154,9 +154,17 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     def scipy_to_mosek(mat: coo_array) -> Matrix:
         internal_mat = mat.tocoo(copy=False)
         return Matrix.sparse(*internal_mat.shape,
-                             internal_mat.row,
-                             internal_mat.col,
+                             np.asarray(internal_mat.row, dtype=np.int32),
+                             np.asarray(internal_mat.col, dtype=np.int32),
                              internal_mat.data)
+    def coo_getcol(mat: coo_array, i: int) -> coo_array:
+        condition = (mat.col == i)
+        new_col = np.zeros(condition.sum(), dtype=np.int32)
+        new_row = np.asarray(mat.row, dtype=np.int32)[condition]
+        new_data = np.asarray(mat.data, dtype=float)[condition]
+        this_col = coo_array((new_data, (new_row, new_col)), shape=(mat.shape[0], 1))
+        return this_col
+
 
 
     if verbose > 1:
@@ -249,8 +257,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         A_row = []
         A_col = []
         A_data = []
-        b_row = np.arange(nof_constraints, dtype=int)
-        b_col = np.zeros(nof_constraints, dtype=int)
+        b_row = np.arange(nof_constraints, dtype=np.int32)
+        b_col = np.zeros(nof_constraints, dtype=np.int32)
         b_data = []
         for i, constraint in enumerate(constraints):
             all_vars_temp = set(constraint)
@@ -266,7 +274,8 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 coeff = constraint[x]
                 b_val += (coeff * x_val)
             b_data.append(b_val)
-        A = coo_array((A_data, (A_row, A_col)),
+        A = coo_array((A_data, (np.array(A_row, dtype=np.int32),
+                                np.array(A_col, dtype=np.int32))),
                       shape=(nof_constraints, nof_variables),
                       dtype=float)
         b = coo_array((b_data, (b_row, b_col)),
@@ -297,14 +306,14 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 # of an expression (A^T I)_i, so we do it manually row by row.
                 AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
                 for var in variables:
-                    slice_ = A.getcol(var2index[var])
+                    slice_ = coo_getcol(A, var2index[var])
                     sparse_slice = scipy_to_mosek(slice_)
                     AtI.append(Expr.dot(sparse_slice, I))
             if var_equalities:
                 E = M.variable("E", len(var_equalities), Domain.unbounded())
                 CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
                 for var in variables:
-                    slice_ = C.getcol(var2index[var])
+                    slice_ = coo_getcol(C, var2index[var])
                     sparse_slice = scipy_to_mosek(slice_)
                     CtI.append(Expr.dot(sparse_slice, E))
 
@@ -560,10 +569,10 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             return {"status": status_str}
 
 
-def triu_indices(A: coo_array) -> Iterator[tuple[int, int]]:
+def triu_indices(A: coo_array) -> Iterator[tuple[np.int32, np.int32]]:
     """Helper functions to extract the upper triangular (i,j) matrix indices
      of the nonzero elements of a symmetric sparse matrix."""
     A_coo = A.tocoo(copy=False)
     mask = np.logical_and(A_coo.data != 0, A_coo.row <= A_coo.col)
-    return zip(A_coo.row[mask].astype(int).flat,
-               A_coo.col[mask].astype(int).flat)
+    return zip(A_coo.row[mask].astype(np.int32).flat,
+               A_coo.col[mask].astype(np.int32).flat)
