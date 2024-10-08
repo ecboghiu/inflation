@@ -1392,10 +1392,7 @@ class InflationLP(object):
                                  reversed(choices_to_combine_CG))
         raw_boolvecs_global = reduce(nb_outer_bitwise_or,
                                      reversed(choices_to_combine_global))
-        return (raw_boolvecs_CG[np.argsort(raw_boolvecs_CG.sum(axis=1))],
-                raw_boolvecs_global[np.argsort(np.matmul(raw_boolvecs_global,
-                                                         self._boolvec_for_CG_ineqs.astype(int))
-                                               )])
+        return (raw_boolvecs_CG, raw_boolvecs_global)
 
     @cached_property
     def minimal_sparse_equalities(self) -> coo_matrix:
