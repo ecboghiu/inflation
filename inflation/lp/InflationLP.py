@@ -1280,7 +1280,7 @@ class InflationLP(object):
             self.num_non_CG = len(old_reps_non_CG)
             if self.verbose > 1:
                 print(f"Orbits discovered! {self.num_CG} unique monomials.")
-            # Obtain the real generating monomomials after accounting for symmetry
+            # Obtain the real generating monomials after accounting for symmetry
         else:
             self.num_CG = self.raw_n_columns
             unique_indices_CG = np.arange(self.num_CG)
@@ -1469,8 +1469,9 @@ class InflationLP(object):
 
     @cached_property
     def minimal_sparse_inequalities(self) -> coo_matrix:
-        """Given the generating monomials, inter conversion to
-        Collins-Gisin notation."""
+        """Here we express the nonnegativity of all `global` (maximal number
+         of variables) events, converting the expressions into Collins-Gisin
+         notation as needed."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
         if np.any(self._boolvec_for_CG_ineqs):
