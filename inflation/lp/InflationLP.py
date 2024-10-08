@@ -766,8 +766,11 @@ class InflationLP(object):
                     polynomial_as_str += mon.name
                 else:
                     polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
-        return polynomial_as_str[1:] if polynomial_as_str[0
-                                            ] == "+" else polynomial_as_str
+        if not len(polynomial_as_str):  # Failsafe for empty dictionary.
+            polynomial_as_str = "0"
+        elif polynomial_as_str[0] == "+":
+            polynomial_as_str = polynomial_as_str[1:]
+        return polynomial_as_str
 
     def certificate_as_string(self,
                               clean: bool = True,
