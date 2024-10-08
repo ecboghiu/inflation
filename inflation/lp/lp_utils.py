@@ -360,7 +360,10 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                     print("Sparse matrix reformat complete...")
 
                 if relax_known_vars or relax_inequalities:
-                    # Minimize lambda
+                    # Maximize lambda
+                    # (If maximum slack is still negative, then the unrelaxed
+                    # LP would be infeasible, whereas positive slack solution
+                    # implies LP solution strictly interior in the polytope.)
                     objective_vector = np.zeros(nof_primal_variables)
                     objective_vector[-1] = -1
                 else:
