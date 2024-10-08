@@ -130,7 +130,7 @@ class InflationSDP:
 
         self._default_lexorder = np.concatenate((self.zero_operator, 
                                                  inflationproblem._lexorder)
-                                                ).astype('int8')
+                                                )
         self._nr_operators = inflationproblem._nr_operators + 1
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._lexorder = self._default_lexorder.copy()
@@ -1801,7 +1801,8 @@ class InflationSDP:
         last_outcome_boolmask = np.array(
             [self.has_children[op[0] - 1] and
               op[-1] == self.outcome_cardinalities[op[0] - 1] - 2 # TODO -2 is a hack for using fake outcomes
-                                for op in self._lexorder], dtype=bool)
+                                for op in self._lexorder[1:]], dtype=bool)
+        last_outcome_boolmask = np.hstack(([False], last_outcome_boolmask))
         
         # This will allow for easy substitution of operators with the last
         # outcome with the rest of the operators orthogonal to it
