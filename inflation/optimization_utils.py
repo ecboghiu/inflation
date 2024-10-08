@@ -98,7 +98,7 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
                                                sp.core.expr.Expr],
                          param: sp.core.symbol.Symbol,
                          **kwargs) -> Union[float,
-                                            Tuple[float, sp.core.add.Add]]:
+                                            Tuple[float, dict]]:
     """Implement the maximization of a variable within the feasible set of
     distributions using SciPy's bisection algorithm.
 
@@ -181,7 +181,7 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
                                              sp.core.expr.Expr],
                        param: sp.core.symbol.Symbol,
                        **kwargs) -> Union[float,
-                                          Tuple[float, sp.core.add.Add]]:
+                                          Tuple[float, dict]]:
     """Implement the maximization of a variable within the feasible set of
     distributions exploiting the certificates of infeasibility. For a given
     value of the parameter, a separating surface that leaves the set of
