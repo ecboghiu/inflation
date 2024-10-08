@@ -14,6 +14,7 @@ from numbers import Real
 from scipy.optimize import bisect, minimize, Bounds
 from sympy.utilities.lambdify import lambdify
 from typing import Dict, Tuple, Union
+from functools import lru_cache
 
 from inflation import InflationLP, InflationSDP
 from inflation.sdp.quantum_tools import make_numerical
@@ -154,7 +155,8 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
 
     discovered_certificates = []
 
-    def f(value):
+    @lru_cache(maxsize=2, typed=False)
+    def f(value: float) -> float:
         evaluated_values = make_numerical(symbolic_values, {param: value})
         program.set_values(evaluated_values,
                        use_lpi_constraints=use_lpi,
@@ -169,6 +171,8 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
         if len(discovered_certificate):  # Checking if certificate has any nonzero coefficients
             discovered_certificates.append((value, discovered_certificate))
         return program.objective_value+precision/2048
+    assert f(bounds[1])+precision/2048 < 0, f"Certificate of infeasibility for v=1 is {f(bounds[1])}, but must be <{precision/2048}."
+    assert f(bounds[0])+precision/2048 > 0, f"Certificate of feasibility for v=0 is {f(bounds[0])}, but must be nonnegative."
     crit_param = bisect(f, bounds[0], bounds[1], **bisect_kwargs, full_output=False)
     if return_last:
         return crit_param, discovered_certificates[-1][-1]
@@ -265,6 +269,11 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
         discovered_certificates.append((new_ub , program.certificate_as_dict()))
         if verbose:
             print(f"Current critical value: {new_ub} (seeded by {old_ub+precision})")
+    assert len(discovered_certificates)>1, """
+    Critical error - optimization failed to yield a useful certificate
+    even when given the initial (infeasible) seed.
+    """
+
     crit_param = max(new_ub, old_ub)
     if return_last:
         return crit_param, discovered_certificates[-1][-1]
