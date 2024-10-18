@@ -177,9 +177,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
         ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or
         ``mosek.presolvemode.off``. Or, control which optimizer is used by
         setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK's
-        documentation
-        <https://docs.mosek.com/latest/pythonapi/solver-parameters.html>`_ for
-        more details.
+        documentation`_ for more details.
     variables : list
         Monomials by name in same order as column indices of all other solver
         arguments
