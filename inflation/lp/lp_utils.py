@@ -9,18 +9,18 @@ import mosek
 import numpy as np
 
 from typing import List, Dict, Union
-from scipy.sparse import coo_matrix, issparse
+from scipy.sparse import coo_array, issparse
 from time import perf_counter
 from gc import collect
 from ..utils import partsextractor, expand_sparse_vec, vstack
 
 
-def drop_zero_rows(coo_mat: coo_matrix):
+def drop_zero_rows(coo_mat: coo_array):
     """Drops zero rows from a sparse matrix in place.
 
     Parameters
     ----------
-    coo_mat : coo_matrix
+    coo_mat : coo_array
         Sparse matrix to drop zero rows from.
     """
     if len(coo_mat.shape) == 1:
@@ -31,12 +31,12 @@ def drop_zero_rows(coo_mat: coo_matrix):
     return coo_mat
 
 
-def canonical_order(coo_mat: coo_matrix):
+def canonical_order(coo_mat: coo_array):
     """Puts a sparse matrix in canonical order in place.
 
     Parameters
     ----------
-    coo_mat : coo_matrix
+    coo_mat : coo_array
         Sparse matrix to put in canonical order.
     """
     if len(coo_mat.shape) == 1:
@@ -47,11 +47,11 @@ def canonical_order(coo_mat: coo_matrix):
     coo_mat.data = np.asarray(coo_mat.data)[order]
     return coo_mat
 
-def solveLP(objective: Union[coo_matrix, Dict] = None,
-            known_vars: Union[coo_matrix, Dict] = None,
+def solveLP(objective: Union[coo_array, Dict] = None,
+            known_vars: Union[coo_array, Dict] = None,
             semiknown_vars: Dict = None,
-            inequalities: Union[coo_matrix, List[Dict]] = None,
-            equalities: Union[coo_matrix, List[Dict]] = None,
+            inequalities: Union[coo_array, List[Dict]] = None,
+            equalities: Union[coo_array, List[Dict]] = None,
             variables: List = None,
             **kwargs
             ) -> Dict:
@@ -60,15 +60,15 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
 
     Parameters
     ----------
-    objective : Union[coo_matrix, Dict], optional
+    objective : Union[coo_array, Dict], optional
         Objective function
-    known_vars : Union[coo_matrix, Dict], optional
+    known_vars : Union[coo_array, Dict], optional
         Known values of the monomials
     semiknown_vars : Dict, optional
         Semiknown variables
-    inequalities : Union[coo_matrix, List[Dict]], optional
+    inequalities : Union[coo_array, List[Dict]], optional
         Inequality constraints
-    equalities : Union[coo_matrix, List[Dict]], optional
+    equalities : Union[coo_array, List[Dict]], optional
         Equality constraints
     variables : List
         Monomials by name in same order as column indices of all other solver
@@ -127,13 +127,13 @@ def solveLP(objective: Union[coo_matrix, Dict] = None,
     return solveLP_sparse(**solver_args)
 
 
-blank_coo_matrix = coo_matrix((0, 0), dtype=np.int8)
-def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
-                   known_vars: coo_matrix = blank_coo_matrix,
-                   inequalities: coo_matrix = blank_coo_matrix,
-                   equalities: coo_matrix = blank_coo_matrix,
-                   lower_bounds: coo_matrix = blank_coo_matrix,
-                   upper_bounds: coo_matrix = blank_coo_matrix,
+blank_coo_array = coo_array((0, 0), dtype=np.int8)
+def solveLP_sparse(objective: coo_array = blank_coo_array,
+                   known_vars: coo_array = blank_coo_array,
+                   inequalities: coo_array = blank_coo_array,
+                   equalities: coo_array = blank_coo_array,
+                   lower_bounds: coo_array = blank_coo_array,
+                   upper_bounds: coo_array = blank_coo_array,
                    solve_dual: bool = False,
                    default_non_negative: bool = True,
                    relax_known_vars: bool = False,
@@ -148,17 +148,17 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
     Parameters
     ----------
-    objective : coo_matrix, optional
+    objective : coo_array, optional
         Objective function with coefficients as matrix entries.
-    known_vars : coo_matrix, optional
+    known_vars : coo_array, optional
         Known values of the monomials with values as matrix entries.
-    inequalities : coo_matrix, optional
+    inequalities : coo_array, optional
         Inequality constraints in matrix form.
-    equalities : coo_matrix, optional
+    equalities : coo_array, optional
         Equality constraints in matrix form.
-    lower_bounds : coo_matrix, optional
+    lower_bounds : coo_array, optional
         Lower bounds of variables with bounds as matrix entries.
-    upper_bounds : coo_matrix, optional
+    upper_bounds : coo_array, optional
         Upper bounds of variables with bounds as matrix entries.
     solve_dual : bool, optional
         Whether to solve the dual (``True``) or primal (``False``) formulation.
@@ -263,7 +263,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                                                 nof_primal_inequalities)))
                 cons_data = np.hstack(
                     (constraints.data, np.repeat(1, nof_primal_inequalities)))
-                constraints = coo_matrix((cons_data, (cons_row, cons_col)),
+                constraints = coo_array((cons_data, (cons_row, cons_col)),
                                          shape=(nof_primal_constraints,
                                                 nof_primal_variables + 1))
 
@@ -281,7 +281,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
                     np.broadcast_to(-1, nof_known_vars)
                 ))
 
-                kv_matrix = coo_matrix((kv_data, (kv_row, kv_col)),
+                kv_matrix = coo_array((kv_data, (kv_row, kv_col)),
                                        shape=(nof_known_vars * 2,
                                               nof_primal_variables + 1))
                 canonical_order(kv_matrix)
@@ -297,7 +297,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             constraints = vstack((constraints, kv_matrix))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
             if objective.shape[-1] == 0:
-                objective = coo_matrix((1, nof_primal_variables), dtype=np.int8)
+                objective = coo_array((1, nof_primal_variables), dtype=np.int8)
 
             nof_lb = lower_bounds.nnz
             nof_ub = upper_bounds.nnz
@@ -522,7 +522,7 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
             cert_data[known_vars.col] = y_values[:nof_known_vars] # Assumes known values coded as equalities
             if relax_known_vars:
                 cert_data[known_vars.col] += y_values[nof_known_vars:(2*nof_known_vars)]
-            sparse_certificate = coo_matrix((cert_data, (cert_row, cert_col)),
+            sparse_certificate = coo_array((cert_data, (cert_row, cert_col)),
                                             shape=(1, nof_primal_variables))
 
             # Certificate as a dictionary
@@ -568,7 +568,7 @@ def streamprinter(text: str) -> None:
 
 
 def to_sparse(argument: Union[Dict, List[Dict]],
-              variables: List) -> coo_matrix:
+              variables: List) -> coo_array:
     """Convert a solver argument to a sparse matrix to pass to the solver.
     
     Parameters
@@ -581,7 +581,7 @@ def to_sparse(argument: Union[Dict, List[Dict]],
     
     Returns
     -------
-    coo_matrix
+    coo_array
         Sparse matrix representation of the solver argument.
     """
     if type(argument) == dict:
@@ -590,7 +590,7 @@ def to_sparse(argument: Union[Dict, List[Dict]],
         keys = list(argument.keys())
         col = partsextractor(var_to_idx, keys)
         row = np.zeros(len(col), dtype=int)
-        return coo_matrix((data, (row, col)), shape=(1, len(variables)))
+        return coo_array((data, (row, col)), shape=(1, len(variables)))
     else:
         # Argument is a list of constraints
         row = []
@@ -600,7 +600,7 @@ def to_sparse(argument: Union[Dict, List[Dict]],
         col = [c for vec_col in cols for c in vec_col]
         data = [to_sparse(cons, variables).data for cons in argument]
         data = [d for vec_data in data for d in vec_data]
-        return coo_matrix((data, (row, col)),
+        return coo_array((data, (row, col)),
                           shape=(len(argument), len(variables)))
 
 
@@ -646,7 +646,7 @@ def convert_dicts(semiknown_vars: Dict = None,
         col = list(sum(col, ()))
         data = [(1, -c) for x, (c, x2) in semiknown_vars.items()]
         data = list(sum(data, ()))
-        semiknown_mat = coo_matrix((data, (row, col)),
+        semiknown_mat = coo_array((data, (row, col)),
                                    shape=(nof_semiknown, nof_variables))
         if "equalities" in sparse_args:
             sparse_args["equalities"] = vstack(

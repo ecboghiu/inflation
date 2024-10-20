@@ -15,7 +15,7 @@ from warnings import warn
 
 import numpy as np
 import sympy as sp
-from scipy.sparse import coo_matrix, vstack
+from scipy.sparse import coo_array, vstack
 from tqdm import tqdm
 
 from .. import InflationProblem
@@ -1395,7 +1395,7 @@ class InflationLP(object):
         return (raw_boolvecs_CG, raw_boolvecs_global)
 
     @cached_property
-    def minimal_sparse_equalities(self) -> coo_matrix:
+    def minimal_sparse_equalities(self) -> coo_array:
         """Given the generating monomials, infer conversion to Collins-Gisin 
         notation."""
         eq_row, eq_col, eq_data = [], [], []
@@ -1441,11 +1441,11 @@ class InflationLP(object):
             if self.verbose > 0:
                 eprint("Number of nontrivial equality constraints in the LP:",
                         nof_equalities)
-        return coo_matrix((eq_data, (eq_row, eq_col)),
+        return coo_array((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
     @property
-    def sparse_extra_equalities(self) -> coo_matrix:
+    def sparse_extra_equalities(self) -> coo_array:
         """Extra equalities in sparse matrix form."""
         eq_row, eq_col, eq_data = [], [], []
         nof_equalities = len(self.extra_equalities)
@@ -1454,18 +1454,18 @@ class InflationLP(object):
             eq_row.extend(np.repeat(row_idx, nof_vars))
             eq_col.extend([self.compmonomial_to_idx[x] for x in eq])
             eq_data.extend(eq.values())
-        return coo_matrix((eq_data, (eq_row, eq_col)),
+        return coo_array((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
     @property
-    def sparse_equalities(self) -> coo_matrix:
+    def sparse_equalities(self) -> coo_array:
         """All equalities (minimal and extra) in sparse matrix 
         form."""
         return vstack((self.minimal_sparse_equalities,
                        self.sparse_extra_equalities))
 
     @cached_property
-    def minimal_sparse_inequalities(self) -> coo_matrix:
+    def minimal_sparse_inequalities(self) -> coo_array:
         """Here we express the nonnegativity of all `global` (maximal number
          of variables) events, converting the expressions into Collins-Gisin
          notation as needed."""
@@ -1510,11 +1510,11 @@ class InflationLP(object):
                 ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
                 ineq_data.append(1)
             nof_inequalities += 1
-        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+        return coo_array((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
     @property
-    def sparse_extra_inequalities(self) -> coo_matrix:
+    def sparse_extra_inequalities(self) -> coo_array:
         """Extra inequalities in sparse matrix form."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = len(self.extra_inequalities)
@@ -1523,11 +1523,11 @@ class InflationLP(object):
             ineq_row.extend(np.repeat(row_idx, nof_vars))
             ineq_col.extend([self.compmonomial_to_idx[x] for x in ineq])
             ineq_data.extend(ineq.values())
-        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+        return coo_array((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
     @property
-    def sparse_inequalities(self) -> coo_matrix:
+    def sparse_inequalities(self) -> coo_array:
         """All inequalities (minimal and extra) in sparse matrix form."""
         return vstack((self.minimal_sparse_inequalities,
                        self.sparse_extra_inequalities))
@@ -1571,13 +1571,13 @@ class InflationLP(object):
         return dict(zip(self.monomial_names[col].flat, data))
 
     def _coo_mat_to_dict(self,
-                         input_coo_mat: coo_matrix,
+                         input_coo_mat: coo_array,
                          string_keys: bool = False) -> List[Dict]:
         """Convert a COO matrix to a list of dictionaries.
         
         Parameters
         ----------
-        input_coo_mat : coo_matrix
+        input_coo_mat : coo_array
             Input COO matrix.
         string_keys : bool, optional
             Whether to use string keys or not, by default, ``False``.
@@ -1594,7 +1594,7 @@ class InflationLP(object):
         else:
             return [self._coo_vec_to_mon_dict(*args) for args in args_iter]
 
-    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_matrix:
+    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_array:
         """
         This is a PLACEHOLDER function, possibly to be deprecated, to convert
          dicts into COO matrices.
@@ -1603,7 +1603,7 @@ class InflationLP(object):
         keys = list(monomials_dict.keys())
         col = partsextractor(self.compmonomial_to_idx, keys)
         row = np.zeros(len(col), dtype=int)
-        return coo_matrix((data, (row, col)), shape=(1, self.n_columns))
+        return coo_array((data, (row, col)), shape=(1, self.n_columns))
 
     @property
     def moment_equalities(self):
@@ -1772,7 +1772,7 @@ class InflationLP(object):
                 for mon, val in self.quadratic_factorization_conditions.items()}
 
     @property
-    def sparse_objective(self) -> coo_matrix:
+    def sparse_objective(self) -> coo_array:
         """Sparse matrix representation of the objective function."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.objective)
@@ -1784,7 +1784,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
     
     @property
-    def sparse_known_vars(self) -> coo_matrix:
+    def sparse_known_vars(self) -> coo_array:
         """Sparse matrix representation of the known values."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.known_moments)
@@ -1796,7 +1796,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
         
     @property
-    def sparse_lowerbounds(self) -> coo_matrix:
+    def sparse_lowerbounds(self) -> coo_array:
         """Sparse matrix representation of the lower bounds."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.moment_lowerbounds)
@@ -1808,7 +1808,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
         
     @property
-    def sparse_upperbounds(self) -> coo_matrix:
+    def sparse_upperbounds(self) -> coo_array:
         """Sparse matrix representation of the upper bounds."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.moment_upperbounds)
@@ -1820,7 +1820,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
 
     @property
-    def sparse_semiknown(self) -> coo_matrix:
+    def sparse_semiknown(self) -> coo_array:
         """Sparse matrix representation of the semiknown values."""
         nof_semiknown = len(self.semiknown_moments)
         nof_variables = len(self.compmonomial_to_idx)
@@ -1830,7 +1830,7 @@ class InflationLP(object):
         col = list(sum(col, ()))
         data = [(1, -c) for x, (c, x2) in self.semiknown_moments.items()]
         data = list(sum(data, ()))
-        return coo_matrix((data, (row, col)),
+        return coo_array((data, (row, col)),
                           shape=(nof_semiknown, nof_variables))
 
     @property
@@ -1842,7 +1842,7 @@ class InflationLP(object):
 
     def _prepare_solver_matrices(self,
                                  separate_bounds: bool = True) -> dict:
-        """Convert arguments from dictionaries to sparse coo_matrix form to
+        """Convert arguments from dictionaries to sparse coo_array form to
         pass to the solver.
 
         Parameters
