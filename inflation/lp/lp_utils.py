@@ -17,30 +17,35 @@ from ..utils import partsextractor, expand_sparse_vec, vstack
 
 def drop_zero_rows(coo_mat: coo_matrix):
     """Drops zero rows from a sparse matrix in place.
-    
+
     Parameters
     ----------
     coo_mat : coo_matrix
         Sparse matrix to drop zero rows from.
     """
+    if len(coo_mat.shape) == 1:
+        coo_mat = coo_mat.reshape((1, coo_mat.shape[0]))
     nz_rows, new_row = np.unique(coo_mat.row, return_inverse=True)
-    coo_mat.row[:] = new_row
-    coo_mat._shape = (len(nz_rows), coo_mat.shape[1])
+    coo_mat.row = new_row
+    coo_mat = coo_mat.reshape((len(nz_rows), coo_mat.shape[1]))
+    return coo_mat
 
 
 def canonical_order(coo_mat: coo_matrix):
     """Puts a sparse matrix in canonical order in place.
-    
+
     Parameters
     ----------
     coo_mat : coo_matrix
         Sparse matrix to put in canonical order.
     """
+    if len(coo_mat.shape) == 1:
+        coo_mat = coo_mat.reshape((1, coo_mat.shape[0]))
     order = np.lexsort([coo_mat.col, coo_mat.row])
-    coo_mat.row[:] = np.asarray(coo_mat.row)[order]
-    coo_mat.col[:] = np.asarray(coo_mat.col)[order]
-    coo_mat.data[:] = np.asarray(coo_mat.data)[order]
-
+    coo_mat.row = np.asarray(coo_mat.row)[order]
+    coo_mat.col = np.asarray(coo_mat.col)[order]
+    coo_mat.data = np.asarray(coo_mat.data)[order]
+    return coo_mat
 
 def solveLP(objective: Union[coo_matrix, Dict] = None,
             known_vars: Union[coo_matrix, Dict] = None,
@@ -192,9 +197,12 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
         and response code.
     """
 
-    drop_zero_rows(inequalities)
-    drop_zero_rows(equalities)
-    canonical_order(known_vars)
+    inequalities=drop_zero_rows(inequalities)
+    equalities=drop_zero_rows(equalities)
+    known_vars=canonical_order(known_vars)
+    upper_bounds=canonical_order(upper_bounds)
+    lower_bounds=canonical_order(lower_bounds)
+    objective=canonical_order(objective)
 
     if verbose > 1:
         t0 = perf_counter()
@@ -288,6 +296,8 @@ def solveLP_sparse(objective: coo_matrix = blank_coo_matrix,
 
             constraints = vstack((constraints, kv_matrix))
             (nof_primal_constraints, nof_primal_variables) = constraints.shape
+            if objective.shape[-1] == 0:
+                objective = coo_matrix((1, nof_primal_variables), dtype=np.int8)
 
             nof_lb = lower_bounds.nnz
             nof_ub = upper_bounds.nnz
