@@ -15,10 +15,10 @@ from warnings import warn
 
 import numpy as np
 import sympy as sp
-from scipy.sparse import lil_matrix
+from scipy.sparse import coo_array
 from tqdm import tqdm
 
-from inflation import InflationProblem
+from .. import InflationProblem
 from .fast_npa import nb_is_knowable as is_knowable
 from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal
@@ -48,7 +48,7 @@ class InflationSDP:
                  supports_problem: bool = False,
                  include_all_outcomes: bool = False,
                  commuting: bool = False,
-                 verbose: int = 0) -> None:
+                 verbose: int = None) -> None:
         """
         Class for generating and solving an SDP relaxation for quantum inflation.
 
@@ -130,7 +130,7 @@ class InflationSDP:
 
         self._default_lexorder = np.concatenate((self.zero_operator, 
                                                  inflationproblem._lexorder)
-                                                ).astype(self.np_dtype)
+                                                )
         self._nr_operators = inflationproblem._nr_operators + 1
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._lexorder = self._default_lexorder.copy()
@@ -328,7 +328,7 @@ class InflationSDP:
         collect()
 
         self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one = \
-            np.in1d([0, 1], self.momentmatrix.ravel())
+            np.isin([0, 1], self.momentmatrix.ravel())
 
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
@@ -1014,7 +1014,7 @@ class InflationSDP:
         prob_array : numpy.ndarray
             Multidimensional array encoding the distribution, which is
             called as ``prob_array[a,b,c,...,x,y,z,...]`` where
-            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
             inputs. Note: even if the inputs have cardinality 1 they must
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must appear in the
@@ -1041,7 +1041,7 @@ class InflationSDP:
         prob_array : numpy.ndarray
             Multidimensional array encoding the distribution, which is
             called as ``prob_array[a,b,c,...,x,y,z,...]`` where
-            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
             inputs. Note: even if the inputs have cardinality 1 they must
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must appear in the
@@ -1437,7 +1437,7 @@ class InflationSDP:
         if self._relaxation_has_been_generated:
             if self.n_columns > 0:
                 self.maskmatrices = {
-                    mon: lil_matrix(self.momentmatrix == mon.idx)
+                    mon: coo_array(self.momentmatrix == mon.idx)
                     for mon in tqdm(self.moments,
                                     disable=not self.verbose,
                                     desc="Assigning mask matrices  ")
@@ -1801,7 +1801,8 @@ class InflationSDP:
         last_outcome_boolmask = np.array(
             [self.has_children[op[0] - 1] and
               op[-1] == self.outcome_cardinalities[op[0] - 1] - 2 # TODO -2 is a hack for using fake outcomes
-                                for op in self._lexorder], dtype=bool)
+                                for op in self._lexorder[1:]], dtype=bool)
+        last_outcome_boolmask = np.hstack(([False], last_outcome_boolmask))
         
         # This will allow for easy substitution of operators with the last
         # outcome with the rest of the operators orthogonal to it
@@ -2150,7 +2151,7 @@ class InflationSDP:
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
             solverargs["inequalities"].append(ub)
-        solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
+        solverargs["mask_matrices"][self.constant_term_name] = coo_array(
             (self.n_columns, self.n_columns))
         return solverargs
 

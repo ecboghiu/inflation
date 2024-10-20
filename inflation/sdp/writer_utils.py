@@ -422,4 +422,3 @@ def write_to_sdpa(problem, filename):
                                              int(x.split("\t")[0]))):
         file_.write(line)
     file_.close()
-

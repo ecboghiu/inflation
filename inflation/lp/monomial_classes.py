@@ -91,11 +91,14 @@ class InternalAtomicMonomial(object):
                 self.is_knowable = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
-            self.rectified_ndarray = np.asarray(
-                inflation_lp_instance.rectify_fake_setting(np.take(self.as_2d_array,
-                                                     [0, -2, -1],
-                                                     axis=1)),
-                dtype=int)
+            if not (self.is_one or self.is_zero):
+                self.rectified_ndarray = np.asarray(
+                    inflation_lp_instance.rectify_fake_setting(np.take(self.as_2d_array,
+                                                         [0, -2, -1],
+                                                         axis=1)),
+                    dtype=int)
+            else:
+                self.rectified_ndarray = np.empty((0,3), dtype=int)
 
         self.name = self._name
         self.legacy_name = self._raw_name

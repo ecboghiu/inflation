@@ -15,10 +15,10 @@ from warnings import warn
 
 import numpy as np
 import sympy as sp
-from scipy.sparse import coo_matrix, vstack
+from scipy.sparse import coo_array, vstack
 from tqdm import tqdm
 
-from inflation import InflationProblem
+from .. import InflationProblem
 from .lp_utils import solveLP
 from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from .numbafied import (nb_outer_bitwise_or,
@@ -596,7 +596,8 @@ class InflationLP(object):
         # Still allow for 'feas_as_optim' as an argument
         if 'feas_as_optim' in solver_arguments:
             if solver_arguments["feas_as_optim"]:
-                relax_known_vars = relax_inequalities = True
+                relax_known_vars = False
+                relax_inequalities = True
                 del solver_arguments["feas_as_optim"]
             else:
                 relax_known_vars = relax_inequalities = False
@@ -765,8 +766,11 @@ class InflationLP(object):
                     polynomial_as_str += mon.name
                 else:
                     polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
-        return polynomial_as_str[1:] if polynomial_as_str[0
-                                            ] == "+" else polynomial_as_str
+        if not len(polynomial_as_str):  # Failsafe for empty dictionary.
+            polynomial_as_str = "0"
+        elif polynomial_as_str[0] == "+":
+            polynomial_as_str = polynomial_as_str[1:]
+        return polynomial_as_str
 
     def certificate_as_string(self,
                               clean: bool = True,
@@ -822,7 +826,7 @@ class InflationLP(object):
         prob_array : numpy.ndarray
             Multidimensional array encoding the distribution, which is
             called as ``prob_array[a,b,c,...,x,y,z,...]`` where
-            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
             inputs. Note: even if the inputs have cardinality 1 they must
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must appear in the
@@ -850,7 +854,7 @@ class InflationLP(object):
         prob_array : numpy.ndarray
             Multidimensional array encoding the distribution, which is
             called as ``prob_array[a,b,c,...,x,y,z,...]`` where
-            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
             inputs. Note: even if the inputs have cardinality 1 they must
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must appear in the
@@ -1276,7 +1280,7 @@ class InflationLP(object):
             self.num_non_CG = len(old_reps_non_CG)
             if self.verbose > 1:
                 print(f"Orbits discovered! {self.num_CG} unique monomials.")
-            # Obtain the real generating monomomials after accounting for symmetry
+            # Obtain the real generating monomials after accounting for symmetry
         else:
             self.num_CG = self.raw_n_columns
             unique_indices_CG = np.arange(self.num_CG)
@@ -1317,8 +1321,8 @@ class InflationLP(object):
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
-            if mon in _compmonomial_to_idx:
-                print(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])
+            # Commented out line below used for internal debugging only.
+            # assert mon not in _compmonomial_to_idx, f"Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index."
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
@@ -1388,13 +1392,10 @@ class InflationLP(object):
                                  reversed(choices_to_combine_CG))
         raw_boolvecs_global = reduce(nb_outer_bitwise_or,
                                      reversed(choices_to_combine_global))
-        return (raw_boolvecs_CG[np.argsort(raw_boolvecs_CG.sum(axis=1))],
-                raw_boolvecs_global[np.argsort(np.matmul(raw_boolvecs_global,
-                                                         self._boolvec_for_CG_ineqs.astype(int))
-                                               )])
+        return (raw_boolvecs_CG, raw_boolvecs_global)
 
     @cached_property
-    def minimal_sparse_equalities(self) -> coo_matrix:
+    def minimal_sparse_equalities(self) -> coo_array:
         """Given the generating monomials, infer conversion to Collins-Gisin 
         notation."""
         eq_row, eq_col, eq_data = [], [], []
@@ -1440,11 +1441,11 @@ class InflationLP(object):
             if self.verbose > 0:
                 eprint("Number of nontrivial equality constraints in the LP:",
                         nof_equalities)
-        return coo_matrix((eq_data, (eq_row, eq_col)),
+        return coo_array((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
     @property
-    def sparse_extra_equalities(self) -> coo_matrix:
+    def sparse_extra_equalities(self) -> coo_array:
         """Extra equalities in sparse matrix form."""
         eq_row, eq_col, eq_data = [], [], []
         nof_equalities = len(self.extra_equalities)
@@ -1453,67 +1454,67 @@ class InflationLP(object):
             eq_row.extend(np.repeat(row_idx, nof_vars))
             eq_col.extend([self.compmonomial_to_idx[x] for x in eq])
             eq_data.extend(eq.values())
-        return coo_matrix((eq_data, (eq_row, eq_col)),
+        return coo_array((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
     @property
-    def sparse_equalities(self) -> coo_matrix:
+    def sparse_equalities(self) -> coo_array:
         """All equalities (minimal and extra) in sparse matrix 
         form."""
         return vstack((self.minimal_sparse_equalities,
                        self.sparse_extra_equalities))
 
     @cached_property
-    def minimal_sparse_inequalities(self) -> coo_matrix:
-        """Given the generating monomials, inter conversion to
-        Collins-Gisin notation."""
+    def minimal_sparse_inequalities(self) -> coo_array:
+        """Here we express the nonnegativity of all `global` (maximal number
+         of variables) events, converting the expressions into Collins-Gisin
+         notation as needed."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
-        if np.any(self._boolvec_for_CG_ineqs):
-            alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
-                                          for v, r in zip(
-                    np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
-                    self._CG_adjusting_ortho_groups_as_boolarrays)}
-            alternatives_as_signs = {
-                i: np.count_nonzero(bool_array, axis=1).astype(bool)
-                for i, bool_array in alternatives_as_boolarrays.items()}
-            for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                                 disable=not self.verbose,
-                                 desc="Discovering inequalities   "):
-                critical_boolvec_intersection = np.bitwise_and(bool_vec,
-                                                               self._boolvec_for_CG_ineqs)
-                if critical_boolvec_intersection.any():
-                    absent_c_boolvec = bool_vec.copy()
-                    absent_c_boolvec[critical_boolvec_intersection] = False
-                    critical_values_in_boovec = np.flatnonzero(
-                        critical_boolvec_intersection)
-                    signs = reduce(nb_outer_bitwise_xor,
-                                   (alternatives_as_signs[i] for i in
-                                    critical_values_in_boovec.flat))
-                    adjustments = reduce(nb_outer_bitwise_or,
-                                         (alternatives_as_boolarrays[i] for i in
-                                          critical_values_in_boovec.flat))
-                    terms_as_boolvecs = np.bitwise_or(
-                        absent_c_boolvec[np.newaxis],
-                        adjustments)
-                    terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()]
-                                       for term_boolvec in terms_as_boolvecs]
-                    terms_as_idxs = self.inverse[terms_as_rawidx]
-                    true_signs = np.power(-1, signs)
+        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+                                      for v, r in zip(
+                np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
+                self._CG_adjusting_ortho_groups_as_boolarrays)}
+        alternatives_as_signs = {
+            i: np.count_nonzero(bool_array, axis=1).astype(bool)
+            for i, bool_array in alternatives_as_boolarrays.items()}
+        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+                             disable=not self.verbose,
+                             desc="Discovering inequalities   "):
+            critical_boolvec_intersection = np.bitwise_and(bool_vec,
+                                                           self._boolvec_for_CG_ineqs)
+            if critical_boolvec_intersection.any():
+                absent_c_boolvec = bool_vec.copy()
+                absent_c_boolvec[critical_boolvec_intersection] = False
+                critical_values_in_boovec = np.flatnonzero(
+                    critical_boolvec_intersection)
+                signs = reduce(nb_outer_bitwise_xor,
+                               (alternatives_as_signs[i] for i in
+                                critical_values_in_boovec.flat))
+                adjustments = reduce(nb_outer_bitwise_or,
+                                     (alternatives_as_boolarrays[i] for i in
+                                      critical_values_in_boovec.flat))
+                terms_as_boolvecs = np.bitwise_or(
+                    absent_c_boolvec[np.newaxis],
+                    adjustments)
+                terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()]
+                                   for term_boolvec in terms_as_boolvecs]
+                terms_as_idxs = self.inverse[terms_as_rawidx]
+                true_signs = np.power(-1, signs)
 
-                    ineq_row.extend([nof_inequalities] * len(signs))
-                    ineq_col.extend(terms_as_idxs.flat)
-                    ineq_data.extend(true_signs.flat)
-                else:
-                    ineq_row.append(nof_inequalities)
-                    ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
-                    ineq_data.append(1)
-                nof_inequalities += 1
-        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                ineq_row.extend([nof_inequalities] * len(signs))
+                ineq_col.extend(terms_as_idxs.flat)
+                ineq_data.extend(true_signs.flat)
+            else:
+                ineq_row.append(nof_inequalities)
+                ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
+                ineq_data.append(1)
+            nof_inequalities += 1
+        return coo_array((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
     @property
-    def sparse_extra_inequalities(self) -> coo_matrix:
+    def sparse_extra_inequalities(self) -> coo_array:
         """Extra inequalities in sparse matrix form."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = len(self.extra_inequalities)
@@ -1522,11 +1523,11 @@ class InflationLP(object):
             ineq_row.extend(np.repeat(row_idx, nof_vars))
             ineq_col.extend([self.compmonomial_to_idx[x] for x in ineq])
             ineq_data.extend(ineq.values())
-        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+        return coo_array((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
     @property
-    def sparse_inequalities(self) -> coo_matrix:
+    def sparse_inequalities(self) -> coo_array:
         """All inequalities (minimal and extra) in sparse matrix form."""
         return vstack((self.minimal_sparse_inequalities,
                        self.sparse_extra_inequalities))
@@ -1570,13 +1571,13 @@ class InflationLP(object):
         return dict(zip(self.monomial_names[col].flat, data))
 
     def _coo_mat_to_dict(self,
-                         input_coo_mat: coo_matrix,
+                         input_coo_mat: coo_array,
                          string_keys: bool = False) -> List[Dict]:
         """Convert a COO matrix to a list of dictionaries.
         
         Parameters
         ----------
-        input_coo_mat : coo_matrix
+        input_coo_mat : coo_array
             Input COO matrix.
         string_keys : bool, optional
             Whether to use string keys or not, by default, ``False``.
@@ -1593,7 +1594,7 @@ class InflationLP(object):
         else:
             return [self._coo_vec_to_mon_dict(*args) for args in args_iter]
 
-    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_matrix:
+    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_array:
         """
         This is a PLACEHOLDER function, possibly to be deprecated, to convert
          dicts into COO matrices.
@@ -1602,7 +1603,7 @@ class InflationLP(object):
         keys = list(monomials_dict.keys())
         col = partsextractor(self.compmonomial_to_idx, keys)
         row = np.zeros(len(col), dtype=int)
-        return coo_matrix((data, (row, col)), shape=(1, self.n_columns))
+        return coo_array((data, (row, col)), shape=(1, self.n_columns))
 
     @property
     def moment_equalities(self):
@@ -1676,14 +1677,14 @@ class InflationLP(object):
             self.semiknown_moments = dict()
         num_nontrivial_known = len(self.known_moments)
         if self.verbose > 1 and num_nontrivial_known > 1:
-            print("Number of variables with fixed numeric value:",
+            eprint("Number of variables with fixed numeric value:",
                   num_nontrivial_known)
         if len(self.semiknown_moments):
             for k in self.known_moments.keys():
                 self.semiknown_moments.pop(k, None)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
+            eprint(f"Number of semiknown variables: {num_semiknown}")
 
     def _reset_bounds(self) -> None:
         """Reset the lists of bounds."""
@@ -1771,7 +1772,7 @@ class InflationLP(object):
                 for mon, val in self.quadratic_factorization_conditions.items()}
 
     @property
-    def sparse_objective(self) -> coo_matrix:
+    def sparse_objective(self) -> coo_array:
         """Sparse matrix representation of the objective function."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.objective)
@@ -1783,7 +1784,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
     
     @property
-    def sparse_known_vars(self) -> coo_matrix:
+    def sparse_known_vars(self) -> coo_array:
         """Sparse matrix representation of the known values."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.known_moments)
@@ -1795,7 +1796,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
         
     @property
-    def sparse_lowerbounds(self) -> coo_matrix:
+    def sparse_lowerbounds(self) -> coo_array:
         """Sparse matrix representation of the lower bounds."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.moment_lowerbounds)
@@ -1807,7 +1808,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
         
     @property
-    def sparse_upperbounds(self) -> coo_matrix:
+    def sparse_upperbounds(self) -> coo_array:
         """Sparse matrix representation of the upper bounds."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.moment_upperbounds)
@@ -1819,7 +1820,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
 
     @property
-    def sparse_semiknown(self) -> coo_matrix:
+    def sparse_semiknown(self) -> coo_array:
         """Sparse matrix representation of the semiknown values."""
         nof_semiknown = len(self.semiknown_moments)
         nof_variables = len(self.compmonomial_to_idx)
@@ -1829,7 +1830,7 @@ class InflationLP(object):
         col = list(sum(col, ()))
         data = [(1, -c) for x, (c, x2) in self.semiknown_moments.items()]
         data = list(sum(data, ()))
-        return coo_matrix((data, (row, col)),
+        return coo_array((data, (row, col)),
                           shape=(nof_semiknown, nof_variables))
 
     @property
@@ -1841,7 +1842,7 @@ class InflationLP(object):
 
     def _prepare_solver_matrices(self,
                                  separate_bounds: bool = True) -> dict:
-        """Convert arguments from dictionaries to sparse coo_matrix form to
+        """Convert arguments from dictionaries to sparse coo_array form to
         pass to the solver.
 
         Parameters

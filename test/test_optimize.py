@@ -10,7 +10,6 @@ from inflation import InflationProblem, InflationSDP, max_within_feasible
 class TestOptimize(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
     def PRbox(v):

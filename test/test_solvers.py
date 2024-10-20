@@ -22,10 +22,6 @@ simple_lp_mat = convert_dicts(**simple_lp, variables=var)
 
 
 class TestSDP(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        warnings.simplefilter("ignore", category=DeprecationWarning)
-
     G = np.array([[1,  2,  3,  4,  5],
                   [2,  1,  6,  7,  8],
                   [3,  6,  1,  9, 10],

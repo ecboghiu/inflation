@@ -102,8 +102,8 @@ def partsextractor(thing_to_take_parts_of, indices) -> Tuple[int,...]:
         return itemgetter(indices)(thing_to_take_parts_of)
 
 
-def expand_sparse_vec(sparse_vec: sps.coo_matrix,
-                      conversion_style: str = "eq") -> sps.coo_matrix:
+def expand_sparse_vec(sparse_vec: sps.coo_array,
+                      conversion_style: str = "eq") -> sps.coo_array:
     """Expand a one-dimensional sparse matrix to its full form. Used to expand
     the solver arguments known_vars, lower_bounds, and upper_bounds."""
     assert conversion_style in {"eq", "lb", "ub"}, \
@@ -130,15 +130,15 @@ def expand_sparse_vec(sparse_vec: sps.coo_matrix,
     if conversion_style == "lb":
         # Lower bound format: x >= a -> x - a >= 0
         data = -data
-    return sps.coo_matrix((data, (row, col)), shape=(nof_rows, nof_cols))
+    return sps.coo_array((data, (row, col)), shape=(nof_rows, nof_cols))
 
 
-def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_matrix:
-    """Stack sparse matrices in coo_matrix form more efficiently."""
+def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_array:
+    """Stack sparse matrices in coo_array form more efficiently."""
     non_empty = tuple(mat for mat in blocks if mat.shape[0])
     nof_blocks = len(non_empty)
     if nof_blocks > 1:
-        if all(isinstance(block, sps.coo_matrix) for block in blocks):
+        if all(isinstance(block, sps.coo_array) for block in blocks):
             # mat_row = blocks[0].row
             # (row_count, _) = blocks[0].shape
             # for block in blocks[1:]:
@@ -155,14 +155,14 @@ def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_matrix:
             mat_row = np.hstack(adjusted_rows)
             mat_col = np.hstack(tuple(block.col for block in blocks))
             mat_data = np.hstack(tuple(block.data for block in blocks))
-            return sps.coo_matrix((mat_data, (mat_row, mat_col)),
+            return sps.coo_array((mat_data, (mat_row, mat_col)),
                                   shape=(nof_rows, nof_cols)).asformat(format)
         else:
             return sps.vstack(blocks, format)
     elif nof_blocks == 1:
         return non_empty[0]
     else:
-        return sps.coo_matrix([])
+        return sps.coo_array([])
 
 def perm_combiner(old_perms: np.ndarray, new_perms: np.ndarray) -> np.ndarray:
     combined = np.take(old_perms, new_perms, axis=1)
