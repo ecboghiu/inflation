@@ -1014,7 +1014,7 @@ class InflationSDP:
         prob_array : numpy.ndarray
             Multidimensional array encoding the distribution, which is
             called as ``prob_array[a,b,c,...,x,y,z,...]`` where
-            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
             inputs. Note: even if the inputs have cardinality 1 they must
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must appear in the
@@ -1041,7 +1041,7 @@ class InflationSDP:
         prob_array : numpy.ndarray
             Multidimensional array encoding the distribution, which is
             called as ``prob_array[a,b,c,...,x,y,z,...]`` where
-            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
             inputs. Note: even if the inputs have cardinality 1 they must
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must appear in the

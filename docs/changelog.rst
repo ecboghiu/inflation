@@ -2,6 +2,15 @@
 Changelog
 *********
 
+2.0.1 - 2024-10-21
+******************
+
+* Support for `NumPy 2 <https://numpy.org/devdocs/release/2.0.0-notes.html>`_.
+
+* Small bugfixes.
+
+* Memory and runtime improvements.
+
 2.0.0 - 2024-06-01
 ******************
 
