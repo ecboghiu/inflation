@@ -1,24 +1,24 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.sdp.sdp_utils &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>inflation.sdp.sdp_utils &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+
   
-        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/clipboard.min.js"></script>
-        <script src="../../../_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -29,11 +29,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../../contents.html" class="icon icon-home"> Inflation
+
+          
+          
+          <a href="../../../contents.html" class="icon icon-home">
+            Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -64,9 +68,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../../index.html">Module code</a> &raquo;</li>
-      <li>inflation.sdp.sdp_utils</li>
+      <li><a href="../../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">inflation.sdp.sdp_utils</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -86,12 +90,14 @@
 
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">gc</span> <span class="kn">import</span> <span class="n">collect</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">dok_matrix</span><span class="p">,</span> <span class="n">eye</span><span class="p">,</span> <span class="n">lil_matrix</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">eye</span><span class="p">,</span> <span class="n">coo_array</span>
 <span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">stdout</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterator</span>
 
 
-<div class="viewcode-block" id="solveSDP_MosekFUSION"><a class="viewcode-back" href="../../../solvers.html#inflation.sdp.sdp_utils.solveSDP_MosekFUSION">[docs]</a><span class="k">def</span> <span class="nf">solveSDP_MosekFUSION</span><span class="p">(</span><span class="n">mask_matrices</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="solveSDP_MosekFUSION">
+<a class="viewcode-back" href="../../../solvers.html#inflation.sdp.sdp_utils.solveSDP_MosekFUSION">[docs]</a>
+<span class="k">def</span> <span class="nf">solveSDP_MosekFUSION</span><span class="p">(</span><span class="n">mask_matrices</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">objective</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">known_vars</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                          <span class="n">semiknown_vars</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -229,6 +235,22 @@
         <span class="n">OptimizeError</span><span class="p">,</span> <span class="n">SolutionError</span><span class="p">,</span> \
         <span class="n">AccSolutionStatus</span><span class="p">,</span> <span class="n">ProblemStatus</span>
 
+    <span class="k">def</span> <span class="nf">scipy_to_mosek</span><span class="p">(</span><span class="n">mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Matrix</span><span class="p">:</span>
+        <span class="n">internal_mat</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">tocoo</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">internal_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                             <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">internal_mat</span><span class="o">.</span><span class="n">row</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span>
+                             <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">internal_mat</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span>
+                             <span class="n">internal_mat</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">coo_getcol</span><span class="p">(</span><span class="n">mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">col</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">new_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">condition</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">new_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">row</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)[</span><span class="n">condition</span><span class="p">]</span>
+        <span class="n">new_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)[</span><span class="n">condition</span><span class="p">]</span>
+        <span class="n">this_col</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">new_data</span><span class="p">,</span> <span class="p">(</span><span class="n">new_row</span><span class="p">,</span> <span class="n">new_col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">this_col</span>
+
+
+
     <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span>
         <span class="n">t0</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
@@ -244,7 +266,7 @@
     <span class="n">var_inequalities</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">inequalities</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span>
     <span class="n">var_equalities</span>   <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">equalities</span>   <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">equalities</span><span class="p">)</span>
 
-    <span class="n">Fi</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">asformat</span><span class="p">(</span><span class="s1">&#39;lil&#39;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">Fi</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">asformat</span><span class="p">(</span><span class="s1">&#39;dok&#39;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
           <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mask_matrices</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
     <span class="n">mat_dim</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">Fi</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">Fi</span> <span class="k">else</span> <span class="mi">0</span>
 
@@ -270,10 +292,8 @@
         <span class="n">var_objective</span> <span class="o">=</span> <span class="p">{</span><span class="n">lam</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
     <span class="c1"># Calculate F0, the constant part of the matrix variable.</span>
-    <span class="k">if</span> <span class="n">mask_matrices</span><span class="p">:</span>
-        <span class="n">F0</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">((</span><span class="n">mat_dim</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">+</span> \
-            <span class="nb">sum</span><span class="p">(</span><span class="n">known_vars</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">Fi</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">Fi</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">known_vars</span><span class="p">))</span>
+    <span class="n">F0</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">mat_dim</span><span class="p">,</span> <span class="n">mat_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">F0</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">known_vars</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">Fi</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">Fi</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">known_vars</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">process_constraints</span><span class="p">:</span>
         <span class="c1"># For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j</span>
@@ -315,23 +335,39 @@
 
     <span class="c1"># Calculate the matrices A, C and vectors b, d such that</span>
     <span class="c1"># Ax + b &gt;= 0, Cx + d == 0.</span>
-    <span class="n">A</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">var_inequalities</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
-    <span class="n">b</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">var_inequalities</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">inequality</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">var_inequalities</span><span class="p">):</span>
-        <span class="n">ineq_vars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">inequality</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ineq_vars</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">known_vars</span><span class="p">):</span>
-            <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">var2index</span><span class="p">[</span><span class="n">x</span><span class="p">]]</span> <span class="o">=</span> <span class="n">inequality</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
-        <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">inequality</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">known_vars</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
-                             <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ineq_vars</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)]))</span>
-
-    <span class="n">C</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">var_equalities</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
-    <span class="n">d</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">var_equalities</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">equality</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">var_equalities</span><span class="p">):</span>
-        <span class="n">eq_vars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">equality</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">eq_vars</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">known_vars</span><span class="p">):</span>
-            <span class="n">C</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">var2index</span><span class="p">[</span><span class="n">x</span><span class="p">]]</span> <span class="o">=</span> <span class="n">equality</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
-        <span class="n">d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">equality</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">known_vars</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
-                             <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">eq_vars</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)]))</span>
+    <span class="n">nof_variables</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">constraint_dicts_to_sparse</span><span class="p">(</span><span class="n">constraints</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">coo_array</span><span class="p">):</span>
+        <span class="n">nof_constraints</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">constraints</span><span class="p">)</span>
+        <span class="n">A_row</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">A_col</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">A_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">b_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nof_constraints</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">b_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_constraints</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">b_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">constraints</span><span class="p">):</span>
+            <span class="n">all_vars_temp</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">constraint</span><span class="p">)</span>
+            <span class="n">free_vars_temp</span> <span class="o">=</span> <span class="n">all_vars_temp</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+            <span class="n">known_vars_temp</span> <span class="o">=</span> <span class="n">all_vars_temp</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">free_vars_temp</span><span class="p">:</span>
+                <span class="n">A_row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="n">A_col</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var2index</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+                <span class="n">A_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">constraint</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+            <span class="n">b_val</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">known_vars_temp</span><span class="p">:</span>
+                <span class="n">x_val</span> <span class="o">=</span> <span class="n">known_vars</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+                <span class="n">coeff</span> <span class="o">=</span> <span class="n">constraint</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+                <span class="n">b_val</span> <span class="o">+=</span> <span class="p">(</span><span class="n">coeff</span> <span class="o">*</span> <span class="n">x_val</span><span class="p">)</span>
+            <span class="n">b_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_val</span><span class="p">)</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">A_data</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">A_row</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span>
+                                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">A_col</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))),</span>
+                      <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_constraints</span><span class="p">,</span> <span class="n">nof_variables</span><span class="p">),</span>
+                      <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">b_data</span><span class="p">,</span> <span class="p">(</span><span class="n">b_row</span><span class="p">,</span> <span class="n">b_col</span><span class="p">)),</span>
+                      <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_constraints</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                      <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span>
+    <span class="n">A</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">constraint_dicts_to_sparse</span><span class="p">(</span><span class="n">var_inequalities</span><span class="p">)</span>
+    <span class="n">C</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">constraint_dicts_to_sparse</span><span class="p">(</span><span class="n">var_equalities</span><span class="p">)</span>
     <span class="n">collect</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pre-processing took&quot;</span><span class="p">,</span>
@@ -352,23 +388,17 @@
                                <span class="n">Domain</span><span class="o">.</span><span class="n">greaterThan</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
                 <span class="c1"># It seems MOSEK Fusion API does not allow to pick index i</span>
                 <span class="c1"># of an expression (A^T I)_i, so we do it manually row by row.</span>
-                <span class="n">A</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
                 <span class="n">AtI</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># \sum_j I_j A_ji as i-th entry of AtI</span>
                 <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
-                    <span class="n">slice_</span> <span class="o">=</span> <span class="n">A</span><span class="p">[:,</span> <span class="n">var2index</span><span class="p">[</span><span class="n">var</span><span class="p">]]</span>
-                    <span class="n">sparse_slice</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">slice_</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                                 <span class="o">*</span><span class="n">slice_</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                                 <span class="n">slice_</span><span class="p">[</span><span class="n">slice_</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">slice_</span> <span class="o">=</span> <span class="n">coo_getcol</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">var2index</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
+                    <span class="n">sparse_slice</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">slice_</span><span class="p">)</span>
                     <span class="n">AtI</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sparse_slice</span><span class="p">,</span> <span class="n">I</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">var_equalities</span><span class="p">:</span>
                 <span class="n">E</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_equalities</span><span class="p">),</span> <span class="n">Domain</span><span class="o">.</span><span class="n">unbounded</span><span class="p">())</span>
-                <span class="n">C</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
                 <span class="n">CtI</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># \sum_j E_j C_ji as i-th entry of CtI</span>
                 <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
-                    <span class="n">slice_</span> <span class="o">=</span> <span class="n">C</span><span class="p">[:,</span> <span class="n">var2index</span><span class="p">[</span><span class="n">var</span><span class="p">]]</span>
-                    <span class="n">sparse_slice</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">slice_</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                                 <span class="o">*</span><span class="n">slice_</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                                 <span class="n">slice_</span><span class="p">[</span><span class="n">slice_</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">slice_</span> <span class="o">=</span> <span class="n">coo_getcol</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">var2index</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
+                    <span class="n">sparse_slice</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">slice_</span><span class="p">)</span>
                     <span class="n">CtI</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sparse_slice</span><span class="p">,</span> <span class="n">E</span><span class="p">))</span>
 
             <span class="c1"># Define and set objective function</span>
@@ -377,21 +407,15 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">feas_as_optim</span><span class="p">:</span>
                 <span class="n">obj_mosek</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">c0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">mask_matrices</span><span class="p">:</span>
-                <span class="n">F0_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">F0</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                         <span class="o">*</span><span class="n">F0</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                         <span class="n">F0</span><span class="p">[</span><span class="n">F0</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">F0_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">F0</span><span class="p">)</span>
                 <span class="n">obj_mosek</span> <span class="o">=</span> <span class="n">Expr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj_mosek</span><span class="p">,</span> <span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">F0_mosek</span><span class="p">))</span>
                 <span class="k">del</span> <span class="n">F0_mosek</span>
             <span class="k">if</span> <span class="n">var_inequalities</span><span class="p">:</span>
-                <span class="n">b_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                        <span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                        <span class="n">b</span><span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">b_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
                 <span class="n">obj_mosek</span> <span class="o">=</span> <span class="n">Expr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj_mosek</span><span class="p">,</span> <span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">b_mosek</span><span class="p">))</span>
                 <span class="k">del</span> <span class="n">b_mosek</span>
             <span class="k">if</span> <span class="n">var_equalities</span><span class="p">:</span>
-                <span class="n">d_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                        <span class="o">*</span><span class="n">d</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                        <span class="n">d</span><span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">d_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
                 <span class="n">obj_mosek</span> <span class="o">=</span> <span class="n">Expr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj_mosek</span><span class="p">,</span> <span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">d_mosek</span><span class="p">))</span>
                 <span class="k">del</span> <span class="n">d_mosek</span>
 
@@ -414,11 +438,7 @@
                     <span class="n">F</span> <span class="o">=</span> <span class="n">Fi</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
                     <span class="n">lhs</span> <span class="o">=</span> <span class="n">Expr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span>
                                    <span class="n">Expr</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span>
-                                            <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span>
-                                                <span class="o">*</span><span class="n">F</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                                <span class="o">*</span><span class="n">F</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                                <span class="n">F</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span>
-                                                    <span class="mi">0</span><span class="p">])))</span>
+                                            <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">F</span><span class="p">)))</span>
                 <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                     <span class="k">pass</span>
                 <span class="k">if</span> <span class="n">var_inequalities</span><span class="p">:</span>
@@ -439,12 +459,8 @@
             <span class="n">x_mosek</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">),</span> <span class="n">domain</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">var_inequalities</span><span class="p">:</span>
-                <span class="n">b_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                        <span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                        <span class="n">b</span><span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="n">A_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                        <span class="o">*</span><span class="n">A</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                        <span class="n">A</span><span class="p">[</span><span class="n">A</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">b_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                <span class="n">A_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
                 <span class="n">ineq_constraint</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="s2">&quot;Ineq&quot;</span><span class="p">,</span>
                                                <span class="n">Expr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">A_mosek</span><span class="p">,</span>
                                                                  <span class="n">x_mosek</span><span class="p">),</span>
@@ -453,12 +469,8 @@
                 <span class="k">del</span> <span class="n">b_mosek</span><span class="p">,</span> <span class="n">A_mosek</span>
 
             <span class="k">if</span> <span class="n">var_equalities</span><span class="p">:</span>
-                <span class="n">d_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                        <span class="o">*</span><span class="n">d</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                        <span class="n">d</span><span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="n">C_mosek</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">sparse</span><span class="p">(</span><span class="o">*</span><span class="n">C</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                                        <span class="o">*</span><span class="n">C</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(),</span>
-                                        <span class="n">C</span><span class="p">[</span><span class="n">C</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">d_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="n">C_mosek</span> <span class="o">=</span> <span class="n">scipy_to_mosek</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
                 <span class="n">eq_constraint</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="s2">&quot;Eq&quot;</span><span class="p">,</span>
                                              <span class="n">Expr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Expr</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">C_mosek</span><span class="p">,</span>
                                                                <span class="n">x_mosek</span><span class="p">),</span>
@@ -583,7 +595,7 @@
             <span class="k">if</span> <span class="n">mask_matrices</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">Fi</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">known_vars</span><span class="p">):</span>
                     <span class="n">support</span> <span class="o">=</span> <span class="n">Fi</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
-                    <span class="n">certificate</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ymat</span><span class="p">[</span><span class="n">support</span><span class="p">],</span> <span class="n">Fi</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="n">support</span><span class="p">]</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">certificate</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ymat</span><span class="p">[</span><span class="n">support</span><span class="p">],</span> <span class="n">Fi</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="n">support</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
 
             <span class="c1"># + I · b</span>
             <span class="k">if</span> <span class="n">var_inequalities</span><span class="p">:</span>
@@ -641,13 +653,14 @@
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status_str</span><span class="p">}</span></div>
 
 
-<span class="k">def</span> <span class="nf">triu_indices</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">lil_matrix</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+
+<span class="k">def</span> <span class="nf">triu_indices</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper functions to extract the upper triangular (i,j) matrix indices</span>
 <span class="sd">     of the nonzero elements of a symmetric sparse matrix.&quot;&quot;&quot;</span>
-    <span class="n">A_coo</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">asformat</span><span class="p">(</span><span class="s1">&#39;coo&#39;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">A_coo</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">tocoo</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">A_coo</span><span class="o">.</span><span class="n">data</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">A_coo</span><span class="o">.</span><span class="n">row</span> <span class="o">&lt;=</span> <span class="n">A_coo</span><span class="o">.</span><span class="n">col</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">A_coo</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span>
-               <span class="n">A_coo</span><span class="o">.</span><span class="n">col</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">A_coo</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span>
+               <span class="n">A_coo</span><span class="o">.</span><span class="n">col</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
 </pre></div>
 
            </div>

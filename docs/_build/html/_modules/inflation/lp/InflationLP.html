@@ -1,26 +1,24 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.lp.InflationLP &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+  <title>inflation.lp.InflationLP &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/sphinx_highlight.js"></script>
-        <script src="../../../_static/clipboard.min.js"></script>
-        <script src="../../../_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -99,10 +97,10 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_matrix</span><span class="p">,</span> <span class="n">vstack</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_array</span><span class="p">,</span> <span class="n">vstack</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="kn">from</span> <span class="nn">inflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
 <span class="kn">from</span> <span class="nn">.lp_utils</span> <span class="kn">import</span> <span class="n">solveLP</span>
 <span class="kn">from</span> <span class="nn">.monomial_classes</span> <span class="kn">import</span> <span class="n">InternalAtomicMonomial</span><span class="p">,</span> <span class="n">CompoundMoment</span>
 <span class="kn">from</span> <span class="nn">.numbafied</span> <span class="kn">import</span> <span class="p">(</span><span class="n">nb_outer_bitwise_or</span><span class="p">,</span>
@@ -114,7 +112,9 @@
     <span class="n">expand_sparse_vec</span>
 
 
-<div class="viewcode-block" id="InflationLP"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP">[docs]</a><span class="k">class</span> <span class="nc">InflationLP</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="InflationLP">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP">[docs]</a>
+<span class="k">class</span> <span class="nc">InflationLP</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="n">constant_term_name</span> <span class="o">=</span> <span class="s2">&quot;constant_term&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -285,7 +285,9 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the monomials as strings.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">mon</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">mon</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monomials</span><span class="p">]</span>
 
-<div class="viewcode-block" id="InflationLP.set_bounds"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_bounds">[docs]</a>    <span class="k">def</span> <span class="nf">set_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationLP.set_bounds">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_bounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                    <span class="n">bounds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
                    <span class="n">bound_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;up&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Set numerical lower or upper bounds on the moments generated in the</span>
@@ -316,6 +318,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_upperbounds</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_set_lowerbounds</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span></div>
+
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">atomic_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -370,7 +373,9 @@
                               <span class="bp">self</span><span class="o">.</span><span class="n">monomial_from_atoms</span><span class="p">[</span><span class="n">mon</span><span class="o">.</span><span class="n">factors</span><span class="p">[</span><span class="mi">1</span><span class="p">:]])</span>
         <span class="k">return</span> <span class="n">conds</span>
 
-<div class="viewcode-block" id="InflationLP.set_distribution"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_distribution">[docs]</a>    <span class="k">def</span> <span class="nf">set_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationLP.set_distribution">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_distribution">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                          <span class="n">prob_array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
                          <span class="n">use_lpi_constraints</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                          <span class="n">shared_randomness</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -411,7 +416,10 @@
                         <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="n">use_lpi_constraints</span><span class="p">,</span>
                         <span class="n">only_specified_values</span><span class="o">=</span><span class="n">shared_randomness</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="InflationLP.set_objective"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_objective">[docs]</a>    <span class="k">def</span> <span class="nf">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="InflationLP.set_objective">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_objective">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                       <span class="n">objective</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">Expr</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
                       <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;max&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set or change the objective function of the polynomial optimization</span>
@@ -456,7 +464,10 @@
                  <span class="s2">&quot;least one monomial that does not appear in the original &quot;</span> <span class="o">+</span>
                  <span class="sa">f</span><span class="s2">&quot;generating set:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">surprising_objective_terms</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="InflationLP.update_values"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.update_values">[docs]</a>    <span class="k">def</span> <span class="nf">update_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="InflationLP.update_values">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.update_values">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                       <span class="n">values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CompoundMoment</span><span class="p">,</span>
                       <span class="n">InternalAtomicMonomial</span><span class="p">,</span>
                       <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
@@ -563,7 +574,10 @@
             <span class="k">del</span> <span class="n">atomic_knowns</span><span class="p">,</span> <span class="n">surprising_semiknowns</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_after_set_values</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="InflationLP.set_values"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_values">[docs]</a>    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+
+<div class="viewcode-block" id="InflationLP.set_values">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.set_values">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
                    <span class="n">values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CompoundMoment</span><span class="p">,</span>
                    <span class="n">InternalAtomicMonomial</span><span class="p">,</span>
                    <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span>
@@ -589,6 +603,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">update_values</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">return</span></div>
+
 
     <span class="k">def</span> <span class="nf">set_extra_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">extra_equalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -624,7 +639,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">extra_inequalities</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_sanitise_dict</span><span class="p">(</span><span class="n">ineq</span><span class="p">)</span>
                                    <span class="k">for</span> <span class="n">ineq</span> <span class="ow">in</span> <span class="n">extra_inequalities</span><span class="p">]</span>
 
-<div class="viewcode-block" id="InflationLP.solve"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationLP.solve">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.solve">[docs]</a>
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
               <span class="n">relax_known_vars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
               <span class="n">relax_inequalities</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
               <span class="n">solve_dual</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -680,7 +697,8 @@
         <span class="c1"># Still allow for &#39;feas_as_optim&#39; as an argument</span>
         <span class="k">if</span> <span class="s1">&#39;feas_as_optim&#39;</span> <span class="ow">in</span> <span class="n">solver_arguments</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">solver_arguments</span><span class="p">[</span><span class="s2">&quot;feas_as_optim&quot;</span><span class="p">]:</span>
-                <span class="n">relax_known_vars</span> <span class="o">=</span> <span class="n">relax_inequalities</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">relax_known_vars</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">relax_inequalities</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">del</span> <span class="n">solver_arguments</span><span class="p">[</span><span class="s2">&quot;feas_as_optim&quot;</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">relax_known_vars</span> <span class="o">=</span> <span class="n">relax_inequalities</span> <span class="o">=</span> <span class="kc">False</span>
@@ -706,10 +724,13 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">objective_value</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
         <span class="n">collect</span><span class="p">()</span></div>
 
+
     <span class="c1">###########################################################################</span>
     <span class="c1"># PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES               #</span>
     <span class="c1">###########################################################################</span>
-<div class="viewcode-block" id="InflationLP.certificate_as_dict"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.certificate_as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">certificate_as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationLP.certificate_as_dict">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.certificate_as_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">certificate_as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                              <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
                              <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -759,6 +780,7 @@
         <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">monomial_from_name</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dual</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monomial_from_name</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">is_zero</span><span class="p">}</span></div>
 
+
     <span class="k">def</span> <span class="nf">probs_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">dict_with_monomial_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Add</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a monomial dictionary into a SymPy expression.</span>
@@ -778,7 +800,9 @@
             <span class="n">polynomial</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="n">mon</span><span class="o">.</span><span class="n">symbol</span>
         <span class="k">return</span> <span class="n">polynomial</span>
 
-<div class="viewcode-block" id="InflationLP.certificate_as_probs"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.certificate_as_probs">[docs]</a>    <span class="k">def</span> <span class="nf">certificate_as_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationLP.certificate_as_probs">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.certificate_as_probs">[docs]</a>
+    <span class="k">def</span> <span class="nf">certificate_as_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                              <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
                              <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Add</span><span class="p">:</span>
@@ -817,6 +841,7 @@
                 <span class="n">chop_tol</span><span class="o">=</span><span class="n">chop_tol</span><span class="p">,</span>
                 <span class="n">round_decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">))</span></div>
 
+
     <span class="k">def</span> <span class="nf">string_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                          <span class="n">dict_with_monomial_keys</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a monomial dictionary into a string.</span>
@@ -849,10 +874,15 @@
                     <span class="n">polynomial_as_str</span> <span class="o">+=</span> <span class="n">mon</span><span class="o">.</span><span class="n">name</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">polynomial_as_str</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">*</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">coeff</span><span class="p">),</span> <span class="n">mon</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">polynomial_as_str</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="n">polynomial_as_str</span><span class="p">[</span><span class="mi">0</span>
-                                            <span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;+&quot;</span> <span class="k">else</span> <span class="n">polynomial_as_str</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">polynomial_as_str</span><span class="p">):</span>  <span class="c1"># Failsafe for empty dictionary.</span>
+            <span class="n">polynomial_as_str</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
+        <span class="k">elif</span> <span class="n">polynomial_as_str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;+&quot;</span><span class="p">:</span>
+            <span class="n">polynomial_as_str</span> <span class="o">=</span> <span class="n">polynomial_as_str</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">polynomial_as_str</span>
 
-<div class="viewcode-block" id="InflationLP.certificate_as_string"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.certificate_as_string">[docs]</a>    <span class="k">def</span> <span class="nf">certificate_as_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationLP.certificate_as_string">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.certificate_as_string">[docs]</a>
+    <span class="k">def</span> <span class="nf">certificate_as_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                               <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                               <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
                               <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -892,6 +922,7 @@
                 <span class="n">chop_tol</span><span class="o">=</span><span class="n">chop_tol</span><span class="p">,</span>
                 <span class="n">round_decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; &lt; 0&quot;</span></div>
 
+
     <span class="k">def</span> <span class="nf">evaluate_polynomial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polynomial</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the certificate of infeasibility in a target probability</span>
 <span class="sd">        distribution. If the evaluation is a negative value, the distribution is</span>
@@ -906,7 +937,7 @@
 <span class="sd">        prob_array : numpy.ndarray</span>
 <span class="sd">            Multidimensional array encoding the distribution, which is</span>
 <span class="sd">            called as ``prob_array[a,b,c,...,x,y,z,...]`` where</span>
-<span class="sd">            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are</span>
+<span class="sd">            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are</span>
 <span class="sd">            inputs. Note: even if the inputs have cardinality 1 they must</span>
 <span class="sd">            be specified, and the corresponding axis dimensions are 1.</span>
 <span class="sd">            The parties&#39; outcomes and measurements must appear in the</span>
@@ -922,7 +953,9 @@
                     <span class="k">for</span> <span class="n">atom</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sanitise_dict</span><span class="p">(</span><span class="n">polynomial</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
 
 
-<div class="viewcode-block" id="InflationLP.evaluate_certificate"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.evaluate_certificate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_certificate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<div class="viewcode-block" id="InflationLP.evaluate_certificate">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.evaluate_certificate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate_certificate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the certificate of infeasibility in a target probability</span>
 <span class="sd">        distribution. If the evaluation is a negative value, the distribution is</span>
 <span class="sd">        not compatible with the causal structure. Warning: when using</span>
@@ -934,7 +967,7 @@
 <span class="sd">        prob_array : numpy.ndarray</span>
 <span class="sd">            Multidimensional array encoding the distribution, which is</span>
 <span class="sd">            called as ``prob_array[a,b,c,...,x,y,z,...]`` where</span>
-<span class="sd">            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are</span>
+<span class="sd">            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are</span>
 <span class="sd">            inputs. Note: even if the inputs have cardinality 1 they must</span>
 <span class="sd">            be specified, and the corresponding axis dimensions are 1.</span>
 <span class="sd">            The parties&#39; outcomes and measurements must appear in the</span>
@@ -952,10 +985,13 @@
                  <span class="s2">&quot;valid for other distributions.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_polynomial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">certificate_as_dict</span><span class="p">(),</span> <span class="n">prob_array</span><span class="p">)</span></div>
 
+
     <span class="c1">###########################################################################</span>
     <span class="c1"># OTHER ROUTINES EXPOSED TO THE USER                                      #</span>
     <span class="c1">##########################################################################</span>
-<div class="viewcode-block" id="InflationLP.reset"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="InflationLP.reset">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.reset">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the various user-specifiable objects in the inflation LP.</span>
 
 <span class="sd">        Parameters</span>
@@ -986,7 +1022,10 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
         <span class="n">collect</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="InflationLP.write_to_file"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.write_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+<div class="viewcode-block" id="InflationLP.write_to_file">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP.write_to_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exports the problem to a file.</span>
 
 <span class="sd">        Parameters</span>
@@ -1015,6 +1054,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;File format not supported. Please choose between &quot;</span>
                             <span class="o">+</span> <span class="s2">&quot;the extensions `.lp` and `.mps`.&quot;</span><span class="p">)</span></div>
+
 
     <span class="c1">###########################################################################</span>
     <span class="c1"># ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #</span>
@@ -1307,7 +1347,9 @@
     <span class="c1">###########################################################################</span>
     <span class="c1"># ROUTINES RELATED TO THE GENERATION OF THE LP                            #</span>
     <span class="c1">###########################################################################</span>
-<div class="viewcode-block" id="InflationLP._generate_lp"><a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP._generate_lp">[docs]</a>    <span class="k">def</span> <span class="nf">_generate_lp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="InflationLP._generate_lp">
+<a class="viewcode-back" href="../../../inflationlp.html#inflation.InflationLP._generate_lp">[docs]</a>
+    <span class="k">def</span> <span class="nf">_generate_lp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the LP associated with the inflation problem.</span>
 
 <span class="sd">        In the inflated graph there are many symmetries coming from invariance</span>
@@ -1360,7 +1402,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">num_non_CG</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_reps_non_CG</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Orbits discovered! </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_CG</span><span class="si">}</span><span class="s2"> unique monomials.&quot;</span><span class="p">)</span>
-            <span class="c1"># Obtain the real generating monomomials after accounting for symmetry</span>
+            <span class="c1"># Obtain the real generating monomials after accounting for symmetry</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">num_CG</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_n_columns</span>
             <span class="n">unique_indices_CG</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_CG</span><span class="p">)</span>
@@ -1401,8 +1443,8 @@
             <span class="n">_monomials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mon</span><span class="p">)</span>
             <span class="n">_monomial_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mon</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="n">_compmonomial_from_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">mon</span>
-            <span class="k">if</span> <span class="n">mon</span> <span class="ow">in</span> <span class="n">_compmonomial_to_idx</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="n">_compmonomial_from_idx</span><span class="p">[</span><span class="n">_compmonomial_to_idx</span><span class="p">[</span><span class="n">mon</span><span class="p">]])</span>
+            <span class="c1"># Commented out line below used for internal debugging only.</span>
+            <span class="c1"># assert mon not in _compmonomial_to_idx, f&quot;Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index.&quot;</span>
             <span class="n">_compmonomial_to_idx</span><span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">first_free_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monomials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">_monomials</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
@@ -1442,6 +1484,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;LP initialization complete, ready to accept further specifics.&quot;</span><span class="p">)</span></div>
 
+
     <span class="k">def</span> <span class="nf">_build_raw_lexboolvecs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Creates the generating set of monomials (as boolvecs),</span>
 <span class="sd">        both in and out of Collins-Gisin notation.</span>
@@ -1472,13 +1515,10 @@
                                  <span class="nb">reversed</span><span class="p">(</span><span class="n">choices_to_combine_CG</span><span class="p">))</span>
         <span class="n">raw_boolvecs_global</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">nb_outer_bitwise_or</span><span class="p">,</span>
                                      <span class="nb">reversed</span><span class="p">(</span><span class="n">choices_to_combine_global</span><span class="p">))</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">raw_boolvecs_CG</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">raw_boolvecs_CG</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))],</span>
-                <span class="n">raw_boolvecs_global</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">raw_boolvecs_global</span><span class="p">,</span>
-                                                         <span class="bp">self</span><span class="o">.</span><span class="n">_boolvec_for_CG_ineqs</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
-                                               <span class="p">)])</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">raw_boolvecs_CG</span><span class="p">,</span> <span class="n">raw_boolvecs_global</span><span class="p">)</span>
 
     <span class="nd">@cached_property</span>
-    <span class="k">def</span> <span class="nf">minimal_sparse_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">minimal_sparse_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Given the generating monomials, infer conversion to Collins-Gisin </span>
 <span class="sd">        notation.&quot;&quot;&quot;</span>
         <span class="n">eq_row</span><span class="p">,</span> <span class="n">eq_col</span><span class="p">,</span> <span class="n">eq_data</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
@@ -1524,11 +1564,11 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">eprint</span><span class="p">(</span><span class="s2">&quot;Number of nontrivial equality constraints in the LP:&quot;</span><span class="p">,</span>
                         <span class="n">nof_equalities</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">eq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">eq_row</span><span class="p">,</span> <span class="n">eq_col</span><span class="p">)),</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">eq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">eq_row</span><span class="p">,</span> <span class="n">eq_col</span><span class="p">)),</span>
                           <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_equalities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_extra_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_extra_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extra equalities in sparse matrix form.&quot;&quot;&quot;</span>
         <span class="n">eq_row</span><span class="p">,</span> <span class="n">eq_col</span><span class="p">,</span> <span class="n">eq_data</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
         <span class="n">nof_equalities</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_equalities</span><span class="p">)</span>
@@ -1537,67 +1577,67 @@
             <span class="n">eq_row</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">row_idx</span><span class="p">,</span> <span class="n">nof_vars</span><span class="p">))</span>
             <span class="n">eq_col</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">compmonomial_to_idx</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">eq</span><span class="p">])</span>
             <span class="n">eq_data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">eq</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">eq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">eq_row</span><span class="p">,</span> <span class="n">eq_col</span><span class="p">)),</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">eq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">eq_row</span><span class="p">,</span> <span class="n">eq_col</span><span class="p">)),</span>
                           <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_equalities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;All equalities (minimal and extra) in sparse matrix </span>
 <span class="sd">        form.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">vstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">minimal_sparse_equalities</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_extra_equalities</span><span class="p">))</span>
 
     <span class="nd">@cached_property</span>
-    <span class="k">def</span> <span class="nf">minimal_sparse_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given the generating monomials, inter conversion to</span>
-<span class="sd">        Collins-Gisin notation.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">minimal_sparse_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Here we express the nonnegativity of all `global` (maximal number</span>
+<span class="sd">         of variables) events, converting the expressions into Collins-Gisin</span>
+<span class="sd">         notation as needed.&quot;&quot;&quot;</span>
         <span class="n">ineq_row</span><span class="p">,</span> <span class="n">ineq_col</span><span class="p">,</span> <span class="n">ineq_data</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
         <span class="n">nof_inequalities</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_boolvec_for_CG_ineqs</span><span class="p">):</span>
-            <span class="n">alternatives_as_boolarrays</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">r</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
-                                          <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_boolvec_for_CG_ineqs</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_CG_adjusting_ortho_groups_as_boolarrays</span><span class="p">)}</span>
-            <span class="n">alternatives_as_signs</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">i</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">bool_array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bool_array</span> <span class="ow">in</span> <span class="n">alternatives_as_boolarrays</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-            <span class="k">for</span> <span class="n">bool_vec</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monomials_as_lexboolvecs_non_CG</span><span class="p">,</span>
-                                 <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
-                                 <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Discovering inequalities   &quot;</span><span class="p">):</span>
-                <span class="n">critical_boolvec_intersection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_and</span><span class="p">(</span><span class="n">bool_vec</span><span class="p">,</span>
-                                                               <span class="bp">self</span><span class="o">.</span><span class="n">_boolvec_for_CG_ineqs</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">critical_boolvec_intersection</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="n">absent_c_boolvec</span> <span class="o">=</span> <span class="n">bool_vec</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                    <span class="n">absent_c_boolvec</span><span class="p">[</span><span class="n">critical_boolvec_intersection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="n">critical_values_in_boovec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span>
-                        <span class="n">critical_boolvec_intersection</span><span class="p">)</span>
-                    <span class="n">signs</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">nb_outer_bitwise_xor</span><span class="p">,</span>
-                                   <span class="p">(</span><span class="n">alternatives_as_signs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
-                                    <span class="n">critical_values_in_boovec</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
-                    <span class="n">adjustments</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">nb_outer_bitwise_or</span><span class="p">,</span>
-                                         <span class="p">(</span><span class="n">alternatives_as_boolarrays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
-                                          <span class="n">critical_values_in_boovec</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
-                    <span class="n">terms_as_boolvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_or</span><span class="p">(</span>
-                        <span class="n">absent_c_boolvec</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
-                        <span class="n">adjustments</span><span class="p">)</span>
-                    <span class="n">terms_as_rawidx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_raw_lookup_dict</span><span class="p">[</span><span class="n">term_boolvec</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()]</span>
-                                       <span class="k">for</span> <span class="n">term_boolvec</span> <span class="ow">in</span> <span class="n">terms_as_boolvecs</span><span class="p">]</span>
-                    <span class="n">terms_as_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverse</span><span class="p">[</span><span class="n">terms_as_rawidx</span><span class="p">]</span>
-                    <span class="n">true_signs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">signs</span><span class="p">)</span>
+        <span class="n">alternatives_as_boolarrays</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">r</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+                                      <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_boolvec_for_CG_ineqs</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_CG_adjusting_ortho_groups_as_boolarrays</span><span class="p">)}</span>
+        <span class="n">alternatives_as_signs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">i</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">bool_array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bool_array</span> <span class="ow">in</span> <span class="n">alternatives_as_boolarrays</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">bool_vec</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monomials_as_lexboolvecs_non_CG</span><span class="p">,</span>
+                             <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
+                             <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Discovering inequalities   &quot;</span><span class="p">):</span>
+            <span class="n">critical_boolvec_intersection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_and</span><span class="p">(</span><span class="n">bool_vec</span><span class="p">,</span>
+                                                           <span class="bp">self</span><span class="o">.</span><span class="n">_boolvec_for_CG_ineqs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">critical_boolvec_intersection</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">absent_c_boolvec</span> <span class="o">=</span> <span class="n">bool_vec</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">absent_c_boolvec</span><span class="p">[</span><span class="n">critical_boolvec_intersection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">critical_values_in_boovec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span>
+                    <span class="n">critical_boolvec_intersection</span><span class="p">)</span>
+                <span class="n">signs</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">nb_outer_bitwise_xor</span><span class="p">,</span>
+                               <span class="p">(</span><span class="n">alternatives_as_signs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
+                                <span class="n">critical_values_in_boovec</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
+                <span class="n">adjustments</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">nb_outer_bitwise_or</span><span class="p">,</span>
+                                     <span class="p">(</span><span class="n">alternatives_as_boolarrays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span>
+                                      <span class="n">critical_values_in_boovec</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
+                <span class="n">terms_as_boolvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_or</span><span class="p">(</span>
+                    <span class="n">absent_c_boolvec</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
+                    <span class="n">adjustments</span><span class="p">)</span>
+                <span class="n">terms_as_rawidx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_raw_lookup_dict</span><span class="p">[</span><span class="n">term_boolvec</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()]</span>
+                                   <span class="k">for</span> <span class="n">term_boolvec</span> <span class="ow">in</span> <span class="n">terms_as_boolvecs</span><span class="p">]</span>
+                <span class="n">terms_as_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverse</span><span class="p">[</span><span class="n">terms_as_rawidx</span><span class="p">]</span>
+                <span class="n">true_signs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">signs</span><span class="p">)</span>
 
-                    <span class="n">ineq_row</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">nof_inequalities</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">signs</span><span class="p">))</span>
-                    <span class="n">ineq_col</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">terms_as_idxs</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
-                    <span class="n">ineq_data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">true_signs</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">ineq_row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nof_inequalities</span><span class="p">)</span>
-                    <span class="n">ineq_col</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_raw_lookup_dict</span><span class="p">[</span><span class="n">bool_vec</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()]])</span>
-                    <span class="n">ineq_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-                <span class="n">nof_inequalities</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">ineq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ineq_row</span><span class="p">,</span> <span class="n">ineq_col</span><span class="p">)),</span>
+                <span class="n">ineq_row</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">nof_inequalities</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">signs</span><span class="p">))</span>
+                <span class="n">ineq_col</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">terms_as_idxs</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
+                <span class="n">ineq_data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">true_signs</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ineq_row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nof_inequalities</span><span class="p">)</span>
+                <span class="n">ineq_col</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_raw_lookup_dict</span><span class="p">[</span><span class="n">bool_vec</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()]])</span>
+                <span class="n">ineq_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">nof_inequalities</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">ineq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ineq_row</span><span class="p">,</span> <span class="n">ineq_col</span><span class="p">)),</span>
                           <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_inequalities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_extra_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_extra_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extra inequalities in sparse matrix form.&quot;&quot;&quot;</span>
         <span class="n">ineq_row</span><span class="p">,</span> <span class="n">ineq_col</span><span class="p">,</span> <span class="n">ineq_data</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
         <span class="n">nof_inequalities</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_inequalities</span><span class="p">)</span>
@@ -1606,11 +1646,11 @@
             <span class="n">ineq_row</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">row_idx</span><span class="p">,</span> <span class="n">nof_vars</span><span class="p">))</span>
             <span class="n">ineq_col</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">compmonomial_to_idx</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ineq</span><span class="p">])</span>
             <span class="n">ineq_data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ineq</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">ineq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ineq_row</span><span class="p">,</span> <span class="n">ineq_col</span><span class="p">)),</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">ineq_data</span><span class="p">,</span> <span class="p">(</span><span class="n">ineq_row</span><span class="p">,</span> <span class="n">ineq_col</span><span class="p">)),</span>
                           <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_inequalities</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;All inequalities (minimal and extra) in sparse matrix form.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">vstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">minimal_sparse_inequalities</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_extra_inequalities</span><span class="p">))</span>
@@ -1654,13 +1694,13 @@
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monomial_names</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_coo_mat_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                         <span class="n">input_coo_mat</span><span class="p">:</span> <span class="n">coo_matrix</span><span class="p">,</span>
+                         <span class="n">input_coo_mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">,</span>
                          <span class="n">string_keys</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a COO matrix to a list of dictionaries.</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        input_coo_mat : coo_matrix</span>
+<span class="sd">        input_coo_mat : coo_array</span>
 <span class="sd">            Input COO matrix.</span>
 <span class="sd">        string_keys : bool, optional</span>
 <span class="sd">            Whether to use string keys or not, by default, ``False``.</span>
@@ -1677,7 +1717,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_coo_vec_to_mon_dict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="k">for</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">args_iter</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_mon_dict_to_coo_vec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomials_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_mon_dict_to_coo_vec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomials_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a PLACEHOLDER function, possibly to be deprecated, to convert</span>
 <span class="sd">         dicts into COO matrices.</span>
@@ -1686,7 +1726,7 @@
         <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">monomials_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="n">col</span> <span class="o">=</span> <span class="n">partsextractor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compmonomial_to_idx</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
         <span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">moment_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1760,14 +1800,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">num_nontrivial_known</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">num_nontrivial_known</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of variables with fixed numeric value:&quot;</span><span class="p">,</span>
+            <span class="n">eprint</span><span class="p">(</span><span class="s2">&quot;Number of variables with fixed numeric value:&quot;</span><span class="p">,</span>
                   <span class="n">num_nontrivial_known</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">num_semiknown</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">num_semiknown</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of semiknown variables: </span><span class="si">{</span><span class="n">num_semiknown</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">eprint</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of semiknown variables: </span><span class="si">{</span><span class="n">num_semiknown</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_reset_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the lists of bounds.&quot;&quot;&quot;</span>
@@ -1855,7 +1895,7 @@
                 <span class="k">for</span> <span class="n">mon</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">quadratic_factorization_conditions</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sparse matrix representation of the objective function.&quot;&quot;&quot;</span>
         <span class="c1"># TO BE DEPRECATED</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mon_dict_to_coo_vec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="p">)</span>
@@ -1867,7 +1907,7 @@
                                      <span class="n">string_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_known_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_known_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sparse matrix representation of the known values.&quot;&quot;&quot;</span>
         <span class="c1"># TO BE DEPRECATED</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mon_dict_to_coo_vec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_moments</span><span class="p">)</span>
@@ -1879,7 +1919,7 @@
                                      <span class="n">string_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_lowerbounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_lowerbounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sparse matrix representation of the lower bounds.&quot;&quot;&quot;</span>
         <span class="c1"># TO BE DEPRECATED</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mon_dict_to_coo_vec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moment_lowerbounds</span><span class="p">)</span>
@@ -1891,7 +1931,7 @@
                                      <span class="n">string_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_upperbounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_upperbounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sparse matrix representation of the upper bounds.&quot;&quot;&quot;</span>
         <span class="c1"># TO BE DEPRECATED</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mon_dict_to_coo_vec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moment_upperbounds</span><span class="p">)</span>
@@ -1903,7 +1943,7 @@
                                      <span class="n">string_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sparse_semiknown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">sparse_semiknown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sparse matrix representation of the semiknown values.&quot;&quot;&quot;</span>
         <span class="n">nof_semiknown</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span><span class="p">)</span>
         <span class="n">nof_variables</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compmonomial_to_idx</span><span class="p">)</span>
@@ -1913,7 +1953,7 @@
         <span class="n">col</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="p">()))</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">semiknown_moments</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">()))</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
                           <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_semiknown</span><span class="p">,</span> <span class="n">nof_variables</span><span class="p">))</span>
 
     <span class="nd">@property</span>
@@ -1925,7 +1965,7 @@
 
     <span class="k">def</span> <span class="nf">_prepare_solver_matrices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                  <span class="n">separate_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert arguments from dictionaries to sparse coo_matrix form to</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert arguments from dictionaries to sparse coo_array form to</span>
 <span class="sd">        pass to the solver.</span>
 
 <span class="sd">        Parameters</span>
@@ -2134,6 +2174,7 @@
         <span class="n">boolvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blank_bool_vec</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">boolvec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">boolvec</span></div>
+
 </pre></div>
 
            </div>

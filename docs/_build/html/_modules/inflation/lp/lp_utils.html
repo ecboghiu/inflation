@@ -1,26 +1,24 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.lp.lp_utils &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+  <title>inflation.lp.lp_utils &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/sphinx_highlight.js"></script>
-        <script src="../../../_static/clipboard.min.js"></script>
-        <script src="../../../_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -93,44 +91,49 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_matrix</span><span class="p">,</span> <span class="n">issparse</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_array</span><span class="p">,</span> <span class="n">issparse</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span>
 <span class="kn">from</span> <span class="nn">gc</span> <span class="kn">import</span> <span class="n">collect</span>
-<span class="kn">from</span> <span class="nn">inflation.utils</span> <span class="kn">import</span> <span class="n">partsextractor</span><span class="p">,</span> <span class="n">expand_sparse_vec</span><span class="p">,</span> <span class="n">vstack</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">partsextractor</span><span class="p">,</span> <span class="n">expand_sparse_vec</span><span class="p">,</span> <span class="n">vstack</span>
 
 
-<span class="k">def</span> <span class="nf">drop_zero_rows</span><span class="p">(</span><span class="n">coo_mat</span><span class="p">:</span> <span class="n">coo_matrix</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">drop_zero_rows</span><span class="p">(</span><span class="n">coo_mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Drops zero rows from a sparse matrix in place.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    coo_mat : coo_matrix</span>
+<span class="sd">    coo_mat : coo_array</span>
 <span class="sd">        Sparse matrix to drop zero rows from.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coo_mat</span> <span class="o">=</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
     <span class="n">nz_rows</span><span class="p">,</span> <span class="n">new_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">new_row</span>
-    <span class="n">coo_mat</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nz_rows</span><span class="p">),</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="n">new_row</span>
+    <span class="n">coo_mat</span> <span class="o">=</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nz_rows</span><span class="p">),</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">coo_mat</span>
 
 
-<span class="k">def</span> <span class="nf">canonical_order</span><span class="p">(</span><span class="n">coo_mat</span><span class="p">:</span> <span class="n">coo_matrix</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">canonical_order</span><span class="p">(</span><span class="n">coo_mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Puts a sparse matrix in canonical order in place.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    coo_mat : coo_matrix</span>
+<span class="sd">    coo_mat : coo_array</span>
 <span class="sd">        Sparse matrix to put in canonical order.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coo_mat</span> <span class="o">=</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
     <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lexsort</span><span class="p">([</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">])</span>
-    <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
-    <span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
-    <span class="n">coo_mat</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">coo_mat</span>
 
-
-<span class="k">def</span> <span class="nf">solveLP</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_matrix</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">known_vars</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_matrix</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">solveLP</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">known_vars</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">semiknown_vars</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">inequalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_matrix</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">equalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_matrix</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">inequalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">equalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">variables</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
@@ -139,15 +142,15 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    objective : Union[coo_matrix, Dict], optional</span>
+<span class="sd">    objective : Union[coo_array, Dict], optional</span>
 <span class="sd">        Objective function</span>
-<span class="sd">    known_vars : Union[coo_matrix, Dict], optional</span>
+<span class="sd">    known_vars : Union[coo_array, Dict], optional</span>
 <span class="sd">        Known values of the monomials</span>
 <span class="sd">    semiknown_vars : Dict, optional</span>
 <span class="sd">        Semiknown variables</span>
-<span class="sd">    inequalities : Union[coo_matrix, List[Dict]], optional</span>
+<span class="sd">    inequalities : Union[coo_array, List[Dict]], optional</span>
 <span class="sd">        Inequality constraints</span>
-<span class="sd">    equalities : Union[coo_matrix, List[Dict]], optional</span>
+<span class="sd">    equalities : Union[coo_array, List[Dict]], optional</span>
 <span class="sd">        Equality constraints</span>
 <span class="sd">    variables : List</span>
 <span class="sd">        Monomials by name in same order as column indices of all other solver</span>
@@ -206,13 +209,15 @@
     <span class="k">return</span> <span class="n">solveLP_sparse</span><span class="p">(</span><span class="o">**</span><span class="n">solver_args</span><span class="p">)</span>
 
 
-<span class="n">blank_coo_matrix</span> <span class="o">=</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
-<div class="viewcode-block" id="solveLP_sparse"><a class="viewcode-back" href="../../../solvers.html#inflation.lp.lp_utils.solveLP_sparse">[docs]</a><span class="k">def</span> <span class="nf">solveLP_sparse</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">coo_matrix</span> <span class="o">=</span> <span class="n">blank_coo_matrix</span><span class="p">,</span>
-                   <span class="n">known_vars</span><span class="p">:</span> <span class="n">coo_matrix</span> <span class="o">=</span> <span class="n">blank_coo_matrix</span><span class="p">,</span>
-                   <span class="n">inequalities</span><span class="p">:</span> <span class="n">coo_matrix</span> <span class="o">=</span> <span class="n">blank_coo_matrix</span><span class="p">,</span>
-                   <span class="n">equalities</span><span class="p">:</span> <span class="n">coo_matrix</span> <span class="o">=</span> <span class="n">blank_coo_matrix</span><span class="p">,</span>
-                   <span class="n">lower_bounds</span><span class="p">:</span> <span class="n">coo_matrix</span> <span class="o">=</span> <span class="n">blank_coo_matrix</span><span class="p">,</span>
-                   <span class="n">upper_bounds</span><span class="p">:</span> <span class="n">coo_matrix</span> <span class="o">=</span> <span class="n">blank_coo_matrix</span><span class="p">,</span>
+<span class="n">blank_coo_array</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+<div class="viewcode-block" id="solveLP_sparse">
+<a class="viewcode-back" href="../../../solvers.html#inflation.lp.lp_utils.solveLP_sparse">[docs]</a>
+<span class="k">def</span> <span class="nf">solveLP_sparse</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">known_vars</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">inequalities</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">equalities</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">lower_bounds</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">upper_bounds</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
                    <span class="n">solve_dual</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                    <span class="n">default_non_negative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                    <span class="n">relax_known_vars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -227,17 +232,17 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    objective : coo_matrix, optional</span>
+<span class="sd">    objective : coo_array, optional</span>
 <span class="sd">        Objective function with coefficients as matrix entries.</span>
-<span class="sd">    known_vars : coo_matrix, optional</span>
+<span class="sd">    known_vars : coo_array, optional</span>
 <span class="sd">        Known values of the monomials with values as matrix entries.</span>
-<span class="sd">    inequalities : coo_matrix, optional</span>
+<span class="sd">    inequalities : coo_array, optional</span>
 <span class="sd">        Inequality constraints in matrix form.</span>
-<span class="sd">    equalities : coo_matrix, optional</span>
+<span class="sd">    equalities : coo_array, optional</span>
 <span class="sd">        Equality constraints in matrix form.</span>
-<span class="sd">    lower_bounds : coo_matrix, optional</span>
+<span class="sd">    lower_bounds : coo_array, optional</span>
 <span class="sd">        Lower bounds of variables with bounds as matrix entries.</span>
-<span class="sd">    upper_bounds : coo_matrix, optional</span>
+<span class="sd">    upper_bounds : coo_array, optional</span>
 <span class="sd">        Upper bounds of variables with bounds as matrix entries.</span>
 <span class="sd">    solve_dual : bool, optional</span>
 <span class="sd">        Whether to solve the dual (``True``) or primal (``False``) formulation.</span>
@@ -261,9 +266,7 @@
 <span class="sd">        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or</span>
 <span class="sd">        ``mosek.presolvemode.off``. Or, control which optimizer is used by</span>
 <span class="sd">        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK&#39;s</span>
-<span class="sd">        documentation</span>
-<span class="sd">        &lt;https://docs.mosek.com/latest/pythonapi/solver-parameters.html&gt;`_ for</span>
-<span class="sd">        more details.</span>
+<span class="sd">        documentation`_ for more details.</span>
 <span class="sd">    variables : list</span>
 <span class="sd">        Monomials by name in same order as column indices of all other solver</span>
 <span class="sd">        arguments</span>
@@ -276,9 +279,12 @@
 <span class="sd">        and response code.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">drop_zero_rows</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span>
-    <span class="n">drop_zero_rows</span><span class="p">(</span><span class="n">equalities</span><span class="p">)</span>
-    <span class="n">canonical_order</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+    <span class="n">inequalities</span><span class="o">=</span><span class="n">drop_zero_rows</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span>
+    <span class="n">equalities</span><span class="o">=</span><span class="n">drop_zero_rows</span><span class="p">(</span><span class="n">equalities</span><span class="p">)</span>
+    <span class="n">known_vars</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+    <span class="n">upper_bounds</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">upper_bounds</span><span class="p">)</span>
+    <span class="n">lower_bounds</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">lower_bounds</span><span class="p">)</span>
+    <span class="n">objective</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">objective</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">t0</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
@@ -339,7 +345,7 @@
                                                 <span class="n">nof_primal_inequalities</span><span class="p">)))</span>
                 <span class="n">cons_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
                     <span class="p">(</span><span class="n">constraints</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_primal_inequalities</span><span class="p">)))</span>
-                <span class="n">constraints</span> <span class="o">=</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">cons_data</span><span class="p">,</span> <span class="p">(</span><span class="n">cons_row</span><span class="p">,</span> <span class="n">cons_col</span><span class="p">)),</span>
+                <span class="n">constraints</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">cons_data</span><span class="p">,</span> <span class="p">(</span><span class="n">cons_row</span><span class="p">,</span> <span class="n">cons_col</span><span class="p">)),</span>
                                          <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_primal_constraints</span><span class="p">,</span>
                                                 <span class="n">nof_primal_variables</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
 
@@ -357,7 +363,7 @@
                     <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_known_vars</span><span class="p">)</span>
                 <span class="p">))</span>
 
-                <span class="n">kv_matrix</span> <span class="o">=</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">kv_data</span><span class="p">,</span> <span class="p">(</span><span class="n">kv_row</span><span class="p">,</span> <span class="n">kv_col</span><span class="p">)),</span>
+                <span class="n">kv_matrix</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">kv_data</span><span class="p">,</span> <span class="p">(</span><span class="n">kv_row</span><span class="p">,</span> <span class="n">kv_col</span><span class="p">)),</span>
                                        <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_known_vars</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
                                               <span class="n">nof_primal_variables</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
                 <span class="n">canonical_order</span><span class="p">(</span><span class="n">kv_matrix</span><span class="p">)</span>
@@ -372,6 +378,8 @@
 
             <span class="n">constraints</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">constraints</span><span class="p">,</span> <span class="n">kv_matrix</span><span class="p">))</span>
             <span class="p">(</span><span class="n">nof_primal_constraints</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">)</span> <span class="o">=</span> <span class="n">constraints</span><span class="o">.</span><span class="n">shape</span>
+            <span class="k">if</span> <span class="n">objective</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">objective</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
 
             <span class="n">nof_lb</span> <span class="o">=</span> <span class="n">lower_bounds</span><span class="o">.</span><span class="n">nnz</span>
             <span class="n">nof_ub</span> <span class="o">=</span> <span class="n">upper_bounds</span><span class="o">.</span><span class="n">nnz</span>
@@ -444,7 +452,10 @@
                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sparse matrix reformat complete...&quot;</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">relax_known_vars</span> <span class="ow">or</span> <span class="n">relax_inequalities</span><span class="p">:</span>
-                    <span class="c1"># Minimize lambda</span>
+                    <span class="c1"># Maximize lambda</span>
+                    <span class="c1"># (If maximum slack is still negative, then the unrelaxed</span>
+                    <span class="c1"># LP would be infeasible, whereas positive slack solution</span>
+                    <span class="c1"># implies LP solution strictly interior in the polytope.)</span>
                     <span class="n">objective_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
                     <span class="n">objective_vector</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -593,7 +604,7 @@
             <span class="n">cert_data</span><span class="p">[</span><span class="n">known_vars</span><span class="o">.</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_values</span><span class="p">[:</span><span class="n">nof_known_vars</span><span class="p">]</span> <span class="c1"># Assumes known values coded as equalities</span>
             <span class="k">if</span> <span class="n">relax_known_vars</span><span class="p">:</span>
                 <span class="n">cert_data</span><span class="p">[</span><span class="n">known_vars</span><span class="o">.</span><span class="n">col</span><span class="p">]</span> <span class="o">+=</span> <span class="n">y_values</span><span class="p">[</span><span class="n">nof_known_vars</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">nof_known_vars</span><span class="p">)]</span>
-            <span class="n">sparse_certificate</span> <span class="o">=</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">cert_data</span><span class="p">,</span> <span class="p">(</span><span class="n">cert_row</span><span class="p">,</span> <span class="n">cert_col</span><span class="p">)),</span>
+            <span class="n">sparse_certificate</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">cert_data</span><span class="p">,</span> <span class="p">(</span><span class="n">cert_row</span><span class="p">,</span> <span class="n">cert_col</span><span class="p">)),</span>
                                             <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">))</span>
 
             <span class="c1"># Certificate as a dictionary</span>
@@ -621,6 +632,7 @@
             <span class="p">}</span></div>
 
 
+
 <span class="k">def</span> <span class="nf">streamprinter</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A stream printer to get output from Mosek.</span>
 <span class="sd">    </span>
@@ -639,7 +651,7 @@
 
 
 <span class="k">def</span> <span class="nf">to_sparse</span><span class="p">(</span><span class="n">argument</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]],</span>
-              <span class="n">variables</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_matrix</span><span class="p">:</span>
+              <span class="n">variables</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a solver argument to a sparse matrix to pass to the solver.</span>
 <span class="sd">    </span>
 <span class="sd">    Parameters</span>
@@ -652,7 +664,7 @@
 <span class="sd">    </span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    coo_matrix</span>
+<span class="sd">    coo_array</span>
 <span class="sd">        Sparse matrix representation of the solver argument.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">argument</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
@@ -661,7 +673,7 @@
         <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">argument</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="n">col</span> <span class="o">=</span> <span class="n">partsextractor</span><span class="p">(</span><span class="n">var_to_idx</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
         <span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Argument is a list of constraints</span>
         <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
@@ -671,7 +683,7 @@
         <span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">vec_col</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">vec_col</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_sparse</span><span class="p">(</span><span class="n">cons</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">cons</span> <span class="ow">in</span> <span class="n">argument</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">vec_data</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">vec_data</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
                           <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">argument</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
 
 
@@ -717,7 +729,7 @@
         <span class="n">col</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="p">()))</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span> <span class="ow">in</span> <span class="n">semiknown_vars</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">()))</span>
-        <span class="n">semiknown_mat</span> <span class="o">=</span> <span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
+        <span class="n">semiknown_mat</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
                                    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_semiknown</span><span class="p">,</span> <span class="n">nof_variables</span><span class="p">))</span>
         <span class="k">if</span> <span class="s2">&quot;equalities&quot;</span> <span class="ow">in</span> <span class="n">sparse_args</span><span class="p">:</span>
             <span class="n">sparse_args</span><span class="p">[</span><span class="s2">&quot;equalities&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">(</span>

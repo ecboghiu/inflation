@@ -1,30 +1,28 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
-      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css" />
+  <title>Advanced &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
-        <script src="_static/clipboard.min.js"></script>
-        <script src="_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -95,12 +93,12 @@
            <div itemprop="articleBody">
              
   <section id="Advanced">
-<h1>Advanced<a class="headerlink" href="#Advanced" title="Permalink to this heading"></a></h1>
+<h1>Advanced<a class="headerlink" href="#Advanced" title="Link to this heading"></a></h1>
 <p>In this section we will consider some advanced aspects related to the package.</p>
 <section id="Performance-considerations">
-<h2>Performance considerations<a class="headerlink" href="#Performance-considerations" title="Permalink to this heading"></a></h2>
+<h2>Performance considerations<a class="headerlink" href="#Performance-considerations" title="Link to this heading"></a></h2>
 <section id="Solving-the-dual-versus-the-primal-formulation-of-the-SDP">
-<h3>Solving the dual versus the primal formulation of the SDP<a class="headerlink" href="#Solving-the-dual-versus-the-primal-formulation-of-the-SDP" title="Permalink to this heading"></a></h3>
+<h3>Solving the dual versus the primal formulation of the SDP<a class="headerlink" href="#Solving-the-dual-versus-the-primal-formulation-of-the-SDP" title="Link to this heading"></a></h3>
 <p>For semidefinite programs that appear often in causal compatibility problems, using the dual formulation speeds up the solve time and significantly lowers RAM usage.</p>
 <p>Consider the following example, where we use the MOSEK Fusion API to solve the primal version of a program, and then the dual:</p>
 <div class="nbinput docutils container">
@@ -155,7 +153,7 @@ MOSEK, you would need to write the dual formulation manually, which when dualise
 </ul>
 </section>
 <section id="Large-scale-problems">
-<h3>Large scale problems<a class="headerlink" href="#Large-scale-problems" title="Permalink to this heading"></a></h3>
+<h3>Large scale problems<a class="headerlink" href="#Large-scale-problems" title="Link to this heading"></a></h3>
 <p>For solving large scale semidefinite programs, it is recommended to use the MOSEK Fusion API, as going through interfaces for conic problems, such as PICOS or CVXPY, usually has an overhead in the pre-processing state (for example, there can be a higher RAM usage in the preprocessing stage than when solving the problem, which can lead to out-of-memory errors). There does not seem to be such an overhead when using YALMIP. For using YALMIP, the user can export the problem to <code class="docutils literal notranslate"><span class="pre">.dat-s</span></code> format
 using <code class="docutils literal notranslate"><span class="pre">InflationSDP.write_to_file()</span></code>, and load it in MATLAB using YALMIP’s <code class="docutils literal notranslate"><span class="pre">loadsdpafile</span></code>.</p>
 <p>For large problems, it is recommended to try using a first-order SDP solver, such as <a class="reference external" href="https://www.cvxgrp.org/scs/">SCS</a>, if using second-order SDP solvers, such as MOSEK, is too slow or too memory-consuming. To use SCS the problem needs to be exported to the user’s interface of choice and have SCS installed.</p>

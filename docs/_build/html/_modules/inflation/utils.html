@@ -1,26 +1,24 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.utils &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+  <title>inflation.utils &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/sphinx_highlight.js"></script>
-        <script src="../../_static/clipboard.min.js"></script>
-        <script src="../../_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -107,7 +105,9 @@
             <span class="n">nested</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">nested</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">nested</span>
 
-<div class="viewcode-block" id="format_permutations"><a class="viewcode-back" href="../../build.html#inflation.sdp.quantum_tools.format_permutations">[docs]</a><span class="k">def</span> <span class="nf">format_permutations</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+<div class="viewcode-block" id="format_permutations">
+<a class="viewcode-back" href="../../build.html#inflation.sdp.quantum_tools.format_permutations">[docs]</a>
+<span class="k">def</span> <span class="nf">format_permutations</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
     <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span><span class="o">...</span><span class="p">]],</span>
@@ -131,6 +131,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">source_permutation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">source_permutation</span><span class="p">,</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span></div>
+
 
 <span class="k">def</span> <span class="nf">clean_coefficients</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
                        <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
@@ -186,8 +187,8 @@
         <span class="k">return</span> <span class="n">itemgetter</span><span class="p">(</span><span class="n">indices</span><span class="p">)(</span><span class="n">thing_to_take_parts_of</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">expand_sparse_vec</span><span class="p">(</span><span class="n">sparse_vec</span><span class="p">:</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">,</span>
-                      <span class="n">conversion_style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;eq&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">expand_sparse_vec</span><span class="p">(</span><span class="n">sparse_vec</span><span class="p">:</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">,</span>
+                      <span class="n">conversion_style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;eq&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Expand a one-dimensional sparse matrix to its full form. Used to expand</span>
 <span class="sd">    the solver arguments known_vars, lower_bounds, and upper_bounds.&quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="n">conversion_style</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;lb&quot;</span><span class="p">,</span> <span class="s2">&quot;ub&quot;</span><span class="p">},</span> \
@@ -214,15 +215,15 @@
     <span class="k">if</span> <span class="n">conversion_style</span> <span class="o">==</span> <span class="s2">&quot;lb&quot;</span><span class="p">:</span>
         <span class="c1"># Lower bound format: x &gt;= a -&gt; x - a &gt;= 0</span>
         <span class="n">data</span> <span class="o">=</span> <span class="o">-</span><span class="n">data</span>
-    <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_rows</span><span class="p">,</span> <span class="n">nof_cols</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_rows</span><span class="p">,</span> <span class="n">nof_cols</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">vstack</span><span class="p">(</span><span class="n">blocks</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coo&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack sparse matrices in coo_matrix form more efficiently.&quot;&quot;&quot;</span>
+<span class="k">def</span> <span class="nf">vstack</span><span class="p">(</span><span class="n">blocks</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coo&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack sparse matrices in coo_array form more efficiently.&quot;&quot;&quot;</span>
     <span class="n">non_empty</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mat</span> <span class="k">for</span> <span class="n">mat</span> <span class="ow">in</span> <span class="n">blocks</span> <span class="k">if</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">nof_blocks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_empty</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nof_blocks</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">)</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">)</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">):</span>
             <span class="c1"># mat_row = blocks[0].row</span>
             <span class="c1"># (row_count, _) = blocks[0].shape</span>
             <span class="c1"># for block in blocks[1:]:</span>
@@ -239,14 +240,14 @@
             <span class="n">mat_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="n">adjusted_rows</span><span class="p">)</span>
             <span class="n">mat_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">col</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">))</span>
             <span class="n">mat_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">mat_data</span><span class="p">,</span> <span class="p">(</span><span class="n">mat_row</span><span class="p">,</span> <span class="n">mat_col</span><span class="p">)),</span>
+            <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">((</span><span class="n">mat_data</span><span class="p">,</span> <span class="p">(</span><span class="n">mat_row</span><span class="p">,</span> <span class="n">mat_col</span><span class="p">)),</span>
                                   <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_rows</span><span class="p">,</span> <span class="n">nof_cols</span><span class="p">))</span><span class="o">.</span><span class="n">asformat</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">nof_blocks</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">non_empty</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">([])</span>
+        <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">([])</span>
 
 <span class="k">def</span> <span class="nf">perm_combiner</span><span class="p">(</span><span class="n">old_perms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">new_perms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="n">combined</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">old_perms</span><span class="p">,</span> <span class="n">new_perms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>

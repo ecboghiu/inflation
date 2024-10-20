@@ -3,10 +3,10 @@ Monomial classes and functions
 InflationLP monomial classes
 ----------------------------
 .. autoclass:: inflation.lp.monomial_classes.InternalAtomicMonomial
-   :members: _raw_name, _name, _signature, _symbol, compute_marginal, _raw_name
+   :members: _raw_name, _name, _signature, compute_marginal
 
 .. autoclass:: inflation.lp.monomial_classes.CompoundMoment
-   :members: _names_of_factors, _symbols_of_factors, attach_idx, compute_marginal, evaluate
+   :members: attach_idx, compute_marginal, evaluate
 
 InflationSDP monomial classes
 -----------------------------
