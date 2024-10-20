@@ -18,7 +18,7 @@ import sympy as sp
 from scipy.sparse import coo_matrix, vstack
 from tqdm import tqdm
 
-from inflation import InflationProblem
+from .. import InflationProblem
 from .lp_utils import solveLP
 from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from .numbafied import (nb_outer_bitwise_or,

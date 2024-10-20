@@ -18,7 +18,7 @@ import sympy as sp
 from scipy.sparse import coo_array
 from tqdm import tqdm
 
-from inflation import InflationProblem
+from .. import InflationProblem
 from .fast_npa import nb_is_knowable as is_knowable
 from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal

@@ -12,7 +12,7 @@ from typing import List, Dict, Union
 from scipy.sparse import coo_matrix, issparse
 from time import perf_counter
 from gc import collect
-from inflation.utils import partsextractor, expand_sparse_vec, vstack
+from ..utils import partsextractor, expand_sparse_vec, vstack
 
 
 def drop_zero_rows(coo_mat: coo_matrix):

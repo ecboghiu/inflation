@@ -16,9 +16,9 @@ from sympy.utilities.lambdify import lambdify
 from typing import Dict, Tuple, Union
 from functools import lru_cache
 
-from inflation import InflationLP, InflationSDP
-from inflation.sdp.quantum_tools import make_numerical
-from inflation.sdp.monomial_classes import CompoundMomentSDP
+from . import InflationLP, InflationSDP
+from .sdp.quantum_tools import make_numerical
+from .sdp.monomial_classes import CompoundMomentSDP
 
 
 def max_within_feasible(program: Union[InflationLP, InflationSDP],
