@@ -1,27 +1,25 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Download and Installation &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+  <title>Download and Installation &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
-        <script src="_static/clipboard.min.js"></script>
-        <script src="_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -89,15 +87,15 @@
            <div itemprop="articleBody">
              
   <section id="download-and-installation">
-<h1>Download and Installation<a class="headerlink" href="#download-and-installation" title="Permalink to this heading"></a></h1>
+<h1>Download and Installation<a class="headerlink" href="#download-and-installation" title="Link to this heading"></a></h1>
 <p>The package is available in the Python Package Index. The latest development version is available on GitHub.</p>
 <section id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h2>
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
 <p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a>, <a class="reference external" href="http://www.numpy.org/">Numpy</a>,  <a class="reference external" href="http://www.scipy.org/">Scipy</a>, and <a class="reference external" href="https://networkx.org/">NetworkX</a>. The code is only compatible with Python 3. It is recommended to install <a class="reference external" href="http://www.numba.org/">Numba</a> which provides just-in-time compilation of several core functions, yielding a significant speed-up.</p>
 <p>Generated relaxations can be exported in <a class="reference external" href="http://euler.nmt.edu/~brian/sdplib/FORMAT">SDPA format</a>, which can be loaded with other solvers. We also support the use of the <a class="reference external" href="http://www.mosek.com/">MOSEK</a> solver for efficiently solving the relaxation (MOSEK has <a class="reference external" href="https://www.mosek.com/products/academic-licenses/">free academic licenses</a>). The MOSEK Python package needs to be installed. Future updates will include exporting to other solver interfaces, such as CVXPY, PICOS or YALMIP.</p>
 </section>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
 <p>Follow the standard procedure for installing Python modules:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install inflation
 </pre></div>

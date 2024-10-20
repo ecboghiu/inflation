@@ -1,26 +1,24 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.sdp.InflationSDP &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+  <title>inflation.sdp.InflationSDP &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/sphinx_highlight.js"></script>
-        <script src="../../../_static/clipboard.min.js"></script>
-        <script src="../../../_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -99,10 +97,10 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">lil_matrix</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_array</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="kn">from</span> <span class="nn">inflation</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">InflationProblem</span>
 <span class="kn">from</span> <span class="nn">.fast_npa</span> <span class="kn">import</span> <span class="n">nb_is_knowable</span> <span class="k">as</span> <span class="n">is_knowable</span>
 <span class="kn">from</span> <span class="nn">.fast_npa</span> <span class="kn">import</span> <span class="p">(</span><span class="n">reverse_mon</span><span class="p">,</span>
                        <span class="n">to_canonical_1d_internal</span>
@@ -122,7 +120,9 @@
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">clean_coefficients</span><span class="p">,</span> <span class="n">partsextractor</span>
 
 
-<div class="viewcode-block" id="InflationSDP"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP">[docs]</a><span class="k">class</span> <span class="nc">InflationSDP</span><span class="p">:</span>
+<div class="viewcode-block" id="InflationSDP">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP">[docs]</a>
+<span class="k">class</span> <span class="nc">InflationSDP</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for generating and solving an SDP relaxation for quantum inflation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">constant_term_name</span> <span class="o">=</span> <span class="s2">&quot;constant_term&quot;</span>
@@ -132,7 +132,7 @@
                  <span class="n">supports_problem</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">include_all_outcomes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">commuting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class for generating and solving an SDP relaxation for quantum inflation.</span>
 
@@ -214,7 +214,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_default_lexorder</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">zero_operator</span><span class="p">,</span> 
                                                  <span class="n">inflationproblem</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">)</span>
-                                                <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span><span class="p">)</span>
+                                                <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nr_operators</span> <span class="o">=</span> <span class="n">inflationproblem</span><span class="o">.</span><span class="n">_nr_operators</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">blank_bool_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nr_operators</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_lexorder</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -290,7 +290,9 @@
     <span class="c1">###########################################################################</span>
     <span class="c1"># MAIN ROUTINES EXPOSED TO THE USER                                       #</span>
     <span class="c1">###########################################################################</span>
-<div class="viewcode-block" id="InflationSDP.generate_relaxation"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.generate_relaxation">[docs]</a>    <span class="k">def</span> <span class="nf">generate_relaxation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationSDP.generate_relaxation">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.generate_relaxation">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate_relaxation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                             <span class="n">column_specification</span><span class="p">:</span>
                             <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span>
                                   <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
@@ -412,7 +414,7 @@
         <span class="n">collect</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">momentmatrix_has_a_zero</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentmatrix_has_a_one</span> <span class="o">=</span> \
-            <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentmatrix</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentmatrix</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
 
         <span class="c1"># Associate Monomials to the remaining entries. The zero monomial is</span>
         <span class="c1"># not stored during calculate_momentmatrix</span>
@@ -483,6 +485,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">maskmatrices</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_relaxation_has_been_generated</span> <span class="o">=</span> <span class="kc">True</span></div>
 
+
     <span class="k">def</span> <span class="nf">set_extra_equalities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">extra_equalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set extra equality constraints for the SDP.</span>
@@ -527,7 +530,9 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;All inequalities (minimal and extra) as one list of dictionaries.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimal_inequalities</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_inequalities</span>
 
-<div class="viewcode-block" id="InflationSDP.set_bounds"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_bounds">[docs]</a>    <span class="k">def</span> <span class="nf">set_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationSDP.set_bounds">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_bounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                    <span class="n">bounds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
                    <span class="n">bound_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;up&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Set numerical lower or upper bounds on the moments generated in the</span>
@@ -575,6 +580,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">moment_lowerbounds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">sanitized_bounds</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_bounds</span><span class="p">(</span><span class="n">bound_type</span><span class="p">)</span></div>
 
+
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">atomic_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">atoms</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -615,7 +621,9 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">atomic_monomials</span> <span class="k">if</span>
                 <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">is_do_conditional</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">is_knowable</span><span class="p">)]</span>
 
-<div class="viewcode-block" id="InflationSDP.set_distribution"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_distribution">[docs]</a>    <span class="k">def</span> <span class="nf">set_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationSDP.set_distribution">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_distribution">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                          <span class="n">prob_array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
                          <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                          <span class="n">shared_randomness</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -654,7 +662,10 @@
                         <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="n">use_lpi_constraints</span><span class="p">,</span>
                         <span class="n">only_specified_values</span><span class="o">=</span><span class="n">shared_randomness</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="InflationSDP.set_objective"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_objective">[docs]</a>    <span class="k">def</span> <span class="nf">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="InflationSDP.set_objective">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_objective">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                       <span class="n">objective</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">Expr</span><span class="p">,</span>
                                        <span class="nb">dict</span><span class="p">,</span>
                                        <span class="kc">None</span><span class="p">],</span>
@@ -702,6 +713,7 @@
                  <span class="s2">&quot;least one monomial that does not appear in the original &quot;</span> <span class="o">+</span>
                  <span class="sa">f</span><span class="s2">&quot;moment matrix:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">surprising_objective_terms</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_update_objective</span><span class="p">()</span></div>
+
 
     <span class="k">def</span> <span class="nf">update_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                    <span class="n">values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CompoundMomentSDP</span><span class="p">,</span>
@@ -816,7 +828,9 @@
             <span class="k">del</span> <span class="n">atomic_knowns</span><span class="p">,</span> <span class="n">surprising_semiknowns</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_after_set_values</span><span class="p">()</span>
 
-<div class="viewcode-block" id="InflationSDP.set_values"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_values">[docs]</a>    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="InflationSDP.set_values">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.set_values">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Exactly like update_values, except it resets all known values to zero</span>
 <span class="sd">        as an intermediate step</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -828,7 +842,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">update_values</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">return</span></div>
 
-<div class="viewcode-block" id="InflationSDP.solve"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+
+<div class="viewcode-block" id="InflationSDP.solve">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.solve">[docs]</a>
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
               <span class="n">interpreter</span><span class="o">=</span><span class="s2">&quot;MOSEKFusion&quot;</span><span class="p">,</span>
               <span class="n">feas_as_optim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
               <span class="n">solve_dual</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -898,6 +915,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">primal_objective</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">objective_value</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
         <span class="n">collect</span><span class="p">()</span></div>
+
 
     <span class="c1">###########################################################################</span>
     <span class="c1"># PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES               #</span>
@@ -971,7 +989,9 @@
             <span class="n">polynomial</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="n">mon</span><span class="o">.</span><span class="n">symbol</span>
         <span class="k">return</span> <span class="n">polynomial</span>
 
-<div class="viewcode-block" id="InflationSDP.certificate_as_probs"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.certificate_as_probs">[docs]</a>    <span class="k">def</span> <span class="nf">certificate_as_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationSDP.certificate_as_probs">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.certificate_as_probs">[docs]</a>
+    <span class="k">def</span> <span class="nf">certificate_as_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                              <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
                              <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">Add</span><span class="p">:</span>
@@ -1009,6 +1029,7 @@
             <span class="n">chop_tol</span><span class="o">=</span><span class="n">chop_tol</span><span class="p">,</span>
             <span class="n">round_decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">))</span></div>
 
+
     <span class="k">def</span> <span class="nf">string_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                          <span class="n">dict_with_monomial_keys</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a monomial dictionary into a string.</span>
@@ -1044,7 +1065,9 @@
         <span class="k">return</span> <span class="n">polynomial_as_str</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="n">polynomial_as_str</span><span class="p">[</span>
                                             <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;+&quot;</span> <span class="k">else</span> <span class="n">polynomial_as_str</span>
 
-<div class="viewcode-block" id="InflationSDP.certificate_as_string"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.certificate_as_string">[docs]</a>    <span class="k">def</span> <span class="nf">certificate_as_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationSDP.certificate_as_string">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.certificate_as_string">[docs]</a>
+    <span class="k">def</span> <span class="nf">certificate_as_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                               <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                               <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
                               <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1084,6 +1107,7 @@
                 <span class="n">chop_tol</span><span class="o">=</span><span class="n">chop_tol</span><span class="p">,</span>
                 <span class="n">round_decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; &lt; 0&quot;</span></div>
 
+
     <span class="k">def</span> <span class="nf">evaluate_polynomial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polynomial</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the certificate of infeasibility in a target probability</span>
 <span class="sd">        distribution. If the evaluation is a negative value, the distribution is</span>
@@ -1098,7 +1122,7 @@
 <span class="sd">        prob_array : numpy.ndarray</span>
 <span class="sd">            Multidimensional array encoding the distribution, which is</span>
 <span class="sd">            called as ``prob_array[a,b,c,...,x,y,z,...]`` where</span>
-<span class="sd">            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are</span>
+<span class="sd">            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are</span>
 <span class="sd">            inputs. Note: even if the inputs have cardinality 1 they must</span>
 <span class="sd">            be specified, and the corresponding axis dimensions are 1.</span>
 <span class="sd">            The parties&#39; outcomes and measurements must appear in the</span>
@@ -1113,7 +1137,9 @@
         <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">atom</span><span class="o">.</span><span class="n">compute_marginal</span><span class="p">(</span><span class="n">prob_array</span><span class="p">)</span> <span class="o">*</span> <span class="n">val</span>
                     <span class="k">for</span> <span class="n">atom</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sanitise_dict</span><span class="p">(</span><span class="n">polynomial</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
 
-<div class="viewcode-block" id="InflationSDP.evaluate_certificate"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.evaluate_certificate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_certificate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<div class="viewcode-block" id="InflationSDP.evaluate_certificate">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.evaluate_certificate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate_certificate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the certificate of infeasibility in a target probability</span>
 <span class="sd">        distribution. If the evaluation is a negative value, the distribution is</span>
 <span class="sd">        not compatible with the causal structure. Warning: when using</span>
@@ -1125,7 +1151,7 @@
 <span class="sd">        prob_array : numpy.ndarray</span>
 <span class="sd">            Multidimensional array encoding the distribution, which is</span>
 <span class="sd">            called as ``prob_array[a,b,c,...,x,y,z,...]`` where</span>
-<span class="sd">            :math:`a,b,c,\dots` are outputs and :math:`x,y,z,\dots` are</span>
+<span class="sd">            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are</span>
 <span class="sd">            inputs. Note: even if the inputs have cardinality 1 they must</span>
 <span class="sd">            be specified, and the corresponding axis dimensions are 1.</span>
 <span class="sd">            The parties&#39; outcomes and measurements must appear in the</span>
@@ -1143,11 +1169,14 @@
                  <span class="s2">&quot;valid for other distributions.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_polynomial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">certificate_as_dict</span><span class="p">(),</span> <span class="n">prob_array</span><span class="p">)</span></div>
 
+
     <span class="c1">###########################################################################</span>
     <span class="c1"># OTHER ROUTINES EXPOSED TO THE USER                                      #</span>
     <span class="c1">###########################################################################</span>
     <span class="c1">#TODO: Natively avoid intermediate 2d-representation in build_columns</span>
-<div class="viewcode-block" id="InflationSDP.build_columns"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.build_columns">[docs]</a>    <span class="k">def</span> <span class="nf">build_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="InflationSDP.build_columns">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.build_columns">[docs]</a>
+    <span class="k">def</span> <span class="nf">build_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                       <span class="n">column_specification</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span>
                                                   <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
                                                   <span class="n">List</span><span class="p">[</span><span class="n">sp</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">]],</span>
@@ -1317,7 +1346,10 @@
                       <span class="k">for</span> <span class="n">lexmon</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">generating_monomials_1d</span> <span class="p">]</span>
         <span class="k">return</span> <span class="n">output</span></div>
 
-<div class="viewcode-block" id="InflationSDP.reset"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+<div class="viewcode-block" id="InflationSDP.reset">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.reset">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the various user-specifiable objects in the inflation SDP.</span>
 
 <span class="sd">        Parameters</span>
@@ -1349,7 +1381,10 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
         <span class="n">collect</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="InflationSDP.write_to_file"><a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.write_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+<div class="viewcode-block" id="InflationSDP.write_to_file">
+<a class="viewcode-back" href="../../../inflationsdp.html#inflation.InflationSDP.write_to_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exports the problem to a file.</span>
 
 <span class="sd">        Parameters</span>
@@ -1379,6 +1414,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;File format not supported. Please choose between &quot;</span>
                             <span class="o">+</span> <span class="s2">&quot;the extensions `.csv`, `.dat-s` and `.mat`.&quot;</span><span class="p">)</span></div>
+
 
     <span class="c1">###########################################################################</span>
     <span class="c1"># ROUTINES RELATED TO CONSTRUCTING COMPOUND MONOMIAL INSTANCES            #</span>
@@ -1521,7 +1557,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_relaxation_has_been_generated</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">maskmatrices</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="n">mon</span><span class="p">:</span> <span class="n">lil_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">momentmatrix</span> <span class="o">==</span> <span class="n">mon</span><span class="o">.</span><span class="n">idx</span><span class="p">)</span>
+                    <span class="n">mon</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">momentmatrix</span> <span class="o">==</span> <span class="n">mon</span><span class="o">.</span><span class="n">idx</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">mon</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">moments</span><span class="p">,</span>
                                     <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
                                     <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Assigning mask matrices  &quot;</span><span class="p">)</span>
@@ -1885,7 +1921,8 @@
         <span class="n">last_outcome_boolmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
             <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">has_children</span><span class="p">[</span><span class="n">op</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="ow">and</span>
               <span class="n">op</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcome_cardinalities</span><span class="p">[</span><span class="n">op</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span> <span class="c1"># TODO -2 is a hack for using fake outcomes</span>
-                                <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+                                <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">[</span><span class="mi">1</span><span class="p">:]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">last_outcome_boolmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(([</span><span class="kc">False</span><span class="p">],</span> <span class="n">last_outcome_boolmask</span><span class="p">))</span>
         
         <span class="c1"># This will allow for easy substitution of operators with the last</span>
         <span class="c1"># outcome with the rest of the operators orthogonal to it</span>
@@ -2234,7 +2271,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">bnd</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="n">ub</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">constant_term_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">bnd</span>
             <span class="n">solverargs</span><span class="p">[</span><span class="s2">&quot;inequalities&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ub</span><span class="p">)</span>
-        <span class="n">solverargs</span><span class="p">[</span><span class="s2">&quot;mask_matrices&quot;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">constant_term_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lil_matrix</span><span class="p">(</span>
+        <span class="n">solverargs</span><span class="p">[</span><span class="s2">&quot;mask_matrices&quot;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">constant_term_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">(</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_columns</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">solverargs</span>
 
@@ -2373,6 +2410,7 @@
         <span class="n">template</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mon</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
         <span class="n">template</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_astuples_dtype</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">partsextractor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">op_to_lexrepr_dict</span><span class="p">,</span> <span class="n">template</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intc</span><span class="p">)</span></div>
+
         <span class="c1"># return nb_mon_to_lexrepr(mon, self._lexorder)</span>
 </pre></div>
 

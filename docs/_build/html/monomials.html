@@ -1,27 +1,25 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monomial classes and functions &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+  <title>Monomial classes and functions &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
-        <script src="_static/clipboard.min.js"></script>
-        <script src="_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -108,23 +106,15 @@
            <div itemprop="articleBody">
              
   <section id="monomial-classes-and-functions">
-<h1>Monomial classes and functions<a class="headerlink" href="#monomial-classes-and-functions" title="Permalink to this heading"></a></h1>
+<h1>Monomial classes and functions<a class="headerlink" href="#monomial-classes-and-functions" title="Link to this heading"></a></h1>
 <section id="inflationlp-monomial-classes">
-<h2>InflationLP monomial classes<a class="headerlink" href="#inflationlp-monomial-classes" title="Permalink to this heading"></a></h2>
+<h2>InflationLP monomial classes<a class="headerlink" href="#inflationlp-monomial-classes" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.InternalAtomicMonomial">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.lp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">InternalAtomicMonomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inflation_lp_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_1d_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#InternalAtomicMonomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.InternalAtomicMonomial" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.lp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">InternalAtomicMonomial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inflation_lp_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_1d_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#InternalAtomicMonomial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.InternalAtomicMonomial" title="Link to this definition"></a></dt>
 <dd><dl class="py property">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.InternalAtomicMonomial._raw_name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_raw_name</span></span><a class="headerlink" href="#inflation.lp.monomial_classes.InternalAtomicMonomial._raw_name" title="Permalink to this definition"></a></dt>
-<dd><p>A string representing the monomial. In case of knowable monomials,
-it is of the form <code class="docutils literal notranslate"><span class="pre">p(outputs|inputs)</span></code>. Otherwise it represents the
-expectation value of the monomial with bracket notation.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="id0">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_raw_name</span></span><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_raw_name</span></span><a class="headerlink" href="#inflation.lp.monomial_classes.InternalAtomicMonomial._raw_name" title="Link to this definition"></a></dt>
 <dd><p>A string representing the monomial. In case of knowable monomials,
 it is of the form <code class="docutils literal notranslate"><span class="pre">p(outputs|inputs)</span></code>. Otherwise it represents the
 expectation value of the monomial with bracket notation.</p>
@@ -132,7 +122,7 @@ expectation value of the monomial with bracket notation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal">
-<span class="sig-name descname"><span class="pre">compute_marginal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#InternalAtomicMonomial.compute_marginal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compute_marginal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#InternalAtomicMonomial.compute_marginal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal" title="Link to this definition"></a></dt>
 <dd><p>Given a probability distribution, compute the numerical value of
 the Monomial.</p>
 <dl class="field-list simple">
@@ -155,17 +145,17 @@ involving only a few parties)</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.CompoundMoment">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.lp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">CompoundMoment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><span class="pre">InternalAtomicMonomial</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.lp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">CompoundMoment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><span class="pre">InternalAtomicMonomial</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment" title="Link to this definition"></a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.CompoundMoment.attach_idx">
-<span class="sig-name descname"><span class="pre">attach_idx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment.attach_idx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment.attach_idx" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">attach_idx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment.attach_idx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment.attach_idx" title="Link to this definition"></a></dt>
 <dd><p>Assign an index to the Monomial. This is used when generating the
 monomials in a scenario, and identifying them with integers.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.CompoundMoment.compute_marginal">
-<span class="sig-name descname"><span class="pre">compute_marginal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment.compute_marginal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment.compute_marginal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compute_marginal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment.compute_marginal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment.compute_marginal" title="Link to this definition"></a></dt>
 <dd><p>Given a probability array, evaluate all the knowable atomic moment
 factors in the monomial and return the product of the resulting values.</p>
 <p>The whole moment needs to be knowable (<code class="docutils literal notranslate"><span class="pre">self.is_knowable</span> <span class="pre">=</span> <span class="pre">True</span></code>),
@@ -188,7 +178,7 @@ outcomes and then settings for the parties).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="inflation.lp.monomial_classes.CompoundMoment.evaluate">
-<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">known_monomials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><span class="pre">InternalAtomicMonomial</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment.evaluate" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">known_monomials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#inflation.lp.monomial_classes.InternalAtomicMonomial" title="inflation.lp.monomial_classes.InternalAtomicMonomial"><span class="pre">InternalAtomicMonomial</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lpi_constraints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/lp/monomial_classes.html#CompoundMoment.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.lp.monomial_classes.CompoundMoment.evaluate" title="Link to this definition"></a></dt>
 <dd><p>Given a dictionary of values for known atomic monomials,
 substitute all factors of the compound moment that are specified in
 the dictionary with their values and return the product of the values
@@ -220,19 +210,19 @@ present in <code class="docutils literal notranslate"><span class="pre">known_mo
 
 </section>
 <section id="inflationsdp-monomial-classes">
-<h2>InflationSDP monomial classes<a class="headerlink" href="#inflationsdp-monomial-classes" title="Permalink to this heading"></a></h2>
+<h2>InflationSDP monomial classes<a class="headerlink" href="#inflationsdp-monomial-classes" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.InternalAtomicMonomialSDP">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.sdp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">InternalAtomicMonomialSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inflation_sdp_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexmon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/sdp/monomial_classes.html#InternalAtomicMonomialSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.sdp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">InternalAtomicMonomialSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inflation_sdp_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexmon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/sdp/monomial_classes.html#InternalAtomicMonomialSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP" title="Link to this definition"></a></dt>
 <dd><dl class="py property">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.dagger">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dagger</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.dagger" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dagger</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.dagger" title="Link to this definition"></a></dt>
 <dd><p>Returns the adjoint of the Monomial.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.is_hermitian">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_hermitian</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.is_hermitian" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_hermitian</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.is_hermitian" title="Link to this definition"></a></dt>
 <dd><p>Whether the atomic monomial is equivalent to its conjugate
 under inflation symmetries and commutation.</p>
 </dd></dl>
@@ -241,24 +231,24 @@ under inflation symmetries and commutation.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.CompoundMomentSDP">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.sdp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">CompoundMomentSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP" title="inflation.sdp.monomial_classes.InternalAtomicMonomialSDP"><span class="pre">InternalAtomicMonomialSDP</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/sdp/monomial_classes.html#CompoundMomentSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.sdp.monomial_classes.</span></span><span class="sig-name descname"><span class="pre">CompoundMomentSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP" title="inflation.sdp.monomial_classes.InternalAtomicMonomialSDP"><span class="pre">InternalAtomicMonomialSDP</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/sdp/monomial_classes.html#CompoundMomentSDP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP" title="Link to this definition"></a></dt>
 <dd><dl class="py property">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.CompoundMomentSDP.is_all_commuting">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_all_commuting</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP.is_all_commuting" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_all_commuting</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP.is_all_commuting" title="Link to this definition"></a></dt>
 <dd><p>If all factors of the compount moment contain operators that all
 commute.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.CompoundMomentSDP.is_hermitian">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_hermitian</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP.is_hermitian" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_hermitian</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP.is_hermitian" title="Link to this definition"></a></dt>
 <dd><p>If all factors of the compount moment contain monomials that are
 hermitian.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="inflation.sdp.monomial_classes.CompoundMomentSDP.is_physical">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_physical</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP.is_physical" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_physical</span></span><a class="headerlink" href="#inflation.sdp.monomial_classes.CompoundMomentSDP.is_physical" title="Link to this definition"></a></dt>
 <dd><p>If all factors of the compount moment contain monomials that are
 physical, i.e., products of positive operators that are positive.</p>
 </dd></dl>
