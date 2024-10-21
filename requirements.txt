@@ -1,0 +1,7 @@
+Mosek==10.0.46
+networkx==3.1
+numba==0.57.0
+numpy==1.24.3
+scipy==1.10.1
+sympy==1.12
+tqdm==4.65.0
