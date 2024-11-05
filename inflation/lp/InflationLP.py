@@ -1306,47 +1306,43 @@ class InflationLP(object):
                                            self._monomials_as_lexboolvecs]
 
         # Associate Monomials to the remaining entries.
-        _monomials = []
-        _monomial_names = []
-        _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
-        _lexboolvec_from_idx = dict()
-        boolvec2mon = dict()
+        self.extra_inverse = np.arange(self.n_columns, dtype=int)
+        first_free_index = 0
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
-            mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
-            unhashable_boolvec = self._lexorder[mon_as_lexboolvec]
-            hashable_boolvec = tuple(tuple(op)
-                              for op in unhashable_boolvec)
-            boolvec2mon[hashable_boolvec] = mon
-            _monomials.append(mon)
-            _monomial_names.append(mon.name)
-            _compmonomial_from_idx[idx] = mon
-            _lexboolvec_from_idx[idx] = unhashable_boolvec
-            # Commented out line below used for internal debugging only.
-            # assert mon not in _compmonomial_to_idx, f"Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index."
-            if mon in _compmonomial_to_idx:
-                previous_idx = _compmonomial_to_idx[mon]
-                previous_mon = _compmonomial_from_idx[previous_idx]
-                previous_lexboolvec = _lexboolvec_from_idx[previous_idx]
-                eprint(f"{unhashable_boolvec} \nvs\n{previous_lexboolvec}")
-                raise RuntimeError(f"{(mon, previous_mon)} are being assigned the same index.")
+            mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), first_free_index)
+            try:
+                current_index = _compmonomial_to_idx[mon]
+                mon.idx = current_index
+            except KeyError:
+                current_index = first_free_index
+                _compmonomial_to_idx[mon] = current_index
+                first_free_index += 1
+            self.extra_inverse[idx] = current_index
+        self.inverse = self.extra_inverse[self.inverse] # Hack to allow for powerful symmetries
 
-            _compmonomial_to_idx[mon] = idx
-        self.first_free_idx = self.n_columns + 1
-        self.monomials = np.array(_monomials, dtype=object)
-        self.monomial_names = np.array(_monomial_names)
-        self.compmonomial_from_idx = _compmonomial_from_idx
-        self.compmonomial_to_idx = _compmonomial_to_idx
-        del _monomials, _compmonomial_from_idx, _compmonomial_to_idx, _monomial_names
+        self.monomials = np.array(list(_compmonomial_to_idx.keys()), dtype=object)
+        assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
+        del _compmonomial_to_idx
+        old_num_columns = self.n_columns
+        self.n_columns = len(self.monomials)
+        self.first_free_idx = first_free_index
+        self.monomial_names = np.array([mon.name for mon in self.monomials.flat])
+        if self.n_columns < old_num_columns:
+            if self.verbose > 0:
+                eprint("Further variable reduction has been made possible. Number of variables in the LP:",
+                       self.n_columns)
+        self.compmonomial_from_idx = dict(zip(range(self.n_columns), self.monomials.flat))
+        self.compmonomial_to_idx = dict(zip(self.monomials.flat, range(self.n_columns)))
         collect(generation=2)
         assert self.monomials[0] == self.One, "Sparse indexing requires that first column represent one."
 
-        assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
-            (f"Multiple indices are being associated to the same monomial. \n" +
-            f"Expected {self.n_columns}, got {len(self.compmonomial_to_idx.keys())}.")
+        # assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
+        #     (f"Multiple indices are being associated to the same monomial. \n" +
+        #     f"Expected {self.n_columns}, got {len(self.compmonomial_to_idx.keys())}.")
 
 
         if self.verbose > 1:
