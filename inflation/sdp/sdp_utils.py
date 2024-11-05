@@ -536,9 +536,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if status_str == "feasible" and verbose > 1:
                 TOL = 1e-8  # Constraint tolerance
                 if var_inequalities:
-                    x = A.todense().A \
+                    x = A.todense() \
                         @ np.array(list(x_values.values())) \
-                        + b.T.A[0]
+                        + b.T.todense()[0]
                     if np.any(x < -TOL):
                         print("Warning: Inequality constraints not satisfied" +
                               f" to {TOL} precision.")
@@ -547,9 +547,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                in enumerate(zip(x < -TOL, var_inequalities))
                                if violated])
                 if var_equalities:
-                    x = C.todense().A \
+                    x = C.todense() \
                         @ np.array(list(x_values.values())) \
-                        + d.T.A[0]
+                        + d.T.todense()[0]
                     if np.any(np.abs(x) > TOL):
                         print("Warning: Equality constraints not satisfied " +
                               f"to {TOL} precision.")
