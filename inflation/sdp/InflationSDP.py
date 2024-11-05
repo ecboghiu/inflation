@@ -349,7 +349,7 @@ class InflationSDP:
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_vars):
-            mon = self.Moment_1d(lexmon, idx)
+            mon = self.Moment_1d(lexmon, first_free_index)
             self.compmoment_from_idx[idx] = mon # Critical for normalization equations and other functions that use old indices
             try:
                 current_index = _compmonomial_to_idx[mon]
