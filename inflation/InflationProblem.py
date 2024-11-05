@@ -175,8 +175,11 @@ class InflationProblem:
             nodes_with_children.difference(self.names, self.intermediate_latents),
             key=nodes_with_children_as_list.index))
         self.nr_sources = len(self._actual_sources)
-        if classical_sources == "all":
-            self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
+        if isinstance(classical_sources, str):
+            if classical_sources.lower() == "all":
+                self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
+            else:
+                raise ValueError(f'The keyword argument classical_sources=`{classical_sources}` could not be parsed.')
         else:
             self._classical_sources = np.zeros(self.nr_sources, dtype=np.uint8)
         if not isinstance(classical_sources, (str, type(None))):
