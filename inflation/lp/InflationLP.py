@@ -1310,19 +1310,30 @@ class InflationLP(object):
         _monomial_names = []
         _compmonomial_from_idx = dict()
         _compmonomial_to_idx = dict()
+        _lexboolvec_from_idx = dict()
         boolvec2mon = dict()
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
             mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
-            boolvec2mon[tuple(tuple(op)
-                              for op in self._lexorder[mon_as_lexboolvec])] = mon
+            unhashable_boolvec = self._lexorder[mon_as_lexboolvec]
+            hashable_boolvec = tuple(tuple(op)
+                              for op in unhashable_boolvec)
+            boolvec2mon[hashable_boolvec] = mon
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
+            _lexboolvec_from_idx[idx] = unhashable_boolvec
             # Commented out line below used for internal debugging only.
             # assert mon not in _compmonomial_to_idx, f"Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index."
+            if mon in _compmonomial_to_idx:
+                previous_idx = _compmonomial_to_idx[mon]
+                previous_mon = _compmonomial_from_idx[previous_idx]
+                previous_lexboolvec = _lexboolvec_from_idx[previous_idx]
+                eprint(f"{unhashable_boolvec} \nvs\n{previous_lexboolvec}")
+                raise RuntimeError(f"{(mon, previous_mon)} are being assigned the same index.")
+
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
