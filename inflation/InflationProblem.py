@@ -753,9 +753,8 @@ class InflationProblem:
                 copy_index_string += ','.join(map(str,op["Relevant Copy Indices"].flat))
                 copy_index_string += '}'
                 op_as_str += copy_index_string
-
-            copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
-            op_as_str += copy_indices_string
+            # copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
+            # op_as_str += copy_indices_string
         op_as_str += f"={op['Outcome']}"
         if len(op["Do Values"]):
             do_values_string = "|do("
