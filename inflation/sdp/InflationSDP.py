@@ -332,19 +332,65 @@ class InflationSDP:
 
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
+        first_free_index = 0
         self.compmoment_from_idx = dict()
-        if self.momentmatrix_has_a_zero:
-            self.compmoment_from_idx[0] = self.Zero
+        _compmonomial_to_idx = dict()
+        self.n_vars = len(self.symmetrized_corresp)
+        _compmonomial_to_idx[self.Zero] = 0
+        self.compmoment_from_idx[0] = self.Zero
+        first_free_index += 1
+        self.n_vars += 1
+        self.extra_inverse = np.arange(self.n_vars, dtype=int)
+        self.old_indices_associated_with_new_index = defaultdict(list)
+        self.old_indices_associated_with_monomial = defaultdict(list)
+        self.old_indices_associated_with_new_index[0]=[0]
+        self.old_indices_associated_with_monomial[self.Zero] = [0]
         for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
-                               disable=not self.verbose,
-                               desc="Initializing monomials   "):
-            self.compmoment_from_idx[idx] = self.Moment_1d(lexmon, idx)
-        self.first_free_idx = max(self.compmoment_from_idx.keys()) + 1
-        self.moments = list(self.compmoment_from_idx.values())
-        self.monomials = list(self.compmoment_from_idx.values())
-        
-        assert all(v == 1 for v in Counter(self.monomials).values()), \
-            "Multiple indices are being associated to the same monomial"
+                             disable=not self.verbose,
+                             desc="Initializing monomials   ",
+                             total=self.n_vars):
+            mon = self.Moment_1d(lexmon, idx)
+            self.compmoment_from_idx[idx] = mon # Critical for normalization equations and other functions that use old indices
+            try:
+                current_index = _compmonomial_to_idx[mon]
+                mon.idx = current_index
+            except KeyError:
+                current_index = first_free_index
+                _compmonomial_to_idx[mon] = current_index
+                first_free_index += 1
+            self.old_indices_associated_with_new_index[current_index].append(idx)
+            self.old_indices_associated_with_monomial[mon].append(idx)
+            self.extra_inverse[idx] = current_index
+
+        monomials_as_list = list(_compmonomial_to_idx.keys())
+        self.monomials = np.array(monomials_as_list, dtype=object)
+        self.moments = self.monomials
+        # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
+        old_num_vars = self.n_vars
+        self.n_vars = len(self.monomials)
+        self.first_free_idx = first_free_index
+        if self.n_vars < old_num_vars:
+            if self.verbose > 0:
+                print("Further variable reduction has been made possible. Number of variables in the SDP:",
+                       self.n_vars)
+        # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
+        # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
+        del _compmonomial_to_idx, monomials_as_list
+        collect(generation=2)
+
+        # self.compmoment_from_idx = dict()
+        # if self.momentmatrix_has_a_zero:
+        #     self.compmoment_from_idx[0] = self.Zero
+        # for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
+        #                        disable=not self.verbose,
+        #                        desc="Initializing monomials   "):
+        #     self.compmoment_from_idx[idx] = self.Moment_1d(lexmon, idx)
+        # self.first_free_idx = max(self.compmoment_from_idx.keys()) + 1
+        # self.moments = list(self.compmoment_from_idx.values())
+        # self.monomials = list(self.compmoment_from_idx.values())
+        #
+        # assert all(v == 1 for v in Counter(self.monomials).values()), \
+        #     "Multiple indices are being associated to the same monomial"
 
         _counter = Counter([mon.knowability_status for mon in self.moments])
         self.n_knowable           = _counter["Knowable"]
@@ -1437,8 +1483,8 @@ class InflationSDP:
         if self._relaxation_has_been_generated:
             if self.n_columns > 0:
                 self.maskmatrices = {
-                    mon: coo_array(self.momentmatrix == mon.idx)
-                    for mon in tqdm(self.moments,
+                    mon: sum(coo_array(self.momentmatrix == oldidx) for oldidx in oldidxs)
+                    for mon, oldidxs in tqdm(self.old_indices_associated_with_monomial.items(),
                                     disable=not self.verbose,
                                     desc="Assigning mask matrices  ")
                                      }
@@ -1848,6 +1894,7 @@ class InflationSDP:
             the inflation symmetries.
         """
         discovered_symmetries = [np.arange(self.n_columns, dtype=int)]
+        permutations_failed = 0
         permutation_failed = False
         for inf_sym in self.lexorder_symmetries[1:]:
             skip_this_one = False
@@ -1862,12 +1909,13 @@ class InflationSDP:
                         = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
             except KeyError:
                 permutation_failed = True
+                permutations_failed += 1
                 skip_this_one = True
             if not skip_this_one:
                 discovered_symmetries.append(total_perm)
         if permutation_failed and (self.verbose > 0):
             warn("The generating set is not closed under source swaps."
-                 + " Some symmetries will not be implemented.")
+                 + f" {permutations_failed} symmetries were not be implemented.")
         return np.unique(discovered_symmetries, axis=0)[1:]
 
     def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:

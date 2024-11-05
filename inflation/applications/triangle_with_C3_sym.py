@@ -1,7 +1,7 @@
-from inflation import InflationProblem, InflationLP
+from inflation import InflationProblem, InflationLP, InflationSDP
 import numpy as np
 
-d=4
+d=3
 
 triangle = InflationProblem(dag={"AB": ["A", "B"],
                                  "BC": ["B", "C"],
@@ -68,7 +68,13 @@ for a in range(d):
 print(np.sum(victors_distribution))
 print(len(np.flatnonzero(victors_distribution)))
 
-triangleLP = InflationLP(triangle, verbose=2)
-triangleLP.set_distribution(victors_distribution, use_lpi_constraints=True)
-triangleLP.solve()
-print(triangleLP.status)
+# triangleLP = InflationLP(triangle, verbose=2)
+# triangleLP.set_distribution(victors_distribution, use_lpi_constraints=True)
+# triangleLP.solve()
+# print(triangleLP.status)
+
+triangleSDP = InflationSDP(triangle, verbose=2)
+triangleSDP.generate_relaxation("local1")
+triangleSDP.set_distribution(victors_distribution, use_lpi_constraints=True)
+triangleSDP.solve()
+print(triangleSDP.status)
