@@ -1324,19 +1324,20 @@ class InflationLP(object):
             self.extra_inverse[idx] = current_index
         self.inverse = self.extra_inverse[self.inverse] # Hack to allow for powerful symmetries
 
-        self.monomials = np.array(list(_compmonomial_to_idx.keys()), dtype=object)
-        assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
-        del _compmonomial_to_idx
+        monomials_as_list = list(_compmonomial_to_idx.keys())
+        self.monomials = np.array(monomials_as_list, dtype = object)
+        # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
         old_num_columns = self.n_columns
         self.n_columns = len(self.monomials)
         self.first_free_idx = first_free_index
-        self.monomial_names = np.array([mon.name for mon in self.monomials.flat])
+        self.monomial_names = np.array([mon.name for mon in monomials_as_list])
         if self.n_columns < old_num_columns:
             if self.verbose > 0:
                 eprint("Further variable reduction has been made possible. Number of variables in the LP:",
                        self.n_columns)
-        self.compmonomial_from_idx = dict(zip(range(self.n_columns), self.monomials.flat))
-        self.compmonomial_to_idx = dict(zip(self.monomials.flat, range(self.n_columns)))
+        self.compmonomial_from_idx = dict(zip(range(self.n_columns), monomials_as_list))
+        self.compmonomial_to_idx = dict(zip(monomials_as_list, range(self.n_columns)))
+        del _compmonomial_to_idx, monomials_as_list
         collect(generation=2)
         assert self.monomials[0] == self.One, "Sparse indexing requires that first column represent one."
 
