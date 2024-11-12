@@ -1479,7 +1479,7 @@ class InflationLP(object):
          notation as needed."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
-        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+        alternatives_as_boolarrays = {v: np.pad(r[1:], ((1, 0), (0, 0)))
                                       for v, r in zip(
                 np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
                 self._CG_adjusting_ortho_groups_as_boolarrays)}
