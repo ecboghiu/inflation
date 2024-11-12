@@ -1,25 +1,27 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Reference &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>API Reference &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/clipboard.min.js"></script>
-        <script src="_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -32,11 +34,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -53,7 +59,9 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationlp.html">InflationLP Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html">Optimization helpers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
@@ -68,15 +76,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
-      <li>API Reference</li>
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -86,50 +94,134 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="api-reference">
-<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this heading"></a></h1>
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem"><code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem.discover_lexorder_symmetries"><code class="docutils literal notranslate"><span class="pre">InflationProblem.discover_lexorder_symmetries()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem.factorize_monomial_1d"><code class="docutils literal notranslate"><span class="pre">InflationProblem.factorize_monomial_1d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem.factorize_monomial_2d"><code class="docutils literal notranslate"><span class="pre">InflationProblem.factorize_monomial_2d()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationproblem.html#inflation.InflationProblem.rectify_fake_setting"><code class="docutils literal notranslate"><span class="pre">InflationProblem.rectify_fake_setting()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP"><code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.build_columns"><code class="docutils literal notranslate"><span class="pre">InflationSDP.build_columns()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.certificate_as_probs"><code class="docutils literal notranslate"><span class="pre">InflationSDP.certificate_as_probs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.certificate_as_string"><code class="docutils literal notranslate"><span class="pre">InflationSDP.certificate_as_string()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.evaluate_certificate"><code class="docutils literal notranslate"><span class="pre">InflationSDP.evaluate_certificate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.generate_relaxation"><code class="docutils literal notranslate"><span class="pre">InflationSDP.generate_relaxation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.reset"><code class="docutils literal notranslate"><span class="pre">InflationSDP.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.set_bounds"><code class="docutils literal notranslate"><span class="pre">InflationSDP.set_bounds()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.set_distribution"><code class="docutils literal notranslate"><span class="pre">InflationSDP.set_distribution()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.set_objective"><code class="docutils literal notranslate"><span class="pre">InflationSDP.set_objective()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.set_values"><code class="docutils literal notranslate"><span class="pre">InflationSDP.set_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.solve"><code class="docutils literal notranslate"><span class="pre">InflationSDP.solve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationsdp.html#inflation.InflationSDP.write_to_file"><code class="docutils literal notranslate"><span class="pre">InflationSDP.write_to_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inflationlp.html">InflationLP Class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inflationlp.html#inflation.InflationLP"><code class="docutils literal notranslate"><span class="pre">InflationLP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP._generate_lp"><code class="docutils literal notranslate"><span class="pre">InflationLP._generate_lp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.certificate_as_dict"><code class="docutils literal notranslate"><span class="pre">InflationLP.certificate_as_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.certificate_as_probs"><code class="docutils literal notranslate"><span class="pre">InflationLP.certificate_as_probs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.certificate_as_string"><code class="docutils literal notranslate"><span class="pre">InflationLP.certificate_as_string()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.evaluate_certificate"><code class="docutils literal notranslate"><span class="pre">InflationLP.evaluate_certificate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.reset"><code class="docutils literal notranslate"><span class="pre">InflationLP.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.set_bounds"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_bounds()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.set_distribution"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_distribution()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.set_objective"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_objective()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.set_values"><code class="docutils literal notranslate"><span class="pre">InflationLP.set_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.solve"><code class="docutils literal notranslate"><span class="pre">InflationLP.solve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.update_values"><code class="docutils literal notranslate"><span class="pre">InflationLP.update_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="inflationlp.html#inflation.InflationLP.write_to_file"><code class="docutils literal notranslate"><span class="pre">InflationLP.write_to_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="solvers.html">Interfaces with solvers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="solvers.html#inflation.sdp.sdp_utils.solveSDP_MosekFUSION"><code class="docutils literal notranslate"><span class="pre">solveSDP_MosekFUSION()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="solvers.html#inflation.lp.lp_utils.solveLP_sparse"><code class="docutils literal notranslate"><span class="pre">solveLP_sparse()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization helpers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html#inflation.optimization_utils.max_within_feasible"><code class="docutils literal notranslate"><span class="pre">max_within_feasible()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="monomials.html">Monomial classes and functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="monomials.html#abstract-monomial-classes">Abstract monomial classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="monomials.html#inflationsdp-internal-monomials">InflationSDP internal monomials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="monomials.html#inflationlp-monomial-classes">InflationLP monomial classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial"><code class="docutils literal notranslate"><span class="pre">InternalAtomicMonomial</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial._raw_name"><code class="docutils literal notranslate"><span class="pre">InternalAtomicMonomial._raw_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal"><code class="docutils literal notranslate"><span class="pre">InternalAtomicMonomial.compute_marginal()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment"><code class="docutils literal notranslate"><span class="pre">CompoundMoment</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment.attach_idx"><code class="docutils literal notranslate"><span class="pre">CompoundMoment.attach_idx()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment.compute_marginal"><code class="docutils literal notranslate"><span class="pre">CompoundMoment.compute_marginal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.lp.monomial_classes.CompoundMoment.evaluate"><code class="docutils literal notranslate"><span class="pre">CompoundMoment.evaluate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="monomials.html#inflationsdp-monomial-classes">InflationSDP monomial classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP"><code class="docutils literal notranslate"><span class="pre">InternalAtomicMonomialSDP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.dagger"><code class="docutils literal notranslate"><span class="pre">InternalAtomicMonomialSDP.dagger</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.InternalAtomicMonomialSDP.is_hermitian"><code class="docutils literal notranslate"><span class="pre">InternalAtomicMonomialSDP.is_hermitian</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.CompoundMomentSDP"><code class="docutils literal notranslate"><span class="pre">CompoundMomentSDP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.CompoundMomentSDP.is_all_commuting"><code class="docutils literal notranslate"><span class="pre">CompoundMomentSDP.is_all_commuting</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.CompoundMomentSDP.is_hermitian"><code class="docutils literal notranslate"><span class="pre">CompoundMomentSDP.is_hermitian</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="monomials.html#inflation.sdp.monomial_classes.CompoundMomentSDP.is_physical"><code class="docutils literal notranslate"><span class="pre">CompoundMomentSDP.is_physical</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="build.html">Functions to build problem elements</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="build.html#auxiliary-functions">Auxiliary functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#inflation.sdp.quantum_tools.calculate_momentmatrix_1d_internal"><code class="docutils literal notranslate"><span class="pre">calculate_momentmatrix_1d_internal()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#inflation.sdp.quantum_tools.construct_normalization_eqs"><code class="docutils literal notranslate"><span class="pre">construct_normalization_eqs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#inflation.sdp.quantum_tools.generate_operators"><code class="docutils literal notranslate"><span class="pre">generate_operators()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#auxiliary-functions">Auxiliary functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="build.html#inflation.sdp.quantum_tools.apply_inflation_symmetries"><code class="docutils literal notranslate"><span class="pre">apply_inflation_symmetries()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="build.html#inflation.sdp.quantum_tools.format_permutations"><code class="docutils literal notranslate"><span class="pre">format_permutations()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Functions to operate on monomials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="operations.html#monomial-properties">Monomial properties</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations.html#transformations-of-representation">Transformations of representation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations.html#other-functions">Other functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.apply_source_perm"><code class="docutils literal notranslate"><span class="pre">apply_source_perm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.dot_mon"><code class="docutils literal notranslate"><span class="pre">dot_mon()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_lexmon_to_canonical"><code class="docutils literal notranslate"><span class="pre">nb_lexmon_to_canonical()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.mon_lexsorted"><code class="docutils literal notranslate"><span class="pre">mon_lexsorted()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.reverse_mon"><code class="docutils literal notranslate"><span class="pre">reverse_mon()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#monomial-properties">Monomial properties</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_is_knowable"><code class="docutils literal notranslate"><span class="pre">nb_is_knowable()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_is_physical"><code class="docutils literal notranslate"><span class="pre">nb_is_physical()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_all_commuting_q"><code class="docutils literal notranslate"><span class="pre">nb_all_commuting_q()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_exists_shared_source"><code class="docutils literal notranslate"><span class="pre">nb_exists_shared_source()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_lexorder_idx"><code class="docutils literal notranslate"><span class="pre">nb_lexorder_idx()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#transformations-of-representation">Transformations of representation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_mon_to_lexrepr"><code class="docutils literal notranslate"><span class="pre">nb_mon_to_lexrepr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.to_name"><code class="docutils literal notranslate"><span class="pre">to_name()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html#other-functions">Other functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.remove_projector_squares"><code class="docutils literal notranslate"><span class="pre">remove_projector_squares()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.commutation_matrix"><code class="docutils literal notranslate"><span class="pre">commutation_matrix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_classify_disconnected_components"><code class="docutils literal notranslate"><span class="pre">nb_classify_disconnected_components()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="operations.html#inflation.sdp.fast_npa.nb_overlap_matrix"><code class="docutils literal notranslate"><span class="pre">nb_overlap_matrix()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -147,7 +239,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

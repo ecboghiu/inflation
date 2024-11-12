@@ -4,6 +4,7 @@ variables under the constraint that the InflationLP or InflationSDP instance
 they implicitly define must be feasible. Useful for exploring the set of
 parametrically-defined distribution for which quantum inflation (at specific
 hierarchy levels) is
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import numpy as np
@@ -13,10 +14,11 @@ from numbers import Real
 from scipy.optimize import bisect, minimize, Bounds
 from sympy.utilities.lambdify import lambdify
 from typing import Dict, Tuple, Union
+from functools import lru_cache
 
-from inflation import InflationLP, InflationSDP
-from inflation.sdp.quantum_tools import make_numerical
-from inflation.sdp.monomial_classes import CompoundMomentSDP
+from . import InflationLP, InflationSDP
+from .sdp.quantum_tools import make_numerical
+from .sdp.monomial_classes import CompoundMomentSDP
 
 
 def max_within_feasible(program: Union[InflationLP, InflationSDP],
@@ -25,7 +27,7 @@ def max_within_feasible(program: Union[InflationLP, InflationSDP],
                         method: str,
                         return_last_certificate=False,
                         **kwargs) -> Union[float,
-                                           Tuple[float, sp.core.add.Add]]:
+                                           Tuple[float, dict]]:
     """Maximize a single real variable within the set of feasible moment
     matrices determined by an ``InflationSDP``. The dependence of the moment
     matrices in the variable is specified by an assignment of monomials in the
@@ -62,7 +64,7 @@ def max_within_feasible(program: Union[InflationLP, InflationSDP],
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs). This is the output
         when ``return_last_certificate=False``.
-    Tuple[float, sympy.core.add.Add]
+    Tuple[float, dict]
         The maximum value that the parameter can take under the set of
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs), and a corresponding
@@ -97,7 +99,7 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
                                                sp.core.expr.Expr],
                          param: sp.core.symbol.Symbol,
                          **kwargs) -> Union[float,
-                                            Tuple[float, sp.core.add.Add]]:
+                                            Tuple[float, dict]]:
     """Implement the maximization of a variable within the feasible set of
     distributions using SciPy's bisection algorithm.
 
@@ -153,7 +155,8 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
 
     discovered_certificates = []
 
-    def f(value):
+    @lru_cache(maxsize=2, typed=False)
+    def f(value: float) -> float:
         evaluated_values = make_numerical(symbolic_values, {param: value})
         program.set_values(evaluated_values,
                        use_lpi_constraints=use_lpi,
@@ -164,10 +167,12 @@ def _maximize_via_bisect(program: Union[InflationLP, InflationSDP],
         if verbose:
             print(f"Parameter = {value:<6.4g}   " +
                   f"Maximum smallest eigenvalue: {program.objective_value:10.4g}")
-        discovered_certificate = program.certificate_as_probs()
-        if discovered_certificate.free_symbols:
+        discovered_certificate = program.certificate_as_dict()
+        if len(discovered_certificate):  # Checking if certificate has any nonzero coefficients
             discovered_certificates.append((value, discovered_certificate))
         return program.objective_value+precision/2048
+    assert f(bounds[1])+precision/2048 < 0, f"Certificate of infeasibility for v=1 is {f(bounds[1])}, but must be <{precision/2048}."
+    assert f(bounds[0])+precision/2048 > 0, f"Certificate of feasibility for v=0 is {f(bounds[0])}, but must be nonnegative."
     crit_param = bisect(f, bounds[0], bounds[1], **bisect_kwargs, full_output=False)
     if return_last:
         return crit_param, discovered_certificates[-1][-1]
@@ -180,7 +185,7 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
                                              sp.core.expr.Expr],
                        param: sp.core.symbol.Symbol,
                        **kwargs) -> Union[float,
-                                          Tuple[float, sp.core.add.Add]]:
+                                          Tuple[float, dict]]:
     """Implement the maximization of a variable within the feasible set of
     distributions exploiting the certificates of infeasibility. For a given
     value of the parameter, a separating surface that leaves the set of
@@ -209,7 +214,7 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs). This is the output
         when ``return_last_certificate=False``.
-    Tuple[float, sympy.core.add.Add]
+    Tuple[float, dict]
         The maximum value that the parameter can take under the set of
         distributions compatible with an inflation (for LPs) or under the set of
         positive-semidefinite moment matrices (for SDPs), and a corresponding
@@ -261,9 +266,14 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
                             constraints=constraints,
                             options={'disp': False})
         new_ub = solution['x'][0]
-        discovered_certificates.append((new_ub , program.certificate_as_probs()))
+        discovered_certificates.append((new_ub , program.certificate_as_dict()))
         if verbose:
             print(f"Current critical value: {new_ub} (seeded by {old_ub+precision})")
+    assert len(discovered_certificates)>1, """
+    Critical error - optimization failed to yield a useful certificate
+    even when given the initial (infeasible) seed.
+    """
+
     crit_param = max(new_ub, old_ub)
     if return_last:
         return crit_param, discovered_certificates[-1][-1]

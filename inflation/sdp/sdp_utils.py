@@ -1,5 +1,6 @@
 """
 This file contains the functions to send the problems to SDP solvers.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 from __future__ import annotations
@@ -7,7 +8,7 @@ import numpy as np
 
 from copy import deepcopy
 from gc import collect
-from scipy.sparse import dok_matrix, eye, lil_matrix
+from scipy.sparse import eye, coo_array
 from sys import stdout
 from typing import List, Dict, Any, Iterator
 
@@ -150,6 +151,22 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         OptimizeError, SolutionError, \
         AccSolutionStatus, ProblemStatus
 
+    def scipy_to_mosek(mat: coo_array) -> Matrix:
+        internal_mat = mat.tocoo(copy=False)
+        return Matrix.sparse(*internal_mat.shape,
+                             np.asarray(internal_mat.row, dtype=np.int32),
+                             np.asarray(internal_mat.col, dtype=np.int32),
+                             internal_mat.data)
+    def coo_getcol(mat: coo_array, i: int) -> coo_array:
+        condition = (mat.col == i)
+        new_col = np.zeros(condition.sum(), dtype=np.int32)
+        new_row = np.asarray(mat.row, dtype=np.int32)[condition]
+        new_data = np.asarray(mat.data, dtype=float)[condition]
+        this_col = coo_array((new_data, (new_row, new_col)), shape=(mat.shape[0], 1))
+        return this_col
+
+
+
     if verbose > 1:
         from time import perf_counter
         t0 = perf_counter()
@@ -165,7 +182,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
     var_inequalities = [] if inequalities is None else deepcopy(inequalities)
     var_equalities   = [] if equalities   is None else deepcopy(equalities)
 
-    Fi = {k: v.asformat('lil', copy=False).astype(float, copy=False)
+    Fi = {k: v.asformat('dok', copy=False).astype(float, copy=False)
           for k, v in mask_matrices.items()}
     mat_dim = next(iter(Fi.values())).shape[0] if Fi else 0
 
@@ -190,16 +207,9 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
         Fi[lam] = -1 * eye(mat_dim).tolil()
         var_objective = {lam: 1}
 
-    # Calculate c0, the constant part of the var_objective.
-    c0 = 0. + float(sum([var_objective[x] * known_vars[x]
-                         for x in set(var_objective).intersection(known_vars)])
-                    )
-
     # Calculate F0, the constant part of the matrix variable.
-    if mask_matrices:
-        F0 = lil_matrix((mat_dim, mat_dim), dtype=float) + \
-            sum(known_vars[x] * Fi[x]
-                for x in set(Fi).intersection(known_vars))
+    F0 = coo_array((mat_dim, mat_dim), dtype=float)
+    F0 += sum(known_vars[x] * Fi[x] for x in set(Fi).intersection(known_vars))
 
     if process_constraints:
         # For the semiknown constraint x_i = a_i * x_j, add to the Fi of x_j
@@ -230,30 +240,50 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             var_equalities.append({x: 1, x2: -c})
             variables.add(x2)
 
+    # Calculate c0, the constant part of the var_objective.
+    c0 = 0. + float(sum([var_objective[x] * known_vars[x]
+                         for x in set(var_objective).intersection(known_vars)])
+                    )
+
     # 'var2index' should be computed after there is no more further modification
     # to 'variables' or any of the constraint or objective dictionaries
     var2index = {x: i for i, x in enumerate(variables)}
 
     # Calculate the matrices A, C and vectors b, d such that
     # Ax + b >= 0, Cx + d == 0.
-    A = dok_matrix((len(var_inequalities), len(variables)))
-    b = dok_matrix((len(var_inequalities), 1))
-    for i, inequality in enumerate(var_inequalities):
-        ineq_vars = set(inequality)
-        for x in ineq_vars.difference(known_vars):
-            A[i, var2index[x]] = inequality[x]
-        b[i, 0] = float(sum([inequality[x] * known_vars[x]
-                             for x in ineq_vars.intersection(known_vars)]))
-
-    C = dok_matrix((len(var_equalities), len(variables)))
-    d = dok_matrix((len(var_equalities), 1))
-    for i, equality in enumerate(var_equalities):
-        eq_vars = set(equality)
-        for x in eq_vars.difference(known_vars):
-            C[i, var2index[x]] = equality[x]
-        d[i, 0] = float(sum([equality[x] * known_vars[x]
-                             for x in eq_vars.intersection(known_vars)]))
-
+    nof_variables = len(variables)
+    def constraint_dicts_to_sparse(constraints: List[dict]) -> (coo_array, coo_array):
+        nof_constraints = len(constraints)
+        A_row = []
+        A_col = []
+        A_data = []
+        b_row = np.arange(nof_constraints, dtype=np.int32)
+        b_col = np.zeros(nof_constraints, dtype=np.int32)
+        b_data = []
+        for i, constraint in enumerate(constraints):
+            all_vars_temp = set(constraint)
+            free_vars_temp = all_vars_temp.difference(known_vars)
+            known_vars_temp = all_vars_temp.intersection(known_vars)
+            for x in free_vars_temp:
+                A_row.append(i)
+                A_col.append(var2index[x])
+                A_data.append(constraint[x])
+            b_val = 0.
+            for x in known_vars_temp:
+                x_val = known_vars[x]
+                coeff = constraint[x]
+                b_val += (coeff * x_val)
+            b_data.append(b_val)
+        A = coo_array((A_data, (np.array(A_row, dtype=np.int32),
+                                np.array(A_col, dtype=np.int32))),
+                      shape=(nof_constraints, nof_variables),
+                      dtype=float)
+        b = coo_array((b_data, (b_row, b_col)),
+                      shape=(nof_constraints, 1),
+                      dtype=float)
+        return A, b
+    A, b = constraint_dicts_to_sparse(var_inequalities)
+    C, d = constraint_dicts_to_sparse(var_equalities)
     collect()
     if verbose > 1:
         print("Pre-processing took",
@@ -274,23 +304,17 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                                Domain.greaterThan(0))
                 # It seems MOSEK Fusion API does not allow to pick index i
                 # of an expression (A^T I)_i, so we do it manually row by row.
-                A = A.tocsr()
                 AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
-                for i in range(len(variables)):
-                    slice_ = A[:, i]
-                    sparse_slice = Matrix.sparse(*slice_.shape,
-                                                 *slice_.nonzero(),
-                                                 slice_[slice_.nonzero()].A[0])
+                for var in variables:
+                    slice_ = coo_getcol(A, var2index[var])
+                    sparse_slice = scipy_to_mosek(slice_)
                     AtI.append(Expr.dot(sparse_slice, I))
             if var_equalities:
                 E = M.variable("E", len(var_equalities), Domain.unbounded())
-                C = C.tocsr()
                 CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
-                for i in range(len(variables)):
-                    slice_ = C[:, i]
-                    sparse_slice = Matrix.sparse(*slice_.shape,
-                                                 *slice_.nonzero(),
-                                                 slice_[slice_.nonzero()].A[0])
+                for var in variables:
+                    slice_ = coo_getcol(C, var2index[var])
+                    sparse_slice = scipy_to_mosek(slice_)
                     CtI.append(Expr.dot(sparse_slice, E))
 
             # Define and set objective function
@@ -299,21 +323,15 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if not feas_as_optim:
                 obj_mosek = float(c0)
             if mask_matrices:
-                F0_mosek = Matrix.sparse(*F0.shape,
-                                         *F0.nonzero(),
-                                         F0[F0.nonzero()].A[0])
+                F0_mosek = scipy_to_mosek(F0)
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(Z, F0_mosek))
                 del F0_mosek
             if var_inequalities:
-                b_mosek = Matrix.sparse(*b.shape,
-                                        *b.nonzero(),
-                                        b[b.nonzero()].A[0])
+                b_mosek = scipy_to_mosek(b)
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(I, b_mosek))
                 del b_mosek
             if var_equalities:
-                d_mosek = Matrix.sparse(*d.shape,
-                                        *d.nonzero(),
-                                        d[d.nonzero()].A[0])
+                d_mosek = scipy_to_mosek(d)
                 obj_mosek = Expr.add(obj_mosek, Expr.dot(E, d_mosek))
                 del d_mosek
 
@@ -328,18 +346,15 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 domain = Domain.equalsTo(0)
             for i, x in enumerate(variables):
                 lhs = 0.0
-                if var_objective and x in var_objective:
+                if var_objective and x in set(var_objective
+                                              ).difference(known_vars):
                     ci  = float(var_objective[x])
                     lhs += ci
                 try:
                     F = Fi.pop(x)
                     lhs = Expr.add(lhs,
                                    Expr.dot(Z,
-                                            Matrix.sparse(
-                                                *F.shape,
-                                                *F.nonzero(),
-                                                F[F.nonzero()].A[
-                                                    0])))
+                                            scipy_to_mosek(F)))
                 except KeyError:
                     pass
                 if var_inequalities:
@@ -359,27 +374,19 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 domain = Domain.unbounded()
             x_mosek = M.variable("x", len(variables), domain)
 
-
             if var_inequalities:
-                b_mosek = Matrix.sparse(*b.shape,
-                                        *b.nonzero(),
-                                        b[b.nonzero()].A[0])
-                A_mosek = Matrix.sparse(*A.shape,
-                                        *A.nonzero(),
-                                        A[A.nonzero()].A[0])
+                b_mosek = scipy_to_mosek(b)
+                A_mosek = scipy_to_mosek(A)
                 ineq_constraint = M.constraint("Ineq",
                                                Expr.add(Expr.mul(A_mosek,
                                                                  x_mosek),
                                                         b_mosek),
                                                Domain.greaterThan(0))
                 del b_mosek, A_mosek
+
             if var_equalities:
-                d_mosek = Matrix.sparse(*d.shape,
-                                        *d.nonzero(),
-                                        d[d.nonzero()].A[0])
-                C_mosek = Matrix.sparse(*C.shape,
-                                        *C.nonzero(),
-                                        C[C.nonzero()].A[0])
+                d_mosek = scipy_to_mosek(d)
+                C_mosek = scipy_to_mosek(C)
                 eq_constraint = M.constraint("Eq",
                                              Expr.add(Expr.mul(C_mosek,
                                                                x_mosek),
@@ -504,7 +511,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             if mask_matrices:
                 for x in set(Fi).intersection(known_vars):
                     support = Fi[x].nonzero()
-                    certificate[x] = np.dot(ymat[support], Fi[x][support].A[0])
+                    certificate[x] = np.dot(ymat[support], Fi[x][support].toarray().ravel())
 
             # + I · b
             if var_inequalities:
@@ -562,10 +569,10 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             return {"status": status_str}
 
 
-def triu_indices(A: lil_matrix) -> Iterator[tuple[int, int]]:
+def triu_indices(A: coo_array) -> Iterator[tuple[np.int32, np.int32]]:
     """Helper functions to extract the upper triangular (i,j) matrix indices
      of the nonzero elements of a symmetric sparse matrix."""
-    A_coo = A.asformat('coo', copy=False)
+    A_coo = A.tocoo(copy=False)
     mask = np.logical_and(A_coo.data != 0, A_coo.row <= A_coo.col)
-    return zip(A_coo.row[mask].astype(int).flat,
-               A_coo.col[mask].astype(int).flat)
+    return zip(A_coo.row[mask].astype(np.int32).flat,
+               A_coo.col[mask].astype(np.int32).flat)

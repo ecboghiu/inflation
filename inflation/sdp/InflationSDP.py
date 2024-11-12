@@ -4,25 +4,25 @@ instance (see arXiv:1909.10519).
 
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import numpy as np
-import sympy as sp
-
 from collections import Counter, deque, defaultdict
-from functools import reduce
+from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
-from operator import itemgetter
 from numbers import Real
-from scipy.sparse import lil_matrix
-from tqdm import tqdm
+from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
-from inflation import InflationProblem
+import numpy as np
+import sympy as sp
+from scipy.sparse import coo_array
+from tqdm import tqdm
+
+from .. import InflationProblem
+from .fast_npa import nb_is_knowable as is_knowable
 from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal
                        )
-from .fast_npa import nb_is_knowable as is_knowable
 from .monomial_classes import InternalAtomicMonomialSDP, CompoundMomentSDP
 from .quantum_tools import (apply_inflation_symmetries,
                             calculate_momentmatrix_1d_internal,
@@ -34,8 +34,8 @@ from .sdp_utils import solveSDP_MosekFUSION
 from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
-from ..utils import clean_coefficients, partsextractor
 from ..lp.numbafied import nb_outer_bitwise_or
+from ..utils import clean_coefficients, partsextractor
 
 
 class InflationSDP:
@@ -48,7 +48,7 @@ class InflationSDP:
                  supports_problem: bool = False,
                  include_all_outcomes: bool = False,
                  commuting: bool = False,
-                 verbose: int = 0) -> None:
+                 verbose: int = None) -> None:
         """
         Class for generating and solving an SDP relaxation for quantum inflation.
 
@@ -130,7 +130,7 @@ class InflationSDP:
 
         self._default_lexorder = np.concatenate((self.zero_operator, 
                                                  inflationproblem._lexorder)
-                                                ).astype(self.np_dtype)
+                                                )
         self._nr_operators = inflationproblem._nr_operators + 1
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self._lexorder = self._default_lexorder.copy()
@@ -141,6 +141,12 @@ class InflationSDP:
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names))
+        self._lexrepr_to_copy_index_free_names = \
+            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names))
+        self.op_from_name = {"0": 0}
+        for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
+            for op_name in op_names:
+                self.op_from_name.setdefault(op_name, i+1)
         self._lexrepr_to_symbols = \
             np.hstack(([sp.S.Zero], inflationproblem._lexrepr_to_symbols))
 
@@ -192,6 +198,7 @@ class InflationSDP:
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
+        self.monomial_from_symbol       = dict()
         self.Zero = self.Moment_2d(self.zero_operator, idx=0)
         self.One  = self.Moment_2d(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
@@ -275,8 +282,12 @@ class InflationSDP:
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
         self.monomial_from_name         = dict()
+        self.monomial_from_symbol       = dict()
         self.Zero = self.Moment_2d(self.zero_operator, idx=0)
         self.One  = self.Moment_2d(self.identity_operator, idx=1)
+        self.Constant_Term = self.One.__copy__()
+        self.Constant_Term.name = self.constant_term_name
+        self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
         self.build_columns(column_specification)
         collect()
@@ -317,7 +328,7 @@ class InflationSDP:
         collect()
 
         self.momentmatrix_has_a_zero, self.momentmatrix_has_a_one = \
-            np.in1d([0, 1], self.momentmatrix.ravel())
+            np.isin([0, 1], self.momentmatrix.ravel())
 
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
@@ -334,13 +345,6 @@ class InflationSDP:
         
         assert all(v == 1 for v in Counter(self.monomials).values()), \
             "Multiple indices are being associated to the same monomial"
-        
-        knowable_atoms = set()
-        for mon in self.moments:
-            knowable_atoms.update(mon.knowable_factors)
-        self.knowable_atoms = [self._moment_from_atoms([atom])
-                               for atom in knowable_atoms]
-        del knowable_atoms
 
         _counter = Counter([mon.knowability_status for mon in self.moments])
         self.n_knowable           = _counter["Knowable"]
@@ -486,6 +490,46 @@ class InflationSDP:
             self._reset_lowerbounds()
             self.moment_lowerbounds.update(sanitized_bounds)
         self._update_bounds(bound_type)
+
+    @cached_property
+    def atomic_factors(self):
+        atoms = set()
+        for mon in self.moments:
+            atoms.update(mon.factors)
+        return sorted(atoms)
+
+    @cached_property
+    def atomic_monomials(self):
+        """Returns the atomic monomials."""
+        return [self._monomial_from_atoms([atom]) for atom in self.atomic_factors]
+
+    @cached_property
+    def atom_from_name(self):
+        """Returns the atomic monomials."""
+        lookup_dict = dict()
+        for atom in self.atomic_factors:
+            lookup_dict[atom.name] = atom
+            lookup_dict[atom.legacy_name] = atom
+        return lookup_dict
+
+    @cached_property
+    def atomic_monomials(self):
+        """Returns the atomic monomials."""
+        atoms = set()
+        for mon in self.moments:
+            atoms.update(mon.factors)
+        return [self._monomial_from_atoms([atom]) for atom in sorted(atoms)]
+
+    @cached_property
+    def knowable_atoms(self):
+        """Returns the knowable atoms."""
+        return [m for m in self.atomic_monomials if m.is_knowable]
+
+    @cached_property
+    def do_conditional_atoms(self):
+        """Returns the atomic monomials which correspond to do conditionals."""
+        return [m for m in self.atomic_monomials if
+                (m.is_do_conditional and not m.is_knowable)]
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
@@ -674,7 +718,7 @@ class InflationSDP:
                 elif known_status == "Semi":
                     if self.use_lpi_constraints:
                         unknown_mon = \
-                            self._moment_from_atoms(unknown_factors)
+                            self._monomial_from_atoms(unknown_factors)
                         self.semiknown_moments[moment] = (value, unknown_mon)
                         if self.verbose > 0:
                             if unknown_mon not in self.moments:
@@ -775,20 +819,19 @@ class InflationSDP:
     # PUBLIC ROUTINES RELATED TO THE PROCESSING OF CERTIFICATES               #
     ###########################################################################
     def certificate_as_dict(self,
-                             clean: bool = True,
-                             chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
-        """Give the polynomial certificate as a dictionary with monomials as
-        keys and their coefficients as values. The certificate of
-        incompatibility is read as ``cert < 0``. 
-        
+                            clean: bool = True,
+                            chop_tol: float = 1e-10,
+                            round_decimals: int = 3) -> dict:
+        """Give certificate as dictionary with monomials as keys and
+        their coefficients in the certificate as the values. The certificate
+        of incompatibility is ``cert < 0``.
+
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
         apply.
-
 
         Parameters
         ----------
@@ -805,8 +848,8 @@ class InflationSDP:
 
         Returns
         -------
-        sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
+        dict
+            The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
         try:
@@ -818,20 +861,41 @@ class InflationSDP:
             warn("Beware that, because the problem contains linearized " +
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
+        if np.allclose(list(dual.values()), 0.):
+            return dict()
+        if clean:
             dual = clean_coefficients(dual, chop_tol, round_decimals)
+        return {self.monomial_from_name[k]: v for k, v in dual.items()
+                if not self.monomial_from_name[k].is_zero}
 
-        return {self.monomial_from_name[k]: v for k, v in dual.items()}
-    
+    def probs_from_dict(self,
+                        dict_with_monomial_keys: dict) -> sp.core.add.Add:
+        """Converts a monomial dictionary into a SymPy expression.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the polynomial encoded in the dictionary.
+        """
+        polynomial = sp.S.Zero
+        for mon, coeff in self._sanitise_dict(dict_with_monomial_keys).items():
+            polynomial += coeff * mon.symbol
+        return polynomial
+
     def certificate_as_probs(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
                              round_decimals: int = 3) -> sp.core.add.Add:
         """Give certificate as symbolic sum of probabilities. The certificate
         of incompatibility is ``cert < 0``.
-        
+
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -853,38 +917,59 @@ class InflationSDP:
         Returns
         -------
         sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
+            The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
+        return self.probs_from_dict(self.certificate_as_dict(
+            clean=clean,
+            chop_tol=chop_tol,
+            round_decimals=round_decimals))
 
-        polynomial = sp.S.Zero
-        for mon_name, coeff in dual.items():
-            if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
-                coeff = int(coeff)
-            polynomial += coeff * self.names_to_symbols[mon_name]
-        return polynomial
+    def string_from_dict(self,
+                         dict_with_monomial_keys: dict) -> str:
+        """Converts a monomial dictionary into a string.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        str
+            The expression of the certificate in string form.
+        """
+        as_dict = self._sanitise_dict(dict_with_monomial_keys)
+        # Watch out for when "1" is note the same as "constant_term"
+        constant_value = as_dict.pop(self.Constant_Term,
+                                     as_dict.pop(self.One, 0.)
+                                     )
+        if constant_value:
+            polynomial_as_str = str(constant_value)
+        else:
+            polynomial_as_str = ""
+        for mon, coeff in as_dict.items():
+            if mon.is_zero or np.isclose(np.abs(coeff), 0):
+                continue
+            else:
+                polynomial_as_str += "+" if coeff >= 0 else "-"
+                if np.isclose(abs(coeff), 1):
+                    polynomial_as_str += mon.name
+                else:
+                    polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
+        return polynomial_as_str[1:] if polynomial_as_str[
+                                            0] == "+" else polynomial_as_str
 
     def certificate_as_string(self,
                               clean: bool = True,
                               chop_tol: float = 1e-10,
                               round_decimals: int = 3) -> str:
-        """Give the certificate as a string with the notation of the operators
-        in the moment matrix. The expression is in the form such that
-        satisfaction implies incompatibility.
-        
+        """Give the certificate as a string of a sum of probabilities. The
+        expression is in the form such that its satisfaction implies
+        incompatibility.
+
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -895,60 +980,84 @@ class InflationSDP:
         clean : bool, optional
             If ``True``, eliminate all coefficients that are smaller than
             ``chop_tol``, normalise and round to the number of decimals
-            specified by ``round_decimals``. By default ``True``.
+            specified by ``round_decimals``. By default, ``True``.
         chop_tol : float, optional
             Coefficients in the dual certificate smaller in absolute value are
-            set to zero. By default ``1e-10``.
+            set to zero. By default, ``1e-10``.
         round_decimals : int, optional
             Coefficients that are not set to zero are rounded to the number of
-            decimals specified. By default ``3``.
+            decimals specified. By default, ``3``.
 
         Returns
         -------
         str
-            The certificate in terms of symbols representing the monomials in
-            the moment matrix. The certificate of incompatibility is
-            ``cert < 0``.
+            The certificate in terms of probabilities and marginals. The
+            certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            if self.verbose > 0:
-                warn("Beware that, because the problem contains linearized " +
-                     "polynomial constraints, the certificate is not " +
-                     "guaranteed to apply to other distributions.")
+        return self.string_from_dict(
+            self.certificate_as_dict(
+                clean=clean,
+                chop_tol=chop_tol,
+                round_decimals=round_decimals)) + " < 0"
 
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
+    def evaluate_polynomial(self, polynomial: dict, prob_array: np.ndarray):
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
 
-        rest_of_dual = dual.copy()
-        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
-        constant_value += rest_of_dual.pop(self.One.name, 0)
-        if constant_value:
-            if clean:
-                cert = "{0:.{prec}f}".format(constant_value,
-                                             prec=round_decimals)
-            else:
-                cert = str(constant_value)
-        else:
-            cert = ""
-        for mon_name, coeff in rest_of_dual.items():
-            if mon_name != "0":
-                cert += "+" if coeff >= 0 else "-"
-                if np.isclose(abs(coeff), 1):
-                    cert += mon_name
-                else:
-                    if clean:
-                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
-                                                          mon_name,
-                                                          prec=round_decimals)
-                    else:
-                        cert += f"{abs(coeff)}*{mon_name}"
-        cert += " < 0"
-        return cert[1:] if cert[0] == "+" else cert
+        Parameters
+        ----------
+        polynomial : dict
+            A dictionary of monomials with coefficients as values.
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        return sum((atom.compute_marginal(prob_array) * val
+                    for atom, val in self._sanitise_dict(polynomial).items()))
+
+    def evaluate_certificate(self, prob_array: np.ndarray) -> float:
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
+
+        Parameters
+        ----------
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        if self.use_lpi_constraints:
+            warn("You have used LPI constraints to obtain the certificate. " +
+                 "Be aware that, because of that, the certificate may not be " +
+                 "valid for other distributions.")
+        return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
@@ -981,7 +1090,7 @@ class InflationSDP:
         """
         columns = None
         if type(column_specification) == list:
-            # There are two possibilities: list of lists, list of arrays 
+            # There are three possibilities: list of lists, list of arrays 
             # or list of symbols. If list of lists, then it is the party
             # block encoding. If it is a list of arrays, then it can be either
             # monomials in the 2d encoding, or the 1d encoding.
@@ -1123,8 +1232,6 @@ class InflationSDP:
                              sp.S.One)
                       for lexmon in self.generating_monomials_1d ]
         return output
-
-
 
     def reset(self, which: Union[str, List[str]] = "all") -> None:
         """Reset the various user-specifiable objects in the inflation SDP.
@@ -1293,7 +1400,7 @@ class InflationSDP:
                                             canonical_order=False)
         list_of_atoms = [self._AtomicMonomial(factor + 1)
                          for factor in _factors if len(factor)]
-        mon = self._moment_from_atoms(list_of_atoms)
+        mon = self._monomial_from_atoms(list_of_atoms)
         mon.attach_idx(idx)
         return mon
 
@@ -1330,7 +1437,7 @@ class InflationSDP:
         if self._relaxation_has_been_generated:
             if self.n_columns > 0:
                 self.maskmatrices = {
-                    mon: lil_matrix(self.momentmatrix == mon.idx)
+                    mon: coo_array(self.momentmatrix == mon.idx)
                     for mon in tqdm(self.moments,
                                     disable=not self.verbose,
                                     desc="Assigning mask matrices  ")
@@ -1346,7 +1453,7 @@ class InflationSDP:
         representative = np.array(min(output_variants), dtype=np.intc)
         return output_variants, representative
 
-    def _moment_from_atoms(self,
+    def _monomial_from_atoms(self,
                              atoms: List[InternalAtomicMonomialSDP]
                              ) -> CompoundMomentSDP:
         """Build an instance of `CompoundMonomial` from a list of instances
@@ -1387,6 +1494,8 @@ class InflationSDP:
                 pass
             self.monomial_from_atoms[atoms]   = mon
             self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
+            self.monomial_from_symbol[mon.symbol] = mon
             return mon
 
     def _sanitise_moment(self, moment: Any) -> CompoundMomentSDP:
@@ -1417,18 +1526,8 @@ class InflationSDP:
         """
         if isinstance(moment, CompoundMomentSDP):
             return moment
-        elif isinstance(moment, (sp.core.symbol.Symbol,
-                                 sp.core.power.Pow,
-                                 sp.core.mul.Mul)):
-            symbols = flatten_symbolic_powers(moment)
-            if len(symbols) == 1:
-                try:
-                    return self.monomial_from_name[str(symbols[0])]
-                except KeyError:
-                    pass
-            array = np.concatenate([self._interpret_atomic_string(str(op))
-                                    for op in symbols])
-            return self._sanitise_moment(array)
+        elif isinstance(moment, InternalAtomicMonomialSDP):
+            return self._monomial_from_atoms([moment])
         elif isinstance(moment, (tuple, list, np.ndarray)):
             array = np.asarray(moment, dtype=self.np_dtype)
             assert array.ndim == 2, \
@@ -1438,11 +1537,8 @@ class InflationSDP:
             canon_lexmon = self._to_canonical_memoized_1d(
                 self.mon_to_lexrepr(array))
             return self.Moment_1d(canon_lexmon)
-        elif isinstance(moment, str):
-            try:
-                return self.monomial_from_name[moment]
-            except KeyError:
-                return self._sanitise_moment(self._interpret_name(moment))
+        elif isinstance(moment, (str, sp.core.symbol.Expr)):
+            return self._sanitise_moment(self._interpret_name(moment))
         elif isinstance(moment, Real):
             if np.isclose(float(moment), 1):
                 return self.One
@@ -1535,16 +1631,23 @@ class InflationSDP:
         numpy.ndarray
             2D array encoding of the input moment.
         """
-        if isinstance(monomial, sp.core.symbol.Expr):
-            factors = [str(factor)
-                       for factor in flatten_symbolic_powers(monomial)]
-        elif str(monomial) == '1':
+        if str(monomial) == '1':
             return self.identity_operator
-        elif isinstance(monomial, tuple) or isinstance(monomial, list):
+        elif isinstance(monomial, str):
+            try:
+                return self.monomial_from_name[monomial]
+            except KeyError:
+                factors = monomial.split("*")
+        elif isinstance(monomial, (tuple, list)):
             factors = [str(factor) for factor in monomial]
+        elif isinstance(monomial, sp.core.symbol.Expr):
+            try:
+                return self.monomial_from_symbol[monomial]
+            except KeyError:
+                factors = [str(factor)
+                           for factor in flatten_symbolic_powers(monomial)]
         else:
-            assert "^" not in monomial, "Cannot interpret exponents."
-            factors = monomial.split("*")
+            raise Exception(f'Cannot interpret monomial with name {monomial} of type {type(monomial)}')
         return np.vstack(tuple(self._interpret_atomic_string(factor_string)
                                for factor_string in factors))
 
@@ -1563,12 +1666,23 @@ class InflationSDP:
         numpy.ndarray
             2D array encoding of the input atomic moment.
         """
+        try:
+            return self.atom_from_name[factor_string].as_2d_array
+        except (KeyError, AttributeError):
+            pass
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
+                or (factor_string[0:1] == "P[" and factor_string[-1] == "]")
                 or set(factor_string).isdisjoint(set("| "))), \
             ("Monomial names must be between < > signs, or in conditional " +
-             "probability form.")
-        if factor_string[0] == "<":
-            operators = factor_string[1:-1].split(" ")
+             f"probability form, whereas input received was {factor_string}")
+        if factor_string[-1] in {'>', ')', "]", "}"}:
+            cleaned_factor_string = factor_string[:-1]
+            substrings_to_kill = {"P[", "P(", "p[", "p(", "<"}
+            for substring in substrings_to_kill:
+                cleaned_factor_string = cleaned_factor_string.replace(
+                    substring, '')
+            cleaned_factor_string = cleaned_factor_string.replace(' & ', ' ')
+            operators = cleaned_factor_string.split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
                                    for op_string in operators))
         else:
@@ -1585,14 +1699,9 @@ class InflationSDP:
         Returns
         -------
         numpy.ndarray
-            1D array encoding of the operator.
+            2D array encoding of the operator.
         """
-        components = op_string.replace('∅','0').split("_")
-        assert len(components) == self._nr_properties, \
-            f"There need to be {self._nr_properties} properties to match " + \
-            "the scenario."
-        components[0] = self.names_to_ints[components[0]]
-        return np.array([int(s) for s in components], dtype=self.np_dtype)
+        return self._lexorder[self.op_from_name[op_string]]
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE MOMENT MATRIX                 #
@@ -1649,7 +1758,8 @@ class InflationSDP:
                                 for party in block]
                 for mon_lexrepr in product(*meas_ops):
                     canon = self._to_canonical_memoized_1d(mon_lexrepr)
-                    if not np.array_equal(canon, _zero_lexorder):
+                    if (not np.array_equal(canon, _zero_lexorder)
+                        and len(canon) == len(block)):
                         _hash = tuple(canon)
                         if _hash not in seen_columns:
                             seen_columns.add(tuple(canon))
@@ -1691,7 +1801,8 @@ class InflationSDP:
         last_outcome_boolmask = np.array(
             [self.has_children[op[0] - 1] and
               op[-1] == self.outcome_cardinalities[op[0] - 1] - 2 # TODO -2 is a hack for using fake outcomes
-                                for op in self._lexorder], dtype=bool)
+                                for op in self._lexorder[1:]], dtype=bool)
+        last_outcome_boolmask = np.hstack(([False], last_outcome_boolmask))
         
         # This will allow for easy substitution of operators with the last
         # outcome with the rest of the operators orthogonal to it
@@ -2040,7 +2151,7 @@ class InflationSDP:
             if not np.isclose(bnd, 0):
                 ub[self.constant_term_name] = bnd
             solverargs["inequalities"].append(ub)
-        solverargs["mask_matrices"][self.constant_term_name] = lil_matrix(
+        solverargs["mask_matrices"][self.constant_term_name] = coo_array(
             (self.n_columns, self.n_columns))
         return solverargs
 

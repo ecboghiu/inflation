@@ -6,15 +6,17 @@ values of monomials in convex programming relaxations of inflation.
 """
 import numpy as np
 
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import total_ordering
 from numbers import Real
 from typing import Dict, List, Tuple
+from copy import deepcopy
 
 from ..sdp.monomial_utils import (compute_marginal,
                                   name_from_atom_names,
                                   symbol_from_atom_name,
                                   symbol_prod)
+from .numbafied import nb_is_do_conditional as is_do_conditional
 
 
 @total_ordering
@@ -23,17 +25,17 @@ class InternalAtomicMonomial(object):
                  "as_2d_array",
                  "is_one",
                  "is_zero",
+                 "is_do_conditional",
                  "is_knowable",
-                 # "is_all_commuting",
-                 # "is_physical",
                  "n_operators",
                  "op_length",
                  "rectified_ndarray",
                  "context",
                  "name",
-                 # "symbol",
+                 "legacy_name",
+                 "is_all_commuting",
                  "signature",
-                 # "as_bool_vec"
+                 "symbol"
                  ]
 
     def __init__(self, inflation_lp_instance, as_1d_vec: np.ndarray):
@@ -50,7 +52,7 @@ class InternalAtomicMonomial(object):
         inflation_lp_instance : InflationLP
             An instance of the ``InflationLP`` class. It is used to access
             methods specific to the inflation problem. E.g., when instantiating
-            an internal atomic moment, the ``InflationSDP`` instance is used to
+            an internal atomic moment, the ``InflationLP`` instance is used to
             check if it already contains such moment.
         array2d : numpy.ndarray
             A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D
@@ -76,19 +78,32 @@ class InternalAtomicMonomial(object):
             self.is_zero = not np.all(self.as_lexmon)
         else:
             raise NotImplementedError("InternalAtomicMonomial requires `lp` or `sdp` parent class.")
-        self.is_knowable = (self.is_one or self.is_zero or
-                            self.context._atomic_knowable_q(self.as_2d_array))
+        if self.is_one or self.is_zero:
+            self.is_all_commuting = True
+            self.is_do_conditional = True
+            self.is_knowable = True
+        else:
+            self.is_all_commuting = inflation_lp_instance.all_commuting_q_1d(self.as_lexmon)
+            self.is_do_conditional = is_do_conditional(self.as_2d_array)
+            if self.is_do_conditional and self.is_all_commuting:
+                self.is_knowable = self.context._atomic_knowable_q(self.as_2d_array)
+            else:
+                self.is_knowable = False
         # Save also array with the original setting, not just the effective one
         if self.is_knowable:
-            self.rectified_ndarray = np.asarray(
-                inflation_lp_instance.rectify_fake_setting(np.take(self.as_2d_array,
-                                                     [0, -2, -1],
-                                                     axis=1)),
-                dtype=int)
+            if not (self.is_one or self.is_zero):
+                self.rectified_ndarray = np.asarray(
+                    inflation_lp_instance.rectify_fake_setting(np.take(self.as_2d_array,
+                                                         [0, -2, -1],
+                                                         axis=1)),
+                    dtype=int)
+            else:
+                self.rectified_ndarray = np.empty((0,3), dtype=int)
 
         self.name = self._name
+        self.legacy_name = self._raw_name
         self.signature = self._signature
-        # self.symbol = self._symbol
+        self.symbol = symbol_from_atom_name(self.name)
 
     def __copy__(self):
         """Make a copy of the Monomial"""
@@ -124,12 +139,37 @@ class InternalAtomicMonomial(object):
         return self.name
 
     @property
-    def _raw_name(self):
-        list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
-        return "<" + " ".join(list_of_op_names) + ">"
+    def as_legacy_lexmon(self):
+        return self.as_lexmon
 
     @property
     def _name(self):
+        if self.is_one:
+            return "1"
+        elif self.is_zero:
+            return "0"
+        if self.is_do_conditional:
+            uncleaned_ops = self.context.InflationProblem._lexrepr_to_dicts[self.as_legacy_lexmon]
+            ambigous_outcome_dict = defaultdict(set)
+            for op in uncleaned_ops.flat:
+                ambigous_outcome_dict[op["Party"]].add(op["Outcome"])
+            parties_with_unambigous_outcomes = [(p, s.pop()) for p, s in ambigous_outcome_dict.items() if len(s)==1]
+            cleaned_ops = [deepcopy(op) for op in uncleaned_ops.flat]
+            for (p, o) in parties_with_unambigous_outcomes:
+                for alt_op in cleaned_ops:
+                    alt_op["Do Values"] = {k: v for k, v in
+                                           alt_op["Do Values"].items()
+                                           if not (k==p and o==v)}
+            list_of_op_names = [self.context.InflationProblem._interpretation_to_name(op, include_copy_indices=False) for op in cleaned_ops]
+        else:
+            list_of_op_names = self.context._lexrepr_to_names[self.as_lexmon]
+        if self.is_all_commuting:
+            return "P[" + " ".join(list_of_op_names) + "]"
+        else:
+            return "<" + " ".join(list_of_op_names) + ">"
+
+    @property
+    def _raw_name(self):
         """A string representing the monomial. In case of knowable monomials,
         it is of the form ``p(outputs|inputs)``. Otherwise it represents the
         expectation value of the monomial with bracket notation.
@@ -154,17 +194,13 @@ class InternalAtomicMonomial(object):
                     "(" + o_divider.join(outputs) +
                     "|" + i_divider.join(inputs) + ")")
         else:
-            return self._raw_name
+            return "<" + " ".join(self.context.InflationProblem._lexrepr_to_all_names[
+                self.as_legacy_lexmon, 2]) + ">"
 
     @property
     def _signature(self):
         # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
         return (self.n_operators, tuple(self.as_lexmon))
-
-    @property
-    def symbol(self):
-        """Return a sympy Symbol representing the monomial."""
-        return symbol_from_atom_name(self.name)
 
     def compute_marginal(self, prob_array: np.ndarray) -> float:
         """Given a probability distribution, compute the numerical value of
@@ -194,6 +230,7 @@ class CompoundMoment(object):
                  "factors",
                  "idx",
                  "is_atomic",
+                 "is_do_conditional",
                  "is_knowable",
                  "is_one",
                  "is_zero",
@@ -204,11 +241,12 @@ class CompoundMoment(object):
                  "n_operators",
                  "n_unknowable_factors",
                  "name",
+                 "legacy_name",
                  "signature",
-                 # "symbol",
                  "unknowable_factors",
                  "as_lexmon",
-                 "internal_type"
+                 "internal_type",
+                 "symbol"
                  ]
 
     def __init__(self, monomials: Tuple[InternalAtomicMonomial]):
@@ -233,6 +271,7 @@ class CompoundMoment(object):
         self.n_factors     = len(self.factors)
         self.n_operators   = sum(factor.n_operators for factor in self.factors)
         self.is_atomic     = (self.n_factors <= 1)
+        self.is_do_conditional = all(factor.is_do_conditional for factor in self.factors)
         self.is_knowable   = all(factor.is_knowable for factor in self.factors)
         if self.n_factors == 0:
             self.as_lexmon = np.empty(0, dtype=np.intc)
@@ -261,8 +300,12 @@ class CompoundMoment(object):
                         or (self.n_factors == 0))
         self.is_zero = any(factor.is_zero for factor in self.factors)
 
-        self.name        = name_from_atom_names(self._names_of_factors)
-        # self.symbol      = symbol_prod(self._symbols_of_factors)
+        self.name        = name_from_atom_names([factor.name
+                                                 for factor in self.factors])
+        self.legacy_name = name_from_atom_names([factor.legacy_name
+                                                 for factor in self.factors])
+        self.symbol      = symbol_prod([factor.symbol
+                                        for factor in self.factors])
         self.signature   = self.factors
         self.internal_type = InternalAtomicMonomial
 
@@ -292,20 +335,6 @@ class CompoundMoment(object):
     def __str__(self):
         """Return the name of the Monomial."""
         return self.name
-
-    @property
-    def _names_of_factors(self):
-        """Return the names of each of the factors in the Monomial."""
-        return [factor.name for factor in self.factors]
-
-    @property
-    def _symbols_of_factors(self):
-        """Generate a sympy Symbol per factor in the Monomial."""
-        return [factor.symbol for factor in self.factors]
-
-    @property
-    def symbol(self):
-        return symbol_prod(self._symbols_of_factors)
 
     def attach_idx(self, idx: int):
         """Assign an index to the Monomial. This is used when generating the
@@ -387,3 +416,14 @@ class CompoundMoment(object):
                 if np.isclose(known_value, 0):
                     known_status = "Known"
         return known_value, unknown_factors, known_status
+
+    def __copy__(self):
+        """Make a copy of the CompoundMonomial"""
+        cls = self.__class__
+        result = cls.__new__(cls)
+        for attr in self.__slots__:
+            try:
+                result.__setattr__(attr, self.__getattribute__(attr))
+            except AttributeError:
+                pass
+        return result

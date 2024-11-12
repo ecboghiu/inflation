@@ -1,17 +1,21 @@
 [![DOI](https://zenodo.org/badge/500850617.svg)](https://zenodo.org/badge/latestdoi/500850617)
 
 # Inflation
-Inflation is a Python package that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatibility between some observed data and a given causal relationship.
+Inflation is a package, written in Python, that implements inflation algorithms for causal inference. In causal inference, the main task is to determine which causal relationships can exist between different observed random variables. Inflation algorithms are a class of techniques designed to solve the causal compatibility problem, that is, test compatibility between some observed data and a given causal relationship.
 
-The first version of this package implements the inflation technique for quantum causal compatibility. For details, see [Physical Review X 11 (2), 021043 (2021)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043). The inflation technique for classical causal compatibility will be implemented in a future update.
+This package implements the inflation technique for classical, quantum, and post-quantum causal compatibility. By relaxing independence constraints to symmetries on larger graphs, it develops hierarchies of relaxations of the causal compatibility problem that can be solved using linear and semidefinite programming. For details, see [Wolfe et al. “The inflation technique for causal inference with latent variables.” Journal of Causal Inference 7 (2), 2017-0020 (2019)](https://www.degruyter.com/document/doi/10.1515/jci-2017-0020/html), [Wolfe et al. “Quantum inflation: A general approach to quantum causal compatibility.” Physical Review X 11 (2), 021043 (2021)](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.021043), and references therein.
 
 Examples of use of this package include:
 
+- Causal compatibility with classical, quantum, non-signaling, and hybrid models.
 - Feasibility problems and extraction of certificates.
 - Optimization of Bell operators.
-- Optimisation over classical distributions.
+- Optimization over classical distributions.
+- Handling of bilayer (i.e., networks) and multilayer causal structures.
 - Standard [Navascués-Pironio-Acín hierarchy](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.98.010401).
 - Scenarios with partial information.
+- Possibilistic compatibility with a causal network.
+- Estimation of do-conditionals and causal strengths.
 
 See the documentation for more details.
 

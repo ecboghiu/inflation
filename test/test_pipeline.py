@@ -150,10 +150,8 @@ class TestMonomialGeneration(unittest.TestCase):
     def test_generation_with_identities(self):
         oneParty = InflationSDP(InflationProblem({"h": ["v"]}, [2], [2], [1]))
         columns  = oneParty.build_columns([[], [0, 0]])
-        truth    = [np.array([[1, 1, 0, 0]]),
-                    np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
-                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]]),
-                    np.array([[1, 1, 1, 0]])]
+        truth    = [np.array([[1, 1, 0, 0], [1, 1, 1, 0]]),
+                    np.array([[1, 1, 1, 0], [1, 1, 0, 0]])]
         truth    = [np.empty((0,4), dtype=int)] + [oneParty.mon_to_lexrepr(mon) 
                                                    for mon in truth]
         self.assertTrue(len(columns) == len(truth),
@@ -263,7 +261,7 @@ class TestResetLP(unittest.TestCase):
     lp._generate_lp()
 
     def setUp(self) -> None:
-        var1 = "<v_1_0_0 v_1_1_0>"
+        var1 = "P[v_0=0 v_1=0]"
         var2 = "pv(0|1)"
         self.lp.set_objective({var1: 1}, "max")
         self.lp.set_bounds({var1: 0.9}, "up")
@@ -289,7 +287,6 @@ class TestResetLP(unittest.TestCase):
 class TestSDPOutput(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        warnings.simplefilter("ignore", category=DeprecationWarning)
         warnings.simplefilter("ignore", category=UserWarning)
 
     def GHZ(self, v):
@@ -755,13 +752,7 @@ class TestSymmetries(unittest.TestCase):
                         "not applied properly after inflation symmetries.")
 
     def test_detected_symmetries(self):
-        cols = bilocalSDP.build_columns('local1')
-        # bilocalSDP.generating_monomials = cols
-        # bilocalSDP.generating_monomials_1d = list(map, bilocalSDP)
-        # bilocalSDP.n_columns = len(cols)
-        # bilocalSDP.genmon_hash_to_index = {
-        #                         bilocalSDP._from_2dndarray(op): i
-        #                         for i, op in enumerate(cols)}
+        bilocalSDP.build_columns('local1')
         syms = bilocalSDP._discover_columns_symmetries()
         # Make it a set so the order doesn't matter
         syms = set(tuple(s) for s in syms)

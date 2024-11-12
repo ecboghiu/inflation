@@ -2,33 +2,31 @@
 The module creates the inflation scenario associated to a causal structure. See
 arXiv:1609.00672 and arXiv:1707.06476 for the original description of
 inflation.
+
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
-import numpy as np
-import sympy
-
+import warnings
+from functools import reduce, cached_property
 from itertools import (chain,
                        combinations,
                        combinations_with_replacement,
-                       product,
                        permutations)
+from typing import Tuple, List, Union, Dict
 from warnings import warn
+
+import networkx as nx
+import numpy as np
+import sympy
+from tqdm import tqdm
+
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm,
                            commutation_matrix)
-
 from .utils import format_permutations, partsextractor, perm_combiner
-from typing import Tuple, List, Union, Dict
-
-from functools import reduce, cached_property
-from tqdm import tqdm
-
-import networkx as nx
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
-import warnings
 formatwarning_orig = warnings.formatwarning
 warnings.formatwarning = lambda msg, category, filename, lineno, line=None: \
     formatwarning_orig(msg, category, filename, lineno, line="")
@@ -42,7 +40,7 @@ class InflationProblem:
                  outcomes_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  settings_per_party: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
                  inflation_level_per_source: Union[Tuple[int,...], List[int], np.ndarray]=tuple(),
-                 classical_sources: Union[str, Tuple[str,...], List[str]]=tuple(),
+                 classical_sources: Union[str, Tuple[str,...], List[str], None]=tuple(),
                  nonclassical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
                  classical_intermediate_latents: Union[Tuple[str,...], List[str]]=tuple(),
                  order: Union[Tuple[str,...], List[str]]=tuple(),
@@ -173,9 +171,9 @@ class InflationProblem:
         # Distinguishing between classical versus nonclassical sources
         nodes_with_children_as_list = list(self.dag.keys())
         nodes_with_children = set(nodes_with_children_as_list)
-        self._actual_sources = sorted(
+        self._actual_sources = np.asarray(sorted(
             nodes_with_children.difference(self.names, self.intermediate_latents),
-            key=nodes_with_children_as_list.index)
+            key=nodes_with_children_as_list.index))
         self.nr_sources = len(self._actual_sources)
         if classical_sources == "all":
             self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
@@ -188,6 +186,20 @@ class InflationProblem:
                     if source in classical_sources:
                         self._classical_sources[ii] = 1
         self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
+
+        # Test if any quantum intermediate latent has fully classical parents.
+        # This case is not yet supported.
+        is_classical_source = dict(zip(self._actual_sources,
+                                       self._classical_sources))
+        for latent in self.nonclassical_intermediate_latents:
+            parents = [parent for parent, children in self.dag.items()
+                       if latent in children]
+            if all([is_classical_source[parent] for parent in parents]):
+                raise NotImplementedError(
+                    f"The node {latent} is a quantum intermediate latent node "
+                    + f"with all classical parents ({', '.join(parents)}). "
+                    + "Quantum intermediate latents with all classical parents "
+                    + "are not yet supported.")
 
         # Unpacking of visible nodes with children
         parties_with_children = nodes_with_children.intersection(self.names)
@@ -393,8 +405,8 @@ class InflationProblem:
         elif self._nonclassical_sources.all():
             source_info = "All sources are quantum."
         else:
-            classical_sources = self._actual_sources[self._classical_sources]
-            quantum_sources   = self._actual_sources[self._nonclassical_sources]
+            classical_sources = self._actual_sources[self._classical_sources.astype(bool)]
+            quantum_sources   = self._actual_sources[self._nonclassical_sources.astype(bool)]
             if len(classical_sources) > 1:
                 extra_1 = "s"
                 extra_2 = "are"
@@ -585,32 +597,92 @@ class InflationProblem:
         return np.asarray(array2d, dtype=self._np_dtype).tobytes()
 
     @cached_property
-    def _lexrepr_to_names(self):
-        """Map 1D array lexorder encoding of a monomial, to a string representation.
+    def _lexrepr_to_dicts(self):
+        """Map 1D array lexorder encoding of a monomial, to a dict representation.
 
         Returns
         -------
         list
             List of the same length as lexorder, where the i-th element is the
-            string representation of the i-th operator in the lexorder.
+            dictionary representation of the i-th operator in the lexorder.
         """
-        # Use expectation value notation. As ndarray for rapid multiextract.
-        as_list = []
-        for op in self._lexorder:
-            name = self.names[op[0] - 1]
-            inflation_indices_as_strs = [str(i) for i in op[1:-2]]
-            if self.settings_per_party[op[0]-1] == 1:
-                setting_as_str = '∅'
-            else:
-                setting_as_str = str(op[-2])
-            outcome_as_str = str(op[-1])
-            char_list = [name] + inflation_indices_as_strs + [setting_as_str, outcome_as_str]
-            op_as_str = "_".join(char_list)
-            as_list.append(op_as_str)
-        return np.array(as_list)
+        return [self._interpret_operator(op) for op in self._lexorder]
+
 
     @cached_property
-    def _lexrepr_to_symbols(self):
+    def _any_inflation(self) -> bool:
+        return np.any(self.inflation_level_per_source > 1)
+
+    @cached_property
+    def _lexrepr_to_dicts(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
+            dictionary interpretation of the i-th operator in the lexorder.
+        """
+        return np.array([self._interpret_operator(op) for op in self._lexorder])
+
+    @cached_property
+    def _lexrepr_to_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
+        return np.asarray([self._interpretation_to_name(
+            op_dict,
+            include_copy_indices=self._any_inflation)
+                for op_dict in self._lexrepr_to_dicts.flat])
+
+    @cached_property
+    def _lexrepr_to_copy_index_free_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial, to a string representation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is the
+            string representation of the i-th operator in the lexorder.
+        """
+        if not self._any_inflation:
+            return self._lexrepr_to_names
+        else:
+            return np.asarray([self._interpretation_to_name(
+                op_dict,
+                include_copy_indices=False)
+                for op_dict in self._lexrepr_to_dicts.flat])
+
+    @cached_property
+    def _lexrepr_to_all_names(self) -> np.ndarray:
+        """Map 1D array lexorder encoding of a monomial to
+        a variety of possible string representations.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the same length as lexorder, where the i-th element is a
+            collection of string representations of the i-th operator in the
+            lexorder.
+        """
+        old_names_v1 = [self._interpretation_to_name_old(op_dict,
+                                                         replace_trivial_setting=True)
+                        for op_dict in self._lexrepr_to_dicts.flat]
+        old_names_v2 = [legacy_name.replace('∅','0') for legacy_name in old_names_v1]
+        return np.stack((
+            self._lexrepr_to_names,
+            self._lexrepr_to_copy_index_free_names,
+            old_names_v1,
+            old_names_v2
+        ), 1)
+
+    @cached_property
+    def _lexrepr_to_symbols(self) -> np.ndarray:
         """For each operator in the lexorder, create a sympy symbol with the 
         same name as returned by InflationPRoblem._lexrepr_to_names()
 
@@ -640,6 +712,68 @@ class InflationProblem:
     ###########################################################################
     # FUNCTIONS PERTAINING TO KNOWABILITY                                     #
     ###########################################################################
+    def _interpret_operator(self, op: np.ndarray) -> dict:
+        interpretation = dict()
+        party_int = op[0] -1
+        interpretation["Party as Integer"] = party_int
+        interpretation["Party"] = self.names[party_int]
+        outcome_int = op[-1]
+        interpretation["Outcome"] = outcome_int
+        setting_as_single_int = op[-2]
+        interpretation["Composite Setting"] = setting_as_single_int
+        interpretation["Composite Setting is Trivial"] = (self.settings_per_party[party_int] == 1)
+        setting_as_tuple = self.effective_to_parent_settings[party_int][setting_as_single_int]
+        private_setting = setting_as_tuple[0]
+        interpretation["Private Setting"] = private_setting
+        interpretation["Private Setting is Trivial"] = (self.private_settings_per_party[party_int] == 1)
+        outcomes_of_parents = setting_as_tuple[1:]
+        parents_in_play_as_ints = self.parents_per_party[party_int]
+        parents_in_play_as_names = partsextractor(self.names, parents_in_play_as_ints)
+        non_private_setting_dict = dict(zip(parents_in_play_as_names, outcomes_of_parents))
+        interpretation["Do Values"] = non_private_setting_dict
+        interpretation["Copy Indices"] = op[1:-2]
+        relevant_slots = np.logical_and(
+            self.inflation_level_per_source > 0,
+            interpretation["Copy Indices"] > 0
+        )
+        interpretation["Relevant Copy Indices"] = interpretation["Copy Indices"][relevant_slots]
+        return interpretation
+
+    @staticmethod
+    def _interpretation_to_name(op: dict, include_copy_indices=True) -> str:
+        op_as_str = op["Party"]
+        if not op["Private Setting is Trivial"]:
+            op_as_str += '_'+str(op["Private Setting"])
+        if include_copy_indices:
+            if len(op["Relevant Copy Indices"]):
+                copy_index_string = '^{'
+                copy_index_string += ','.join(map(str,op["Relevant Copy Indices"].flat))
+                copy_index_string += '}'
+                op_as_str += copy_index_string
+
+            copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
+            op_as_str += copy_indices_string
+        op_as_str += f"={op['Outcome']}"
+        if len(op["Do Values"]):
+            do_values_string = "|do("
+            do_values_string += ','.join((f"{p}={v}" for p, v in op["Do Values"].items()))
+            do_values_string += ')'
+            op_as_str += do_values_string
+        return op_as_str
+
+    @staticmethod
+    def _interpretation_to_name_old(op: dict, replace_trivial_setting=True) -> str:
+        op_as_str = op["Party"]
+        copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
+        op_as_str += copy_indices_string
+        if replace_trivial_setting and op["Composite Setting is Trivial"]:
+            op_as_str += "_∅"
+        else:
+            op_as_str += "_" + str(op["Composite Setting"])
+        op_as_str += "_" + str(op['Outcome'])
+        return op_as_str
+
+
 
     def _is_knowable_q_non_networks(self, monomial: np.ndarray) -> bool:
         """Checks if a monomial (written as a sequence of operators in 2d array

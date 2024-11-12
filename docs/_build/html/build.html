@@ -1,27 +1,27 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Functions to build problem elements &mdash; CausalInflation 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>Functions to build problem elements &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/clipboard.min.js"></script>
-        <script src="_static/copybutton.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -34,11 +34,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -55,10 +59,19 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="inflationproblem.html">InflationProblem Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationlp.html">InflationLP Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html">Optimization helpers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Functions to build problem elements</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#auxiliary-functions">Auxiliary functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inflation.sdp.quantum_tools.calculate_momentmatrix_1d_internal"><code class="docutils literal notranslate"><span class="pre">calculate_momentmatrix_1d_internal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inflation.sdp.quantum_tools.construct_normalization_eqs"><code class="docutils literal notranslate"><span class="pre">construct_normalization_eqs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inflation.sdp.quantum_tools.generate_operators"><code class="docutils literal notranslate"><span class="pre">generate_operators()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxiliary-functions">Auxiliary functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.sdp.quantum_tools.apply_inflation_symmetries"><code class="docutils literal notranslate"><span class="pre">apply_inflation_symmetries()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inflation.sdp.quantum_tools.format_permutations"><code class="docutils literal notranslate"><span class="pre">format_permutations()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
@@ -73,16 +86,16 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="modules.html">API Reference</a> &raquo;</li>
-      <li>Functions to build problem elements</li>
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Functions to build problem elements</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/build.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -92,35 +105,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="functions-to-build-problem-elements">
-<h1>Functions to build problem elements<a class="headerlink" href="#functions-to-build-problem-elements" title="Permalink to this heading"></a></h1>
+  <section id="functions-to-build-problem-elements">
+<h1>Functions to build problem elements<a class="headerlink" href="#functions-to-build-problem-elements" title="Link to this heading"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.calculate_momentmatrix">
-<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">calculate_momentmatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lexorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#calculate_momentmatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.calculate_momentmatrix" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="inflation.sdp.quantum_tools.calculate_momentmatrix_1d_internal">
+<span class="sig-prename descclassname"><span class="pre">inflation.sdp.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">calculate_momentmatrix_1d_internal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notcomm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orthomat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commuting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/sdp/quantum_tools.html#calculate_momentmatrix_1d_internal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.quantum_tools.calculate_momentmatrix_1d_internal" title="Link to this definition"></a></dt>
 <dd><p>Calculate the moment matrix. The function takes as input the generating
 set <span class="math notranslate nohighlight">\(\{M_i\}_i\)</span> encoded as a list of monomials. Each monomial is a
 matrix where each row is an operator and the columns specify the operator
@@ -133,32 +122,34 @@ index of the monomial that represents the result of the expectation value
 moment matrix and the dictionary mapping each monomial in string
 representation to its integer representation.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cols</strong> (<em>List</em>) – List of numpy.ndarray representing the generating set.</p></li>
+<li><p><strong>cols</strong> (<em>List</em>) – List of numpy.ndarray representing the generating set in 1d internal format.</p></li>
 <li><p><strong>notcomm</strong> (<em>numpy.ndarray</em>) – Matrix of commutation relations, given in the format specified by
-<cite>causalinflation.quantum.fast_npa.commutation_matrix</cite>.</p></li>
-<li><p><strong>lexorder</strong> (<em>numpy.ndarray</em>) – Matrix with rows as operators where the index of the row gives
-the lexicographic order of the operator.</p></li>
+<cite>inflation.quantum.fast_npa.commutation_matrix</cite>.</p></li>
+<li><p><strong>orthomat</strong> (<em>numpy.ndarray</em>) – Matrix of orthogonality relations. Each operator can be identified by an
+integer <cite>i</cite> which also doubles as its lexicographic rank. Given two
+operators with ranks <cite>i</cite>, <cite>j</cite>, <code class="docutils literal notranslate"><span class="pre">notcomm[i,</span> <span class="pre">j]</span></code> is 1 if the operators
+are orthogonal, and 0 if they do.</p></li>
 <li><p><strong>commuting</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the variables in the problem commute or not. By default
 <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – How much information to print. By default <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The moment matrix <span class="math notranslate nohighlight">\(\Gamma\)</span>, where each entry <span class="math notranslate nohighlight">\((i,j)\)</span> stores
 the integer representation of a monomial. The Dict is a mapping from
 string representation to integer representation.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple[numpy.ndarray, Dict]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.construct_normalization_eqs">
-<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">construct_normalization_eqs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_equalities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">momentmatrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#construct_normalization_eqs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.construct_normalization_eqs" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="inflation.sdp.quantum_tools.construct_normalization_eqs">
+<span class="sig-prename descclassname"><span class="pre">inflation.sdp.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">construct_normalization_eqs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_equalities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">momentmatrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/sdp/quantum_tools.html#construct_normalization_eqs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.quantum_tools.construct_normalization_eqs" title="Link to this definition"></a></dt>
 <dd><p>Given a list of column level normalization equalities and the moment
 matrix, this function computes the implicit normalization equalities
 between matrix elements. Column-level and monomial-level equalities share
@@ -166,60 +157,60 @@ nearly the same format, they differ merely in whether integers pertain to
 column indices or the indices that represent the unique moment matrix
 elements.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>column_equalities</strong> (<em>List</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>]</em>) – The list of equalities between columns in the moment matrix, in the
 form of tuples whose first element is the index of one of the columns,
 and the second element is the list of indices of the columns whose
 corresponding operators sum up to the operator corresponding to the
 first element.</p></li>
-<li><p><strong>momentmatix</strong> (<em>numpy.ndarray</em>) – The moment matrix of which the identification between variables shall
+<li><p><strong>momentmatrix</strong> (<em>numpy.ndarray</em>) – The moment matrix of which the identification between variables shall
 be computed.</p></li>
 <li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – Verbosity level. By default 0.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The equalities between variables. For each tuple, the first element is
 the index of one of the variables in <code class="docutils literal notranslate"><span class="pre">momentmatrix</span></code>, and the second
 is the list of variables whose sum corresponds to the first.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>List[Tuple[int, List[int]]]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.generate_operators">
-<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">generate_operators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outs_per_input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#generate_operators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.generate_operators" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="inflation.sdp.quantum_tools.generate_operators">
+<span class="sig-prename descclassname"><span class="pre">inflation.sdp.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">generate_operators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outs_per_input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Symbol</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/sdp/quantum_tools.html#generate_operators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.quantum_tools.generate_operators" title="Link to this definition"></a></dt>
 <dd><p>Generates the list of <code class="docutils literal notranslate"><span class="pre">sympy.core.symbol.Symbol</span></code> variables
 representing the measurements for a given party. The variables are treated
 as non-commuting. This code is adapted from <a class="reference external" href="https://github.com/peterwittek/ncpol2sdpa/">ncpol2sdpa</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>outs_per_input</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – The number of outcomes of each measurement for a given party</p></li>
 <li><p><strong>name</strong> (<em>str</em>) – The name to be associated to the party</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The list of Sympy operators</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list</p>
 </dd>
 </dl>
 </dd></dl>
 
 <section id="auxiliary-functions">
-<h2>Auxiliary functions<a class="headerlink" href="#auxiliary-functions" title="Permalink to this heading"></a></h2>
+<h2>Auxiliary functions<a class="headerlink" href="#auxiliary-functions" title="Link to this heading"></a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.apply_inflation_symmetries">
-<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">apply_inflation_symmetries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">momentmatrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_symmetries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#apply_inflation_symmetries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.apply_inflation_symmetries" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="inflation.sdp.quantum_tools.apply_inflation_symmetries">
+<span class="sig-prename descclassname"><span class="pre">inflation.sdp.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">apply_inflation_symmetries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">momentmatrix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_symmetries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/sdp/quantum_tools.html#apply_inflation_symmetries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.quantum_tools.apply_inflation_symmetries" title="Link to this definition"></a></dt>
 <dd><p>Applies the inflation symmetries, in the form of permutations of the
 rows and colums of a moment matrix, to the moment matrix.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>momentmatrix</strong> (<em>numpy.ndarray</em>) – The moment matrix.</p></li>
 <li><p><strong>inflation_symmetries</strong> (<em>numpy.ndarray</em>) – Two-dimensional array where each row represents a permutation of
@@ -227,7 +218,7 @@ the rows and columns of the moment matrix.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – Whether information about progress is printed out.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>sym_mm</strong> (<em>numpy.ndarray</em>) – The symmetrized version of the moment matrix, where each cell is
 the lowest index of all the Monomials that are equivalent to that
@@ -244,20 +235,20 @@ faster.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="causalinflation.quantum.quantum_tools.format_permutations">
-<span class="sig-prename descclassname"><span class="pre">causalinflation.quantum.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">format_permutations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/quantum/quantum_tools.html#format_permutations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.quantum.quantum_tools.format_permutations" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="inflation.sdp.quantum_tools.format_permutations">
+<span class="sig-prename descclassname"><span class="pre">inflation.sdp.quantum_tools.</span></span><span class="sig-name descname"><span class="pre">format_permutations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/utils.html#format_permutations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.sdp.quantum_tools.format_permutations" title="Link to this definition"></a></dt>
 <dd><p>Permutations of inflation indices must leave the integers 0,
 corresponding to sources not being measured by the operator, invariant.
 In order to achieve this, this function shifts a permutation of sources
 by 1 and prepends it with the integer 0.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>array</strong> (<em>numpy.ndarray</em>) – 2-d array where each row is a permutations.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The processed list of permutations.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -277,7 +268,7 @@ by 1 and prepends it with the integer 0.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

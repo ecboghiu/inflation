@@ -1,0 +1,559 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>inflation.lp.monomial_classes &mdash; Inflation 2.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a56c686a"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../contents.html" class="icon icon-home">
+            Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">inflation.lp.monomial_classes</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for inflation.lp.monomial_classes</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains classes for defining probabilities of events or expectation</span>
+<span class="sd">values of monomials in convex programming relaxations of inflation.</span>
+
+<span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">total_ordering</span>
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Real</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="kn">from</span> <span class="nn">..sdp.monomial_utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">compute_marginal</span><span class="p">,</span>
+                                  <span class="n">name_from_atom_names</span><span class="p">,</span>
+                                  <span class="n">symbol_from_atom_name</span><span class="p">,</span>
+                                  <span class="n">symbol_prod</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.numbafied</span> <span class="kn">import</span> <span class="n">nb_is_do_conditional</span> <span class="k">as</span> <span class="n">is_do_conditional</span>
+
+
+<div class="viewcode-block" id="InternalAtomicMonomial">
+<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial">[docs]</a>
+<span class="nd">@total_ordering</span>
+<span class="k">class</span> <span class="nc">InternalAtomicMonomial</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;as_lexmon&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;as_2d_array&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_one&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_zero&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_do_conditional&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_knowable&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;n_operators&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;op_length&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;rectified_ndarray&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;context&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;name&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;legacy_name&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_all_commuting&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;signature&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;symbol&quot;</span>
+                 <span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_lp_instance</span><span class="p">,</span> <span class="n">as_1d_vec</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models a moment</span>
+<span class="sd">        :math:`\langle Op_1 Op_2\dots Op_n\rangle` on the inflated problem,</span>
+<span class="sd">        which cannot be decomposed into products of other moments. It is used</span>
+<span class="sd">        as a building block for the ``CompoundMonomial`` class. It is</span>
+<span class="sd">        initialized with a 1D array representing a moment and an instance of</span>
+<span class="sd">        ``InflationLP``, used for methods that depend on the scenario.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        inflation_lp_instance : InflationLP</span>
+<span class="sd">            An instance of the ``InflationLP`` class. It is used to access</span>
+<span class="sd">            methods specific to the inflation problem. E.g., when instantiating</span>
+<span class="sd">            an internal atomic moment, the ``InflationLP`` instance is used to</span>
+<span class="sd">            check if it already contains such moment.</span>
+<span class="sd">        array2d : numpy.ndarray</span>
+<span class="sd">            A moment :math:`\langle Op_1Op_2\dots Op_n\rangle` encoded as a 2D</span>
+<span class="sd">            array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">inflation_lp_instance</span>
+        <span class="k">if</span> <span class="n">as_1d_vec</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="c1"># self.as_bool_vec = as_1d_vec</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">as_1d_vec</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intc</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">as_1d_vec</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">intc</span><span class="p">)</span>
+            <span class="c1"># self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()</span>
+            <span class="c1"># self.as_bool_vec[self.as_lexmon] = True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">as_2d_array</span> <span class="o">=</span> <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">op_length</span> <span class="o">=</span> <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">_nr_properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_one</span>      <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Hack to account for different meanings of the zero position in the lexorder</span>
+        <span class="k">if</span> <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">problem_type</span> <span class="o">==</span> <span class="s2">&quot;lp&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">problem_type</span> <span class="o">==</span> <span class="s2">&quot;sdp&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;InternalAtomicMonomial requires `lp` or `sdp` parent class.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_one</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_all_commuting</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_do_conditional</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_all_commuting</span> <span class="o">=</span> <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">all_commuting_q_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_do_conditional</span> <span class="o">=</span> <span class="n">is_do_conditional</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_2d_array</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_do_conditional</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_all_commuting</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_atomic_knowable_q</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_2d_array</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># Save also array with the original setting, not just the effective one</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_one</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                    <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">rectify_fake_setting</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_2d_array</span><span class="p">,</span>
+                                                         <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                                         <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)),</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raw_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signature</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_signature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">symbol_from_atom_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a copy of the Monomial&quot;&quot;&quot;</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">attr</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Monomial is equal to the ``other`` Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the hash of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signature</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Monomial is lexicographically smaller than the ``other``</span>
+<span class="sd">        Monomial.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">signature</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">signature</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">as_legacy_lexmon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_one</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;1&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;0&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_do_conditional</span><span class="p">:</span>
+            <span class="n">uncleaned_ops</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">InflationProblem</span><span class="o">.</span><span class="n">_lexrepr_to_dicts</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">as_legacy_lexmon</span><span class="p">]</span>
+            <span class="n">ambigous_outcome_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">uncleaned_ops</span><span class="o">.</span><span class="n">flat</span><span class="p">:</span>
+                <span class="n">ambigous_outcome_dict</span><span class="p">[</span><span class="n">op</span><span class="p">[</span><span class="s2">&quot;Party&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">op</span><span class="p">[</span><span class="s2">&quot;Outcome&quot;</span><span class="p">])</span>
+            <span class="n">parties_with_unambigous_outcomes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">ambigous_outcome_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">cleaned_ops</span> <span class="o">=</span> <span class="p">[</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">uncleaned_ops</span><span class="o">.</span><span class="n">flat</span><span class="p">]</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span> <span class="ow">in</span> <span class="n">parties_with_unambigous_outcomes</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">alt_op</span> <span class="ow">in</span> <span class="n">cleaned_ops</span><span class="p">:</span>
+                    <span class="n">alt_op</span><span class="p">[</span><span class="s2">&quot;Do Values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span>
+                                           <span class="n">alt_op</span><span class="p">[</span><span class="s2">&quot;Do Values&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                           <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">k</span><span class="o">==</span><span class="n">p</span> <span class="ow">and</span> <span class="n">o</span><span class="o">==</span><span class="n">v</span><span class="p">)}</span>
+            <span class="n">list_of_op_names</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">InflationProblem</span><span class="o">.</span><span class="n">_interpretation_to_name</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">include_copy_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">cleaned_ops</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">list_of_op_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_lexrepr_to_names</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_all_commuting</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;P[&quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">list_of_op_names</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&lt;&quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">list_of_op_names</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;&gt;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_raw_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A string representing the monomial. In case of knowable monomials,</span>
+<span class="sd">        it is of the form ``p(outputs|inputs)``. Otherwise it represents the</span>
+<span class="sd">        expectation value of the monomial with bracket notation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_one</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;1&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;0&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span><span class="p">:</span>
+            <span class="c1"># Use notation p(outputs|settings)</span>
+            <span class="c1"># Convention in numpy monomial format is first party = 1</span>
+            <span class="n">party_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">parties</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="n">party_indices</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+            <span class="n">inputs</span>  <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span> <span class="k">for</span> <span class="nb">input</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">p_divider</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="c1"># We will probably never have more than 1 digit cardinalities,</span>
+            <span class="c1"># but who knows...</span>
+            <span class="n">i_divider</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;,&quot;</span>
+            <span class="n">o_divider</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;,&quot;</span>
+            <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;p&quot;</span> <span class="o">+</span> <span class="n">p_divider</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span> <span class="o">+</span>
+                    <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">o_divider</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span> <span class="o">+</span>
+                    <span class="s2">&quot;|&quot;</span> <span class="o">+</span> <span class="n">i_divider</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&lt;&quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">InflationProblem</span><span class="o">.</span><span class="n">_lexrepr_to_all_names</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">as_legacy_lexmon</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;&gt;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">))</span>
+
+<div class="viewcode-block" id="InternalAtomicMonomial.compute_marginal">
+<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal">[docs]</a>
+    <span class="k">def</span> <span class="nf">compute_marginal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a probability distribution, compute the numerical value of</span>
+<span class="sd">        the Monomial.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prob_array : numpy.ndarray</span>
+<span class="sd">            The target probability distribution. The dimensions of this array</span>
+<span class="sd">            are (outcomes_per_party, settings_per_party), where the settings</span>
+<span class="sd">            are explicitly 1 is there is only one measurement performed.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            The value of the corresponding probability (which can be a marginal</span>
+<span class="sd">            involving only a few parties)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">compute_marginal</span><span class="p">(</span><span class="n">prob_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CompoundMoment">
+<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment">[docs]</a>
+<span class="k">class</span> <span class="nc">CompoundMoment</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;as_counter&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;factors&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;idx&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_atomic&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_do_conditional&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_knowable&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_one&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;is_zero&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;knowability_status&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;knowable_factors&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;n_factors&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;n_knowable_factors&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;n_operators&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;n_unknowable_factors&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;name&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;legacy_name&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;signature&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;unknowable_factors&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;as_lexmon&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;internal_type&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;symbol&quot;</span>
+                 <span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomials</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">InternalAtomicMonomial</span><span class="p">]):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models moments :math:`\langle Op_1 Op_2\dots Op_n\rangle</span>
+<span class="sd">        =\langle Op_i\dots\rangle\langle Op_{i&#39;}\dots\rangle` on the inflated</span>
+<span class="sd">        problem that are products of other moments. It is built from a tuple of</span>
+<span class="sd">        instances of the ``InternalAtomicMonomial`` class.</span>
+
+<span class="sd">        At initialisation, a moment is classified into knowable, semi-knowable</span>
+<span class="sd">        or unknowable based on the knowability of each of the atomic moments</span>
+<span class="sd">        (which in turn is determined through methods of the</span>
+<span class="sd">        ``InternalAtomicMonomial`` class). This class also computes names for</span>
+<span class="sd">        the moment, provides the ability to compare (in)equivalence, and to</span>
+<span class="sd">        assign numerical values to a moment given a probability distribution.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        monomials : tuple of InternalAtomicMonomial</span>
+<span class="sd">            The atomic moments that make up the compound moment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">factors</span>       <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">monomials</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span>     <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span>   <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">n_operators</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_atomic</span>     <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_do_conditional</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_do_conditional</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span>   <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_knowable</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intc</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span>     <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">factor</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">])</span>
+
+        <span class="n">knowable_factors</span>   <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">unknowable_factors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">as_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">factor</span><span class="p">,</span> <span class="n">power</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_counter</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">factor</span><span class="o">.</span><span class="n">is_knowable</span><span class="p">:</span>
+                <span class="n">knowable_factors</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">factor</span><span class="p">]</span> <span class="o">*</span> <span class="n">power</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unknowable_factors</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">factor</span><span class="p">]</span> <span class="o">*</span> <span class="n">power</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">knowable_factors</span>     <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">knowable_factors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unknowable_factors</span>   <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">unknowable_factors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_knowable_factors</span>   <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">knowable_factors</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_unknowable_factors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unknowable_factors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_unknowable_factors</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">knowability_status</span> <span class="o">=</span> <span class="s2">&quot;Knowable&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_unknowable_factors</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">knowability_status</span> <span class="o">=</span> <span class="s2">&quot;Unknowable&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">knowability_status</span> <span class="o">=</span> <span class="s2">&quot;Semi&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_one</span>  <span class="o">=</span> <span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_one</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+                        <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">is_zero</span> <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span>        <span class="o">=</span> <span class="n">name_from_atom_names</span><span class="p">([</span><span class="n">factor</span><span class="o">.</span><span class="n">name</span>
+                                                 <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_name</span> <span class="o">=</span> <span class="n">name_from_atom_names</span><span class="p">([</span><span class="n">factor</span><span class="o">.</span><span class="n">legacy_name</span>
+                                                 <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span>      <span class="o">=</span> <span class="n">symbol_prod</span><span class="p">([</span><span class="n">factor</span><span class="o">.</span><span class="n">symbol</span>
+                                        <span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signature</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">internal_type</span> <span class="o">=</span> <span class="n">InternalAtomicMonomial</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Monomial is equal to the ``other`` Monomial.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_counter</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">as_counter</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">internal_type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected object of class </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2">, received </span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">&quot;</span>
+                 <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; of class </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the hash of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signature</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of AtomicMonomials in the CompoundMonomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+<div class="viewcode-block" id="CompoundMoment.attach_idx">
+<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.attach_idx">[docs]</a>
+    <span class="k">def</span> <span class="nf">attach_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assign an index to the Monomial. This is used when generating the</span>
+<span class="sd">        monomials in a scenario, and identifying them with integers.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span></div>
+
+
+<div class="viewcode-block" id="CompoundMoment.compute_marginal">
+<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.compute_marginal">[docs]</a>
+    <span class="k">def</span> <span class="nf">compute_marginal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a probability array, evaluate all the knowable atomic moment</span>
+<span class="sd">        factors in the monomial and return the product of the resulting values.</span>
+
+<span class="sd">        The whole moment needs to be knowable (``self.is_knowable = True``),</span>
+<span class="sd">        else this method will raise an error.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prob_array : np.ndarray</span>
+<span class="sd">            A conditional probability distribution over the non-inflated</span>
+<span class="sd">            scenario with dimensions ``(da,db,...,dx,dy,...)`` (i.e., first</span>
+<span class="sd">            outcomes and then settings for the parties).</span>
+
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        CompoundMonomial.evaluate : This function does not rely on the</span>
+<span class="sd">            knowability of the monomial.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_knowable</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Only marginals of knowable monomials can &quot;</span> <span class="o">+</span>
+                                  <span class="sa">f</span><span class="s2">&quot;be computed, and </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2"> is not knowable.&quot;</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="k">for</span> <span class="n">factor</span><span class="p">,</span> <span class="n">power</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_counter</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">value</span> <span class="o">*=</span> <span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">compute_marginal</span><span class="p">(</span><span class="n">prob_array</span><span class="p">)</span> <span class="o">**</span> <span class="n">power</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="CompoundMoment.evaluate">
+<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.evaluate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">known_monomials</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">InternalAtomicMonomial</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+                 <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a dictionary of values for known atomic monomials,</span>
+<span class="sd">        substitute all factors of the compound moment that are specified in</span>
+<span class="sd">        the dictionary with their values and return the product of the values</span>
+<span class="sd">        and a remainder compound moment made of the remaining factors.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        known_monomials : Dict[InternalAtomicMonomial, float]</span>
+<span class="sd">            A dictionary of known atomic monomials and their values.</span>
+<span class="sd">        use_lpi_constraints : bool, optional</span>
+<span class="sd">            Whether compound moments whose factors are partially present in</span>
+<span class="sd">            ``known_monomials`` are labelled as ``&quot;Semi&quot;`` or ``&quot;Unknowable&quot;``.</span>
+<span class="sd">            If ``True``, they are labelled as ``&quot;Semi&quot;``. By default ``True``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Tuple[float, List, str]</span>
+<span class="sd">            A tuple where the first element is the value of the knowable parts</span>
+<span class="sd">            of the compound moment, the second element is a compound monomial</span>
+<span class="sd">            of all the remaining factors not present in ``known_monomials`` and</span>
+<span class="sd">            the third element is a string describing whether all factors are</span>
+<span class="sd">            present in ``known_monomials`` (``&quot;Known&quot;``), some are</span>
+<span class="sd">            (``&quot;Semi&quot;``), or none are (``&quot;Unknown&quot;``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">known_value</span>     <span class="o">=</span> <span class="mf">1.</span>
+        <span class="n">unknown_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">factor</span><span class="p">,</span> <span class="n">power</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_counter</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">known_value</span> <span class="o">*=</span> <span class="p">(</span><span class="n">known_monomials</span><span class="p">[</span><span class="n">factor</span><span class="p">]</span> <span class="o">**</span> <span class="n">power</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">unknown_counter</span><span class="p">[</span><span class="n">factor</span><span class="p">]</span> <span class="o">=</span> <span class="n">power</span>
+        <span class="c1"># unknown_factors = sorted(unknown_counter.elements(),</span>
+        <span class="c1">#                          key=lambda factor: factor.as_int_vec.tobytes())</span>
+        <span class="n">unknown_factors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">unknown_counter</span><span class="o">.</span><span class="n">elements</span><span class="p">())</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unknown_factors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">known_status</span> <span class="o">=</span> <span class="s2">&quot;Known&quot;</span>
+        <span class="k">elif</span> <span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">unknown_factors</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span><span class="p">)</span>
+              <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">use_lpi_constraints</span><span class="p">)):</span>
+            <span class="n">known_status</span> <span class="o">=</span> <span class="s2">&quot;Unknown&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">known_status</span> <span class="o">=</span> <span class="s2">&quot;Semi&quot;</span>
+            <span class="k">if</span> <span class="n">use_lpi_constraints</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">known_value</span><span class="p">,</span> <span class="n">Real</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">known_value</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="n">known_status</span> <span class="o">=</span> <span class="s2">&quot;Known&quot;</span>
+        <span class="k">return</span> <span class="n">known_value</span><span class="p">,</span> <span class="n">unknown_factors</span><span class="p">,</span> <span class="n">known_status</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a copy of the CompoundMonomial&quot;&quot;&quot;</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">attr</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

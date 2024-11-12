@@ -5,32 +5,30 @@ or non-fanout inflation instance (see arXiv:1707.06476).
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 
-import numpy as np
-import sympy as sp
-
 from collections import Counter, defaultdict
+from functools import reduce, cached_property
 from gc import collect
 from itertools import chain
 from numbers import Real
-from tqdm import tqdm
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
-from scipy.sparse import coo_matrix, vstack
 
-from inflation import InflationProblem
+import numpy as np
+import sympy as sp
+from scipy.sparse import coo_array, vstack
+from tqdm import tqdm
 
+from .. import InflationProblem
+from .lp_utils import solveLP
+from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from .numbafied import (nb_outer_bitwise_or,
                         nb_outer_bitwise_xor)
 from .writer_utils import write_to_lp, write_to_mps
-
 from ..sdp.fast_npa import nb_is_knowable as is_knowable
-from .monomial_classes import InternalAtomicMonomial, CompoundMoment
 from ..sdp.quantum_tools import flatten_symbolic_powers
-from .lp_utils import solveLP
-from functools import reduce
 from ..utils import clean_coefficients, eprint, partsextractor, \
     expand_sparse_vec
-from functools import cached_property
+
 
 class InflationLP(object):
     constant_term_name = "constant_term"
@@ -86,6 +84,11 @@ class InflationLP(object):
                 "You appear to be requesting fanout (classical)" \
                     + " inflation, \nbut have not specified classical_sources=`all`." \
                     + "\nNote that the `nonfanout` keyword argument is deprecated as of release 2.0.0"
+
+        self.all_operators_commute = True
+        self.all_commuting_q_2d = lambda mon: True
+        self.all_commuting_q_1d = lambda lexmon: True
+
         self.default_non_negative = default_non_negative
         if self.verbose > 1:
             print(inflationproblem)
@@ -95,6 +98,11 @@ class InflationLP(object):
         self.names = inflationproblem.names
         self.names_to_ints = inflationproblem.names_to_ints
         self._lexrepr_to_names = inflationproblem._lexrepr_to_names
+        self._lexrepr_to_copy_index_free_names = inflationproblem._lexrepr_to_copy_index_free_names
+        self.op_from_name = dict()
+        for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
+            for op_name in op_names:
+                self.op_from_name.setdefault(op_name, i)
         self.nr_sources = inflationproblem.nr_sources
         self.nr_parties = inflationproblem.nr_parties
         self.hypergraph = inflationproblem.hypergraph
@@ -180,7 +188,8 @@ class InflationLP(object):
 
         self._atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
-        self.monomial_from_name         = dict()
+        self.monomial_from_name = dict()
+        self.monomial_from_symbol = dict()
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._generate_lp()
 
@@ -196,7 +205,7 @@ class InflationLP(object):
                    bounds: Union[dict, None],
                    bound_type: str = "up") -> None:
         r"""Set numerical lower or upper bounds on the moments generated in the
-        SDP relaxation. The bounds are at the level of the SDP variables,
+        LP relaxation. The bounds are at the level of the LP variables,
         and do not take into consideration non-convex constraints. E.g., two
         individual lower bounds, :math:`p_A(0|0) \geq 0.1` and
         :math:`p_B(0|0) \geq 0.1` do not directly impose the constraint
@@ -225,12 +234,37 @@ class InflationLP(object):
             self._set_lowerbounds(bounds)
 
     @cached_property
+    def atomic_factors(self):
+        atoms = set()
+        for mon in self.monomials:
+            atoms.update(mon.factors)
+        return sorted(atoms)
+
+    @cached_property
+    def atomic_monomials(self):
+        """Returns the atomic monomials."""
+        return [self._monomial_from_atoms([atom]) for atom in
+                self.atomic_factors]
+
+    @cached_property
+    def atom_from_name(self):
+        """Returns the atomic monomials."""
+        lookup_dict = dict()
+        for atom in self.atomic_factors:
+            lookup_dict[atom.name] = atom
+            lookup_dict[atom.legacy_name] = atom
+        return lookup_dict
+
+    @cached_property
     def knowable_atoms(self):
         """Returns the knowable atoms."""
-        _knowable_atoms = set()
-        for mon in self.monomials:
-            _knowable_atoms.update(mon.knowable_factors)
-        return _knowable_atoms
+        return [m for m in self.atomic_monomials if m.is_knowable]
+
+    @cached_property
+    def do_conditional_atoms(self):
+        """Returns the atomic monomials which correspond to do conditionals."""
+        return [m for m in self.atomic_monomials if
+                (m.is_do_conditional and not m.is_knowable)]
 
     @cached_property
     def factorization_conditions(self):
@@ -269,7 +303,7 @@ class InflationLP(object):
             be specified, and the corresponding axis dimensions are 1.
             The parties' outcomes and measurements must be appear in the
             same order as specified by the ``order`` parameter in the
-            ``InflationProblem`` used to instantiate ``InflationSDP``.
+            ``InflationProblem`` used to instantiate ``InflationLP``.
         use_lpi_constraints : bool, optional
             Specification whether linearized polynomial constraints (see,
             e.g., Eq. (D6) in `arXiv:2203.16543
@@ -362,7 +396,9 @@ class InflationLP(object):
             some Monomial).
         use_lpi_constraints : bool
             Specification whether linearized polynomial constraints (see, e.g.,
-            Eq. (D6) in arXiv:2203.16543) will be imposed or not.
+            Eq. (D6) in `arXiv:2203.16543
+            <https://www.arxiv.org/abs/2203.16543/>`_) will be imposed or not.
+            By default ``False``.
         only_specified_values : bool
             Specifies whether one wishes to fix only the variables provided
             (``True``), or also the variables containing products of the
@@ -512,7 +548,7 @@ class InflationLP(object):
               verbose: int = None,
               default_non_negative: bool = None,
               **solver_arguments) -> None:
-        r"""Call a solver on the SDP relaxation. Upon successful solution, it
+        r"""Call a solver on the LP relaxation. Upon successful solution, it
         returns the primal and dual objective values along with the solution
         matrices.
 
@@ -560,7 +596,8 @@ class InflationLP(object):
         # Still allow for 'feas_as_optim' as an argument
         if 'feas_as_optim' in solver_arguments:
             if solver_arguments["feas_as_optim"]:
-                relax_known_vars = relax_inequalities = True
+                relax_known_vars = False
+                relax_inequalities = True
                 del solver_arguments["feas_as_optim"]
             else:
                 relax_known_vars = relax_inequalities = False
@@ -592,13 +629,13 @@ class InflationLP(object):
     def certificate_as_dict(self,
                              clean: bool = True,
                              chop_tol: float = 1e-10,
-                             round_decimals: int = 3) -> sp.core.add.Add:
+                             round_decimals: int = 3) -> dict:
         """Give certificate as dictionary with monomials as keys and
         their coefficients in the certificate as the values. The certificate
         of incompatibility is ``cert < 0``.
 
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -619,23 +656,44 @@ class InflationLP(object):
 
         Returns
         -------
-        sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
+        dict
+            The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
         try:
             dual = self.solution_object["dual_certificate"]
         except AttributeError:
             raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
+                            "a problem. Call \"InflationLP.solve()\" first.")
         if len(self.semiknown_moments) > 0:
             warn("Beware that, because the problem contains linearized " +
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
+        if np.allclose(list(dual.values()), 0.):
+            return dict()
+        if clean:
             dual = clean_coefficients(dual, chop_tol, round_decimals)
+        return {self.monomial_from_name[k]: v for k, v in dual.items()
+                if not self.monomial_from_name[k].is_zero}
 
-        return {self.monomial_from_name[k]: v for k, v in dual.items()}
+    def probs_from_dict(self,
+                        dict_with_monomial_keys: dict) -> sp.core.add.Add:
+        """Converts a monomial dictionary into a SymPy expression.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        sympy.core.add.Add
+            The expression of the polynomial encoded in the dictionary.
+        """
+        polynomial = sp.S.Zero
+        for mon, coeff in self._sanitise_dict(dict_with_monomial_keys).items():
+            polynomial += coeff * mon.symbol
+        return polynomial
 
     def certificate_as_probs(self,
                              clean: bool = True,
@@ -645,7 +703,7 @@ class InflationLP(object):
         of incompatibility is ``cert < 0``.
 
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -667,27 +725,52 @@ class InflationLP(object):
         Returns
         -------
         sympy.core.add.Add
-            The expression of the certificate in terms or probabilities and
+            The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions.")
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
 
-        polynomial = sp.S.Zero
-        for mon_name, coeff in dual.items():
-            if clean and np.isclose(int(coeff), round(coeff, round_decimals)):
-                coeff = int(coeff)
-            polynomial += coeff * self.names_to_symbols[mon_name]
-        return polynomial
+        return self.probs_from_dict(self.certificate_as_dict(
+                clean=clean,
+                chop_tol=chop_tol,
+                round_decimals=round_decimals))
+
+    def string_from_dict(self,
+                         dict_with_monomial_keys) -> str:
+        """Converts a monomial dictionary into a string.
+
+        Parameters
+        ----------
+        dict_with_monomial_keys : Dict[sympy.Symbol, float]
+            Dictionary with monomials and associated coefficients.
+
+        Returns
+        -------
+        str
+            The expression of the certificate in string form.
+        """
+        as_dict = self._sanitise_dict(dict_with_monomial_keys)
+        # Watch out for when "1" is note the same as "constant_term"
+        constant_value = as_dict.pop(self.Constant_Term,
+                                     as_dict.pop(self.One, 0.)
+                                     )
+        if constant_value:
+            polynomial_as_str = str(constant_value)
+        else:
+            polynomial_as_str = ""
+        for mon, coeff in as_dict.items():
+            if mon.is_zero or np.isclose(np.abs(coeff), 0):
+                continue
+            else:
+                polynomial_as_str += "+" if coeff >= 0 else "-"
+                if np.isclose(abs(coeff), 1):
+                    polynomial_as_str += mon.name
+                else:
+                    polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
+        if not len(polynomial_as_str):  # Failsafe for empty dictionary.
+            polynomial_as_str = "0"
+        elif polynomial_as_str[0] == "+":
+            polynomial_as_str = polynomial_as_str[1:]
+        return polynomial_as_str
 
     def certificate_as_string(self,
                               clean: bool = True,
@@ -698,7 +781,7 @@ class InflationLP(object):
         incompatibility.
 
         If the certificate is evaluated on a point giving a negative value, this
-        guarantess that the compatibility test for the same point is infeasible
+        guarantees that the compatibility test for the same point is infeasible
         provided the set of constraints of the program does not change. Warning:
         when using ``use_lpi_constraints=True`` the set of constraints depends
         on the specified distribution, thus the certificate is not guaranteed to
@@ -723,46 +806,77 @@ class InflationLP(object):
             The certificate in terms of probabilities and marginals. The
             certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationLP.solve()\" first.")
+        return self.string_from_dict(
+            self.certificate_as_dict(
+                clean=clean,
+                chop_tol=chop_tol,
+                round_decimals=round_decimals)) + " < 0"
 
-        if clean and not np.allclose(list(dual.values()), 0.):
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
+    def evaluate_polynomial(self, polynomial: dict, prob_array: np.ndarray):
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
 
-        rest_of_dual = dual.copy()
-        constant_value = rest_of_dual.pop(self.constant_term_name, 0)
-        constant_value += rest_of_dual.pop(self.One.name, 0)
-        if constant_value:
-            if clean:
-                cert = "{0:.{prec}f}".format(constant_value,
-                                             prec=round_decimals)
-            else:
-                cert = str(constant_value)
-        else:
-            cert = ""
-        for mon_name, coeff in rest_of_dual.items():
-            if mon_name != "0":
-                cert += "+" if coeff >= 0 else "-"
-                if np.isclose(abs(coeff), 1):
-                    cert += mon_name
-                else:
-                    if clean:
-                        cert += "{0:.{prec}f}*{1}".format(abs(coeff),
-                                                          mon_name,
-                                                          prec=round_decimals)
-                    else:
-                        cert += f"{abs(coeff)}*{mon_name}"
-        cert += " < 0"
-        return cert[1:] if cert[0] == "+" else cert
+        Parameters
+        ----------
+        polynomial : dict
+            A dictionary of monomials with coefficients as values.
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        return sum((atom.compute_marginal(prob_array) * val
+                    for atom, val in self._sanitise_dict(polynomial).items()))
+
+
+    def evaluate_certificate(self, prob_array: np.ndarray) -> float:
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
+
+        Parameters
+        ----------
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        if self.use_lpi_constraints:
+            warn("You have used LPI constraints to obtain the certificate. " +
+                 "Be aware that, because of that, the certificate may not be " +
+                 "valid for other distributions.")
+        return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ##########################################################################
     def reset(self, which: Union[str, List[str]] = "all") -> None:
-        """Reset the various user-specifiable objects in the inflation SDP.
+        """Reset the various user-specifiable objects in the inflation LP.
 
         Parameters
         ----------
@@ -786,7 +900,7 @@ class InflationLP(object):
                 self._reset_values()
             else:
                 raise Exception(f"The attribute {which} is not part of " +
-                                "InflationSDP.")
+                                "InflationLP.")
         else:
             for attr in which:
                 self.reset(attr)
@@ -918,6 +1032,8 @@ class InflationLP(object):
                 pass
             self.monomial_from_atoms[key] = mon
             self.monomial_from_name[mon.name] = mon
+            self.monomial_from_name[mon.legacy_name] = mon  # For legacy compatibility!
+            self.monomial_from_symbol[mon.symbol] = mon
             return mon
 
     def _sanitise_monomial(self, mon: Any) -> CompoundMoment:
@@ -952,16 +1068,20 @@ class InflationLP(object):
             return self._monomial_from_atoms([mon])
         elif isinstance(mon, (sp.core.symbol.Symbol,
                               sp.core.power.Pow,
-                              sp.core.mul.Mul)):
-            symbols = flatten_symbolic_powers(mon)
-            if len(symbols) == 1:
-                try:
-                    return self.monomial_from_name[str(symbols[0])]
-                except KeyError:
-                    pass
-            array = np.concatenate([self._interpret_atomic_string(str(op))
-                                    for op in symbols])
-            return self._sanitise_monomial(array)
+                              sp.core.mul.Mul,
+                              sp.core.symbol.Expr)):
+            try:
+                return self.monomial_from_symbol[mon]
+            except KeyError:
+                symbols = flatten_symbolic_powers(mon)
+                if len(symbols) == 1:
+                    try:
+                        return self.monomial_from_name[str(symbols[0])]
+                    except KeyError:
+                        pass
+                array = np.concatenate([self._interpret_atomic_string(str(op))
+                                        for op in symbols])
+                return self._sanitise_monomial(array)
         elif isinstance(mon, (tuple, list, np.ndarray)):
             array = np.asarray(mon, dtype=self.np_dtype)
             assert array.ndim <= 2, \
@@ -1033,16 +1153,23 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the input moment.
         """
-        if isinstance(monomial, sp.core.symbol.Expr):
-            factors = [str(factor)
-                       for factor in flatten_symbolic_powers(monomial)]
-        elif str(monomial) == '1':
+        if str(monomial) == '1':
             return self.identity_operator
+        elif isinstance(monomial, str):
+            try:
+                return self.monomial_from_name[monomial]
+            except KeyError:
+                factors = monomial.split("*")
         elif isinstance(monomial, tuple) or isinstance(monomial, list):
             factors = [str(factor) for factor in monomial]
+        elif isinstance(monomial, sp.core.symbol.Expr):
+            try:
+                return self.monomial_from_symbol[monomial]
+            except KeyError:
+                factors = [str(factor)
+                           for factor in flatten_symbolic_powers(monomial)]
         else:
-            assert "^" not in monomial, "Cannot interpret exponents."
-            factors = monomial.split("*")
+            raise Exception(f'Cannot interpret monomial with name {monomial} of type {type(monomial)}')
         return np.vstack(tuple(self._interpret_atomic_string(factor_string)
                                for factor_string in factors))
 
@@ -1061,12 +1188,22 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the input atomic moment.
         """
+        try:
+            return self.atom_from_name[factor_string].as_2d_array
+        except (KeyError, AttributeError):
+            pass
         assert ((factor_string[0] == "<" and factor_string[-1] == ">")
+                or (factor_string[0:1] == "P[" and factor_string[-1] == "]")
                 or set(factor_string).isdisjoint(set("| "))), \
             ("Monomial names must be between < > signs, or in conditional " +
-             f"probability form, whereas input recieved was {factor_string}")
-        if factor_string[0] == "<":
-            operators = factor_string[1:-1].split(" ")
+             f"probability form, whereas input received was {factor_string}")
+        if factor_string[-1] in {'>', ')', "]", "}"}:
+            cleaned_factor_string = factor_string[:-1]
+            substrings_to_kill = {"P[", "P(", "p[", "p(", "<"}
+            for substring in substrings_to_kill:
+                cleaned_factor_string = cleaned_factor_string.replace(substring, '')
+            cleaned_factor_string = cleaned_factor_string.replace( ' & ',' ')
+            operators = cleaned_factor_string.split(" ")
             return np.vstack(tuple(self._interpret_operator_string(op_string)
                                    for op_string in operators))
         else:
@@ -1085,12 +1222,7 @@ class InflationLP(object):
         numpy.ndarray
             2D array encoding of the operator.
         """
-        components = op_string.replace('∅','0').split("_")
-        assert len(components) == self._nr_properties, \
-            f"There need to be {self._nr_properties} properties to match " + \
-            "the scenario."
-        components[0] = self.names_to_ints[components[0]]
-        return np.array([int(s) for s in components], dtype=self.np_dtype)
+        return self._lexorder[self.op_from_name[op_string]]
 
     ###########################################################################
     # ROUTINES RELATED TO THE GENERATION OF THE LP                            #
@@ -1113,7 +1245,9 @@ class InflationLP(object):
 
         self._atomic_monomial_from_hash = dict()
         self.monomial_from_atoms = dict()
-        self.monomial_from_name = dict()
+        self.Constant_Term = self.One.__copy__()
+        self.Constant_Term.name = self.constant_term_name
+        self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
         (self._raw_monomials_as_lexboolvecs,
          self._raw_monomials_as_lexboolvecs_non_CG) = self._build_raw_lexboolvecs()
@@ -1146,7 +1280,7 @@ class InflationLP(object):
             self.num_non_CG = len(old_reps_non_CG)
             if self.verbose > 1:
                 print(f"Orbits discovered! {self.num_CG} unique monomials.")
-            # Obtain the real generating monomomials after accounting for symmetry
+            # Obtain the real generating monomials after accounting for symmetry
         else:
             self.num_CG = self.raw_n_columns
             unique_indices_CG = np.arange(self.num_CG)
@@ -1187,8 +1321,8 @@ class InflationLP(object):
             _monomials.append(mon)
             _monomial_names.append(mon.name)
             _compmonomial_from_idx[idx] = mon
-            if mon in _compmonomial_to_idx:
-                print(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])
+            # Commented out line below used for internal debugging only.
+            # assert mon not in _compmonomial_to_idx, f"Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index."
             _compmonomial_to_idx[mon] = idx
         self.first_free_idx = self.n_columns + 1
         self.monomials = np.array(_monomials, dtype=object)
@@ -1258,13 +1392,10 @@ class InflationLP(object):
                                  reversed(choices_to_combine_CG))
         raw_boolvecs_global = reduce(nb_outer_bitwise_or,
                                      reversed(choices_to_combine_global))
-        return (raw_boolvecs_CG[np.argsort(raw_boolvecs_CG.sum(axis=1))],
-                raw_boolvecs_global[np.argsort(np.matmul(raw_boolvecs_global,
-                                                         self._boolvec_for_CG_ineqs.astype(int))
-                                               )])
+        return (raw_boolvecs_CG, raw_boolvecs_global)
 
     @cached_property
-    def minimal_sparse_equalities(self) -> coo_matrix:
+    def minimal_sparse_equalities(self) -> coo_array:
         """Given the generating monomials, infer conversion to Collins-Gisin 
         notation."""
         eq_row, eq_col, eq_data = [], [], []
@@ -1310,11 +1441,11 @@ class InflationLP(object):
             if self.verbose > 0:
                 eprint("Number of nontrivial equality constraints in the LP:",
                         nof_equalities)
-        return coo_matrix((eq_data, (eq_row, eq_col)),
+        return coo_array((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
     @property
-    def sparse_extra_equalities(self) -> coo_matrix:
+    def sparse_extra_equalities(self) -> coo_array:
         """Extra equalities in sparse matrix form."""
         eq_row, eq_col, eq_data = [], [], []
         nof_equalities = len(self.extra_equalities)
@@ -1323,67 +1454,67 @@ class InflationLP(object):
             eq_row.extend(np.repeat(row_idx, nof_vars))
             eq_col.extend([self.compmonomial_to_idx[x] for x in eq])
             eq_data.extend(eq.values())
-        return coo_matrix((eq_data, (eq_row, eq_col)),
+        return coo_array((eq_data, (eq_row, eq_col)),
                           shape=(nof_equalities, self.n_columns))
 
     @property
-    def sparse_equalities(self) -> coo_matrix:
+    def sparse_equalities(self) -> coo_array:
         """All equalities (minimal and extra) in sparse matrix 
         form."""
         return vstack((self.minimal_sparse_equalities,
                        self.sparse_extra_equalities))
 
     @cached_property
-    def minimal_sparse_inequalities(self) -> coo_matrix:
-        """Given the generating monomials, inter conversion to
-        Collins-Gisin notation."""
+    def minimal_sparse_inequalities(self) -> coo_array:
+        """Here we express the nonnegativity of all `global` (maximal number
+         of variables) events, converting the expressions into Collins-Gisin
+         notation as needed."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
-        if np.any(self._boolvec_for_CG_ineqs):
-            alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
-                                          for v, r in zip(
-                    np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
-                    self._CG_adjusting_ortho_groups_as_boolarrays)}
-            alternatives_as_signs = {
-                i: np.count_nonzero(bool_array, axis=1).astype(bool)
-                for i, bool_array in alternatives_as_boolarrays.items()}
-            for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
-                                 disable=not self.verbose,
-                                 desc="Discovering inequalities   "):
-                critical_boolvec_intersection = np.bitwise_and(bool_vec,
-                                                               self._boolvec_for_CG_ineqs)
-                if critical_boolvec_intersection.any():
-                    absent_c_boolvec = bool_vec.copy()
-                    absent_c_boolvec[critical_boolvec_intersection] = False
-                    critical_values_in_boovec = np.flatnonzero(
-                        critical_boolvec_intersection)
-                    signs = reduce(nb_outer_bitwise_xor,
-                                   (alternatives_as_signs[i] for i in
-                                    critical_values_in_boovec.flat))
-                    adjustments = reduce(nb_outer_bitwise_or,
-                                         (alternatives_as_boolarrays[i] for i in
-                                          critical_values_in_boovec.flat))
-                    terms_as_boolvecs = np.bitwise_or(
-                        absent_c_boolvec[np.newaxis],
-                        adjustments)
-                    terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()]
-                                       for term_boolvec in terms_as_boolvecs]
-                    terms_as_idxs = self.inverse[terms_as_rawidx]
-                    true_signs = np.power(-1, signs)
+        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+                                      for v, r in zip(
+                np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
+                self._CG_adjusting_ortho_groups_as_boolarrays)}
+        alternatives_as_signs = {
+            i: np.count_nonzero(bool_array, axis=1).astype(bool)
+            for i, bool_array in alternatives_as_boolarrays.items()}
+        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+                             disable=not self.verbose,
+                             desc="Discovering inequalities   "):
+            critical_boolvec_intersection = np.bitwise_and(bool_vec,
+                                                           self._boolvec_for_CG_ineqs)
+            if critical_boolvec_intersection.any():
+                absent_c_boolvec = bool_vec.copy()
+                absent_c_boolvec[critical_boolvec_intersection] = False
+                critical_values_in_boovec = np.flatnonzero(
+                    critical_boolvec_intersection)
+                signs = reduce(nb_outer_bitwise_xor,
+                               (alternatives_as_signs[i] for i in
+                                critical_values_in_boovec.flat))
+                adjustments = reduce(nb_outer_bitwise_or,
+                                     (alternatives_as_boolarrays[i] for i in
+                                      critical_values_in_boovec.flat))
+                terms_as_boolvecs = np.bitwise_or(
+                    absent_c_boolvec[np.newaxis],
+                    adjustments)
+                terms_as_rawidx = [self._raw_lookup_dict[term_boolvec.tobytes()]
+                                   for term_boolvec in terms_as_boolvecs]
+                terms_as_idxs = self.inverse[terms_as_rawidx]
+                true_signs = np.power(-1, signs)
 
-                    ineq_row.extend([nof_inequalities] * len(signs))
-                    ineq_col.extend(terms_as_idxs.flat)
-                    ineq_data.extend(true_signs.flat)
-                else:
-                    ineq_row.append(nof_inequalities)
-                    ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
-                    ineq_data.append(1)
-                nof_inequalities += 1
-        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+                ineq_row.extend([nof_inequalities] * len(signs))
+                ineq_col.extend(terms_as_idxs.flat)
+                ineq_data.extend(true_signs.flat)
+            else:
+                ineq_row.append(nof_inequalities)
+                ineq_col.append(self.inverse[self._raw_lookup_dict[bool_vec.tobytes()]])
+                ineq_data.append(1)
+            nof_inequalities += 1
+        return coo_array((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
     @property
-    def sparse_extra_inequalities(self) -> coo_matrix:
+    def sparse_extra_inequalities(self) -> coo_array:
         """Extra inequalities in sparse matrix form."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = len(self.extra_inequalities)
@@ -1392,11 +1523,11 @@ class InflationLP(object):
             ineq_row.extend(np.repeat(row_idx, nof_vars))
             ineq_col.extend([self.compmonomial_to_idx[x] for x in ineq])
             ineq_data.extend(ineq.values())
-        return coo_matrix((ineq_data, (ineq_row, ineq_col)),
+        return coo_array((ineq_data, (ineq_row, ineq_col)),
                           shape=(nof_inequalities, self.n_columns))
 
     @property
-    def sparse_inequalities(self) -> coo_matrix:
+    def sparse_inequalities(self) -> coo_array:
         """All inequalities (minimal and extra) in sparse matrix form."""
         return vstack((self.minimal_sparse_inequalities,
                        self.sparse_extra_inequalities))
@@ -1440,13 +1571,13 @@ class InflationLP(object):
         return dict(zip(self.monomial_names[col].flat, data))
 
     def _coo_mat_to_dict(self,
-                         input_coo_mat: coo_matrix,
+                         input_coo_mat: coo_array,
                          string_keys: bool = False) -> List[Dict]:
         """Convert a COO matrix to a list of dictionaries.
         
         Parameters
         ----------
-        input_coo_mat : coo_matrix
+        input_coo_mat : coo_array
             Input COO matrix.
         string_keys : bool, optional
             Whether to use string keys or not, by default, ``False``.
@@ -1463,7 +1594,7 @@ class InflationLP(object):
         else:
             return [self._coo_vec_to_mon_dict(*args) for args in args_iter]
 
-    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_matrix:
+    def _mon_dict_to_coo_vec(self, monomials_dict: Dict) -> coo_array:
         """
         This is a PLACEHOLDER function, possibly to be deprecated, to convert
          dicts into COO matrices.
@@ -1472,7 +1603,7 @@ class InflationLP(object):
         keys = list(monomials_dict.keys())
         col = partsextractor(self.compmonomial_to_idx, keys)
         row = np.zeros(len(col), dtype=int)
-        return coo_matrix((data, (row, col)), shape=(1, self.n_columns))
+        return coo_array((data, (row, col)), shape=(1, self.n_columns))
 
     @property
     def moment_equalities(self):
@@ -1546,14 +1677,14 @@ class InflationLP(object):
             self.semiknown_moments = dict()
         num_nontrivial_known = len(self.known_moments)
         if self.verbose > 1 and num_nontrivial_known > 1:
-            print("Number of variables with fixed numeric value:",
+            eprint("Number of variables with fixed numeric value:",
                   num_nontrivial_known)
         if len(self.semiknown_moments):
             for k in self.known_moments.keys():
                 self.semiknown_moments.pop(k, None)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
+            eprint(f"Number of semiknown variables: {num_semiknown}")
 
     def _reset_bounds(self) -> None:
         """Reset the lists of bounds."""
@@ -1588,7 +1719,7 @@ class InflationLP(object):
         collect()
 
     def _reset_solution(self) -> None:
-        """Resets class attributes storing the solution to the SDP
+        """Resets class attributes storing the solution to the LP
         relaxation."""
         for attribute in {"primal_objective",
                           "objective_value",
@@ -1641,7 +1772,7 @@ class InflationLP(object):
                 for mon, val in self.quadratic_factorization_conditions.items()}
 
     @property
-    def sparse_objective(self) -> coo_matrix:
+    def sparse_objective(self) -> coo_array:
         """Sparse matrix representation of the objective function."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.objective)
@@ -1653,7 +1784,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
     
     @property
-    def sparse_known_vars(self) -> coo_matrix:
+    def sparse_known_vars(self) -> coo_array:
         """Sparse matrix representation of the known values."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.known_moments)
@@ -1665,7 +1796,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
         
     @property
-    def sparse_lowerbounds(self) -> coo_matrix:
+    def sparse_lowerbounds(self) -> coo_array:
         """Sparse matrix representation of the lower bounds."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.moment_lowerbounds)
@@ -1677,7 +1808,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
         
     @property
-    def sparse_upperbounds(self) -> coo_matrix:
+    def sparse_upperbounds(self) -> coo_array:
         """Sparse matrix representation of the upper bounds."""
         # TO BE DEPRECATED
         return self._mon_dict_to_coo_vec(self.moment_upperbounds)
@@ -1689,7 +1820,7 @@ class InflationLP(object):
                                      string_keys=True)[0]
 
     @property
-    def sparse_semiknown(self) -> coo_matrix:
+    def sparse_semiknown(self) -> coo_array:
         """Sparse matrix representation of the semiknown values."""
         nof_semiknown = len(self.semiknown_moments)
         nof_variables = len(self.compmonomial_to_idx)
@@ -1699,7 +1830,7 @@ class InflationLP(object):
         col = list(sum(col, ()))
         data = [(1, -c) for x, (c, x2) in self.semiknown_moments.items()]
         data = list(sum(data, ()))
-        return coo_matrix((data, (row, col)),
+        return coo_array((data, (row, col)),
                           shape=(nof_semiknown, nof_variables))
 
     @property
@@ -1711,7 +1842,7 @@ class InflationLP(object):
 
     def _prepare_solver_matrices(self,
                                  separate_bounds: bool = True) -> dict:
-        """Convert arguments from dictionaries to sparse coo_matrix form to
+        """Convert arguments from dictionaries to sparse coo_array form to
         pass to the solver.
 
         Parameters
@@ -1765,12 +1896,12 @@ class InflationLP(object):
         """Prepare arguments to pass to the solver.
 
         The solver takes as input the following arguments, which are all
-        dicts with keys as scalar SDP variables:
+        dicts with keys as scalar LP variables:
             * "objective": dict with values the coefficient of the key
             variable in the objective function.
             * "known_vars": scalar variables that are fixed to be constant.
             * "semiknown_vars": if applicable, linear proportionality
-            constraints between variables in the SDP.
+            constraints between variables in the LP.
             * "equalities": list of dicts where each dict gives the
             coefficients of the keys in a linear equality constraint.
             * "inequalities": list of dicts where each dict gives the
@@ -1791,7 +1922,7 @@ class InflationLP(object):
         Raises
         ------
         Exception
-            If the SDP relaxation has not been calculated yet.
+            If the LP relaxation has not been calculated yet.
         """
         if not self._lp_has_been_generated:
             raise Exception("LP is not generated yet. " +
@@ -1802,14 +1933,18 @@ class InflationLP(object):
              str(set(self.known_moments.keys()
                      ).difference(self.monomials)))
 
+        # Rectification in the event of unnormalized problem
+        variables = self.monomial_names.tolist()
+        if {1, self.constant_term_name}.isdisjoint(self.known_vars_by_name):
+            self.known_vars_by_name[self.constant_term_name] = 1.
+            if self.constant_term_name not in variables:
+                variables.append(self.constant_term_name)
         solverargs = {"objective": self.objective_by_name,
                       "known_vars": self.known_vars_by_name,
                       "semiknown_vars": self.semiknown_by_name,
                       "equalities": self.moment_equalities_by_name,
-                      "inequalities": self.moment_inequalities_by_name
-                      }
-        # Add the constant 1 in case of unnormalized problems removed it
-        solverargs["known_vars"][self.constant_term_name] = 1.
+                      "inequalities": self.moment_inequalities_by_name,
+                      "variables": variables}
         if separate_bounds:
             solverargs["lower_bounds"] = self.lowerbounds_by_name
             solverargs["upper_bounds"] = self.upperbounds_by_name
@@ -1850,7 +1985,7 @@ class InflationLP(object):
                                                             axis=1))
 
     def _set_upperbounds(self, upperbounds: Union[dict, None]) -> None:
-        """Set upper bounds for variables in the SDP relaxation.
+        """Set upper bounds for variables in the LP relaxation.
 
         Parameters
         ----------
@@ -1876,7 +2011,7 @@ class InflationLP(object):
         self.moment_upperbounds = sanitized_upperbounds
 
     def _set_lowerbounds(self, lowerbounds: Union[dict, None]) -> None:
-        """Set lower bounds for variables in the SDP relaxation.
+        """Set lower bounds for variables in the LP relaxation.
 
         Parameters
         ----------
