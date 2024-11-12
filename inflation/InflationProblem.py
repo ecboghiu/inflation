@@ -183,11 +183,10 @@ class InflationProblem:
         else:
             self._classical_sources = np.zeros(self.nr_sources, dtype=np.uint8)
         if not isinstance(classical_sources, (str, type(None))):
-            if classical_sources:
-                assert set(classical_sources).issubset(self._actual_sources), "Some specified classical source cannot be found in the DAG."
-                for ii, source in enumerate(self._actual_sources):
-                    if source in classical_sources:
-                        self._classical_sources[ii] = 1
+            assert set(classical_sources).issubset(self._actual_sources), "Some specified classical source cannot be found in the DAG."
+            for ii, source in enumerate(self._actual_sources):
+                if source in classical_sources:
+                    self._classical_sources[ii] = 1
         self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
 
         # Test if any quantum intermediate latent has fully classical parents.
