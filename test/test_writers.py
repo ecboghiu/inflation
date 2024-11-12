@@ -25,7 +25,6 @@ class TestLPWriters(unittest.TestCase):
                                     order=("A", "B"),
                                     classical_sources=["U_AB"])
     instrumental_infLP = InflationLP(instrumental,
-                                     nonfanout=False,
                                      verbose=False,
                                      include_all_outcomes=True)
     instrumental_infLP.set_distribution(p)

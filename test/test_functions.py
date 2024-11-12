@@ -11,28 +11,6 @@ from itertools import product, permutations
 
 
 class TestFunctions(unittest.TestCase):
-    # def test_remove_sandwich(self):
-    #     # <(A_111*A_121*A_111)*(A_332*A_312*A_342*A_312*A_332)*(B_011*B_012)>
-    #     monomial = np.array([[1, 1, 1, 1, 0, 0],
-    #                          [1, 1, 2, 1, 0, 0],
-    #                          [1, 1, 1, 1, 0, 0],
-    #                          [1, 3, 3, 2, 0, 0],
-    #                          [1, 3, 5, 2, 0, 0],
-    #                          [1, 3, 4, 2, 0, 0],
-    #                          [1, 3, 5, 2, 0, 0],
-    #                          [1, 3, 3, 2, 0, 0],
-    #                          [2, 0, 1, 1, 0, 0],
-    #                          [2, 0, 1, 2, 0, 0]])
-    #
-    #     delayered = nb_remove_sandwich(monomial)
-    #     correct = np.array([[1, 1, 2, 1, 0, 0],
-    #                         [1, 3, 4, 2, 0, 0],
-    #                         [2, 0, 1, 1, 0, 0],
-    #                         [2, 0, 1, 2, 0, 0]])
-    #
-    #     self.assertTrue(np.array_equal(delayered, correct),
-    #                     "Removal of complex sandwiches is not working.")
-
     def test_sanitize(self):
         bellScenario = InflationProblem({"Lambda": ["A"]},
                                         outcomes_per_party=[3],
@@ -182,7 +160,7 @@ class TestProblems(TestExtraConstraints):
                                     classical_sources='all')
 
     def test_lp(self):
-        lp = InflationLP(self.bellScenario_c, nonfanout=False)
+        lp = InflationLP(self.bellScenario_c)
         compound_mon = lp.monomials[-1]
         str_mon = "pA(0|0)"
         int_mon = 1
@@ -299,8 +277,8 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
             
     def test_physical_mon_gen_1party_no_copies(self):
         # Test for 1 party, no copies, nofanout
-        scenario = InflationProblem({'r': ['A']}, (3,), (3,), (1, ))
-        lp = InflationLP(scenario, nonfanout=True)
+        scenario = InflationProblem({'r': ['A']}, (3,), (3,), (1,))
+        lp = InflationLP(scenario)
 
         bool2lexorder = np.arange(lp._lexorder.shape[0])
         set_predicted = {tuple(bool2lexorder[e]) 
@@ -315,8 +293,8 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
 
     def test_physical_mon_gen_1party_3_copies(self):
         # Test for 1 party, 3 copies, nofanout
-        scenario = InflationProblem({'r': ['A']}, (3,), (3,), (3, ))
-        lp = InflationLP(scenario, nonfanout=True)
+        scenario = InflationProblem({'r': ['A']}, (3,), (3,), (3,))
+        lp = InflationLP(scenario)
 
         bool2lexorder = np.arange(lp._lexorder.shape[0])
         set_predicted = {tuple(bool2lexorder[e]) 
@@ -332,7 +310,7 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
     def test_physical_mon_gen_1party_2_nc_sources(self):
         scenario = InflationProblem({'s': ['A'], 't': ['A']},
                                     (3,), (3,), (3, 2))
-        lp = InflationLP(scenario, nonfanout=True)
+        lp = InflationLP(scenario)
         physical_monomials = scenario._generate_compatible_monomials_given_party(0)
 
         bool2lexorder = np.arange(lp._lexorder.shape[0])
