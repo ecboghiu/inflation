@@ -1844,25 +1844,24 @@ class InflationSDP:
         # skip_party = [not i for i in self.has_children]
 
         # This will help us identify relevant operators with the last outcome
-        last_outcome_boolmask = np.array(
+        first_outcome_boolmask = np.array(
             [self.has_children[op[0] - 1] and
-              op[-1] == self.outcome_cardinalities[op[0] - 1] - 2 # TODO -2 is a hack for using fake outcomes
-                                for op in self._lexorder[1:]], dtype=bool)
-        last_outcome_boolmask = np.hstack(([False], last_outcome_boolmask))
+              op[-1] == 0 for op in self._lexorder[1:]], dtype=bool)
+        first_outcome_boolmask = np.hstack(([False], first_outcome_boolmask))
         
         # This will allow for easy substitution of operators with the last
         # outcome with the rest of the operators orthogonal to it
         lexmon_to_orthogroup = dict()
         for group in self.InflationProblem._ortho_groups:
-            last_outcome_op = \
-                self.mon_to_lexrepr(np.expand_dims(group[-1], axis=0))[0]
-            lexmon_to_orthogroup[last_outcome_op] = \
+            first_outcome_op = \
+                self.mon_to_lexrepr(np.expand_dims(group[0], axis=0))[0]
+            lexmon_to_orthogroup[first_outcome_op] = \
                 np.concatenate([self.mon_to_lexrepr(np.expand_dims(m, axis=0))
                                 for m in group], dtype=np.intc)    
         
         column_level_equalities = []
         for i, lexmon in enumerate(self.generating_monomials_1d):
-            last_outcome_ops = last_outcome_boolmask[lexmon]
+            last_outcome_ops = first_outcome_boolmask[lexmon]
             if last_outcome_ops.sum() > 0:
                 eqs = []
                 for i, op in enumerate(lexmon):
