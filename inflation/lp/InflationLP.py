@@ -1301,10 +1301,6 @@ class InflationLP(object):
             eprint("Number of nontrivial inequality constraints in the LP:",
                     self.nof_collins_gisin_inequalities)
 
-        _monomials_as_lexorder = [tuple(self.mon_to_lexrepr(self._lexorder[bool_idx]))
-                                           for bool_idx in
-                                           self._monomials_as_lexboolvecs]
-
         # Associate Monomials to the remaining entries.
         _compmonomial_to_idx = dict()
         self.extra_inverse = np.arange(self.n_columns, dtype=int)
