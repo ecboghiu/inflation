@@ -362,8 +362,10 @@ class InflationSDP:
             self.old_indices_associated_with_monomial[mon].append(idx)
             self.extra_inverse[idx] = current_index
 
-        monomials_as_list = list(_compmonomial_to_idx.keys())
-        self.monomials = np.array(monomials_as_list, dtype=object)
+        self.monomials = list(_compmonomial_to_idx.keys())
+        if not self.momentmatrix_has_a_zero:
+            self.monomials = self.monomials[1:]
+            self.n_vars -= 1
         self.moments = self.monomials
         # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
         old_num_vars = self.n_vars
