@@ -377,7 +377,7 @@ class InflationSDP:
                        self.n_vars)
         # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
         # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
-        del _compmonomial_to_idx, monomials_as_list
+        del _compmonomial_to_idx
         collect(generation=2)
 
         # self.compmoment_from_idx = dict()
