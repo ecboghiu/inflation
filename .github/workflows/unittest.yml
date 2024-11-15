@@ -30,7 +30,4 @@ jobs:
         pip install mosek networkx numba numpy scipy sympy tqdm
     - name: Test with unittest
       run: |
-        python -m unittest -v test.test_factorization test.test_functions test.test_monomial_properties \
-        test.test_pipeline.TestSDPOutput.test_equalities test.test_pipeline.TestSDPOutput.test_lpi_bounds \
-        test.test_pipeline.TestSDPOutput.test_new_indices test.test_pipeline.TestSymmetries \
-        test.test_pipeline.TestConstraintGeneration test.test_writers.TestSDPWriters
+        python -m unittest -v test.test_factorization test.test_functions test.test_monomial_properties test.test_pipeline.TestSDPOutput.test_equalities test.test_pipeline.TestSDPOutput.test_lpi_bounds test.test_pipeline.TestSDPOutput.test_new_indices test.test_pipeline.TestSymmetries test.test_pipeline.TestConstraintGeneration test.test_writers.TestSDPWriters
