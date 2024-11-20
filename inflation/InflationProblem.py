@@ -371,6 +371,17 @@ class InflationProblem:
                 measurements_per_party.reshape(
                     (-1, O_card, self._nr_properties)))
         self._ortho_groups = list(chain.from_iterable(self._ortho_groups_per_party))
+
+        #New - orthogonal indices. To be used to accelerate monomial instantiation.
+        offset = 0
+        self._ortho_idxs = []
+        for ortho_group in self._ortho_groups:
+            l = len(ortho_group)
+            block = np.arange(l)
+            block += offset
+            self._ortho_idxs.append(block)
+            offset += l
+
         self._lexorder = np.vstack(self._ortho_groups).astype(self._np_dtype)
         self._nr_operators = len(self._lexorder)
 
@@ -388,17 +399,14 @@ class InflationProblem:
             self._default_notcomm = np.zeros(
                 (self._lexorder.shape[0], self._lexorder.shape[0]),
                 dtype=bool)
-        self._compatible_measurements = np.invert(self._default_notcomm)
-        # Use self._ortho_groups to label operators that are orthogonal as
-        # incompatible as their product is zero, and they can never be 
-        # observed together with non-zero probability.
-        offset = 0
-        for ortho_group in self._ortho_groups:
-            l = len(ortho_group)
-            block = np.arange(l)
-            block+= offset
-            self._compatible_measurements[np.ix_(block, block)] = False
-            offset+=l
+
+    @property
+    def _compatible_measurements(self):
+        compat_measurements = np.invert(self._default_notcomm)
+        for ortho_block in self._ortho_idxs:
+            compat_measurements[np.ix_(ortho_block, ortho_block)] = False
+        return compat_measurements
+
 
 
     def __repr__(self):
