@@ -8,6 +8,7 @@ from collections import Counter, deque, defaultdict
 from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
+from operator import neg as op_neg
 from numbers import Real
 from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
@@ -92,6 +93,7 @@ class InflationSDP:
             # HACK to fix detection of incompatible supports. 
             # (Can be fixed upon adding set_extra_equalities)
             self.has_children[:] = True
+        self.does_not_have_children = np.logical_not(self.has_children)
 
 
         self.outcome_cardinalities += self.has_children
@@ -132,7 +134,22 @@ class InflationSDP:
                                                  inflationproblem._lexorder)
                                                 )
         self._nr_operators = inflationproblem._nr_operators + 1
-        self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
+        # self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
+        self.blank_bool_array = np.zeros((1, self._nr_operators), dtype=bool)
+        self._lexeye = np.eye(self._nr_operators, dtype=bool)
+        all_ortho_groups_as_boolarrays = []
+        for ortho_groups in inflationproblem._ortho_idxs_per_party:
+            ortho_groups_as_boolarrays = []
+            for ortho_group in ortho_groups:
+                ortho_groups_as_boolarrays.append(self._lexeye[ortho_group])
+            all_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
+        self._CG_limited_ortho_groups_as_boolarrays = []
+        for i, ortho_groups_as_boolarrays in enumerate(all_ortho_groups_as_boolarrays):
+            if self.does_not_have_children[i]:
+                for ortho_group_as_boolarray in ortho_groups_as_boolarrays:
+                    self._CG_limited_ortho_groups_as_boolarrays.append(ortho_group_as_boolarray[:-1])
+            else:
+                self._CG_limited_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
         self._lexorder = self._default_lexorder.copy()
         self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
@@ -1189,22 +1206,33 @@ class InflationSDP:
                         col_specs += [operators]
                     columns = self._build_cols_from_specs(col_specs)
                 else:
-                    physmon_per_party \
-                        = [self.InflationProblem._generate_compatible_monomials_given_party(
-                            party, 
-                            up_to_length=length,
-                            with_last_outcome=self.has_children[party]
-                            )
-                            for length, party in zip(lengths,
-                                                     range(self.nr_parties))
-                            ]
-                    physical_monomials_as_boolvecs = \
-                        reduce(nb_outer_bitwise_or, reversed(physmon_per_party))
+                    def template_to_event_boolarray(template: List[int],
+                                                    decompressor: List[np.ndarray]) -> np.ndarray:
+                        if template:
+                            to_expand = partsextractor(decompressor, sorted(template, key=op_neg))
+                            return reduce(nb_outer_bitwise_or, to_expand)
+                        else:
+                            return self.blank_bool_array
+                    lex_idx_to_party = self.InflationProblem.party_from_templateidx
+                    def template_is_short_enough(template: List[int]) -> bool:
+                        if max_monomial_length and (len(template) > max_monomial_length):
+                            return False
+                        parties_in_template = Counter(lex_idx_to_party[template])
+                        for p, cap in enumerate(lengths):
+                            if not cap == None:
+                                if parties_in_template[p+1] > cap:
+                                    return False
+                        return True
+
+                    relevant_physical_templates = list(filter(template_is_short_enough,
+                                                              self.InflationProblem._all_compatible_templates))
+                    physical_monomials_as_boolvecs = np.vstack([
+                        template_to_event_boolarray(subclique, self._CG_limited_ortho_groups_as_boolarrays)
+                        for subclique in relevant_physical_templates
+                    ])
                     columns = sorted(
                         (np.flatnonzero(boolvec).astype(np.intc) + 1 
-                        for boolvec in physical_monomials_as_boolvecs
-                        if max_monomial_length == 0 or \
-                            (boolvec.sum() <= max_monomial_length)),
+                        for boolvec in physical_monomials_as_boolvecs),
                                     key=lambda x: (len(x), tuple(x)))
             else:
                 raise Exception("I have not understood the format of the "

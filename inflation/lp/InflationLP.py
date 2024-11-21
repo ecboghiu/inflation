@@ -8,9 +8,9 @@ or non-fanout inflation instance (see arXiv:1707.06476).
 from collections import Counter, defaultdict
 from functools import reduce, cached_property
 from gc import collect
-from itertools import chain
+from operator import neg as op_neg
 from numbers import Real
-from typing import List, Dict, Tuple, Union, Any
+from typing import List, Dict, Union, Any
 from warnings import warn
 
 import numpy as np
@@ -120,11 +120,13 @@ class InflationLP(object):
         self.np_dtype = inflationproblem._np_dtype
         self._lexorder = inflationproblem._lexorder
         self._nr_operators = inflationproblem._nr_operators
+        self._lexeye = np.eye(self._nr_operators, dtype=bool)
         self._lexrange = np.arange(self._nr_operators)
         self.lexorder_symmetries = inflationproblem.lexorder_symmetries
         self._from_2dndarray = inflationproblem._from_2dndarray
         self.mon_to_lexrepr = inflationproblem.mon_to_lexrepr
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
+        self.blank_bool_array = np.zeros((1, self._nr_operators), dtype=bool)
         self._ortho_groups_per_party = inflationproblem._ortho_groups_per_party
         self.has_children = inflationproblem.has_children.copy()
         if include_all_outcomes or supports_problem: # HACK to fix detection of incompatible supports. (Can be fixed upon adding set_extra_equalities)
@@ -132,25 +134,24 @@ class InflationLP(object):
         self.does_not_have_children = np.logical_not(self.has_children)
 
         all_ortho_groups_as_boolarrays = []
-        for ortho_groups in self._ortho_groups_per_party:
+        for ortho_groups in inflationproblem._ortho_idxs_per_party:
             ortho_groups_as_boolarrays = []
             for ortho_group in ortho_groups:
-                ortho_groups_as_boolarrays.append(np.vstack(
-                    [self.mon_to_boolvec(op[np.newaxis])
-                     for op in ortho_group]))
+                ortho_groups_as_boolarrays.append(self._lexeye[ortho_group])
             all_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
-        CG_adjusting_ortho_groups_as_boolarrays = []
-        CG_nonadjusting_ortho_groups_as_boolarrays = []
+        self._CG_adjusting_ortho_groups_as_boolarrays = []
+        self._CG_nonadjusting_ortho_groups_as_boolarrays = []
+        self._all_ortho_groups_as_boolarrays = []
+        self._CG_limited_ortho_groups_as_boolarrays = []
         for i, ortho_groups_as_boolarrays in enumerate(all_ortho_groups_as_boolarrays):
             if self.does_not_have_children[i]:
-                CG_adjusting_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
+                self._CG_adjusting_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
+                for ortho_group_as_boolarray in ortho_groups_as_boolarrays:
+                    self._CG_limited_ortho_groups_as_boolarrays.append(ortho_group_as_boolarray[:-1])
             else:
-                CG_nonadjusting_ortho_groups_as_boolarrays.append(
-                    ortho_groups_as_boolarrays)
-
-        self._CG_adjusting_ortho_groups_as_boolarrays = list(chain.from_iterable(CG_adjusting_ortho_groups_as_boolarrays))
-        self._CG_nonadjusting_ortho_groups_as_boolarrays = list(chain.from_iterable(CG_nonadjusting_ortho_groups_as_boolarrays))
-        self._all_ortho_groups_as_boolarrays = list(chain.from_iterable(all_ortho_groups_as_boolarrays))
+                self._CG_nonadjusting_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
+                self._CG_limited_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
+            self._all_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
 
         # We want to consider ALL outcomes for variables which have children, 
         # but not the last outcome for childless variables.
@@ -1249,9 +1250,6 @@ class InflationLP(object):
         self.Constant_Term.name = self.constant_term_name
         self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
-        (self._raw_monomials_as_lexboolvecs,
-         self._raw_monomials_as_lexboolvecs_non_CG) = self._build_raw_lexboolvecs()
-        collect(generation=2)
         self.raw_n_columns = len(self._raw_monomials_as_lexboolvecs)
         self.raw_n_columns_non_CG = len(self._raw_monomials_as_lexboolvecs_non_CG)
 
@@ -1331,7 +1329,7 @@ class InflationLP(object):
         self.compmonomial_to_idx = _compmonomial_to_idx
         del _monomials, _compmonomial_from_idx, _compmonomial_to_idx, _monomial_names
         collect(generation=2)
-        assert self.monomials[0] == self.One, "Sparse indexing requires that first column represent one."
+        assert self.monomials[0] == self.One, f"Sparse indexing requires that first column represent one, but got {self.monomials[0]}"
 
         assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
             (f"Multiple indices are being associated to the same monomial. \n" +
@@ -1362,37 +1360,64 @@ class InflationLP(object):
         if self.verbose > 1:
             print("LP initialization complete, ready to accept further specifics.")
 
-    def _build_raw_lexboolvecs(self) -> Tuple[np.ndarray, np.ndarray]:
-        r"""Creates the generating set of monomials (as boolvecs),
-        both in and out of Collins-Gisin notation.
-        """
-        choices_to_combine = []
-        lengths = []
-        for party in range(self.nr_parties):
-            boolvecs = \
-                self.InflationProblem._generate_compatible_monomials_given_party(
-                    party,
-                    up_to_length=self.local_level,
-                    with_last_outcome=True)
-            lengths.append(len(boolvecs))
-            choices_to_combine.append(boolvecs)
-        # Use reduce to take outer combinations, using bitwise addition
-        if self.verbose > 0:
-            eprint(f"About to generate {np.prod(np.asarray(lengths, dtype=object))} probability placeholders...")
+    def _template_to_event_boolarray(self, template: List[int], decompressor: List[np.ndarray]) -> np.ndarray:
+        if template:
+            to_expand = partsextractor(decompressor, sorted(template, key=op_neg))
+            return reduce(nb_outer_bitwise_or, to_expand)
+        else:
+            return self.blank_bool_array
 
-        choices_to_combine_CG = []
-        choices_to_combine_global = []
-        for choices in choices_to_combine:
-            CG_selection = np.logical_not(np.matmul(choices,
-                                                    self._boolvec_for_CG_ineqs))
-            choices_to_combine_CG.append(choices[CG_selection])
-            event_count = choices.sum(axis=1)
-            choices_to_combine_global.append(choices[event_count == event_count.max()])
-        raw_boolvecs_CG = reduce(nb_outer_bitwise_or, 
-                                 reversed(choices_to_combine_CG))
-        raw_boolvecs_global = reduce(nb_outer_bitwise_or,
-                                     reversed(choices_to_combine_global))
-        return (raw_boolvecs_CG, raw_boolvecs_global)
+    @cached_property
+    def _raw_monomials_as_lexboolvecs(self) -> np.ndarray:
+        r"""Creates the generating set of monomials (as boolvecs),
+        of ALL lengths, limited to Collins-Gisin notation.
+        """
+        return np.vstack([
+            self._template_to_event_boolarray(subclique, self._CG_limited_ortho_groups_as_boolarrays)
+            for subclique in self.InflationProblem._all_compatible_templates
+        ])
+
+    @cached_property
+    def _raw_monomials_as_lexboolvecs_non_CG(self) -> np.ndarray:
+        r"""Creates the generating set of monomials (as boolvecs),
+        of ALL lengths, limited to Collins-Gisin notation.
+        """
+        return np.vstack([
+            self._template_to_event_boolarray(clique, self._all_ortho_groups_as_boolarrays)
+            for clique in self.InflationProblem._maximal_compatible_templates
+        ])
+
+    # def _build_raw_lexboolvecs(self) -> Tuple[np.ndarray, np.ndarray]:
+    #     r"""Creates the generating set of monomials (as boolvecs),
+    #     both in and out of Collins-Gisin notation.
+    #     """
+    #     choices_to_combine = []
+    #     lengths = []
+    #     for party in range(self.nr_parties):
+    #         boolvecs = \
+    #             self.InflationProblem._generate_compatible_monomials_given_party(
+    #                 party,
+    #                 up_to_length=self.local_level,
+    #                 with_last_outcome=True)
+    #         lengths.append(len(boolvecs))
+    #         choices_to_combine.append(boolvecs)
+    #     # Use reduce to take outer combinations, using bitwise addition
+    #     if self.verbose > 0:
+    #         eprint(f"About to generate {np.prod(np.asarray(lengths, dtype=object))} probability placeholders...")
+    #
+    #     choices_to_combine_CG = []
+    #     choices_to_combine_global = []
+    #     for choices in choices_to_combine:
+    #         CG_selection = np.logical_not(np.matmul(choices,
+    #                                                 self._boolvec_for_CG_ineqs))
+    #         choices_to_combine_CG.append(choices[CG_selection])
+    #         event_count = choices.sum(axis=1)
+    #         choices_to_combine_global.append(choices[event_count == event_count.max()])
+    #     raw_boolvecs_CG = reduce(nb_outer_bitwise_or,
+    #                              reversed(choices_to_combine_CG))
+    #     raw_boolvecs_global = reduce(nb_outer_bitwise_or,
+    #                                  reversed(choices_to_combine_global))
+    #     return (raw_boolvecs_CG, raw_boolvecs_global)
 
     @cached_property
     def minimal_sparse_equalities(self) -> coo_array:

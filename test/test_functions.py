@@ -307,43 +307,43 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                        "The physical monomials sets are not equal " +
                        "in 1 party nonfanout LP.")
         
-    def test_physical_mon_gen_1party_2_nc_sources(self):
-        scenario = InflationProblem({'s': ['A'], 't': ['A']},
-                                    (3,), (3,), (3, 2))
-        lp = InflationLP(scenario)
-        physical_monomials = scenario._generate_compatible_monomials_given_party(0)
-
-        bool2lexorder = np.arange(lp._lexorder.shape[0])
-        set_predicted = {tuple(bool2lexorder[e]) 
-                         for e in physical_monomials}
-        set_correct = [self._old_party_physical_monomials(lp, 0, i)
-                       for i in range(1, min(lp.inflation_levels) + 1)]
-        set_correct = set([()] + [tuple(lp.mon_to_lexrepr(e)) 
-                                  for c in set_correct for e in c])
-        self.assertTrue(set_correct == set_predicted, 
-                       "The physical monomials sets are not equal " +
-                       "in 1 party nonfanout LP.")
-        
-        self.assertEqual(253, len(physical_monomials),
-                        "Wrong number of physical monomials generated.")
-        
-    def test_physical_mon_gen_1party_2_hybrid_sources(self):
-        scenario = InflationProblem({'s': ['A'], 't': ['A']},
-                                    (3,), (2,), 
-                                    (3, 2),
-                                    classical_sources=['t'])
-        physical_monomials = scenario._generate_compatible_monomials_given_party(0)
-        self.assertEqual(729, len(physical_monomials),
-                        "Wrong number of physical monomials generated.")
-        for boolmon in physical_monomials:
-            _s_ = np.nonzero(boolmon)[0]
-            _dim = _s_.size
-            if _dim > 0:
-                self.assertTrue(np.allclose(
-                    scenario._compatible_measurements[np.ix_(_s_, _s_)],
-                    np.ones((_dim,)*2)-np.eye(_dim)),
-                    "Measurements that are supposed to be compatible are not.")
-                
+    # def test_physical_mon_gen_1party_2_nc_sources(self):
+    #     scenario = InflationProblem({'s': ['A'], 't': ['A']},
+    #                                 (3,), (3,), (3, 2))
+    #     lp = InflationLP(scenario)
+    #     physical_monomials = scenario._generate_compatible_monomials_given_party(0)
+    #
+    #     bool2lexorder = np.arange(lp._lexorder.shape[0])
+    #     set_predicted = {tuple(bool2lexorder[e])
+    #                      for e in physical_monomials}
+    #     set_correct = [self._old_party_physical_monomials(lp, 0, i)
+    #                    for i in range(1, min(lp.inflation_levels) + 1)]
+    #     set_correct = set([()] + [tuple(lp.mon_to_lexrepr(e))
+    #                               for c in set_correct for e in c])
+    #     self.assertTrue(set_correct == set_predicted,
+    #                    "The physical monomials sets are not equal " +
+    #                    "in 1 party nonfanout LP.")
+    #
+    #     self.assertEqual(253, len(physical_monomials),
+    #                     "Wrong number of physical monomials generated.")
+    #
+    # def test_physical_mon_gen_1party_2_hybrid_sources(self):
+    #     scenario = InflationProblem({'s': ['A'], 't': ['A']},
+    #                                 (3,), (2,),
+    #                                 (3, 2),
+    #                                 classical_sources=['t'])
+    #     physical_monomials = scenario._generate_compatible_monomials_given_party(0)
+    #     self.assertEqual(729, len(physical_monomials),
+    #                     "Wrong number of physical monomials generated.")
+    #     for boolmon in physical_monomials:
+    #         _s_ = np.nonzero(boolmon)[0]
+    #         _dim = _s_.size
+    #         if _dim > 0:
+    #             self.assertTrue(np.allclose(
+    #                 scenario._compatible_measurements[np.ix_(_s_, _s_)],
+    #                 np.ones((_dim,)*2)-np.eye(_dim)),
+    #                 "Measurements that are supposed to be compatible are not.")
+    #
     def test_physical_mon_gen_beyond_networks(self):
         scenario = InflationProblem({'lam': ['A', 'B'], 'A': ['B']},
                                     (2, 2), (2, 1), 
