@@ -36,4 +36,4 @@ jobs:
         test/test_pipeline.py::TestSDPOutput::test_instrumental test/test_pipeline.py::TestSDPOutput::test_lpi \
         test/test_pipeline.py::TestSDPOutput::test_supports test/test_pipeline.py::TestLPOutput \
         test/test_pipeline.py::TestInstrumental test/test_pipeline.py::TestBell test/test_pipeline.py::TestTriangle \
-        test/test_pipeline.py::TestEvans test/test_pipeline.py::TestFullNN est/test_writers.py::TestLPWriters
+        test/test_pipeline.py::TestEvans test/test_pipeline.py::TestFullNN test/test_writers.py::TestLPWriters
