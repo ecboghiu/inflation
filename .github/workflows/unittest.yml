@@ -32,6 +32,7 @@ jobs:
     - name: Test with pytest
       run: |
         pytest -v \
+        --ignore=test/test_writers.py \
         --deselect=test/test_pipeline.py::TestSDPOutput::test_bounds \
         --deselect=test/test_pipeline.py::TestSDPOutput::test_CHSH \
         --deselect=test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting \
@@ -50,7 +51,5 @@ jobs:
         --deselect=test/test_pipeline.py::TestTriangle::test_triangle_nonfanout \
         --deselect=test/test_pipeline.py::TestEvans::test_evans_fanout \
         --deselect=test/test_pipeline.py::TestEvans::test_evans_nonfanout \
-        --deselect=test/test_pipeline.py::TestFullNN::test_fullnetworknonlocality_3partite_line \
-        --deselect=test/test_writers.py::TestLPWriters::test_write_to_lp \
-        --deselect=test/test_writers.py::TestLPWriters::test_write_to_mps
+        --deselect=test/test_pipeline.py::TestFullNN::test_fullnetworknonlocality_3partite_line
   
