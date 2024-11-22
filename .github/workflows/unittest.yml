@@ -31,9 +31,4 @@ jobs:
         pip install mosek networkx numba numpy scipy sympy tqdm
     - name: Test with pytest
       run: |
-        pytest -v --deselect test/test_pipeline.py::TestSDPOutput::test_bounds test/test_pipeline.py::TestSDPOutput::test_CHSH \
-        test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting test/test_pipeline.py::TestSDPOutput::test_GHZ_NC \
-        test/test_pipeline.py::TestSDPOutput::test_instrumental test/test_pipeline.py::TestSDPOutput::test_lpi \
-        test/test_pipeline.py::TestSDPOutput::test_supports test/test_pipeline.py::TestLPOutput \
-        test/test_pipeline.py::TestInstrumental test/test_pipeline.py::TestBell test/test_pipeline.py::TestTriangle \
-        test/test_pipeline.py::TestEvans test/test_pipeline.py::TestFullNN test/test_writers.py
+        pytest -v --deselect "test/test_pipeline.py::TestSDPOutput::test_bounds test/test_pipeline.py::TestSDPOutput::test_CHSH test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting test/test_pipeline.py::TestSDPOutput::test_GHZ_NC test/test_pipeline.py::TestSDPOutput::test_instrumental test/test_pipeline.py::TestSDPOutput::test_lpi test/test_pipeline.py::TestSDPOutput::test_supports test/test_pipeline.py::TestLPOutput test/test_pipeline.py::TestInstrumental test/test_pipeline.py::TestBell test/test_pipeline.py::TestTriangle test/test_pipeline.py::TestEvans test/test_pipeline.py::TestFullNN test/test_writers.py::TestLPWriters"
