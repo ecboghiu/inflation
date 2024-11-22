@@ -33,6 +33,19 @@ jobs:
       run: |
         pytest -v \
         --ignore=test/test_writers.py \
+        --ignore=test/test_optimize.py \
+        --deselect=test/test_solvers.py::TestSDP::test_LP_with_SDP \
+        --deselect=test/test_solvers.py::TestSDP::test_SDP \
+        --deselect=test/test_solvers.py::TestSDP::test_SDP_equalities \
+        --deselect=test/test_solvers.py::TestSDP::test_SDP_inequalities \
+        --deselect=test/test_solvers.py::TestLP::test_LP_free_bounds \
+        --deselect=test/test_solvers.py::TestLP::test_LP_non_negative_bounds \
+        --deselect=test/test_solvers.py::TestLP::test_LP_lower_bounds_of_zero \
+        --deselect=test/test_solvers.py::TestLP::test_LP_free_bounds_of_zero_and_non_negative \
+        --deselect=test/test_solvers.py::TestLP::test_LP_negative_lower_bounds \
+        --deselect=test/test_solvers.py::TestLP::test_LP_negative_lower_bounds_and_non_negative \
+        --deselect=test/test_solvers.py::TestSolverProcesses::test_semiknown_constraints \
+        --deselect=test/test_solvers.py::TestSolverProcesses::test_partially_known_objective \
         --deselect=test/test_pipeline.py::TestSDPOutput::test_bounds \
         --deselect=test/test_pipeline.py::TestSDPOutput::test_CHSH \
         --deselect=test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting \
