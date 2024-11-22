@@ -12,7 +12,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
-      fail_fast: false
+      fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
 
