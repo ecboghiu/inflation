@@ -31,7 +31,9 @@ jobs:
         pip install mosek networkx numba numpy scipy sympy tqdm
     - name: Test with pytest
       run: |
-        pytest -v test/test_factorization.py test/test_functions.py test/test_monomial_properties.py \
-        test/test_pipeline.py::TestSDPOutput::test_equalities test/test_pipeline.py::TestSDPOutput::test_lpi_bounds \
-        test/test_pipeline.py::TestSDPOutput::test_new_indices test/test_pipeline.py::TestSymmetries \
-        test/test_pipeline.py::TestConstraintGeneration test/test_writers.py::TestSDPWriters
+        pytest -v --deselect test/test_pipeline.py::TestSDPOutput::test_bounds test/test_pipeline.py::TestSDPOutput::test_CHSH \
+        test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting test/test_pipeline.py::TestSDPOutput::test_GHZ_NC \
+        test/test_pipeline.py::TestSDPOutput::test_instrumental test/test_pipeline.py::TestSDPOutput::test_lpi \
+        test/test_pipeline.py::TestSDPOutput::test_supports test/test_pipeline.py::TestLPOutput \
+        test/test_pipeline.py::TestInstrumental test/test_pipeline.py::TestBell test/test_pipeline.py::TestTriangle \
+        test/test_pipeline.py::TestEvans test/test_pipeline.py::TestFullNN est/test_writers.py::TestLPWriters
