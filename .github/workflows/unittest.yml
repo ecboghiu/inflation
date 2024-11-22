@@ -32,18 +32,18 @@ jobs:
     - name: Test with pytest
       run: |
         pytest -v \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_bounds \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_CHSH \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_GHZ_NC \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_instrumental \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_lpi \
-        --deselect=test/test_pipeline.py::TestSDPOutput::test_supports \
-        --deselect=test/test_pipeline.py::TestLPOutput \
-        --deselect=test/test_pipeline.py::TestInstrumental \
-        --deselect=test/test_pipeline.py::TestBell \
-        --deselect=test/test_pipeline.py::TestTriangle \
-        --deselect=test/test_pipeline.py::TestEvans \
-        --deselect=test/test_pipeline.py::TestFullNN \
-        --deselect=test/test_writers.py::TestLPWriters
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_bounds \
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_CHSH \
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_GHZ_commuting \
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_GHZ_NC \
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_instrumental \
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_lpi \
+        --deselect=test/test_pipeline.py::TestSDPOutput::()::test_supports \
+        --deselect=test/test_pipeline.py::TestLPOutput::() \
+        --deselect=test/test_pipeline.py::TestInstrumental::() \
+        --deselect=test/test_pipeline.py::TestBell::() \
+        --deselect=test/test_pipeline.py::TestTriangle::() \
+        --deselect=test/test_pipeline.py::TestEvans::() \
+        --deselect=test/test_pipeline.py::TestFullNN::() \
+        --deselect=test/test_writers.py::TestLPWriters::()
   
