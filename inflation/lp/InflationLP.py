@@ -1336,12 +1336,12 @@ class InflationLP(object):
             f"Expected {self.n_columns}, got {len(self.compmonomial_to_idx.keys())}.")
 
 
+        _counter = Counter([mon.knowability_status
+                            for mon in self.monomials])
+        self.n_knowable           = _counter["Knowable"]
+        self.n_something_knowable = _counter["Semi"]
+        self.n_unknowable         = _counter["Unknowable"]
         if self.verbose > 1:
-            _counter = Counter([mon.knowability_status
-                                for mon in self.monomials])
-            self.n_knowable           = _counter["Knowable"]
-            self.n_something_knowable = _counter["Semi"]
-            self.n_unknowable         = _counter["Unknowable"]
             eprint(f"The problem has {self.n_knowable} knowable monomials, " +
                   f"{self.n_something_knowable} semi-knowable monomials, " +
                   f"and {self.n_unknowable} unknowable monomials.")
