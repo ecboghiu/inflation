@@ -23,7 +23,7 @@ from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm,
                            commutation_matrix)
-from .utils import format_permutations, partsextractor, perm_combiner
+from .utils import format_permutations, partsextractor, perm_combiner, all_and_maximal_cliques
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -412,23 +412,12 @@ class InflationProblem:
     def _compatible_template_measurements(self):
         return np.invert(self._default_notcomm[np.ix_(self._template_idxs, self._template_idxs)])
 
-    @property
-    def _maximal_compatible_templates(self):
-        G = nx.from_numpy_array(self._compatible_template_measurements)
-        raw_cliques = nx.find_cliques(G)
-        return [list(clique) for clique in raw_cliques]
-
-    @property
-    def _all_compatible_templates(self):
-        #TODO: This is extremely inefficient. Should be overhauled ASAP.
-        discovered_subsets = set([frozenset([])])
-        discovered_subsets.update(map(frozenset, self._maximal_compatible_templates))
-        for max_clique in self._maximal_compatible_templates:
-            n = len(max_clique)
-            for i in range(1,n):
-                for subclique in combinations(max_clique, i):
-                    discovered_subsets.add(frozenset(subclique))
-        return sorted(map(list, discovered_subsets), key=len)
+    def all_and_maximal_compatible_templates(self,
+                                             max_n=0,
+                                             isolate_maximal=True):
+        return all_and_maximal_cliques(self._compatible_template_measurements,
+                                       max_n=max_n,
+                                       isolate_maximal=isolate_maximal)
 
 
     def __repr__(self):
@@ -463,118 +452,8 @@ class InflationProblem:
                 " inflation copies per source. " + source_info)
 
     ###########################################################################
-    # HELPER UTILITY FUNCTION                                    #
+    # HELPER UTILITY FUNCTION                                                 #
     ###########################################################################
-    
-    # @cached_property
-    # def _party_positions_within_lexorder(self):
-    #     # TODO @Elie write docstring
-    #     offset = 0
-    #     party_positions_within_lexorder = []
-    #     for ortho_groups in self._ortho_groups_per_party:
-    #         this_party_positions = []
-    #         for ortho_group in ortho_groups:
-    #             l = len(ortho_group)
-    #             block = np.arange(offset, offset+l)
-    #             this_party_positions.append(block)
-    #             offset+=l
-    #         party_positions_within_lexorder.append(this_party_positions)
-    #     return party_positions_within_lexorder
-    #
-    # def _subsets_of_compatible_mmnts_per_party(self,
-    #                                            party: int,
-    #                                            with_last_outcome: bool = False
-    #                                            ) -> list:
-    #     """Find all subsets of compatible operators for a given party. They
-    #     are returned as lists of sets of maximum length monomials (that is,
-    #     if AB is compatible and ABC is compatible, only ABC is returned as
-    #     AB is a subset of ABC).
-    #
-    #     Parameters
-    #     ----------
-    #     party : int
-    #         The party specifies as its position in the list of parties,
-    #         as specified by 'order'.
-    #     with_last_outcome : bool, optional
-    #         Whether the compatible measurements should include those that
-    #         have the last outcome, by default False
-    #
-    #     Returns
-    #     -------
-    #     list
-    #         List of lists of compatible operators of maximum length.
-    #     """
-    #     if with_last_outcome:
-    #         _s_ = list(chain.from_iterable(self._party_positions_within_lexorder[party]))
-    #     else:
-    #         _s_ = []
-    #         for positions in self._party_positions_within_lexorder[party]:
-    #             _s_.extend(positions[:-1])
-    #     party_compat = self._compatible_measurements[np.ix_(_s_, _s_)]
-    #     G = nx.from_numpy_array(party_compat)
-    #     raw_cliques = nx.find_cliques(G)
-    #     return [partsextractor(_s_, clique) for clique in raw_cliques]
-    #
-    def _generate_compatible_monomials_given_party(self,
-                                                party: int,
-                                                up_to_length: int = None,
-                                                with_last_outcome: bool = False
-                                                  ) -> np.ndarray:
-        """Helper function to generate all compatible monomials given a party.
-
-        While _subsets_of_compatible_mmnts_per_party returns maximum length
-        compatible operators, i.e., ABC but not AB, this function returns
-        all lengths up to the specified maximum, i.e., if up_to_length=2,
-        for the compatible monomial ABC, the monomials A, B, C, AB, AC, BC, ABC
-        are returned.
-
-        Parameters
-        ----------
-        party : int
-            The party specifies as its position in the list of parties,
-            as specified by 'order'.
-        up_to_length : int, optional
-            _description_, by default None
-        with_last_outcome : bool, optional
-            Whether the compatible measurements should include those that
-            have the last outcome, by default False
-
-        Returns
-        -------
-        2D array
-            A 2D boolean array where each row is a compatible monomial,
-            and the columns are the lexorder indices of the operators.
-            If we have 4 operators in the lexorder, ABCD, then
-            [[1, 0, 1, 0], [0, 1, 1, 0]] corresponds to AC and BC.
-        """
-        # The cliques will be all unique sets of compatible operators of
-        # ALL lengths, given a scenario's compatibility matrix
-        cliques = self._subsets_of_compatible_mmnts_per_party(
-            party,
-            with_last_outcome=with_last_outcome)
-        max_len_clique = max([len(c) for c in cliques])
-        max_length = up_to_length if up_to_length != None else max_len_clique
-        if max_length > max_len_clique:
-            max_length = max_len_clique
-            if self.verbose > 0:
-                warn("The maximum length of physical monomials required is " +
-                     "larger than the maximum sequence of compatible operators")
-
-        # Take combinations of all lengths up to the specified maximum
-        # of all the cliques
-        unique_subsets = {frozenset(ops) for nr_ops in range(max_length + 1)
-                              for clique in cliques
-                              for ops in combinations(clique, nr_ops)}
-        # Sort them in ascending lexicographic order
-        unique_subsets = sorted((sorted(s) for s in unique_subsets),
-                                key=lambda x: (len(x), x))
-        # Convert them to boolean vector encoding
-        unique_subsets_as_boolvecs = np.zeros(
-            (len(unique_subsets), len(self._lexorder)), dtype=bool)
-        for i, mon_as_set in enumerate(unique_subsets):
-            unique_subsets_as_boolvecs[i, mon_as_set] = True
-        return unique_subsets_as_boolvecs
-
     @cached_property
     def original_dag_events(self) -> np.ndarray:
         """

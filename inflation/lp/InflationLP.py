@@ -1368,13 +1368,23 @@ class InflationLP(object):
             return self.blank_bool_array
 
     @cached_property
+    def all_and_maximal_compatible_templates(self):
+        return self.InflationProblem.all_and_maximal_compatible_templates()
+    @property
+    def all_compatible_templates(self):
+        return self.all_and_maximal_compatible_templates[0]
+    @property
+    def maximal_compatible_templates(self):
+        return self.all_and_maximal_compatible_templates[1]
+
+    @cached_property
     def _raw_monomials_as_lexboolvecs(self) -> np.ndarray:
         r"""Creates the generating set of monomials (as boolvecs),
         of ALL lengths, limited to Collins-Gisin notation.
         """
         return np.vstack([
             self._template_to_event_boolarray(subclique, self._CG_limited_ortho_groups_as_boolarrays)
-            for subclique in self.InflationProblem._all_compatible_templates
+            for subclique in self.all_compatible_templates
         ])
 
     @cached_property
@@ -1384,40 +1394,8 @@ class InflationLP(object):
         """
         return np.vstack([
             self._template_to_event_boolarray(clique, self._all_ortho_groups_as_boolarrays)
-            for clique in self.InflationProblem._maximal_compatible_templates
+            for clique in self.maximal_compatible_templates
         ])
-
-    # def _build_raw_lexboolvecs(self) -> Tuple[np.ndarray, np.ndarray]:
-    #     r"""Creates the generating set of monomials (as boolvecs),
-    #     both in and out of Collins-Gisin notation.
-    #     """
-    #     choices_to_combine = []
-    #     lengths = []
-    #     for party in range(self.nr_parties):
-    #         boolvecs = \
-    #             self.InflationProblem._generate_compatible_monomials_given_party(
-    #                 party,
-    #                 up_to_length=self.local_level,
-    #                 with_last_outcome=True)
-    #         lengths.append(len(boolvecs))
-    #         choices_to_combine.append(boolvecs)
-    #     # Use reduce to take outer combinations, using bitwise addition
-    #     if self.verbose > 0:
-    #         eprint(f"About to generate {np.prod(np.asarray(lengths, dtype=object))} probability placeholders...")
-    #
-    #     choices_to_combine_CG = []
-    #     choices_to_combine_global = []
-    #     for choices in choices_to_combine:
-    #         CG_selection = np.logical_not(np.matmul(choices,
-    #                                                 self._boolvec_for_CG_ineqs))
-    #         choices_to_combine_CG.append(choices[CG_selection])
-    #         event_count = choices.sum(axis=1)
-    #         choices_to_combine_global.append(choices[event_count == event_count.max()])
-    #     raw_boolvecs_CG = reduce(nb_outer_bitwise_or,
-    #                              reversed(choices_to_combine_CG))
-    #     raw_boolvecs_global = reduce(nb_outer_bitwise_or,
-    #                                  reversed(choices_to_combine_global))
-    #     return (raw_boolvecs_CG, raw_boolvecs_global)
 
     @cached_property
     def minimal_sparse_equalities(self) -> coo_array:

@@ -1215,17 +1215,16 @@ class InflationSDP:
                             return self.blank_bool_array
                     lex_idx_to_party = self.InflationProblem.party_from_templateidx
                     def template_is_short_enough(template: List[int]) -> bool:
-                        if max_monomial_length and (len(template) > max_monomial_length):
-                            return False
                         parties_in_template = Counter(lex_idx_to_party[template])
                         for p, cap in enumerate(lengths):
                             if not cap == None:
                                 if parties_in_template[p+1] > cap:
                                     return False
                         return True
-
                     relevant_physical_templates = list(filter(template_is_short_enough,
-                                                              self.InflationProblem._all_compatible_templates))
+                                                              self.InflationProblem.all_and_maximal_compatible_templates(
+                                                                  max_n=max_monomial_length,
+                                                                  isolate_maximal=False)[0]))
                     physical_monomials_as_boolvecs = np.vstack([
                         template_to_event_boolarray(subclique, self._CG_limited_ortho_groups_as_boolarrays)
                         for subclique in relevant_physical_templates

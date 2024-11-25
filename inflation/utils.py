@@ -10,6 +10,7 @@ from itertools import chain
 from typing import Iterable, Union, List, Tuple, Dict
 from sys import stderr
 from operator import itemgetter
+from collections import deque
 
 
 def flatten(nested):
@@ -164,8 +165,99 @@ def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_array:
     else:
         return sps.coo_array([])
 
+
 def perm_combiner(old_perms: np.ndarray, new_perms: np.ndarray) -> np.ndarray:
     combined = np.take(old_perms, new_perms, axis=1)
-    # combined = old_perms.T[new_perms.T]
-    new_shape = ((-1, new_perms.shape[1]))
+    new_shape = (-1, new_perms.shape[1])
     return combined.reshape(new_shape)
+
+
+def all_and_maximal_cliques(adjmat: np.ndarray,
+                            max_n=0,
+                            isolate_maximal=True) -> (List, List):
+    """Based on NetworkX's `enumerate_all_cliques`.
+    This version uses numpy boolean arrays for subset inclusion testing,
+    which is known to be suboptimal.
+
+    Parameters
+    ----------
+    adjmat : numpy.ndarray
+      A boolean numpy array representing the adjacency matrix of an undirected graph.
+    max_n : int, optional
+      A cutoff for clique size reporting. Default 0, meaning no cutoff.
+    isolate_maximal : bool, optional
+      A flag to disable filtering for maximality, which can increase performance. True by default.
+
+    Returns
+    -------
+    Tuple[List, List]
+      A list of all cliques as well as a list of maximal cliques. The maximal cliques list will be empty if the
+      `isolate_maximal` flag is set to False.
+    """
+    all_cliques = [[]]
+    maximal_cliques = []
+    d = adjmat.shape[0]
+    eye = np.eye(d, dtype=bool)
+    nbrs = np.triu(adjmat, k=1)
+    queue = deque(zip(eye, nbrs))
+    there_is_a_cutoff = (max_n <= 0)
+    while queue:
+        base, cnbrs = queue.popleft()
+        clique = np.flatnonzero(base).tolist()
+        all_cliques.append(clique)
+        if isolate_maximal and not cnbrs.any():
+            if not any(np.greater_equal(superbase, base).all() for (superbase, _) in queue):
+                maximal_cliques.append(clique)
+        elif there_is_a_cutoff or len(clique) < max_n:
+            new_bases = (np.bitwise_or(base,
+                                       eye[cnbrs]))
+            new_cnbrs = (np.bitwise_and(cnbrs,
+                                        nbrs[cnbrs]))
+            queue.extend(zip(new_bases, new_cnbrs))
+    return all_cliques, maximal_cliques
+
+def all_and_maximal_cliques_native(adjmat: np.ndarray,
+                                   max_n=0,
+                                   isolate_maximal=True) -> (List, List):
+    """Based on NetworkX's `enumerate_all_cliques`.
+    This version uses native Python sets instead of numpy arrays.
+    (Performance comparison needed.)
+
+    Parameters
+    ----------
+    adjmat : numpy.ndarray
+      A boolean numpy array representing the adjacency matrix of an undirected graph.
+    max_n : int, optional
+      A cutoff for clique size reporting. Default 0, meaning no cutoff.
+    isolate_maximal : bool, optional
+      A flag to disable filtering for maximality, which can increase performance. True by default.
+
+    Returns
+    -------
+    Tuple[List, List]
+      A list of all cliques as well as a list of maximal cliques. The maximal cliques list will be empty if the
+      `isolate_maximal` flag is set to False.
+    """
+    all_cliques = [[]]
+    maximal_cliques = []
+    verts = tuple(range(adjmat.shape[0]))
+    initial_cliques = [[u] for u in verts]
+    nbrs_mat = np.triu(adjmat, k=1)
+    initial_cnbrs = [np.flatnonzero(nbrs_mat[u]).tolist() for u in verts]
+    nbrs = list(map(set, initial_cnbrs))
+    queue = deque(zip(initial_cliques, initial_cnbrs))
+    there_is_a_cutoff = (max_n <= 0)
+    while queue:
+        base, cnbrs = queue.popleft()
+        all_cliques.append(base)
+        if isolate_maximal and not len(cnbrs):
+            base_as_set = set(base)
+            if not any(base_as_set.issubset(superbase) for (superbase, _) in queue):
+                maximal_cliques.append(base)
+        elif there_is_a_cutoff or len(base) < max_n:
+            for i, u in enumerate(cnbrs):
+                new_base = base.copy()
+                new_base.append(u)
+                new_cnbrs = list(filter(nbrs[u].__contains__, cnbrs[i+1:]))
+                queue.append((new_base, new_cnbrs))
+    return all_cliques, maximal_cliques
