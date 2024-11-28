@@ -584,19 +584,6 @@ class InflationProblem:
         return np.asarray(array2d, dtype=self._np_dtype).tobytes()
 
     @cached_property
-    def _lexrepr_to_dicts(self):
-        """Map 1D array lexorder encoding of a monomial, to a dict representation.
-
-        Returns
-        -------
-        list
-            List of the same length as lexorder, where the i-th element is the
-            dictionary representation of the i-th operator in the lexorder.
-        """
-        return [self._interpret_operator(op) for op in self._lexorder]
-
-
-    @cached_property
     def _any_inflation(self) -> bool:
         return np.any(self.inflation_level_per_source > 1)
 
@@ -960,12 +947,12 @@ class InflationProblem:
         return disconnected_components
 
     ###########################################################################
-    # FUNCTIONS PERTAINING TO SYMMETRY                                        #
+    # FUNCTIONS PERTAINING TO INFLATION SYMMETRIES                            #
     ###########################################################################
     def discover_lexorder_symmetries(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
-        monomials. The new set of operators is a permutation of the old. The
-        function outputs a list of all permutations.
+        monomials due to copy index relabelling. The new set of operators is a
+        permutation of the old. The function outputs a list of all permutations.
 
         Returns
         -------
@@ -1036,7 +1023,7 @@ class InflationProblem:
         return self._lexidx_to_origidx[lexperm][self._canonical_lexids]
 
     @cached_property
-    def _possible_party_relabelling_symmetries(self) -> List[Tuple[np.ndarray, np.ndarray]]:
+    def _possible_party_relabelling_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
         """Return a list of all party relabelling symmetries (each proceeded by
         its associated source relabelling symmetry) consistent with the
         graphical symmetries of the original DAG, subject to matching
@@ -1045,10 +1032,9 @@ class InflationProblem:
 
         Returns
         -------
-        List[Tuple[numpy.ndarray, numpy.ndarray]]
-            A list of all two-element tuples. The first element in each tuple
-            corresponds to a permutation of the sources, the second element
-            to the permutation of parties.
+        Tuple[numpy.ndarray, numpy.ndarray]
+            The first array gives permutations of the lexorder, the second array gives the permutations of the original
+            events.
         """
         nr_sources = self.nr_sources
         import networkx as nx
@@ -1113,79 +1099,9 @@ class InflationProblem:
             # original_dag_events_perms += [dag_events_permutation]
         return np.array(lexorder_perms), np.array(original_dag_events_perms)
 
-    # #TASK: Obtain a list of all setting relabellings,
-    # # and all outcome-per-setting relabellings.
-    # def _possible_setting_specific_outcome_relabelling_symmetries(self) -> List[np.ndarray]:
-    #     """
-    #     Yields all possible setting relabellings paired with all possible
-    #     setting-dependant outcome relabellings as
-    #     permutations of the events on the original graph. Seperated by party,
-    #     so that iteration will involve itertools.product.
-    #     """
-    #     nr_original_events = len(self.original_dag_events)
-    #     default_events_order = np.arange(nr_original_events)
-    #     original_dag_lookup = {op.tobytes(): i
-    #                            for i, op in enumerate(self.original_dag_events)}
-    #     # empty_perm = np.empty((0, nr_original_events), dtype=int)
-    #     empty_perm = default_events_order.copy().reshape((1, nr_original_events))
-    #     possible_syms_per_party = []
-    #     for p, (card_in, card_out) in enumerate(zip(
-    #         self.settings_per_party.flat,
-    #         self.outcomes_per_party.flat)):
-    #         possible_syms = set()
-    #         # TEMPORARY BYPASS OF COMPLICATED STUFF: skip symmetry if party `p`
-    #         # has a nontrivial parent, or has children.
-    #         if self.has_children[p] or any(
-    #                 self.outcomes_per_party[parent] > 1 for
-    #                 parent in self.parents_per_party[p]):
-    #             possible_syms_per_party.append(empty_perm)
-    #             continue
-    #         ops = np.empty((card_in, card_out, 3), dtype=self._np_dtype)
-    #         ops[:,:, 0 ] = p + 1
-    #         for i in range(card_in):
-    #             ops[i, :, 1] = i
-    #         for o in range(card_out):
-    #             ops[:, o, 2] = o
-    #         ops_flatish = ops.reshape((card_in * card_out, 3))
-    #         for i_perm in permutations(range(card_in)):
-    #             ops_copy = ops.copy()
-    #             for old_i, new_i in enumerate(i_perm):
-    #                 ops_copy[old_i, :, 1] = new_i
-    #                 for o_perm in permutations(range(card_out)):
-    #                     ops_copy[old_i, :, 2] = o_perm
-    #                     sym = []
-    #                     for ops_pair in zip(ops_flatish,
-    #                             ops_copy.reshape((card_in * card_out, 3))):
-    #                         if not np.array_equal(*ops_pair):
-    #                             sym.append(ops_pair)
-    #                     if len(sym) >= 2:
-    #                         discovered_sym = frozenset((
-    #                             (op1.tobytes(),
-    #                              op2.tobytes()) for op1, op2 in sym))
-    #                         possible_syms.add(discovered_sym)
-    #         possible_syms_as_permutations = [default_events_order]
-    #         for sym in possible_syms:
-    #             events_order = default_events_order.copy()
-    #             for evnt1_hash, evnt2_hash in sym:
-    #                 events_order[original_dag_lookup[evnt1_hash]] = \
-    #                     original_dag_lookup[evnt2_hash]
-    #             possible_syms_as_permutations.append(events_order)
-    #         if len(possible_syms_as_permutations):
-    #             possible_syms_as_permutations = np.vstack(
-    #                 possible_syms_as_permutations).astype(int).reshape(
-    #                 (-1, nr_original_events))
-    #         else:
-    #             possible_syms_as_permutations = empty_perm
-    #         possible_syms_per_party.append(possible_syms_as_permutations)
-
-    #     orig_order_perms = np.vstack([reduce(np.take, perms)
-    #                                   for perms in
-    #                                   product(*possible_syms_per_party)])
-
-    #     return np.take(self.original_dag_events, orig_order_perms, axis=0)
 
     @cached_property
-    def _possible_setting_specific_outcome_relabelling_symmetries(self) -> List[np.ndarray]:
+    def _possible_setting_specific_outcome_relabelling_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Yields all possible setting relabellings paired with all possible
         setting-dependant outcome relabellings as
