@@ -402,6 +402,12 @@ class InflationProblem:
             self._compatible_measurements[np.ix_(block, block)] = False
             offset+=l
 
+        _lexorder_to_original = self.rectify_fake_setting(self._lexorder[:, [0, -2, -1]])
+        (self.original_dag_events,
+         self._canonical_lexids,
+         self._lexidx_to_origidx) = np.unique(_lexorder_to_original, return_index=True, return_inverse=True, axis=0)
+
+
 
     def __repr__(self):
         if self._classical_sources.all():
@@ -546,29 +552,6 @@ class InflationProblem:
         for i, mon_as_set in enumerate(unique_subsets):
             unique_subsets_as_boolvecs[i, mon_as_set] = True
         return unique_subsets_as_boolvecs
-
-    @cached_property
-    def original_dag_events(self) -> np.ndarray:
-        """
-        Creates the analog of a lexorder for the original DAG.
-        """
-        original_dag_events = []
-        for p in range(self.nr_parties):
-            O_vals = np.arange(self.outcomes_per_party[p],
-                               dtype=self._np_dtype)
-            S_vals = np.arange(self.private_settings_per_party[p],
-                               dtype=self._np_dtype)
-            events_per_party = np.empty(
-                (len(S_vals), len(O_vals), 3),
-                dtype=self._np_dtype)
-            events_per_party[::, :, 0] = p + 1
-            for s in S_vals.flat:
-                events_per_party[s, :, -2] = s
-                for o in O_vals.flat:
-                    events_per_party[s, o, -1] = o
-            original_dag_events.extend(
-                events_per_party.reshape((-1, 3)))
-        return np.vstack(original_dag_events).astype(self._np_dtype)
 
     @cached_property
     def _lexorder_lookup(self) -> dict:
@@ -1049,6 +1032,8 @@ class InflationProblem:
     def _interpret_original_symmetry(self, perm: np.ndarray) -> dict:
         return dict(zip(self._original_event_names, self._original_event_names[perm]))
 
+    def lexperm_to_origperm(self, lexperm: np.ndarray) -> np.ndarray:
+        return self._lexidx_to_origidx[lexperm][self._canonical_lexids]
 
     @cached_property
     def _possible_party_relabelling_symmetries(self) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -1107,10 +1092,6 @@ class InflationProblem:
                                  dtype=int),
                      ))
 
-        lexorder_to_original_dag_events = {i: op[[0, -2, -1]]
-                                           for i, op in enumerate(self._lexorder)}
-        original_dag_lookup = {op.tobytes(): i
-                               for i, op in enumerate(self.original_dag_events)}
         lexorder_perms, original_dag_events_perms = [], []
         for automorphism in discovered_automorphisms:
             source_perm, party_perm = automorphism
@@ -1120,15 +1101,16 @@ class InflationProblem:
             new_source_perm = np.argsort(source_perm)
             template = template[:, [0] + (1+new_source_perm).tolist() + [-2, -1]]
             lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in template])
+            original_perm = self.lexperm_to_origperm(lexorder_perm)
             lexorder_perms += [lexorder_perm]
-            lexorder_to_original_dag_events_perm = {i: op[[0, -2, -1]]
-                                           for i, op in enumerate(template)}
-            original_dag_event_perm_dict = {lexorder_to_original_dag_events[i].tobytes(): lexorder_to_original_dag_events_perm[i]
-                                       for i in range(self._lexorder.shape[0])}
-            permuted_dag_events = np.array([original_dag_event_perm_dict[op.tobytes()] for op in self.original_dag_events])
-            dag_events_permutation = np.array([original_dag_lookup[op.tobytes()] for op in permuted_dag_events])
-            original_dag_events_perms += [dag_events_permutation]
-
+            original_dag_events_perms += [original_perm]
+            # lexorder_to_original_dag_events_perm = {i: op[[0, -2, -1]]
+            #                                for i, op in enumerate(template)}
+            # original_dag_event_perm_dict = {lexorder_to_original_dag_events[i].tobytes(): lexorder_to_original_dag_events_perm[i]
+            #                            for i in range(self._lexorder.shape[0])}
+            # permuted_dag_events = np.array([original_dag_event_perm_dict[op.tobytes()] for op in self.original_dag_events])
+            # dag_events_permutation = np.array([original_dag_lookup[op.tobytes()] for op in permuted_dag_events])
+            # original_dag_events_perms += [dag_events_permutation]
         return np.array(lexorder_perms), np.array(original_dag_events_perms)
 
     # #TASK: Obtain a list of all setting relabellings,
@@ -1210,87 +1192,115 @@ class InflationProblem:
         permutations of the events on the original graph. Seperated by party,
         so that iteration will involve itertools.product.
         """
-        nr_original_events = len(self.original_dag_events)
-        # default_events_order = np.arange(nr_original_events)
-        original_dag_lookup = {op.tobytes(): i
-                               for i, op in enumerate(self.original_dag_events)}
-        # empty_perm = np.empty((0, nr_original_events), dtype=int)
-        # empty_perm = default_events_order.copy().reshape((1, nr_original_events))
-        empty_perm = list(range(nr_original_events))
-
-
-        sym_generators = [empty_perm]
+        identity_perm_original = np.arange(len(self.original_dag_events), dtype=int)
+        identity_perm_lexorder = np.arange(self._nr_operators, dtype=int)
+        sym_generators_original = [identity_perm_original]
+        sym_generators_lexorder = [identity_perm_lexorder]
+        lexorder_private_settings = self.rectify_fake_setting(self._lexorder.copy())[:, -2]
         for p in range(self.nr_parties):
             if self.has_children[p]:
                 break  # Do not attempt outcome relabelling if the variable is also a setting.
-            select_this_party = (self.original_dag_events[:, 0] == p + 1)
-            # exclude_final_outcome = (self.original_dag_events[:, 2] < self.outcomes_per_party[p]-1)
-            # select_this_party *= exclude_final_outcome
+            select_this_party_lexorder = (self._lexorder[:, 0] == p + 1)
             for x in range(self.private_settings_per_party[p]):
-                select_this_setting = (self.original_dag_events[:, 1] == x)
-                select_this_party_and_this_setting = select_this_party*select_this_setting
-                template = self.original_dag_events.copy()
+                select_this_setting_lexorder = (lexorder_private_settings == x)
+                where_to_modify = np.logical_and(select_this_party_lexorder, select_this_setting_lexorder)
+                before_relabelling = self._lexorder[where_to_modify, -1]
                 for i, perm in enumerate(permutations(range(self.outcomes_per_party[p]))):
-                    if i == 0:   # skip empty perm
-                        continue # skip empty perm
-                    template[select_this_party_and_this_setting, 2] = np.array(perm)
-                    new_syms = np.array([original_dag_lookup[op.tobytes()] for op in template])
-                    sym_generators += [new_syms]
-
-        sym_generators_on_lexorder = []
-        for sym in sym_generators:
-            sym_map = {op1.tobytes(): op2
-                       for op1, op2 in zip(self.original_dag_events,
-                                           self.original_dag_events[sym])}
-            lexorder_copy = self._lexorder.copy()
-            for i in range(lexorder_copy.shape[0]):
-                lexorder_copy[i, np.array([0, -2, -1])] = \
-                    sym_map[lexorder_copy[i, np.array([0, -2, -1])].tobytes()]
-            lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in lexorder_copy])
-            sym_generators_on_lexorder += [lexorder_perm]
-
-        return np.array(sym_generators_on_lexorder), np.array(sym_generators)
+                    if i == 0:  # skip empty perm
+                        continue  # skip empty perm
+                    after_relabelling = np.take(perm, before_relabelling)
+                    implicit_change = np.argsort(before_relabelling, stable=True)[
+                        np.argsort(after_relabelling, stable=True)]
+                    lexorder_perm = identity_perm_lexorder.copy()
+                    lexorder_perm[where_to_modify] = lexorder_perm[where_to_modify][implicit_change]
+                    original_perm = self.lexperm_to_origperm(lexorder_perm)
+                    sym_generators_lexorder.append(lexorder_perm)
+                    sym_generators_original.append(original_perm)
+        #     select_this_party_original = (self.original_dag_events[:, 0] == p + 1)
+        #     # exclude_final_outcome = (self.original_dag_events[:, 2] < self.outcomes_per_party[p]-1)
+        #     # select_this_party *= exclude_final_outcome
+        #     for x in range(self.private_settings_per_party[p]):
+        #         select_this_setting = (self.original_dag_events[:, 1] == x)
+        #         select_this_party_and_this_setting = np.logical_and(select_this_party_original,
+        #                                                             select_this_setting)
+        #         original_template = self.original_dag_events.copy()
+        #         lexorder_template = self._lexorder.copy()
+        #
+        #         for i, perm in enumerate(permutations(range(self.outcomes_per_party[p]))):
+        #             if i == 0:   # skip empty perm
+        #                 continue # skip empty perm
+        #             original_template[select_this_party_and_this_setting, 2] = np.array(perm)
+        #             new_syms = np.array([self._original_lookup[op.tobytes()] for op in original_template])
+        #             sym_generators_original += [new_syms]
+        #
+        # sym_generators_on_lexorder = []
+        # for sym in sym_generators_original:
+        #     sym_map = {op1.tobytes(): op2
+        #                for op1, op2 in zip(self.original_dag_events,
+        #                                    self.original_dag_events[sym])}
+        #     lexorder_copy = self._lexorder.copy()
+        #     for i in range(lexorder_copy.shape[0]):
+        #         lexorder_copy[i, np.array([0, -2, -1])] = \
+        #             sym_map[lexorder_copy[i, np.array([0, -2, -1])].tobytes()]
+        #     lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in lexorder_copy])
+        #     sym_generators_on_lexorder += [lexorder_perm]
+        return np.array(sym_generators_lexorder), np.array(sym_generators_original)
 
     @cached_property
-    def _possible_party_specific_setting_relabelling_symmetries(self):
-        nr_original_events = len(self.original_dag_events)
-        default_events_order = np.arange(nr_original_events)
-        original_dag_lookup = {op.tobytes(): i
-                                for i, op in enumerate(self.original_dag_events)}
-        # empty_perm = np.empty((0, nr_original_events), dtype=int)
-        # empty_perm = default_events_order.copy().reshape((1, nr_original_events))
-        empty_perm = list(range(nr_original_events))
-
-        sym_generators = [empty_perm]
+    def _possible_party_specific_setting_relabelling_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
+        identity_perm_original = np.arange(len(self.original_dag_events), dtype=int)
+        identity_perm_lexorder = np.arange(self._nr_operators, dtype=int)
+        sym_generators_original = [identity_perm_original]
+        sym_generators_lexorder = [identity_perm_lexorder]
+        lexorder_private_settings = self.rectify_fake_setting(self._lexorder.copy())[:, -2]
         for p in range(self.nr_parties):
-            template = self.original_dag_events.copy()
+            # Since we are only adjusting PRIVATE setting, we can proceed even is the party has children
+            # if self.has_children[p]:
+            #     break  # Do not attempt outcome relabelling if the variable is also a setting.
+            where_to_modify = (self._lexorder[:, 0] == p + 1)
+            before_relabelling = lexorder_private_settings[where_to_modify]
             for i, perm in enumerate(permutations(range(self.private_settings_per_party[p]))):
-                if i > 0:  # skip empty perm
-                    if self.has_children[p]:
-                        # TODO
-                        # for child in children_per_party[p]:
-                            # child_settings = self.effective_to_parent_settings[child]
-                            # new_child_settings =
-                        ...
-                    else:
-                        for a in range(self.outcomes_per_party[p]):
-                            template[(template[:, 0] == p + 1) * (template[:, 2] == a), 1] = np.array(perm)
-                        new_syms = np.array([original_dag_lookup[op.tobytes()] for op in template])
-                        sym_generators += [new_syms]
-
-        sym_generators_on_lexorder = []
-        for sym in sym_generators:
-            sym_map = {op1.tobytes(): op2
-                        for op1, op2 in zip(self.original_dag_events,
-                                            self.original_dag_events[sym])}
-            lexorder_copy = self._lexorder.copy()
-            for i in range(lexorder_copy.shape[0]):
-                lexorder_copy[i, np.array([0, -2, -1])] = \
-                    sym_map[lexorder_copy[i, np.array([0, -2, -1])].tobytes()]
-            lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in lexorder_copy])
-            sym_generators_on_lexorder += [lexorder_perm]
-
-        return np.array(sym_generators_on_lexorder), np.array(sym_generators)
+                if i == 0:  # skip empty perm
+                    continue  # skip empty perm
+                after_relabelling = np.take(perm, before_relabelling)
+                implicit_change = np.argsort(before_relabelling, stable=True)[
+                    np.argsort(after_relabelling, stable=True)]
+                lexorder_perm = identity_perm_lexorder.copy()
+                lexorder_perm[where_to_modify] = lexorder_perm[where_to_modify][implicit_change]
+                original_perm = self.lexperm_to_origperm(lexorder_perm)
+                sym_generators_lexorder.append(lexorder_perm)
+                sym_generators_original.append(original_perm)
+        # empty_perm = list(range(self.original_dag_events))
+        #
+        # sym_generators = [empty_perm]
+        # for p in range(self.nr_parties):
+        #     template = self.original_dag_events.copy()
+        #     for i, perm in enumerate(permutations(range(self.private_settings_per_party[p]))):
+        #         if i > 0:  # skip empty perm
+        #             if self.has_children[p] :
+        #                 # TODO
+        #                 # for child in children_per_party[p]:
+        #                     # child_settings = self.effective_to_parent_settings[child]
+        #                     # new_child_settings =
+        #                 ...
+        #             else:
+        #                 for a in range(self.outcomes_per_party[p]):
+        #                     template[(template[:, 0] == p + 1) * (template[:, 2] == a), 1] = np.array(perm)
+        #                 new_syms = np.array([self._original_lookup[op.tobytes()] for op in template])
+        #                 sym_generators += [new_syms]
+        #
+        # sym_generators_on_lexorder = []
+        # for sym in sym_generators:
+        #     sym_map = {op1.tobytes(): op2
+        #                 for op1, op2 in zip(self.original_dag_events,
+        #                                     self.original_dag_events[sym])}
+        #     lexorder_copy = self._lexorder.copy()
+        #     for i in range(lexorder_copy.shape[0]):
+        #         lexorder_copy[i, np.array([0, -2, -1])] = \
+        #             sym_map[lexorder_copy[i, np.array([0, -2, -1])].tobytes()]
+        #     lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in lexorder_copy])
+        #     sym_generators_on_lexorder += [lexorder_perm]
+        return np.array(sym_generators_lexorder), np.array(sym_generators_original)
 
     @staticmethod
     def _group_elements_from_group_generators(list_of_gens: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
@@ -1298,37 +1308,38 @@ class InflationProblem:
         group_elements = np.array(list(G.generate_schreier_sims(af=True)))
         return group_elements[np.lexsort(np.rot90(group_elements))]
 
-    def _incorporate_new_symmetries(self, new_symmetries: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
-        return self._group_elements_from_group_generators(
-            np.vstack((self.lexorder_symmetries, new_symmetries)))
-
-    def discover_distribution_symmetries(self, symmetric_distribution):
-        original_dag_events_order = {tuple(op): i for i, op in enumerate(self.original_dag_events)}
-
+    @cached_property
+    def _all_possible_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
         party_relabeling_gen_lexorder, party_relabeling_gen_original_events = \
             self._possible_party_relabelling_symmetries
         setting_relabeling_gen_lexorder, setting_relabeling_gen_original_events = \
             self._possible_party_specific_setting_relabelling_symmetries
         outcome_relabeling_gen_lexorder, outcome_relabeling_gen_original_events = \
             self._possible_setting_specific_outcome_relabelling_symmetries
-
         # Join them into a single permutation that acts on a concatenation
         # of the lexorder and the original events
         offset = len(self.original_dag_events)
         party_relabeling = np.hstack(((party_relabeling_gen_original_events,
-                                       party_relabeling_gen_lexorder+offset)))
+                                       party_relabeling_gen_lexorder + offset)))
         setting_relabeling = np.hstack(((setting_relabeling_gen_original_events,
-                                       setting_relabeling_gen_lexorder+offset)))
+                                         setting_relabeling_gen_lexorder + offset)))
         outcome_relabeling = np.hstack(((outcome_relabeling_gen_original_events,
-                                       outcome_relabeling_gen_lexorder+offset)))
-
+                                         outcome_relabeling_gen_lexorder + offset)))
         group_generators = np.vstack((
             outcome_relabeling,
             setting_relabeling,
-            party_relabeling
-        ))
+            party_relabeling))
         group_elements = self._group_elements_from_group_generators(group_generators)
+        all_possible_lexorder_symmetries = group_elements[:, offset:] - offset
+        all_possible_original_symmetries = group_elements[:, :offset]
+        return all_possible_lexorder_symmetries, all_possible_original_symmetries
 
+
+
+    def discover_distribution_symmetries(self, symmetric_distribution):
+
+        all_possible_lexorder_symmetries, all_possible_original_symmetries = self._all_possible_symmetries
+        original_dag_events_order = {tuple(op): i for i, op in enumerate(self.original_dag_events)}
 
         ## Find the symmetries of the distribution.
         # First, build the knowable monomials of maximum length of the original
@@ -1351,20 +1362,23 @@ class InflationProblem:
                                     for mon in original_dag_monomials_lexboolvecs])
         good_orig_perms = []
         good_inf_perms  = []
-        for perm in tqdm(group_elements,
+        for perm_original, perm_lexorder in tqdm(zip(all_possible_original_symmetries,
+                                                      all_possible_lexorder_symmetries),
                          desc="Discovering distribution symmetries",
                          disable=not self.verbose):
-            perm_original = perm[:offset]
 
             lexboolvecs = original_dag_monomials_lexboolvecs.copy()
             lexboolvecs = lexboolvecs[:, perm_original]  # permute the columns
             new_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
                                       for mon in lexboolvecs])
             if np.allclose(new_values_1d, original_values_1d):
-                perm_inflation = perm[offset:] - offset
                 good_orig_perms += [perm_original]
-                good_inf_perms += [perm_inflation]
+                good_inf_perms += [perm_lexorder]
         if self.verbose > 0:
             print(f"Found {len(good_inf_perms)} symmetries.")
 
         return np.array(good_inf_perms), np.array(good_orig_perms)
+
+    def _incorporate_new_symmetries(self, new_symmetries: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
+        return self._group_elements_from_group_generators(
+            np.vstack((self.lexorder_symmetries, new_symmetries)))
