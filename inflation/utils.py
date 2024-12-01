@@ -4,10 +4,13 @@ This file contains auxiliary functions of general purpose
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 from __future__ import print_function
+import sympy
+
 import numpy as np
 import scipy.sparse as sps
+
 from itertools import chain
-from typing import Iterable, Union, List, Tuple, Dict
+from typing import Any, Dict, Iterable, List, Tuple, Union
 from sys import stderr
 from operator import itemgetter
 from collections import deque
@@ -23,6 +26,7 @@ def flatten(nested):
         while isinstance(nested[0], Iterable):
             nested = list(chain.from_iterable(nested))
         return nested
+
 
 def format_permutations(array: Union[
     np.ndarray,
@@ -48,6 +52,7 @@ def format_permutations(array: Union[
     """
     source_permutation = np.asarray(array) + 1
     return np.pad(source_permutation, ((0, 0), (1, 0)))
+
 
 def clean_coefficients(cert: Dict[str, float],
                        chop_tol: float = 1e-10,
@@ -88,8 +93,10 @@ def clean_coefficients(cert: Dict[str, float],
     coeffs = np.round(coeffs, decimals=round_decimals)
     return dict(zip(cert.keys(), coeffs.flat))
 
+
 def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
+
 
 def partsextractor(thing_to_take_parts_of, indices) -> Tuple[int,...]:
     if hasattr(indices, '__iter__'):
@@ -261,3 +268,29 @@ def all_and_maximal_cliques_native(adjmat: np.ndarray,
                 new_cnbrs = list(filter(nbrs[u].__contains__, cnbrs[i+1:]))
                 queue.append((new_base, new_cnbrs))
     return all_cliques, maximal_cliques
+
+
+def make_numerical(symbolic_expressions: Dict[Any, sympy.core.expr.Expr],
+                   symbols_to_values: Dict[sympy.core.symbol.Symbol, float]
+                   ) -> Dict[Any, float]:
+    """Replace the symbols in the values of a dictionary by the corresponding
+    numerical values.
+    Parameters
+    ----------
+    symbolic_expressions : Dict[Any, sympy.core.expr.Expr]
+        Dictionary where the values are symbolic expressions of some variables.
+    symbols_to_values : Dict[sympy.core.symbol.Symbol, float]
+        Correspondence of the variables in the expressions and their associated
+        numerical values.
+    Returns
+    -------
+    Dict[Any, float]
+        The dictionary with same keys and evaluated expressions as values.
+    """
+    numeric_values = dict()
+    for k, v in symbolic_expressions.items():
+        try:
+            numeric_values[k] = float(v.evalf(subs=symbols_to_values))
+        except AttributeError:
+            numeric_values[k] = float(v)
+    return numeric_values
