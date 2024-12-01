@@ -153,42 +153,6 @@ def calculate_momentmatrix_1d_internal(cols: List,
     return momentmatrix, canonical_mon_to_idx
 
 
-def to_symbol(mon: np.ndarray,
-              names: Union[np.ndarray, List[str]],
-              commutative=False) -> sympy.core.symbol.Symbol:
-    """Convert a monomial to a SymPy expression.
-
-    Parameters
-    ----------
-    mon : numpy.ndarray
-        Monomial written as a 2D array.
-    names : numpy.ndarray
-        The names of the parties in the monomial.
-    commutative : bool, optional
-        If the operators in the monomial are commutative. By default
-        ``False``.
-
-    Returns
-    -------
-    sp.core.symbol.Symbol
-        The monomial as a SymPy expression.
-
-    Examples
-    --------
-    >>> to_symbol(np.array([[1, 1, 0, 1], [2, 1, 1, 2]]), ["A", "B"])
-    A_1_0_1*B_1_1_2
-    """
-    if isinstance(mon, np.ndarray):
-        if mon.shape[0] == 0:
-            return sympy.S.One
-        res = sympy.S.One
-        for mon in mon:
-            name = '_'.join([names[mon[0] - 1]] +
-                            [str(i) for i in mon.tolist()][1:])
-            res *= sympy.Symbol(name, commutative=commutative)
-        return res
-
-
 ###############################################################################
 # FUNCTIONS FOR INFLATIONS                                                    #
 ###############################################################################

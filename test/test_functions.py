@@ -6,7 +6,6 @@ import numpy as np
 from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP, InflationLP
-from inflation.sdp.quantum_tools import to_symbol
 from itertools import product, permutations
 
 
@@ -103,15 +102,6 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
                          f"{sdp._sanitise_moment(mon)} instead of {truth}.")
-
-    def test_to_symbol(self):
-        truth = (Symbol("A_1_0_0", commutative=False)
-                 * Symbol("B_1_1_0", commutative=False))
-
-        self.assertEqual(to_symbol(np.array([[1, 1, 0, 0], [2, 1, 1, 0]]),
-                                   ["A", "B"]),
-                         truth,
-                         "to_symbol is not working as expected.")
 
 
 class TestExtraConstraints(unittest.TestCase):
