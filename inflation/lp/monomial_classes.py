@@ -60,12 +60,9 @@ class InternalAtomicMonomial(object):
         """
         self.context = inflation_lp_instance
         if as_1d_vec.dtype == bool:
-            # self.as_bool_vec = as_1d_vec
             self.as_lexmon = np.flatnonzero(as_1d_vec).astype(np.intc)
         else:
             self.as_lexmon = np.asarray(as_1d_vec, np.intc)
-            # self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()
-            # self.as_bool_vec[self.as_lexmon] = True
 
         self.as_2d_array = inflation_lp_instance._lexorder[self.as_lexmon]
         self.n_operators = len(self.as_lexmon)
@@ -199,7 +196,6 @@ class InternalAtomicMonomial(object):
 
     @property
     def _signature(self):
-        # return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!
         return (self.n_operators, tuple(self.as_lexmon))
 
     def compute_marginal(self, prob_array: np.ndarray) -> float:
@@ -402,8 +398,6 @@ class CompoundMoment(object):
                 known_value *= (known_monomials[factor] ** power)
             except KeyError:
                 unknown_counter[factor] = power
-        # unknown_factors = sorted(unknown_counter.elements(),
-        #                          key=lambda factor: factor.as_int_vec.tobytes())
         unknown_factors = list(unknown_counter.elements())
         if (len(unknown_factors) == 0):
             known_status = "Known"

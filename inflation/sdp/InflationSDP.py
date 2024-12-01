@@ -118,10 +118,8 @@ class InflationSDP:
         self._is_knowable_q_non_networks = \
             inflationproblem._is_knowable_q_non_networks
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
-        # self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
         self.factorize_moment_1d = inflationproblem.factorize_monomial_1d
 
-        # self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = inflationproblem._nr_properties
         self.np_dtype = inflationproblem._np_dtype
         self._astuples_dtype = inflationproblem._astuples_dtype
@@ -134,7 +132,6 @@ class InflationSDP:
                                                  inflationproblem._lexorder)
                                                 )
         self._nr_operators = inflationproblem._nr_operators + 1
-        # self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
         self.blank_bool_array = np.zeros((1, self._nr_operators), dtype=bool)
         self._lexeye = np.eye(self._nr_operators, dtype=bool)
         all_ortho_groups_as_boolarrays = []
@@ -181,7 +178,7 @@ class InflationSDP:
 
         # Translating the compatibility matrix of InflationProblem to
         # a commutativity matrix for InflationSDP.
-        # # InflationProblem has more operators in ._lexorder than InflationSDP
+        # InflationProblem has more operators in ._lexorder than InflationSDP
         # This is because events with the last outcome are included in
         # InflationProblem. We carefully avoid this by using .mon_to_lexrepr
         # of InflationProblem on the operators in InflationSDP._lexorder
@@ -653,7 +650,8 @@ class InflationSDP:
 
         Parameters
         ----------
-        values : Union[None, Dict[Union[CompoundMomentSDP, InternalAtomicMonomialSDP, sympy.core.symbol.Symbol, str], float]]
+        values : Union[None, Dict[Union[CompoundMomentSDP, InternalAtomicMonomialSDP,
+                       sympy.core.symbol.Symbol, str], float]]
             The description of the variables to be assigned numerical values
             and the corresponding values. The keys can be either of the
             Monomial class, symbols or strings (which should be the name of
@@ -1822,7 +1820,6 @@ class InflationSDP:
             A list of normalization equalities between columns of the moment
         matrix.
         """
-        # skip_party = [not i for i in self.has_children]
 
         # This will help us identify relevant operators with the last outcome
         last_outcome_boolmask = np.array(
@@ -2317,4 +2314,3 @@ class InflationSDP:
         template = np.empty(len(mon), dtype=object)
         template[:] = np.asarray(mon, self.np_dtype).ravel().view(self._astuples_dtype)
         return np.array(partsextractor(self.op_to_lexrepr_dict, template), dtype=np.intc)
-        # return nb_mon_to_lexrepr(mon, self._lexorder)

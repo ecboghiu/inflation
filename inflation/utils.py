@@ -147,11 +147,6 @@ def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_array:
     nof_blocks = len(non_empty)
     if nof_blocks > 1:
         if all(isinstance(block, sps.coo_array) for block in blocks):
-            # mat_row = blocks[0].row
-            # (row_count, _) = blocks[0].shape
-            # for block in blocks[1:]:
-            #     mat_row = np.concatenate((mat_row,
-            #                               block.row + row_count))
             nof_rows = 0
             nof_cols = 0
             adjusted_rows = []
