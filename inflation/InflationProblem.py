@@ -14,7 +14,6 @@ from itertools import (chain,
 from typing import Tuple, List, Union, Dict
 from warnings import warn
 
-import networkx as nx
 import numpy as np
 import sympy
 from tqdm import tqdm
