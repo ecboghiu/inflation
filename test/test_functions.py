@@ -6,6 +6,7 @@ import numpy as np
 from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP, InflationLP
+from inflation.utils import all_and_maximal_cliques, all_and_maximal_cliques_native
 from itertools import product, permutations
 
 
@@ -352,7 +353,87 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
         mons = sdp.build_columns("physical12")
         self.assertEqual(len(mons), 20,
                          ("Wrong number of physical monomials generated " +
-                         "with maximum 1 operator of 'A' and 2 of 'B' "))
+                         "with maximum 1 operator of 'A' and 2 of 'B'"))
         mons = sdp.build_columns("physical21")
         self.assertEqual(len(mons), 27,
-                         "with maximum 2 operators for 'A' and 1 of 'B' ")
+                         ("Wrong number of physical monomials generated " +
+                          "with maximum 2 operators for 'A' and 1 of 'B'"))
+
+class TestEnumerateAllCliques(unittest.TestCase):
+    # This test is adapted from
+    # https://github.com/networkx/networkx/blob/main/networkx/algorithms/tests/test_clique.py
+    def test_paper_figure_4(self):
+        # Same graph as given in Fig. 4 of paper enumerate_all_cliques is
+        # based on.
+        # http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1559964&isnumber=33129
+        adjacency_mat = np.array([[0, 1, 1, 1, 1, 0, 0],
+                                  [1, 0, 1, 1, 1, 1, 0],
+                                  [1, 1, 0, 1, 1, 1, 1],
+                                  [1, 1, 1, 0, 1, 0, 1],
+                                  [1, 1, 1, 1, 0, 0, 1],
+                                  [0, 1, 1, 0, 0, 0, 1],
+                                  [0, 0, 1, 1, 1, 1, 0]])
+
+        all_cliques, maximal_cliques = all_and_maximal_cliques_native(adjacency_mat)
+
+        expected_cliques = [
+            [0],
+            [1],
+            [2],
+            [3],
+            [4],
+            [5],
+            [6],
+            [0, 1],
+            [0, 1, 3],
+            [0, 1, 3, 4],
+            [0, 1, 4],
+            [0, 2],
+            [0, 2, 3],
+            [0, 2, 3, 4],
+            [0, 2, 4],
+            [0, 3],
+            [0, 3, 4],
+            [0, 4],
+            [1, 2],
+            [1, 2, 3],
+            [1, 2, 3, 4],
+            [1, 2, 4],
+            [1, 2, 5],
+            [1, 3],
+            [1, 3, 4],
+            [1, 4],
+            [1, 5],
+            [2, 3],
+            [2, 3, 4],
+            [2, 3, 4, 6],
+            [2, 3, 6],
+            [2, 4],
+            [2, 4, 6],
+            [2, 5],
+            [2, 5, 6],
+            [2, 6],
+            [3, 4],
+            [3, 4, 6],
+            [3, 6],
+            [4, 6],
+            [5, 6],
+            [0, 1, 2],
+            [0, 1, 2, 3],
+            [0, 1, 2, 3, 4],
+            [0, 1, 2, 4],
+        ]
+
+        expected_maximal_cliques = [
+            [1, 2, 5],
+            [2, 5, 6],
+            [2, 3, 4, 6],
+            [0, 1, 2, 3, 4]
+        ]
+
+        self.assertEqual(sorted(map(sorted, all_cliques[1:])),
+                         sorted(map(sorted, expected_cliques)),
+                         "The list of cliques is not correct")
+        self.assertEqual(sorted(map(sorted, maximal_cliques)),
+                         sorted(map(sorted, expected_maximal_cliques)),
+                         "The list of maximal cliques is not correct")
