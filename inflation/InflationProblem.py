@@ -507,19 +507,6 @@ class InflationProblem:
         return np.asarray(array2d, dtype=self._np_dtype).tobytes()
 
     @cached_property
-    def _lexrepr_to_dicts(self):
-        """Map 1D array lexorder encoding of a monomial, to a dict representation.
-
-        Returns
-        -------
-        list
-            List of the same length as lexorder, where the i-th element is the
-            dictionary representation of the i-th operator in the lexorder.
-        """
-        return [self._interpret_operator(op) for op in self._lexorder]
-
-
-    @cached_property
     def _any_inflation(self) -> bool:
         return np.any(self.inflation_level_per_source > 1)
 
