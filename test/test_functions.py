@@ -6,7 +6,7 @@ import numpy as np
 from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP, InflationLP
-from inflation.utils import all_and_maximal_cliques, all_and_maximal_cliques_native
+from inflation.utils import all_and_maximal_cliques
 from itertools import product, permutations
 
 
@@ -374,7 +374,7 @@ class TestEnumerateAllCliques(unittest.TestCase):
                                   [0, 1, 1, 0, 0, 0, 1],
                                   [0, 0, 1, 1, 1, 1, 0]])
 
-        all_cliques, maximal_cliques = all_and_maximal_cliques_native(adjacency_mat)
+        all_cliques, maximal_cliques = all_and_maximal_cliques(adjacency_mat)
 
         expected_cliques = [
             [0],
