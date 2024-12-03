@@ -6,7 +6,7 @@ import numpy as np
 from sympy import Symbol
 
 from inflation import InflationProblem, InflationSDP, InflationLP
-from inflation.sdp.quantum_tools import to_symbol
+from inflation.utils import all_and_maximal_cliques
 from itertools import product, permutations
 
 
@@ -103,15 +103,6 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(sdp._sanitise_moment(mon), truth,
                          f"Sanitization of {mon} is giving " +
                          f"{sdp._sanitise_moment(mon)} instead of {truth}.")
-
-    def test_to_symbol(self):
-        truth = (Symbol("A_1_0_0", commutative=False)
-                 * Symbol("B_1_1_0", commutative=False))
-
-        self.assertEqual(to_symbol(np.array([[1, 1, 0, 0], [2, 1, 1, 0]]),
-                                   ["A", "B"]),
-                         truth,
-                         "to_symbol is not working as expected.")
 
 
 class TestExtraConstraints(unittest.TestCase):
@@ -279,6 +270,8 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
         # Test for 1 party, no copies, nofanout
         scenario = InflationProblem({'r': ['A']}, (3,), (3,), (1,))
         lp = InflationLP(scenario)
+        scenario = InflationProblem({'r': ['A']}, (3,), (3,), (1, ))
+        lp = InflationLP(scenario)
 
         bool2lexorder = np.arange(lp._lexorder.shape[0])
         set_predicted = {tuple(bool2lexorder[e]) 
@@ -289,11 +282,13 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                                   for c in set_correct for e in c])
         self.assertTrue(set_correct == set_predicted,
             "The physical monomials sets are not equal " + 
-            "in 1 party nonfanout LP.")
+            "in 1-party nonfanout LP.")
 
     def test_physical_mon_gen_1party_3_copies(self):
         # Test for 1 party, 3 copies, nofanout
         scenario = InflationProblem({'r': ['A']}, (3,), (3,), (3,))
+        lp = InflationLP(scenario)
+        scenario = InflationProblem({'r': ['A']}, (3,), (3,), (3, ))
         lp = InflationLP(scenario)
 
         bool2lexorder = np.arange(lp._lexorder.shape[0])
@@ -305,26 +300,23 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                                   for c in set_correct for e in c])
         self.assertTrue(set_correct == set_predicted, 
                        "The physical monomials sets are not equal " +
-                       "in 1 party nonfanout LP.")
-        
+                       "in 1-party nonfanout LP.")
+
     def test_physical_mon_gen_1party_2_nc_sources(self):
         scenario = InflationProblem({'s': ['A'], 't': ['A']},
                                     (3,), (3,), (3, 2))
-        lp = InflationLP(scenario)
-        physical_monomials = scenario._generate_compatible_monomials_given_party(0)
-
-        bool2lexorder = np.arange(lp._lexorder.shape[0])
-        set_predicted = {tuple(bool2lexorder[e]) 
-                         for e in physical_monomials}
-        set_correct = [self._old_party_physical_monomials(lp, 0, i)
-                       for i in range(1, min(lp.inflation_levels) + 1)]
-        set_correct = set([()] + [tuple(lp.mon_to_lexrepr(e)) 
+        sdp = InflationSDP(scenario)
+        predicted = sdp.build_columns(f"physical{min(sdp.inflation_levels)}")
+        set_predicted = set([tuple(arr) for arr in predicted])
+        set_correct = [self._old_party_physical_monomials(sdp, 0, i)
+                       for i in range(1, min(sdp.inflation_levels) + 1)]
+        set_correct = set([()] + [tuple(sdp.mon_to_lexrepr(e)) 
                                   for c in set_correct for e in c])
         self.assertTrue(set_correct == set_predicted, 
-                       "The physical monomials sets are not equal " +
-                       "in 1 party nonfanout LP.")
+                        "The physical monomials sets are not equal " +
+                        "in 1-party nonfanout LP.")
         
-        self.assertEqual(253, len(physical_monomials),
+        self.assertEqual(253, len(predicted),
                         "Wrong number of physical monomials generated.")
         
     def test_physical_mon_gen_1party_2_hybrid_sources(self):
@@ -332,7 +324,8 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
                                     (3,), (2,), 
                                     (3, 2),
                                     classical_sources=['t'])
-        physical_monomials = scenario._generate_compatible_monomials_given_party(0)
+        sdp = InflationSDP(scenario)
+        physical_monomials = sdp.build_columns(f"physical3")
         self.assertEqual(729, len(physical_monomials),
                         "Wrong number of physical monomials generated.")
         for boolmon in physical_monomials:
@@ -340,10 +333,10 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
             _dim = _s_.size
             if _dim > 0:
                 self.assertTrue(np.allclose(
-                    scenario._compatible_measurements[np.ix_(_s_, _s_)],
-                    np.ones((_dim,)*2)-np.eye(_dim)),
+                    scenario._compatible_template_measurements[np.ix_(_s_, _s_)],
+                    1 - (np.ones((_dim,)*2)-np.eye(_dim))),
                     "Measurements that are supposed to be compatible are not.")
-                
+
     def test_physical_mon_gen_beyond_networks(self):
         scenario = InflationProblem({'lam': ['A', 'B'], 'A': ['B']},
                                     (2, 2), (2, 1), 
@@ -360,7 +353,87 @@ class TestPhysicalMonomialGeneration(unittest.TestCase):
         mons = sdp.build_columns("physical12")
         self.assertEqual(len(mons), 20,
                          ("Wrong number of physical monomials generated " +
-                         "with maximum 1 operator of 'A' and 2 of 'B' "))
+                         "with maximum 1 operator of 'A' and 2 of 'B'"))
         mons = sdp.build_columns("physical21")
         self.assertEqual(len(mons), 27,
-                         "with maximum 2 operators for 'A' and 1 of 'B' ")
+                         ("Wrong number of physical monomials generated " +
+                          "with maximum 2 operators for 'A' and 1 of 'B'"))
+
+class TestEnumerateAllCliques(unittest.TestCase):
+    # This test is adapted from
+    # https://github.com/networkx/networkx/blob/main/networkx/algorithms/tests/test_clique.py
+    def test_paper_figure_4(self):
+        # Same graph as given in Fig. 4 of paper enumerate_all_cliques is
+        # based on.
+        # http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1559964&isnumber=33129
+        adjacency_mat = np.array([[0, 1, 1, 1, 1, 0, 0],
+                                  [1, 0, 1, 1, 1, 1, 0],
+                                  [1, 1, 0, 1, 1, 1, 1],
+                                  [1, 1, 1, 0, 1, 0, 1],
+                                  [1, 1, 1, 1, 0, 0, 1],
+                                  [0, 1, 1, 0, 0, 0, 1],
+                                  [0, 0, 1, 1, 1, 1, 0]])
+
+        all_cliques, maximal_cliques = all_and_maximal_cliques(adjacency_mat)
+
+        expected_cliques = [
+            [0],
+            [1],
+            [2],
+            [3],
+            [4],
+            [5],
+            [6],
+            [0, 1],
+            [0, 1, 3],
+            [0, 1, 3, 4],
+            [0, 1, 4],
+            [0, 2],
+            [0, 2, 3],
+            [0, 2, 3, 4],
+            [0, 2, 4],
+            [0, 3],
+            [0, 3, 4],
+            [0, 4],
+            [1, 2],
+            [1, 2, 3],
+            [1, 2, 3, 4],
+            [1, 2, 4],
+            [1, 2, 5],
+            [1, 3],
+            [1, 3, 4],
+            [1, 4],
+            [1, 5],
+            [2, 3],
+            [2, 3, 4],
+            [2, 3, 4, 6],
+            [2, 3, 6],
+            [2, 4],
+            [2, 4, 6],
+            [2, 5],
+            [2, 5, 6],
+            [2, 6],
+            [3, 4],
+            [3, 4, 6],
+            [3, 6],
+            [4, 6],
+            [5, 6],
+            [0, 1, 2],
+            [0, 1, 2, 3],
+            [0, 1, 2, 3, 4],
+            [0, 1, 2, 4],
+        ]
+
+        expected_maximal_cliques = [
+            [1, 2, 5],
+            [2, 5, 6],
+            [2, 3, 4, 6],
+            [0, 1, 2, 3, 4]
+        ]
+
+        self.assertEqual(sorted(map(sorted, all_cliques[1:])),
+                         sorted(map(sorted, expected_cliques)),
+                         "The list of cliques is not correct")
+        self.assertEqual(sorted(map(sorted, maximal_cliques)),
+                         sorted(map(sorted, expected_maximal_cliques)),
+                         "The list of maximal cliques is not correct")

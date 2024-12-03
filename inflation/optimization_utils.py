@@ -17,7 +17,7 @@ from typing import Dict, Tuple, Union
 from functools import lru_cache
 
 from . import InflationLP, InflationSDP
-from .sdp.quantum_tools import make_numerical
+from .utils import make_numerical
 from .sdp.monomial_classes import CompoundMomentSDP
 
 

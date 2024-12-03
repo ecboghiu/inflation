@@ -8,6 +8,7 @@ from collections import Counter, deque, defaultdict
 from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
+from operator import neg as op_neg
 from numbers import Real
 from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
@@ -92,6 +93,7 @@ class InflationSDP:
             # HACK to fix detection of incompatible supports. 
             # (Can be fixed upon adding set_extra_equalities)
             self.has_children[:] = True
+        self.does_not_have_children = np.logical_not(self.has_children)
 
 
         self.outcome_cardinalities += self.has_children
@@ -116,10 +118,8 @@ class InflationSDP:
         self._is_knowable_q_non_networks = \
             inflationproblem._is_knowable_q_non_networks
         self.rectify_fake_setting = inflationproblem.rectify_fake_setting
-        # self.factorize_monomial_2d = inflationproblem.factorize_monomial_2d
         self.factorize_moment_1d = inflationproblem.factorize_monomial_1d
 
-        # self._nr_operators = len(flatten(self.measurements))
         self._nr_properties = inflationproblem._nr_properties
         self.np_dtype = inflationproblem._np_dtype
         self._astuples_dtype = inflationproblem._astuples_dtype
@@ -132,7 +132,21 @@ class InflationSDP:
                                                  inflationproblem._lexorder)
                                                 )
         self._nr_operators = inflationproblem._nr_operators + 1
-        self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
+        self.blank_bool_array = np.zeros((1, self._nr_operators), dtype=bool)
+        self._lexeye = np.eye(self._nr_operators, dtype=bool)
+        all_ortho_groups_as_boolarrays = []
+        for ortho_groups in inflationproblem._ortho_idxs_per_party:
+            ortho_groups_as_boolarrays = []
+            for ortho_group in ortho_groups:
+                ortho_groups_as_boolarrays.append(self._lexeye[ortho_group])
+            all_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
+        self._CG_limited_ortho_groups_as_boolarrays = []
+        for i, ortho_groups_as_boolarrays in enumerate(all_ortho_groups_as_boolarrays):
+            if self.does_not_have_children[i]:
+                for ortho_group_as_boolarray in ortho_groups_as_boolarrays:
+                    self._CG_limited_ortho_groups_as_boolarrays.append(ortho_group_as_boolarray[:-1])
+            else:
+                self._CG_limited_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
         self._lexorder = self._default_lexorder.copy()
         self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
@@ -164,7 +178,7 @@ class InflationSDP:
 
         # Translating the compatibility matrix of InflationProblem to
         # a commutativity matrix for InflationSDP.
-        # # InflationProblem has more operators in ._lexorder than InflationSDP
+        # InflationProblem has more operators in ._lexorder than InflationSDP
         # This is because events with the last outcome are included in
         # InflationProblem. We carefully avoid this by using .mon_to_lexrepr
         # of InflationProblem on the operators in InflationSDP._lexorder
@@ -482,12 +496,12 @@ class InflationSDP:
                                    for ineq in extra_inequalities]
 
     @property
-    def moment_equalities(self) -> list[dict]:
+    def moment_equalities(self) -> List[Dict]:
         """All equalities (minimal and extra) as one list of dictionaries."""
         return self.minimal_equalities + self.extra_equalities
 
     @property
-    def moment_inequalities(self) -> list[dict]:
+    def moment_inequalities(self) -> List[Dict]:
         """All inequalities (minimal and extra) as one list of dictionaries."""
         return self.minimal_inequalities + self.extra_inequalities
 
@@ -684,7 +698,8 @@ class InflationSDP:
 
         Parameters
         ----------
-        values : Union[None, Dict[Union[CompoundMomentSDP, InternalAtomicMonomialSDP, sympy.core.symbol.Symbol, str], float]]
+        values : Union[None, Dict[Union[CompoundMomentSDP, InternalAtomicMonomialSDP,
+                       sympy.core.symbol.Symbol, str], float]]
             The description of the variables to be assigned numerical values
             and the corresponding values. The keys can be either of the
             Monomial class, symbols or strings (which should be the name of
@@ -1237,22 +1252,32 @@ class InflationSDP:
                         col_specs += [operators]
                     columns = self._build_cols_from_specs(col_specs)
                 else:
-                    physmon_per_party \
-                        = [self.InflationProblem._generate_compatible_monomials_given_party(
-                            party, 
-                            up_to_length=length,
-                            with_last_outcome=self.has_children[party]
-                            )
-                            for length, party in zip(lengths,
-                                                     range(self.nr_parties))
-                            ]
-                    physical_monomials_as_boolvecs = \
-                        reduce(nb_outer_bitwise_or, reversed(physmon_per_party))
+                    def template_to_event_boolarray(template: List[int],
+                                                    decompressor: List[np.ndarray]) -> np.ndarray:
+                        if template:
+                            to_expand = partsextractor(decompressor, sorted(template, key=op_neg))
+                            return reduce(nb_outer_bitwise_or, to_expand)
+                        else:
+                            return self.blank_bool_array
+                    lex_idx_to_party = self.InflationProblem.party_from_templateidx
+                    def template_is_short_enough(template: List[int]) -> bool:
+                        parties_in_template = Counter(lex_idx_to_party[template])
+                        for p, cap in enumerate(lengths):
+                            if not cap == None:
+                                if parties_in_template[p+1] > cap:
+                                    return False
+                        return True
+                    relevant_physical_templates = list(filter(template_is_short_enough,
+                                                              self.InflationProblem.all_and_maximal_compatible_templates(
+                                                                  max_n=max_monomial_length,
+                                                                  isolate_maximal=False)[0]))
+                    physical_monomials_as_boolvecs = np.vstack([
+                        template_to_event_boolarray(subclique, self._CG_limited_ortho_groups_as_boolarrays)
+                        for subclique in relevant_physical_templates
+                    ])
                     columns = sorted(
                         (np.flatnonzero(boolvec).astype(np.intc) + 1 
-                        for boolvec in physical_monomials_as_boolvecs
-                        if max_monomial_length == 0 or \
-                            (boolvec.sum() <= max_monomial_length)),
+                        for boolvec in physical_monomials_as_boolvecs),
                                     key=lambda x: (len(x), tuple(x)))
             else:
                 raise Exception("I have not understood the format of the "
@@ -1843,7 +1868,6 @@ class InflationSDP:
             A list of normalization equalities between columns of the moment
         matrix.
         """
-        # skip_party = [not i for i in self.has_children]
 
         # This will help us identify relevant operators with the last outcome
         first_outcome_boolmask = np.array(
@@ -2339,4 +2363,3 @@ class InflationSDP:
         template = np.empty(len(mon), dtype=object)
         template[:] = np.asarray(mon, self.np_dtype).ravel().view(self._astuples_dtype)
         return np.array(partsextractor(self.op_to_lexrepr_dict, template), dtype=np.intc)
-        # return nb_mon_to_lexrepr(mon, self._lexorder)

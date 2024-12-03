@@ -1,0 +1,71 @@
+# This workflow will install Python dependencies and run tests
+
+name: test
+
+on:
+  push:
+    branches: [ ]    # Run tests on pushes to any branch
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
+        pip install mosek numba numpy scipy sympy tqdm
+#     - name: Set up MOSEK license
+#       env:
+#         MOSEK_LICENSE_KEY: ${{ secrets.MOSEK_LICENSE_KEY }}
+#       run: |
+#         mkdir -p $HOME/mosek
+#         echo "$MOSEK_LICENSE_KEY" > $HOME/mosek/mosek.lic
+    - name: Test with pytest
+      run: |
+        pytest -v \
+        --ignore=test/test_writers.py \
+        --ignore=test/test_optimize.py \
+        --deselect=test/test_solvers.py::TestSDP::test_LP_with_SDP \
+        --deselect=test/test_solvers.py::TestSDP::test_SDP \
+        --deselect=test/test_solvers.py::TestSDP::test_SDP_equalities \
+        --deselect=test/test_solvers.py::TestSDP::test_SDP_inequalities \
+        --deselect=test/test_solvers.py::TestLP::test_LP_free_bounds \
+        --deselect=test/test_solvers.py::TestLP::test_LP_non_negative_bounds \
+        --deselect=test/test_solvers.py::TestLP::test_LP_lower_bounds_of_zero \
+        --deselect=test/test_solvers.py::TestLP::test_LP_free_bounds_of_zero_and_non_negative \
+        --deselect=test/test_solvers.py::TestLP::test_LP_negative_lower_bounds \
+        --deselect=test/test_solvers.py::TestLP::test_LP_negative_lower_bounds_and_non_negative \
+        --deselect=test/test_solvers.py::TestSolverProcesses::test_semiknown_constraints \
+        --deselect=test/test_solvers.py::TestSolverProcesses::test_partially_known_objective \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_bounds \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_CHSH \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_GHZ_commuting \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_GHZ_NC \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_instrumental \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_lpi \
+        --deselect=test/test_pipeline.py::TestSDPOutput::test_supports \
+        --deselect=test/test_pipeline.py::TestLPOutput::test_bounds \
+        --deselect=test/test_pipeline.py::TestLPOutput::test_instrumental \
+        --deselect=test/test_pipeline.py::TestLPOutput::test_supports \
+        --deselect=test/test_pipeline.py::TestInstrumental::test_instrumental_fanout \
+        --deselect=test/test_pipeline.py::TestInstrumental::test_instrumental_nonfanout \
+        --deselect=test/test_pipeline.py::TestBell::test_bell_fanout \
+        --deselect=test/test_pipeline.py::TestBell::test_bell_nonfanout \
+        --deselect=test/test_pipeline.py::TestTriangle::test_triangle_fanout \
+        --deselect=test/test_pipeline.py::TestTriangle::test_triangle_nonfanout \
+        --deselect=test/test_pipeline.py::TestEvans::test_evans_fanout \
+        --deselect=test/test_pipeline.py::TestEvans::test_evans_nonfanout \
+        --deselect=test/test_pipeline.py::TestFullNN::test_fullnetworknonlocality_3partite_line

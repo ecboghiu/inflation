@@ -901,8 +901,6 @@ class TestPipelineLP(unittest.TestCase):
                              "distribution.")
         with self.subTest(msg=f"Testing {dist_name}, compatible distribution, "
                               "feasibility as optimization"):
-            # self.skipTest("Feasibility as optimization not working for "
-            #               "compatible distributions?")
             lp.solve(feas_as_optim=True)
             self.assertTrue(lp.primal_objective >= -1e-6,
                             "The LP with feasibility as optimization did not "
@@ -981,7 +979,6 @@ class TestBell(TestPipelineLP):
             self.assertAlmostEqual(lp.objective_value, truth,
                                    msg=f"The LP is not recovering max(CHSH) = "
                                        f"{truth}.")
-        # Biased CHSH?
 
     def p_Signalling_to_Bob(self, v):
         dist = np.full((2, 2, 2, 2), (1 - v) / 4)
@@ -998,7 +995,6 @@ class TestBell(TestPipelineLP):
                 "dist_name": "Noisy Signalling to Bob",
                 "crit_cutoff": 0.2}
         self._run(**args)
-        # self._CHSH(**args)
 
     def test_bell_nonfanout(self):
         bell = InflationLP(self.bellScenario)
@@ -1010,7 +1006,6 @@ class TestBell(TestPipelineLP):
                 "dist_name": "Noisy Signalling to Bob",
                 "crit_cutoff": 0.2}
         self._run(**args)
-        # self._CHSH(**args)
 
 
 class TestTriangle(TestPipelineLP):
