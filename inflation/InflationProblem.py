@@ -1031,6 +1031,9 @@ class InflationProblem:
         sym_generators_lexorder = [identity_perm_lexorder]
 
         for p in range(self.nr_parties):
+            # We do not attempt outcome relabelling on parties with children and parents!
+            if self.has_children[p] and (self.settings_per_party[p] > 1):
+                break
             for x in range(self.private_settings_per_party[p]):
                 for i, perm in enumerate(permutations(range(self.outcomes_per_party[p]))):
                     if i == 0:
@@ -1038,14 +1041,13 @@ class InflationProblem:
                     new_interpretations = [op_as_dict.copy() for op_as_dict in self._lexrepr_to_dicts]
                     lexorder_perm = []
                     for op_as_dict in new_interpretations:
-                        adjusted_p = p+1
-                        if adjusted_p in op_as_dict["Parents in-play as Integers"]:
+                        if p in op_as_dict["Parents in-play as Integers"]:
                             to_adjust = list(op_as_dict["Setting as Tuple"])
-                            old_value = to_adjust[adjusted_p]
+                            old_value = to_adjust[p+1]
                             new_value = perm[old_value]
-                            to_adjust[adjusted_p] = new_value
+                            to_adjust[p+1] = new_value
                             op_as_dict["Setting as Tuple"] = tuple(to_adjust)
-                        if op_as_dict["Party as Integer"] == p:
+                        if (op_as_dict["Party as Integer"] == p) and (op_as_dict["Private Setting"] == x):
                             old_value = op_as_dict["Outcome"]
                             op_as_dict["Outcome"] = perm[old_value]
                         lexorder_perm.append(self._lexorder_hashable_interpretation_decoder[self._make_interpretation_hashable(op_as_dict)])
