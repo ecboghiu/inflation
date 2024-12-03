@@ -1040,11 +1040,11 @@ class InflationProblem:
                     for op_as_dict in new_interpretations:
                         adjusted_p = p+1
                         if adjusted_p in op_as_dict["Parents in-play as Integers"]:
-                            to_adjust = list(op_as_dict["Settings as Tuple"])
+                            to_adjust = list(op_as_dict["Setting as Tuple"])
                             old_value = to_adjust[adjusted_p]
                             new_value = perm[old_value]
                             to_adjust[adjusted_p] = new_value
-                            op_as_dict["Settings as Tuple"] = tuple(to_adjust)
+                            op_as_dict["Setting as Tuple"] = tuple(to_adjust)
                         if op_as_dict["Party as Integer"] == p:
                             old_value = op_as_dict["Outcome"]
                             op_as_dict["Outcome"] = perm[old_value]
@@ -1071,11 +1071,11 @@ class InflationProblem:
                 lexorder_perm = []
                 for op_as_dict in new_interpretations:
                     if op_as_dict["Party as Integer"] == p:
-                        to_adjust = list(op_as_dict["Settings as Tuple"])
+                        to_adjust = list(op_as_dict["Setting as Tuple"])
                         old_value = to_adjust[0]
                         new_value = perm[old_value]
                         to_adjust[0] = new_value
-                        op_as_dict["Settings as Tuple"] = tuple(to_adjust)
+                        op_as_dict["Setting as Tuple"] = tuple(to_adjust)
                     lexorder_perm.append(
                         self._lexorder_hashable_interpretation_decoder[
                             self._make_interpretation_hashable(op_as_dict)])
