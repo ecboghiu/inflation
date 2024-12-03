@@ -159,14 +159,14 @@ class InflationLP(object):
         # them to inequalities when the LHS is non_CG but childless-only.
         if np.any(self.does_not_have_children):
             bad_boolvecs_for_ineqs = [bool_array[-1] for bool_array in self._CG_adjusting_ortho_groups_as_boolarrays]
-            self._boolvec_for_CG_ineqs = np.bitwise_or.reduce(bad_boolvecs_for_ineqs, axis=0)
+            self._boolvec_for_not_being_in_CG_notation = np.bitwise_or.reduce(bad_boolvecs_for_ineqs, axis=0)
         else:
-            self._boolvec_for_CG_ineqs = self.blank_bool_vec
+            self._boolvec_for_not_being_in_CG_notation = self.blank_bool_vec
         if np.any(self.has_children):
             bad_boolvecs_for_eqs = [bool_array[-1] for bool_array in self._CG_nonadjusting_ortho_groups_as_boolarrays]
-            self._boolvec_for_FR_eqs = np.bitwise_or.reduce(bad_boolvecs_for_eqs, axis=0)
+            self._boolvec_to_trigger_equality_generation = np.bitwise_or.reduce(bad_boolvecs_for_eqs, axis=0)
         else:
-            self._boolvec_for_FR_eqs = self.blank_bool_vec
+            self._boolvec_to_trigger_equality_generation = self.blank_bool_vec
 
         if self.verbose > 1:
             print("Number of single operator measurements per party:", end="")
@@ -1251,7 +1251,7 @@ class InflationLP(object):
         self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
         self.raw_n_columns = len(self._raw_monomials_as_lexboolvecs)
-        self.raw_n_columns_non_CG = len(self._raw_monomials_as_lexboolvecs_non_CG)
+        self.n_maximal_events = len(self._maximal_event_as_lexboolvecs)
 
         self._raw_lookup_dict = {bitvec.tobytes(): i for i, bitvec in
                                  enumerate(self._raw_monomials_as_lexboolvecs)}
@@ -1272,10 +1272,10 @@ class InflationLP(object):
             self.num_CG = len(old_reps_CG)
 
             orbits_non_CG = self._discover_inflation_orbits(
-                self._raw_monomials_as_lexboolvecs_non_CG)
+                self._maximal_event_as_lexboolvecs)
             old_reps_non_CG, unique_indices_non_CG, inverse_non_CG = np.unique(
                 orbits_non_CG, return_index=True, return_inverse=True)
-            self.num_non_CG = len(old_reps_non_CG)
+            self.n_representative_maximal_events = len(old_reps_non_CG)
             if self.verbose > 1:
                 print(f"Orbits discovered! {self.num_CG} unique monomials.")
             # Obtain the real generating monomials after accounting for symmetry
@@ -1283,15 +1283,15 @@ class InflationLP(object):
             self.num_CG = self.raw_n_columns
             unique_indices_CG = np.arange(self.num_CG)
             inverse_CG = unique_indices_CG
-            self.num_non_CG = self.raw_n_columns_non_CG
-            unique_indices_non_CG = np.arange(self.num_non_CG)
+            self.n_representative_maximal_events = self.n_maximal_events
+            unique_indices_non_CG = np.arange(self.n_representative_maximal_events)
         self.inverse = inverse_CG
 
         self._monomials_as_lexboolvecs = self._raw_monomials_as_lexboolvecs[unique_indices_CG]
-        self._monomials_as_lexboolvecs_non_CG = self._raw_monomials_as_lexboolvecs_non_CG[unique_indices_non_CG]
+        self._representative_maximal_events_as_lexboolvecs = self._maximal_event_as_lexboolvecs[unique_indices_non_CG]
         self.n_columns = len(self._monomials_as_lexboolvecs)
 
-        self.nof_collins_gisin_inequalities = self.num_non_CG
+        self.nof_collins_gisin_inequalities = self.n_representative_maximal_events
 
         if self.verbose > 0:
             eprint("Number of variables in the LP:",
@@ -1384,9 +1384,9 @@ class InflationLP(object):
         ])
 
     @cached_property
-    def _raw_monomials_as_lexboolvecs_non_CG(self) -> np.ndarray:
+    def _maximal_event_as_lexboolvecs(self) -> np.ndarray:
         r"""Creates the generating set of monomials (as boolvecs),
-        of ALL lengths, limited to Collins-Gisin notation.
+        of MAXIMAL lengths, NOT limited to Collins-Gisin notation.
         """
         return np.vstack([
             self._template_to_event_boolarray(clique, self._all_ortho_groups_as_boolarrays)
@@ -1399,10 +1399,10 @@ class InflationLP(object):
         notation."""
         eq_row, eq_col, eq_data = [], [], []
         nof_equalities = 0
-        if np.any(self._boolvec_for_FR_eqs):
+        if np.any(self._boolvec_to_trigger_equality_generation):
             alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
                                           for v, r in zip(
-                    np.flatnonzero(self._boolvec_for_FR_eqs).flat,
+                    np.flatnonzero(self._boolvec_to_trigger_equality_generation).flat,
                     self._CG_nonadjusting_ortho_groups_as_boolarrays)}
             alternatives_as_signs = {
                 i: np.count_nonzero(bool_array, axis=1).astype(bool)
@@ -1411,7 +1411,7 @@ class InflationLP(object):
             for bool_vec in tqdm(self._monomials_as_lexboolvecs,
                     disable=not self.verbose,
                     desc="Discovering equalities   "):
-                critical_boolvec_intersection = np.bitwise_and(bool_vec, self._boolvec_for_FR_eqs)
+                critical_boolvec_intersection = np.bitwise_and(bool_vec, self._boolvec_to_trigger_equality_generation)
                 if np.any(critical_boolvec_intersection):
 
                     absent_c_boolvec = bool_vec.copy()
@@ -1472,16 +1472,16 @@ class InflationLP(object):
         nof_inequalities = 0
         alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
                                       for v, r in zip(
-                np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
+                np.flatnonzero(self._boolvec_for_not_being_in_CG_notation).flat,
                 self._CG_adjusting_ortho_groups_as_boolarrays)}
         alternatives_as_signs = {
             i: np.count_nonzero(bool_array, axis=1).astype(bool)
             for i, bool_array in alternatives_as_boolarrays.items()}
-        for bool_vec in tqdm(self._monomials_as_lexboolvecs_non_CG,
+        for bool_vec in tqdm(self._representative_maximal_events_as_lexboolvecs,
                              disable=not self.verbose,
                              desc="Discovering inequalities   "):
             critical_boolvec_intersection = np.bitwise_and(bool_vec,
-                                                           self._boolvec_for_CG_ineqs)
+                                                           self._boolvec_for_not_being_in_CG_notation)
             if critical_boolvec_intersection.any():
                 absent_c_boolvec = bool_vec.copy()
                 absent_c_boolvec[critical_boolvec_intersection] = False
