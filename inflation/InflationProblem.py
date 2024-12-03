@@ -622,11 +622,13 @@ class InflationProblem:
         interpretation["Composite Setting"] = setting_as_single_int
         interpretation["Composite Setting is Trivial"] = (self.settings_per_party[party_int] == 1)
         setting_as_tuple = self.effective_to_parent_settings[party_int][setting_as_single_int]
+        interpretation["Setting as Tuple"] = setting_as_tuple
         private_setting = setting_as_tuple[0]
         interpretation["Private Setting"] = private_setting
         interpretation["Private Setting is Trivial"] = (self.private_settings_per_party[party_int] == 1)
         outcomes_of_parents = setting_as_tuple[1:]
         parents_in_play_as_ints = self.parents_per_party[party_int]
+        interpretation["Parents in-play as Integers"] = parents_in_play_as_ints
         parents_in_play_as_names = partsextractor(self.names, parents_in_play_as_ints)
         non_private_setting_dict = dict(zip(parents_in_play_as_names, outcomes_of_parents))
         interpretation["Do Values"] = non_private_setting_dict
@@ -639,6 +641,13 @@ class InflationProblem:
         )
         interpretation["Relevant Copy Indices"] = interpretation["Copy Indices"][relevant_slots]
         return interpretation
+
+    @staticmethod
+    def _make_interpretation_hashable(op_as_dict):
+        return (int(op_as_dict["Party as Integer"]),
+                tuple(int(i) for i in op_as_dict["Copy Indices"]),
+                tuple(int(i) for i in op_as_dict["Setting as Tuple"]),
+                int(op_as_dict["Outcome"]))
 
     @staticmethod
     def _interpretation_to_name(op: dict, include_copy_indices=True) -> str:
@@ -1000,14 +1009,12 @@ class InflationProblem:
             original_perm = self.lexperm_to_origperm(lexorder_perm)
             lexorder_perms += [lexorder_perm]
             original_dag_events_perms += [original_perm]
-            # lexorder_to_original_dag_events_perm = {i: op[[0, -2, -1]]
-            #                                for i, op in enumerate(template)}
-            # original_dag_event_perm_dict = {lexorder_to_original_dag_events[i].tobytes(): lexorder_to_original_dag_events_perm[i]
-            #                            for i in range(self._lexorder.shape[0])}
-            # permuted_dag_events = np.array([original_dag_event_perm_dict[op.tobytes()] for op in self.original_dag_events])
-            # dag_events_permutation = np.array([original_dag_lookup[op.tobytes()] for op in permuted_dag_events])
-            # original_dag_events_perms += [dag_events_permutation]
         return np.array(lexorder_perms), np.array(original_dag_events_perms)
+
+    @cached_property
+    def _lexorder_hashable_interpretation_decoder(self):
+        return {self._make_interpretation_hashable(op_as_dict): i for
+                    i, op_as_dict in enumerate(self._lexrepr_to_dicts)}
 
 
     @cached_property
@@ -1022,54 +1029,30 @@ class InflationProblem:
         identity_perm_lexorder = np.arange(self._nr_operators, dtype=int)
         sym_generators_original = [identity_perm_original]
         sym_generators_lexorder = [identity_perm_lexorder]
-        lexorder_private_settings = self.rectify_fake_setting(self._lexorder.copy())[:, -2]
+
         for p in range(self.nr_parties):
-            if self.has_children[p]:
-                break  # Do not attempt outcome relabelling if the variable is also a setting.
-            select_this_party_lexorder = (self._lexorder[:, 0] == p + 1)
             for x in range(self.private_settings_per_party[p]):
-                select_this_setting_lexorder = (lexorder_private_settings == x)
-                where_to_modify = np.logical_and(select_this_party_lexorder, select_this_setting_lexorder)
-                before_relabelling = self._lexorder[where_to_modify, -1]
                 for i, perm in enumerate(permutations(range(self.outcomes_per_party[p]))):
-                    if i == 0:  # skip empty perm
+                    if i == 0:
                         continue  # skip empty perm
-                    after_relabelling = np.take(perm, before_relabelling)
-                    implicit_change = np.argsort(before_relabelling, stable=True)[
-                        np.argsort(after_relabelling, stable=True)]
-                    lexorder_perm = identity_perm_lexorder.copy()
-                    lexorder_perm[where_to_modify] = lexorder_perm[where_to_modify][implicit_change]
+                    new_interpretations = [op_as_dict.copy() for op_as_dict in self._lexrepr_to_dicts]
+                    lexorder_perm = []
+                    for op_as_dict in new_interpretations:
+                        adjusted_p = p+1
+                        if adjusted_p in op_as_dict["Parents in-play as Integers"]:
+                            to_adjust = list(op_as_dict["Settings as Tuple"])
+                            old_value = to_adjust[adjusted_p]
+                            new_value = perm[old_value]
+                            to_adjust[adjusted_p] = new_value
+                            op_as_dict["Settings as Tuple"] = tuple(to_adjust)
+                        if op_as_dict["Party as Integer"] == p:
+                            old_value = op_as_dict["Outcome"]
+                            op_as_dict["Outcome"] = perm[old_value]
+                        lexorder_perm.append(self._lexorder_hashable_interpretation_decoder[self._make_interpretation_hashable(op_as_dict)])
+                    lexorder_perm = np.array(lexorder_perm)
                     original_perm = self.lexperm_to_origperm(lexorder_perm)
                     sym_generators_lexorder.append(lexorder_perm)
                     sym_generators_original.append(original_perm)
-        #     select_this_party_original = (self.original_dag_events[:, 0] == p + 1)
-        #     # exclude_final_outcome = (self.original_dag_events[:, 2] < self.outcomes_per_party[p]-1)
-        #     # select_this_party *= exclude_final_outcome
-        #     for x in range(self.private_settings_per_party[p]):
-        #         select_this_setting = (self.original_dag_events[:, 1] == x)
-        #         select_this_party_and_this_setting = np.logical_and(select_this_party_original,
-        #                                                             select_this_setting)
-        #         original_template = self.original_dag_events.copy()
-        #         lexorder_template = self._lexorder.copy()
-        #
-        #         for i, perm in enumerate(permutations(range(self.outcomes_per_party[p]))):
-        #             if i == 0:   # skip empty perm
-        #                 continue # skip empty perm
-        #             original_template[select_this_party_and_this_setting, 2] = np.array(perm)
-        #             new_syms = np.array([self._original_lookup[op.tobytes()] for op in original_template])
-        #             sym_generators_original += [new_syms]
-        #
-        # sym_generators_on_lexorder = []
-        # for sym in sym_generators_original:
-        #     sym_map = {op1.tobytes(): op2
-        #                for op1, op2 in zip(self.original_dag_events,
-        #                                    self.original_dag_events[sym])}
-        #     lexorder_copy = self._lexorder.copy()
-        #     for i in range(lexorder_copy.shape[0]):
-        #         lexorder_copy[i, np.array([0, -2, -1])] = \
-        #             sym_map[lexorder_copy[i, np.array([0, -2, -1])].tobytes()]
-        #     lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in lexorder_copy])
-        #     sym_generators_on_lexorder += [lexorder_perm]
         return np.array(sym_generators_lexorder), np.array(sym_generators_original)
 
     @cached_property
@@ -1078,54 +1061,28 @@ class InflationProblem:
         identity_perm_lexorder = np.arange(self._nr_operators, dtype=int)
         sym_generators_original = [identity_perm_original]
         sym_generators_lexorder = [identity_perm_lexorder]
-        lexorder_private_settings = self.rectify_fake_setting(self._lexorder.copy())[:, -2]
         for p in range(self.nr_parties):
             # Since we are only adjusting PRIVATE setting, we can proceed even is the party has children
-            # if self.has_children[p]:
-            #     break  # Do not attempt outcome relabelling if the variable is also a setting.
-            where_to_modify = (self._lexorder[:, 0] == p + 1)
-            before_relabelling = lexorder_private_settings[where_to_modify]
             for i, perm in enumerate(permutations(range(self.private_settings_per_party[p]))):
-                if i == 0:  # skip empty perm
+                if i == 0:
                     continue  # skip empty perm
-                after_relabelling = np.take(perm, before_relabelling)
-                implicit_change = np.argsort(before_relabelling, stable=True)[
-                    np.argsort(after_relabelling, stable=True)]
-                lexorder_perm = identity_perm_lexorder.copy()
-                lexorder_perm[where_to_modify] = lexorder_perm[where_to_modify][implicit_change]
+                new_interpretations = [op_as_dict.copy() for op_as_dict in
+                                       self._lexrepr_to_dicts]
+                lexorder_perm = []
+                for op_as_dict in new_interpretations:
+                    if op_as_dict["Party as Integer"] == p:
+                        to_adjust = list(op_as_dict["Settings as Tuple"])
+                        old_value = to_adjust[0]
+                        new_value = perm[old_value]
+                        to_adjust[0] = new_value
+                        op_as_dict["Settings as Tuple"] = tuple(to_adjust)
+                    lexorder_perm.append(
+                        self._lexorder_hashable_interpretation_decoder[
+                            self._make_interpretation_hashable(op_as_dict)])
+                lexorder_perm = np.array(lexorder_perm)
                 original_perm = self.lexperm_to_origperm(lexorder_perm)
                 sym_generators_lexorder.append(lexorder_perm)
                 sym_generators_original.append(original_perm)
-        # empty_perm = list(range(self.original_dag_events))
-        #
-        # sym_generators = [empty_perm]
-        # for p in range(self.nr_parties):
-        #     template = self.original_dag_events.copy()
-        #     for i, perm in enumerate(permutations(range(self.private_settings_per_party[p]))):
-        #         if i > 0:  # skip empty perm
-        #             if self.has_children[p] :
-        #                 # TODO
-        #                 # for child in children_per_party[p]:
-        #                     # child_settings = self.effective_to_parent_settings[child]
-        #                     # new_child_settings =
-        #                 ...
-        #             else:
-        #                 for a in range(self.outcomes_per_party[p]):
-        #                     template[(template[:, 0] == p + 1) * (template[:, 2] == a), 1] = np.array(perm)
-        #                 new_syms = np.array([self._original_lookup[op.tobytes()] for op in template])
-        #                 sym_generators += [new_syms]
-        #
-        # sym_generators_on_lexorder = []
-        # for sym in sym_generators:
-        #     sym_map = {op1.tobytes(): op2
-        #                 for op1, op2 in zip(self.original_dag_events,
-        #                                     self.original_dag_events[sym])}
-        #     lexorder_copy = self._lexorder.copy()
-        #     for i in range(lexorder_copy.shape[0]):
-        #         lexorder_copy[i, np.array([0, -2, -1])] = \
-        #             sym_map[lexorder_copy[i, np.array([0, -2, -1])].tobytes()]
-        #     lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in lexorder_copy])
-        #     sym_generators_on_lexorder += [lexorder_perm]
         return np.array(sym_generators_lexorder), np.array(sym_generators_original)
 
     @staticmethod
