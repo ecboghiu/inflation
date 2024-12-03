@@ -408,6 +408,15 @@ class InflationProblem:
                 (self._lexorder.shape[0], self._lexorder.shape[0]),
                 dtype=bool)
 
+        _lexorder_to_original = self.rectify_fake_setting(
+            self._lexorder[:, [0, -2, -1]])
+        (self.original_dag_events,
+         self._canonical_lexids,
+         self._lexidx_to_origidx) = np.unique(_lexorder_to_original,
+                                              return_index=True,
+                                              return_inverse=True, axis=0)
+
+
     @property
     def _compatible_template_measurements(self):
         return np.invert(self._default_notcomm[np.ix_(self._template_idxs, self._template_idxs)])
@@ -418,12 +427,6 @@ class InflationProblem:
         return all_and_maximal_cliques(self._compatible_template_measurements,
                                        max_n=max_n,
                                        isolate_maximal=isolate_maximal)
-
-        _lexorder_to_original = self.rectify_fake_setting(self._lexorder[:, [0, -2, -1]])
-        (self.original_dag_events,
-         self._canonical_lexids,
-         self._lexidx_to_origidx) = np.unique(_lexorder_to_original, return_index=True, return_inverse=True, axis=0)
-
 
 
     def __repr__(self):
