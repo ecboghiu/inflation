@@ -158,7 +158,7 @@ class InflationLP(object):
         # In other words, if we take all the CG equalities, we want to convert 
         # them to inequalities when the LHS is non_CG but childless-only.
         if np.any(self.does_not_have_children):
-            bad_boolvecs_for_ineqs = [bool_array[0] for bool_array in self._CG_adjusting_ortho_groups_as_boolarrays]
+            bad_boolvecs_for_ineqs = [bool_array[-1] for bool_array in self._CG_adjusting_ortho_groups_as_boolarrays]
             self._boolvec_for_CG_ineqs = np.bitwise_or.reduce(bad_boolvecs_for_ineqs, axis=0)
         else:
             self._boolvec_for_CG_ineqs = self.blank_bool_vec
@@ -1408,7 +1408,7 @@ class InflationLP(object):
         eq_row, eq_col, eq_data = [], [], []
         nof_equalities = 0
         if np.any(self._boolvec_for_FR_eqs):
-            alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
+            alternatives_as_boolarrays = {v: np.pad(r[1:], ((1, 0), (0, 0)))
                                           for v, r in zip(
                     np.flatnonzero(self._boolvec_for_FR_eqs).flat,
                     self._CG_nonadjusting_ortho_groups_as_boolarrays)}
@@ -1478,7 +1478,7 @@ class InflationLP(object):
          notation as needed."""
         ineq_row, ineq_col, ineq_data = [], [], []
         nof_inequalities = 0
-        alternatives_as_boolarrays = {v: np.pad(r[1:], ((1, 0), (0, 0)))
+        alternatives_as_boolarrays = {v: np.pad(r[:-1], ((1, 0), (0, 0)))
                                       for v, r in zip(
                 np.flatnonzero(self._boolvec_for_CG_ineqs).flat,
                 self._CG_adjusting_ortho_groups_as_boolarrays)}
