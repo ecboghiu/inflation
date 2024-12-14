@@ -1,13 +1,18 @@
 Monomial classes and functions
 ==============================
-Abstract monomial classes
--------------------------
-.. autoclass:: causalinflation.quantum.monomial_classes.InternalAtomicMonomial
-   :members: compute_marginal, dagger, is_physical, is_hermitian, name, symbol
+InflationLP monomial classes
+----------------------------
+.. autoclass:: inflation.lp.monomial_classes.InternalAtomicMonomial
+   :members: _raw_name, _name, _signature, compute_marginal
 
-.. autoclass:: causalinflation.quantum.monomial_classes.CompoundMonomial
-   :members: attach_idx, compute_marginal, evaluate, is_physical, n_operators, name, symbol
+.. autoclass:: inflation.lp.monomial_classes.CompoundMoment
+   :members: attach_idx, compute_marginal, evaluate
 
-InflationSDP internal monomials
--------------------------------
-.. autofunction:: causalinflation.InflationSDP.Monomial
+InflationSDP monomial classes
+-----------------------------
+.. autoclass:: inflation.sdp.monomial_classes.InternalAtomicMonomialSDP
+   :members: is_all_commuting, conjugate_lexmon, is_hermitian, dagger, 
+
+.. autoclass:: inflation.sdp.monomial_classes.CompoundMomentSDP
+   :members: is_all_commuting, is_physical, is_hermitian
+

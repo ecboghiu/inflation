@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>inflation.lp.lp_utils &mdash; Inflation 2.0.2 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../contents.html" class="icon icon-home"> Inflation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../download.html">Download and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples and features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../contents.html">Inflation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>inflation.lp.lp_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for inflation.lp.lp_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains functions to interact with LP solvers.</span>
+
+<span class="sd">@authors: Erica Han, Elie Wolfe</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">mosek</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_array</span><span class="p">,</span> <span class="n">issparse</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span>
+<span class="kn">from</span> <span class="nn">gc</span> <span class="kn">import</span> <span class="n">collect</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">partsextractor</span><span class="p">,</span> <span class="n">expand_sparse_vec</span><span class="p">,</span> <span class="n">vstack</span>
+
+
+<span class="k">def</span> <span class="nf">drop_zero_rows</span><span class="p">(</span><span class="n">coo_mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Drops zero rows from a sparse matrix in place.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coo_mat : coo_array</span>
+<span class="sd">        Sparse matrix to drop zero rows from.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coo_mat</span> <span class="o">=</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">nz_rows</span><span class="p">,</span> <span class="n">new_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="n">new_row</span>
+    <span class="n">coo_mat</span> <span class="o">=</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nz_rows</span><span class="p">),</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">coo_mat</span>
+
+
+<span class="k">def</span> <span class="nf">canonical_order</span><span class="p">(</span><span class="n">coo_mat</span><span class="p">:</span> <span class="n">coo_array</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Puts a sparse matrix in canonical order in place.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coo_mat : coo_array</span>
+<span class="sd">        Sparse matrix to put in canonical order.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coo_mat</span> <span class="o">=</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lexsort</span><span class="p">([</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">])</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">row</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">col</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">coo_mat</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo_mat</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">coo_mat</span>
+
+<span class="k">def</span> <span class="nf">solveLP</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">known_vars</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">semiknown_vars</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">inequalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">equalities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">coo_array</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">variables</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper function that converts all dictionaries to sparse matrices to</span>
+<span class="sd">    pass to the solver.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    objective : Union[coo_array, Dict], optional</span>
+<span class="sd">        Objective function</span>
+<span class="sd">    known_vars : Union[coo_array, Dict], optional</span>
+<span class="sd">        Known values of the monomials</span>
+<span class="sd">    semiknown_vars : Dict, optional</span>
+<span class="sd">        Semiknown variables</span>
+<span class="sd">    inequalities : Union[coo_array, List[Dict]], optional</span>
+<span class="sd">        Inequality constraints</span>
+<span class="sd">    equalities : Union[coo_array, List[Dict]], optional</span>
+<span class="sd">        Equality constraints</span>
+<span class="sd">    variables : List</span>
+<span class="sd">        Monomials by name in same order as column indices of all other solver</span>
+<span class="sd">        arguments</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Primal objective value, dual objective value, problem status, success</span>
+<span class="sd">        status, dual certificate (as dictionary and sparse matrix), x values,</span>
+<span class="sd">        and response code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Save solver arguments, unpacking kwargs</span>
+    <span class="n">solver_args</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+    <span class="k">del</span> <span class="n">solver_args</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span>
+    <span class="n">solver_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># Check type for arguments related to the problem</span>
+    <span class="n">problem_args</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;objective&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;known_vars&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;semiknown_vars&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;inequalities&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;equalities&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;lower_bounds&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;upper_bounds&quot;</span><span class="p">)</span>
+    <span class="n">used_args</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">solver_args</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                 <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">problem_args</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">issparse</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">used_args</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">assert</span> <span class="n">variables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Variables must be declared when all &quot;</span> \
+                                      <span class="s2">&quot;arguments are in sparse matrix form.&quot;</span>
+    <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">used_args</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">variables</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Infer variables</span>
+            <span class="n">variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">objective</span><span class="p">:</span>
+                <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">objective</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">inequalities</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ineq</span> <span class="ow">in</span> <span class="n">inequalities</span><span class="p">:</span>
+                    <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ineq</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">equalities</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">equalities</span><span class="p">:</span>
+                    <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">semiknown_vars</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span> <span class="ow">in</span> <span class="n">semiknown_vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">x2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">known_vars</span><span class="p">:</span>
+                <span class="n">variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+            <span class="n">variables</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+            <span class="n">solver_args</span><span class="p">[</span><span class="s2">&quot;variables&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variables</span>
+        <span class="n">solver_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">convert_dicts</span><span class="p">(</span><span class="o">**</span><span class="n">solver_args</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">variables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Variables must be declared when &quot;</span> \
+                                      <span class="s2">&quot;arguments are of mixed form.&quot;</span>
+        <span class="n">solver_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">convert_dicts</span><span class="p">(</span><span class="o">**</span><span class="n">solver_args</span><span class="p">))</span>
+    <span class="n">solver_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;semiknown_vars&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">solveLP_sparse</span><span class="p">(</span><span class="o">**</span><span class="n">solver_args</span><span class="p">)</span>
+
+
+<span class="n">blank_coo_array</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+<div class="viewcode-block" id="solveLP_sparse"><a class="viewcode-back" href="../../../solvers.html#inflation.lp.lp_utils.solveLP_sparse">[docs]</a><span class="k">def</span> <span class="nf">solveLP_sparse</span><span class="p">(</span><span class="n">objective</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">known_vars</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">inequalities</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">equalities</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">lower_bounds</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">upper_bounds</span><span class="p">:</span> <span class="n">coo_array</span> <span class="o">=</span> <span class="n">blank_coo_array</span><span class="p">,</span>
+                   <span class="n">solve_dual</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">default_non_negative</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                   <span class="n">relax_known_vars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">relax_inequalities</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                   <span class="n">solverparameters</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">variables</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span>
+                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Internal function to solve an LP with the Mosek Optimizer API using</span>
+<span class="sd">    sparse matrices. Columns of each matrix correspond to a fixed order of</span>
+<span class="sd">    variables in the LP.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    objective : coo_array, optional</span>
+<span class="sd">        Objective function with coefficients as matrix entries.</span>
+<span class="sd">    known_vars : coo_array, optional</span>
+<span class="sd">        Known values of the monomials with values as matrix entries.</span>
+<span class="sd">    inequalities : coo_array, optional</span>
+<span class="sd">        Inequality constraints in matrix form.</span>
+<span class="sd">    equalities : coo_array, optional</span>
+<span class="sd">        Equality constraints in matrix form.</span>
+<span class="sd">    lower_bounds : coo_array, optional</span>
+<span class="sd">        Lower bounds of variables with bounds as matrix entries.</span>
+<span class="sd">    upper_bounds : coo_array, optional</span>
+<span class="sd">        Upper bounds of variables with bounds as matrix entries.</span>
+<span class="sd">    solve_dual : bool, optional</span>
+<span class="sd">        Whether to solve the dual (``True``) or primal (``False``) formulation.</span>
+<span class="sd">        By default, ``False``.</span>
+<span class="sd">    default_non_negative : bool, optional</span>
+<span class="sd">        Whether to set default primal variables as non-negative. By default,</span>
+<span class="sd">        ``True``.</span>
+<span class="sd">    relax_known_vars : bool, optional</span>
+<span class="sd">        Do feasibility as optimization where each known value equality becomes</span>
+<span class="sd">        two relaxed inequality constraints. E.g., P(A) = 0.7 becomes P(A) +</span>
+<span class="sd">        lambda &gt;= 0.7 and P(A) - lambda &lt;= 0.7, where lambda is a slack</span>
+<span class="sd">        variable. By default, ``False``.</span>
+<span class="sd">    relax_inequalities : bool, optional</span>
+<span class="sd">        Do feasibility as optimization where each inequality is relaxed by the</span>
+<span class="sd">        non-negative slack variable lambda. By default, ``False``.</span>
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        Verbosity. Higher means more messages. By default, 0.</span>
+<span class="sd">    solverparameters : dict, optional</span>
+<span class="sd">        Parameters to pass to the MOSEK solver. For example, to control whether</span>
+<span class="sd">        presolve is applied before optimization, set</span>
+<span class="sd">        ``mosek.iparam.presolve_use`` to ``mosek.presolvemode.on`` or</span>
+<span class="sd">        ``mosek.presolvemode.off``. Or, control which optimizer is used by</span>
+<span class="sd">        setting an optimizer type to ``mosek.iparam.optimizer``. See `MOSEK&#39;s</span>
+<span class="sd">        documentation`_ for more details.</span>
+<span class="sd">    variables : list</span>
+<span class="sd">        Monomials by name in same order as column indices of all other solver</span>
+<span class="sd">        arguments</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Primal objective value, dual objective value, problem status, success</span>
+<span class="sd">        status, dual certificate (as dictionary and sparse matrix), x values,</span>
+<span class="sd">        and response code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">inequalities</span><span class="o">=</span><span class="n">drop_zero_rows</span><span class="p">(</span><span class="n">inequalities</span><span class="p">)</span>
+    <span class="n">equalities</span><span class="o">=</span><span class="n">drop_zero_rows</span><span class="p">(</span><span class="n">equalities</span><span class="p">)</span>
+    <span class="n">known_vars</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+    <span class="n">upper_bounds</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">upper_bounds</span><span class="p">)</span>
+    <span class="n">lower_bounds</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">lower_bounds</span><span class="p">)</span>
+    <span class="n">objective</span><span class="o">=</span><span class="n">canonical_order</span><span class="p">(</span><span class="n">objective</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">t_total</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting pre-processing for the LP solver...&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Since the value of infinity is ignored, define it for symbolic purposes</span>
+    <span class="n">inf</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">if</span> <span class="n">relax_known_vars</span> <span class="ow">or</span> <span class="n">relax_inequalities</span><span class="p">:</span>
+        <span class="n">default_non_negative</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">with</span> <span class="n">mosek</span><span class="o">.</span><span class="n">Env</span><span class="p">()</span> <span class="k">as</span> <span class="n">env</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">mosek</span><span class="o">.</span><span class="n">Task</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="k">as</span> <span class="n">task</span><span class="p">:</span>
+            <span class="c1"># Set parameters for the solver depending on value type</span>
+            <span class="k">if</span> <span class="n">solverparameters</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">solverparameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">putdouparam</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">putstrparam</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">solve_dual</span><span class="p">:</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">iparam</span><span class="o">.</span><span class="n">sim_solve_form</span><span class="p">,</span>
+                                 <span class="n">mosek</span><span class="o">.</span><span class="n">solveform</span><span class="o">.</span><span class="n">dual</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">iparam</span><span class="o">.</span><span class="n">sim_solve_form</span><span class="p">,</span>
+                                 <span class="n">mosek</span><span class="o">.</span><span class="n">solveform</span><span class="o">.</span><span class="n">primal</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># Attach a log stream printer to the task</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">set_Stream</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">streamtype</span><span class="o">.</span><span class="n">log</span><span class="p">,</span> <span class="n">streamprinter</span><span class="p">)</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">iparam</span><span class="o">.</span><span class="n">log_include_summary</span><span class="p">,</span>
+                                 <span class="n">mosek</span><span class="o">.</span><span class="n">onoffkey</span><span class="o">.</span><span class="n">on</span><span class="p">)</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">iparam</span><span class="o">.</span><span class="n">log_storage</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">iparam</span><span class="o">.</span><span class="n">log_sim</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putintparam</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">iparam</span><span class="o">.</span><span class="n">log_intpnt</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+            <span class="c1"># Initialize constraint matrix</span>
+            <span class="n">constraints</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">inequalities</span><span class="p">,</span> <span class="n">equalities</span><span class="p">))</span>
+
+            <span class="n">nof_primal_inequalities</span> <span class="o">=</span> <span class="n">inequalities</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">nof_primal_equalities</span> <span class="o">=</span> <span class="n">equalities</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="p">(</span><span class="n">nof_primal_constraints</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">)</span> <span class="o">=</span> <span class="n">constraints</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">nof_known_vars</span> <span class="o">=</span> <span class="n">known_vars</span><span class="o">.</span><span class="n">nnz</span>
+
+            <span class="c1"># Initialize b vector (RHS of constraints)</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_primal_constraints</span>
+
+            <span class="k">if</span> <span class="n">relax_inequalities</span><span class="p">:</span>
+                <span class="c1"># Add slack variable lambda to each inequality</span>
+                <span class="n">cons_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">constraints</span><span class="o">.</span><span class="n">row</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nof_primal_inequalities</span><span class="p">)))</span>
+                <span class="n">cons_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">constraints</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">,</span>
+                                                <span class="n">nof_primal_inequalities</span><span class="p">)))</span>
+                <span class="n">cons_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">constraints</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_primal_inequalities</span><span class="p">)))</span>
+                <span class="n">constraints</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">cons_data</span><span class="p">,</span> <span class="p">(</span><span class="n">cons_row</span><span class="p">,</span> <span class="n">cons_col</span><span class="p">)),</span>
+                                         <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_primal_constraints</span><span class="p">,</span>
+                                                <span class="n">nof_primal_variables</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">relax_known_vars</span><span class="p">:</span>
+                <span class="c1"># Each known value is replaced by two inequalities with slacks</span>
+                <span class="n">kv_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nof_known_vars</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="mi">2</span><span class="p">)</span>
+                <span class="n">kv_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">known_vars</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">,</span> <span class="n">nof_known_vars</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">))</span>
+                <span class="n">kv_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_known_vars</span> <span class="o">*</span> <span class="mi">3</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_known_vars</span><span class="p">)</span>
+                <span class="p">))</span>
+
+                <span class="n">kv_matrix</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">kv_data</span><span class="p">,</span> <span class="p">(</span><span class="n">kv_row</span><span class="p">,</span> <span class="n">kv_col</span><span class="p">)),</span>
+                                       <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_known_vars</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                                              <span class="n">nof_primal_variables</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="n">canonical_order</span><span class="p">(</span><span class="n">kv_matrix</span><span class="p">)</span>
+                <span class="n">constraints</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">nof_primal_constraints</span><span class="p">,</span>
+                                     <span class="n">nof_primal_variables</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">b</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">known_vars</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Add known values as equalities to the constraint matrix</span>
+                <span class="n">kv_matrix</span> <span class="o">=</span> <span class="n">expand_sparse_vec</span><span class="p">(</span><span class="n">known_vars</span><span class="p">)</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">b</span><span class="p">,</span> <span class="n">known_vars</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+                <span class="n">nof_primal_equalities</span> <span class="o">+=</span> <span class="n">nof_known_vars</span>
+
+            <span class="n">constraints</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">constraints</span><span class="p">,</span> <span class="n">kv_matrix</span><span class="p">))</span>
+            <span class="p">(</span><span class="n">nof_primal_constraints</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">)</span> <span class="o">=</span> <span class="n">constraints</span><span class="o">.</span><span class="n">shape</span>
+            <span class="k">if</span> <span class="n">objective</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">objective</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+
+            <span class="n">nof_lb</span> <span class="o">=</span> <span class="n">lower_bounds</span><span class="o">.</span><span class="n">nnz</span>
+            <span class="n">nof_ub</span> <span class="o">=</span> <span class="n">upper_bounds</span><span class="o">.</span><span class="n">nnz</span>
+
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Size of constraint matrix: </span><span class="si">{</span><span class="n">constraints</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">solve_dual</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Proceeding with dual initialization...&quot;</span><span class="p">)</span>
+
+                <span class="n">nof_primal_nontriv_bounds</span> <span class="o">=</span> <span class="n">nof_lb</span> <span class="o">+</span> <span class="n">nof_ub</span>
+                <span class="n">nof_dual_constraints</span> <span class="o">=</span> <span class="n">nof_primal_variables</span>
+                <span class="n">nof_dual_variables</span> <span class="o">=</span> <span class="n">nof_primal_constraints</span> <span class="o">+</span> \
+                    <span class="n">nof_primal_nontriv_bounds</span>
+
+                <span class="c1"># Add variable bounds as inequality constraints to matrix</span>
+                <span class="k">if</span> <span class="n">nof_primal_nontriv_bounds</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">lb_mat</span> <span class="o">=</span> <span class="n">expand_sparse_vec</span><span class="p">(</span><span class="n">lower_bounds</span><span class="p">,</span>
+                                               <span class="n">conversion_style</span><span class="o">=</span><span class="s2">&quot;eq&quot;</span><span class="p">)</span>
+                    <span class="n">ub_mat</span> <span class="o">=</span> <span class="n">expand_sparse_vec</span><span class="p">(</span><span class="n">upper_bounds</span><span class="p">,</span>
+                                               <span class="n">conversion_style</span><span class="o">=</span><span class="s2">&quot;eq&quot;</span><span class="p">)</span>
+                    <span class="n">ub_mat</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span> <span class="o">=</span> <span class="o">-</span><span class="n">ub_mat</span><span class="o">.</span><span class="n">data</span> <span class="c1"># just a list of ones</span>
+                    <span class="n">matrix</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">constraints</span><span class="p">,</span> <span class="n">lb_mat</span><span class="p">,</span> <span class="n">ub_mat</span><span class="p">),</span>
+                                    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">)</span>
+                    <span class="n">b_extra</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">lower_bounds</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">upper_bounds</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>
+                    <span class="n">objective_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">b</span><span class="p">,</span> <span class="n">b_extra</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">matrix</span> <span class="o">=</span> <span class="n">constraints</span><span class="o">.</span><span class="n">tocsr</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">objective_vector</span> <span class="o">=</span> <span class="n">b</span>
+
+                <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sparse matrix reformat complete...&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Set bound keys and values for constraints (primal objective)</span>
+                <span class="k">if</span> <span class="n">relax_known_vars</span> <span class="ow">or</span> <span class="n">relax_inequalities</span><span class="p">:</span>
+                    <span class="n">blc</span> <span class="o">=</span> <span class="n">buc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
+                    <span class="n">blc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">buc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">blc</span> <span class="o">=</span> <span class="n">buc</span> <span class="o">=</span> <span class="n">objective</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+                <span class="c1"># Set constraint bounds corresponding to primal variable bounds</span>
+                <span class="k">if</span> <span class="n">default_non_negative</span><span class="p">:</span>
+                    <span class="n">bkc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">lo</span><span class="p">,</span> <span class="n">nof_dual_constraints</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">bkc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">fx</span><span class="p">,</span> <span class="n">nof_dual_constraints</span><span class="p">)</span>
+
+                <span class="c1"># Set bound keys and values for variables</span>
+                <span class="c1"># Non-positivity for y corresponding to inequalities</span>
+                <span class="n">bkx</span> <span class="o">=</span> <span class="p">[</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">up</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_primal_inequalities</span> <span class="o">+</span> \
+                      <span class="p">[</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">fr</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_primal_equalities</span>
+                <span class="n">bux</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_dual_variables</span>
+                <span class="n">blx</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_dual_variables</span>
+                <span class="k">if</span> <span class="n">relax_known_vars</span><span class="p">:</span>
+                    <span class="n">bkx</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">up</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_known_vars</span> <span class="o">+</span>
+                               <span class="p">[</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">lo</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_known_vars</span><span class="p">)</span>
+                <span class="n">bkx</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">up</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_primal_nontriv_bounds</span><span class="p">)</span>
+
+                <span class="c1"># Set the objective sense</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putobjsense</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">objsense</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Proceeding with primal initialization...&quot;</span><span class="p">)</span>
+
+                <span class="n">matrix</span> <span class="o">=</span> <span class="n">constraints</span><span class="o">.</span><span class="n">tocsc</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sparse matrix reformat complete...&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">relax_known_vars</span> <span class="ow">or</span> <span class="n">relax_inequalities</span><span class="p">:</span>
+                    <span class="c1"># Maximize lambda</span>
+                    <span class="c1"># (If maximum slack is still negative, then the unrelaxed</span>
+                    <span class="c1"># LP would be infeasible, whereas positive slack solution</span>
+                    <span class="c1"># implies LP solution strictly interior in the polytope.)</span>
+                    <span class="n">objective_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
+                    <span class="n">objective_vector</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">objective_vector</span> <span class="o">=</span> <span class="n">objective</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+                <span class="c1"># Set bound keys and values for constraints</span>
+                <span class="c1"># Ax &gt;= b where b is 0</span>
+                <span class="n">bkc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">lo</span><span class="p">,</span> <span class="n">nof_primal_inequalities</span><span class="p">),</span>
+                                 <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">fx</span><span class="p">,</span>
+                                                 <span class="n">nof_primal_equalities</span><span class="p">)</span>
+                                 <span class="p">))</span>
+                <span class="k">if</span> <span class="n">relax_known_vars</span><span class="p">:</span>
+                    <span class="n">bkc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">bkc</span><span class="p">,</span>
+                                     <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">lo</span><span class="p">,</span> <span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">up</span><span class="p">],</span>
+                                                     <span class="n">nof_known_vars</span><span class="p">)</span>
+                                     <span class="p">))</span>
+                <span class="n">blc</span> <span class="o">=</span> <span class="n">buc</span> <span class="o">=</span> <span class="n">b</span>
+
+                <span class="n">ub_col</span> <span class="o">=</span> <span class="n">upper_bounds</span><span class="o">.</span><span class="n">col</span>
+                <span class="n">ub_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
+                <span class="n">ub_data</span><span class="p">[</span><span class="n">ub_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">upper_bounds</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">lb_col</span> <span class="o">=</span> <span class="n">lower_bounds</span><span class="o">.</span><span class="n">col</span>
+                <span class="n">lb_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
+                <span class="n">lb_data</span><span class="p">[</span><span class="n">lb_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">lower_bounds</span><span class="o">.</span><span class="n">data</span>
+
+                <span class="c1"># Set bound keys and bound values for variables</span>
+                <span class="n">blx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
+                <span class="n">bux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)</span>
+                <span class="n">ub_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">upper_bounds</span><span class="o">.</span><span class="n">col</span><span class="p">)</span>
+                <span class="n">lb_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lower_bounds</span><span class="o">.</span><span class="n">col</span><span class="p">)</span>
+                <span class="n">lb_data</span> <span class="o">=</span> <span class="n">lower_bounds</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">if</span> <span class="n">default_non_negative</span><span class="p">:</span>
+                    <span class="n">bkx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">lo</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">)</span>
+                    <span class="n">bkx</span><span class="p">[</span><span class="n">ub_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">ra</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">bkx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">fr</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">)</span>
+                    <span class="n">bkx</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">lb_col</span><span class="p">,</span> <span class="n">ub_col</span><span class="p">)]</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">lo</span>
+                    <span class="n">bkx</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">ub_col</span><span class="p">,</span> <span class="n">lb_col</span><span class="p">)]</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">up</span>
+                    <span class="n">bkx</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">ub_col</span><span class="p">,</span> <span class="n">lb_col</span><span class="p">)]</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">ra</span>
+                <span class="n">blx</span><span class="p">[</span><span class="n">lb_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">lb_data</span>
+                <span class="n">bux</span><span class="p">[</span><span class="n">ub_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">upper_bounds</span><span class="o">.</span><span class="n">data</span>
+
+
+                <span class="k">if</span> <span class="n">relax_known_vars</span> <span class="ow">or</span> <span class="n">relax_inequalities</span><span class="p">:</span>
+                    <span class="n">bkx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">boundkey</span><span class="o">.</span><span class="n">fr</span>
+
+                <span class="c1"># Set the objective sense</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">putobjsense</span><span class="p">(</span><span class="n">mosek</span><span class="o">.</span><span class="n">objsense</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+
+            <span class="c1"># Add all the problem data to the task</span>
+            <span class="k">if</span> <span class="n">solve_dual</span><span class="p">:</span>
+                <span class="n">numcon</span> <span class="o">=</span> <span class="n">nof_dual_constraints</span>
+                <span class="n">numvar</span> <span class="o">=</span> <span class="n">nof_dual_variables</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">numcon</span> <span class="o">=</span> <span class="n">nof_primal_constraints</span>
+                <span class="n">numvar</span> <span class="o">=</span> <span class="n">nof_primal_variables</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting task.inputdata in Mosek...&quot;</span><span class="p">)</span>
+            <span class="n">task</span><span class="o">.</span><span class="n">inputdata</span><span class="p">(</span><span class="c1"># maxnumcon=</span>
+                           <span class="n">numcon</span><span class="p">,</span>
+                           <span class="c1"># maxnumvar=</span>
+                           <span class="n">numvar</span><span class="p">,</span>
+                           <span class="c1"># c=</span>
+                           <span class="n">objective_vector</span><span class="p">,</span>
+                           <span class="c1"># cfix=</span>
+                           <span class="mi">0</span><span class="p">,</span>
+                           <span class="c1"># aptrb=</span>
+                           <span class="n">matrix</span><span class="o">.</span><span class="n">indptr</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                           <span class="c1"># aptre=</span>
+                           <span class="n">matrix</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                           <span class="c1"># asub=</span>
+                           <span class="n">matrix</span><span class="o">.</span><span class="n">indices</span><span class="p">,</span>
+                           <span class="c1"># aval=</span>
+                           <span class="n">matrix</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                           <span class="n">bkc</span><span class="p">,</span>
+                           <span class="n">blc</span><span class="p">,</span>
+                           <span class="n">buc</span><span class="p">,</span>
+                           <span class="n">bkx</span><span class="p">,</span>
+                           <span class="n">blx</span><span class="p">,</span>
+                           <span class="n">bux</span><span class="p">)</span>
+            <span class="n">collect</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pre-processing took&quot;</span><span class="p">,</span>
+                      <span class="nb">format</span><span class="p">(</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="s2">&quot;.4f&quot;</span><span class="p">),</span> <span class="s2">&quot;seconds.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">t0</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Writing problem to debug_lp.ptf...&quot;</span><span class="p">)</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">writedata</span><span class="p">(</span><span class="s2">&quot;debug_lp.ptf&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Solve the problem</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solving the problem...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">trmcode</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solving took&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="p">(</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="s2">&quot;.4f&quot;</span><span class="p">),</span>
+                      <span class="s2">&quot;seconds.&quot;</span><span class="p">)</span>
+            <span class="n">basic</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">soltype</span><span class="o">.</span><span class="n">bas</span>
+            <span class="p">(</span><span class="n">problemsta</span><span class="p">,</span>
+             <span class="n">solutionsta</span><span class="p">,</span>
+             <span class="n">skc</span><span class="p">,</span>
+             <span class="n">skx</span><span class="p">,</span>
+             <span class="n">skn</span><span class="p">,</span>
+             <span class="n">xc</span><span class="p">,</span>
+             <span class="n">xx</span><span class="p">,</span>
+             <span class="n">yy</span><span class="p">,</span>
+             <span class="n">slc</span><span class="p">,</span>
+             <span class="n">suc</span><span class="p">,</span>
+             <span class="n">slx</span><span class="p">,</span>
+             <span class="n">sux</span><span class="p">,</span>
+             <span class="n">snx</span><span class="p">)</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">getsolution</span><span class="p">(</span><span class="n">basic</span><span class="p">)</span>
+
+            <span class="c1"># Get objective values, solutions x, dual values y</span>
+            <span class="k">if</span> <span class="n">solve_dual</span><span class="p">:</span>
+                <span class="n">primal</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">getdualobj</span><span class="p">(</span><span class="n">basic</span><span class="p">)</span>
+                <span class="n">dual</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">getprimalobj</span><span class="p">(</span><span class="n">basic</span><span class="p">)</span>
+                <span class="n">x_values</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">yy</span><span class="p">))</span>
+                <span class="n">y_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xx</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">primal</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">getprimalobj</span><span class="p">(</span><span class="n">basic</span><span class="p">)</span>
+                <span class="n">dual</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">getdualobj</span><span class="p">(</span><span class="n">basic</span><span class="p">)</span>
+                <span class="n">x_values</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">xx</span><span class="p">))</span>
+                <span class="n">y_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">yy</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">solutionsta</span> <span class="o">==</span> <span class="n">mosek</span><span class="o">.</span><span class="n">solsta</span><span class="o">.</span><span class="n">optimal</span><span class="p">:</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">status_str</span> <span class="o">=</span> <span class="n">solutionsta</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+            <span class="n">term_tuple</span> <span class="o">=</span> <span class="n">mosek</span><span class="o">.</span><span class="n">Env</span><span class="o">.</span><span class="n">getcodedesc</span><span class="p">(</span><span class="n">trmcode</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">solutionsta</span> <span class="o">==</span> <span class="n">mosek</span><span class="o">.</span><span class="n">solsta</span><span class="o">.</span><span class="n">unknown</span> <span class="ow">and</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The solution status is unknown.&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;   Termination code: </span><span class="si">{</span><span class="n">term_tuple</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Extract the certificate as a sparse matrix: y.b - c.x &lt;= 0</span>
+            <span class="k">if</span> <span class="n">relax_known_vars</span><span class="p">:</span>
+                <span class="n">y_values</span> <span class="o">=</span> <span class="n">y_values</span><span class="p">[</span><span class="n">nof_primal_constraints</span> <span class="o">-</span> <span class="n">nof_known_vars</span><span class="o">*</span><span class="mi">2</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">y_values</span> <span class="o">=</span> <span class="n">y_values</span><span class="p">[</span><span class="n">nof_primal_constraints</span> <span class="o">-</span> <span class="n">nof_known_vars</span><span class="p">:]</span>
+            <span class="n">cert_row</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">nof_primal_variables</span>
+            <span class="n">cert_col</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="n">nof_primal_variables</span><span class="p">)]</span>
+            <span class="n">cert_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nof_primal_variables</span><span class="p">,))</span>
+            <span class="n">obj_data</span> <span class="o">=</span> <span class="n">objective</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+            <span class="n">objective_unknown_cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">objective</span><span class="o">.</span><span class="n">col</span><span class="p">,</span> <span class="n">known_vars</span><span class="o">.</span><span class="n">col</span><span class="p">)</span>
+            <span class="n">cert_data</span><span class="p">[</span><span class="n">objective_unknown_cols</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">obj_data</span><span class="p">[</span><span class="n">objective_unknown_cols</span><span class="p">]</span>
+            <span class="n">cert_data</span><span class="p">[</span><span class="n">known_vars</span><span class="o">.</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_values</span><span class="p">[:</span><span class="n">nof_known_vars</span><span class="p">]</span> <span class="c1"># Assumes known values coded as equalities</span>
+            <span class="k">if</span> <span class="n">relax_known_vars</span><span class="p">:</span>
+                <span class="n">cert_data</span><span class="p">[</span><span class="n">known_vars</span><span class="o">.</span><span class="n">col</span><span class="p">]</span> <span class="o">+=</span> <span class="n">y_values</span><span class="p">[</span><span class="n">nof_known_vars</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">nof_known_vars</span><span class="p">)]</span>
+            <span class="n">sparse_certificate</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">cert_data</span><span class="p">,</span> <span class="p">(</span><span class="n">cert_row</span><span class="p">,</span> <span class="n">cert_col</span><span class="p">)),</span>
+                                            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nof_primal_variables</span><span class="p">))</span>
+
+            <span class="c1"># Certificate as a dictionary</span>
+            <span class="n">certificate</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span>
+                                   <span class="n">sparse_certificate</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">ravel</span><span class="p">()))</span>
+
+            <span class="c1"># Clean entries with coefficient zero</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">certificate</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">certificate</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="k">del</span> <span class="n">certificate</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Total execution time:&quot;</span><span class="p">,</span>
+                      <span class="nb">format</span><span class="p">(</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t_total</span><span class="p">,</span> <span class="s2">&quot;.4f&quot;</span><span class="p">),</span> <span class="s2">&quot;seconds.&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;primal_value&quot;</span><span class="p">:</span> <span class="n">primal</span><span class="p">,</span>
+                <span class="s2">&quot;dual_value&quot;</span><span class="p">:</span> <span class="n">dual</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status_str</span><span class="p">,</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="n">success</span><span class="p">,</span>
+                <span class="s2">&quot;dual_certificate&quot;</span><span class="p">:</span> <span class="n">certificate</span><span class="p">,</span>
+                <span class="s2">&quot;sparse_certificate&quot;</span><span class="p">:</span> <span class="n">sparse_certificate</span><span class="p">,</span>
+                <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x_values</span><span class="p">,</span>
+                <span class="s2">&quot;term_code&quot;</span><span class="p">:</span> <span class="n">term_tuple</span>
+            <span class="p">}</span></div>
+
+
+<span class="k">def</span> <span class="nf">streamprinter</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A stream printer to get output from Mosek.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        Text to print.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+
+<span class="c1">###########################################################################</span>
+<span class="c1"># ROUTINES RELATED TO SPARSE MATRIX CONVERSION                            #</span>
+<span class="c1">###########################################################################</span>
+
+
+<span class="k">def</span> <span class="nf">to_sparse</span><span class="p">(</span><span class="n">argument</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]],</span>
+              <span class="n">variables</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">coo_array</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert a solver argument to a sparse matrix to pass to the solver.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    argument : Union[Dict, List[Dict]]</span>
+<span class="sd">        Solver argument to convert to sparse matrix.</span>
+<span class="sd">    variables : List</span>
+<span class="sd">        Monomials by name in same order as column indices of all other solver</span>
+<span class="sd">        arguments</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    coo_array</span>
+<span class="sd">        Sparse matrix representation of the solver argument.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">argument</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">var_to_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">)}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">argument</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">argument</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">partsextractor</span><span class="p">(</span><span class="n">var_to_idx</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Argument is a list of constraints</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cons</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">argument</span><span class="p">):</span>
+            <span class="n">row</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">cons</span><span class="p">))</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_sparse</span><span class="p">(</span><span class="n">cons</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span><span class="o">.</span><span class="n">col</span> <span class="k">for</span> <span class="n">cons</span> <span class="ow">in</span> <span class="n">argument</span><span class="p">]</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">vec_col</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">vec_col</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_sparse</span><span class="p">(</span><span class="n">cons</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">cons</span> <span class="ow">in</span> <span class="n">argument</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">vec_data</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">vec_data</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
+                          <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">argument</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
+
+
+<span class="k">def</span> <span class="nf">convert_dicts</span><span class="p">(</span><span class="n">semiknown_vars</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">variables</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert any dictionaries to sparse matrices to send to the solver.</span>
+<span class="sd">    Semiknown variables are absorbed into the equality constraints.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    semiknown_vars : Dict, optional</span>
+<span class="sd">        Semiknown variables</span>
+<span class="sd">    variables : List</span>
+<span class="sd">        Monomials by name in same order as column indices of all other solver</span>
+<span class="sd">        arguments</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict</span>
+<span class="sd">        Converted arguments (Unchanged arguments are not returned)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="n">variables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Variables must be passed.&quot;</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+    <span class="k">del</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># Arguments converted from dictionaries to sparse matrices</span>
+    <span class="n">sparse_args</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">to_sparse</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                   <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;semiknown_vars&quot;</span>
+                   <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;solverparameters&quot;</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;variables&quot;</span><span class="p">}</span>
+
+    <span class="c1"># Add semiknown variables to equality constraints</span>
+    <span class="k">if</span> <span class="n">semiknown_vars</span><span class="p">:</span>
+        <span class="n">nof_semiknown</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">semiknown_vars</span><span class="p">)</span>
+        <span class="n">nof_variables</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+        <span class="n">var_to_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">)}</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nof_semiknown</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="p">[(</span><span class="n">var_to_idx</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">var_to_idx</span><span class="p">[</span><span class="n">x2</span><span class="p">])</span>
+               <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span> <span class="ow">in</span> <span class="n">semiknown_vars</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="p">()))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span> <span class="ow">in</span> <span class="n">semiknown_vars</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">()))</span>
+        <span class="n">semiknown_mat</span> <span class="o">=</span> <span class="n">coo_array</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span>
+                                   <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nof_semiknown</span><span class="p">,</span> <span class="n">nof_variables</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s2">&quot;equalities&quot;</span> <span class="ow">in</span> <span class="n">sparse_args</span><span class="p">:</span>
+            <span class="n">sparse_args</span><span class="p">[</span><span class="s2">&quot;equalities&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">sparse_args</span><span class="p">[</span><span class="s2">&quot;equalities&quot;</span><span class="p">],</span> <span class="n">semiknown_mat</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sparse_args</span><span class="p">[</span><span class="s2">&quot;equalities&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">semiknown_mat</span>
+    <span class="k">return</span> <span class="n">sparse_args</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

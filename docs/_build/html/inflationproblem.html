@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>InflationProblem Class &mdash; CausalInflation 0.1 documentation</title>
+  <title>InflationProblem Class &mdash; Inflation 2.0.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
@@ -32,7 +32,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -53,7 +53,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">InflationProblem Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inflationsdp.html">InflationSDP Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflationlp.html">InflationLP Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solvers.html">Interfaces with solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimization.html">Optimization helpers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="monomials.html">Monomial classes and functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="build.html">Functions to build problem elements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="operations.html">Functions to operate on monomials</a></li>
@@ -68,7 +70,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -114,37 +116,114 @@
 <section id="inflationproblem-class">
 <h1>InflationProblem Class<a class="headerlink" href="#inflationproblem-class" title="Permalink to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="causalinflation.InflationProblem">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">causalinflation.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem" title="Permalink to this definition"></a></dt>
-<dd><p>Class for enconding relevant details concerning the causal compatibility
-scenario.</p>
+<dt class="sig sig-object py" id="inflation.InflationProblem">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">inflation.</span></span><span class="sig-name descname"><span class="pre">InflationProblem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes_per_party</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings_per_party</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflation_level_per_source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classical_sources</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonclassical_intermediate_latents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classical_intermediate_latents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/inflation/InflationProblem.html#InflationProblem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationProblem" title="Permalink to this definition"></a></dt>
+<dd><p>Class for encoding relevant details concerning the causal compatibility.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationProblem.discover_lexorder_symmetries">
+<span class="sig-name descname"><span class="pre">discover_lexorder_symmetries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/InflationProblem.html#InflationProblem.discover_lexorder_symmetries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationProblem.discover_lexorder_symmetries" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates all the symmetries pertaining to the set of generating
+monomials. The new set of operators is a permutation of the old. The
+function outputs a list of all permutations.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dag</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Dictionary where each key is a parent node, and the corresponding value
-is a list of the corresponding children nodes. By default it is a
-single source connecting all the parties.</p></li>
-<li><p><strong>outcomes_per_party</strong> (<em>List</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Measurement outcome cardinalities. By default <code class="docutils literal notranslate"><span class="pre">2</span></code> for all parties.</p></li>
-<li><p><strong>settings_per_party</strong> (<em>List</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Measurement setting cardinalities. By default <code class="docutils literal notranslate"><span class="pre">1</span></code> for all parties.</p></li>
-<li><p><strong>inflation_level_per_source</strong> (<em>[</em><em>int</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Number of copies per source in the inflated graph. Source order is the
-same as insertion order in <cite>dag</cite>. If an integer is provided, it is used
-as the inflation level for all sources. By default <code class="docutils literal notranslate"><span class="pre">1</span></code> for all sources.</p></li>
-<li><p><strong>order</strong> (<em>List</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Name of each party. This also fixes the order in which party outcomes
-and settings are to appear in a conditional probability distribution.
-Default is alphabetical order and labels, e.g., <code class="docutils literal notranslate"><span class="pre">['A',</span> <span class="pre">'B',</span> <span class="pre">...]</span></code>.</p></li>
-<li><p><strong>verbose</strong> (<em>int</em><em>, </em><em>optional</em>) – <p>Optional parameter for level of verbose:</p>
-<ul>
-<li><p>0: quiet (default),</p></li>
-<li><p>1: monitor level: track program process and see warnings,</p></li>
-<li><p>2: debug level: show properties of objects created.</p></li>
-</ul>
-</p></li>
-</ul>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The permutations of the lexicographic order implied by the inflation
+symmetries.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray[int]</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py method">
-<dt class="sig sig-object py" id="causalinflation.InflationProblem.rectify_fake_setting">
-<span class="sig-name descname"><span class="pre">rectify_fake_setting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/causalinflation/InflationProblem.html#InflationProblem.rectify_fake_setting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#causalinflation.InflationProblem.rectify_fake_setting" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="inflation.InflationProblem.factorize_monomial_1d">
+<span class="sig-name descname"><span class="pre">factorize_monomial_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial_as_1darray</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canonical_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/InflationProblem.html#InflationProblem.factorize_monomial_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationProblem.factorize_monomial_1d" title="Permalink to this definition"></a></dt>
+<dd><p>Split a moment/expectation value into products of moments according
+to the support of the operators within the moment. The moment is
+encoded as a 1d array representing elements of the lexorder.</p>
+<p>The output is a tuple of ndarrays where each array represents another
+monomial s.t. their product is equal to the original monomial.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>monomial_as_1darray</strong> (<em>numpy.ndarray</em>) – Monomial in 1d array form.</p></li>
+<li><p><strong>canonical_order</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return the different factors in a canonical order.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple of ndarrays, where each array represents a picklist for an atomic monomial
+factor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[numpy.ndarray]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationProblem.factorize_monomial_2d">
+<span class="sig-name descname"><span class="pre">factorize_monomial_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial_as_2darray</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canonical_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/inflation/InflationProblem.html#InflationProblem.factorize_monomial_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationProblem.factorize_monomial_2d" title="Permalink to this definition"></a></dt>
+<dd><p>Split a moment/expectation value into products of moments according
+to the support of the operators within the moment. The moment is
+encoded as a 2d array where each row is an operator. If
+<code class="docutils literal notranslate"><span class="pre">monomial=A*B*C*B</span></code> then row 1 is <code class="docutils literal notranslate"><span class="pre">A</span></code>, row 2 is <code class="docutils literal notranslate"><span class="pre">B</span></code>, row 3 is
+<code class="docutils literal notranslate"><span class="pre">C</span></code>, and row 4 is <code class="docutils literal notranslate"><span class="pre">B</span></code>. In each row, the columns encode the
+following information:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>First column: The party index, <em>starting from 1</em> (e.g., 1 for
+<code class="docutils literal notranslate"><span class="pre">A</span></code>, 2 for <code class="docutils literal notranslate"><span class="pre">B</span></code>, etc.)</p></li>
+<li><p>Last two columns: The input <code class="docutils literal notranslate"><span class="pre">x</span></code> starting from zero, and then the
+output <code class="docutils literal notranslate"><span class="pre">a</span></code> starting from zero.</p></li>
+<li><p>In between: This encodes the support of the operator. There are as
+many columns as sources/quantum states. Column <cite>j</cite> represents
+source <cite>j-1</cite> (-1 because the first column represents the party). If
+the value is 0, then this operator does not measure this source. If
+the value is, e.g., 2, then this operator is acting on copy 2 of
+source <cite>j-1</cite>.</p></li>
+</ul>
+</div></blockquote>
+<p>The output is a tuple of ndarrays where each array represents another
+monomial s.t. their product is equal to the original monomial.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>monomial_as_2darray</strong> (<em>numpy.ndarray</em>) – Monomial in 2d array form.</p></li>
+<li><p><strong>canonical_order</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return the different factors in a canonical order.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple of ndarrays, where each array represents an atomic monomial
+factor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[numpy.ndarray]</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">monomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="go">                         [2, 1, 0, 2, 0, 0],</span>
+<span class="go">                         [1, 0, 3, 3, 0, 0],</span>
+<span class="go">                         [3, 3, 5, 0, 0, 0],</span>
+<span class="go">                         [3, 1, 4, 0, 0, 0],</span>
+<span class="go">                         [3, 6, 6, 0, 0, 0],</span>
+<span class="go">                         [3, 4, 5, 0, 0, 0]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">factorised</span> <span class="o">=</span> <span class="n">factorize_monomial</span><span class="p">(</span><span class="n">monomial_as_2darray</span><span class="p">)</span>
+<span class="go">[array([[1, 0, 1, 1, 0, 0]]),</span>
+<span class="go"> array([[1, 0, 3, 3, 0, 0]]),</span>
+<span class="go"> array([[2, 1, 0, 2, 0, 0],</span>
+<span class="go">        [3, 1, 4, 0, 0, 0]]),</span>
+<span class="go"> array([[3, 3, 5, 0, 0, 0],</span>
+<span class="go">        [3, 4, 5, 0, 0, 0]]),</span>
+<span class="go"> array([[3, 6, 6, 0, 0, 0]])]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="inflation.InflationProblem.rectify_fake_setting">
+<span class="sig-name descname"><span class="pre">rectify_fake_setting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monomial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/inflation/InflationProblem.html#InflationProblem.rectify_fake_setting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#inflation.InflationProblem.rectify_fake_setting" title="Permalink to this definition"></a></dt>
 <dd><p>When constructing the monomials in a non-network scenario, we rely
 on an internal representation of operators where the integer denoting
 the setting actually is an ‘effective setting’ that encodes, in
@@ -156,7 +235,7 @@ relate knowable monomials to their meaning as conditional events in
 non-network scenarios. If the scenario is a network, this function does
 nothing.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>monomial</strong> (<em>numpy.ndarray</em>) – An internal representation of a monomial as a 2d numpy array.
 Each row in the array corresponds to an operator. For each row,
 the zeroth element represents the party, the last element
@@ -164,11 +243,11 @@ represents the outcome, the second-to-last element represents
 the setting, and the remaining elements represent inflation
 copies.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The monomial with the index of the setting representing only the
 private setting.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>numpy.ndarray</p>
 </dd>
 </dl>
@@ -189,7 +268,7 @@ private setting.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Download and Installation &mdash; CausalInflation 0.1 documentation</title>
+  <title>Download and Installation &mdash; Inflation 2.0.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
@@ -32,7 +32,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="contents.html" class="icon icon-home"> CausalInflation
+            <a href="contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -64,7 +64,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">CausalInflation</a>
+          <a href="contents.html">Inflation</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -111,13 +111,17 @@
 <p>The package is available in the Python Package Index. The latest development version is available on GitHub.</p>
 <section id="dependencies">
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h2>
-<p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a>, <a class="reference external" href="http://www.numpy.org/">Numpy</a> and <a class="reference external" href="http://www.scipy.org/">Scipy</a>. The code is only compatible with Python 3. It is recommended to install <a class="reference external" href="http://www.numba.org/">Numba</a> which provides just-in-time compilation of several core functions, yielding a significant speed-up.</p>
+<p>The implementation requires <a class="reference external" href="http://sympy.org/">SymPy</a>, <a class="reference external" href="http://www.numpy.org/">Numpy</a>, and <a class="reference external" href="http://www.scipy.org/">Scipy</a>. The code is only compatible with Python 3. It is recommended to install <a class="reference external" href="http://www.numba.org/">Numba</a> which provides just-in-time compilation of several core functions, yielding a significant speed-up.</p>
 <p>Generated relaxations can be exported in <a class="reference external" href="http://euler.nmt.edu/~brian/sdplib/FORMAT">SDPA format</a>, which can be loaded with other solvers. We also support the use of the <a class="reference external" href="http://www.mosek.com/">MOSEK</a> solver for efficiently solving the relaxation (MOSEK has <a class="reference external" href="https://www.mosek.com/products/academic-licenses/">free academic licenses</a>). The MOSEK Python package needs to be installed. Future updates will include exporting to other solver interfaces, such as CVXPY, PICOS or YALMIP.</p>
 </section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
 <p>Follow the standard procedure for installing Python modules:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install causalinflation
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install inflation
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install git+https://github.com/ecboghiu/inflation.git@main
 </pre></div>
 </div>
 <p>If you use the development version, you can download the source code from the <a class="reference external" href="https://github.com/ecboghiu/inflation">GitHub repository</a> and run</p>
@@ -139,7 +143,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
+    <p>&#169; Copyright 2024, Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
