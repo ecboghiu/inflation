@@ -1,25 +1,25 @@
-
-
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Changelog &mdash; Inflation 2.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-
+  <title>Changelog &mdash; Inflation 2.0.2 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f5cff4aa"></script>
-      <script src="_static/doctools.js?v=9a2dae69"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
-      <script src="_static/copybutton.js?v=a56c686a"></script>
-      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -31,15 +31,11 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="contents.html" class="icon icon-home">
-            Inflation
+            <a href="contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -55,9 +51,10 @@
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#id1">2.0.1 - 2024-10-21</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id2">2.0.0 - 2024-06-01</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id3">1.0.0 - 2022-11-28</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">2.0.2 - 2024-12-14</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">2.0.1 - 2024-10-21</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">2.0.0 - 2024-06-01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">1.0.0 - 2022-11-28</a></li>
 </ul>
 </li>
 </ul>
@@ -75,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Changelog</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Changelog</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/changelog.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -86,18 +83,50 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="changelog">
-<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h1>
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this heading"></a></h1>
 <section id="id1">
-<h2>2.0.1 - 2024-10-21<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<h2>2.0.2 - 2024-12-14<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Compatibility fixes and improvements: the uses of SciPy’s <cite>coo_matrix</cite> (to be deprecated) have been substituted by <cite>coo_array</cite>. Also, the library does not need <cite>networkx</cite> any more.</p></li>
+<li><p>Bug fixes in the generation of physical monomials in structures with intermediate latents.</p></li>
+<li><p>Memory and runtime improvements.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>2.0.1 - 2024-10-21<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>Support for <a class="reference external" href="https://numpy.org/devdocs/release/2.0.0-notes.html">NumPy 2</a>.</p></li>
 <li><p>Small bugfixes.</p></li>
 <li><p>Memory and runtime improvements.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h2>2.0.0 - 2024-06-01<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<section id="id3">
+<h2>2.0.0 - 2024-06-01<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>Added support for linear programming relaxations of causal scenarios, via <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code>. This allows to run inflation hierarchies bounding the sets of classical and no-signaling correlations, per <a class="reference external" href="https://doi.org/10.1515/jci-2017-0020">J. Causal Inference 7(2), 2019</a> (<a class="reference external" href="https://arxiv.org/abs/1609.00672">arXiv:1609.00672</a>)</p></li>
 <li><p>Added support for hybrid scenarios with sources of different nature, via the <code class="docutils literal notranslate"><span class="pre">classical_sources</span></code> argument to <code class="docutils literal notranslate"><span class="pre">InflationProblem</span></code>. Currently supported: classical-no-signaling (via <code class="docutils literal notranslate"><span class="pre">InflationLP</span></code>) and classical-quantum (via <code class="docutils literal notranslate"><span class="pre">InflationSDP</span></code>).</p></li>
@@ -108,8 +137,8 @@
 <li><p>Revamped the description of monomials. This makes the codes faster and consume less memory.</p></li>
 </ul>
 </section>
-<section id="id3">
-<h2>1.0.0 - 2022-11-28<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<section id="id4">
+<h2>1.0.0 - 2022-11-28<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>Initial release.</p></li>
 </ul>

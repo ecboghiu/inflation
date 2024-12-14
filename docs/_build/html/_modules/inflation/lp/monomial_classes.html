@@ -1,24 +1,24 @@
-
-
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../">
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.lp.monomial_classes &mdash; Inflation 2.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=92fd9be5" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-
+  <title>inflation.lp.monomial_classes &mdash; Inflation 2.0.2 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
-      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
-      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
-      <script src="../../../_static/copybutton.js?v=a56c686a"></script>
-      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -29,15 +29,11 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="../../../contents.html" class="icon icon-home">
-            Inflation
+            <a href="../../../contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -68,9 +64,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">inflation.lp.monomial_classes</li>
+      <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>inflation.lp.monomial_classes</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -101,9 +97,7 @@
 <span class="kn">from</span> <span class="nn">.numbafied</span> <span class="kn">import</span> <span class="n">nb_is_do_conditional</span> <span class="k">as</span> <span class="n">is_do_conditional</span>
 
 
-<div class="viewcode-block" id="InternalAtomicMonomial">
-<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial">[docs]</a>
-<span class="nd">@total_ordering</span>
+<div class="viewcode-block" id="InternalAtomicMonomial"><a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial">[docs]</a><span class="nd">@total_ordering</span>
 <span class="k">class</span> <span class="nc">InternalAtomicMonomial</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;as_lexmon&quot;</span><span class="p">,</span>
                  <span class="s2">&quot;as_2d_array&quot;</span><span class="p">,</span>
@@ -123,7 +117,7 @@
                  <span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_lp_instance</span><span class="p">,</span> <span class="n">as_1d_vec</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models a moment</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models a moment</span>
 <span class="sd">        :math:`\langle Op_1 Op_2\dots Op_n\rangle` on the inflated problem,</span>
 <span class="sd">        which cannot be decomposed into products of other moments. It is used</span>
 <span class="sd">        as a building block for the ``CompoundMonomial`` class. It is</span>
@@ -144,12 +138,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">inflation_lp_instance</span>
         <span class="k">if</span> <span class="n">as_1d_vec</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">:</span>
-            <span class="c1"># self.as_bool_vec = as_1d_vec</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">as_1d_vec</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intc</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">as_1d_vec</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">intc</span><span class="p">)</span>
-            <span class="c1"># self.as_bool_vec = inflation_lp_instance.blank_bool_vec.copy()</span>
-            <span class="c1"># self.as_bool_vec[self.as_lexmon] = True</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">as_2d_array</span> <span class="o">=</span> <span class="n">inflation_lp_instance</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">)</span>
@@ -190,7 +181,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">symbol_from_atom_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a copy of the Monomial&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Make a copy of the Monomial&quot;&quot;&quot;</span>
         <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
@@ -201,25 +192,25 @@
         <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Monomial is equal to the ``other`` Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Whether the Monomial is equal to the ``other`` Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the hash of the Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the hash of the Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signature</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Monomial is lexicographically smaller than the ``other``</span>
+        <span class="sd">&quot;&quot;&quot;Whether the Monomial is lexicographically smaller than the ``other``</span>
 <span class="sd">        Monomial.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">signature</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">signature</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
@@ -254,7 +245,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_raw_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A string representing the monomial. In case of knowable monomials,</span>
+        <span class="sd">&quot;&quot;&quot;A string representing the monomial. In case of knowable monomials,</span>
 <span class="sd">        it is of the form ``p(outputs|inputs)``. Otherwise it represents the</span>
 <span class="sd">        expectation value of the monomial with bracket notation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -283,13 +274,10 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_signature</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># return self.as_1d_int_vec.tobytes() #FOR QUANTUM OR NONCOMMUTING CASE!!</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_operators</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_lexmon</span><span class="p">))</span>
 
-<div class="viewcode-block" id="InternalAtomicMonomial.compute_marginal">
-<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal">[docs]</a>
-    <span class="k">def</span> <span class="nf">compute_marginal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a probability distribution, compute the numerical value of</span>
+<div class="viewcode-block" id="InternalAtomicMonomial.compute_marginal"><a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.InternalAtomicMonomial.compute_marginal">[docs]</a>    <span class="k">def</span> <span class="nf">compute_marginal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Given a probability distribution, compute the numerical value of</span>
 <span class="sd">        the Monomial.</span>
 
 <span class="sd">        Parameters</span>
@@ -308,14 +296,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_zero</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">0.</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">compute_marginal</span><span class="p">(</span><span class="n">prob_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span><span class="p">)</span></div>
-</div>
+            <span class="k">return</span> <span class="n">compute_marginal</span><span class="p">(</span><span class="n">prob_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rectified_ndarray</span><span class="p">)</span></div></div>
 
 
-
-<div class="viewcode-block" id="CompoundMoment">
-<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment">[docs]</a>
-<span class="k">class</span> <span class="nc">CompoundMoment</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="CompoundMoment"><a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment">[docs]</a><span class="k">class</span> <span class="nc">CompoundMoment</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;as_counter&quot;</span><span class="p">,</span>
                  <span class="s2">&quot;factors&quot;</span><span class="p">,</span>
                  <span class="s2">&quot;idx&quot;</span><span class="p">,</span>
@@ -340,7 +324,7 @@
                  <span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomials</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">InternalAtomicMonomial</span><span class="p">]):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models moments :math:`\langle Op_1 Op_2\dots Op_n\rangle</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;This class models moments :math:`\langle Op_1 Op_2\dots Op_n\rangle</span>
 <span class="sd">        =\langle Op_i\dots\rangle\langle Op_{i&#39;}\dots\rangle` on the inflated</span>
 <span class="sd">        problem that are products of other moments. It is built from a tuple of</span>
 <span class="sd">        instances of the ``InternalAtomicMonomial`` class.</span>
@@ -400,7 +384,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">internal_type</span> <span class="o">=</span> <span class="n">InternalAtomicMonomial</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Monomial is equal to the ``other`` Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Whether the Monomial is equal to the ``other`` Monomial.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_counter</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">as_counter</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">internal_type</span><span class="p">):</span>
@@ -411,34 +395,29 @@
             <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the hash of the Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the hash of the Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signature</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of AtomicMonomials in the CompoundMonomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the number of AtomicMonomials in the CompoundMonomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_factors</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of the Monomial.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
-<div class="viewcode-block" id="CompoundMoment.attach_idx">
-<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.attach_idx">[docs]</a>
-    <span class="k">def</span> <span class="nf">attach_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assign an index to the Monomial. This is used when generating the</span>
+<div class="viewcode-block" id="CompoundMoment.attach_idx"><a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.attach_idx">[docs]</a>    <span class="k">def</span> <span class="nf">attach_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Assign an index to the Monomial. This is used when generating the</span>
 <span class="sd">        monomials in a scenario, and identifying them with integers.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span></div>
 
-
-<div class="viewcode-block" id="CompoundMoment.compute_marginal">
-<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.compute_marginal">[docs]</a>
-    <span class="k">def</span> <span class="nf">compute_marginal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a probability array, evaluate all the knowable atomic moment</span>
+<div class="viewcode-block" id="CompoundMoment.compute_marginal"><a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.compute_marginal">[docs]</a>    <span class="k">def</span> <span class="nf">compute_marginal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Given a probability array, evaluate all the knowable atomic moment</span>
 <span class="sd">        factors in the monomial and return the product of the resulting values.</span>
 
 <span class="sd">        The whole moment needs to be knowable (``self.is_knowable = True``),</span>
@@ -463,13 +442,10 @@
             <span class="n">value</span> <span class="o">*=</span> <span class="p">(</span><span class="n">factor</span><span class="o">.</span><span class="n">compute_marginal</span><span class="p">(</span><span class="n">prob_array</span><span class="p">)</span> <span class="o">**</span> <span class="n">power</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">value</span></div>
 
-
-<div class="viewcode-block" id="CompoundMoment.evaluate">
-<a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.evaluate">[docs]</a>
-    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="CompoundMoment.evaluate"><a class="viewcode-back" href="../../../monomials.html#inflation.lp.monomial_classes.CompoundMoment.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">known_monomials</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">InternalAtomicMonomial</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
                  <span class="n">use_lpi_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a dictionary of values for known atomic monomials,</span>
+        <span class="sd">&quot;&quot;&quot;Given a dictionary of values for known atomic monomials,</span>
 <span class="sd">        substitute all factors of the compound moment that are specified in</span>
 <span class="sd">        the dictionary with their values and return the product of the values</span>
 <span class="sd">        and a remainder compound moment made of the remaining factors.</span>
@@ -500,8 +476,6 @@
                 <span class="n">known_value</span> <span class="o">*=</span> <span class="p">(</span><span class="n">known_monomials</span><span class="p">[</span><span class="n">factor</span><span class="p">]</span> <span class="o">**</span> <span class="n">power</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                 <span class="n">unknown_counter</span><span class="p">[</span><span class="n">factor</span><span class="p">]</span> <span class="o">=</span> <span class="n">power</span>
-        <span class="c1"># unknown_factors = sorted(unknown_counter.elements(),</span>
-        <span class="c1">#                          key=lambda factor: factor.as_int_vec.tobytes())</span>
         <span class="n">unknown_factors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">unknown_counter</span><span class="o">.</span><span class="n">elements</span><span class="p">())</span>
         <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unknown_factors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
             <span class="n">known_status</span> <span class="o">=</span> <span class="s2">&quot;Known&quot;</span>
@@ -515,9 +489,8 @@
                     <span class="n">known_status</span> <span class="o">=</span> <span class="s2">&quot;Known&quot;</span>
         <span class="k">return</span> <span class="n">known_value</span><span class="p">,</span> <span class="n">unknown_factors</span><span class="p">,</span> <span class="n">known_status</span></div>
 
-
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a copy of the CompoundMonomial&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Make a copy of the CompoundMonomial&quot;&quot;&quot;</span>
         <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
@@ -526,7 +499,6 @@
             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
                 <span class="k">pass</span>
         <span class="k">return</span> <span class="n">result</span></div>
-
 </pre></div>
 
            </div>

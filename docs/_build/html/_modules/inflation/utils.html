@@ -1,24 +1,24 @@
-
-
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../">
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.utils &mdash; Inflation 2.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
-
+  <title>inflation.utils &mdash; Inflation 2.0.2 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
-      <script src="../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=f5cff4aa"></script>
-      <script src="../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
-      <script src="../../_static/copybutton.js?v=a56c686a"></script>
-      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -29,15 +29,11 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="../../contents.html" class="icon icon-home">
-            Inflation
+            <a href="../../contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -68,9 +64,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">inflation.utils</li>
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>inflation.utils</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -86,16 +82,20 @@
 <span class="sd">@authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">sympy</span>
+
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="k">as</span> <span class="nn">sps</span>
+
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">stderr</span>
 <span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">itemgetter</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">deque</span>
 
 
 <span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">nested</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keeps flattening a nested lists of lists until  the</span>
+    <span class="sd">&quot;&quot;&quot;Keeps flattening a nested lists of lists until  the</span>
 <span class="sd">    first element of the resulting list is not a list.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nested</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
@@ -105,16 +105,15 @@
             <span class="n">nested</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">nested</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">nested</span>
 
-<div class="viewcode-block" id="format_permutations">
-<a class="viewcode-back" href="../../build.html#inflation.sdp.quantum_tools.format_permutations">[docs]</a>
-<span class="k">def</span> <span class="nf">format_permutations</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+
+<div class="viewcode-block" id="format_permutations"><a class="viewcode-back" href="../../build.html#inflation.sdp.quantum_tools.format_permutations">[docs]</a><span class="k">def</span> <span class="nf">format_permutations</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
     <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span><span class="o">...</span><span class="p">]],</span>
     <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span><span class="o">...</span><span class="p">],</span><span class="o">...</span><span class="p">],</span>
     <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span><span class="o">...</span><span class="p">],</span>
 <span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Permutations of inflation indices must leave the integers 0,</span>
+    <span class="sd">&quot;&quot;&quot;Permutations of inflation indices must leave the integers 0,</span>
 <span class="sd">    corresponding to sources not being measured by the operator, invariant.</span>
 <span class="sd">    In order to achieve this, this function shifts a permutation of sources</span>
 <span class="sd">    by 1 and prepends it with the integer 0.</span>
@@ -136,7 +135,7 @@
 <span class="k">def</span> <span class="nf">clean_coefficients</span><span class="p">(</span><span class="n">cert</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
                        <span class="n">chop_tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
                        <span class="n">round_decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean the list of coefficients in a certificate.</span>
+    <span class="sd">&quot;&quot;&quot;Clean the list of coefficients in a certificate.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -172,8 +171,10 @@
     <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="n">round_decimals</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">coeffs</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
 
+
 <span class="k">def</span> <span class="nf">eprint</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">stderr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
 
 <span class="k">def</span> <span class="nf">partsextractor</span><span class="p">(</span><span class="n">thing_to_take_parts_of</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span><span class="o">...</span><span class="p">]:</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
@@ -189,7 +190,7 @@
 
 <span class="k">def</span> <span class="nf">expand_sparse_vec</span><span class="p">(</span><span class="n">sparse_vec</span><span class="p">:</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">,</span>
                       <span class="n">conversion_style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;eq&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expand a one-dimensional sparse matrix to its full form. Used to expand</span>
+    <span class="sd">&quot;&quot;&quot;Expand a one-dimensional sparse matrix to its full form. Used to expand</span>
 <span class="sd">    the solver arguments known_vars, lower_bounds, and upper_bounds.&quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="n">conversion_style</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;lb&quot;</span><span class="p">,</span> <span class="s2">&quot;ub&quot;</span><span class="p">},</span> \
         <span class="s2">&quot;Conversion style must be `lb`, `ub`, or `eq`.&quot;</span>
@@ -219,16 +220,11 @@
 
 
 <span class="k">def</span> <span class="nf">vstack</span><span class="p">(</span><span class="n">blocks</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coo&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack sparse matrices in coo_array form more efficiently.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Stack sparse matrices in coo_array form more efficiently.&quot;&quot;&quot;</span>
     <span class="n">non_empty</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mat</span> <span class="k">for</span> <span class="n">mat</span> <span class="ow">in</span> <span class="n">blocks</span> <span class="k">if</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">nof_blocks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_empty</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nof_blocks</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">)</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">):</span>
-            <span class="c1"># mat_row = blocks[0].row</span>
-            <span class="c1"># (row_count, _) = blocks[0].shape</span>
-            <span class="c1"># for block in blocks[1:]:</span>
-            <span class="c1">#     mat_row = np.concatenate((mat_row,</span>
-            <span class="c1">#                               block.row + row_count))</span>
             <span class="n">nof_rows</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">nof_cols</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">adjusted_rows</span> <span class="o">=</span> <span class="p">[]</span>
@@ -249,11 +245,84 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">sps</span><span class="o">.</span><span class="n">coo_array</span><span class="p">([])</span>
 
+
 <span class="k">def</span> <span class="nf">perm_combiner</span><span class="p">(</span><span class="n">old_perms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">new_perms</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="n">combined</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">old_perms</span><span class="p">,</span> <span class="n">new_perms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="c1"># combined = old_perms.T[new_perms.T]</span>
-    <span class="n">new_shape</span> <span class="o">=</span> <span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">new_perms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">new_perms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">combined</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">all_and_maximal_cliques</span><span class="p">(</span><span class="n">adjmat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                            <span class="n">max_n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                            <span class="n">isolate_maximal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">List</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Based on NetworkX&#39;s `enumerate_all_cliques`.</span>
+<span class="sd">    This version uses native Python sets instead of numpy arrays.</span>
+<span class="sd">    (Performance comparison needed.)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adjmat : numpy.ndarray</span>
+<span class="sd">      A boolean numpy array representing the adjacency matrix of an undirected graph.</span>
+<span class="sd">    max_n : int, optional</span>
+<span class="sd">      A cutoff for clique size reporting. Default 0, meaning no cutoff.</span>
+<span class="sd">    isolate_maximal : bool, optional</span>
+<span class="sd">      A flag to disable filtering for maximality, which can increase performance. True by default.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[List, List]</span>
+<span class="sd">      A list of all cliques as well as a list of maximal cliques. The maximal cliques list will be empty if the</span>
+<span class="sd">      `isolate_maximal` flag is set to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">all_cliques</span> <span class="o">=</span> <span class="p">[[]]</span>
+    <span class="n">maximal_cliques</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">verts</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">adjmat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">initial_cliques</span> <span class="o">=</span> <span class="p">[[</span><span class="n">u</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">verts</span><span class="p">]</span>
+    <span class="n">nbrs_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">adjmat</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">initial_cnbrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">nbrs_mat</span><span class="p">[</span><span class="n">u</span><span class="p">])</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">verts</span><span class="p">]</span>
+    <span class="n">nbrs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">set</span><span class="p">,</span> <span class="n">initial_cnbrs</span><span class="p">))</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">initial_cliques</span><span class="p">,</span> <span class="n">initial_cnbrs</span><span class="p">))</span>
+    <span class="n">there_is_a_cutoff</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_n</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">queue</span><span class="p">:</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">cnbrs</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+        <span class="n">all_cliques</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">isolate_maximal</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">cnbrs</span><span class="p">):</span>
+            <span class="n">base_as_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">base_as_set</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">superbase</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">superbase</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">queue</span><span class="p">):</span>
+                <span class="n">maximal_cliques</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">there_is_a_cutoff</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_n</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cnbrs</span><span class="p">):</span>
+                <span class="n">new_base</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">new_base</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                <span class="n">new_cnbrs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">nbrs</span><span class="p">[</span><span class="n">u</span><span class="p">]</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">,</span> <span class="n">cnbrs</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">:]))</span>
+                <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">new_base</span><span class="p">,</span> <span class="n">new_cnbrs</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">all_cliques</span><span class="p">,</span> <span class="n">maximal_cliques</span>
+
+
+<span class="k">def</span> <span class="nf">make_numerical</span><span class="p">(</span><span class="n">symbolic_expressions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">Expr</span><span class="p">],</span>
+                   <span class="n">symbols_to_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">Symbol</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Replace the symbols in the values of a dictionary by the corresponding</span>
+<span class="sd">    numerical values.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    symbolic_expressions : Dict[Any, sympy.core.expr.Expr]</span>
+<span class="sd">        Dictionary where the values are symbolic expressions of some variables.</span>
+<span class="sd">    symbols_to_values : Dict[sympy.core.symbol.Symbol, float]</span>
+<span class="sd">        Correspondence of the variables in the expressions and their associated</span>
+<span class="sd">        numerical values.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict[Any, float]</span>
+<span class="sd">        The dictionary with same keys and evaluated expressions as values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">numeric_values</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">symbolic_expressions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">numeric_values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">evalf</span><span class="p">(</span><span class="n">subs</span><span class="o">=</span><span class="n">symbols_to_values</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">numeric_values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numeric_values</span>
 </pre></div>
 
            </div>

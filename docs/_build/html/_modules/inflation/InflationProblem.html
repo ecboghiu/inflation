@@ -1,23 +1,21 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.InflationProblem &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
-
-  
+  <title>inflation.InflationProblem &mdash; Inflation 2.0.2 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/sphinx_highlight.js"></script>
         <script src="../../_static/clipboard.min.js"></script>
         <script src="../../_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -31,15 +29,11 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="../../contents.html" class="icon icon-home">
-            Inflation
+            <a href="../../contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -70,9 +64,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">inflation.InflationProblem</li>
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>inflation.InflationProblem</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -98,7 +92,6 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span>
 <span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
 
-<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">sympy</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
@@ -107,7 +100,7 @@
                            <span class="n">nb_overlap_matrix</span><span class="p">,</span>
                            <span class="n">apply_source_perm</span><span class="p">,</span>
                            <span class="n">commutation_matrix</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">format_permutations</span><span class="p">,</span> <span class="n">partsextractor</span><span class="p">,</span> <span class="n">perm_combiner</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">format_permutations</span><span class="p">,</span> <span class="n">partsextractor</span><span class="p">,</span> <span class="n">perm_combiner</span><span class="p">,</span> <span class="n">all_and_maximal_cliques</span>
 
 <span class="c1"># Force warnings.warn() to omit the source code line in the message</span>
 <span class="c1"># https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings</span>
@@ -117,7 +110,7 @@
 
 
 <div class="viewcode-block" id="InflationProblem"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem">[docs]</a><span class="k">class</span> <span class="nc">InflationProblem</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for encoding relevant details concerning the causal compatibility.</span>
+    <span class="sd">&quot;&quot;&quot;Class for encoding relevant details concerning the causal compatibility.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">dag</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -129,7 +122,7 @@
                  <span class="n">classical_intermediate_latents</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="o">...</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(),</span>
                  <span class="n">order</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="o">...</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(),</span>
                  <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class for encoding relevant details concerning the causal compatibility</span>
+        <span class="sd">&quot;&quot;&quot;Class for encoding relevant details concerning the causal compatibility</span>
 <span class="sd">        scenario.</span>
 
 <span class="sd">        Parameters</span>
@@ -255,20 +248,22 @@
         <span class="c1"># Distinguishing between classical versus nonclassical sources</span>
         <span class="n">nodes_with_children_as_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="n">nodes_with_children</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">nodes_with_children_as_list</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
             <span class="n">nodes_with_children</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_latents</span><span class="p">),</span>
-            <span class="n">key</span><span class="o">=</span><span class="n">nodes_with_children_as_list</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">key</span><span class="o">=</span><span class="n">nodes_with_children_as_list</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">classical_sources</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classical_sources</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">classical_sources</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The keyword argument classical_sources=`</span><span class="si">{</span><span class="n">classical_sources</span><span class="si">}</span><span class="s1">` could not be parsed.&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_sources</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classical_sources</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
-            <span class="k">if</span> <span class="n">classical_sources</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">classical_sources</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">),</span> <span class="s2">&quot;Some specified classical source cannot be found in the DAG.&quot;</span>
-                <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">classical_sources</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">classical_sources</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">),</span> <span class="s2">&quot;Some specified classical source cannot be found in the DAG.&quot;</span>
+            <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">classical_sources</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nonclassical_sources</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 
         <span class="c1"># Test if any quantum intermediate latent has fully classical parents.</span>
@@ -453,7 +448,26 @@
                 <span class="n">measurements_per_party</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
                     <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">O_card</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nr_properties</span><span class="p">)))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_groups</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ortho_groups_per_party</span><span class="p">))</span>
+
+        <span class="c1">#New - orthogonal indices. To be used to accelerate monomial instantiation.</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_idxs_per_party</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_idxs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ortho_groups_of_party</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_groups_per_party</span><span class="p">:</span>
+            <span class="n">ortho_idxs_of_party</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ortho_group</span> <span class="ow">in</span> <span class="n">ortho_groups_of_party</span><span class="p">:</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ortho_group</span><span class="p">)</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+                <span class="n">block</span> <span class="o">+=</span> <span class="n">offset</span>
+                <span class="n">ortho_idxs_of_party</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                <span class="n">offset</span> <span class="o">+=</span> <span class="n">l</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_idxs_per_party</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ortho_idxs_of_party</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_idxs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ortho_idxs_of_party</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_template_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ortho_idx_group</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ortho_idx_group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_idxs</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ortho_groups</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_np_dtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">party_from_lexidx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">party_from_templateidx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">party_from_lexidx</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_template_idxs</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nr_operators</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder_for_factorization</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
@@ -470,17 +484,17 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_default_notcomm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_compatible_measurements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default_notcomm</span><span class="p">)</span>
-        <span class="c1"># Use self._ortho_groups to label operators that are orthogonal as</span>
-        <span class="c1"># incompatible as their product is zero, and they can never be </span>
-        <span class="c1"># observed together with non-zero probability.</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">ortho_group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_groups</span><span class="p">:</span>
-            <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ortho_group</span><span class="p">)</span>
-            <span class="n">block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
-            <span class="n">block</span><span class="o">+=</span> <span class="n">offset</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_compatible_measurements</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">block</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">offset</span><span class="o">+=</span><span class="n">l</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_compatible_template_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default_notcomm</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_template_idxs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template_idxs</span><span class="p">)])</span>
+
+    <span class="k">def</span> <span class="nf">all_and_maximal_compatible_templates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                             <span class="n">max_n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                             <span class="n">isolate_maximal</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">all_and_maximal_cliques</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compatible_template_measurements</span><span class="p">,</span>
+                                       <span class="n">max_n</span><span class="o">=</span><span class="n">max_n</span><span class="p">,</span>
+                                       <span class="n">isolate_maximal</span><span class="o">=</span><span class="n">isolate_maximal</span><span class="p">)</span>
 
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -489,8 +503,8 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nonclassical_sources</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
             <span class="n">source_info</span> <span class="o">=</span> <span class="s2">&quot;All sources are quantum.&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">classical_sources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span><span class="p">]</span>
-            <span class="n">quantum_sources</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_nonclassical_sources</span><span class="p">]</span>
+            <span class="n">classical_sources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_classical_sources</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)]</span>
+            <span class="n">quantum_sources</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_actual_sources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_nonclassical_sources</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)]</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">classical_sources</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">extra_1</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span>
                 <span class="n">extra_2</span> <span class="o">=</span> <span class="s2">&quot;are&quot;</span>
@@ -515,121 +529,11 @@
                 <span class="s2">&quot; inflation copies per source. &quot;</span> <span class="o">+</span> <span class="n">source_info</span><span class="p">)</span>
 
     <span class="c1">###########################################################################</span>
-    <span class="c1"># HELPER UTILITY FUNCTION                                    #</span>
+    <span class="c1"># HELPER UTILITY FUNCTION                                                 #</span>
     <span class="c1">###########################################################################</span>
-    
-    <span class="nd">@cached_property</span>
-    <span class="k">def</span> <span class="nf">_party_positions_within_lexorder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># TODO @Elie write docstring</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">party_positions_within_lexorder</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">ortho_groups</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ortho_groups_per_party</span><span class="p">:</span>
-            <span class="n">this_party_positions</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">ortho_group</span> <span class="ow">in</span> <span class="n">ortho_groups</span><span class="p">:</span>
-                <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ortho_group</span><span class="p">)</span>
-                <span class="n">block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">offset</span><span class="o">+</span><span class="n">l</span><span class="p">)</span>
-                <span class="n">this_party_positions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
-                <span class="n">offset</span><span class="o">+=</span><span class="n">l</span>
-            <span class="n">party_positions_within_lexorder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_party_positions</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">party_positions_within_lexorder</span>
-    
-    <span class="k">def</span> <span class="nf">_subsets_of_compatible_mmnts_per_party</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                                               <span class="n">party</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                               <span class="n">with_last_outcome</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-                                               <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find all subsets of compatible operators for a given party. They</span>
-<span class="sd">        are returned as lists of sets of maximum length monomials (that is,</span>
-<span class="sd">        if AB is compatible and ABC is compatible, only ABC is returned as</span>
-<span class="sd">        AB is a subset of ABC).</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        party : int</span>
-<span class="sd">            The party specifies as its position in the list of parties,</span>
-<span class="sd">            as specified by &#39;order&#39;.</span>
-<span class="sd">        with_last_outcome : bool, optional</span>
-<span class="sd">            Whether the compatible measurements should include those that</span>
-<span class="sd">            have the last outcome, by default False</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        list</span>
-<span class="sd">            List of lists of compatible operators of maximum length.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">with_last_outcome</span><span class="p">:</span>
-            <span class="n">_s_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_party_positions_within_lexorder</span><span class="p">[</span><span class="n">party</span><span class="p">]))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">_s_</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">positions</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_party_positions_within_lexorder</span><span class="p">[</span><span class="n">party</span><span class="p">]:</span>
-                <span class="n">_s_</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">party_compat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compatible_measurements</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">_s_</span><span class="p">,</span> <span class="n">_s_</span><span class="p">)]</span>
-        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">from_numpy_array</span><span class="p">(</span><span class="n">party_compat</span><span class="p">)</span>
-        <span class="n">raw_cliques</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">find_cliques</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">partsextractor</span><span class="p">(</span><span class="n">_s_</span><span class="p">,</span> <span class="n">clique</span><span class="p">)</span> <span class="k">for</span> <span class="n">clique</span> <span class="ow">in</span> <span class="n">raw_cliques</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">_generate_compatible_monomials_given_party</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                                                <span class="n">party</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                                <span class="n">up_to_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                                                <span class="n">with_last_outcome</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-                                                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to generate all compatible monomials given a party.</span>
-<span class="sd">        </span>
-<span class="sd">        While _subsets_of_compatible_mmnts_per_party returns maximum length</span>
-<span class="sd">        compatible operators, i.e., ABC but not AB, this function returns </span>
-<span class="sd">        all lengths up to the specified maximum, i.e., if up_to_length=2,</span>
-<span class="sd">        for the compatible monomial ABC, the monomials A, B, C, AB, AC, BC, ABC</span>
-<span class="sd">        are returned.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        party : int</span>
-<span class="sd">            The party specifies as its position in the list of parties,</span>
-<span class="sd">            as specified by &#39;order&#39;.</span>
-<span class="sd">        up_to_length : int, optional</span>
-<span class="sd">            _description_, by default None</span>
-<span class="sd">        with_last_outcome : bool, optional</span>
-<span class="sd">            Whether the compatible measurements should include those that</span>
-<span class="sd">            have the last outcome, by default False</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        2D array</span>
-<span class="sd">            A 2D boolean array where each row is a compatible monomial,</span>
-<span class="sd">            and the columns are the lexorder indices of the operators.</span>
-<span class="sd">            If we have 4 operators in the lexorder, ABCD, then</span>
-<span class="sd">            [[1, 0, 1, 0], [0, 1, 1, 0]] corresponds to AC and BC.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># The cliques will be all unique sets of compatible operators of</span>
-        <span class="c1"># ALL lengths, given a scenario&#39;s compatibility matrix</span>
-        <span class="n">cliques</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subsets_of_compatible_mmnts_per_party</span><span class="p">(</span>
-            <span class="n">party</span><span class="p">,</span>
-            <span class="n">with_last_outcome</span><span class="o">=</span><span class="n">with_last_outcome</span><span class="p">)</span>
-        <span class="n">max_len_clique</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cliques</span><span class="p">])</span>
-        <span class="n">max_length</span> <span class="o">=</span> <span class="n">up_to_length</span> <span class="k">if</span> <span class="n">up_to_length</span> <span class="o">!=</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">max_len_clique</span>
-        <span class="k">if</span> <span class="n">max_length</span> <span class="o">&gt;</span> <span class="n">max_len_clique</span><span class="p">:</span>
-            <span class="n">max_length</span> <span class="o">=</span> <span class="n">max_len_clique</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The maximum length of physical monomials required is &quot;</span> <span class="o">+</span>
-                     <span class="s2">&quot;larger than the maximum sequence of compatible operators&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Take combinations of all lengths up to the specified maximum</span>
-        <span class="c1"># of all the cliques</span>
-        <span class="n">unique_subsets</span> <span class="o">=</span> <span class="p">{</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">ops</span><span class="p">)</span> <span class="k">for</span> <span class="n">nr_ops</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-                              <span class="k">for</span> <span class="n">clique</span> <span class="ow">in</span> <span class="n">cliques</span>
-                              <span class="k">for</span> <span class="n">ops</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">clique</span><span class="p">,</span> <span class="n">nr_ops</span><span class="p">)}</span>
-        <span class="c1"># Sort them in ascending lexicographic order</span>
-        <span class="n">unique_subsets</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">((</span><span class="nb">sorted</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">unique_subsets</span><span class="p">),</span>
-                                <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">x</span><span class="p">))</span>
-        <span class="c1"># Convert them to boolean vector encoding</span>
-        <span class="n">unique_subsets_as_boolvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_subsets</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mon_as_set</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unique_subsets</span><span class="p">):</span>
-            <span class="n">unique_subsets_as_boolvecs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">mon_as_set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="n">unique_subsets_as_boolvecs</span>
-
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">original_dag_events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates the analog of a lexorder for the original DAG.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">original_dag_events</span> <span class="o">=</span> <span class="p">[]</span>
@@ -652,7 +556,7 @@
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_lexorder_lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates helper dictionary for quick lookup of lexorder indices.</span>
+        <span class="sd">&quot;&quot;&quot;Creates helper dictionary for quick lookup of lexorder indices.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -670,7 +574,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to interpret</span><span class="se">\n</span><span class="si">{</span><span class="n">mon</span><span class="si">}</span><span class="se">\n</span><span class="s2"> relative to specified lexorder </span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_from_2dndarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array2d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Obtains the bytes representation of an array. The library uses this</span>
+        <span class="sd">&quot;&quot;&quot;Obtains the bytes representation of an array. The library uses this</span>
 <span class="sd">        representation as hashes for the corresponding monomials.</span>
 
 <span class="sd">        Parameters</span>
@@ -681,25 +585,12 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_np_dtype</span><span class="p">)</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()</span>
 
     <span class="nd">@cached_property</span>
-    <span class="k">def</span> <span class="nf">_lexrepr_to_dicts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a dict representation.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        list</span>
-<span class="sd">            List of the same length as lexorder, where the i-th element is the</span>
-<span class="sd">            dictionary representation of the i-th operator in the lexorder.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_interpret_operator</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lexorder</span><span class="p">]</span>
-
-
-    <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_any_inflation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflation_level_per_source</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_lexrepr_to_dicts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a string representation.</span>
+        <span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a string representation.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -711,7 +602,7 @@
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_lexrepr_to_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a string representation.</span>
+        <span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a string representation.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -726,7 +617,7 @@
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_lexrepr_to_copy_index_free_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a string representation.</span>
+        <span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial, to a string representation.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -744,7 +635,7 @@
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_lexrepr_to_all_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial to</span>
+        <span class="sd">&quot;&quot;&quot;Map 1D array lexorder encoding of a monomial to</span>
 <span class="sd">        a variety of possible string representations.</span>
 
 <span class="sd">        Returns</span>
@@ -767,7 +658,7 @@
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">_lexrepr_to_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;For each operator in the lexorder, create a sympy symbol with the </span>
+        <span class="sd">&quot;&quot;&quot;For each operator in the lexorder, create a sympy symbol with the </span>
 <span class="sd">        same name as returned by InflationPRoblem._lexrepr_to_names()</span>
 
 <span class="sd">        Returns</span>
@@ -781,7 +672,7 @@
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">names_to_ints</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map party names to integers denoting their position in the list of</span>
+        <span class="sd">&quot;&quot;&quot;Map party names to integers denoting their position in the list of</span>
 <span class="sd">        parties, as specified by &#39;order&#39;, offset by 1 (i.e., first party is 1).</span>
 
 <span class="sd">        Used for the 2D array representation of monomials.</span>
@@ -860,7 +751,7 @@
 
 
     <span class="k">def</span> <span class="nf">_is_knowable_q_non_networks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if a monomial (written as a sequence of operators in 2d array</span>
+        <span class="sd">&quot;&quot;&quot;Checks if a monomial (written as a sequence of operators in 2d array</span>
 <span class="sd">        form) corresponds to a knowable probability. The function assumes that</span>
 <span class="sd">        the candidate monomial already passed the preliminary knowable test</span>
 <span class="sd">        from `inflation.sdp.quantum_tools.py`.</span>
@@ -902,7 +793,7 @@
             <span class="k">return</span> <span class="kc">True</span>
 
 <div class="viewcode-block" id="InflationProblem.rectify_fake_setting"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem.rectify_fake_setting">[docs]</a>    <span class="k">def</span> <span class="nf">rectify_fake_setting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;When constructing the monomials in a non-network scenario, we rely</span>
+        <span class="sd">&quot;&quot;&quot;When constructing the monomials in a non-network scenario, we rely</span>
 <span class="sd">        on an internal representation of operators where the integer denoting</span>
 <span class="sd">        the setting actually is an &#39;effective setting&#39; that encodes, in</span>
 <span class="sd">        addition to the &#39;private setting&#39; that each party is free to choose,</span>
@@ -946,7 +837,7 @@
 <div class="viewcode-block" id="InflationProblem.factorize_monomial_2d"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem.factorize_monomial_2d">[docs]</a>    <span class="k">def</span> <span class="nf">factorize_monomial_2d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                               <span class="n">monomial_as_2darray</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                               <span class="n">canonical_order</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split a moment/expectation value into products of moments according</span>
+        <span class="sd">&quot;&quot;&quot;Split a moment/expectation value into products of moments according</span>
 <span class="sd">        to the support of the operators within the moment. The moment is</span>
 <span class="sd">        encoded as a 2d array where each row is an operator. If</span>
 <span class="sd">        ``monomial=A*B*C*B`` then row 1 is ``A``, row 2 is ``B``, row 3 is</span>
@@ -1004,7 +895,7 @@
 <div class="viewcode-block" id="InflationProblem.factorize_monomial_1d"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem.factorize_monomial_1d">[docs]</a>    <span class="k">def</span> <span class="nf">factorize_monomial_1d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                               <span class="n">monomial_as_1darray</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                               <span class="n">canonical_order</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split a moment/expectation value into products of moments according</span>
+        <span class="sd">&quot;&quot;&quot;Split a moment/expectation value into products of moments according</span>
 <span class="sd">        to the support of the operators within the moment. The moment is</span>
 <span class="sd">        encoded as a 1d array representing elements of the lexorder.</span>
 
@@ -1045,7 +936,7 @@
     <span class="c1"># FUNCTIONS PERTAINING TO SYMMETRY                                        #</span>
     <span class="c1">###########################################################################</span>
 <div class="viewcode-block" id="InflationProblem.discover_lexorder_symmetries"><a class="viewcode-back" href="../../inflationproblem.html#inflation.InflationProblem.discover_lexorder_symmetries">[docs]</a>    <span class="k">def</span> <span class="nf">discover_lexorder_symmetries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculates all the symmetries pertaining to the set of generating</span>
+        <span class="sd">&quot;&quot;&quot;Calculates all the symmetries pertaining to the set of generating</span>
 <span class="sd">        monomials. The new set of operators is a permutation of the old. The</span>
 <span class="sd">        function outputs a list of all permutations.</span>
 
@@ -1095,7 +986,7 @@
         
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">lexorder_symmetries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Discover symmetries expressed as permutations of the lexorder.</span>
+        <span class="sd">&quot;&quot;&quot;Discover symmetries expressed as permutations of the lexorder.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
