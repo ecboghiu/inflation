@@ -2,6 +2,15 @@
 Changelog
 *********
 
+2.0.2 - 2024-12-14
+******************
+
+* Compatibility fixes and improvements: the uses of SciPy's `coo_matrix` (to be deprecated) have been substituted by `coo_array`. Also, the library does not need `networkx` any more.
+
+* Bug fixes in the generation of physical monomials in structures with intermediate latents.
+
+* Memory and runtime improvements.
+
 2.0.1 - 2024-10-21
 ******************
 
