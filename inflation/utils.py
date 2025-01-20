@@ -4,12 +4,16 @@ This file contains auxiliary functions of general purpose
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 from __future__ import print_function
+import sympy
+
 import numpy as np
 import scipy.sparse as sps
+
 from itertools import chain
-from typing import Iterable, Union, List, Tuple, Dict
+from typing import Any, Dict, Iterable, List, Tuple, Union
 from sys import stderr
 from operator import itemgetter
+from collections import deque
 
 
 def flatten(nested):
@@ -22,6 +26,7 @@ def flatten(nested):
         while isinstance(nested[0], Iterable):
             nested = list(chain.from_iterable(nested))
         return nested
+
 
 def format_permutations(array: Union[
     np.ndarray,
@@ -47,6 +52,7 @@ def format_permutations(array: Union[
     """
     source_permutation = np.asarray(array) + 1
     return np.pad(source_permutation, ((0, 0), (1, 0)))
+
 
 def clean_coefficients(cert: Dict[str, float],
                        chop_tol: float = 1e-10,
@@ -87,8 +93,10 @@ def clean_coefficients(cert: Dict[str, float],
     coeffs = np.round(coeffs, decimals=round_decimals)
     return dict(zip(cert.keys(), coeffs.flat))
 
+
 def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
+
 
 def partsextractor(thing_to_take_parts_of, indices) -> Tuple[int,...]:
     if hasattr(indices, '__iter__'):
@@ -139,11 +147,6 @@ def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_array:
     nof_blocks = len(non_empty)
     if nof_blocks > 1:
         if all(isinstance(block, sps.coo_array) for block in blocks):
-            # mat_row = blocks[0].row
-            # (row_count, _) = blocks[0].shape
-            # for block in blocks[1:]:
-            #     mat_row = np.concatenate((mat_row,
-            #                               block.row + row_count))
             nof_rows = 0
             nof_cols = 0
             adjusted_rows = []
@@ -164,8 +167,81 @@ def vstack(blocks: tuple, format: str = 'coo') -> sps.coo_array:
     else:
         return sps.coo_array([])
 
+
 def perm_combiner(old_perms: np.ndarray, new_perms: np.ndarray) -> np.ndarray:
     combined = np.take(old_perms, new_perms, axis=1)
-    # combined = old_perms.T[new_perms.T]
-    new_shape = ((-1, new_perms.shape[1]))
+    new_shape = (-1, new_perms.shape[1])
     return combined.reshape(new_shape)
+
+
+def all_and_maximal_cliques(adjmat: np.ndarray,
+                            max_n=0,
+                            isolate_maximal=True) -> (List, List):
+    """Based on NetworkX's `enumerate_all_cliques`.
+    This version uses native Python sets instead of numpy arrays.
+    (Performance comparison needed.)
+
+    Parameters
+    ----------
+    adjmat : numpy.ndarray
+      A boolean numpy array representing the adjacency matrix of an undirected graph.
+    max_n : int, optional
+      A cutoff for clique size reporting. Default 0, meaning no cutoff.
+    isolate_maximal : bool, optional
+      A flag to disable filtering for maximality, which can increase performance. True by default.
+
+    Returns
+    -------
+    Tuple[List, List]
+      A list of all cliques as well as a list of maximal cliques. The maximal cliques list will be empty if the
+      `isolate_maximal` flag is set to False.
+    """
+    all_cliques = [[]]
+    maximal_cliques = []
+    verts = tuple(range(adjmat.shape[0]))
+    initial_cliques = [[u] for u in verts]
+    nbrs_mat = np.triu(adjmat, k=1)
+    initial_cnbrs = [np.flatnonzero(nbrs_mat[u]).tolist() for u in verts]
+    nbrs = list(map(set, initial_cnbrs))
+    queue = deque(zip(initial_cliques, initial_cnbrs))
+    there_is_a_cutoff = (max_n <= 0)
+    while queue:
+        base, cnbrs = queue.popleft()
+        all_cliques.append(base)
+        if isolate_maximal and not len(cnbrs):
+            base_as_set = set(base)
+            if not any(base_as_set.issubset(superbase) for (superbase, _) in queue):
+                maximal_cliques.append(base)
+        elif there_is_a_cutoff or len(base) < max_n:
+            for i, u in enumerate(cnbrs):
+                new_base = base.copy()
+                new_base.append(u)
+                new_cnbrs = list(filter(nbrs[u].__contains__, cnbrs[i+1:]))
+                queue.append((new_base, new_cnbrs))
+    return all_cliques, maximal_cliques
+
+
+def make_numerical(symbolic_expressions: Dict[Any, sympy.core.expr.Expr],
+                   symbols_to_values: Dict[sympy.core.symbol.Symbol, float]
+                   ) -> Dict[Any, float]:
+    """Replace the symbols in the values of a dictionary by the corresponding
+    numerical values.
+    Parameters
+    ----------
+    symbolic_expressions : Dict[Any, sympy.core.expr.Expr]
+        Dictionary where the values are symbolic expressions of some variables.
+    symbols_to_values : Dict[sympy.core.symbol.Symbol, float]
+        Correspondence of the variables in the expressions and their associated
+        numerical values.
+    Returns
+    -------
+    Dict[Any, float]
+        The dictionary with same keys and evaluated expressions as values.
+    """
+    numeric_values = dict()
+    for k, v in symbolic_expressions.items():
+        try:
+            numeric_values[k] = float(v.evalf(subs=symbols_to_values))
+        except AttributeError:
+            numeric_values[k] = float(v)
+    return numeric_values

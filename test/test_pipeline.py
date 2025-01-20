@@ -257,7 +257,7 @@ class TestReset(unittest.TestCase):
 
 
 class TestResetLP(unittest.TestCase):
-    lp = InflationLP(trivial_c, nonfanout=False)
+    lp = InflationLP(trivial_c)
     lp._generate_lp()
 
     def setUp(self) -> None:
@@ -456,13 +456,13 @@ class TestSDPOutput(unittest.TestCase):
         self.assertEqual(sdp.status, "infeasible",
                          "The commuting SDP is not identifying incompatible " +
                          "distributions.")
-        lp_fanout = InflationLP(self.cutInflation_c, nonfanout=False)
+        lp_fanout = InflationLP(self.cutInflation_c)
         lp_fanout.set_distribution(self.GHZ(0.5 + 1e-2))
         lp_fanout.solve()
         self.assertEqual(lp_fanout.success, False,
                          "The fanout LP is not identifying incompatible " +
                          "distributions.")
-        lp_nonfanout = InflationLP(self.cutInflation_c, nonfanout=True)
+        lp_nonfanout = InflationLP(self.cutInflation)
         lp_nonfanout.set_distribution(self.GHZ(0.5 + 1e-2))
         lp_nonfanout.solve()
         self.assertEqual(lp_nonfanout.success, False,
@@ -654,7 +654,7 @@ class TestLPOutput(unittest.TestCase):
                     f"{lp.objective_value}.")
 
     def test_instrumental(self):
-        lp = InflationLP(TestSDPOutput.instrumental_c, nonfanout=False)
+        lp = InflationLP(TestSDPOutput.instrumental_c)
         with self.subTest(msg="Infeasible Bonet's inequality"):
             lp.set_distribution(TestSDPOutput.incompatible_dist)
             lp.solve(feas_as_optim=False)
@@ -680,8 +680,7 @@ class TestLPOutput(unittest.TestCase):
                              "scenario is not being recognized as such.")
 
     def test_supports(self):
-        lp = InflationLP(TestSDPOutput.bellScenario_c, supports_problem=True,
-                         nonfanout=False)
+        lp = InflationLP(TestSDPOutput.bellScenario_c, supports_problem=True)
         with self.subTest(msg="Incompatible support"):
             pr_support = np.zeros((2, 2, 2, 2))
             for a, b, x, y in np.ndindex(*pr_support.shape):
@@ -902,8 +901,6 @@ class TestPipelineLP(unittest.TestCase):
                              "distribution.")
         with self.subTest(msg=f"Testing {dist_name}, compatible distribution, "
                               "feasibility as optimization"):
-            # self.skipTest("Feasibility as optimization not working for "
-            #               "compatible distributions?")
             lp.solve(feas_as_optim=True)
             self.assertTrue(lp.primal_objective >= -1e-6,
                             "The LP with feasibility as optimization did not "
@@ -936,7 +933,7 @@ class TestInstrumental(TestPipelineLP):
         return dist
 
     def test_instrumental_fanout(self):
-        inst = InflationLP(self.instrumental_c, nonfanout=False)
+        inst = InflationLP(self.instrumental_c)
         args = {"scenario": inst,
                 "truth_columns": 36,
                 "truth_eq": 20,
@@ -946,7 +943,7 @@ class TestInstrumental(TestPipelineLP):
         self._run(**args)
 
     def test_instrumental_nonfanout(self):
-        inst = InflationLP(self.instrumental, nonfanout=True)
+        inst = InflationLP(self.instrumental)
         args = {"scenario": inst,
                 "truth_columns": 15,
                 "truth_eq": 6,
@@ -982,7 +979,6 @@ class TestBell(TestPipelineLP):
             self.assertAlmostEqual(lp.objective_value, truth,
                                    msg=f"The LP is not recovering max(CHSH) = "
                                        f"{truth}.")
-        # Biased CHSH?
 
     def p_Signalling_to_Bob(self, v):
         dist = np.full((2, 2, 2, 2), (1 - v) / 4)
@@ -990,7 +986,7 @@ class TestBell(TestPipelineLP):
         return dist
 
     def test_bell_fanout(self):
-        bell = InflationLP(self.bellScenario_c, nonfanout=False)
+        bell = InflationLP(self.bellScenario_c)
         args = {"scenario": bell,
                 "truth_columns": 16,
                 "truth_obj": 2,
@@ -999,10 +995,9 @@ class TestBell(TestPipelineLP):
                 "dist_name": "Noisy Signalling to Bob",
                 "crit_cutoff": 0.2}
         self._run(**args)
-        # self._CHSH(**args)
 
     def test_bell_nonfanout(self):
-        bell = InflationLP(self.bellScenario, nonfanout=True)
+        bell = InflationLP(self.bellScenario)
         args = {"scenario": bell,
                 "truth_columns": 9,
                 "truth_obj": 2,
@@ -1011,7 +1006,6 @@ class TestBell(TestPipelineLP):
                 "dist_name": "Noisy Signalling to Bob",
                 "crit_cutoff": 0.2}
         self._run(**args)
-        # self._CHSH(**args)
 
 
 class TestTriangle(TestPipelineLP):
@@ -1022,6 +1016,15 @@ class TestTriangle(TestPipelineLP):
                                 settings_per_party=[1, 1, 1],
                                 inflation_level_per_source=[1, 1, 1],
                                 order=['a', 'b', 'c'])
+    
+    triangle_c = InflationProblem({"lambda": ["a", "b"],
+                                   "mu": ["b", "c"],
+                                   "sigma": ["a", "c"]},
+                                  outcomes_per_party=[2, 2, 2],
+                                  settings_per_party=[1, 1, 1],
+                                  inflation_level_per_source=[1, 1, 1],
+                                  order=['a', 'b', 'c'],
+                                  classical_sources="all")
 
     def GHZ(self, v):
         dist = np.zeros((2, 2, 2, 1, 1, 1))
@@ -1029,7 +1032,7 @@ class TestTriangle(TestPipelineLP):
         return v * dist + (1 - v) / 8
 
     def test_triangle_fanout(self):
-        triangle = InflationLP(self.triangle, nonfanout=False)
+        triangle = InflationLP(self.triangle_c)
         args = {"scenario": triangle,
                 "truth_columns": 8,
                 "truth_eq": 0,
@@ -1039,7 +1042,7 @@ class TestTriangle(TestPipelineLP):
         self._run(**args)
 
     def test_triangle_nonfanout(self):
-        triangle = InflationLP(self.triangle, nonfanout=True)
+        triangle = InflationLP(self.triangle)
         args = {"scenario": triangle,
                 "truth_columns": 8,
                 "truth_eq": 0,
@@ -1073,7 +1076,7 @@ class TestEvans(TestPipelineLP):
         return dist
 
     def test_evans_fanout(self):
-        evans = InflationLP(self.evans_c, nonfanout=False)
+        evans = InflationLP(self.evans_c)
         args = {"scenario": evans,
                 "truth_columns": 48,
                 "truth_eq": 16,
@@ -1083,7 +1086,7 @@ class TestEvans(TestPipelineLP):
         self._run(**args)
 
     def test_evans_nonfanout(self):
-        evans = InflationLP(self.evans, nonfanout=True)
+        evans = InflationLP(self.evans)
         args = {"scenario": evans,
                 "truth_columns": 27,
                 "truth_eq": 9,
@@ -1136,7 +1139,7 @@ class TestFullNN(TestPipelineLP):
         return p
     
     def test_fullnetworknonlocality_3partite_line(self):
-        lp = InflationLP(self.scenario, nonfanout=True)
+        lp = InflationLP(self.scenario)
         
         best_theta = np.arccos(np.sqrt(5) / 3)
         v_for_best_theta = 2 / np.sqrt(5)

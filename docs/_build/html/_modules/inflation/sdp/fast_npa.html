@@ -1,23 +1,21 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>inflation.sdp.fast_npa &mdash; Inflation 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
-
-  
+  <title>inflation.sdp.fast_npa &mdash; Inflation 2.0.2 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/sphinx_highlight.js"></script>
         <script src="../../../_static/clipboard.min.js"></script>
         <script src="../../../_static/copybutton.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -31,15 +29,11 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="../../../contents.html" class="icon icon-home">
-            Inflation
+            <a href="../../../contents.html" class="icon icon-home"> Inflation
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -70,9 +64,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../contents.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">inflation.sdp.fast_npa</li>
+      <li><a href="../../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>inflation.sdp.fast_npa</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -122,7 +116,7 @@
 <div class="viewcode-block" id="dot_mon"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.dot_mon">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">dot_mon</span><span class="p">(</span><span class="n">mon1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="n">mon2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns ((mon1)^dagger)*mon2.</span>
+    <span class="sd">&quot;&quot;&quot;Returns ((mon1)^dagger)*mon2.</span>
 
 <span class="sd">    For hermitian operators this is the same as reversed(mon1)*mon2. Since all</span>
 <span class="sd">    parties commute, the output is ordered by parties. We do not assume any</span>
@@ -153,7 +147,7 @@
 <div class="viewcode-block" id="mon_lexsorted"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.mon_lexsorted">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">mon_lexsorted</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                   <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sorts a monomial lexicographically.</span>
+    <span class="sd">&quot;&quot;&quot;Sorts a monomial lexicographically.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -174,7 +168,7 @@
 
 <div class="viewcode-block" id="nb_classify_disconnected_components"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_classify_disconnected_components">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_classify_disconnected_components</span><span class="p">(</span><span class="n">adj_mat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a boolean matrix where each cell indicates whether the supports of</span>
+    <span class="sd">&quot;&quot;&quot;Given a boolean matrix where each cell indicates whether the supports of</span>
 <span class="sd">    the operator denoting the row and the operator denoting the column overlap,</span>
 <span class="sd">    generate a list determining to which disconnected component each operator</span>
 <span class="sd">    belongs to.</span>
@@ -221,7 +215,7 @@
 
 <div class="viewcode-block" id="nb_is_knowable"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_is_knowable">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_is_knowable</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine whether a given atomic monomial admits an identification with</span>
+    <span class="sd">&quot;&quot;&quot;Determine whether a given atomic monomial admits an identification with</span>
 <span class="sd">    a probability of the original scenario.</span>
 
 <span class="sd">    Parameters</span>
@@ -250,7 +244,7 @@
 <div class="viewcode-block" id="nb_lexorder_idx"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_lexorder_idx">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_lexorder_idx</span><span class="p">(</span><span class="n">operator</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                     <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the unique integer corresponding to the lexicographic ordering of</span>
+    <span class="sd">&quot;&quot;&quot;Return the unique integer corresponding to the lexicographic ordering of</span>
 <span class="sd">    the operator. If ``operator`` is not found in ``lexorder``, no value is</span>
 <span class="sd">    returned.</span>
 
@@ -275,7 +269,7 @@
 <div class="viewcode-block" id="nb_mon_to_lexrepr"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_mon_to_lexrepr">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_mon_to_lexrepr</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                       <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a monomial to its lexicographic representation, in the form of</span>
+    <span class="sd">&quot;&quot;&quot;Convert a monomial to its lexicographic representation, in the form of</span>
 <span class="sd">    an array of integers representing the lexicographic rank of each operator.</span>
 
 <span class="sd">    Parameters</span>
@@ -300,7 +294,7 @@
 
 <span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_monomial_to_components</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper for obtaining the list of disconnected components of a monomial.</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper for obtaining the list of disconnected components of a monomial.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -334,7 +328,7 @@
 
 <div class="viewcode-block" id="nb_overlap_matrix"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_overlap_matrix">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_overlap_matrix</span><span class="p">(</span><span class="n">inflation_indxs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a list of inflation indices for a number of operators, generate</span>
+    <span class="sd">&quot;&quot;&quot;Given a list of inflation indices for a number of operators, generate</span>
 <span class="sd">    a boolean matrix whose entries denote whether the supports of the operator</span>
 <span class="sd">    indexed by the row and of the operator indexed by the column overlap.</span>
 
@@ -365,7 +359,7 @@
 <span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_indices_of_more_than_one_op_per_party_per_factor</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                                                         <span class="n">sandwich_positivity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If sandwich_positivity=True, this removes sandwiching/pinching from the</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;If sandwich_positivity=True, this removes sandwiching/pinching from the</span>
 <span class="sd">    monomial. This is, it converts the monomial represented by</span>
 <span class="sd">    :math:`U A U^\dagger` into :math:`A`.</span>
 <span class="sd">    Regardless, it then factorises the monomial into components, yielding</span>
@@ -405,7 +399,7 @@
 
 <div class="viewcode-block" id="nb_is_physical"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_is_physical">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_is_physical</span><span class="p">(</span><span class="n">monomial_in</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">sandwich_positivity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Determines whether a monomial is physical, this is, if it always has a</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Determines whether a monomial is physical, this is, if it always has a</span>
 <span class="sd">    non-negative expectation value.</span>
 
 <span class="sd">    This code also supports the detection of &quot;sandwiches&quot;, i.e., monomials</span>
@@ -437,7 +431,7 @@
 
 <div class="viewcode-block" id="remove_projector_squares"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.remove_projector_squares">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">remove_projector_squares</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simplify the monomial by removing operator powers. This is because we</span>
+    <span class="sd">&quot;&quot;&quot;Simplify the monomial by removing operator powers. This is because we</span>
 <span class="sd">    assume projectors, P**2=P. This corresponds to removing duplicates of rows</span>
 <span class="sd">    which are adjacent.</span>
 
@@ -460,7 +454,7 @@
 
 <div class="viewcode-block" id="reverse_mon"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.reverse_mon">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">reverse_mon</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the reversed monomial.</span>
+    <span class="sd">&quot;&quot;&quot;Return the reversed monomial.</span>
 
 <span class="sd">    This represents the Hermitian conjugate of the monomial, assuming that</span>
 <span class="sd">    each operator is Hermitian.</span>
@@ -481,7 +475,7 @@
 <div class="viewcode-block" id="to_name"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.to_name">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">to_name</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="n">names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the 2d array representation of a monomial to a string.</span>
+    <span class="sd">&quot;&quot;&quot;Convert the 2d array representation of a monomial to a string.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -517,7 +511,7 @@
 <span class="k">def</span> <span class="nf">apply_source_perm</span><span class="p">(</span><span class="n">monomial</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                       <span class="n">source</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                       <span class="n">permutation</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a source swap to a monomial.</span>
+    <span class="sd">&quot;&quot;&quot;Apply a source swap to a monomial.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -546,7 +540,7 @@
 <span class="k">def</span> <span class="nf">commutation_matrix</span><span class="p">(</span><span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                        <span class="n">sources_to_check_for_pairwise</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                        <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a matrix encoding of which operators commute according to the</span>
+    <span class="sd">&quot;&quot;&quot;Build a matrix encoding of which operators commute according to the</span>
 <span class="sd">    function ``nb_operators_commute``. Rows and columns are indexed by</span>
 <span class="sd">    operators, and each element is a 0 if the operators in the row and in the</span>
 <span class="sd">    column commute or 1 if they do not.</span>
@@ -591,7 +585,7 @@
 <span class="k">def</span> <span class="nf">nb_all_commuting_q</span><span class="p">(</span><span class="n">mon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                        <span class="n">lexorder</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                        <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if all operators in ``mon`` commute.</span>
+    <span class="sd">&quot;&quot;&quot;Check if all operators in ``mon`` commute.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -621,7 +615,7 @@
 <div class="viewcode-block" id="nb_exists_shared_source"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_exists_shared_source">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_exists_shared_source</span><span class="p">(</span><span class="n">inf_indices1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                             <span class="n">inf_indices2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine if there is any common source referred to by two</span>
+    <span class="sd">&quot;&quot;&quot;Determine if there is any common source referred to by two</span>
 <span class="sd">     specifications of inflation (a.k.a. &#39;copy&#39;) indices.</span>
 
 <span class="sd">    Parameters</span>
@@ -647,7 +641,7 @@
 <div class="viewcode-block" id="nb_lexmon_to_canonical"><a class="viewcode-back" href="../../../operations.html#inflation.sdp.fast_npa.nb_lexmon_to_canonical">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="n">nopython</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">forceobj</span><span class="o">=</span><span class="ow">not</span> <span class="n">nopython</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">nb_lexmon_to_canonical</span><span class="p">(</span><span class="n">lexmon</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                            <span class="n">notcomm</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Brings a monomial, input as the indices of the operators in the</span>
+    <span class="sd">&quot;&quot;&quot;Brings a monomial, input as the indices of the operators in the</span>
 <span class="sd">    lexicographic ordering, to canonical form with respect to commutations.</span>
 
 <span class="sd">    Parameters</span>
@@ -714,7 +708,7 @@
                          <span class="n">operator2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                          <span class="n">sources_to_check_for_pairwise</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bool_</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine if two operators commute. Currently, this only takes into</span>
+    <span class="sd">&quot;&quot;&quot;Determine if two operators commute. Currently, this only takes into</span>
 <span class="sd">    account commutation coming from inflation and settings.</span>
 
 <span class="sd">    Parameters</span>
@@ -780,7 +774,7 @@
                              <span class="n">orthomat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                              <span class="n">commuting</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                              <span class="n">apply_only_commutations</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Brings a monomial to canonical form with respect to commutations,</span>
+    <span class="sd">&quot;&quot;&quot;Brings a monomial to canonical form with respect to commutations,</span>
 <span class="sd">    removing square projectors, and identifying orthogonality.</span>
 
 <span class="sd">    Parameters</span>
