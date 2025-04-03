@@ -29,6 +29,15 @@ trivial_c = InflationProblem({"h": ["v"]},
                            classical_sources="all"
                            )
 
+bellScenario = InflationProblem({"Lambda": ["A", "B"]},
+                                outcomes_per_party=[2, 2],
+                                settings_per_party=[2, 2],
+                                inflation_level_per_source=[1])
+bellScenario_c = InflationProblem({"Lambda": ["A", "B"]},
+                                    outcomes_per_party=[2, 2],
+                                    settings_per_party=[2, 2],
+                                    inflation_level_per_source=[1],
+                                    classical_sources='all')
 
 class TestMonomialGeneration(unittest.TestCase):
     bilocalSDP_commuting = InflationSDP(bilocality_c)
@@ -300,16 +309,6 @@ class TestSDPOutput(unittest.TestCase):
                         dist[a, b, c, 0, 0, 0] = (1-v)/8
         return dist
 
-    bellScenario = InflationProblem({"Lambda": ["A", "B"]},
-                                    outcomes_per_party=[2, 2],
-                                    settings_per_party=[2, 2],
-                                    inflation_level_per_source=[1])
-    bellScenario_c = InflationProblem({"Lambda": ["A", "B"]},
-                                      outcomes_per_party=[2, 2],
-                                      settings_per_party=[2, 2],
-                                      inflation_level_per_source=[1],
-                                      classical_sources='all')
-
     cutInflation = InflationProblem({"lambda": ["a", "b"],
                                      "mu": ["b", "c"],
                                      "sigma": ["a", "c"]},
@@ -367,7 +366,7 @@ class TestSDPOutput(unittest.TestCase):
                         f"{sdp.objective_value}.")
 
     def test_CHSH(self):
-        sdp = InflationSDP(self.bellScenario)
+        sdp = InflationSDP(bellScenario)
         sdp.generate_relaxation("npa1")
         self.assertEqual(sdp.n_columns, 5,
                          "The number of generating columns is not correct.")
@@ -608,7 +607,7 @@ class TestSDPOutput(unittest.TestCase):
                         " LPI constraints are not assigned correct indices.")
 
     def test_supports(self):
-        sdp = InflationSDP(self.bellScenario, supports_problem=True)
+        sdp = InflationSDP(bellScenario, supports_problem=True)
         sdp.generate_relaxation("local1")
         pr_support = np.zeros((2, 2, 2, 2))
         for a, b, x, y in np.ndindex(*pr_support.shape):
@@ -680,7 +679,7 @@ class TestLPOutput(unittest.TestCase):
                              "scenario is not being recognized as such.")
 
     def test_supports(self):
-        lp = InflationLP(TestSDPOutput.bellScenario_c, supports_problem=True)
+        lp = InflationLP(bellScenario_c, supports_problem=True)
         with self.subTest(msg="Incompatible support"):
             pr_support = np.zeros((2, 2, 2, 2))
             for a, b, x, y in np.ndindex(*pr_support.shape):
@@ -954,15 +953,6 @@ class TestInstrumental(TestPipelineLP):
 
 
 class TestBell(TestPipelineLP):
-    bellScenario = InflationProblem({"Lambda": ["A", "B"]},
-                                    outcomes_per_party=[2, 2],
-                                    settings_per_party=[2, 2],
-                                    inflation_level_per_source=[1])
-    bellScenario_c = InflationProblem({"Lambda": ["A", "B"]},
-                                      outcomes_per_party=[2, 2],
-                                      settings_per_party=[2, 2],
-                                      inflation_level_per_source=[1],
-                                      classical_sources='all')
 
     def _CHSH(self, **args):
         lp = args["scenario"]
@@ -986,7 +976,7 @@ class TestBell(TestPipelineLP):
         return dist
 
     def test_bell_fanout(self):
-        bell = InflationLP(self.bellScenario_c)
+        bell = InflationLP(bellScenario_c)
         args = {"scenario": bell,
                 "truth_columns": 16,
                 "truth_obj": 2,
@@ -997,7 +987,7 @@ class TestBell(TestPipelineLP):
         self._run(**args)
 
     def test_bell_nonfanout(self):
-        bell = InflationLP(self.bellScenario)
+        bell = InflationLP(bellScenario)
         args = {"scenario": bell,
                 "truth_columns": 9,
                 "truth_obj": 2,
