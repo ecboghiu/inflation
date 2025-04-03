@@ -224,7 +224,8 @@ class InflationSDP:
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = "npa1"
+                                  List[sp.core.symbol.Symbol]] = "npa1",
+                            **kwargs
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -292,6 +293,10 @@ class InflationSDP:
               the measurement operators in ``InflationSDP.measurements``. This
               list needs to have the identity ``sympy.S.One`` as the first
               element.
+
+        kwargs :
+            Additional arguments that will be passed to
+            ``InflationSDP.build_columns``.
         """
         self.atomic_monomial_from_hash  = dict()
         self.monomial_from_atoms        = dict()
@@ -303,7 +308,7 @@ class InflationSDP:
         self.Constant_Term.name = self.constant_term_name
         self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
-        self.build_columns(column_specification)
+        self.build_columns(column_specification, **kwargs)
         collect()
         if self.verbose > 0:
             print("Number of columns in the moment matrix:", self.n_columns)
