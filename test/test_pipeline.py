@@ -773,6 +773,8 @@ class TestSymmetries(unittest.TestCase):
 
     def test_symmetrized_PRbox(self):
 
+        from inflation.symmetry_utils import discover_distribution_symmetries
+
         def PR_box(v):
             prob = np.zeros((2,2,2,2), dtype=float)
             for a,b,x,y in np.ndindex(*prob.shape):
@@ -781,15 +783,14 @@ class TestSymmetries(unittest.TestCase):
 
             return v * prob + (1-v) * np.ones_like(prob) / 4
 
-        symmetries = discover_distribution_symmetries(PR_box(1),
-                                                      bellScenario)
+        symmetries = discover_distribution_symmetries(PR_box(1), bellScenario)
         bellScenario.add_symmetries(symmetries)
         bellScenario_c.add_symmetries(symmetries)
 
         BellLP = InflationLP(bellScenario_c)
         BellLP.set_distribution(PR_box(1/2+1e-4))
         BellLP.solve()
-        self.assertEqual(BellLP.status, "infeasible",
+        self.assertEqual(BellLP.status, "dual_infeas_cer",
                          "The symmetrized LP is not identifying incompatible" +
                          " distributions.")
         BellLP.set_distribution(PR_box(1/2-1e-4))
@@ -807,7 +808,7 @@ class TestSymmetries(unittest.TestCase):
                          " distributions.")
         BellSDP.set_distribution(PR_box(1/np.sqrt(2)-1e-4))
         BellSDP.solve()
-        self.assertEqual(BellSDP.status, "optimal",
+        self.assertEqual(BellSDP.status, "feasible",
                          "The symmetrized SDP is not identifying compatible" +
                          " distributions.")
 

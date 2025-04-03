@@ -6,13 +6,12 @@ This file contains auxiliary functions for discovering symmetries
 
 import numpy as np
 
-from . import InflationProblem
 from tqdm import tqdm
-from typing import Tuple
+from . import InflationProblem
 
 def discover_distribution_symmetries(distribution: np.array,
                                      scenario: InflationProblem
-                                     ) -> Tuple[np.ndarray, np.ndarray]:
+                                     ) -> np.ndarray:
     """
     """
     # Sanity checks
@@ -55,8 +54,7 @@ def discover_distribution_symmetries(distribution: np.array,
     original_dag_monomials_lexboolvecs = np.array(original_dag_monomials_lexboolvecs)
     original_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
                                 for mon in original_dag_monomials_lexboolvecs])
-    good_orig_perms = []
-    good_inf_perms  = []
+    good_perms  = []
     for perm_original, perm_lexorder in tqdm(zip(all_possible_original_symmetries,
                                                     all_possible_lexorder_symmetries),
                         desc="Discovering distribution symmetries",
@@ -67,9 +65,8 @@ def discover_distribution_symmetries(distribution: np.array,
         new_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
                                     for mon in lexboolvecs])
         if np.allclose(new_values_1d, original_values_1d):
-            good_orig_perms += [perm_original]
-            good_inf_perms += [perm_lexorder]
+            good_perms += [perm_lexorder]
     if scenario.verbose > 0:
-        print(f"Found {len(good_inf_perms)} symmetries.")
+        print(f"Found {len(good_perms)} symmetries.")
 
-    return np.array(good_inf_perms), np.array(good_orig_perms)
+    return np.array(good_perms)
