@@ -151,7 +151,7 @@ class InflationSDP:
         self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
         self.lexorder_symmetries = \
-            np.pad(inflationproblem.lexorder_symmetries + 1, ((0, 0), (1, 0)))
+            np.pad(inflationproblem.symmetries + 1, ((0, 0), (1, 0)))
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names))

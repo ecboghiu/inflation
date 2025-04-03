@@ -122,7 +122,7 @@ class InflationLP(object):
         self._nr_operators = inflationproblem._nr_operators
         self._lexeye = np.eye(self._nr_operators, dtype=bool)
         self._lexrange = np.arange(self._nr_operators)
-        self.lexorder_symmetries = inflationproblem.lexorder_symmetries
+        self.lexorder_symmetries = inflationproblem.symmetries
         self._from_2dndarray = inflationproblem._from_2dndarray
         self.mon_to_lexrepr = inflationproblem.mon_to_lexrepr
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)

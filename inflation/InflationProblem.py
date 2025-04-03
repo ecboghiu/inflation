@@ -416,6 +416,9 @@ class InflationProblem:
                                               return_index=True,
                                               return_inverse=True, axis=0)
 
+        # Symmetries implied by the inflation
+        self.symmetries = self._discover_inflation_symmetries()
+
 
     @property
     def _compatible_template_measurements(self):
@@ -868,7 +871,7 @@ class InflationProblem:
     ###########################################################################
     # FUNCTIONS PERTAINING TO INFLATION SYMMETRIES                            #
     ###########################################################################
-    def discover_lexorder_symmetries(self) -> np.ndarray:
+    def _discover_inflation_symmetries(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials due to copy index relabelling. The new set of operators is a
         permutation of the old. The function outputs a list of all permutations.
@@ -884,8 +887,8 @@ class InflationProblem:
                                if inf_level > 1]
         if len(sources_with_copies):
             permutation_failed = False
-            lexorder_symmetries = []
-            identity_perm        = np.arange(self._nr_operators, dtype=np.intc)
+            symmetries         = []
+            identity_perm      = np.arange(self._nr_operators, dtype=np.intc)
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
@@ -908,14 +911,10 @@ class InflationProblem:
                         one_source_symmetries.append(new_order)
                     except KeyError:
                         permutation_failed = True
-                        pass
-                lexorder_symmetries.append(np.asarray(one_source_symmetries, dtype=np.intc))
+                symmetries.append(np.asarray(one_source_symmetries, dtype=np.intc))
             if permutation_failed and (self.verbose > 0):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
-            return reduce(perm_combiner, lexorder_symmetries)
-        else:
-            return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
         
     @cached_property
     def lexorder_symmetries(self):
@@ -928,6 +927,8 @@ class InflationProblem:
             symmetries.
         """
         return self.discover_lexorder_symmetries()
+            return reduce(perm_combiner, symmetries)
+        return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
 
     ###########################################################################
     # EXPERIMENTAL FUNCTIONS FOR INCORPORATING EXTRA SYMMETRIES               #
