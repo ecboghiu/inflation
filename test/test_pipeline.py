@@ -771,6 +771,49 @@ class TestSymmetries(unittest.TestCase):
         self.assertEqual(syms, syms_good, "The symmetries are not being " +
                                           "detected correctly.")
 
+    def test_symmetrized_PRbox(self):
+
+        def PR_box(v):
+            prob = np.zeros((2,2,2,2), dtype=float)
+            for a,b,x,y in np.ndindex(*prob.shape):
+                if np.bitwise_xor(a,b) == np.bitwise_and(x,y):
+                    prob[a,b,x,y] = 0.5
+
+            return v * prob + (1-v) * np.ones_like(prob) / 4
+
+        symmetries = discover_distribution_symmetries(PR_box(1),
+                                                      bellScenario)
+        bellScenario.add_symmetries(symmetries)
+        bellScenario_c.add_symmetries(symmetries)
+
+        BellLP = InflationLP(bellScenario_c)
+        BellLP.set_distribution(PR_box(1/2+1e-4))
+        BellLP.solve()
+        self.assertEqual(BellLP.status, "infeasible",
+                         "The symmetrized LP is not identifying incompatible" +
+                         " distributions.")
+        BellLP.set_distribution(PR_box(1/2-1e-4))
+        BellLP.solve()
+        self.assertEqual(BellLP.status, "optimal",
+                         "The symmetrized LP is not identifying compatible" +
+                         " distributions.")
+
+        BellSDP = InflationSDP(bellScenario)
+        BellSDP.generate_relaxation("npa2")
+        BellSDP.set_distribution(PR_box(1/np.sqrt(2)+1e-4))
+        BellSDP.solve()
+        self.assertEqual(BellSDP.status, "infeasible",
+                         "The symmetrized SDP is not identifying incompatible" +
+                         " distributions.")
+        BellSDP.set_distribution(PR_box(1/np.sqrt(2)-1e-4))
+        BellSDP.solve()
+        self.assertEqual(BellSDP.status, "optimal",
+                         "The symmetrized SDP is not identifying compatible" +
+                         " distributions.")
+
+        bellScenario.reset_symmetries()
+        bellScenario_c.reset_symmetries()
+
 
 class TestConstraintGeneration(unittest.TestCase):
     def test_norm_eqs_mon2index_mapping(self):

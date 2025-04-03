@@ -1121,49 +1121,6 @@ class InflationProblem:
 
 
 
-    def discover_distribution_symmetries(self, symmetric_distribution):
-
-        all_possible_lexorder_symmetries, all_possible_original_symmetries = self._all_possible_symmetries
-        original_dag_events_order = {tuple(op): i for i, op in enumerate(self.original_dag_events)}
-
-        ## Find the symmetries of the distribution.
-        # First, build the knowable monomials of maximum length of the original
-        # DAG, and their values under the distribution.
-        original_dag_monomials_values = {}
-        original_dag_monomials_lexboolvecs = []
-        for ins in np.ndindex(*self.settings_per_party):
-            for outs in np.ndindex(*self.outcomes_per_party):
-                # Build the monomial corresponding to p(outs...|ins...)
-                original_dag_lexboolvec = np.zeros(len(self.original_dag_events), dtype=bool)
-                for p, (x, a) in enumerate(zip(ins, outs)):
-                    original_dag_lexboolvec[original_dag_events_order[(p + 1, x, a)]] = True
-                original_dag_monomials_lexboolvecs += [original_dag_lexboolvec]
-                # Calculate its value under the distribution
-                _value = symmetric_distribution[(*outs, *ins)]
-                _hash = original_dag_lexboolvec.tobytes()
-                original_dag_monomials_values[_hash] = _value
-        original_dag_monomials_lexboolvecs = np.array(original_dag_monomials_lexboolvecs)
-        original_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
-                                    for mon in original_dag_monomials_lexboolvecs])
-        good_orig_perms = []
-        good_inf_perms  = []
-        for perm_original, perm_lexorder in tqdm(zip(all_possible_original_symmetries,
-                                                      all_possible_lexorder_symmetries),
-                         desc="Discovering distribution symmetries",
-                         disable=not self.verbose):
-
-            lexboolvecs = original_dag_monomials_lexboolvecs.copy()
-            lexboolvecs = lexboolvecs[:, perm_original]  # permute the columns
-            new_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
-                                      for mon in lexboolvecs])
-            if np.allclose(new_values_1d, original_values_1d):
-                good_orig_perms += [perm_original]
-                good_inf_perms += [perm_lexorder]
-        if self.verbose > 0:
-            print(f"Found {len(good_inf_perms)} symmetries.")
-
-        return np.array(good_inf_perms), np.array(good_orig_perms)
-
     def _incorporate_new_symmetries(self, new_symmetries: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
         return self._group_elements_from_group_generators(
             np.vstack((self.lexorder_symmetries, new_symmetries)))
