@@ -915,18 +915,6 @@ class InflationProblem:
             if permutation_failed and (self.verbose > 0):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
-        
-    @cached_property
-    def lexorder_symmetries(self):
-        """Discover symmetries expressed as permutations of the lexorder.
-        
-        Returns
-        -------
-        numpy.ndarray[int]
-            The permutations of the lexicographic order implied by the inflation
-            symmetries.
-        """
-        return self.discover_lexorder_symmetries()
             return reduce(perm_combiner, symmetries)
         return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
 
@@ -1120,8 +1108,15 @@ class InflationProblem:
         all_possible_original_symmetries = group_elements[:, :offset]
         return all_possible_lexorder_symmetries, all_possible_original_symmetries
 
+    def add_symmetries(self,
+                       new_symmetries: Union[np.ndarray, List[np.ndarray]]
+                       ):
+        """TBD"""
+        self.symmetries = self._group_elements_from_group_generators(
+            np.vstack((self.symmetries, new_symmetries)))
 
-
-    def _incorporate_new_symmetries(self, new_symmetries: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
-        return self._group_elements_from_group_generators(
-            np.vstack((self.lexorder_symmetries, new_symmetries)))
+    def reset_symmetries(self):
+        """Remove all the symmetries of the scenario, keeping only the ones
+            that are implied by the inflation.        
+        """
+        self.symmetries = self._discover_inflation_symmetries()
