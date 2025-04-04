@@ -462,13 +462,14 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
 
             status = M.getProblemStatus()
             if status == ProblemStatus.PrimalAndDualFeasible:
-                status_str = "feasible"
+                status_str = "optimal"
                 primal     = M.primalObjValue()
                 dual       = M.dualObjValue()
 
-            elif status in [ProblemStatus.DualInfeasible,
-                            ProblemStatus.PrimalInfeasible]:
-                status_str = "infeasible"
+            elif status == ProblemStatus.DualInfeasible:
+                status_str = "dual_infeas_cer"
+            elif status == ProblemStatus.PrimalInfeasible:
+                status_str = "primal_infeas_cer",
             elif status == ProblemStatus.Unknown:
                 status_str = "unknown"
                 code, desc = mosek.Env.getcodedesc(
@@ -495,11 +496,11 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
             return {"status": status_str, "error": error_message}
         except Exception as e:
             status_str = "other"
-            error_message = "Unexpected error: {0}".format(e)
+            error_message = f"Unexpected error: {e}"
             print(error_message)
             return {"status": status_str, "error": error_message}
 
-        if status_str in ["feasible", "infeasible"]:
+        if status_str in ["optimal", "primal_infeas_cer", "dual_infeas_cer"]:
             certificate = {x: 0 for x in known_vars}
 
             # c0(P(a...|x...))
@@ -533,7 +534,7 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                     del certificate[x]
 
             # For debugging purposes
-            if status_str == "feasible" and verbose > 1:
+            if status_str == "optimal" and verbose > 1:
                 TOL = 1e-8  # Constraint tolerance
                 if var_inequalities:
                     x = A.todense() \
