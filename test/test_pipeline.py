@@ -803,12 +803,12 @@ class TestSymmetries(unittest.TestCase):
         BellSDP.generate_relaxation("npa2")
         BellSDP.set_distribution(PR_box(1/np.sqrt(2)+1e-4))
         BellSDP.solve()
-        self.assertEqual(BellSDP.status, "infeasible",
+        self.assertEqual(BellSDP.status, "dual_infeas_cer",
                          "The symmetrized SDP is not identifying incompatible" +
                          " distributions.")
         BellSDP.set_distribution(PR_box(1/np.sqrt(2)-1e-4))
         BellSDP.solve()
-        self.assertEqual(BellSDP.status, "feasible",
+        self.assertEqual(BellSDP.status, "optimal",
                          "The symmetrized SDP is not identifying compatible" +
                          " distributions.")
 
