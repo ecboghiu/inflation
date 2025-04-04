@@ -921,15 +921,6 @@ class InflationProblem:
     ###########################################################################
     # EXPERIMENTAL FUNCTIONS FOR INCORPORATING EXTRA SYMMETRIES               #
     ###########################################################################
-    def _interpret_lexorder_symmetry(self, perm: np.ndarray) -> dict:
-        return dict(zip(self._lexrepr_to_names, self._lexrepr_to_names[perm]))
-
-    def _interpret_original_symmetry(self, perm: np.ndarray) -> dict:
-        return dict(zip(self._original_event_names, self._original_event_names[perm]))
-
-    def lexperm_to_origperm(self, lexperm: np.ndarray) -> np.ndarray:
-        return self._lexidx_to_origidx[lexperm][self._canonical_lexids]
-
     @cached_property
     def _lexorder_hashable_interpretation_decoder(self):
         return {self._make_interpretation_hashable(op_as_dict): i for

@@ -57,7 +57,7 @@ def discover_distribution_symmetries(distribution: np.array,
     for perm_lexorder in tqdm(scenario._all_possible_symmetries,
                               desc="Discovering distribution symmetries",
                               disable=not scenario.verbose):
-        perm_orig = scenario.lexperm_to_origperm(perm_lexorder)
+        perm_orig   = lexperm_to_origperm(perm_lexorder, scenario)
         lexboolvecs = original_dag_monomials_lexboolvecs.copy()
         lexboolvecs = lexboolvecs[:, perm_orig]  # permute the columns
         new_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
@@ -68,3 +68,23 @@ def discover_distribution_symmetries(distribution: np.array,
         print(f"Found {len(good_perms)} symmetries.")
 
     return np.array(good_perms)
+
+def interpret_lexorder_symmetry(perm: np.ndarray,
+                                scenario: InflationProblem) -> dict:
+    """
+    """
+    return dict(zip(scenario._lexrepr_to_names,
+                    scenario._lexrepr_to_names[perm]))
+
+def interpret_original_symmetry(perm: np.ndarray,
+                                scenario: InflationProblem) -> dict:
+    """
+    """
+    return dict(zip(scenario._original_event_names,
+                    scenario._original_event_names[perm]))
+
+def lexperm_to_origperm(lexperm: np.ndarray,
+                        scenario: InflationProblem) -> np.ndarray:
+    """
+    """
+    return scenario._lexidx_to_origidx[lexperm][scenario._canonical_lexids]
