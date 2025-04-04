@@ -32,7 +32,6 @@ def discover_distribution_symmetries(distribution: np.array,
     if not np.all(np.isclose(distribution.sum(axis=tuple(range(parties))), 1)):
         raise ValueError("The distribution is not normalized for each setting.")
 
-    all_possible_lexorder_symmetries, all_possible_original_symmetries = scenario._all_possible_symmetries
     original_dag_events_order = {tuple(op): i for i, op in enumerate(scenario.original_dag_events)}
 
     ## Find the symmetries of the distribution.
@@ -55,13 +54,12 @@ def discover_distribution_symmetries(distribution: np.array,
     original_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
                                 for mon in original_dag_monomials_lexboolvecs])
     good_perms  = []
-    for perm_original, perm_lexorder in tqdm(zip(all_possible_original_symmetries,
-                                                    all_possible_lexorder_symmetries),
-                        desc="Discovering distribution symmetries",
-                        disable=not scenario.verbose):
-
+    for perm_lexorder in tqdm(scenario._all_possible_symmetries,
+                              desc="Discovering distribution symmetries",
+                              disable=not scenario.verbose):
+        perm_orig = scenario.lexperm_to_origperm(perm_lexorder)
         lexboolvecs = original_dag_monomials_lexboolvecs.copy()
-        lexboolvecs = lexboolvecs[:, perm_original]  # permute the columns
+        lexboolvecs = lexboolvecs[:, perm_orig]  # permute the columns
         new_values_1d = np.array([original_dag_monomials_values[mon.tobytes()]
                                     for mon in lexboolvecs])
         if np.allclose(new_values_1d, original_values_1d):

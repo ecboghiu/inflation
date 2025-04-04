@@ -931,7 +931,12 @@ class InflationProblem:
         return self._lexidx_to_origidx[lexperm][self._canonical_lexids]
 
     @cached_property
-    def _possible_party_relabelling_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
+    def _lexorder_hashable_interpretation_decoder(self):
+        return {self._make_interpretation_hashable(op_as_dict): i for
+                    i, op_as_dict in enumerate(self._lexrepr_to_dicts)}
+
+    @cached_property
+    def _party_relabelling_symmetries(self) -> np.ndarray:
         """Return a list of all party relabelling symmetries (each proceeded by
         its associated source relabelling symmetry) consistent with the
         graphical symmetries of the original DAG, subject to matching
@@ -941,8 +946,8 @@ class InflationProblem:
         Returns
         -------
         Tuple[numpy.ndarray, numpy.ndarray]
-            The first array gives permutations of the lexorder, the second array gives the permutations of the original
-            events.
+            The first array gives permutations of the lexorder, the second array
+            gives the permutations of the original events.
         """
         nr_sources = self.nr_sources
         import networkx as nx
@@ -986,48 +991,44 @@ class InflationProblem:
                                  dtype=int),
                      ))
 
-        lexorder_perms, original_dag_events_perms = [], []
+        lexorder_perms = []
         for automorphism in discovered_automorphisms:
             source_perm, party_perm = automorphism
             template = self._lexorder.copy()
             for p, new_p in zip(range(self.nr_parties), party_perm):
                 template[self._lexorder[:, 0] == p + 1, 0] = new_p + 1
             new_source_perm = np.argsort(source_perm)
-            template = template[:, [0] + (1+new_source_perm).tolist() + [-2, -1]]
-            lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()] for op in template])
-            original_perm = self.lexperm_to_origperm(lexorder_perm)
+            template = template[:, [0]+(1+new_source_perm).tolist() + [-2, -1]]
+            lexorder_perm = np.array([self._lexorder_lookup[op.tobytes()]
+                                      for op in template])
             lexorder_perms += [lexorder_perm]
-            original_dag_events_perms += [original_perm]
-        return np.array(lexorder_perms), np.array(original_dag_events_perms)
+        return np.array(lexorder_perms)
 
     @cached_property
-    def _lexorder_hashable_interpretation_decoder(self):
-        return {self._make_interpretation_hashable(op_as_dict): i for
-                    i, op_as_dict in enumerate(self._lexrepr_to_dicts)}
-
-
-    @cached_property
-    def _possible_setting_specific_outcome_relabelling_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
+    def _setting_specific_outcome_relabelling_symmetries(self) -> np.ndarray:
         """
         Yields all possible setting relabellings paired with all possible
-        setting-dependant outcome relabellings as
-        permutations of the events on the original graph. Seperated by party,
-        so that iteration will involve itertools.product.
+        setting-dependant outcome relabellings as permutations of the events on
+        the original graph. Seperated by party, so that iteration will involve
+        itertools.product.
         """
-        identity_perm_original = np.arange(len(self.original_dag_events), dtype=int)
-        identity_perm_lexorder = np.arange(self._nr_operators, dtype=int)
-        sym_generators_original = [identity_perm_original]
-        sym_generators_lexorder = [identity_perm_lexorder]
+        identity_perm = np.arange(self._nr_operators, dtype=int)
+        sym_generators = [identity_perm]
 
         for p in range(self.nr_parties):
-            # We do not attempt outcome relabelling on parties with children and parents!
+            # We do not attempt outcome relabelling on parties with children
+            # and parents!
             if self.has_children[p] and (self.settings_per_party[p] > 1):
                 break
             for x in range(self.private_settings_per_party[p]):
-                for i, perm in enumerate(permutations(range(self.outcomes_per_party[p]))):
+                for i, perm in enumerate(
+                                   permutations(
+                                       range(self.outcomes_per_party[p]))):
                     if i == 0:
                         continue  # skip empty perm
-                    new_interpretations = [op_as_dict.copy() for op_as_dict in self._lexrepr_to_dicts]
+                    new_interpretations = [op_as_dict.copy()
+                                           for op_as_dict
+                                           in self._lexrepr_to_dicts]
                     lexorder_perm = []
                     for op_as_dict in new_interpretations:
                         if p in op_as_dict["Parents in-play as Integers"]:
@@ -1036,25 +1037,27 @@ class InflationProblem:
                             new_value = perm[old_value]
                             to_adjust[p+1] = new_value
                             op_as_dict["Setting as Tuple"] = tuple(to_adjust)
-                        if (op_as_dict["Party as Integer"] == p) and (op_as_dict["Private Setting"] == x):
+                        if ((op_as_dict["Party as Integer"] == p)
+                            and (op_as_dict["Private Setting"] == x)):
                             old_value = op_as_dict["Outcome"]
                             op_as_dict["Outcome"] = perm[old_value]
-                        lexorder_perm.append(self._lexorder_hashable_interpretation_decoder[self._make_interpretation_hashable(op_as_dict)])
+                        lexorder_perm.append(
+                            self._lexorder_hashable_interpretation_decoder[
+                                self._make_interpretation_hashable(op_as_dict)])
                     lexorder_perm = np.array(lexorder_perm)
-                    original_perm = self.lexperm_to_origperm(lexorder_perm)
-                    sym_generators_lexorder.append(lexorder_perm)
-                    sym_generators_original.append(original_perm)
-        return np.array(sym_generators_lexorder), np.array(sym_generators_original)
+                    sym_generators.append(lexorder_perm)
+        return np.array(sym_generators)
 
     @cached_property
-    def _possible_party_specific_setting_relabelling_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
-        identity_perm_original = np.arange(len(self.original_dag_events), dtype=int)
-        identity_perm_lexorder = np.arange(self._nr_operators, dtype=int)
-        sym_generators_original = [identity_perm_original]
-        sym_generators_lexorder = [identity_perm_lexorder]
+    def _party_specific_setting_relabelling_symmetries(self) -> np.ndarray:
+        identity_perm = np.arange(self._nr_operators, dtype=int)
+        sym_generators = [identity_perm]
         for p in range(self.nr_parties):
-            # Since we are only adjusting PRIVATE setting, we can proceed even is the party has children
-            for i, perm in enumerate(permutations(range(self.private_settings_per_party[p]))):
+            # Since we are only adjusting PRIVATE setting, we can proceed even
+            # if the party has children
+            for i, perm in enumerate(
+                            permutations(
+                                range(self.private_settings_per_party[p]))):
                 if i == 0:
                     continue  # skip empty perm
                 new_interpretations = [op_as_dict.copy() for op_as_dict in
@@ -1071,48 +1074,32 @@ class InflationProblem:
                         self._lexorder_hashable_interpretation_decoder[
                             self._make_interpretation_hashable(op_as_dict)])
                 lexorder_perm = np.array(lexorder_perm)
-                original_perm = self.lexperm_to_origperm(lexorder_perm)
-                sym_generators_lexorder.append(lexorder_perm)
-                sym_generators_original.append(original_perm)
-        return np.array(sym_generators_lexorder), np.array(sym_generators_original)
+                sym_generators.append(lexorder_perm)
+        return np.array(sym_generators)
 
     @staticmethod
-    def _group_elements_from_group_generators(list_of_gens: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
-        G = PermutationGroup([Permutation(perm) for perm in np.unique(list_of_gens, axis=0)])
+    def _group_elements_from_generators(gens: Union[np.ndarray,
+                                                    List[np.ndarray]]
+                                        ) -> np.ndarray:
+        G = PermutationGroup([Permutation(perm)
+                              for perm in np.unique(gens, axis=0)])
         group_elements = np.array(list(G.generate_schreier_sims(af=True)))
         return group_elements[np.lexsort(np.rot90(group_elements))]
 
     @cached_property
-    def _all_possible_symmetries(self) -> Tuple[np.ndarray, np.ndarray]:
-        party_relabeling_gen_lexorder, party_relabeling_gen_original_events = \
-            self._possible_party_relabelling_symmetries
-        setting_relabeling_gen_lexorder, setting_relabeling_gen_original_events = \
-            self._possible_party_specific_setting_relabelling_symmetries
-        outcome_relabeling_gen_lexorder, outcome_relabeling_gen_original_events = \
-            self._possible_setting_specific_outcome_relabelling_symmetries
-        # Join them into a single permutation that acts on a concatenation
-        # of the lexorder and the original events
-        offset = len(self.original_dag_events)
-        party_relabeling = np.hstack(((party_relabeling_gen_original_events,
-                                       party_relabeling_gen_lexorder + offset)))
-        setting_relabeling = np.hstack(((setting_relabeling_gen_original_events,
-                                         setting_relabeling_gen_lexorder + offset)))
-        outcome_relabeling = np.hstack(((outcome_relabeling_gen_original_events,
-                                         outcome_relabeling_gen_lexorder + offset)))
+    def _all_possible_symmetries(self) -> np.ndarray:
         group_generators = np.vstack((
-            outcome_relabeling,
-            setting_relabeling,
-            party_relabeling))
-        group_elements = self._group_elements_from_group_generators(group_generators)
-        all_possible_lexorder_symmetries = group_elements[:, offset:] - offset
-        all_possible_original_symmetries = group_elements[:, :offset]
-        return all_possible_lexorder_symmetries, all_possible_original_symmetries
+            self._party_relabelling_symmetries,
+            self._party_specific_setting_relabelling_symmetries,
+            self._setting_specific_outcome_relabelling_symmetries))
+        group_elements = self._group_elements_from_generators(group_generators)
+        return group_elements
 
     def add_symmetries(self,
                        new_symmetries: Union[np.ndarray, List[np.ndarray]]
                        ):
         """TBD"""
-        self.symmetries = self._group_elements_from_group_generators(
+        self.symmetries = self._group_elements_from_generators(
             np.vstack((self.symmetries, new_symmetries)))
 
     def reset_symmetries(self):
