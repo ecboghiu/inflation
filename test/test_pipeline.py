@@ -452,7 +452,7 @@ class TestSDPOutput(unittest.TestCase):
 
         sdp.set_distribution(self.GHZ(0.5 + 1e-2))
         sdp.solve()
-        self.assertEqual(sdp.status, "infeasible",
+        self.assertEqual(sdp.status, "dual_infeas_cer",
                          "The commuting SDP is not identifying incompatible " +
                          "distributions.")
         lp_fanout = InflationLP(self.cutInflation_c)
@@ -473,7 +473,7 @@ class TestSDPOutput(unittest.TestCase):
                         "is not identifying incompatible distributions.")
         sdp.set_distribution(self.GHZ(0.5 - 1e-2))
         sdp.solve()
-        self.assertEqual(sdp.status, "feasible",
+        self.assertEqual(sdp.status, "optimal",
                          "The commuting SDP is not recognizing compatible " +
                          "distributions.")
         lp_fanout.set_distribution(self.GHZ(0.5 - 1e-2))
@@ -506,7 +506,7 @@ class TestSDPOutput(unittest.TestCase):
                                    (0.5+1e-2) / 2 + (0.5-1e-2) / 8),
                         "Setting the distribution is failing.")
         sdp.solve()
-        self.assertTrue(sdp.status in ["infeasible", "unknown"],
+        self.assertTrue(sdp.status in ["dual_infeas_cer", "unknown"],
                         "The non-commuting SDP is not identifying " +
                         "incompatible distributions.")
         sdp.solve(feas_as_optim=True)
@@ -518,7 +518,7 @@ class TestSDPOutput(unittest.TestCase):
                                    (0.5-1e-2) / 2 + (0.5+1e-2) / 8),
                         "Re-setting the distribution is failing.")
         sdp.solve()
-        self.assertEqual(sdp.status, "feasible",
+        self.assertEqual(sdp.status, "optimal",
                          "The non-commuting SDP is not recognizing " +
                          "compatible distributions.")
         sdp.solve(feas_as_optim=True)
@@ -531,20 +531,20 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation("local1")
         sdp.set_distribution(self.incompatible_dist)
         sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "infeasible",
+        self.assertEqual(sdp.status, "dual_infeas_cer",
                          "Failing to detect the infeasibility of the " +
                          "distribution that maximally violates Bonet's " +
                          "inequalty.")
         unnormalized_dist = np.ones((2, 2, 3, 1), dtype=float)
         sdp.set_distribution(unnormalized_dist)
         sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "infeasible",
+        self.assertEqual(sdp.status, "dual_infeas_cer",
                          "Failing to detect the infeasibility of an " +
                          "distribution that violates normalization.")
         compat_dist = unnormalized_dist / 4
         sdp.set_distribution(compat_dist)
         sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "feasible",
+        self.assertEqual(sdp.status, "optimal",
                          "A feasible distribution for the instrumental " +
                          "scenario is not being recognized as such.")
 
@@ -615,13 +615,13 @@ class TestSDPOutput(unittest.TestCase):
                 pr_support[a, b, x, y] = np.random.randn()
         sdp.set_distribution(pr_support)
         sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "infeasible",
+        self.assertEqual(sdp.status, "dual_infeas_cer",
                          "Failing to detect the infeasibility of a support "
                          + "known to be incompatible.")
         compatible_support = np.ones((2, 2, 2, 2), dtype=float)
         sdp.set_distribution(compatible_support)
         sdp.solve(feas_as_optim=False)
-        self.assertEqual(sdp.status, "feasible",
+        self.assertEqual(sdp.status, "optimal",
                          "A feasible support for the Bell scenario is not " +
                          "being recognized as such.")
 
