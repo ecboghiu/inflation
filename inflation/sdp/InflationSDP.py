@@ -49,6 +49,7 @@ class InflationSDP:
                  supports_problem: bool = False,
                  include_all_outcomes: bool = False,
                  commuting: bool = False,
+                 real_qt: bool = False,
                  verbose: int = None) -> None:
         """
         Class for generating and solving an SDP relaxation for quantum inflation.
@@ -60,6 +61,9 @@ class InflationSDP:
         supports_problem : bool, optional
             Whether to consider feasibility problems with distributions, or just
             with the distribution's support. By default ``False``.
+        real_qt : bool, optional
+            Whether to assume real quantum theory instead of traditional (complex)
+            quantum theory. By default ``False``.
         verbose : int, optional
             Optional parameter for level of verbose:
 
@@ -195,6 +199,13 @@ class InflationSDP:
                 "You appear to be requesting commuting (classical)" \
                     + " inflation, \nbut have not specified classical_sources=`all`." \
                     + "\nNote that the `commuting` keyword argument has been deprecated as of release 2.0.0"
+        if real_qt:
+            assert not self.all_operators_commute, \
+                "You appear to be requesting inflation assuming real quantum theory," \
+                + " but this is meaningless without noncommuting operators."
+            self.real_qt = True
+        else:
+            self.real_qt = False
         if self.all_operators_commute:
             self.all_commuting_q_2d = lambda mon: True
             self.all_commuting_q_1d = lambda lexmon: True
@@ -1509,9 +1520,13 @@ class InflationSDP:
             else:
                 pass
         atoms = tuple(sorted(list_of_atoms))
-        conjugate = tuple(sorted(factor.dagger for factor in atoms))
-        atoms = min(atoms, conjugate)
-        del conjugate
+        if not self.all_operators_commute:
+            conjugate = tuple(sorted(factor.dagger for factor in atoms))
+            if not self.real_qt:
+                atoms = min(atoms, conjugate)
+            else:
+                atoms = min(tuple(sorted(candidate)) for candidate in product(zip(atoms, conjugate)))
+            del conjugate
         try:
             mon = self.monomial_from_atoms[atoms]
             return mon
