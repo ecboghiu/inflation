@@ -302,20 +302,22 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 I = M.variable("I",
                                len(var_inequalities),
                                Domain.greaterThan(0))
+                I_reshaped = I.reshape(I.getShape()[0], 1)
                 # It seems MOSEK Fusion API does not allow to pick index i
                 # of an expression (A^T I)_i, so we do it manually row by row.
                 AtI = []  # \sum_j I_j A_ji as i-th entry of AtI
                 for var in variables:
                     slice_ = coo_getcol(A, var2index[var])
                     sparse_slice = scipy_to_mosek(slice_)
-                    AtI.append(Expr.dot(sparse_slice, I))
+                    AtI.append(Expr.dot(sparse_slice, I_reshaped))
             if var_equalities:
                 E = M.variable("E", len(var_equalities), Domain.unbounded())
+                E_reshaped = E.reshape(E.getShape()[0], 1)
                 CtI = []  # \sum_j E_j C_ji as i-th entry of CtI
                 for var in variables:
                     slice_ = coo_getcol(C, var2index[var])
                     sparse_slice = scipy_to_mosek(slice_)
-                    CtI.append(Expr.dot(sparse_slice, E))
+                    CtI.append(Expr.dot(sparse_slice, E_reshaped))
 
             # Define and set objective function
             # c0 + Tr Z F0 + I·b + E·d
@@ -328,11 +330,11 @@ def solveSDP_MosekFUSION(mask_matrices: Dict = None,
                 del F0_mosek
             if var_inequalities:
                 b_mosek = scipy_to_mosek(b)
-                obj_mosek = Expr.add(obj_mosek, Expr.dot(I, b_mosek))
+                obj_mosek = Expr.add(obj_mosek, Expr.dot(b_mosek, I_reshaped))
                 del b_mosek
             if var_equalities:
                 d_mosek = scipy_to_mosek(d)
-                obj_mosek = Expr.add(obj_mosek, Expr.dot(E, d_mosek))
+                obj_mosek = Expr.add(obj_mosek, Expr.dot(d_mosek, E_reshaped))
                 del d_mosek
 
             M.objective(ObjectiveSense.Minimize, obj_mosek)
