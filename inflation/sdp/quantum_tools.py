@@ -117,7 +117,7 @@ def calculate_momentmatrix_1d_internal(cols: List,
         string representation to integer representation.
     """
     nrcols = len(cols)
-    canonical_mon_to_idx = dict()
+    canonical_mon_to_idx = {}
     momentmatrix = np.zeros((nrcols, nrcols), dtype=np.uint32)
     varidx = 1  # We start from 1 because 0 is reserved for 0
     for (i, mon1), (j, mon2) in tqdm(

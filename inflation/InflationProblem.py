@@ -188,7 +188,7 @@ class InflationProblem:
                     self._classical_sources[ii] = 1
         self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
 
-        self._partial_inverse_dag = dict()
+        self._partial_inverse_dag = {}
         for il in self.intermediate_latents:
             this_ils_parents = set(v for (v, kids) in self.dag.items() if il in kids)
             self._partial_inverse_dag[il] = this_ils_parents
@@ -625,7 +625,7 @@ class InflationProblem:
     # FUNCTIONS PERTAINING TO KNOWABILITY                                     #
     ###########################################################################
     def _interpret_operator(self, op: np.ndarray) -> dict:
-        interpretation = dict()
+        interpretation = {}
         party_int = op[0] -1
         interpretation["Party as Integer"] = party_int
         interpretation["Party"] = self.names[party_int]

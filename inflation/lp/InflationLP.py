@@ -99,7 +99,7 @@ class InflationLP(object):
         self.names_to_ints = inflationproblem.names_to_ints
         self._lexrepr_to_names = inflationproblem._lexrepr_to_names
         self._lexrepr_to_copy_index_free_names = inflationproblem._lexrepr_to_copy_index_free_names
-        self.op_from_name = dict()
+        self.op_from_name = {}
         for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
             for op_name in op_names:
                 self.op_from_name.setdefault(op_name, i)
@@ -187,10 +187,10 @@ class InflationLP(object):
         # init so as to be able to test the Monomial constructor function
         # without generate_lp.
 
-        self._atomic_monomial_from_hash  = dict()
-        self.monomial_from_atoms        = dict()
-        self.monomial_from_name = dict()
-        self.monomial_from_symbol = dict()
+        self._atomic_monomial_from_hash  = {}
+        self.monomial_from_atoms        = {}
+        self.monomial_from_name = {}
+        self.monomial_from_symbol = {}
         self.One  = self.Monomial(self.identity_operator, idx=1)
         self._generate_lp()
 
@@ -250,7 +250,7 @@ class InflationLP(object):
     @cached_property
     def atom_from_name(self):
         """Returns the atomic monomials."""
-        lookup_dict = dict()
+        lookup_dict = {}
         for atom in self.atomic_factors:
             lookup_dict[atom.name] = atom
             lookup_dict[atom.legacy_name] = atom
@@ -270,7 +270,7 @@ class InflationLP(object):
     @cached_property
     def factorization_conditions(self):
         """Returns the factorization conditions."""
-        conds = dict()
+        conds = {}
         for mon in self.monomials:
             if mon.n_factors > 1:
                 conds[mon] = tuple(self.monomial_from_atoms[(fac,)]
@@ -280,7 +280,7 @@ class InflationLP(object):
     @cached_property
     def quadratic_factorization_conditions(self):
         """Returns the quadratic factorization conditions."""
-        conds = dict()
+        conds = {}
         for mon in self.monomials:
             if mon.n_factors > 1:
                 conds[mon] = (self.monomial_from_atoms[mon.factors[:1]],
@@ -322,7 +322,7 @@ class InflationLP(object):
             knowable_values = {atom: atom.compute_marginal(prob_array)
                                for atom in self.knowable_atoms}
         else:
-            knowable_values = dict()
+            knowable_values = {}
 
         self.set_values(knowable_values,
                         use_lpi_constraints=use_lpi_constraints,
@@ -671,7 +671,7 @@ class InflationLP(object):
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions.")
         if np.allclose(list(dual.values()), 0.):
-            return dict()
+            return {}
         if clean:
             dual = clean_coefficients(dual, chop_tol, round_decimals)
         return {self.monomial_from_name[k]: v for k, v in dual.items()
@@ -1126,7 +1126,7 @@ class InflationLP(object):
             if input_dict.free_symbols:
                 input_dict_copy = {k: float(v) for k, v in sp.expand(input_dict).as_coefficients_dict().items()}
             else:
-                input_dict_copy = dict()
+                input_dict_copy = {}
         else:
             input_dict_copy = input_dict
         output_dict = defaultdict(int)
@@ -1244,8 +1244,8 @@ class InflationLP(object):
         if self.generate_lp_has_been_called:
             return None
 
-        self._atomic_monomial_from_hash = dict()
-        self.monomial_from_atoms = dict()
+        self._atomic_monomial_from_hash = {}
+        self.monomial_from_atoms = {}
         self.Constant_Term = self.One.__copy__()
         self.Constant_Term.name = self.constant_term_name
         self.monomial_from_name[self.constant_term_name] = self.Constant_Term
@@ -1302,9 +1302,9 @@ class InflationLP(object):
         # Associate Monomials to the remaining entries.
         _monomials = []
         _monomial_names = []
-        _compmonomial_from_idx = dict()
-        _compmonomial_to_idx = dict()
-        boolvec2mon = dict()
+        _compmonomial_from_idx = {}
+        _compmonomial_to_idx = {}
+        boolvec2mon = {}
         for idx, mon_as_lexboolvec in tqdm(enumerate(self._monomials_as_lexboolvecs),
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
@@ -1673,7 +1673,7 @@ class InflationLP(object):
             for mon in nonzero_known_monomials:
                 self.moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
-            self.semiknown_moments = dict()
+            self.semiknown_moments = {}
         num_nontrivial_known = len(self.known_moments)
         if self.verbose > 1 and num_nontrivial_known > 1:
             eprint("Number of variables with fixed numeric value:",
@@ -1694,12 +1694,12 @@ class InflationLP(object):
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
         self._reset_solution()
-        self.moment_lowerbounds = dict()
+        self.moment_lowerbounds = {}
 
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
         self._reset_solution()
-        self.moment_upperbounds = dict()
+        self.moment_upperbounds = {}
 
     def _reset_objective(self) -> None:
         """Reset the objective function."""
@@ -1710,8 +1710,8 @@ class InflationLP(object):
     def _reset_values(self) -> None:
         """Reset the known values."""
         self._reset_solution()
-        self.known_moments     = dict()
-        self.semiknown_moments = dict()
+        self.known_moments     = {}
+        self.semiknown_moments = {}
         self.known_moments[self.One] = 1.
         self.extra_equalities = []
         self.extra_inequalities = []
@@ -1996,7 +1996,7 @@ class InflationLP(object):
         self._reset_upperbounds()
         if upperbounds is None:
             return
-        sanitized_upperbounds = dict()
+        sanitized_upperbounds = {}
         for mon, upperbound in upperbounds.items():
             mon = self._sanitise_monomial(mon)
             if mon not in sanitized_upperbounds.keys():
@@ -2022,7 +2022,7 @@ class InflationLP(object):
         self._reset_lowerbounds()
         if lowerbounds is None:
             return
-        sanitized_lowerbounds = dict()
+        sanitized_lowerbounds = {}
         for mon, lowerbound in lowerbounds.items():
             mon = self._sanitise_monomial(mon)
             if mon not in sanitized_lowerbounds.keys():

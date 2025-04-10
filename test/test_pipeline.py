@@ -194,11 +194,11 @@ class TestReset(unittest.TestCase):
         self.assertEqual(self.sdp.moment_lowerbounds,
                          self.physical_bounds,
                          "Resetting lower bounds fails.")
-        self.assertEqual(self.sdp.moment_upperbounds, dict(),
+        self.assertEqual(self.sdp.moment_upperbounds, {},
                          "Resetting processed upper bounds fails.")
         self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
                          "Resetting the objective function fails.")
-        self.assertEqual(self.sdp.semiknown_moments, dict(),
+        self.assertEqual(self.sdp.semiknown_moments, {},
                          "Resetting the known values fails to empty " +
                          "semiknown_moments.")
         self.assertEqual(self.sdp.known_moments, {self.sdp.One: 1.},
@@ -213,7 +213,7 @@ class TestReset(unittest.TestCase):
         self.assertEqual(self.sdp.moment_lowerbounds,
                          correct,
                          "Resetting lower bounds fails.")
-        self.assertEqual(self.sdp.moment_upperbounds, dict(),
+        self.assertEqual(self.sdp.moment_upperbounds, {},
                          "Resetting upper bounds fails.")
         self.assertTrue(len(self.sdp.objective) == 2,
                         "Resetting the bounds resets the objective function.")
@@ -225,7 +225,7 @@ class TestReset(unittest.TestCase):
         self.sdp.reset(["objective", "values"])
         self.assertEqual(self.sdp.objective, {self.sdp.One: 0.},
                          "Resetting the objective function fails.")
-        self.assertEqual(self.sdp.semiknown_moments, dict(),
+        self.assertEqual(self.sdp.semiknown_moments, {},
                         "Resetting the known values fails to empty " +
                         "semiknown_moments.")
         self.assertEqual(self.sdp.known_moments, {self.sdp.One: 1.},
@@ -251,7 +251,7 @@ class TestReset(unittest.TestCase):
     def test_reset_values(self):
         self.prepare_objects(self.sdp)
         self.sdp.reset("values")
-        self.assertEqual(self.sdp.semiknown_moments, dict(),
+        self.assertEqual(self.sdp.semiknown_moments, {},
                          "Resetting the known values fails to empty " +
                          "semiknown_moments.")
         self.assertEqual(self.sdp.known_moments, {self.sdp.One: 1.},
@@ -279,13 +279,13 @@ class TestResetLP(unittest.TestCase):
 
     def test_reset_all(self):
         self.lp.reset("all")
-        self.assertEqual(self.lp.moment_lowerbounds, dict(),
+        self.assertEqual(self.lp.moment_lowerbounds, {},
                          "Resetting lower bounds failed.")
-        self.assertEqual(self.lp.moment_upperbounds, dict(),
+        self.assertEqual(self.lp.moment_upperbounds, {},
                          "Resetting upper bounds failed.")
-        self.assertEqual(self.lp.objective, dict(),
+        self.assertEqual(self.lp.objective, {},
                          "Resetting objective failed.")
-        self.assertEqual(self.lp.semiknown_moments, dict(),
+        self.assertEqual(self.lp.semiknown_moments, {},
                          "Resetting known values failed to empty "
                          "semiknown_moments.")
         self.assertEqual(self.lp.known_moments, {self.lp.One: 1.},

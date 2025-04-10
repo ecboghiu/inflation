@@ -238,7 +238,7 @@ def make_numerical(symbolic_expressions: Dict[Any, sympy.core.expr.Expr],
     Dict[Any, float]
         The dictionary with same keys and evaluated expressions as values.
     """
-    numeric_values = dict()
+    numeric_values = {}
     for k, v in symbolic_expressions.items():
         try:
             numeric_values[k] = float(v.evalf(subs=symbols_to_values))

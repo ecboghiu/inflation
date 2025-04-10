@@ -33,13 +33,13 @@ def convert_to_human_readable(problem):
     constants = {moment.idx: str(value)
                  for moment, value in problem.known_moments.items()}
     # Replacer for semiknowns
-    semiknowns = dict()
+    semiknowns = {}
     for key, val in problem.semiknown_moments.items():
         val_str = val[1].name.replace(", ", ";")
         semiknowns[key.idx] = f"{val[0]}*{val_str}"
     semiknown_replacer = np.vectorize(lambda x: semiknowns.get(x, str(x)))
     # Replacer for remaining symbols
-    monomials = dict()
+    monomials = {}
     for mon in problem.moments:
         monomials[mon.idx] = mon.name.replace(", ", ";")
 

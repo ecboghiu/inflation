@@ -204,15 +204,15 @@ class InflationSDP:
             self.all_commuting_q_2d = \
                 lambda mon: self.all_commuting_q_1d(self.mon_to_lexrepr(mon))
 
-        self.canon_lexmon_from_hash     = dict()
-        self.canonsym_lexmon_from_hash  = dict()
+        self.canon_lexmon_from_hash     = {}
+        self.canonsym_lexmon_from_hash  = {}
         # These next properties are reset during generate_relaxation, but
         # are needed in init so as to be able to test the Monomial constructor
         # function without generate_relaxation.
-        self.atomic_monomial_from_hash  = dict()
-        self.monomial_from_atoms        = dict()
-        self.monomial_from_name         = dict()
-        self.monomial_from_symbol       = dict()
+        self.atomic_monomial_from_hash  = {}
+        self.monomial_from_atoms        = {}
+        self.monomial_from_name         = {}
+        self.monomial_from_symbol       = {}
         self.Zero = self.Moment_2d(self.zero_operator, idx=0)
         self.One  = self.Moment_2d(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
@@ -298,10 +298,10 @@ class InflationSDP:
             Additional arguments that will be passed to
             ``InflationSDP.build_columns``.
         """
-        self.atomic_monomial_from_hash  = dict()
-        self.monomial_from_atoms        = dict()
-        self.monomial_from_name         = dict()
-        self.monomial_from_symbol       = dict()
+        self.atomic_monomial_from_hash  = {}
+        self.monomial_from_atoms        = {}
+        self.monomial_from_name         = {}
+        self.monomial_from_symbol       = {}
         self.Zero = self.Moment_2d(self.zero_operator, idx=0)
         self.One  = self.Moment_2d(self.identity_operator, idx=1)
         self.Constant_Term = self.One.__copy__()
@@ -351,7 +351,7 @@ class InflationSDP:
 
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
-        self.compmoment_from_idx = dict()
+        self.compmoment_from_idx = {}
         if self.momentmatrix_has_a_zero:
             self.compmoment_from_idx[0] = self.Zero
         for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
@@ -409,13 +409,13 @@ class InflationSDP:
                 self.minimal_equalities.append(eq_dict)
 
         self.minimal_inequalities = []
-        self.moment_upperbounds  = dict()
+        self.moment_upperbounds  = {}
         self.moment_lowerbounds  = {m: 0. for m in self.hermitian_moments}
 
         self.set_objective(None)
         self.set_values(None)
 
-        self.maskmatrices = dict()
+        self.maskmatrices = {}
         self._relaxation_has_been_generated = True
 
     def set_extra_equalities(self,
@@ -492,7 +492,7 @@ class InflationSDP:
         if bounds is None:
             return
         # Sanitize list of bounds
-        sanitized_bounds = dict()
+        sanitized_bounds = {}
         for mon, bound in bounds.items():
             mon = self._sanitise_moment(mon)
             if mon not in sanitized_bounds.keys():
@@ -525,7 +525,7 @@ class InflationSDP:
     @cached_property
     def atom_from_name(self):
         """Returns the atomic monomials."""
-        lookup_dict = dict()
+        lookup_dict = {}
         for atom in self.atomic_factors:
             lookup_dict[atom.name] = atom
             lookup_dict[atom.legacy_name] = atom
@@ -583,7 +583,7 @@ class InflationSDP:
             knowable_values = {atom: atom.compute_marginal(prob_array)
                                for atom in self.knowable_atoms}
         else:
-            knowable_values = dict()
+            knowable_values = {}
 
         self.set_values(knowable_values,
                         use_lpi_constraints=use_lpi_constraints,
@@ -882,7 +882,7 @@ class InflationSDP:
                  "polynomial constraints, the certificate is not guaranteed " +
                  "to apply to other distributions.")
         if np.allclose(list(dual.values()), 0.):
-            return dict()
+            return {}
         if clean:
             dual = clean_coefficients(dual, chop_tol, round_decimals)
         return {self.monomial_from_name[k]: v for k, v in dual.items()
@@ -1586,7 +1586,7 @@ class InflationSDP:
                 input_dict_copy = {k: float(v) for k, v in sp.expand(
                     input_dict).as_coefficients_dict().items()}
             else:
-                input_dict_copy = dict()
+                input_dict_copy = {}
         else:
             input_dict_copy = input_dict
         output_dict = defaultdict(int)
@@ -1835,7 +1835,7 @@ class InflationSDP:
         
         # This will allow for easy substitution of operators with the last
         # outcome with the rest of the operators orthogonal to it
-        lexmon_to_orthogroup = dict()
+        lexmon_to_orthogroup = {}
         for group in self.InflationProblem._ortho_groups:
             last_outcome_op = \
                 self.mon_to_lexrepr(np.expand_dims(group[-1], axis=0))[0]
@@ -1970,7 +1970,7 @@ class InflationSDP:
             for mon in nonzero_known_monomials:
                 self.moment_lowerbounds[mon] = 1.
                 del self.known_moments[mon]
-            self.semiknown_moments = dict()
+            self.semiknown_moments = {}
 
         self._update_bounds("lo")
         self._update_bounds("up")
@@ -1999,7 +1999,7 @@ class InflationSDP:
     def _reset_upperbounds(self) -> None:
         """Reset the list of upper bounds."""
         self._reset_solution()
-        self.moment_upperbounds = dict()
+        self.moment_upperbounds = {}
 
     def _reset_objective(self) -> None:
         """Reset the objective function."""
@@ -2011,8 +2011,8 @@ class InflationSDP:
     def _reset_values(self) -> None:
         """Reset the known values."""
         self._reset_solution()
-        self.known_moments     = dict()
-        self.semiknown_moments = dict()
+        self.known_moments     = {}
+        self.semiknown_moments = {}
         if self.momentmatrix_has_a_zero:
             self.known_moments[self.Zero] = 0.
         self.known_moments[self.One] = 1.
