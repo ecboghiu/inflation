@@ -1,0 +1,53 @@
+import unittest
+import warnings
+import numpy as np
+
+from inflation import InflationProblem
+from inflation.symmetry_utils import discover_distribution_symmetries
+
+
+class TestSymmetry(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore", category=UserWarning)
+
+    PR_box = np.zeros((2, 2, 2, 2))
+    for a,b,x,y in np.ndindex(*PR_box.shape):
+        if np.bitwise_xor(a,b) == np.bitwise_and(x,y):
+            PR_box[a,b,x,y] = 0.5
+
+    bellScenario = InflationProblem({"Lambda": ["A", "B"]},
+                                    outcomes_per_party=[2, 2],
+                                    settings_per_party=[2, 2],
+                                    inflation_level_per_source=[1])
+
+    def test_discover(self):
+        PRbox_symmetries = discover_distribution_symmetries(self.PR_box,
+                                                            self.bellScenario)
+        # Order: (a=0,x=0), (a=1,x=0), (a=0,x=1), (a=1,x=1),
+        #        (b=0,y=0), (b=1,y=0), (b=0,y=1), (b=1,y=1)
+        # There's five symmetries: flip parties, flip X, flip Y, and flip the
+        # outcomes of each. Out of all these, the only valid ones are those that
+        # do not change a+b+xy mod 2
+        # Identity
+        symmetries = [[0, 1, 2, 3, 4, 5, 6, 7]]
+        # Flip outcomes in x=1, and flip y
+        symmetries += [[0, 1, 3, 2, 6, 7, 4, 5]]
+        # Flip outcomes in x=0, flip b and y
+        symmetries += [[1, 0, 2, 3, 7, 6, 5, 4]]
+        # Flip a and b
+        symmetries += [[1, 0, 3, 2, 5, 4, 7, 6]]
+        # Flip x, flip b outcomes in y=1
+        symmetries += [[2, 3, 0, 1, 4, 5, 7, 6]]
+        # Flip x, flip y, flip a in x=1, flip b in y=0
+        symmetries += [[2, 3, 1, 0, 7, 6, 4, 5]]
+        # Flip x, flip y, flip a in x=0, flip b in y=1
+        symmetries += [[3, 2, 0, 1, 6, 7, 5, 4]]
+        # Flip x, flip a, flip b in y=0
+        symmetries += [[3, 2, 1, 0, 5, 4, 6, 7]]
+        # All the above, but swapping A and B
+        swapped = [symm[4:] + symm[:4] for symm in symmetries]
+        symmetries = symmetries + swapped
+        self.assertSetEqual(set(map(tuple, symmetries)),
+                            set(map(tuple, PRbox_symmetries)),
+                            "Failed to discover the symmetries of the PR box.")
