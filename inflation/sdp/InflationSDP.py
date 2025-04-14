@@ -1525,7 +1525,7 @@ class InflationSDP:
             if not self.real_qt:
                 atoms = min(atoms, tuple(sorted(conjugate)))
             else:
-                atoms = min(tuple(sorted(candidate)) for candidate in product(zip(atoms, conjugate)))
+                atoms = min(tuple(sorted(candidate)) for candidate in product(*zip(atoms, conjugate)))
             del conjugate
         try:
             mon = self.monomial_from_atoms[atoms]
