@@ -1406,6 +1406,9 @@ class InflationSDP:
                 return mon
             except KeyError:
                 mon = InternalAtomicMonomialSDP(self, repr_lexmon)
+                if self.real_qt:
+                    conj = mon.dagger
+                    mon = min(mon, conj)
                 self.atomic_monomial_from_hash[key]     = mon
                 self.atomic_monomial_from_hash[new_key] = mon
                 return mon
