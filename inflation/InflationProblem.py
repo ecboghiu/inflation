@@ -1061,6 +1061,11 @@ class InflationProblem:
 
     @cached_property
     def _party_specific_setting_relabelling_symmetries(self) -> np.ndarray:
+        """
+        Yields all possible setting relabellings that are specific to just one
+        party as permutations of the events on the original graph. Seperated by
+        party, so that iteration will involve itertools.product.
+        """
         identity_perm = np.arange(self._nr_operators, dtype=int)
         sym_generators = [identity_perm]
         for p in range(self.nr_parties):

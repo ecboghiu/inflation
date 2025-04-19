@@ -8,9 +8,8 @@ from collections import Counter, deque, defaultdict
 from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
-from operator import neg as op_neg
+from operator import neg as op_neg, itemgetter
 from numbers import Real
-from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 

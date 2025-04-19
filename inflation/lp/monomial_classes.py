@@ -272,7 +272,7 @@ class CompoundMoment(object):
         if self.n_factors == 0:
             self.as_lexmon = np.empty(0, dtype=np.intc)
         else:
-            self.as_lexmon     = np.hstack([factor.as_lexmon for factor in self.factors])
+            self.as_lexmon = np.hstack([factor.as_lexmon for factor in self.factors])
 
         knowable_factors   = []
         unknowable_factors = []

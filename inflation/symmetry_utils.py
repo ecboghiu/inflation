@@ -32,7 +32,7 @@ def discover_distribution_symmetries(distribution: np.array,
                          "the scenario do not match.")
     if not np.all(distribution >= 0):
         raise ValueError("The distribution contains negative values.")
-    if not np.all(np.isclose(distribution.sum(axis=tuple(range(parties))), 1)):
+    if not np.allclose(distribution.sum(axis=tuple(range(parties))), 1):
         raise ValueError("The distribution is not normalized for each setting.")
 
     original_dag_events_order = {tuple(op): i
