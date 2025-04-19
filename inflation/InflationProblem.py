@@ -417,7 +417,7 @@ class InflationProblem:
                                               return_inverse=True, axis=0)
 
         # Symmetries implied by the inflation
-        self.symmetries = self._discover_inflation_symmetries()
+        self.symmetries = self.inflation_symmetries
 
 
     @property
@@ -871,7 +871,8 @@ class InflationProblem:
     ###########################################################################
     # FUNCTIONS PERTAINING TO INFLATION SYMMETRIES                            #
     ###########################################################################
-    def _discover_inflation_symmetries(self) -> np.ndarray:
+    @cached_property
+    def inflation_symmetries(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials due to copy index relabelling. The new set of operators is a
         permutation of the old. The function outputs a list of all permutations.
