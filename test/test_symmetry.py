@@ -2,7 +2,7 @@ import unittest
 import warnings
 import numpy as np
 
-from inflation import InflationProblem
+from inflation import InflationProblem, InflationLP
 from inflation.symmetry_utils import (discover_distribution_symmetries,
                                       group_elements_from_generators)
 
@@ -24,7 +24,8 @@ class TestSymmetry(unittest.TestCase):
     bellScenario = InflationProblem({"Lambda": ["A", "B"]},
                                     outcomes_per_party=[2, 2],
                                     settings_per_party=[2, 2],
-                                    inflation_level_per_source=[1])
+                                    inflation_level_per_source=[1],
+                                    classical_sources='all')
 
     triangle = InflationProblem({"Lambda": ["A", "B"],
                                  "Mu": ["B", "C"],
@@ -32,9 +33,10 @@ class TestSymmetry(unittest.TestCase):
                                 outcomes_per_party=[2, 2, 2],
                                 inflation_level_per_source=[2, 1, 1])
 
+    PRbox_symmetries = discover_distribution_symmetries(PR_box,
+                                                        bellScenario)
+
     def test_discover(self):
-        PRbox_symmetries = discover_distribution_symmetries(self.PR_box,
-                                                            self.bellScenario)
         # Order: (a=0,x=0), (a=1,x=0), (a=0,x=1), (a=1,x=1),
         #        (b=0,y=0), (b=1,y=0), (b=0,y=1), (b=1,y=1)
         # There's five symmetries: flip parties, flip X, flip Y, and flip the
@@ -60,7 +62,7 @@ class TestSymmetry(unittest.TestCase):
         swapped = [symm[4:] + symm[:4] for symm in symmetries]
         symmetries = symmetries + swapped
         self.assertSetEqual(set(map(tuple, symmetries)),
-                            set(map(tuple, PRbox_symmetries)),
+                            set(map(tuple, self.PRbox_symmetries)),
                             "Failed to discover the symmetries of the PR box.")
 
     def test_discover_inflation(self):
@@ -89,3 +91,24 @@ class TestSymmetry(unittest.TestCase):
         self.assertSetEqual(set(map(tuple, elements)),
                             set(map(tuple, truth)),
                             "Failed to generate S3 from generators.")
+
+    def test_desymmetrized_certificate(self):
+        self.bellScenario.add_symmetries(self.PRbox_symmetries)
+        lp = InflationLP(self.bellScenario, verbose=0)
+        lp.set_distribution(self.PR_box)
+        lp.solve()
+        certificate = lp.desymmetrize_certificate()
+        truth = {
+            'P[A_0=0]': 0.125, 'P[A_0=1]': 0.125, 'P[A_1=0]': 0.125, 'P[A_1=1]': 0.125,
+            'P[B_0=0]': 0.125, 'P[B_0=1]': 0.125, 'P[B_1=0]': 0.125, 'P[B_1=1]': 0.125,
+            'P[A_0=0 B_0=0]': -0.1875, 'P[A_0=0 B_0=1]': 0.0625,
+            'P[A_0=0 B_1=0]': -0.1875, 'P[A_0=0 B_1=1]': 0.0625,
+            'P[A_0=1 B_1=1]': -0.1875, 'P[A_0=1 B_1=0]': 0.0625,
+            'P[A_0=1 B_0=1]': -0.1875, 'P[A_0=1 B_0=0]': 0.0625,
+            'P[A_1=0 B_0=0]': -0.1875, 'P[A_1=0 B_0=1]': 0.0625,
+            'P[A_1=0 B_1=1]': -0.1875, 'P[A_1=0 B_1=0]': 0.0625,
+            'P[A_1=1 B_1=0]': -0.1875, 'P[A_1=1 B_1=1]': 0.0625,
+            'P[A_1=1 B_0=1]': -0.1875, 'P[A_1=1 B_0=0]': 0.0625}
+        self.assertDictEqual(certificate, truth,
+                             "Failed to desymmetrize the CHSH inequality.")
+

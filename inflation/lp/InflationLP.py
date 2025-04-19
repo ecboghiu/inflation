@@ -873,6 +873,49 @@ class InflationLP(object):
                  "valid for other distributions.")
         return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
 
+    def desymmetrize_certificate(self) -> dict:
+        """If the scenario contains symmetries other than the inflation
+        symmetries, this function writes a certificate of infeasibility valid
+        for non-symmetric distributions too.
+
+        Parameters
+        ----------
+        replace : bool, optional
+            Whether to replace the certificate in ``self.solution_object``.
+            By default ``False``.
+
+        Returns
+        -------
+        dict
+            The expression of the un-symmetrized certificate in terms of
+            probabilities and marginals. The certificate of incompatibility is
+            ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationSDP.solve()\" first.")
+
+        desymmetrized = {}
+        norm = len(self.InflationProblem.symmetries)
+        lexmon_names = self.InflationProblem._lexrepr_to_copy_index_free_names
+        for symm in self.InflationProblem.symmetries:
+            for mon, coeff in dual.items():
+                mon = self.monomial_from_name[mon]
+                if not mon.is_zero:
+                    desymm_mon = lexmon_names[symm[mon.as_lexmon]]
+                    desymm_mon = sorted(desymm_mon, key=lambda x: x[0])
+                    if not mon.is_one:
+                        desymm_name = "P[" + " ".join(desymm_mon) + "]"
+                    else:
+                        desymm_name = "1"
+                    if desymm_name not in desymmetrized:
+                        desymmetrized[desymm_name] = coeff / norm
+                    else:
+                        desymmetrized[desymm_name] += coeff / norm
+        return desymmetrized
+
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ##########################################################################
