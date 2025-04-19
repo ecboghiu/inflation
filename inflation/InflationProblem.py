@@ -8,7 +8,6 @@ inflation.
 import warnings
 from functools import reduce, cached_property
 from itertools import (chain,
-                       combinations,
                        combinations_with_replacement,
                        permutations)
 from typing import Tuple, List, Union, Dict
@@ -19,7 +18,6 @@ import numpy as np
 from networkx.algorithms import isomorphism
 from sympy import Symbol
 from tqdm import tqdm
-
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm,
@@ -403,7 +401,7 @@ class InflationProblem:
             for op in self._lexorder[:, 1:-2]],
             dtype=np.intc)
 
-        # Here we set up compatible measurements
+        # Set up compatible measurements
         if self._nonclassical_sources.any():
             self._default_notcomm = commutation_matrix(self._lexorder,
                                                        self.sources_to_check_for_party_pair_commutation,
@@ -731,8 +729,7 @@ class InflationProblem:
             outcomes_of_parent_parties = partsextractor(outcomes_by_party, self.parents_per_party[party_index])
             if not np.array_equal(outcomes_of_parent_parties, o_nonprivate_settings):
                 return False
-        else:
-            return True
+        return True
 
     def rectify_fake_setting(self, monomial: np.ndarray) -> np.ndarray:
         """When constructing the monomials in a non-network scenario, we rely
@@ -874,7 +871,7 @@ class InflationProblem:
         return disconnected_components
 
     ###########################################################################
-    # FUNCTIONS PERTAINING TO INFLATION SYMMETRIES                            #
+    # FUNCTIONS PERTAINING TO SYMMETRIES                                      #
     ###########################################################################
     @cached_property
     def inflation_symmetries(self) -> np.ndarray:
@@ -917,7 +914,8 @@ class InflationProblem:
                         one_source_symmetries.append(new_order)
                     except KeyError:
                         permutation_failed = True
-                symmetries.append(np.asarray(one_source_symmetries, dtype=np.intc))
+                symmetries.append(np.asarray(one_source_symmetries,
+                                             dtype=np.intc))
             if permutation_failed and (self.verbose > 0):
                 warn("The generating set is not closed under source swaps."
                      + " Some symmetries will not be implemented.")
