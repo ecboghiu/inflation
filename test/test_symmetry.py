@@ -16,10 +16,20 @@ class TestSymmetry(unittest.TestCase):
         if np.bitwise_xor(a,b) == np.bitwise_and(x,y):
             PR_box[a,b,x,y] = 0.5
 
+    GHZ = np.zeros((2, 2, 2, 1, 1, 1))
+    GHZ[0, 0, 0, 0, 0, 0] = 1/2
+    GHZ[1, 1, 1, 0, 0, 0] = 1/2
+
     bellScenario = InflationProblem({"Lambda": ["A", "B"]},
                                     outcomes_per_party=[2, 2],
                                     settings_per_party=[2, 2],
                                     inflation_level_per_source=[1])
+
+    triangle = InflationProblem({"Lambda": ["A", "B"],
+                                 "Mu": ["B", "C"],
+                                 "Sigma": ["C", "A"]},
+                                outcomes_per_party=[2, 2, 2],
+                                inflation_level_per_source=[2, 1, 1])
 
     def test_discover(self):
         PRbox_symmetries = discover_distribution_symmetries(self.PR_box,
@@ -51,3 +61,22 @@ class TestSymmetry(unittest.TestCase):
         self.assertSetEqual(set(map(tuple, symmetries)),
                             set(map(tuple, PRbox_symmetries)),
                             "Failed to discover the symmetries of the PR box.")
+
+    def test_discover_inflation(self):
+        GHZ_symmetries = discover_distribution_symmetries(self.GHZ,
+                                                          self.triangle)
+        # Order: a11=0 a11=1 a12=0 a12=1 b11=0 b11=1 b21=0 b21=1 c11=0 c11=1
+        # There's only three symmetries: swap all outcomes, swap A and B, and
+        # both at the same time
+        # Identity
+        symmetries = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
+        # Flip all outcomes
+        symmetries += [[1, 0, 3, 2, 5, 4, 7, 6, 9, 8]]
+        # Flip A and B
+        symmetries += [[4, 5, 6, 7, 0, 1, 2, 3, 8, 9]]
+        # Both at the same time
+        symmetries += [[5, 4, 7, 6, 1, 0, 3, 2, 9, 8]]
+        self.assertSetEqual(set(map(tuple, symmetries)),
+                            set(map(tuple, GHZ_symmetries)),
+                            "Failed to discover the symmetries of the PR box.")
+
