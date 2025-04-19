@@ -3,7 +3,8 @@ import warnings
 import numpy as np
 
 from inflation import InflationProblem
-from inflation.symmetry_utils import discover_distribution_symmetries
+from inflation.symmetry_utils import (discover_distribution_symmetries,
+                                      group_elements_from_generators)
 
 
 class TestSymmetry(unittest.TestCase):
@@ -80,3 +81,11 @@ class TestSymmetry(unittest.TestCase):
                             set(map(tuple, GHZ_symmetries)),
                             "Failed to discover the symmetries of the PR box.")
 
+    def test_group_elements_from_generators(self):
+        generators = [[1, 2, 0], [1, 0, 2]]
+        elements = group_elements_from_generators(generators)
+        truth = [[0, 1, 2], [1, 0, 2], [2, 1, 0],
+                 [2, 0, 1],  [0, 2, 1], [1, 2, 0]]
+        self.assertSetEqual(set(map(tuple, elements)),
+                            set(map(tuple, truth)),
+                            "Failed to generate S3 from generators.")
