@@ -14,7 +14,9 @@ from itertools import (chain,
 from typing import Tuple, List, Union, Dict
 from warnings import warn
 
+import networkx as nx
 import numpy as np
+from networkx.algorithms import isomorphism
 from sympy import Symbol
 from tqdm import tqdm
 
@@ -963,8 +965,6 @@ class InflationProblem:
             gives the permutations of the original events.
         """
         nr_sources = self.nr_sources
-        import networkx as nx
-        from networkx.algorithms import isomorphism
         g1 = nx.DiGraph()
         g1.add_nodes_from(range(self.nr_parties+nr_sources))
         for s, bool_children in enumerate(self.hypergraph):
