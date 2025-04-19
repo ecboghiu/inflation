@@ -4,8 +4,11 @@ This file contains auxiliary functions for discovering symmetries
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe and Alejandro Pozas-Kerstjens
 """
 
+from typing import List, Union
+
 import numpy as np
 
+from sympy.combinatorics import Permutation, PermutationGroup
 from tqdm import tqdm
 from . import InflationProblem
 
@@ -68,6 +71,24 @@ def discover_distribution_symmetries(distribution: np.array,
         print(f"Found {len(good_perms)} symmetries.")
 
     return np.array(good_perms)
+
+def group_elements_from_generators(generators: Union[np.ndarray,
+                                                List[np.ndarray]]
+                                    ) -> np.ndarray:
+    """
+    Given a set of generators of some permutation group, return the group
+    elements in lexicographic order.
+
+    Parameters
+    ----------
+    generators : Union[np.ndarray, List[np.ndarray]]
+        The generators of the permutation group. Each generator is a permutation
+        of the indices [0...n].
+    """
+    G = PermutationGroup([Permutation(perm)
+                          for perm in np.unique(generators, axis=0)])
+    group_elements = np.array(list(G.generate_schreier_sims(af=True)))
+    return group_elements[np.lexsort(np.rot90(group_elements))]
 
 def interpret_lexorder_symmetry(perm: np.ndarray,
                                 scenario: InflationProblem) -> dict:

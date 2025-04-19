@@ -16,14 +16,17 @@ from warnings import warn
 
 import numpy as np
 from sympy import Symbol
-from sympy.combinatorics import Permutation, PermutationGroup
 from tqdm import tqdm
 
 from .sdp.fast_npa import (nb_classify_disconnected_components,
                            nb_overlap_matrix,
                            apply_source_perm,
                            commutation_matrix)
-from .utils import format_permutations, partsextractor, perm_combiner, all_and_maximal_cliques
+from .symmetry_utils import group_elements_from_generators
+from .utils import (format_permutations,
+                    partsextractor,
+                    perm_combiner,
+                    all_and_maximal_cliques)
 
 # Force warnings.warn() to omit the source code line in the message
 # https://stackoverflow.com/questions/2187269/print-only-the-message-on-warnings
@@ -919,9 +922,27 @@ class InflationProblem:
             return reduce(perm_combiner, symmetries)
         return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
 
-    ###########################################################################
-    # EXPERIMENTAL FUNCTIONS FOR INCORPORATING EXTRA SYMMETRIES               #
-    ###########################################################################
+    def add_symmetries(self,
+                       new_symmetries: Union[np.ndarray, List[np.ndarray]]
+                       ):
+        """Adds new symmetries, represented as permutations of the
+        lexicographical order, to the list of symmetries in the scenario.
+
+        Parameters
+        -------
+        new_symmetries : numpy.ndarray[int], List[np.ndarray[int]]
+            The permutations of the lexicographic order that conform the
+            symmetries to be included.
+        """
+        self.symmetries = group_elements_from_generators(
+            np.vstack((self.symmetries, new_symmetries)))
+
+    def reset_symmetries(self):
+        """Remove all the symmetries of the scenario, keeping only the ones
+            that are implied by the inflation structure.        
+        """
+        self.symmetries = self.inflation_symmetries
+
     @cached_property
     def _lexorder_hashable_interpretation_decoder(self):
         return {self._make_interpretation_hashable(op_as_dict): i for
@@ -1069,33 +1090,11 @@ class InflationProblem:
                 sym_generators.append(lexorder_perm)
         return np.array(sym_generators)
 
-    @staticmethod
-    def _group_elements_from_generators(gens: Union[np.ndarray,
-                                                    List[np.ndarray]]
-                                        ) -> np.ndarray:
-        G = PermutationGroup([Permutation(perm)
-                              for perm in np.unique(gens, axis=0)])
-        group_elements = np.array(list(G.generate_schreier_sims(af=True)))
-        return group_elements[np.lexsort(np.rot90(group_elements))]
-
     @cached_property
     def _all_possible_symmetries(self) -> np.ndarray:
         group_generators = np.vstack((
             self._party_relabelling_symmetries,
             self._party_specific_setting_relabelling_symmetries,
             self._setting_specific_outcome_relabelling_symmetries))
-        group_elements = self._group_elements_from_generators(group_generators)
+        group_elements = group_elements_from_generators(group_generators)
         return group_elements
-
-    def add_symmetries(self,
-                       new_symmetries: Union[np.ndarray, List[np.ndarray]]
-                       ):
-        """TBD"""
-        self.symmetries = self._group_elements_from_generators(
-            np.vstack((self.symmetries, new_symmetries)))
-
-    def reset_symmetries(self):
-        """Remove all the symmetries of the scenario, keeping only the ones
-            that are implied by the inflation.        
-        """
-        self.symmetries = self._discover_inflation_symmetries()
