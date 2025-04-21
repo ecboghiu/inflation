@@ -136,7 +136,7 @@ class Certificate(object):
                 else:
                     polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
 
-        if polynomial_as_str[0] = "+":
+        if polynomial_as_str[0] == "+":
             polynomial_as_str = polynomial_as_str[1:]
         return polynomial_as_str + " < 0"
 
@@ -227,9 +227,7 @@ class Certificate(object):
         desymmetrized = {}
         norm = len(self.problem.InflationProblem.symmetries)
         lexmon_names = self.problem.InflationProblem._lexrepr_to_copy_index_free_names
-        # TODO: Make that the lexorder in InflationLP and InflationSDP is the
-        # same, so we do not need this offset
-        offset = int(type(self.problem) is InflationSDP)
+        offset = int(self.problem.problem_type == "sdp")
         for symm in self.problem.InflationProblem.symmetries:
             for mon, coeff in self.certificate.items():
                 mon = self.problem.monomial_from_name[mon]
