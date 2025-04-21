@@ -2192,18 +2192,6 @@ class InflationSDP:
             return self._is_knowable_q_non_networks(np.take(atomic_monarray,
                                                             [0, -2, -1],
                                                     axis=1))
-
-    def _from_2dndarray(self, array2d: np.ndarray) -> bytes:
-        """Obtains the bytes representation of an array. The library uses this
-        representation as hashes for the corresponding monomials.
-
-        Parameters
-        ----------
-        array2d : numpy.ndarray
-            Monomial encoded as a 2D array.
-        """
-        return np.asarray(array2d, dtype=self.np_dtype).tobytes()
-
     def _prepare_solver_arguments(self) -> dict:
         """Prepare arguments to pass to the solver.
 
@@ -2285,64 +2273,6 @@ class InflationSDP:
             except AttributeError:
                 pass
         self.status = "Not yet solved"
-
-    def _to_2dndarray(self, bytestream: bytes) -> np.ndarray:
-        """Create a monomial array from its corresponding stream of bytes.
-
-        Parameters
-        ----------
-        bytestream : bytes
-            The stream of bytes encoding the monomial.
-
-        Returns
-        -------
-        numpy.ndarray
-            The corresponding monomial in array form.
-        """
-        array = np.frombuffer(bytestream, dtype=self.np_dtype)
-        return array.reshape((-1, self._nr_properties))
-
-    def _to_canonical_memoized(self,
-                               array2d: np.ndarray,
-                               apply_only_commutations=False) -> np.ndarray:
-        """Cached function to convert a monomial to its canonical form.
-
-        It checks whether the input monomial's canonical form has already been
-        calculated and stored in the ``InflationSDP.canon_ndarray_from_hash``.
-        If not, it calculates it.
-
-        Parameters
-        ----------
-        array2d : numpy.ndarray
-            Moment encoded as a 2D array.
-        apply_only_commutations : bool, optional
-            If ``True``, skip the removal of projector squares and the test to
-            see if the monomial is equal to zero, by default ``False``.
-
-        Returns
-        -------
-        numpy.ndarray
-            Moment in canonical form.
-        """
-        key = self._from_2dndarray(array2d)
-        try:
-            return self.canon_ndarray_from_hash[key]
-        except KeyError:
-            if len(array2d) == 0 or np.array_equiv(array2d, 0):
-                self.canon_ndarray_from_hash[key] = array2d
-                return array2d
-            else:
-                lexmon = self.mon_to_lexrepr(array2d)
-                new_lexmon = to_canonical_1d_internal(lexmon,
-                                                       self._notcomm,
-                                                       self._orthomat,
-                                                       self.all_operators_commute,
-                                                       apply_only_commutations)
-                new_array2d = self._lexorder[new_lexmon]
-                new_key = self._from_2dndarray(new_array2d)
-                self.canon_ndarray_from_hash[key]     = new_array2d
-                self.canon_ndarray_from_hash[new_key] = new_array2d
-                return new_array2d
 
     def _to_canonical_memoized_1d(self,
                                   lexmon: np.ndarray,
