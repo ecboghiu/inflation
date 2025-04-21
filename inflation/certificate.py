@@ -183,5 +183,33 @@ class Certificate(object):
         return polynomial
 
     def evaluate(self, prob_array: np.ndarray) -> float:
+        """Evaluate the certificate of infeasibility in a target probability
+        distribution. If the evaluation is a negative value, the distribution is
+        not compatible with the causal structure. Warning: when using
+        ``use_lpi_constraints=True`` the set of constraints depends on the
+        specified distribution, thus the certificate is not guaranteed to apply.
+
+        Parameters
+        ----------
+        prob_array : numpy.ndarray
+            Multidimensional array encoding the distribution, which is
+            called as ``prob_array[a,b,c,...,x,y,z,...]`` where
+            :math:`a,b,c,\\dots` are outputs and :math:`x,y,z,\\dots` are
+            inputs. Note: even if the inputs have cardinality 1 they must
+            be specified, and the corresponding axis dimensions are 1.
+            The parties' outcomes and measurements must appear in the
+            same order as specified by the ``order`` parameter in the
+            ``InflationProblem`` used to instantiate ``InflationLP``.
+
+        Returns
+        -------
+        float
+            The evaluation of the certificate of infeasibility in prob_array.
+        """
+        if self.problem.use_lpi_constraints:
+            warn("You have used LPI constraints to obtain the certificate. " +
+                 "Be aware that, because of that, the certificate may not be " +
+                 "valid for other distributions.")
+        return self.problem.evaluate_polynomial(self.as_dict(), prob_array)
 
     def desymmetrize(self) -> dict:

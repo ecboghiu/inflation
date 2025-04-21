@@ -1053,11 +1053,9 @@ class InflationSDP:
         float
             The evaluation of the certificate of infeasibility in prob_array.
         """
-        if self.use_lpi_constraints:
-            warn("You have used LPI constraints to obtain the certificate. " +
-                 "Be aware that, because of that, the certificate may not be " +
-                 "valid for other distributions.")
-        return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
+        warn("evaluate_certificate() will be removed from new versions of the "
+             + "library. Please use InflationLP.certificate.evaluate() instead")
+        return self.certificate.evaluate(prob_array)
 
     def desymmetrize_certificate(self) -> dict:
         """If the scenario contains symmetries other than the inflation
