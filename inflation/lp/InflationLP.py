@@ -122,7 +122,7 @@ class InflationLP(object):
         self._nr_operators = inflationproblem._nr_operators
         self._lexeye = np.eye(self._nr_operators, dtype=bool)
         self._lexrange = np.arange(self._nr_operators)
-        self.lexorder_symmetries = inflationproblem.lexorder_symmetries
+        self.lexorder_symmetries = inflationproblem.symmetries
         self._from_2dndarray = inflationproblem._from_2dndarray
         self.mon_to_lexrepr = inflationproblem.mon_to_lexrepr
         self.blank_bool_vec = np.zeros(self._nr_operators, dtype=bool)
@@ -873,6 +873,49 @@ class InflationLP(object):
                  "valid for other distributions.")
         return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
 
+    def desymmetrize_certificate(self) -> dict:
+        """If the scenario contains symmetries other than the inflation
+        symmetries, this function writes a certificate of infeasibility valid
+        for non-symmetric distributions too.
+
+        Parameters
+        ----------
+        replace : bool, optional
+            Whether to replace the certificate in ``self.solution_object``.
+            By default ``False``.
+
+        Returns
+        -------
+        dict
+            The expression of the un-symmetrized certificate in terms of
+            probabilities and marginals. The certificate of incompatibility is
+            ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationSDP.solve()\" first.")
+
+        desymmetrized = {}
+        norm = len(self.InflationProblem.symmetries)
+        lexmon_names = self.InflationProblem._lexrepr_to_copy_index_free_names
+        for symm in self.InflationProblem.symmetries:
+            for mon, coeff in dual.items():
+                mon = self.monomial_from_name[mon]
+                if not mon.is_zero:
+                    desymm_mon = lexmon_names[symm[mon.as_lexmon]]
+                    desymm_mon = sorted(desymm_mon, key=lambda x: x[0])
+                    if not mon.is_one:
+                        desymm_name = "P[" + " ".join(desymm_mon) + "]"
+                    else:
+                        desymm_name = "1"
+                    if desymm_name not in desymmetrized:
+                        desymmetrized[desymm_name] = coeff / norm
+                    else:
+                        desymmetrized[desymm_name] += coeff / norm
+        return desymmetrized
+
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ##########################################################################
@@ -1309,27 +1352,37 @@ class InflationLP(object):
                              disable=not self.verbose,
                              desc="Initializing monomials   ",
                              total=self.n_columns):
-            mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), idx)
-            boolvec2mon[tuple(tuple(op)
-                              for op in self._lexorder[mon_as_lexboolvec])] = mon
-            _monomials.append(mon)
-            _monomial_names.append(mon.name)
-            _compmonomial_from_idx[idx] = mon
-            # Commented out line below used for internal debugging only.
-            # assert mon not in _compmonomial_to_idx, f"Critical error: these two monomials {(mon, _compmonomial_from_idx[_compmonomial_to_idx[mon]])} are being assigned the same index."
-            _compmonomial_to_idx[mon] = idx
-        self.first_free_idx = self.n_columns + 1
-        self.monomials = np.array(_monomials, dtype=object)
-        self.monomial_names = np.array(_monomial_names)
-        self.compmonomial_from_idx = _compmonomial_from_idx
-        self.compmonomial_to_idx = _compmonomial_to_idx
-        del _monomials, _compmonomial_from_idx, _compmonomial_to_idx, _monomial_names
+            mon = self.Monomial(np.flatnonzero(mon_as_lexboolvec), first_free_index)
+            try:
+                current_index = _compmonomial_to_idx[mon]
+                mon.idx = current_index
+            except KeyError:
+                current_index = first_free_index
+                _compmonomial_to_idx[mon] = current_index
+                first_free_index += 1
+            self.extra_inverse[idx] = current_index
+        self.inverse = self.extra_inverse[self.inverse] # Hack to allow for powerful symmetries
+
+        monomials_as_list = list(_compmonomial_to_idx.keys())
+        self.monomials = np.array(monomials_as_list, dtype = object)
+        # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
+        old_num_columns = self.n_columns
+        self.n_columns = len(self.monomials)
+        self.first_free_idx = first_free_index
+        self.monomial_names = np.array([mon.name for mon in monomials_as_list])
+        if self.n_columns < old_num_columns:
+            if self.verbose > 0:
+                eprint("Further variable reduction has been made possible. Number of variables in the LP:",
+                       self.n_columns)
+        self.compmonomial_from_idx = dict(zip(range(self.n_columns), monomials_as_list))
+        self.compmonomial_to_idx = dict(zip(monomials_as_list, range(self.n_columns)))
+        del _compmonomial_to_idx, monomials_as_list
         collect(generation=2)
         assert self.monomials[0] == self.One, f"Sparse indexing requires that first column represent one, but got {self.monomials[0]}"
 
-        assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
-            (f"Multiple indices are being associated to the same monomial. \n" +
-            f"Expected {self.n_columns}, got {len(self.compmonomial_to_idx.keys())}.")
+        # assert len(self.compmonomial_to_idx.keys()) == self.n_columns, \
+        #     (f"Multiple indices are being associated to the same monomial. \n" +
+        #     f"Expected {self.n_columns}, got {len(self.compmonomial_to_idx.keys())}.")
 
 
         _counter = Counter([mon.knowability_status

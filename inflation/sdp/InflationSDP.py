@@ -8,9 +8,8 @@ from collections import Counter, deque, defaultdict
 from functools import reduce, cached_property
 from gc import collect
 from itertools import chain, count, product, repeat, combinations
-from operator import neg as op_neg
+from operator import neg as op_neg, itemgetter
 from numbers import Real
-from operator import itemgetter
 from typing import List, Dict, Tuple, Union, Any
 from warnings import warn
 
@@ -151,7 +150,7 @@ class InflationSDP:
         self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
         self.lexorder_symmetries = \
-            np.pad(inflationproblem.lexorder_symmetries + 1, ((0, 0), (1, 0)))
+            np.pad(inflationproblem.symmetries + 1, ((0, 0), (1, 0)))
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names))
@@ -351,19 +350,67 @@ class InflationSDP:
 
         # Associate Monomials to the remaining entries. The zero monomial is
         # not stored during calculate_momentmatrix
-        self.compmoment_from_idx = {}
-        if self.momentmatrix_has_a_zero:
-            self.compmoment_from_idx[0] = self.Zero
+        first_free_index = 0
+        self.compmoment_from_idx = dict()
+        _compmonomial_to_idx = dict()
+        self.n_vars = len(self.symmetrized_corresp)
+        _compmonomial_to_idx[self.Zero] = 0
+        self.compmoment_from_idx[0] = self.Zero
+        first_free_index += 1
+        self.n_vars += 1
+        self.extra_inverse = np.arange(self.n_vars, dtype=int)
+        self.old_indices_associated_with_new_index = defaultdict(list)
+        self.old_indices_associated_with_monomial = defaultdict(list)
+        self.old_indices_associated_with_new_index[0]=[0]
+        self.old_indices_associated_with_monomial[self.Zero] = [0]
         for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
-                               disable=not self.verbose,
-                               desc="Initializing monomials   "):
-            self.compmoment_from_idx[idx] = self.Moment_1d(lexmon, idx)
-        self.first_free_idx = max(self.compmoment_from_idx.keys()) + 1
-        self.moments = list(self.compmoment_from_idx.values())
-        self.monomials = list(self.compmoment_from_idx.values())
-        
-        assert all(v == 1 for v in Counter(self.monomials).values()), \
-            "Multiple indices are being associated to the same monomial"
+                             disable=not self.verbose,
+                             desc="Initializing monomials   ",
+                             total=self.n_vars):
+            mon = self.Moment_1d(lexmon, first_free_index)
+            self.compmoment_from_idx[idx] = mon # Critical for normalization equations and other functions that use old indices
+            try:
+                current_index = _compmonomial_to_idx[mon]
+                mon.idx = current_index
+            except KeyError:
+                current_index = first_free_index
+                _compmonomial_to_idx[mon] = current_index
+                first_free_index += 1
+            self.old_indices_associated_with_new_index[current_index].append(idx)
+            self.old_indices_associated_with_monomial[mon].append(idx)
+            self.extra_inverse[idx] = current_index
+
+        self.monomials = list(_compmonomial_to_idx.keys())
+        if not self.momentmatrix_has_a_zero:
+            self.monomials = self.monomials[1:]
+            self.n_vars -= 1
+        self.moments = self.monomials
+        # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
+        old_num_vars = self.n_vars
+        self.n_vars = len(self.monomials)
+        self.first_free_idx = first_free_index
+        if self.n_vars < old_num_vars:
+            if self.verbose > 0:
+                print("Further variable reduction has been made possible. Number of variables in the SDP:",
+                       self.n_vars)
+        # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
+        # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
+        del _compmonomial_to_idx
+        collect(generation=2)
+
+        # self.compmoment_from_idx = dict()
+        # if self.momentmatrix_has_a_zero:
+        #     self.compmoment_from_idx[0] = self.Zero
+        # for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
+        #                        disable=not self.verbose,
+        #                        desc="Initializing monomials   "):
+        #     self.compmoment_from_idx[idx] = self.Moment_1d(lexmon, idx)
+        # self.first_free_idx = max(self.compmoment_from_idx.keys()) + 1
+        # self.moments = list(self.compmoment_from_idx.values())
+        # self.monomials = list(self.compmoment_from_idx.values())
+        #
+        # assert all(v == 1 for v in Counter(self.monomials).values()), \
+        #     "Multiple indices are being associated to the same monomial"
 
         _counter = Counter([mon.knowability_status for mon in self.moments])
         self.n_knowable           = _counter["Knowable"]
@@ -1079,6 +1126,43 @@ class InflationSDP:
                  "valid for other distributions.")
         return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
 
+    def desymmetrize_certificate(self) -> dict:
+        """If the scenario contains symmetries other than the inflation
+        symmetries, this function writes a certificate of infeasibility valid
+        for non-symmetric distributions too.
+
+        Returns
+        -------
+        dict
+            The expression of the un-symmetrized certificate in terms of
+            probabilities and marginals. The certificate of incompatibility is
+            ``cert < 0``.
+        """
+        try:
+            dual = self.solution_object["dual_certificate"]
+        except AttributeError:
+            raise Exception("For extracting a certificate you need to solve " +
+                            "a problem. Call \"InflationSDP.solve()\" first.")
+
+        desymmetrized = {}
+        norm = len(self.InflationProblem.symmetries)
+        lexmon_names = self.InflationProblem._lexrepr_to_copy_index_free_names
+        for symm in self.InflationProblem.symmetries:
+            for mon, coeff in dual.items():
+                mon = self.monomial_from_name[mon]
+                if not mon.is_zero:
+                    desymm_mon = lexmon_names[symm[mon.as_lexmon-1]]
+                    desymm_mon = sorted(desymm_mon, key=lambda x: x[0])
+                    if not mon.is_one:
+                        desymm_name = "P[" + " ".join(desymm_mon) + "]"
+                    else:
+                        desymm_name = "1"
+                    if desymm_name not in desymmetrized:
+                        desymmetrized[desymm_name] = coeff / norm
+                    else:
+                        desymmetrized[desymm_name] += coeff / norm
+        return desymmetrized
+
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
     ###########################################################################
@@ -1467,8 +1551,8 @@ class InflationSDP:
         if self._relaxation_has_been_generated:
             if self.n_columns > 0:
                 self.maskmatrices = {
-                    mon: coo_array(self.momentmatrix == mon.idx)
-                    for mon in tqdm(self.moments,
+                    mon: sum(coo_array(self.momentmatrix == oldidx) for oldidx in oldidxs)
+                    for mon, oldidxs in tqdm(self.old_indices_associated_with_monomial.items(),
                                     disable=not self.verbose,
                                     desc="Assigning mask matrices  ")
                                      }
@@ -1827,25 +1911,24 @@ class InflationSDP:
         """
 
         # This will help us identify relevant operators with the last outcome
-        last_outcome_boolmask = np.array(
+        first_outcome_boolmask = np.array(
             [self.has_children[op[0] - 1] and
-              op[-1] == self.outcome_cardinalities[op[0] - 1] - 2 # TODO -2 is a hack for using fake outcomes
-                                for op in self._lexorder[1:]], dtype=bool)
-        last_outcome_boolmask = np.hstack(([False], last_outcome_boolmask))
+              op[-1] == 0 for op in self._lexorder[1:]], dtype=bool)
+        first_outcome_boolmask = np.hstack(([False], first_outcome_boolmask))
         
         # This will allow for easy substitution of operators with the last
         # outcome with the rest of the operators orthogonal to it
         lexmon_to_orthogroup = {}
         for group in self.InflationProblem._ortho_groups:
-            last_outcome_op = \
-                self.mon_to_lexrepr(np.expand_dims(group[-1], axis=0))[0]
-            lexmon_to_orthogroup[last_outcome_op] = \
+            first_outcome_op = \
+                self.mon_to_lexrepr(np.expand_dims(group[0], axis=0))[0]
+            lexmon_to_orthogroup[first_outcome_op] = \
                 np.concatenate([self.mon_to_lexrepr(np.expand_dims(m, axis=0))
                                 for m in group], dtype=np.intc)    
         
         column_level_equalities = []
         for i, lexmon in enumerate(self.generating_monomials_1d):
-            last_outcome_ops = last_outcome_boolmask[lexmon]
+            last_outcome_ops = first_outcome_boolmask[lexmon]
             if last_outcome_ops.sum() > 0:
                 eqs = []
                 for i, op in enumerate(lexmon):
@@ -1877,6 +1960,7 @@ class InflationSDP:
             the inflation symmetries.
         """
         discovered_symmetries = [np.arange(self.n_columns, dtype=int)]
+        permutations_failed = 0
         permutation_failed = False
         for inf_sym in self.lexorder_symmetries[1:]:
             skip_this_one = False
@@ -1891,12 +1975,13 @@ class InflationSDP:
                         = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
             except KeyError:
                 permutation_failed = True
+                permutations_failed += 1
                 skip_this_one = True
             if not skip_this_one:
                 discovered_symmetries.append(total_perm)
         if permutation_failed and (self.verbose > 0):
             warn("The generating set is not closed under source swaps."
-                 + " Some symmetries will not be implemented.")
+                 + f" {permutations_failed} symmetries were not be implemented.")
         return np.unique(discovered_symmetries, axis=0)[1:]
 
     def _generate_parties(self) -> List[List[List[List[sp.Symbol]]]]:

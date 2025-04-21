@@ -29,12 +29,12 @@ def flatten(nested):
 
 
 def format_permutations(array: Union[
-    np.ndarray,
-    List[List[int]],
-    List[Tuple[int,...]],
-    Tuple[Tuple[int,...],...],
-    Tuple[List[int],...],
-]) -> np.ndarray:
+        np.ndarray,
+        List[List[int]],
+        List[Tuple[int,...]],
+        Tuple[Tuple[int,...],...],
+        Tuple[List[int],...],
+    ]) -> np.ndarray:
     """Permutations of inflation indices must leave the integers 0,
     corresponding to sources not being measured by the operator, invariant.
     In order to achieve this, this function shifts a permutation of sources
