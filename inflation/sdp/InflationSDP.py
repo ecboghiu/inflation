@@ -215,6 +215,7 @@ class InflationSDP:
         self.Zero = self.Moment_2d(self.zero_operator, idx=0)
         self.One  = self.Moment_2d(self.identity_operator, idx=1)
         self._relaxation_has_been_generated = False
+        self.expected_distro_shape = inflationproblem.expected_distro_shape
 
     ###########################################################################
     # MAIN ROUTINES EXPOSED TO THE USER                                       #
@@ -627,6 +628,10 @@ class InflationSDP:
                 ``True``), only atomic monomials are assigned numerical values.
         """
         if prob_array is not None:
+            assert prob_array.shape == self.expected_distro_shape, \
+                f"Cardinalities mismatch: \n" \
+                f"expected {self.expected_distro_shape}, \n " \
+                f"got {prob_array.shape}"
             knowable_values = {atom: atom.compute_marginal(prob_array)
                                for atom in self.knowable_atoms}
         else:

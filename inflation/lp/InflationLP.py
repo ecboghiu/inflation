@@ -316,9 +316,10 @@ class InflationLP(object):
             ``True``), only atomic monomials are assigned numerical values.
         """
         if prob_array is not None:
-            assert prob_array.shape == self.expected_distro_shape, f"Cardinalities mismatch: \n" \
-                                                                   f"expected {self.expected_distro_shape}, \n " \
-                                                                   f"got {prob_array.shape}"
+            assert prob_array.shape == self.expected_distro_shape, \
+                f"Cardinalities mismatch: \n" \
+                f"expected {self.expected_distro_shape}, \n " \
+                f"got {prob_array.shape}"
             knowable_values = {atom: atom.compute_marginal(prob_array)
                                for atom in self.knowable_atoms}
         else:

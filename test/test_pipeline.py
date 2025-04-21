@@ -554,14 +554,14 @@ class TestSDPOutput(unittest.TestCase):
         sdp.generate_relaxation([1,
                                  A10, A11, A20, A21,
                                  A10*A11, A10*A21, A11*A20, A20*A21])
-        sdp.set_distribution(np.array([[0.14873, 0.85168]]))
+        sdp.set_distribution(np.array([[0.14873, 0.85168], [None, None]]))
         sdp.set_objective(A11*A10*A20*A21)
         sdp.solve()
         self.assertTrue(np.isclose(sdp.objective_value, 0.0918999),
                         "Optimization of a simple SDP without LPI-like " +
                         "constraints is not obtaining the correct known value."
                         )
-        sdp.set_distribution(np.array([[0.14873, 0.85168]]),
+        sdp.set_distribution(np.array([[0.14873, 0.85168], [None, None]]),
                              use_lpi_constraints=True
                              )
         sdp.solve()
@@ -598,7 +598,7 @@ class TestSDPOutput(unittest.TestCase):
                           [1, 2, 0, 0],
                           [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
-        sdp.set_distribution(np.ones((2, 1)) / 2,
+        sdp.set_distribution(np.ones((2, 2)) / 2,
                              use_lpi_constraints=True)
         new_mon_indices = np.array([semi[1][1].idx
                                     for semi in sdp.semiknown_moments.items()])
