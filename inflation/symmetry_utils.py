@@ -12,10 +12,31 @@ from sympy.combinatorics import Permutation, PermutationGroup
 from tqdm import tqdm
 from . import InflationProblem
 
-def discover_distribution_symmetries(distribution: np.array,
+def discover_distribution_symmetries(distribution: np.ndarray,
                                      scenario: InflationProblem
                                      ) -> np.ndarray:
     """
+    Given a distribution, find the symmetries of the distribution that are
+    compatible with the symmetries of the scenario. The symmetries are
+    represented as permutations of the lexicographic order of the events in
+    the scenario.
+
+    Parameters
+    ----------
+    distribution : numpy.ndarray
+        The distribution to be analyzed. It must be a numpy array of shape
+        ``[o1, ..., oN, s1, ..., sN]``, where ``oi`` and ``si`` are, respectively,
+         the number of outcomes and settings for party ``i``.
+    scenario : InflationProblem
+        The scenario object.
+
+    Returns
+    -------
+    numpy.ndarray
+        The symmetries of the distribution that are compatible with the
+        symmetries of the scenario. The symmetries are represented as
+        permutations of the lexicographic order of the events in the
+        scenario.
     """
     # Sanity checks
     parties = scenario.nr_parties
@@ -85,9 +106,15 @@ def group_elements_from_generators(generators: Union[np.ndarray,
 
     Parameters
     ----------
-    generators : Union[np.ndarray, List[np.ndarray]]
+    generators : Union[numpy.ndarray, List[numpy.ndarray]]
         The generators of the permutation group. Each generator is a permutation
-        of the indices [0...n].
+        of the indices ``[0...n]``.
+
+    Returns
+    -------
+    numpy.ndarray
+        The elements of the symmetry group as permutatiosn of th lexicographic
+        order.
     """
     G = PermutationGroup([Permutation(perm)
                           for perm in np.unique(generators, axis=0)])
@@ -101,7 +128,7 @@ def interpret_lexorder_symmetry(perm: np.ndarray,
 
     Parameters
     ----------
-    perm : np.ndarray
+    perm : numpy.ndarray
         The permutation of the lexicographic order of the events in the
         scenario.
     scenario : InflationProblem
@@ -123,7 +150,7 @@ def interpret_original_symmetry(perm: np.ndarray,
 
     Parameters
     ----------
-    perm : np.ndarray
+    perm : numpy.ndarray
         The permutation of the events in the scenario.
     scenario : InflationProblem
         The scenario object.
@@ -145,7 +172,7 @@ def lexperm_to_origperm(lexperm: np.ndarray,
 
     Parameters
     ----------
-    lexperm : np.ndarray
+    lexperm : numpy.ndarray
         The permutation of the lexicographic order of the events in the
         scenario.
     scenario : InflationProblem
@@ -153,7 +180,7 @@ def lexperm_to_origperm(lexperm: np.ndarray,
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         The corresponding permutation of the observable events in the scenario.
     """
     return scenario._lexidx_to_origidx[lexperm][scenario._canonical_lexids]

@@ -14,6 +14,8 @@ API Reference
 
    optimization
 
+   symmetry
+
    monomials
 
    build
