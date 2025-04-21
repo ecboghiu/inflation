@@ -213,3 +213,35 @@ class Certificate(object):
         return self.problem.evaluate_polynomial(self.as_dict(), prob_array)
 
     def desymmetrize(self) -> dict:
+        """If the scenario contains symmetries other than the inflation
+        symmetries, this function writes a certificate of infeasibility valid
+        for non-symmetric distributions too.
+
+        Returns
+        -------
+        dict
+            The expression of the un-symmetrized certificate in terms of
+            probabilities and marginals. The certificate of incompatibility is
+            ``cert < 0``.
+        """
+        desymmetrized = {}
+        norm = len(self.problem.InflationProblem.symmetries)
+        lexmon_names = self.problem.InflationProblem._lexrepr_to_copy_index_free_names
+        # TODO: Make that the lexorder in InflationLP and InflationSDP is the
+        # same, so we do not need this offset
+        offset = int(type(self.problem) is InflationSDP)
+        for symm in self.problem.InflationProblem.symmetries:
+            for mon, coeff in self.certificate.items():
+                mon = self.problem.monomial_from_name[mon]
+                if not mon.is_zero:
+                    desymm_mon = lexmon_names[symm[mon.as_lexmon-offset]]
+                    desymm_mon = sorted(desymm_mon, key=lambda x: x[0])
+                    if not mon.is_one:
+                        desymm_name = "P[" + " ".join(desymm_mon) + "]"
+                    else:
+                        desymm_name = "1"
+                    if desymm_name not in desymmetrized:
+                        desymmetrized[desymm_name] = coeff / norm
+                    else:
+                        desymmetrized[desymm_name] += coeff / norm
+        return desymmetrized
