@@ -97,7 +97,7 @@ class TestSymmetry(unittest.TestCase):
         lp = InflationLP(self.bellScenario, verbose=0)
         lp.set_distribution(self.PR_box)
         lp.solve()
-        certificate = lp.desymmetrize_certificate()
+        certificate = lp.certificate.desymmetrize()
         truth = {
             'P[A_0=0]': 0.125, 'P[A_0=1]': 0.125, 'P[A_1=0]': 0.125, 'P[A_1=1]': 0.125,
             'P[B_0=0]': 0.125, 'P[B_0=1]': 0.125, 'P[B_1=0]': 0.125, 'P[B_1=1]': 0.125,
