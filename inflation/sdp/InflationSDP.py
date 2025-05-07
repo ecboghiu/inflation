@@ -35,7 +35,7 @@ from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
 from ..lp.numbafied import nb_outer_bitwise_or
-from ..utils import clean_coefficients, partsextractor
+from ..utils import clean_coefficients, partsextractor, eprint
 
 
 class InflationSDP:
@@ -149,8 +149,23 @@ class InflationSDP:
         self._lexorder = self._default_lexorder.copy()
         self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
-        self.lexorder_symmetries = \
+        self.raw_lexorder_symmetries = \
             np.pad(inflationproblem.symmetries + 1, ((0, 0), (1, 0)))
+        # self.lexorder_symmetries = self.raw_lexorder_symmetries.copy()
+        CG_ops = []
+        for boolarray in self._CG_limited_ortho_groups_as_boolarrays:
+            CG_ops.extend(np.flatnonzero(boolarray)+1)
+        CG_ops = np.sort(CG_ops).astype(int)
+        self.lexorder_symmetries=np.array([
+            perm for perm in self.raw_lexorder_symmetries
+            if np.array_equal(np.sort(perm[CG_ops]), CG_ops)
+        ], dtype=int)
+        if self.verbose > 0:
+            old_group_size = len(self.raw_lexorder_symmetries)
+            new_group_size = len(self.lexorder_symmetries)
+            if new_group_size < old_group_size:
+                eprint("Warning: The use of Collins-Gisin notation internally via the argument `include_all_outcomes=False`")
+                eprint(f" means that not all symmetries of the problem can be exploited. Group size drop from {old_group_size} to {new_group_size}.")
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names))
@@ -1959,19 +1974,23 @@ class InflationSDP:
         permutation_failed = False
         for inf_sym in self.lexorder_symmetries[1:]:
             skip_this_one = False
-            try:
-                total_perm = np.empty(self.n_columns, dtype=int)
-                for i, lexmon in enumerate(self.generating_monomials_1d):
-                    new_lexmon = inf_sym[lexmon]
-                    new_lexmon_canon = self._to_canonical_memoized_1d(
-                        new_lexmon,
-                        apply_only_commutations=True)
+            total_perm = np.empty(self.n_columns, dtype=int)
+            for i, lexmon in enumerate(self.generating_monomials_1d):
+                new_lexmon = np.argsort(inf_sym)[lexmon]
+                new_lexmon_canon = self._to_canonical_memoized_1d(
+                    new_lexmon,
+                    apply_only_commutations=True)
+                try:
                     total_perm[i] \
-                        = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
-            except KeyError:
-                permutation_failed = True
-                permutations_failed += 1
-                skip_this_one = True
+                    = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
+                except KeyError:
+                    eprint(f"Warning: generating monomial before symmetry becomes unrecognizable after symmetry!")
+                    eprint(f" Generating monomial before symmetry: {self._lexrepr_to_names[lexmon]}")
+                    eprint(f" Generating monomial after symmetry: {self._lexrepr_to_names[new_lexmon_canon]}")
+                    permutation_failed = True
+                    permutations_failed += 1
+                    skip_this_one = True
+                    break
             if not skip_this_one:
                 discovered_symmetries.append(total_perm)
         if permutation_failed and (self.verbose > 0):
