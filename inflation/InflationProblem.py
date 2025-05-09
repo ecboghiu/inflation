@@ -528,7 +528,7 @@ class InflationProblem:
         return np.asarray([self._interpretation_to_name(
             op_dict,
             include_copy_indices=self._any_inflation)
-                for op_dict in self._lexrepr_to_dicts.flat])
+                for op_dict in self._lexrepr_to_dicts.flat], dtype=object)
 
     @cached_property
     def _original_event_names(self) -> np.ndarray:
@@ -543,7 +543,7 @@ class InflationProblem:
         return np.asarray([self._interpretation_to_name(
             self._interpret_operator(event),
             include_copy_indices=False)
-                for event in self.original_dag_events])
+                for event in self.original_dag_events], dtype=object)
 
     @cached_property
     def _lexrepr_to_copy_index_free_names(self) -> np.ndarray:
@@ -561,7 +561,7 @@ class InflationProblem:
             return np.asarray([self._interpretation_to_name(
                 op_dict,
                 include_copy_indices=False)
-                for op_dict in self._lexrepr_to_dicts.flat])
+                for op_dict in self._lexrepr_to_dicts.flat], dtype=object)
 
     @cached_property
     def _lexrepr_to_all_names(self) -> np.ndarray:
@@ -584,7 +584,7 @@ class InflationProblem:
             self._lexrepr_to_copy_index_free_names,
             old_names_v1,
             old_names_v2
-        ), 1)
+        ), 1).astype(object)
 
     @cached_property
     def _lexrepr_to_symbols(self) -> np.ndarray:
