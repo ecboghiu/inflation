@@ -36,7 +36,7 @@ from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
 from ..lp.numbafied import nb_outer_bitwise_or
-from ..utils import clean_coefficients, partsextractor
+from ..utils import clean_coefficients, partsextractor, eprint
 
 
 class InflationSDP:
@@ -106,7 +106,7 @@ class InflationSDP:
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
-            print("Number of single operator measurements per party:", end="")
+            eprint("Number of single operator measurements per party:", end="")
             prefix = " "
             for i, measures in enumerate(self.measurements):
                 counter = count()
@@ -114,9 +114,9 @@ class InflationSDP:
                     chain.from_iterable(measures)),
                           counter),
                       maxlen=0)
-                print(prefix + f"{self.names[i]}={next(counter)}", end="")
+                eprint(prefix + f"{self.names[i]}={next(counter)}", end="")
                 prefix = ", "
-            print()
+            eprint()
         self.use_lpi_constraints = False
         self.network_scenario    = inflationproblem.is_network
         self._is_knowable_q_non_networks = \
@@ -321,7 +321,7 @@ class InflationSDP:
         self.build_columns(column_specification)
         collect()
         if self.verbose > 0:
-            print("Number of columns in the moment matrix:", self.n_columns)
+            eprint("Number of columns in the moment matrix:", self.n_columns)
 
         # Calculate the moment matrix without the inflation symmetries
         unsymmetrized_mm, unsymmetrized_corresp = \
@@ -333,7 +333,7 @@ class InflationSDP:
                          else "")
             if 0 in unsymmetrized_mm.flat:
                 additional_var = 1
-            print("Number of variables" + extra_msg + ":",
+            eprint("Number of variables" + extra_msg + ":",
                   len(unsymmetrized_corresp) + additional_var)
 
         # Calculate the inflation symmetries
@@ -350,7 +350,7 @@ class InflationSDP:
         if self.verbose > 0:
             extra_msg = (" after symmetrization" if symmetrization_required
                          else "")
-            print(f"Number of variables{extra_msg}: "
+            eprint(f"Number of variables{extra_msg}: "
                   + f"{len(self.symmetrized_corresp)+additional_var}")
         del unsymmetrized_mm, unsymmetrized_corresp, \
             symmetrization_required, additional_var
@@ -396,16 +396,13 @@ class InflationSDP:
             self.monomials = self.monomials[1:]
             self.n_vars -= 1
         self.moments = self.monomials
-        # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
         old_num_vars = self.n_vars
         self.n_vars = len(self.monomials)
         self.first_free_idx = first_free_index
         if self.n_vars < old_num_vars:
             if self.verbose > 0:
-                print("Further variable reduction has been made possible. Number of variables in the SDP:",
+                eprint("Further variable reduction has been made possible. Number of variables in the SDP:",
                        self.n_vars)
-        # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
-        # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
         del _compmonomial_to_idx
         collect(generation=2)
 
@@ -414,7 +411,7 @@ class InflationSDP:
         self.n_something_knowable = _counter["Semi"]
         self.n_unknowable         = _counter["Unknowable"]
         if self.verbose > 1:
-            print(f"The problem has {self.n_knowable} knowable moments, " +
+            eprint(f"The problem has {self.n_knowable} knowable moments, " +
                   f"{self.n_something_knowable} semi-knowable moments, " +
                   f"and {self.n_unknowable} unknowable moments.")
 
@@ -424,7 +421,7 @@ class InflationSDP:
             self.hermitian_moments = [mon for mon in self.moments
                                       if mon.is_hermitian]
             if self.verbose > 1:
-                print(f"The problem has {len(self.hermitian_moments)} " +
+                eprint(f"The problem has {len(self.hermitian_moments)} " +
                       "non-negative moments.")
 
         # This dictionary useful for certificates_as_probs
@@ -442,7 +439,7 @@ class InflationSDP:
                                                 self.momentmatrix,
                                                 self.verbose)
             if self.verbose > 1 and len(self.idx_level_equalities):
-                print("Number of normalization equalities:",
+                eprint("Number of normalization equalities:",
                       len(self.idx_level_equalities))
             for (norm_idx, summation_idxs) in self.idx_level_equalities:
                 eq_dict = {self.compmoment_from_idx[norm_idx]: 1}
@@ -1359,7 +1356,7 @@ class InflationSDP:
 
         # Write file according to the extension
         if self.verbose > 0:
-            print("Writing the SDP program to", filename)
+            eprint("Writing the SDP program to", filename)
         if extension == "dat-s":
             write_to_sdpa(self, filename)
         elif extension == "csv":
@@ -1819,7 +1816,7 @@ class InflationSDP:
             for specs in col_specs:
                 to_print.append("1" if specs == []
                                 else "".join([self.names[p] for p in specs]))
-            print("Column structure:", "+".join(to_print))
+            eprint("Column structure:", "+".join(to_print))
 
         _zero_lexorder = np.array([0], dtype=np.intc)
         columns      = []
@@ -2032,14 +2029,14 @@ class InflationSDP:
         if self.momentmatrix_has_a_one:
             num_nontrivial_known -= 1
         if self.verbose > 1 and num_nontrivial_known > 0:
-            print("Number of variables with fixed numeric value:",
+            eprint("Number of variables with fixed numeric value:",
                   len(self.known_moments))
         if len(self.semiknown_moments):
             for k in self.known_moments.keys():
                 self.semiknown_moments.pop(k, None)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
+            eprint(f"Number of semiknown variables: {num_semiknown}")
 
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
