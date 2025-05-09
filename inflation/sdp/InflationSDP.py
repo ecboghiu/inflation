@@ -322,7 +322,7 @@ class InflationSDP:
         self.build_columns(column_specification)
         collect()
         if self.verbose > 0:
-            print("Number of columns in the moment matrix:", self.n_columns)
+            eprint("Number of columns in the moment matrix:", self.n_columns)
 
         # Calculate the moment matrix without the inflation symmetries
         unsymmetrized_mm, unsymmetrized_corresp = \
@@ -334,7 +334,7 @@ class InflationSDP:
                          else "")
             if 0 in unsymmetrized_mm.flat:
                 additional_var = 1
-            print("Number of variables" + extra_msg + ":",
+            eprint("Number of variables" + extra_msg + ":",
                   len(unsymmetrized_corresp) + additional_var)
 
         # Calculate the inflation symmetries
@@ -351,7 +351,7 @@ class InflationSDP:
         if self.verbose > 0:
             extra_msg = (" after symmetrization" if symmetrization_required
                          else "")
-            print(f"Number of variables{extra_msg}: "
+            eprint(f"Number of variables{extra_msg}: "
                   + f"{len(self.symmetrized_corresp)+additional_var}")
         del unsymmetrized_mm, unsymmetrized_corresp, \
             symmetrization_required, additional_var
@@ -429,7 +429,7 @@ class InflationSDP:
         self.n_something_knowable = _counter["Semi"]
         self.n_unknowable         = _counter["Unknowable"]
         if self.verbose > 1:
-            print(f"The problem has {self.n_knowable} knowable moments, " +
+            eprint(f"The problem has {self.n_knowable} knowable moments, " +
                   f"{self.n_something_knowable} semi-knowable moments, " +
                   f"and {self.n_unknowable} unknowable moments.")
 
@@ -439,7 +439,7 @@ class InflationSDP:
             self.hermitian_moments = [mon for mon in self.moments
                                       if mon.is_hermitian]
             if self.verbose > 1:
-                print(f"The problem has {len(self.hermitian_moments)} " +
+                eprint(f"The problem has {len(self.hermitian_moments)} " +
                       "non-negative moments.")
 
         # This dictionary useful for certificates_as_probs
@@ -457,7 +457,7 @@ class InflationSDP:
                                                 self.momentmatrix,
                                                 self.verbose)
             if self.verbose > 1 and len(self.idx_level_equalities):
-                print("Number of normalization equalities:",
+                eprint("Number of normalization equalities:",
                       len(self.idx_level_equalities))
             for (norm_idx, summation_idxs) in self.idx_level_equalities:
                 eq_dict = {self.compmoment_from_idx[norm_idx]: 1}
