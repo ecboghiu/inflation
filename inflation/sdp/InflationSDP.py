@@ -48,6 +48,7 @@ class InflationSDP:
                  supports_problem: bool = False,
                  include_all_outcomes: bool = False,
                  commuting: bool = False,
+                 real_qt: bool = False,
                  verbose: int = None) -> None:
         """
         Class for generating and solving an SDP relaxation for quantum inflation.
@@ -59,6 +60,9 @@ class InflationSDP:
         supports_problem : bool, optional
             Whether to consider feasibility problems with distributions, or just
             with the distribution's support. By default ``False``.
+        real_qt : bool, optional
+            Whether to assume real quantum theory instead of traditional (complex)
+            quantum theory. By default ``False``.
         verbose : int, optional
             Optional parameter for level of verbose:
 
@@ -211,6 +215,13 @@ class InflationSDP:
                 "You appear to be requesting commuting (classical)" \
                     + " inflation, \nbut have not specified classical_sources=`all`." \
                     + "\nNote that the `commuting` keyword argument has been deprecated as of release 2.0.0"
+        if real_qt:
+            assert not self.all_operators_commute, \
+                "You appear to be requesting inflation assuming real quantum theory," \
+                + " but this is meaningless without noncommuting operators."
+            self.real_qt = True
+        else:
+            self.real_qt = False
         if self.all_operators_commute:
             self.all_commuting_q_2d = lambda mon: True
             self.all_commuting_q_1d = lambda lexmon: True
@@ -241,8 +252,7 @@ class InflationSDP:
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = "npa1",
-                            **kwargs
+                                  List[sp.core.symbol.Symbol]] = "npa1"
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -325,7 +335,7 @@ class InflationSDP:
         self.Constant_Term.name = self.constant_term_name
         self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
-        self.build_columns(column_specification, **kwargs)
+        self.build_columns(column_specification)
         collect()
         if self.verbose > 0:
             eprint("Number of columns in the moment matrix:", self.n_columns)
@@ -1450,6 +1460,9 @@ class InflationSDP:
                 return mon
             except KeyError:
                 mon = InternalAtomicMonomialSDP(self, repr_lexmon)
+                if self.real_qt:
+                    conj = mon.dagger
+                    mon = min(mon, conj)
                 self.atomic_monomial_from_hash[key]     = mon
                 self.atomic_monomial_from_hash[new_key] = mon
                 return mon
@@ -1598,9 +1611,13 @@ class InflationSDP:
             else:
                 pass
         atoms = tuple(sorted(list_of_atoms))
-        conjugate = tuple(sorted(factor.dagger for factor in atoms))
-        atoms = min(atoms, conjugate)
-        del conjugate
+        if not self.all_operators_commute:
+            conjugate = [factor.dagger for factor in atoms]
+            if not self.real_qt:
+                atoms = min(atoms, tuple(sorted(conjugate)))
+            else:
+                atoms = min(tuple(sorted(candidate)) for candidate in product(*zip(atoms, conjugate)))
+            del conjugate
         try:
             mon = self.monomial_from_atoms[atoms]
             return mon
