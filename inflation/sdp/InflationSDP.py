@@ -168,9 +168,11 @@ class InflationSDP:
                 eprint(f" means that not all symmetries of the problem can be exploited. Group size drop from {old_group_size} to {new_group_size}.")
 
         self._lexrepr_to_names = \
-            np.hstack((["0"], inflationproblem._lexrepr_to_names))
+            np.hstack((["0"], inflationproblem._lexrepr_to_names)).astype(object)
+        # eprint("CG stuff:", self._lexrepr_to_names[CG_ops])
+        # eprint("else: ", np.setdiff1d(self._lexrepr_to_names, self._lexrepr_to_names[CG_ops]))
         self._lexrepr_to_copy_index_free_names = \
-            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names))
+            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names)).astype(object)
         self.op_from_name = {"0": 0}
         for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
             for op_name in op_names:
