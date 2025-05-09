@@ -403,7 +403,6 @@ class InflationSDP:
             self.monomials = self.monomials[1:]
             self.n_vars -= 1
         self.moments = self.monomials
-        # assert np.array_equal(list(_compmonomial_to_idx.values()), np.arange(len(self.monomials))), "Something went wrong with monomial initialization."
         old_num_vars = self.n_vars
         self.n_vars = len(self.monomials)
         self.first_free_idx = first_free_index
@@ -411,24 +410,8 @@ class InflationSDP:
             if self.verbose > 0:
                 eprint("Further variable reduction has been made possible. Number of variables in the SDP:",
                        self.n_vars)
-        # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
-        # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
         del _compmonomial_to_idx
         collect(generation=2)
-
-        # self.compmoment_from_idx = dict()
-        # if self.momentmatrix_has_a_zero:
-        #     self.compmoment_from_idx[0] = self.Zero
-        # for (idx, lexmon) in tqdm(self.symmetrized_corresp.items(),
-        #                        disable=not self.verbose,
-        #                        desc="Initializing monomials   "):
-        #     self.compmoment_from_idx[idx] = self.Moment_1d(lexmon, idx)
-        # self.first_free_idx = max(self.compmoment_from_idx.keys()) + 1
-        # self.moments = list(self.compmoment_from_idx.values())
-        # self.monomials = list(self.compmoment_from_idx.values())
-        #
-        # assert all(v == 1 for v in Counter(self.monomials).values()), \
-        #     "Multiple indices are being associated to the same monomial"
 
         _counter = Counter([mon.knowability_status for mon in self.moments])
         self.n_knowable           = _counter["Knowable"]
