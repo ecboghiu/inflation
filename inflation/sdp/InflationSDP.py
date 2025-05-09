@@ -35,7 +35,7 @@ from .writer_utils import (write_to_csv,
                            write_to_mat,
                            write_to_sdpa)
 from ..lp.numbafied import nb_outer_bitwise_or
-from ..utils import clean_coefficients, partsextractor
+from ..utils import clean_coefficients, partsextractor, eprint
 
 
 class InflationSDP:
@@ -101,7 +101,7 @@ class InflationSDP:
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
-            print("Number of single operator measurements per party:", end="")
+            eprint("Number of single operator measurements per party:", end="")
             prefix = " "
             for i, measures in enumerate(self.measurements):
                 counter = count()
@@ -109,9 +109,9 @@ class InflationSDP:
                     chain.from_iterable(measures)),
                           counter),
                       maxlen=0)
-                print(prefix + f"{self.names[i]}={next(counter)}", end="")
+                eprint(prefix + f"{self.names[i]}={next(counter)}", end="")
                 prefix = ", "
-            print()
+            eprint()
         self.use_lpi_constraints = False
         self.network_scenario    = inflationproblem.is_network
         self._is_knowable_q_non_networks = \
@@ -149,13 +149,30 @@ class InflationSDP:
         self._lexorder = self._default_lexorder.copy()
         self.op_to_lexrepr_dict = {tuple(op): i for i, op in enumerate(self._lexorder)}
         self._lexorder_len = len(self._lexorder)
-        self.lexorder_symmetries = \
+        self.raw_lexorder_symmetries = \
             np.pad(inflationproblem.symmetries + 1, ((0, 0), (1, 0)))
+        # self.lexorder_symmetries = self.raw_lexorder_symmetries.copy()
+        CG_ops = []
+        for boolarray in self._CG_limited_ortho_groups_as_boolarrays:
+            CG_ops.extend(np.flatnonzero(boolarray)+1)
+        CG_ops = np.sort(CG_ops).astype(int)
+        self.lexorder_symmetries=np.array([
+            perm for perm in self.raw_lexorder_symmetries
+            if np.array_equal(np.sort(perm[CG_ops]), CG_ops)
+        ], dtype=int)
+        if self.verbose > 0:
+            old_group_size = len(self.raw_lexorder_symmetries)
+            new_group_size = len(self.lexorder_symmetries)
+            if new_group_size < old_group_size:
+                eprint("Warning: The use of Collins-Gisin notation internally via the argument `include_all_outcomes=False`")
+                eprint(f" means that not all symmetries of the problem can be exploited. Group size drop from {old_group_size} to {new_group_size}.")
 
         self._lexrepr_to_names = \
-            np.hstack((["0"], inflationproblem._lexrepr_to_names))
+            np.hstack((["0"], inflationproblem._lexrepr_to_names)).astype(object)
+        # eprint("CG stuff:", self._lexrepr_to_names[CG_ops])
+        # eprint("else: ", np.setdiff1d(self._lexrepr_to_names, self._lexrepr_to_names[CG_ops]))
         self._lexrepr_to_copy_index_free_names = \
-            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names))
+            np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names)).astype(object)
         self.op_from_name = {"0": 0}
         for i, op_names in enumerate(inflationproblem._lexrepr_to_all_names.tolist()):
             for op_name in op_names:
@@ -311,7 +328,7 @@ class InflationSDP:
         self.build_columns(column_specification, **kwargs)
         collect()
         if self.verbose > 0:
-            print("Number of columns in the moment matrix:", self.n_columns)
+            eprint("Number of columns in the moment matrix:", self.n_columns)
 
         # Calculate the moment matrix without the inflation symmetries
         unsymmetrized_mm, unsymmetrized_corresp = \
@@ -323,7 +340,7 @@ class InflationSDP:
                          else "")
             if 0 in unsymmetrized_mm.flat:
                 additional_var = 1
-            print("Number of variables" + extra_msg + ":",
+            eprint("Number of variables" + extra_msg + ":",
                   len(unsymmetrized_corresp) + additional_var)
 
         # Calculate the inflation symmetries
@@ -340,7 +357,7 @@ class InflationSDP:
         if self.verbose > 0:
             extra_msg = (" after symmetrization" if symmetrization_required
                          else "")
-            print(f"Number of variables{extra_msg}: "
+            eprint(f"Number of variables{extra_msg}: "
                   + f"{len(self.symmetrized_corresp)+additional_var}")
         del unsymmetrized_mm, unsymmetrized_corresp, \
             symmetrization_required, additional_var
@@ -392,7 +409,7 @@ class InflationSDP:
         self.first_free_idx = first_free_index
         if self.n_vars < old_num_vars:
             if self.verbose > 0:
-                print("Further variable reduction has been made possible. Number of variables in the SDP:",
+                eprint("Further variable reduction has been made possible. Number of variables in the SDP:",
                        self.n_vars)
         # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
         # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
@@ -418,7 +435,7 @@ class InflationSDP:
         self.n_something_knowable = _counter["Semi"]
         self.n_unknowable         = _counter["Unknowable"]
         if self.verbose > 1:
-            print(f"The problem has {self.n_knowable} knowable moments, " +
+            eprint(f"The problem has {self.n_knowable} knowable moments, " +
                   f"{self.n_something_knowable} semi-knowable moments, " +
                   f"and {self.n_unknowable} unknowable moments.")
 
@@ -428,7 +445,7 @@ class InflationSDP:
             self.hermitian_moments = [mon for mon in self.moments
                                       if mon.is_hermitian]
             if self.verbose > 1:
-                print(f"The problem has {len(self.hermitian_moments)} " +
+                eprint(f"The problem has {len(self.hermitian_moments)} " +
                       "non-negative moments.")
 
         # This dictionary useful for certificates_as_probs
@@ -446,7 +463,7 @@ class InflationSDP:
                                                 self.momentmatrix,
                                                 self.verbose)
             if self.verbose > 1 and len(self.idx_level_equalities):
-                print("Number of normalization equalities:",
+                eprint("Number of normalization equalities:",
                       len(self.idx_level_equalities))
             for (norm_idx, summation_idxs) in self.idx_level_equalities:
                 eq_dict = {self.compmoment_from_idx[norm_idx]: 1}
@@ -1404,7 +1421,7 @@ class InflationSDP:
 
         # Write file according to the extension
         if self.verbose > 0:
-            print("Writing the SDP program to", filename)
+            eprint("Writing the SDP program to", filename)
         if extension == "dat-s":
             write_to_sdpa(self, filename)
         elif extension == "csv":
@@ -1857,7 +1874,7 @@ class InflationSDP:
             for specs in col_specs:
                 to_print.append("1" if specs == []
                                 else "".join([self.names[p] for p in specs]))
-            print("Column structure:", "+".join(to_print))
+            eprint("Column structure:", "+".join(to_print))
 
         _zero_lexorder = np.array([0], dtype=np.intc)
         columns      = []
@@ -1969,19 +1986,23 @@ class InflationSDP:
         permutation_failed = False
         for inf_sym in self.lexorder_symmetries[1:]:
             skip_this_one = False
-            try:
-                total_perm = np.empty(self.n_columns, dtype=int)
-                for i, lexmon in enumerate(self.generating_monomials_1d):
-                    new_lexmon = inf_sym[lexmon]
-                    new_lexmon_canon = self._to_canonical_memoized_1d(
-                        new_lexmon,
-                        apply_only_commutations=True)
+            total_perm = np.empty(self.n_columns, dtype=int)
+            for i, lexmon in enumerate(self.generating_monomials_1d):
+                new_lexmon = np.argsort(inf_sym)[lexmon]
+                new_lexmon_canon = self._to_canonical_memoized_1d(
+                    new_lexmon,
+                    apply_only_commutations=True)
+                try:
                     total_perm[i] \
-                        = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
-            except KeyError:
-                permutation_failed = True
-                permutations_failed += 1
-                skip_this_one = True
+                    = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
+                except KeyError:
+                    eprint(f"Warning: generating monomial before symmetry becomes unrecognizable after symmetry!")
+                    eprint(f" Generating monomial before symmetry: {self._lexrepr_to_names[lexmon]}")
+                    eprint(f" Generating monomial after symmetry: {self._lexrepr_to_names[new_lexmon_canon]}")
+                    permutation_failed = True
+                    permutations_failed += 1
+                    skip_this_one = True
+                    break
             if not skip_this_one:
                 discovered_symmetries.append(total_perm)
         if permutation_failed and (self.verbose > 0):
@@ -2071,14 +2092,14 @@ class InflationSDP:
         if self.momentmatrix_has_a_one:
             num_nontrivial_known -= 1
         if self.verbose > 1 and num_nontrivial_known > 0:
-            print("Number of variables with fixed numeric value:",
+            eprint("Number of variables with fixed numeric value:",
                   len(self.known_moments))
         if len(self.semiknown_moments):
             for k in self.known_moments.keys():
                 self.semiknown_moments.pop(k, None)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
+            eprint(f"Number of semiknown variables: {num_semiknown}")
 
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""

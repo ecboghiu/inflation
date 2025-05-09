@@ -169,13 +169,13 @@ class InflationLP(object):
             self._boolvec_for_FR_eqs = self.blank_bool_vec
 
         if self.verbose > 1:
-            print("Number of single operator measurements per party:", end="")
+            eprint("Number of single operator measurements per party:", end="")
             prefix = " "
             for i, measures in enumerate(inflationproblem.measurements):
                 op_count = np.prod(measures.shape[:2])
-                print(prefix + f"{self.names[i]}={op_count}", end="")
+                eprint(prefix + f"{self.names[i]}={op_count}", end="")
                 prefix = ", "
-            print()
+            eprint()
         self.use_lpi_constraints = False
 
         self.identity_operator = np.empty((0, self._nr_properties),
@@ -972,7 +972,7 @@ class InflationLP(object):
         # Write file according to the extension
         args = self._prepare_solver_arguments(separate_bounds=True)
         if self.verbose > 0:
-            print("Writing the LP program to", filename)
+            eprint("Writing the LP program to", filename)
         if extension == "lp":
             write_to_lp(args, filename)
         elif extension == "mps":
@@ -1142,7 +1142,7 @@ class InflationLP(object):
             try:
                 return self.monomial_from_name[mon]
             except KeyError:
-                print(f"As of now we only recognize \n{list(self.monomial_from_name.keys())}")
+                eprint(f"As of now we only recognize \n{list(self.monomial_from_name.keys())}")
                 return self._sanitise_monomial(self._interpret_name(mon))
         elif isinstance(mon, Real):
             if np.isclose(float(mon), 1):
@@ -1321,7 +1321,7 @@ class InflationLP(object):
                 orbits_non_CG, return_index=True, return_inverse=True)
             self.num_non_CG = len(old_reps_non_CG)
             if self.verbose > 1:
-                print(f"Orbits discovered! {self.num_CG} unique monomials.")
+                eprint(f"Orbits discovered! {self.num_CG} unique monomials.")
             # Obtain the real generating monomials after accounting for symmetry
         else:
             self.num_CG = self.raw_n_columns
@@ -1406,7 +1406,7 @@ class InflationLP(object):
 
         self._lp_has_been_generated = True
         if self.verbose > 1:
-            print("LP initialization complete, ready to accept further specifics.")
+            eprint("LP initialization complete, ready to accept further specifics.")
 
     def _template_to_event_boolarray(self, template: List[int], decompressor: List[np.ndarray]) -> np.ndarray:
         if template:
