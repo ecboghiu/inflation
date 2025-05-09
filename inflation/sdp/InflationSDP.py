@@ -101,7 +101,7 @@ class InflationSDP:
 
         self.measurements = self._generate_parties()
         if self.verbose > 1:
-            print("Number of single operator measurements per party:", end="")
+            eprint("Number of single operator measurements per party:", end="")
             prefix = " "
             for i, measures in enumerate(self.measurements):
                 counter = count()
@@ -109,9 +109,9 @@ class InflationSDP:
                     chain.from_iterable(measures)),
                           counter),
                       maxlen=0)
-                print(prefix + f"{self.names[i]}={next(counter)}", end="")
+                eprint(prefix + f"{self.names[i]}={next(counter)}", end="")
                 prefix = ", "
-            print()
+            eprint()
         self.use_lpi_constraints = False
         self.network_scenario    = inflationproblem.is_network
         self._is_knowable_q_non_networks = \
@@ -403,7 +403,7 @@ class InflationSDP:
         self.first_free_idx = first_free_index
         if self.n_vars < old_num_vars:
             if self.verbose > 0:
-                print("Further variable reduction has been made possible. Number of variables in the SDP:",
+                eprint("Further variable reduction has been made possible. Number of variables in the SDP:",
                        self.n_vars)
         # self.compmoment_from_idx = dict(zip(range(self.n_vars), monomials_as_list))
         # self.compmoment_to_idx = dict(zip(monomials_as_list, range(self.n_vars)))
@@ -1411,7 +1411,7 @@ class InflationSDP:
 
         # Write file according to the extension
         if self.verbose > 0:
-            print("Writing the SDP program to", filename)
+            eprint("Writing the SDP program to", filename)
         if extension == "dat-s":
             write_to_sdpa(self, filename)
         elif extension == "csv":
@@ -1864,7 +1864,7 @@ class InflationSDP:
             for specs in col_specs:
                 to_print.append("1" if specs == []
                                 else "".join([self.names[p] for p in specs]))
-            print("Column structure:", "+".join(to_print))
+            eprint("Column structure:", "+".join(to_print))
 
         _zero_lexorder = np.array([0], dtype=np.intc)
         columns      = []
@@ -2082,14 +2082,14 @@ class InflationSDP:
         if self.momentmatrix_has_a_one:
             num_nontrivial_known -= 1
         if self.verbose > 1 and num_nontrivial_known > 0:
-            print("Number of variables with fixed numeric value:",
+            eprint("Number of variables with fixed numeric value:",
                   len(self.known_moments))
         if len(self.semiknown_moments):
             for k in self.known_moments.keys():
                 self.semiknown_moments.pop(k, None)
         num_semiknown = len(self.semiknown_moments)
         if self.verbose > 1 and num_semiknown > 0:
-            print(f"Number of semiknown variables: {num_semiknown}")
+            eprint(f"Number of semiknown variables: {num_semiknown}")
 
     def _reset_lowerbounds(self) -> None:
         """Reset the list of lower bounds."""
