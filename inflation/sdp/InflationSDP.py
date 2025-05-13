@@ -19,6 +19,7 @@ from scipy.sparse import coo_array
 from tqdm import tqdm
 
 from .. import InflationProblem
+from ..certificate import Certificate
 from .fast_npa import nb_is_knowable as is_knowable
 from .fast_npa import (reverse_mon,
                        to_canonical_1d_internal
@@ -883,6 +884,7 @@ class InflationSDP:
         self.solution_object = solveSDP_MosekFUSION(**args)
 
         self.status = self.solution_object["status"]
+        self.certificate = Certificate(self)
         if self.status == "optimal":
             self.success = True
             self.primal_objective = self.solution_object["primal_value"]
@@ -931,40 +933,9 @@ class InflationSDP:
             The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-        if len(self.semiknown_moments) > 0:
-            warn("Beware that, because the problem contains linearized " +
-                 "polynomial constraints, the certificate is not guaranteed " +
-                 "to apply to other distributions.")
-        if np.allclose(list(dual.values()), 0.):
-            return {}
-        if clean:
-            dual = clean_coefficients(dual, chop_tol, round_decimals)
-        return {self.monomial_from_name[k]: v for k, v in dual.items()
-                if not self.monomial_from_name[k].is_zero}
-
-    def probs_from_dict(self,
-                        dict_with_monomial_keys: dict) -> sp.core.add.Add:
-        """Converts a monomial dictionary into a SymPy expression.
-
-        Parameters
-        ----------
-        dict_with_monomial_keys : Dict[sympy.Symbol, float]
-            Dictionary with monomials and associated coefficients.
-
-        Returns
-        -------
-        sympy.core.add.Add
-            The expression of the polynomial encoded in the dictionary.
-        """
-        polynomial = sp.S.Zero
-        for mon, coeff in self._sanitise_dict(dict_with_monomial_keys).items():
-            polynomial += coeff * mon.symbol
-        return polynomial
+        warn("certificate_as_dict() will be removed from new versions of the "
+             + "library. Please use InflationLP.certificate.as_dict() instead")
+        return self.certificate.as_dict(clean, chop_tol, round_decimals)
 
     def certificate_as_probs(self,
                              clean: bool = True,
@@ -999,45 +970,9 @@ class InflationSDP:
             The expression of the certificate in terms of probabilities and
             marginals. The certificate of incompatibility is ``cert < 0``.
         """
-        return self.probs_from_dict(self.certificate_as_dict(
-            clean=clean,
-            chop_tol=chop_tol,
-            round_decimals=round_decimals))
-
-    def string_from_dict(self,
-                         dict_with_monomial_keys: dict) -> str:
-        """Converts a monomial dictionary into a string.
-
-        Parameters
-        ----------
-        dict_with_monomial_keys : Dict[sympy.Symbol, float]
-            Dictionary with monomials and associated coefficients.
-
-        Returns
-        -------
-        str
-            The expression of the certificate in string form.
-        """
-        as_dict = self._sanitise_dict(dict_with_monomial_keys)
-        # Watch out for when "1" is note the same as "constant_term"
-        constant_value = as_dict.pop(self.Constant_Term,
-                                     as_dict.pop(self.One, 0.)
-                                     )
-        if constant_value:
-            polynomial_as_str = str(constant_value)
-        else:
-            polynomial_as_str = ""
-        for mon, coeff in as_dict.items():
-            if mon.is_zero or np.isclose(np.abs(coeff), 0):
-                continue
-            else:
-                polynomial_as_str += "+" if coeff >= 0 else "-"
-                if np.isclose(abs(coeff), 1):
-                    polynomial_as_str += mon.name
-                else:
-                    polynomial_as_str += "{0}*{1}".format(abs(coeff), mon.name)
-        return polynomial_as_str[1:] if polynomial_as_str[
-                                            0] == "+" else polynomial_as_str
+        warn("certificate_as_probs() will be removed from new versions of the "
+             + "library. Please use InflationLP.certificate.as_probs() instead")
+        return self.certificate.as_probs(clean, chop_tol, round_decimals)
 
     def certificate_as_string(self,
                               clean: bool = True,
@@ -1073,11 +1008,9 @@ class InflationSDP:
             The certificate in terms of probabilities and marginals. The
             certificate of incompatibility is ``cert < 0``.
         """
-        return self.string_from_dict(
-            self.certificate_as_dict(
-                clean=clean,
-                chop_tol=chop_tol,
-                round_decimals=round_decimals)) + " < 0"
+        warn("certificate_as_string() will be removed from new versions of the "
+             + "library. Please use InflationLP.certificate.as_string() instead")
+        return self.certificate.as_string(clean, chop_tol, round_decimals)
 
     def evaluate_polynomial(self, polynomial: dict, prob_array: np.ndarray):
         """Evaluate the certificate of infeasibility in a target probability
@@ -1132,11 +1065,9 @@ class InflationSDP:
         float
             The evaluation of the certificate of infeasibility in prob_array.
         """
-        if self.use_lpi_constraints:
-            warn("You have used LPI constraints to obtain the certificate. " +
-                 "Be aware that, because of that, the certificate may not be " +
-                 "valid for other distributions.")
-        return self.evaluate_polynomial(self.certificate_as_dict(), prob_array)
+        warn("evaluate_certificate() will be removed from new versions of the "
+             + "library. Please use InflationLP.certificate.evaluate() instead")
+        return self.certificate.evaluate(prob_array)
 
     def desymmetrize_certificate(self) -> dict:
         """If the scenario contains symmetries other than the inflation
@@ -1150,30 +1081,10 @@ class InflationSDP:
             probabilities and marginals. The certificate of incompatibility is
             ``cert < 0``.
         """
-        try:
-            dual = self.solution_object["dual_certificate"]
-        except AttributeError:
-            raise Exception("For extracting a certificate you need to solve " +
-                            "a problem. Call \"InflationSDP.solve()\" first.")
-
-        desymmetrized = {}
-        norm = len(self.InflationProblem.symmetries)
-        lexmon_names = self.InflationProblem._lexrepr_to_copy_index_free_names
-        for symm in self.InflationProblem.symmetries:
-            for mon, coeff in dual.items():
-                mon = self.monomial_from_name[mon]
-                if not mon.is_zero:
-                    desymm_mon = lexmon_names[symm[mon.as_lexmon-1]]
-                    desymm_mon = sorted(desymm_mon, key=lambda x: x[0])
-                    if not mon.is_one:
-                        desymm_name = "P[" + " ".join(desymm_mon) + "]"
-                    else:
-                        desymm_name = "1"
-                    if desymm_name not in desymmetrized:
-                        desymmetrized[desymm_name] = coeff / norm
-                    else:
-                        desymmetrized[desymm_name] += coeff / norm
-        return desymmetrized
+        warn("desymmetrize_certificate() will be removed from new versions of "
+             + "the library. Please use InflationLP.certificate.desymmetrize() "
+             + "instead")
+        return self.certificate.desymmetrize()
 
     ###########################################################################
     # OTHER ROUTINES EXPOSED TO THE USER                                      #
