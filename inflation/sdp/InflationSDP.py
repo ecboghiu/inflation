@@ -149,7 +149,7 @@ class InflationSDP:
             if self.does_not_have_children[i]:
                 for ortho_group_as_boolarray in ortho_groups_as_boolarrays:
                     self._CG_limited_ortho_groups_as_boolarrays.append(ortho_group_as_boolarray[:-1])
-                    self._raw_CG_ops.append(np.flatnonzero(ortho_group_as_boolarray[-1]))
+                    self._raw_CG_ops.extend(np.flatnonzero(ortho_group_as_boolarray[-1]))
             else:
                 self._CG_limited_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
         self._lexorder = self._default_lexorder.copy()
