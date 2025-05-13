@@ -248,7 +248,8 @@ class InflationSDP:
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = "npa1"
+                                  List[sp.core.symbol.Symbol]] = "npa1",
+                            **kwargs
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
         the `NPA hierarchy <https://www.arxiv.org/abs/quant-ph/0607119>`_ and
@@ -331,7 +332,7 @@ class InflationSDP:
         self.Constant_Term.name = self.constant_term_name
         self.monomial_from_name[self.constant_term_name] = self.Constant_Term
 
-        self.build_columns(column_specification)
+        self.build_columns(column_specification, **kwargs)
         collect()
         if self.verbose > 0:
             eprint("Number of columns in the moment matrix:", self.n_columns)
