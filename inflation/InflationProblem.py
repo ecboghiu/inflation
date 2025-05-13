@@ -228,10 +228,17 @@ class InflationProblem:
             ii = names_to_integers[parent]
             self.has_children[ii] = True
             observable_children = set(self.dag[parent])
-            assert observable_children.issubset(self.names), "At this time InflationProblem does not accept DAGs with observed nodes pointing to intermediate latents."
-            for child in observable_children:
-                jj = names_to_integers[child]
-                adjacency_matrix[ii, jj] = True
+            if not observable_children.issubset(self.names):
+                raise NotImplementedError("At this time InflationProblem does not accept DAGs with observed nodes pointing to intermediate latents.")
+            latents_behind_this_node = self._inverse_dag[parent].difference(self.names)
+            siblings_of_parent = set([])
+            for latent in latents_behind_this_node:
+                siblings_of_parent.update(self.dag[latent])
+            if not observable_children.issubset(siblings_of_parent):
+                raise NotImplementedError(
+                    "At this time InflationProblem does not accept DAGs with directed edges between observed nodes lacking a common latent parent.")
+            child_indices = [names_to_integers[child] for child in observable_children]
+            adjacency_matrix[ii, child_indices] = True
 
         # Compute number of settings for the unpacked variables
         self.parents_per_party = list(map(np.flatnonzero, adjacency_matrix.T))
