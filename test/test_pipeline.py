@@ -574,12 +574,12 @@ class TestSDPOutput(unittest.TestCase):
         sdp  = InflationSDP(trivial)
         cols = [np.array([]),
                 np.array([[1, 2, 0, 0],
-                 [1, 2, 1, 0]]),
+                          [1, 2, 1, 0]]),
                 np.array([[1, 1, 0, 0],
-                 [1, 2, 0, 0],
-                 [1, 2, 1, 0]])]
+                          [1, 2, 0, 0],
+                          [1, 2, 1, 0]])]
         sdp.generate_relaxation(cols)
-        sdp.set_distribution(np.ones((2, 1)) / 2,
+        sdp.set_distribution(np.ones((2, 2)) / 2,
                              use_lpi_constraints=True)
 
         self.assertGreaterEqual(len(sdp.semiknown_moments), 1,
