@@ -1993,9 +1993,10 @@ class InflationSDP:
                     total_perm[i] \
                     = self.genmon_1d_to_index[tuple(new_lexmon_canon)]
                 except KeyError:
-                    eprint(f"Warning: generating monomial before symmetry becomes unrecognizable after symmetry!")
-                    eprint(f" Generating monomial before symmetry: {self._lexrepr_to_names[lexmon]}")
-                    eprint(f" Generating monomial after symmetry: {self._lexrepr_to_names[new_lexmon_canon]}")
+                    if self.verbose:
+                        eprint(f"Warning: generating monomial before symmetry becomes unrecognizable after symmetry!")
+                        eprint(f" Generating monomial before symmetry: {self._lexrepr_to_names[lexmon]}")
+                        eprint(f" Generating monomial after symmetry: {self._lexrepr_to_names[new_lexmon_canon]}")
                     permutation_failed = True
                     permutations_failed += 1
                     skip_this_one = True
