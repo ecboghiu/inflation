@@ -144,10 +144,12 @@ class InflationSDP:
                 ortho_groups_as_boolarrays.append(self._lexeye[ortho_group])
             all_ortho_groups_as_boolarrays.append(ortho_groups_as_boolarrays)
         self._CG_limited_ortho_groups_as_boolarrays = []
+        self._raw_CG_ops = []
         for i, ortho_groups_as_boolarrays in enumerate(all_ortho_groups_as_boolarrays):
             if self.does_not_have_children[i]:
                 for ortho_group_as_boolarray in ortho_groups_as_boolarrays:
                     self._CG_limited_ortho_groups_as_boolarrays.append(ortho_group_as_boolarray[:-1])
+                    self._raw_CG_ops.append(np.flatnonzero(ortho_group_as_boolarray[-1]))
             else:
                 self._CG_limited_ortho_groups_as_boolarrays.extend(ortho_groups_as_boolarrays)
         self._lexorder = self._default_lexorder.copy()
@@ -155,14 +157,10 @@ class InflationSDP:
         self._lexorder_len = len(self._lexorder)
         self.raw_lexorder_symmetries = \
             np.pad(inflationproblem.symmetries + 1, ((0, 0), (1, 0)))
-        # self.lexorder_symmetries = self.raw_lexorder_symmetries.copy()
-        CG_ops = []
-        for boolarray in self._CG_limited_ortho_groups_as_boolarrays:
-            CG_ops.extend(np.flatnonzero(boolarray)+1)
-        CG_ops = np.sort(CG_ops).astype(int)
+        self._CG_ops = np.sort(self._raw_CG_ops).astype(int)+1
         self.lexorder_symmetries=np.array([
             perm for perm in self.raw_lexorder_symmetries
-            if np.array_equal(np.sort(perm[CG_ops]), CG_ops)
+            if np.array_equal(np.sort(perm[self._CG_ops]), self._CG_ops)
         ], dtype=int)
         if self.verbose > 0:
             old_group_size = len(self.raw_lexorder_symmetries)
@@ -173,8 +171,6 @@ class InflationSDP:
 
         self._lexrepr_to_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_names)).astype(object)
-        # eprint("CG stuff:", self._lexrepr_to_names[CG_ops])
-        # eprint("else: ", np.setdiff1d(self._lexrepr_to_names, self._lexrepr_to_names[CG_ops]))
         self._lexrepr_to_copy_index_free_names = \
             np.hstack((["0"], inflationproblem._lexrepr_to_copy_index_free_names)).astype(object)
         self.op_from_name = {"0": 0}
