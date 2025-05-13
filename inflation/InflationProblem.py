@@ -6,6 +6,7 @@ inflation.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import warnings
+from collections import defaultdict
 from functools import reduce, cached_property
 from itertools import (chain,
                        combinations_with_replacement,
@@ -192,34 +193,28 @@ class InflationProblem:
                     self._classical_sources[ii] = 1
         self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
 
-        self._partial_inverse_dag = {}
+        self._inverse_dag = defaultdict(set)
+        for v, children in self.dag.items():
+            for child in children:
+                self._inverse_dag[child].add(v)
         for il in self.intermediate_latents:
-            this_ils_parents = set(v for (v, kids) in self.dag.items() if il in kids)
-            self._partial_inverse_dag[il] = this_ils_parents
-            assert this_ils_parents.isdisjoint(self.names), "InflationProblem cannot handle intermediate latents with observable parents at this time."
-        for ncil in self.nonclassical_intermediate_latents:
-            this_ils_parents = self._partial_inverse_dag[ncil]
-            assert not this_ils_parents.isdisjoint(self._actual_sources[self._nonclassical_sources].flat), (f"The nonclassical intermediate latent {ncil} has no nonclassical source parent." +
-            f"\nIts parents are {this_ils_parents} while the set of nonclassical sources is {self._actual_sources[self._nonclassical_sources]})" +
-            "\nPlease add a nonclassical source parent to the DAG and re-initialize InflationProblem.")
-        for cil in self.classical_intermediate_latents:
-            this_ils_parents = self._partial_inverse_dag[cil]
-            assert not this_ils_parents.isdisjoint(self._actual_sources.flat), f"The intermediate latent {il} has no source parent. Please add a source parent to the DAG and re-initialize InflationProblem."
-
-
-        # Test if any quantum intermediate latent has fully classical parents.
-        # This case is not yet supported.
-        is_classical_source = dict(zip(self._actual_sources,
-                                       self._classical_sources))
-        for latent in self.nonclassical_intermediate_latents:
-            parents = [parent for parent, children in self.dag.items()
-                       if latent in children]
-            if all([is_classical_source[parent] for parent in parents]):
+            this_ils_parents = self._inverse_dag[il]
+            if not this_ils_parents.isdisjoint(self.names):
                 raise NotImplementedError(
-                    f"The node {latent} is a quantum intermediate latent node "
-                    + f"with all classical parents ({', '.join(parents)}). "
-                    + "Quantum intermediate latents with all classical parents "
-                    + "are not yet supported.")
+                    "InflationProblem cannot handle intermediate latents with observable parents at this time.")
+            elif this_ils_parents.isdisjoint(self._actual_sources.flat):
+                raise ValueError(
+                    f"The intermediate latent {il} has no source parent. Please add a source parent to the DAG and re-initialize InflationProblem.")
+
+        for ncil in self.nonclassical_intermediate_latents:
+            this_ils_parents = self._inverse_dag[ncil]
+            if this_ils_parents.isdisjoint(self._actual_sources[self._nonclassical_sources].flat):
+                raise NotImplementedError(
+                    f"The nonclassical intermediate latent {ncil} has no nonclassical source parent." +
+                    f"\nIts parents are {this_ils_parents} while the set of nonclassical sources is {self._actual_sources[self._nonclassical_sources]})" +
+                    "\nPlease add a nonclassical source parent to the DAG and re-initialize InflationProblem.")
+
+
 
         # Unpacking of visible nodes with children
         parties_with_children = nodes_with_children.intersection(self.names)
