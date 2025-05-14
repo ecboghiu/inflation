@@ -177,21 +177,21 @@ class InflationProblem:
         nodes_with_children = set(nodes_with_children_as_list)
         self._actual_sources = np.asarray(sorted(
             nodes_with_children.difference(self.names, self.intermediate_latents),
-            key=nodes_with_children_as_list.index))
+            key=nodes_with_children_as_list.index), dtype=object)
         self.nr_sources = len(self._actual_sources)
         if isinstance(classical_sources, str):
             if classical_sources.lower() == "all":
-                self._classical_sources = np.ones(self.nr_sources, dtype=np.uint8)
+                self._classical_sources = np.ones(self.nr_sources, dtype=bool)
             else:
                 raise ValueError(f'The keyword argument classical_sources=`{classical_sources}` could not be parsed.')
         else:
-            self._classical_sources = np.zeros(self.nr_sources, dtype=np.uint8)
+            self._classical_sources = np.zeros(self.nr_sources, dtype=bool)
         if not isinstance(classical_sources, (str, type(None))):
             assert set(classical_sources).issubset(self._actual_sources), "Some specified classical source cannot be found in the DAG."
             for ii, source in enumerate(self._actual_sources):
                 if source in classical_sources:
                     self._classical_sources[ii] = 1
-        self._nonclassical_sources = np.logical_not(self._classical_sources).astype(np.uint8)
+        self._nonclassical_sources = np.logical_not(self._classical_sources)
 
         self._inverse_dag = defaultdict(set)
         for v, children in self.dag.items():
