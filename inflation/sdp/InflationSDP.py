@@ -431,9 +431,12 @@ class InflationSDP:
 
         if self.all_operators_commute:
             self.hermitian_moments = self.moments
+            self.physical_moments = self.moments
         else:
             self.hermitian_moments = [mon for mon in self.moments
                                       if mon.is_hermitian]
+            self.physical_moments = [mon for mon in self.hermitian_moments
+                                     if mon.is_all_commuting]
             if self.verbose > 1:
                 eprint(f"The problem has {len(self.hermitian_moments)} " +
                       "non-negative moments.")
@@ -604,6 +607,11 @@ class InflationSDP:
         """Returns the atomic monomials which correspond to do conditionals."""
         return [m for m in self.atomic_monomials if
                 (m.is_do_conditional and not m.is_knowable)]
+
+    @cached_property
+    def physical_atoms(self):
+        """Returns the knowable atoms."""
+        return [m for m in self.atomic_monomials if m.is_all_commuting]
 
     def set_distribution(self,
                          prob_array: Union[np.ndarray, None],
