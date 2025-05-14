@@ -81,8 +81,11 @@ class InternalAtomicMonomial(object):
             self.is_knowable = True
         else:
             self.is_all_commuting = inflation_lp_instance.all_commuting_q_1d(self.as_lexmon)
-            self.is_do_conditional = is_do_conditional(self.as_2d_array)
-            if self.is_do_conditional and self.is_all_commuting:
+            if self.is_all_commuting:
+                self.is_do_conditional = is_do_conditional(self.as_2d_array)
+            else:
+                self.is_do_conditional = False
+            if self.is_do_conditional:
                 self.is_knowable = self.context._atomic_knowable_q(self.as_2d_array)
             else:
                 self.is_knowable = False
