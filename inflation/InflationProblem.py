@@ -348,16 +348,16 @@ class InflationProblem:
             self.inflation_indices_per_party.append(
                 np.vstack(inflation_indices))
 
-        all_unique_inflation_indices = np.unique(
+        self._all_unique_inflation_indices = np.unique(
             np.vstack(self.inflation_indices_per_party),
             axis=0).astype(self._np_dtype)
         
         # Create hashes and overlap matrix for quick reference
         self._inflation_indices_hash = {op.tobytes(): i for i, op
                                         in enumerate(
-                all_unique_inflation_indices)}
+                self._all_unique_inflation_indices)}
         self._inflation_indices_overlap = nb_overlap_matrix(
-            np.asarray(all_unique_inflation_indices, dtype=self._np_dtype))
+            np.asarray(self._all_unique_inflation_indices, dtype=self._np_dtype))
 
         # Create the measurements (formerly generate_parties)
         self._nr_properties = 1 + self.nr_sources + 2
