@@ -6,7 +6,7 @@ inflation.
 @authors: Emanuel-Cristian Boghiu, Elie Wolfe, Alejandro Pozas-Kerstjens
 """
 import warnings
-from functools import reduce, cached_property
+from functools import cached_property
 from itertools import (chain,
                        combinations_with_replacement,
                        permutations)
@@ -888,8 +888,7 @@ class InflationProblem:
     ###########################################################################
     # FUNCTIONS PERTAINING TO SYMMETRIES                                      #
     ###########################################################################
-    @cached_property
-    def inflation_symmetries(self) -> np.ndarray:
+    def inflation_generators(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials due to copy index relabelling. The new set of operators is a
         permutation of the old. The function outputs a list of all permutations.
@@ -903,39 +902,59 @@ class InflationProblem:
         sources_with_copies = [source for source, inf_level
                                in enumerate(self.inflation_level_per_source)
                                if inf_level > 1]
+        
+        identity_perm      = np.arange(self._nr_operators, dtype=np.intc)
+        symmetries         = [identity_perm]
         if len(sources_with_copies):
             permutation_failed = False
-            symmetries         = []
-            identity_perm      = np.arange(self._nr_operators, dtype=np.intc)
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
                                leave=True,
                                position=0):
-                one_source_symmetries = [identity_perm]
+                one_source_symmetries = []
                 inf_level = self.inflation_level_per_source[source]
-                perms = format_permutations(list(
-                    permutations(range(inf_level)))[1:])
-                for permutation in perms:
-                    adjusted_ops = apply_source_perm(self._lexorder,
-                                                     source,
-                                                     permutation)
-                    try:
+                raw_permutations = [list(range())]
+                # add the cycle 
+                if inf_level > 1:
+                    raw_permutations[0][0] = 1
+                    raw_permutations[0][1] = 0
+                if inf_level > 2:
+                    raw_permutations.append(np.roll(list(range(inf_level)), 1).tolist())
+                if inf_level > 1:
+                    perms = format_permutations(raw_permutations)
+                    for permutation in perms:
+                        adjusted_ops = apply_source_perm(self._lexorder,
+                                                        source,
+                                                        permutation)
+
                         new_order = np.fromiter(
                             (self._lexorder_lookup[op.tobytes()]
-                             for op in adjusted_ops),
-                            dtype=np.intc
-                        )
+                            for op in adjusted_ops),
+                            dtype=np.intc)
                         one_source_symmetries.append(new_order)
-                    except KeyError:
-                        permutation_failed = True
-                symmetries.append(np.asarray(one_source_symmetries,
-                                             dtype=np.intc))
-            if permutation_failed and (self.verbose > 0):
-                warn("The generating set is not closed under source swaps."
-                     + " Some symmetries will not be implemented.")
-            return reduce(perm_combiner, symmetries)
-        return np.arange(self._nr_operators, dtype=np.intc)[np.newaxis]
+                    symmetries.extend(np.asarray(one_source_symmetries,
+                                                dtype=np.intc))
+            if len(symmetries) >= 2:
+                return symmetries[1:]
+            else:
+                return symmetries
+        return symmetries
+
+
+    @cached_property
+    def inflation_symmetries(self) -> np.ndarray:
+        """Calculates all the symmetries pertaining to the set of generating
+        monomials due to copy index relabelling. The new set of operators is a
+        permutation of the old. The function outputs a list of all permutations.
+
+        Returns
+        -------
+        numpy.ndarray[int]
+            The permutations of the lexicographic order implied by the inflation
+            symmetries.
+        """
+        return group_elements_from_generators(self.inflation_generators)
 
     def add_symmetries(self,
                        new_symmetries: Union[np.ndarray, List[np.ndarray]]
