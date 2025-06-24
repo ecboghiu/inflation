@@ -888,6 +888,21 @@ class InflationProblem:
     ###########################################################################
     # FUNCTIONS PERTAINING TO SYMMETRIES                                      #
     ###########################################################################
+    @staticmethod
+    def generators_of_sn(n: int):
+        generating_permutations = []
+        identity_permutation = np.arange(n)
+        if n > 1:
+            cycle = identity_permutation.copy()
+            cycle[0, 1] = [1, 0]
+            generating_permutations.append(cycle)
+        if n > 2:
+            cycle = np.roll(identity_permutation, 1)
+            generating_permutations.append(cycle)
+        number_of_generators = len(generating_permutations)
+        return np.asarray(generating_permutations).reshape((number_of_generators, n))
+
+
     def inflation_generators(self) -> np.ndarray:
         """Calculates all the symmetries pertaining to the set of generating
         monomials due to copy index relabelling. The new set of operators is a
@@ -906,7 +921,6 @@ class InflationProblem:
         identity_perm      = np.arange(self._nr_operators, dtype=np.intc)
         symmetries         = [identity_perm]
         if len(sources_with_copies):
-            permutation_failed = False
             for source in tqdm(sources_with_copies,
                                disable=not self.verbose,
                                desc="Calculating symmetries   ",
@@ -914,27 +928,20 @@ class InflationProblem:
                                position=0):
                 one_source_symmetries = []
                 inf_level = self.inflation_level_per_source[source]
-                raw_permutations = [list(range())]
-                # add the cycle 
-                if inf_level > 1:
-                    raw_permutations[0][0] = 1
-                    raw_permutations[0][1] = 0
-                if inf_level > 2:
-                    raw_permutations.append(np.roll(list(range(inf_level)), 1).tolist())
-                if inf_level > 1:
-                    perms = format_permutations(raw_permutations)
-                    for permutation in perms:
-                        adjusted_ops = apply_source_perm(self._lexorder,
-                                                        source,
-                                                        permutation)
+                raw_permutations = self.generators_of_sn(inf_level)
+                perms = format_permutations(raw_permutations)
+                for permutation in perms:
+                    adjusted_ops = apply_source_perm(self._lexorder,
+                                                    source,
+                                                    permutation)
 
-                        new_order = np.fromiter(
-                            (self._lexorder_lookup[op.tobytes()]
-                            for op in adjusted_ops),
-                            dtype=np.intc)
-                        one_source_symmetries.append(new_order)
-                    symmetries.extend(np.asarray(one_source_symmetries,
-                                                dtype=np.intc))
+                    new_order = np.fromiter(
+                        (self._lexorder_lookup[op.tobytes()]
+                        for op in adjusted_ops),
+                        dtype=np.intc)
+                    one_source_symmetries.append(new_order)
+                symmetries.extend(np.asarray(one_source_symmetries,
+                                            dtype=np.intc))
             if len(symmetries) >= 2:
                 return symmetries[1:]
             else:
@@ -1067,8 +1074,7 @@ class InflationProblem:
                 break
             for x in range(self.private_settings_per_party[p]):
                 for i, perm in enumerate(
-                                   permutations(
-                                       range(self.outcomes_per_party[p]))):
+                                   self.generators_of_sn(self.outcomes_per_party[p])):
                     if i == 0:
                         continue  # skip empty perm
                     new_interpretations = [op_as_dict.copy()
@@ -1106,8 +1112,7 @@ class InflationProblem:
             # Since we are only adjusting PRIVATE setting, we can proceed even
             # if the party has children
             for i, perm in enumerate(
-                            permutations(
-                                range(self.private_settings_per_party[p]))):
+                            self.generators_of_sn(self.private_settings_per_party[p])):
                 if i == 0:
                     continue  # skip empty perm
                 new_interpretations = [op_as_dict.copy() for op_as_dict in
@@ -1128,10 +1133,14 @@ class InflationProblem:
         return np.array(sym_generators)
 
     @cached_property
-    def _all_possible_symmetries(self) -> np.ndarray:
+    def _all_possible_symmetries_generators(self) -> np.ndarray:
         group_generators = np.vstack((
             self._party_relabelling_symmetries,
             self._party_specific_setting_relabelling_symmetries,
             self._setting_specific_outcome_relabelling_symmetries))
-        group_elements = group_elements_from_generators(group_generators)
+        return group_generators
+
+    @cached_property
+    def _all_possible_symmetries(self) -> np.ndarray:
+        group_elements = group_elements_from_generators(self._all_possible_symmetries_generators)
         return group_elements
