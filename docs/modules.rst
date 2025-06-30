@@ -16,6 +16,8 @@ API Reference
 
    symmetry
 
+   certificate
+
    monomials
 
    build
