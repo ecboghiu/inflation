@@ -1,6 +1,6 @@
 import platform
 
-
+from networkx import __version__ as networkx_version
 from numpy import __version__ as numpy_version
 from scipy import __version__ as scipy_version
 from sympy import __version__ as sympy_version
@@ -37,6 +37,7 @@ SciPy Version:\t{scipy_version}
 SymPy Version:\t{sympy_version}
 Numba Version:\t{numba_version}
 Mosek Version:\t{mosek_version}
+Networkx Version:\t{networkx_version}
 
 Python Version:\t{platform.python_version()}
 Platform Info:\t{platform.system()} ({platform.machine()})
