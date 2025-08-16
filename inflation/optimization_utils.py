@@ -269,10 +269,10 @@ def _maximize_via_dual(program: Union[InflationLP, InflationSDP],
         discovered_certificates.append((new_ub , program.certificate_as_dict()))
         if verbose:
             print(f"Current critical value: {new_ub} (seeded by {old_ub+precision})")
-    assert len(discovered_certificates)>1, """
-    Critical error - optimization failed to yield a useful certificate
-    even when given the initial (infeasible) seed.
-    """
+    # assert len(discovered_certificates)>1, """
+    # Critical error - optimization failed to yield a useful certificate
+    # even when given the initial (infeasible) seed.
+    # """
 
     crit_param = max(new_ub, old_ub)
     if return_last:

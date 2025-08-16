@@ -197,6 +197,7 @@ def all_and_maximal_cliques(adjmat: np.ndarray,
       A list of all cliques as well as a list of maximal cliques. The maximal cliques list will be empty if the
       `isolate_maximal` flag is set to False.
     """
+    print("Finding compatible operator sequences...")
     all_cliques = [[]]
     maximal_cliques = []
     verts = tuple(range(adjmat.shape[0]))
@@ -219,6 +220,59 @@ def all_and_maximal_cliques(adjmat: np.ndarray,
                 new_base.append(u)
                 new_cnbrs = list(filter(nbrs[u].__contains__, cnbrs[i+1:]))
                 queue.append((new_base, new_cnbrs))
+    print("Finding compatible operator sequences... COMPLETE.")
+    return all_cliques, maximal_cliques
+
+def all_and_maximal_cliques_symmetry_aware(
+        adjmat: np.ndarray,
+        symgroup: np.ndarray,
+        max_n=0,
+        isolate_maximal=True) -> (List, List):
+    """Based on NetworkX's `enumerate_all_cliques`.
+    This version uses native Python sets instead of numpy arrays.
+    (Performance comparison needed.)
+
+    Parameters
+    ----------
+    adjmat : numpy.ndarray
+      A boolean numpy array representing the adjacency matrix of an undirected graph.
+    symgroup : numpy.ndarray
+      A list of permutations which preserve the adjacency matrix.
+    max_n : int, optional
+      A cutoff for clique size reporting. Default 0, meaning no cutoff.
+    isolate_maximal : bool, optional
+      A flag to disable filtering for maximality, which can increase performance. True by default.
+
+    Returns
+    -------
+    Tuple[List, List]
+      A list of all cliques as well as a list of maximal cliques. The maximal cliques list will be empty if the
+      `isolate_maximal` flag is set to False.
+    """
+    print("Finding compatible operator sequences...")
+    all_cliques = [[]]
+    maximal_cliques = []
+    verts = tuple(range(adjmat.shape[0]))
+    initial_cliques = [[u] for u in verts]
+    nbrs_mat = np.triu(adjmat, k=1)
+    initial_cnbrs = [np.flatnonzero(nbrs_mat[u]).tolist() for u in verts]
+    nbrs = list(map(set, initial_cnbrs))
+    queue = deque(zip(initial_cliques, initial_cnbrs))
+    there_is_a_cutoff = (max_n <= 0)
+    while queue:
+        base, cnbrs = queue.popleft()
+        all_cliques.append(base)
+        if isolate_maximal and not len(cnbrs):
+            base_as_set = set(base)
+            if not any(base_as_set.issubset(superbase) for (superbase, _) in queue):
+                maximal_cliques.append(base)
+        elif there_is_a_cutoff or len(base) < max_n:
+            for i, u in enumerate(cnbrs):
+                new_base = base.copy()
+                new_base.append(u)
+                new_cnbrs = list(filter(nbrs[u].__contains__, cnbrs[i+1:]))
+                queue.append((new_base, new_cnbrs))
+    print("Finding compatible operator sequences... COMPLETE.")
     return all_cliques, maximal_cliques
 
 

@@ -429,7 +429,7 @@ def to_name(monomial: np.ndarray,
 ###############################################################################
 # OPERATIONS ON MONOMIALS RELATED TO INFLATION                                #
 ###############################################################################
-@jit(nopython=nopython, cache=cache, forceobj=not nopython)
+# @jit(nopython=nopython, cache=cache, forceobj=not nopython)
 def apply_source_perm(monomial: np.ndarray,
                       source: int,
                       permutation: np.ndarray) -> np.ndarray:

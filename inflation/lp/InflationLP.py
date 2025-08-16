@@ -1406,7 +1406,7 @@ class InflationLP(object):
             eprint("LP initialization complete, ready to accept further specifics.")
 
     def _template_to_event_boolarray(self, template: List[int], decompressor: List[np.ndarray]) -> np.ndarray:
-        if template:
+        if len(template):
             to_expand = partsextractor(decompressor, sorted(template, key=op_neg))
             return reduce(nb_outer_bitwise_or, to_expand)
         else:
