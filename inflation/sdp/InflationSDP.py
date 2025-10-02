@@ -91,6 +91,7 @@ class InflationSDP:
         self.has_children = inflationproblem.has_children
         self.outcome_cardinalities = inflationproblem.outcomes_per_party.copy()
         self.has_children = inflationproblem.has_children.copy()
+        self.cg_notation = not include_all_outcomes
         if include_all_outcomes or supports_problem:  
             # HACK to fix detection of incompatible supports. 
             # (Can be fixed upon adding set_extra_equalities)
@@ -449,7 +450,7 @@ class InflationSDP:
         # In non-network scenarios we do not use Collins-Gisin notation for
         # some variables, so there exist normalization constraints between them
         self.minimal_equalities = []
-        if not self.network_scenario or self.supports_problem:
+        if not self.network_scenario or self.supports_problem or not self.cg_notation:
             self.column_level_equalities = self._discover_normalization_eqns()
             self.idx_level_equalities    = construct_normalization_eqs(
                                                 self.column_level_equalities,
