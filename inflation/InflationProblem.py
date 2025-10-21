@@ -660,33 +660,33 @@ class InflationProblem:
     ###########################################################################
     def _interpret_operator(self, op: np.ndarray) -> dict:
         interpretation = {}
-        party_int = op[0] -1
+        party_int = int(op[0] -1)
         interpretation["Party as Integer"] = party_int
         interpretation["Party"] = self.names[party_int]
-        outcome_int = op[-1]
+        outcome_int = int(op[-1])
         interpretation["Outcome"] = outcome_int
-        setting_as_single_int = op[-2]
+        setting_as_single_int = int(op[-2])
         interpretation["Composite Setting"] = setting_as_single_int
-        interpretation["Composite Setting is Trivial"] = (self.settings_per_party[party_int] == 1)
+        interpretation["Composite Setting is Trivial"] = bool(self.settings_per_party[party_int] == 1)
         setting_as_tuple = self.effective_to_parent_settings[party_int][setting_as_single_int]
         interpretation["Setting as Tuple"] = setting_as_tuple
         private_setting = setting_as_tuple[0]
         interpretation["Private Setting"] = private_setting
-        interpretation["Private Setting is Trivial"] = (self.private_settings_per_party[party_int] == 1)
+        interpretation["Private Setting is Trivial"] = bool(self.private_settings_per_party[party_int] == 1)
         outcomes_of_parents = setting_as_tuple[1:]
-        parents_in_play_as_ints = self.parents_per_party[party_int]
+        parents_in_play_as_ints = self.parents_per_party[party_int].tolist()
         interpretation["Parents in-play as Integers"] = parents_in_play_as_ints
         parents_in_play_as_names = partsextractor(self.names, parents_in_play_as_ints)
         non_private_setting_dict = dict(zip(parents_in_play_as_names, outcomes_of_parents))
         interpretation["Do Values"] = non_private_setting_dict
         if len(op)==3:
             return interpretation
-        interpretation["Copy Indices"] = op[1:-2]
+        interpretation["Copy Indices"] = op[1:-2].tolist()
         relevant_slots = np.logical_and(
             self.inflation_level_per_source > 0,
-            interpretation["Copy Indices"] > 0
+            np.asarray(interpretation["Copy Indices"]) > 0
         )
-        interpretation["Relevant Copy Indices"] = interpretation["Copy Indices"][relevant_slots]
+        interpretation["Relevant Copy Indices"] = np.asarray(interpretation["Copy Indices"])[relevant_slots].tolist()
         return interpretation
 
     @staticmethod
@@ -704,7 +704,7 @@ class InflationProblem:
         if include_copy_indices:
             if len(op["Relevant Copy Indices"]):
                 copy_index_string = '^{'
-                copy_index_string += ','.join(map(str,op["Relevant Copy Indices"].flat))
+                copy_index_string += ','.join(map(str,op["Relevant Copy Indices"]))
                 copy_index_string += '}'
                 op_as_str += copy_index_string
             # copy_indices_string = "_" + "_".join(map(str, op["Copy Indices"]))
