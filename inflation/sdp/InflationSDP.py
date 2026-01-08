@@ -102,11 +102,12 @@ class InflationSDP:
         self.outcome_cardinalities += self.has_children
         self.setting_cardinalities = inflationproblem.settings_per_party
         self._quantum_sources = inflationproblem._nonclassical_sources
+        self.measurements = inflationproblem.measurements_symbolic
 
         if self.verbose > 1:
             eprint("Number of single operator measurements per party:", end="")
             prefix = " "
-            for i, measures in enumerate(self.InflationProblem.measurements_symbolic):
+            for i, measures in enumerate(self.measurements):
                 counter = count()
                 deque(zip(chain.from_iterable(
                     chain.from_iterable(measures)),
