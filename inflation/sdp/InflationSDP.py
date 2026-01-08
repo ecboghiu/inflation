@@ -250,7 +250,7 @@ class InflationSDP:
                             column_specification:
                             Union[str,
                                   List[List[int]],
-                                  List[sp.core.symbol.Symbol]] = "npa1",
+                                  List[Union[sp.core.symbol.Symbol, str]]] = "npa1",
                             **kwargs
                             ) -> None:
         r"""Creates the SDP relaxation of the quantum inflation problem using
@@ -314,11 +314,11 @@ class InflationSDP:
               is the same as ``npa2`` for three parties. ``[[]]`` encodes the
               identity element.
 
-            * `List[sympy.core.symbol.Symbol]`: one can also fully specify the
-              generating set by giving a list of symbolic operators built from
-              the measurement operators in ``InflationSDP.measurements``. This
-              list needs to have the identity ``sympy.S.One`` as the first
-              element.
+            * `List[Union[sp.core.symbol.Symbol, str]]`: one can also fully specify the
+              generating set by giving a list of operator sequence names or symbolic
+              operators built from the measurement operators in ``InflationSDP.measurements``.
+              This list needs to have the identity (string or integer 1, or ``sympy.S.One``)
+              as the first element.
 
         kwargs :
             Additional arguments that will be passed to
@@ -1200,7 +1200,7 @@ class InflationSDP:
 
         Parameters
         ----------
-        column_specification : Union[str, List[List[int]], List[sympy.core.symbol.Symbol]]
+        column_specification : Union[str, List[List[int]], List[Union[sympy.core.symbol.Symbol, str]]]
             See description in the ``self.generate_relaxation()`` method.
         max_monomial_length : int, optional
             Maximum number of letters in a monomial in the generating set,
@@ -1236,10 +1236,12 @@ class InflationSDP:
                 else:
                     raise Exception("The generating columns are not specified "
                                     + "in a valid format.")
-            elif type(column_specification[0]) in [int, sp.core.symbol.Symbol,
+            elif type(column_specification[0]) in [int,
+                                                   sp.core.symbol.Symbol,
                                                    sp.core.power.Pow,
                                                    sp.core.mul.Mul,
-                                                   sp.core.numbers.One]:
+                                                   sp.core.numbers.One,
+                                                   str]:
                 columns = []
                 for col in column_specification:
                     if type(col) in [int, sp.core.numbers.One]:
@@ -1250,7 +1252,8 @@ class InflationSDP:
                             columns.append(np.array([], dtype=np.intc))
                     elif type(col) in [sp.core.symbol.Symbol,
                                        sp.core.power.Pow,
-                                       sp.core.mul.Mul]:
+                                       sp.core.mul.Mul,
+                                       str]:
                         columns.append(self.mon_to_lexrepr(
                             self._interpret_name(col)))
                     else:
